@@ -207,6 +207,18 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion );
 
     /**
+     * Initializes the given key to a state where it's lower than any possible key in the tree.
+     * @param key key to initialize.
+     */
+    void initializeAsLowest( KEY key );
+
+    /**
+     * Initializes the given key to a state where it's higher than any possible key in the tree.
+     * @param key key to initialize.
+     */
+    void initializeAsHighest( KEY key );
+
+    /**
      * Adapter for {@link Layout}, which contains convenient standard implementations of some methods.
      *
      * @param <KEY> type of key

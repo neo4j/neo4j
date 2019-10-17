@@ -51,4 +51,30 @@ public interface Seeker<KEY,VALUE> extends Closeable
      * @throws IllegalStateException if called before first invocation of true-returning {@link #next()}.
      */
     VALUE value();
+
+    interface Factory<KEY,VALUE>
+    {
+        /**
+         * Seeks hits in this tree, given a key range. Hits are iterated over using the returned {@link Seeker}.
+         * There's no guarantee that neither the {@link KEY} nor the {@link VALUE} instances are immutable and so
+         * if caller wants to cache the results it's safest to copy the instances, or rather their contents,
+         * into its own result cache.
+         * <p>
+         * Seeks can go either forwards or backwards depending on the values of the key arguments.
+         * <ul>
+         * <li>
+         * A {@code fromInclusive} that is smaller than the {@code toExclusive} results in results in ascending order.
+         * </li>
+         * <li>
+         * A {@code fromInclusive} that is bigger than the {@code toExclusive} results in results in descending order.
+         * </li>
+         * </ul>
+         *
+         * @param fromInclusive lower bound of the range to seek (inclusive).
+         * @param toExclusive higher bound of the range to seek (exclusive).
+         * @return a {@link Seeker} used to iterate over the hits within the specified key range.
+         * @throws IOException on error reading from index.
+         */
+        Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive ) throws IOException;
+    }
 }

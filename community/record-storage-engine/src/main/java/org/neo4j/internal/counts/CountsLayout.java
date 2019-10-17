@@ -104,4 +104,16 @@ public class CountsLayout extends Layout.Adapter<CountsKey,CountsValue>
         }
         return Integer.compare( o1.second, o2.second );
     }
+
+    @Override
+    public void initializeAsLowest( CountsKey key )
+    {
+        key.initialize( Byte.MIN_VALUE, Long.MIN_VALUE, Integer.MIN_VALUE );
+    }
+
+    @Override
+    public void initializeAsHighest( CountsKey key )
+    {
+        key.initialize( Byte.MAX_VALUE, Long.MAX_VALUE, Integer.MAX_VALUE );
+    }
 }

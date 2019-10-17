@@ -98,6 +98,18 @@ public class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
         readLongs( cursor, into.getBitSets() );
     }
 
+    @Override
+    public void initializeAsLowest( IdRangeKey idRangeKey )
+    {
+        idRangeKey.setIdRangeIdx( Long.MIN_VALUE );
+    }
+
+    @Override
+    public void initializeAsHighest( IdRangeKey idRangeKey )
+    {
+        idRangeKey.setIdRangeIdx( Long.MAX_VALUE );
+    }
+
     private static void writeLongs( PageCursor cursor, long[][] groups )
     {
         for ( long[] group : groups )

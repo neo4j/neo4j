@@ -245,4 +245,16 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     {
         return value.getValue();
     }
+
+    @Override
+    public void initializeAsLowest( MutableLong key )
+    {
+        key.setValue( Long.MIN_VALUE );
+    }
+
+    @Override
+    public void initializeAsHighest( MutableLong key )
+    {
+        key.setValue( Long.MAX_VALUE );
+    }
 }

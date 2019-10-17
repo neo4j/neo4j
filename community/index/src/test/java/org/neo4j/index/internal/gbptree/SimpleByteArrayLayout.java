@@ -232,6 +232,20 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         return toSeed( rawBytes );
     }
 
+    @Override
+    public void initializeAsLowest( RawBytes rawBytes )
+    {
+        rawBytes.bytes = new byte[8];
+        Arrays.fill( rawBytes.bytes, Byte.MIN_VALUE );
+    }
+
+    @Override
+    public void initializeAsHighest( RawBytes rawBytes )
+    {
+        rawBytes.bytes = new byte[8];
+        Arrays.fill( rawBytes.bytes, Byte.MAX_VALUE );
+    }
+
     private long toSeed( RawBytes rawBytes )
     {
         ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES );

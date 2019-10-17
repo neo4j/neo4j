@@ -1319,7 +1319,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // WHEN
         try ( SeekCursor<KEY,VALUE> cursor = new SeekCursor<>( this.cursor,
                 node, from, to, layout, stableGeneration, unstableGeneration, () -> 0L, failingRootCatchup,
-                unstableGeneration, exceptionDecorator, 1 ) )
+                unstableGeneration, exceptionDecorator, 1, SeekCursor.NO_MONITOR ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1965,7 +1965,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, key( 0 ), key( 1 ), layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
-                exceptionDecorator, 1 ) )
+                exceptionDecorator, 1, SeekCursor.NO_MONITOR ) )
         {
             // do nothing
         }
@@ -2017,7 +2017,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator, 1 ) )
+                exceptionDecorator, 1, SeekCursor.NO_MONITOR ) )
         {
             // do nothing
         }
@@ -2066,7 +2066,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         KEY to = key( 20L );
         try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator, 1 ) )
+                exceptionDecorator, 1, SeekCursor.NO_MONITOR ) )
         {
             while ( seek.next() )
             {
@@ -2294,7 +2294,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
             PageCursor pageCursor, long stableGeneration, long unstableGeneration, RootCatchup rootCatchup ) throws IOException
     {
         return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
-                generationSupplier, rootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ) );
+                generationSupplier, rootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ),
+                SeekCursor.NO_MONITOR );
     }
 
     /**

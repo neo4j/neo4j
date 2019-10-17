@@ -80,4 +80,16 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     {
         return spatialSettings;
     }
+
+    @Override
+    public void initializeAsLowest( GenericKey key )
+    {
+        key.initValuesAsLowest();
+    }
+
+    @Override
+    public void initializeAsHighest( GenericKey key )
+    {
+        key.initValuesAsHighest();
+    }
 }

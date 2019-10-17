@@ -133,4 +133,16 @@ public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     {
         into.bits = cursor.getLong();
     }
+
+    @Override
+    public void initializeAsLowest( LabelScanKey key )
+    {
+        key.set( Integer.MIN_VALUE, Long.MIN_VALUE );
+    }
+
+    @Override
+    public void initializeAsHighest( LabelScanKey key )
+    {
+        key.set( Integer.MAX_VALUE, Long.MAX_VALUE );
+    }
 }

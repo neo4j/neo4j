@@ -140,6 +140,34 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
 {
+    interface Monitor
+    {
+        /**
+         * @param depth where {@code depth==0} is the root.
+         * @param keyCount number of keys in the visited internal node.
+         */
+        void internalNode( int depth, int keyCount );
+
+        /**
+         * @param depth where {@code depth==0} is a root-only tree, where the root is a leaf.
+         * @param keyCount number of keys in the visited leaf node.
+         */
+        void leafNode( int depth, int keyCount );
+    }
+
+    static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void internalNode( int depth, int keyCount )
+        {   // no-op
+        }
+
+        @Override
+        public void leafNode( int depth, int keyCount )
+        {   // no-op
+        }
+    };
+
     static final int DEFAULT_MAX_READ_AHEAD = 20;
 
     /**
@@ -381,6 +409,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     private final Consumer<Throwable> exceptionDecorator;
 
     /**
+     * Monitor for internal seek events.
+     */
+    private final Monitor monitor;
+
+    /**
      * Normally {@link #readHeader()} is called when {@link #concurrentWriteHappened} is {@code true}. However this flag
      * guards for cases where the header must be read and {@link #concurrentWriteHappened} is {@code false},
      * such as when moving over to the next sibling and continuing reading.
@@ -395,7 +428,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     @SuppressWarnings( "unchecked" )
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
-            RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead )
+            RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead, Monitor monitor )
                     throws IOException
     {
         this.cursor = cursor;
@@ -403,6 +436,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         this.toExclusive = toExclusive;
         this.layout = layout;
         this.exceptionDecorator = exceptionDecorator;
+        this.monitor = monitor;
         this.exactMatch = layout.compare( fromInclusive, toExclusive ) == 0;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -448,6 +482,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private void traverseDownToFirstLeaf() throws IOException
     {
+        int depth = 0;
         do
         {
             // Read
@@ -481,6 +516,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             {
                 prepareToStartFromRoot();
                 isInternal = true;
+                depth = 0;
                 continue;
             }
             else if ( !saneRead() )
@@ -500,10 +536,13 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
 
             if ( isInternal )
             {
+                monitor.internalNode( depth, keyCount );
                 goTo( pointerId, pointerGeneration, "child", false );
+                depth++;
             }
         }
         while ( isInternal );
+        monitor.leafNode( depth, keyCount );
 
         // We've now come to the first relevant leaf, initialize the state for the coming leaf scan
         pos -= stride;

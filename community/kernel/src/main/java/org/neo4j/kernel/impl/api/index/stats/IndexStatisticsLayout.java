@@ -99,4 +99,16 @@ public class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,Ind
     {
         return Long.compare( o1.getIndexId(), o2.getIndexId() );
     }
+
+    @Override
+    public void initializeAsLowest( IndexStatisticsKey key )
+    {
+        key.setIndexId( Long.MIN_VALUE );
+    }
+
+    @Override
+    public void initializeAsHighest( IndexStatisticsKey key )
+    {
+        key.setIndexId( Long.MAX_VALUE );
+    }
 }

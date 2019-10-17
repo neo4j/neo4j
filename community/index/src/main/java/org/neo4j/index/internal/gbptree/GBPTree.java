@@ -129,7 +129,7 @@ import static org.neo4j.internal.helpers.Exceptions.withMessage;
  * @param <KEY> type of keys
  * @param <VALUE> type of values
  */
-public class GBPTree<KEY,VALUE> implements Closeable
+public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 {
     /**
      * For monitoring {@link GBPTree}.
@@ -936,28 +936,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return cursor;
     }
 
-    /**
-     * Seeks hits in this tree, given a key range. Hits are iterated over using the returned {@link Seeker}.
-     * There's no guarantee that neither the {@link KEY} nor the {@link VALUE} instances are immutable and so
-     * if caller wants to cache the results it's safest to copy the instances, or rather their contents,
-     * into its own result cache.
-     * <p>
-     * Seeks can go either forwards or backwards depending on the values of the key arguments.
-     * <ul>
-     * <li>
-     * A {@code fromInclusive} that is smaller than the {@code toExclusive} results in results in ascending order.
-     * </li>
-     * <li>
-     * A {@code fromInclusive} that is bigger than the {@code toExclusive} results in results in descending order.
-     * </li>
-     * </ul>
-     *
-     * @param fromInclusive lower bound of the range to seek (inclusive).
-     * @param toExclusive higher bound of the range to seek (exclusive).
-     * @return a {@link Seeker} used to iterate over the hits within the specified key range.
-     * @throws IOException on error reading from index.
-     */
+    @Override
     public Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
+    {
+        return seekInternal( fromInclusive, toExclusive, SeekCursor.DEFAULT_MAX_READ_AHEAD, SeekCursor.NO_MONITOR );
+    }
+
+    private Seeker<KEY,VALUE> seekInternal( KEY fromInclusive, KEY toExclusive, int readAheadLength, SeekCursor.Monitor monitor ) throws IOException
     {
         long generation = this.generation;
         long stableGeneration = stableGeneration( generation );
@@ -969,7 +954,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchupSupplier.get(), rootGeneration,
-                exceptionDecorator, SeekCursor.DEFAULT_MAX_READ_AHEAD );
+                exceptionDecorator, readAheadLength, monitor );
     }
 
     /**
@@ -988,6 +973,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @throws IOException on error reading from index.
      */
     public Collection<Seeker<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive, int numberOfPartitions ) throws IOException
+    {
+        return partitionedSeekInternal( fromInclusive, toExclusive, numberOfPartitions, this );
+    }
+
+    private Collection<Seeker<KEY,VALUE>> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int numberOfPartitions,
+            Seeker.Factory<KEY,VALUE> seekerFactory )
+            throws IOException
     {
         Preconditions.checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
 
@@ -1033,7 +1025,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             for ( Pair<KEY,KEY> partition : partitioning.partition( rootKeys, fromInclusive, toExclusive, numberOfPartitions ) )
             {
-                seekers.add( seek( partition.getLeft(), partition.getRight() ) );
+                seekers.add( seekerFactory.seek( partition.getLeft(), partition.getRight() ) );
             }
             success = true;
         }
@@ -1046,6 +1038,34 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
 
         return seekers;
+    }
+
+    /**
+     * Calculates an estimate of number of keys in this tree in O(log(n)) time. The number is only an estimate and may make its decision on a
+     * concurrently changing tree, but should usually be correct within a couple of percents margin.
+     *
+     * @return an estimate of number of keys in the tree.
+     */
+    public long estimateNumberOfEntriesInTree() throws IOException
+    {
+        KEY low = layout.newKey();
+        layout.initializeAsLowest( low );
+        KEY high = layout.newKey();
+        layout.initializeAsHighest( high );
+        int sampleSize = 100;
+        SizeEstimationMonitor monitor = new SizeEstimationMonitor();
+        do
+        {
+            monitor.clear();
+            Seeker.Factory<KEY,VALUE> monitoredSeeks = ( fromInclusive, toExclusive ) -> seekInternal( fromInclusive, toExclusive, 1, monitor );
+            for ( Seeker<KEY,VALUE> partition : partitionedSeekInternal( low, high, sampleSize, monitoredSeeks ) )
+            {
+                // Simply make sure the first one is found so that the supplied monitor have been notified about the path down to it
+                partition.next();
+            }
+        }
+        while ( !monitor.isConsistent() );
+        return monitor.estimateNumberOfKeys();
     }
 
     /**
