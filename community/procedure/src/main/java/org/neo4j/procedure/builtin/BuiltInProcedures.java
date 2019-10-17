@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -215,6 +216,57 @@ public class BuiltInProcedures
             final IndexDetailResult indexDetailResult = asIndexDetails( tokenLookup, schemaRead, index );
             return Stream.of( indexDetailResult );
         }
+    }
+
+    @SystemProcedure
+    @Description( "List all statements for creating and dropping existing indexes and constraints." )
+    @Procedure( name = "db.schemaStatements", mode = SCHEMA )
+    public Stream<SchemaStatementResult> schemaStatements()
+    {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
+        try ( Statement ignore = kernelTransaction.acquireStatement() )
+        {
+            SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
+            Map<String,SchemaStatementResult> schemaStatements = new HashMap<>();
+
+            // Indexes
+            // If index is backing an existing constraint, it will be overwritten later.
+            Iterators.stream( schemaRead.indexesGetAll() )
+                    .map( index -> new SchemaStatementResult( index.getName(), "INDEX", createStatement( index ), dropStatement( index ) ) )
+                    .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
+
+            // Constraints
+            Iterators.stream( schemaRead.constraintsGetAll() )
+                    .map( constraint -> new SchemaStatementResult( constraint.getName(), "CONSTRAINT", createStatement( constraint ),
+                            dropStatement( constraint ) ) )
+                    .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
+
+            return schemaStatements.values().stream();
+        }
+    }
+
+    private String createStatement( ConstraintDescriptor constraint )
+    {
+        return "Create constraint placeholder";
+    }
+
+    private String dropStatement( ConstraintDescriptor constraint )
+    {
+        return "DROP CONSTRAINT `" + constraint.getName() + "`";
+    }
+
+    private String createStatement( IndexDescriptor indexDescriptor )
+    {
+        return "Create index placeholder";
+    }
+
+    private String dropStatement( IndexDescriptor indexDescriptor )
+    {
+        return "DROP INDEX `" + indexDescriptor.getName() + "`";
     }
 
     private IndexResult asIndexResult( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
@@ -578,8 +630,6 @@ public class BuiltInProcedures
         public final String failureMessage;
         // Maybe additional things to add
 //        public final String useLucene;           //  - "True", "False"
-//        public final String createCommand; // - "CREATE INDEX 'myIndex' ON :Label(name)"
-//        public final String dropCommand; // - "DROP INDEX 'myIndex'"
 //        public final String indexSize; // Index size on disk
 
         private IndexDetailResult( long id, String name, String state, double populationPercent, String uniqueness, String type, String entityType,
@@ -614,6 +664,22 @@ public class BuiltInProcedures
                     indexResult.provider,
                     indexConfig,
                     failureMessage );
+        }
+    }
+
+    public static class SchemaStatementResult
+    {
+        public final String name;               // "MY INDEX", "constraint_5837f24
+        public final String type;               // "INDEX", "CONSTRAINT"
+        public final String createStatement;    // "CALL db.createIndex(...)"
+        public final String dropStatement;      // DROP CONSTRAINT `My Constraint`
+
+        public SchemaStatementResult( String name, String type, String createStatement, String dropStatement )
+        {
+            this.name = name;
+            this.type = type;
+            this.createStatement = createStatement;
+            this.dropStatement = dropStatement;
         }
     }
 
