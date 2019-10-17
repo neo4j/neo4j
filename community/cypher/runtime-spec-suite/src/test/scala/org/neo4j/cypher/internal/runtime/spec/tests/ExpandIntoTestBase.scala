@@ -226,6 +226,28 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
+  test("should handle expand undirected after expandAll") {
+    val (_, rels) = given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expandInto("(x)--(y)")
+      .expandAll("(x)--(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        r <- rels
+        row <- List(Array(r.getStartNode, r.getEndNode), Array(r.getEndNode, r.getStartNode))
+      } yield row
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
   test("should handle existing types") {
     // given
     val (r1, r2, r3) = given {
@@ -345,6 +367,64 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a", "b", "c").withRows(expected)
   }
 
+  test("should support expandInto on RHS of apply") {
+    // given
+    val size = sizeHint / 16
+    val (as, bs) = given {
+      nodeGraph(size, "A")
+      nodeGraph(size, "B")
+      bipartiteGraph(size, "A", "B", "R")
+    }
+
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply()
+      .|.expandInto("(a)-[:R]->(b)")
+      .|.nodeByLabelScan("b", "B",  "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = for {
+      a <- as
+      b <- bs
+    } yield Array(a, b)
+
+    // then
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
+
+  test("should support undirected expandInto on RHS of apply") {
+    val size = sizeHint / 16
+    // given
+    val (as, bs, as2, bs2) = given {
+      val (as, bs) = bipartiteGraph(size, "A", "B", "R")
+      val (bs2, as2) = bipartiteGraph(size, "B", "A", "R2")
+      // Some not connected nodes as well
+      nodeGraph(size, "A")
+      nodeGraph(size, "B")
+      (as, bs, as2, bs2)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply()
+      .|.expandInto("(a)--(b)")
+      .|.nodeByLabelScan("b", "B",  "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = (for {a <- as;b <- bs} yield Array(a, b)) ++ (for {a <- as2;b <- bs2} yield Array(a, b))
+
+    // then
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
 }
 
 // Supported by interpreted, slotted, morsel, parallel
