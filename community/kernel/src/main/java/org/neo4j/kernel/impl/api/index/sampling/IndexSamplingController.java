@@ -84,7 +84,8 @@ public class IndexSamplingController
         this.log = logProvider.getLog( getClass() );
         this.logRecoverIndexSamples = FeatureToggles.flag( IndexSamplingController.class, LOG_RECOVER_INDEX_SAMPLES_NAME, false );
         this.asyncRecoverIndexSamples = FeatureToggles.flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, false );
-        this.asyncRecoverIndexSamplesWait = FeatureToggles.flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, true );
+        this.asyncRecoverIndexSamplesWait =
+                FeatureToggles.flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, asyncRecoverIndexSamples );
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
