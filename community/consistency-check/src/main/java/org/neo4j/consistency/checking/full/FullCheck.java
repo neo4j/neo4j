@@ -221,7 +221,8 @@ public class FullCheck
         consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS );
     }
 
-    private static void consistencyCheckSingleCheckable( ConsistencyReporter report, ProgressListener listener, ConsistencyCheckable checkable, RecordType recordType )
+    private static void consistencyCheckSingleCheckable( ConsistencyReporter report, ProgressListener listener, ConsistencyCheckable checkable,
+            RecordType recordType )
     {
         ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( recordType );
         ReporterFactory proxyFactory = new ReporterFactory( handler );
