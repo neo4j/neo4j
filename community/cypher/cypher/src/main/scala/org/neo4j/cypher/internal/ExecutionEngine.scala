@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
-import org.neo4j.cypher.{CypherExpressionEngineOption, ParameterNotFoundException, exceptionHandler}
+import org.neo4j.cypher.{CypherExecutionMode, CypherExpressionEngineOption, ParameterNotFoundException, exceptionHandler}
 import org.neo4j.graphdb.Result
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{QueryExecution, ResultBuffer, TransactionalContext}
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
@@ -183,8 +183,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def clearQueryCaches(): Long =
     List(masterCompiler.clearCaches(), queryCache.clear(), preParser.clearCache()).max
 
-  def isPeriodicCommit(query: String): Boolean =
-    preParser.preParseQuery(query, profile = false).isPeriodicCommit
+  /**
+    * @return { @code true} if the query is a PERIODIC COMMIT query and not an EXPLAIN query
+    */
+  def isPeriodicCommit(query: String): Boolean = {
+    val preParsedQuery = preParser.preParseQuery(query)
+    preParsedQuery.executionMode != CypherExecutionMode.explain && preParsedQuery.isPeriodicCommit
+  }
 
   // HELPERS
 
