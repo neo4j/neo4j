@@ -728,10 +728,10 @@ public final class ProcedureCompilation
     /**
      * Generates the actual body of the function. Generated the code will look something like:
      * <p>
-     * USER_CLASS.field1 = (type1) SETTER_1.get(context)
-     * USER_CLASS.field2 = (type2) SETTER_2.get(context)
+     * userClass.field1 = (type1) SETTER_1.get(context)
+     * userClass.field2 = (type2) SETTER_2.get(context)
      * ...
-     * return [CONVERT TO AnyVALUE](USER_CLASS.call( [CONVERT_TO_JAVA] input[0], ... );
+     * return [CONVERT TO AnyVALUE](userClass.call( [CONVERT_TO_JAVA] input[0], ... );
      */
     private static void functionBody( CodeBlock block,
             List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet,
@@ -833,7 +833,7 @@ public final class ProcedureCompilation
      *
      * For example say that the class has a field of type long. Then we will generate the RHS of.
      * <pre>
-     *     USER_CLASS.longField = ((Long) invoke).longValue()
+     *     userClass.longField = ((Long) invoke).longValue()
      * </pre>
      *
      * @param fieldType the type of the field
