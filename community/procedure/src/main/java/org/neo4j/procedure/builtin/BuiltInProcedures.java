@@ -339,9 +339,9 @@ public class BuiltInProcedures
     }
 
     @SystemProcedure
-    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\", 300))." )
+    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\"MyIndex\", 300))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
-    public void awaitIndex( @Name( "index" ) String index,
+    public void awaitIndex( @Name( "indexName" ) String indexName,
             @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
             throws ProcedureException
     {
@@ -352,7 +352,7 @@ public class BuiltInProcedures
 
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            indexProcedures.awaitIndexByPattern( index, timeout, TimeUnit.SECONDS );
+            indexProcedures.awaitIndexByName( indexName, timeout, TimeUnit.SECONDS );
         }
     }
 

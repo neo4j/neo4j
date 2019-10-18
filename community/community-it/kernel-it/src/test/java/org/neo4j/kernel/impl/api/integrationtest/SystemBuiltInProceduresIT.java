@@ -200,7 +200,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.awaitIndex(':Person(name)',10)" ).hasNext());
+            assertFalse( tx.execute( "CALL db.awaitIndex('person foo index',10)" ).hasNext());
         }
     }
 
