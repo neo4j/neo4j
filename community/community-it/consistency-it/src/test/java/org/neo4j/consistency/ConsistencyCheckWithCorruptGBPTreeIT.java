@@ -198,7 +198,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void shouldReportProgress() throws Exception
     {
-
         Writer writer = new StringWriter();
         ProgressMonitorFactory factory = ProgressMonitorFactory.textual( writer );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), factory );

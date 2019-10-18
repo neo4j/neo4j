@@ -118,9 +118,10 @@ public class FullCheck
                 AUTO_WITHOUT_PAGECACHE.newByteArray( stores.nativeStores().getNodeStore().getHighId(), new byte[ByteArrayBitsManipulator.MAX_BYTES] ),
                 statistics.getCounts(), threads );
         RecordAccess records = recordAccess( stores.nativeStores(), cacheAccess );
-        CountsStore countsStore = checkCountsStore( countsSupplier, log, summary, report, countsBuilder, records );
+        CountsStore countsStore = getCountsStore( countsSupplier, log, summary );
         execute( stores, decorator, records, report, cacheAccess, reportMonitor, countsStore );
         ownerCheck.scanForOrphanChains( progressFactory );
+        checkCountsStoreConsistency( report, countsBuilder, records, countsStore );
 
         if ( !summary.isConsistent() )
         {
@@ -129,19 +130,22 @@ public class FullCheck
         return summary;
     }
 
-    private CountsStore checkCountsStore( ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log, ConsistencySummaryStatistics summary,
-            InconsistencyReport report, CountsBuilderDecorator countsBuilder, RecordAccess records )
+    private void checkCountsStoreConsistency( InconsistencyReport report, CountsBuilderDecorator countsBuilder, RecordAccess records, CountsStore countsStore )
     {
-        CountsStore countsStore = CountsStore.nullInstance;
+        if ( checkGraph )
+        {
+            countsBuilder.checkCounts( countsStore, new ConsistencyReporter( records, report ), progressFactory );
+        }
+    }
+
+    private CountsStore getCountsStore( ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log, ConsistencySummaryStatistics summary )
+    {
         // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
         // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
+        CountsStore countsStore = CountsStore.nullInstance;
         try
         {
             countsStore = countsSupplier.get();
-            if ( checkGraph )
-            {
-                countsBuilder.checkCounts( countsStore, new ConsistencyReporter( records, report ), progressFactory );
-            }
         }
         catch ( Exception e )
         {
