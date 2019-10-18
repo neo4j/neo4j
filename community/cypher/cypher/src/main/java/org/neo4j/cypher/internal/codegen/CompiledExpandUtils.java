@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.neo4j.cypher.operations.CompiledCursorUtils;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;

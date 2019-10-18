@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.codegen
+package org.neo4j.cypher.operations
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.{nodeGetProperty, nodeHasLabel, relationshipGetProperty}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.operations.CompiledCursorUtils.{nodeGetProperty, nodeHasLabel, relationshipGetProperty}
 import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read, RelationshipScanCursor}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
