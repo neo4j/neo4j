@@ -426,7 +426,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void maintenance()
     {
-        if ( cache.size() < cacheOptimisticRefillThreshold )
+        if ( !readOnly && cache.size() < cacheOptimisticRefillThreshold )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache();
