@@ -556,7 +556,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         MutableObject<Long> rootNode = new MutableObject<>();
         File countsStoreFile = countsStoreFile();
-        final LayoutBootstrapper countsLayoutBootstrapper = ( indexFile, pageCache, meta, targetLayout ) -> new CountsLayout();
+        final LayoutBootstrapper countsLayoutBootstrapper = ( indexFile, pageCache, meta ) -> new CountsLayout();
         corruptIndexes( fs, true, ( tree, inspection ) -> {
             rootNode.setValue( inspection.getRootNode() );
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
@@ -744,7 +744,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( pageCache, layoutBootstrapper, readOnly );
             for ( File file : targetFiles )
             {
-                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, "generic1" );
+                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file );
                 if ( bootstrap.isTree() )
                 {
                     treeFiles.add( file );

@@ -50,7 +50,7 @@ public class GBPTreeBootstrapper
         this.readOnly = readOnly;
     }
 
-    public Bootstrap bootstrapTree( File file, String targetLayout )
+    public Bootstrap bootstrapTree( File file )
     {
         try
         {
@@ -62,8 +62,7 @@ public class GBPTreeBootstrapper
             TreeState state = TreeStatePair.selectNewestValidState( statePair );
 
             // Create layout and treeNode from meta
-            Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta, targetLayout );
-            TreeNodeSelector.Factory factory = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
+            Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree =
                     new GBPTree<>( pageCache, file, layout, meta.getPageSize(), NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly );
             return new SuccessfulBootstrap( tree, layout, state, meta );

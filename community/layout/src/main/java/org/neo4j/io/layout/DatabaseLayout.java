@@ -193,9 +193,9 @@ public class DatabaseLayout
     public Set<File> idFiles()
     {
         return Arrays.stream( DatabaseFile.values() )
-                     .filter( DatabaseFile::hasIdFile )
-                    .flatMap( value -> idFile( value ).stream() )
-                     .collect( Collectors.toSet() );
+                .filter( DatabaseFile::hasIdFile )
+                .flatMap( value -> idFile( value ).stream() )
+                .collect( Collectors.toSet() );
     }
 
     public Set<File> storeFiles()

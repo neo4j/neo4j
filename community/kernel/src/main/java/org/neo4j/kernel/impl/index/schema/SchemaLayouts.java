@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.index.internal.gbptree.Meta;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
+import org.neo4j.internal.id.indexed.IdRangeLayout;
 import org.neo4j.internal.index.label.LabelScanLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsLayout;
@@ -44,23 +45,23 @@ public class SchemaLayouts implements LayoutBootstrapper
         allSchemaLayout = new ArrayList<>();
         allSchemaLayout.addAll( Arrays.asList(
                 genericLayout(),
-                ( indexFile, pageCache, meta, targetLayout ) -> new LabelScanLayout(),
-                ( indexFile, pageCache, meta, targetLayout ) -> new IndexStatisticsLayout() ) );
+                idRangeLayout(),
+                ( indexFile, pageCache, meta ) -> new LabelScanLayout(),
+                ( indexFile, pageCache, meta ) -> new IndexStatisticsLayout() ) );
     }
 
     @Override
-    public Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta, String targetLayout ) throws IOException
+    public Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta ) throws IOException
     {
         for ( LayoutBootstrapper factory : allSchemaLayout )
         {
-            final Layout<?,?> layout = factory.create( indexFile, pageCache, meta, targetLayout );
+            final Layout<?,?> layout = factory.create( indexFile, pageCache, meta );
             if ( layout != null && matchingLayout( meta, layout ) )
             {
-                // Verify spatial and generic
                 return layout;
             }
         }
-        throw new RuntimeException( "Layout with identifier \"" + targetLayout + "\" did not match meta " + meta );
+        throw new RuntimeException( "Could not find any layout matching meta " + meta );
     }
 
     private static boolean matchingLayout( Meta meta, Layout layout )
@@ -78,14 +79,35 @@ public class SchemaLayouts implements LayoutBootstrapper
 
     private static LayoutBootstrapper genericLayout()
     {
-        return ( indexFile, pageCache, meta, targetLayout ) ->
+        return ( indexFile, pageCache, meta ) ->
         {
-            if ( targetLayout.contains( "generic" ) )
+            final IndexSpecificSpaceFillingCurveSettings settings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+            int maxNumberOfSlots = 10;
+            for ( int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++ )
             {
-                final String numberOfSlotsString = targetLayout.replace( "generic", "" );
-                final int numberOfSlots = Integer.parseInt( numberOfSlotsString );
-                final IndexSpecificSpaceFillingCurveSettings settings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-                return new GenericLayout( numberOfSlots, settings );
+                final GenericLayout genericLayout = new GenericLayout( numberOfSlots, settings );
+                if ( matchingLayout( meta, genericLayout ) )
+                {
+                    return genericLayout;
+                }
+            }
+            return null;
+        };
+    }
+
+    private static LayoutBootstrapper idRangeLayout()
+    {
+        return ( indexFile, pageCache, meta ) ->
+        {
+            int maxExponent = 10;
+            for ( int exponent = 0; exponent < maxExponent; exponent++ )
+            {
+                final int idsPerEntry = 1 << exponent;
+                final IdRangeLayout idRangeLayout = new IdRangeLayout( idsPerEntry );
+                if ( matchingLayout( meta, idRangeLayout ) )
+                {
+                    return idRangeLayout;
+                }
             }
             return null;
         };
