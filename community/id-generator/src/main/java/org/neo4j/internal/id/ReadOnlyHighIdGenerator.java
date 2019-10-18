@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.IOLimiter;
 
 /**
@@ -122,5 +123,11 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     public void clearCache()
     {
         // no-op
+    }
+
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        return true;
     }
 }

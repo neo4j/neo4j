@@ -22,9 +22,11 @@ package org.neo4j.internal.id;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 
-public interface IdGenerator extends IdSequence, Closeable
+public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 {
     /**
      * @param id the highest in use + 1
@@ -170,6 +172,12 @@ public interface IdGenerator extends IdSequence, Closeable
         public void clearCache()
         {
             delegate.clearCache();
+        }
+
+        @Override
+        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        {
+            return delegate.consistencyCheck( reporterFactory );
         }
     }
 
