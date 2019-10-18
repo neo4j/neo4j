@@ -66,10 +66,15 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * Read operations inside of a transaction will also read uncommitted data from
  * the same transaction.
  * <p>
- * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside a transaction
+ * All {@link ResourceIterable ResourceIterables} that were returned from operations executed inside a transaction
  * will be automatically closed when the transaction is committed or rolled back.
  * Note however, that the {@link ResourceIterator} should be {@link ResourceIterator#close() closed} as soon as
  * possible if you don't intend to exhaust the iterator.
+ *
+ * <p>
+ * <strong>Note that transactions are not synchronized.</strong>
+ * It is generally not safe to use a transaction from multiple threads.
+ * Doing so will lead to undefined behavior.
  */
 @PublicApi
 public interface Transaction extends AutoCloseable
