@@ -53,6 +53,10 @@ public interface ProcedureITBase
                                 "type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: " +
                                 "STRING?, indexConfig :: MAP?, failureMessage :: STRING?)", "Detailed description of specific index.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
+                proc( "db.schemaStatements",
+                        "() :: (name :: STRING?, type :: STRING?, createStatement :: STRING?, dropStatement :: STRING?)",
+                        "List all statements for creating and dropping existing indexes and constraints.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\", 300)).",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
