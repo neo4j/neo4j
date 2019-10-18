@@ -143,7 +143,7 @@ class CheckPointerIntegrationTest
         LogFile logFile = logFiles.getLogFile();
         try ( ReadableLogChannel reader = logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
         {
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
             LogEntry entry;
             while ( (entry = logEntryReader.readLogEntry( reader )) != null )
             {
@@ -247,11 +247,11 @@ class CheckPointerIntegrationTest
     private static class CheckPointCollector
     {
         private final LogFiles logFiles;
-        private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+        private final LogEntryReader logEntryReader;
 
         CheckPointCollector( File directory, FileSystemAbstraction fileSystem ) throws IOException
         {
-            this.logEntryReader = new VersionAwareLogEntryReader<>();
+            this.logEntryReader = new VersionAwareLogEntryReader();
             this.logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
                     .withLogEntryReader( logEntryReader ).build();
         }

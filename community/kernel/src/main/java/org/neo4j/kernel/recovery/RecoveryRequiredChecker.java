@@ -25,7 +25,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -57,13 +56,13 @@ class RecoveryRequiredChecker
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
     {
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+        LogEntryReader reader = new VersionAwareLogEntryReader();
         LogFiles logFiles = buildLogFiles( databaseLayout, reader );
         LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors() );
         return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
     }
 
-    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, LogEntryReader<ReadableClosablePositionAwareChannel> reader ) throws IOException
+    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, LogEntryReader reader ) throws IOException
     {
         return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                     .withConfig( config )
@@ -72,7 +71,7 @@ class RecoveryRequiredChecker
 
     boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner ) throws IOException
     {
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+        LogEntryReader reader = new VersionAwareLogEntryReader();
         LogFiles logFiles = buildLogFiles( databaseLayout, reader );
         return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
     }

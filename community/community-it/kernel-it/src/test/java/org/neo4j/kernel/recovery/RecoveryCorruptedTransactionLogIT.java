@@ -667,7 +667,7 @@ class RecoveryCorruptedTransactionLogIT
         LogPosition checkpointPosition = null;
 
         LogFile transactionLogFile = logFiles.getLogFile();
-        VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
         LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
@@ -737,7 +737,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private LogPosition getLastReadablePosition( File logFile ) throws IOException
     {
-        VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
         long logVersion = logFiles.getLogVersion( logFile );
         LogPosition startPosition = logFiles.extractHeader( logVersion ).getStartPosition();
         try ( ReadableLogChannel reader = openTransactionFileChannel( logVersion, startPosition ) )
@@ -763,7 +763,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private LogPosition getLastReadablePosition( LogFile logFile ) throws IOException
     {
-        VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
         LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = logFile.getReader( startPosition ) )
         {
@@ -834,7 +834,7 @@ class RecoveryCorruptedTransactionLogIT
         LogFile transactionLogFile = logFiles.getLogFile();
 
         LogPosition fileStartPosition = logFiles.extractHeader( 0 ).getStartPosition();
-        VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
 
         MutableObjectLongMap<Class> multiset = new ObjectLongHashMap<>();
         try ( ReadableLogChannel fileReader = transactionLogFile.getReader( fileStartPosition ) )

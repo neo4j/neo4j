@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.ReadableClosableChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
@@ -65,7 +65,7 @@ public abstract class ValueType
         add( new ValueType( Boolean.TYPE, Boolean.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return from.get() == 0 ? Boolean.FALSE : Boolean.TRUE;
             }
@@ -85,7 +85,7 @@ public abstract class ValueType
         add( new ValueType( Byte.TYPE, Byte.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return from.get();
             }
@@ -105,7 +105,7 @@ public abstract class ValueType
         add( new ValueType( Short.TYPE, Short.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return from.getShort();
             }
@@ -125,7 +125,7 @@ public abstract class ValueType
         add( new ValueType( Character.TYPE, Character.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return (char)from.getInt();
             }
@@ -145,7 +145,7 @@ public abstract class ValueType
         add( new ValueType( Integer.TYPE, Integer.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return from.getInt();
             }
@@ -165,7 +165,7 @@ public abstract class ValueType
         add( new ValueType( Long.TYPE, Long.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return from.getLong();
             }
@@ -185,7 +185,7 @@ public abstract class ValueType
         add( new ValueType( Float.TYPE, Float.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return from.getFloat();
             }
@@ -205,7 +205,7 @@ public abstract class ValueType
         add( stringType = new ValueType( String.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 int length = from.getInt();
                 byte[] bytes = new byte[length]; // TODO wasteful
@@ -229,7 +229,7 @@ public abstract class ValueType
         add( new ValueType( Double.class, Double.TYPE )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return from.getDouble();
             }
@@ -249,7 +249,7 @@ public abstract class ValueType
         add( new ValueType( LocalDate.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return LocalDate.ofEpochDay( from.getLong() );
             }
@@ -269,7 +269,7 @@ public abstract class ValueType
         add( new ValueType( LocalTime.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return LocalTime.ofNanoOfDay( from.getLong() );
             }
@@ -289,7 +289,7 @@ public abstract class ValueType
         add( new ValueType( LocalDateTime.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return LocalDateTime.ofEpochSecond( from.getLong(), from.getInt(), UTC );
             }
@@ -311,7 +311,7 @@ public abstract class ValueType
         add( new ValueType( OffsetTime.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 return OffsetTime.ofInstant( Instant.ofEpochSecond( 0, from.getLong() ), ZoneOffset.ofTotalSeconds( from.getInt() ) );
             }
@@ -333,7 +333,7 @@ public abstract class ValueType
         add( new ValueType( ZonedDateTime.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 if ( from.get() == (byte) 0 )
                 {
@@ -387,7 +387,7 @@ public abstract class ValueType
         add( new ValueType( DurationValue.class, Duration.class, Period.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 int nanos = from.getInt();
                 long seconds = from.getLong();
@@ -427,7 +427,7 @@ public abstract class ValueType
         add( new ValueType( PointValue.class )
         {
             @Override
-            public Object read( ReadableClosableChannel from ) throws IOException
+            public Object read( ReadableChannel from ) throws IOException
             {
                 int code = from.getInt();
                 CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( code );
@@ -465,7 +465,7 @@ public abstract class ValueType
     private static final ValueType arrayType = new ValueType()
     {
         @Override
-        public Object read( ReadableClosableChannel from ) throws IOException
+        public Object read( ReadableChannel from ) throws IOException
         {
             ValueType componentType = typeOf( from.get() );
             int length = from.getInt();
@@ -565,7 +565,7 @@ public abstract class ValueType
         return id;
     }
 
-    public abstract Object read( ReadableClosableChannel from ) throws IOException;
+    public abstract Object read( ReadableChannel from ) throws IOException;
 
     public abstract int length( Object value );
 

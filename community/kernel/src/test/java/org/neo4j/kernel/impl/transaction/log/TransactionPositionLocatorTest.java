@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 
 class TransactionPositionLocatorTest
 {
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = mock( LogEntryReader.class );
+    private final LogEntryReader logEntryReader = mock( LogEntryReader.class );
     private final ReadableClosablePositionAwareChannel channel = mock( ReadableClosablePositionAwareChannel.class );
     private final TransactionMetadataCache metadataCache = mock( TransactionMetadataCache.class );
 

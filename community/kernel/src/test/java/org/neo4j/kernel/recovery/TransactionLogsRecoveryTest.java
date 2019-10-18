@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -164,7 +163,7 @@ class TransactionLogsRecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
+            final LogEntryReader reader = logEntryReader();
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
@@ -264,7 +263,7 @@ class TransactionLogsRecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
+            final LogEntryReader reader = logEntryReader();
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
@@ -438,7 +437,7 @@ class TransactionLogsRecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
+            final LogEntryReader reader = logEntryReader();
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
@@ -463,8 +462,7 @@ class TransactionLogsRecoveryTest
         return recoveryRequired.get();
     }
 
-    private LogTailScanner getTailScanner( LogFiles logFiles,
-            LogEntryReader<ReadableClosablePositionAwareChannel> reader )
+    private LogTailScanner getTailScanner( LogFiles logFiles, LogEntryReader reader )
     {
         return new LogTailScanner( logFiles, reader, monitors, false );
     }

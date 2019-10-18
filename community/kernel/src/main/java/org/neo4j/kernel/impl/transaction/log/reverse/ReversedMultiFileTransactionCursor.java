@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -71,7 +70,7 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
      * and including transaction starting at {@link LogPosition}.
      */
     public static TransactionCursor fromLogFile( LogFiles logFiles, LogFile logFile, LogPosition backToPosition,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor )
+            LogEntryReader logEntryReader, boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor )
     {
         long highestVersion = logFiles.getHighestLogVersion();
         ThrowingFunction<LogPosition,TransactionCursor,IOException> factory = position ->
@@ -86,7 +85,7 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
             }
 
             // Fall back to simply eagerly reading each single log file and reversing in memory
-            return eagerlyReverse( new PhysicalTransactionCursor<>( channel, logEntryReader ) );
+            return eagerlyReverse( new PhysicalTransactionCursor( channel, logEntryReader ) );
         };
         return new ReversedMultiFileTransactionCursor( logFiles, factory, highestVersion, backToPosition );
     }

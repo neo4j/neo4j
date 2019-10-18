@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -78,7 +77,7 @@ class LogTailScannerTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
+    private final LogEntryReader reader = logEntryReader();
 
     private LogTailScanner tailScanner;
 
@@ -643,8 +642,7 @@ class LogTailScannerTest
 
         private final long txId;
 
-        FirstTxIdConfigurableTailScanner( long txId, LogFiles logFiles,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
+        FirstTxIdConfigurableTailScanner( long txId, LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors )
         {
             super( logFiles, logEntryReader, monitors );
             this.txId = txId;

@@ -48,19 +48,19 @@ import static org.mockito.Mockito.when;
 class PhysicalTransactionCursorTest
 {
     private final ReadableLogChannel channel = mock( ReadableLogChannel.class, RETURNS_MOCKS );
-    private final LogEntryReader<ReadableLogChannel> entryReader = mock( LogEntryReader.class );
+    private final LogEntryReader entryReader = mock( LogEntryReader.class );
 
     private static final LogEntry NULL_ENTRY = null;
     private static final CheckPoint A_CHECK_POINT_ENTRY = new CheckPoint( LogPosition.UNSPECIFIED );
     private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0, 0, 0L, 0L, null, LogPosition.UNSPECIFIED );
     private static final LogEntryCommit A_COMMIT_ENTRY = new LogEntryCommit( 42, 0 );
     private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new TestCommand() );
-    private PhysicalTransactionCursor<ReadableLogChannel> cursor;
+    private PhysicalTransactionCursor cursor;
 
     @BeforeEach
     void setup() throws IOException
     {
-        cursor = new PhysicalTransactionCursor<>( channel, entryReader );
+        cursor = new PhysicalTransactionCursor( channel, entryReader );
     }
 
     @Test

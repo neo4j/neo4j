@@ -104,7 +104,6 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
@@ -354,7 +353,7 @@ public class Database extends LifecycleAdapter
             upgradeStore( databaseConfig, databasePageCache );
 
             // Check the tail of transaction logs and validate version
-            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+            final LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
 
             LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
                     .withConfig( databaseConfig )
@@ -587,7 +586,7 @@ public class Database extends LifecycleAdapter
 
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config,
             LogProvider logProvider, JobScheduler scheduler, CheckPointerImpl.ForceOperation forceOperation,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, TransactionIdStore transactionIdStore, Monitors monitors )
+            LogEntryReader logEntryReader, TransactionIdStore transactionIdStore, Monitors monitors )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 

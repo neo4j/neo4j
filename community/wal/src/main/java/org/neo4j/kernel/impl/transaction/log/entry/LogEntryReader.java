@@ -21,26 +21,24 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.io.fs.ReadableClosableChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
 /**
- * Reads {@link LogEntry} instances from a {@link ReadableClosableChannel source}. Instances are expected to be
+ * Reads {@link LogEntry} instances from a {@link ReadableChannel source}. Instances are expected to be
  * immutable and handle concurrent calls from multiple threads.
- *
- * @param <S> source to read bytes from.
  */
-public interface LogEntryReader<S extends ReadableClosablePositionAwareChannel>
+public interface LogEntryReader
 {
     /**
      * Reads the next {@link LogEntry} from the given source.
      *
-     * @param source {@link ReadableClosableChannel} to read from.
+     * @param source {@link ReadableChannel} to read from.
      * @return the read {@link LogEntry} or {@code null} if there were no more complete entries in the given source.
      * @throws IOException if source throws exception.
      */
-    LogEntry readLogEntry( S source ) throws IOException;
+    LogEntry readLogEntry( ReadableClosablePositionAwareChannel source ) throws IOException;
 
     LogPosition lastPosition();
 }

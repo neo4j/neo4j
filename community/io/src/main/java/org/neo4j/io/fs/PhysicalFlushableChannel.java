@@ -78,21 +78,6 @@ public class PhysicalFlushableChannel implements FlushableChannel
         return channel;
     }
 
-    private void handleClosedChannelException( ClosedChannelException e ) throws ClosedChannelException
-    {
-        // We don't want to check the closed flag every time we empty, instead we can avoid unnecessary the
-        // volatile read and catch ClosedChannelException where we see if the channel being closed was
-        // deliberate or not. If it was deliberately closed then throw IllegalStateException instead so
-        // that callers won't treat this as a kernel panic.
-        if ( closed )
-        {
-            throw new IllegalStateException( "This log channel has been closed", e );
-        }
-
-        // OK, this channel was closed without us really knowing about it, throw exception as is.
-        throw e;
-    }
-
     @Override
     public FlushableChannel put( byte value ) throws IOException
     {
@@ -149,16 +134,6 @@ public class PhysicalFlushableChannel implements FlushableChannel
         return this;
     }
 
-    private ByteBuffer bufferWithGuaranteedSpace( int spaceInBytes ) throws IOException
-    {
-        assert spaceInBytes < buffer.capacity();
-        if ( buffer.remaining() < spaceInBytes )
-        {
-            prepareForFlush();
-        }
-        return buffer;
-    }
-
     /**
      * External synchronization between this method and emptyBufferIntoChannelAndClearIt is required so that they
      * aren't called concurrently. Currently that's done by acquiring the PhysicalLogFile monitor.
@@ -195,5 +170,30 @@ public class PhysicalFlushableChannel implements FlushableChannel
         // and if so skip flushing and simply move the cursor in the buffer.
         prepareForFlush().flush();
         channel.position( position );
+    }
+
+    ByteBuffer bufferWithGuaranteedSpace( int spaceInBytes ) throws IOException
+    {
+        assert spaceInBytes < buffer.capacity();
+        if ( buffer.remaining() < spaceInBytes )
+        {
+            prepareForFlush();
+        }
+        return buffer;
+    }
+
+    private void handleClosedChannelException( ClosedChannelException e ) throws ClosedChannelException
+    {
+        // We don't want to check the closed flag every time we empty, instead we can avoid unnecessary the
+        // volatile read and catch ClosedChannelException where we see if the channel being closed was
+        // deliberate or not. If it was deliberately closed then throw IllegalStateException instead so
+        // that callers won't treat this as a kernel panic.
+        if ( closed )
+        {
+            throw new IllegalStateException( "This log channel has been closed", e );
+        }
+
+        // OK, this channel was closed without us really knowing about it, throw exception as is.
+        throw e;
     }
 }

@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.ReadableClosableChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -149,7 +149,7 @@ class TransactionLogFileTest
         writer.prepareForFlush().flush();
 
         // THEN
-        try ( ReadableClosableChannel reader = logFiles.getLogFile().getReader( positionMarker.newPosition() ) )
+        try ( ReadableChannel reader = logFiles.getLogFile().getReader( positionMarker.newPosition() ) )
         {
             assertEquals( intValue, reader.getInt() );
             assertEquals( longValue, reader.getLong() );
@@ -190,13 +190,13 @@ class TransactionLogFileTest
         writer.prepareForFlush().flush();
 
         // THEN
-        try ( ReadableClosableChannel reader = logFile.getReader( position1 ) )
+        try ( ReadableChannel reader = logFile.getReader( position1 ) )
         {
             assertEquals( intValue, reader.getInt() );
             assertEquals( longValue, reader.getLong() );
             assertArrayEquals( someBytes, readBytes( reader, 40 ) );
         }
-        try ( ReadableClosableChannel reader = logFile.getReader( position2 ) )
+        try ( ReadableChannel reader = logFile.getReader( position2 ) )
         {
             assertEquals( longValue2, reader.getLong() );
             assertArrayEquals( someBytes, readBytes( reader, 40 ) );
@@ -315,7 +315,7 @@ class TransactionLogFileTest
         assertThrows( IllegalStateException.class, () -> writer.prepareForFlush().flush() );
     }
 
-    private static byte[] readBytes( ReadableClosableChannel reader, int length ) throws IOException
+    private static byte[] readBytes( ReadableChannel reader, int length ) throws IOException
     {
         byte[] result = new byte[length];
         reader.get( result, length );

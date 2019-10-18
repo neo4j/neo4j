@@ -30,12 +30,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
  */
 public class LogEntryCursor implements IOCursor<LogEntry>
 {
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private final LogEntryReader logEntryReader;
     private final ReadableClosablePositionAwareChannel channel;
     private final LogPositionMarker position = new LogPositionMarker();
     private LogEntry entry;
 
-    public LogEntryCursor( LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
+    public LogEntryCursor( LogEntryReader logEntryReader,
                            ReadableClosablePositionAwareChannel channel )
     {
         this.logEntryReader = logEntryReader;

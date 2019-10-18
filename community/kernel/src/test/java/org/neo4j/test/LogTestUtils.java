@@ -107,7 +107,7 @@ public class LogTestUtils
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.getLogVersion(), logHeader.getLogFormatVersion(), file );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );
-            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
+            LogEntryReader entryReader = new VersionAwareLogEntryReader();
 
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )

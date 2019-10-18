@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
@@ -30,8 +29,8 @@ public class TestLogEntryReader
     {
     }
 
-    public static <C extends ReadableClosablePositionAwareChannel> LogEntryReader<C> logEntryReader()
+    public static LogEntryReader logEntryReader()
     {
-        return new VersionAwareLogEntryReader<>( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+        return new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
     }
 }

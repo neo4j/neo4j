@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -234,7 +233,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
@@ -294,7 +293,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
@@ -342,8 +341,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         }
 
         // Check number of transactions, should only have one
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                new VersionAwareLogEntryReader<>( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+        LogEntryReader logEntryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
 
         assertThat( logFiles.getLowestLogVersion(), is( logFiles.getHighestLogVersion() ) );
         long version = logFiles.getHighestLogVersion();
@@ -416,7 +414,7 @@ public class BatchingTransactionAppenderConcurrencyTest
             }
             super.panic( cause );
         }
-    };
+    }
 
     protected TransactionToApply tx()
     {

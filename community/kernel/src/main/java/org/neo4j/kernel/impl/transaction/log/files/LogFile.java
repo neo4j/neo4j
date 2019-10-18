@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.ReadableClosableChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -50,7 +50,7 @@ public interface LogFile
      * from that position and onwards, through physical log versions.
      *
      * @param position {@link LogPosition} to position the returned reader at.
-     * @return {@link ReadableClosableChannel} capable of reading log data, starting from {@link LogPosition position}.
+     * @return {@link ReadableChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException on I/O error.
      */
     ReadableLogChannel getReader( LogPosition position ) throws IOException;
@@ -61,7 +61,7 @@ public interface LogFile
      *
      * @param position {@link LogPosition} to position the returned reader at.
      * @param logVersionBridge {@link LogVersionBridge} how to bridge log versions.
-     * @return {@link ReadableClosableChannel} capable of reading log data, starting from {@link LogPosition position}.
+     * @return {@link ReadableChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException on I/O error.
      */
     ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge ) throws IOException;

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.io.fs.ReadableClosableChannel;
+import org.neo4j.io.fs.ReadableChannel;
 
-public interface ReadableClosablePositionAwareChannel extends ReadableClosableChannel, PositionAwareChannel
+public interface ReadableClosablePositionAwareChannel extends ReadableChannel, PositionAwareChannel
 {
 }

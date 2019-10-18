@@ -146,7 +146,7 @@ class LogVersionUpgradeCheckerIT
 
     private void appendCheckpoint( LogEntryVersion logVersion ) throws IOException
     {
-        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader();
         LogFiles logFiles =
                 LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withLogEntryReader( logEntryReader ).build();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );

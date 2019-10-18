@@ -103,9 +103,9 @@ public class TransactionLogFileInformation implements LogFileInformation
     {
 
         private final LogFiles logFiles;
-        private final LogEntryReader<ReadableLogChannel> logEntryReader;
+        private final LogEntryReader logEntryReader;
 
-        TransactionLogFileTimestampMapper( LogFiles logFiles, LogEntryReader<ReadableLogChannel> logEntryReader )
+        TransactionLogFileTimestampMapper( LogFiles logFiles, LogEntryReader logEntryReader )
         {
             this.logFiles = logFiles;
             this.logEntryReader = logEntryReader;

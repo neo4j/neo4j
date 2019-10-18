@@ -31,7 +31,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.neo4j.internal.helpers.Exceptions.throwIfInstanceOf;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySanity.logEntryMakesSense;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
 
 /**
@@ -41,31 +40,28 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
  *
  * Read all about it at {@link LogEntryVersion}.
  */
-public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionAwareChannel> implements LogEntryReader<SOURCE>
+public class VersionAwareLogEntryReader implements LogEntryReader
 {
     private final CommandReaderFactory commandReaderFactory;
-    private final InvalidLogEntryHandler invalidLogEntryHandler;
     private final LogPositionMarker positionMarker;
 
     public VersionAwareLogEntryReader()
     {
-        this( new ServiceLoadingCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+        this( new ServiceLoadingCommandReaderFactory() );
     }
 
-    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, InvalidLogEntryHandler invalidLogEntryHandler )
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
     {
         this.commandReaderFactory = commandReaderFactory;
-        this.invalidLogEntryHandler = invalidLogEntryHandler;
         this.positionMarker = new LogPositionMarker();
     }
 
     @Override
-    public LogEntry readLogEntry( SOURCE channel ) throws IOException
+    public LogEntry readLogEntry( ReadableClosablePositionAwareChannel channel ) throws IOException
     {
         try
         {
             LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
-            long skipped = 0;
             while ( true )
             {
                 channel.getCurrentPosition( positionMarker );
@@ -88,7 +84,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                 }
                 byte typeCode = channel.get();
 
-                LogEntryParser<LogEntry> entryReader;
+                LogEntryParser entryReader;
                 LogEntry entry;
                 try
                 {
@@ -98,19 +94,6 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                     }
                     entryReader = version.entryParser( typeCode );
                     entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
-                    if ( entry != null && skipped > 0 )
-                    {
-                        // Take extra care when reading an entry in a bad section. Just because entry reading
-                        // didn't throw exception doesn't mean that it's a sane entry.
-                        if ( !logEntryMakesSense( entry ) )
-                        {
-                            throw new IllegalArgumentException( "Log entry " + entry + " which was read after " +
-                                    "a bad section of " + skipped + " bytes was read successfully, but " +
-                                    "its contents is unrealistic, so treating as part of bad section" );
-                        }
-                        invalidLogEntryHandler.bytesSkipped( skipped );
-                        skipped = 0;
-                    }
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler
@@ -119,16 +102,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                 catch ( Exception e )
                 {   // Tag all other exceptions with log position and other useful information
                     LogPosition position = positionMarker.newPosition();
-                    e = withMessage( e, e.getMessage() + ". At position " + position +
-                            " and entry version " + version );
-
-                    if ( channel instanceof PositionableChannel &&
-                            invalidLogEntryHandler.handleInvalidEntry( e, position ) )
-                    {
-                        ((PositionableChannel)channel).setCurrentPosition( positionMarker.getByteOffset() + 1 );
-                        skipped++;
-                        continue;
-                    }
+                    withMessage( e, e.getMessage() + ". At position " + position + " and entry version " + version );
                     throwIfInstanceOf( e, UnsupportedLogVersionException.class );
                     throw new IOException( e );
                 }
@@ -142,7 +116,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
         }
     }
 
-    private void resetChannelPosition( SOURCE channel ) throws IOException
+    private void resetChannelPosition( ReadableClosablePositionAwareChannel channel ) throws IOException
     {
         //take current position
         channel.getCurrentPosition( positionMarker );

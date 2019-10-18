@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -70,7 +69,7 @@ class VersionAwareLogEntryReaderIT
     @Inject
     private DatabaseManagementService managementService;
     private DatabaseLayout databaseLayout;
-    private final VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
+    private final VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
 
     @BeforeEach
     void setUp()

@@ -255,8 +255,7 @@ class TestLogPruning
             LogVersionedStoreChannel versionedStoreChannel = files.openForVersion( version );
             try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
             {
-                try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
-                        new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
+                try ( PhysicalTransactionCursor physicalTransactionCursor = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader() ) )
                 {
                     while ( physicalTransactionCursor.next() )
                     {

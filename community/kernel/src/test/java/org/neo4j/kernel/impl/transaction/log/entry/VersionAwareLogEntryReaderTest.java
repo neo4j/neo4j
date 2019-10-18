@@ -27,18 +27,14 @@ import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class VersionAwareLogEntryReaderTest
 {
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-            new VersionAwareLogEntryReader<>( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+    private final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
 
     @Test
     void shouldReadAStartLogEntry() throws IOException
@@ -154,117 +150,5 @@ class VersionAwareLogEntryReaderTest
 
         // then
         assertNull( logEntry );
-    }
-
-    @Test
-    void shouldBeAbleToSkipBadVersionAndTypeBytesInBetweenLogEntries() throws Exception
-    {
-        // GIVEN
-        AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
-        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new TestCommandReaderFactory(), invalidLogEntryHandler );
-        InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
-        LogEntryWriter writer = new LogEntryWriter( channel.writer() );
-        long startTime = currentTimeMillis();
-        long commitTime = startTime + 10;
-        writer.writeStartEntry( 1, 2, startTime, 3, new byte[0] );
-        writer.writeCommitEntry( 4, commitTime );
-        channel.put( (byte) 127 );
-        channel.put( (byte) 126 );
-        channel.put( (byte) 125 );
-        long secondStartTime = startTime + 100;
-        writer.writeStartEntry( 1, 2, secondStartTime, 4, new byte[0] );
-
-        // WHEN
-        LogEntryStart readStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
-        LogEntryCommit readCommitEntry = (LogEntryCommit) reader.readLogEntry( channel.reader() );
-        LogEntryStart readSecondStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
-
-        // THEN
-        assertEquals( 1, readStartEntry.getMasterId() );
-        assertEquals( 2, readStartEntry.getLocalId() );
-        assertEquals( startTime, readStartEntry.getTimeWritten() );
-
-        assertEquals( 4, readCommitEntry.getTxId() );
-        assertEquals( commitTime, readCommitEntry.getTimeWritten() );
-
-        assertEquals( 3, invalidLogEntryHandler.bytesSkipped );
-        assertEquals( 3, invalidLogEntryHandler.invalidEntryCalls );
-
-        assertEquals( 1, readSecondStartEntry.getMasterId() );
-        assertEquals( 2, readSecondStartEntry.getLocalId() );
-        assertEquals( secondStartTime, readSecondStartEntry.getTimeWritten() );
-    }
-
-    @Test
-    void shouldBeAbleToSkipBadLogEntries() throws Exception
-    {
-        // GIVEN
-        AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
-        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new TestCommandReaderFactory(), invalidLogEntryHandler );
-        InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
-        LogEntryWriter writer = new LogEntryWriter( channel.writer() );
-        long startTime = currentTimeMillis();
-        long commitTime = startTime + 10;
-        writer.writeStartEntry( 1, 2, startTime, 3, new byte[0] );
-
-        // Write command ...
-        int posBefore = channel.writerPosition();
-        writer.serialize( singletonList( new TestCommand() ) );
-        int posAfter = channel.writerPosition();
-        // ... which then gets overwritten with invalid data
-        channel.positionWriter( posBefore );
-        while ( channel.writerPosition() < posAfter )
-        {
-            channel.put( (byte) 0xFF );
-        }
-
-        writer.writeCommitEntry( 4, commitTime );
-        long secondStartTime = startTime + 100;
-        writer.writeStartEntry( 1, 2, secondStartTime, 4, new byte[0] );
-
-        // WHEN
-        LogEntryStart readStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
-        LogEntryCommit readCommitEntry = (LogEntryCommit) reader.readLogEntry( channel.reader() );
-        LogEntryStart readSecondStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
-
-        // THEN
-        assertEquals( 1, readStartEntry.getMasterId() );
-        assertEquals( 2, readStartEntry.getLocalId() );
-        assertEquals( startTime, readStartEntry.getTimeWritten() );
-
-        assertEquals( 4, readCommitEntry.getTxId() );
-        assertEquals( commitTime, readCommitEntry.getTimeWritten() );
-
-        assertEquals( posAfter - posBefore, invalidLogEntryHandler.bytesSkipped );
-        assertEquals( posAfter - posBefore, invalidLogEntryHandler.invalidEntryCalls );
-
-        assertEquals( 1, readSecondStartEntry.getMasterId() );
-        assertEquals( 2, readSecondStartEntry.getLocalId() );
-        assertEquals( secondStartTime, readSecondStartEntry.getTimeWritten() );
-    }
-
-    static class AcceptingInvalidLogEntryHandler extends InvalidLogEntryHandler
-    {
-        long bytesSkipped;
-        Exception e;
-        LogPosition position;
-        int invalidEntryCalls;
-
-        @Override
-        public boolean handleInvalidEntry( Exception e, LogPosition position )
-        {
-            this.e = e;
-            this.position = position;
-            invalidEntryCalls++;
-            return true;
-        }
-
-        @Override
-        public void bytesSkipped( long bytesSkipped )
-        {
-            this.bytesSkipped += bytesSkipped;
-        }
     }
 }

@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReader;
@@ -52,7 +51,7 @@ public abstract class BaseCommandReader implements CommandReader
      * Reads the next {@link Command} from {@code channel}.
      *
      * @param commandType type of command to read, f.ex. node command, relationship command a.s.o.
-     * @param channel     {@link ReadableClosableChannel} to read from.
+     * @param channel     {@link ReadableChannel} to read from.
      * @return {@link Command} or {@code null} if end reached.
      * @throws IOException if channel throws exception.
      */

@@ -52,7 +52,6 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler.STRICT;
 
 public class Runner implements Callable<Long>
 {
@@ -129,7 +128,7 @@ public class Runner implements Callable<Long>
         return LogFilesBuilder.builder( databaseLayout, fileSystemAbstraction )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), STRICT ) )
+                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
     }

@@ -32,21 +32,19 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareChannel>
-        implements TransactionCursor
+public class PhysicalTransactionCursor implements TransactionCursor
 {
-    private final T channel;
+    private final ReadableClosablePositionAwareChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
     private CommittedTransactionRepresentation current;
 
-    public PhysicalTransactionCursor( T channel, LogEntryReader<T> entryReader ) throws IOException
+    public PhysicalTransactionCursor( ReadableClosablePositionAwareChannel channel, LogEntryReader entryReader ) throws IOException
     {
         this.channel = channel;
         channel.getCurrentPosition( lastGoodPositionMarker );
-        this.logEntryCursor =
-                new LogEntryCursor( (LogEntryReader<ReadableClosablePositionAwareChannel>) entryReader, channel );
+        this.logEntryCursor = new LogEntryCursor( entryReader, channel );
     }
 
     @Override

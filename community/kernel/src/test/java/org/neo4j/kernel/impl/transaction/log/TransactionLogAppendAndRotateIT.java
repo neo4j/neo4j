@@ -155,7 +155,7 @@ class TransactionLogAppendAndRotateIT
     {
         try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) ) )
         {
-            LogEntryReader<ReadableLogChannel> entryReader = logEntryReader();
+            LogEntryReader entryReader = logEntryReader();
             LogEntry entry;
             boolean inTx = false;
             int transactions = 0;

@@ -80,14 +80,14 @@ public enum LogEntryVersion
     }
 
     private final byte version;
-    private final LogEntryParser<LogEntry>[] entryTypes;
+    private final LogEntryParser[] entryTypes;
 
-    LogEntryVersion( byte version, Class<? extends Enum<? extends LogEntryParser<? extends LogEntry>>> cls )
+    LogEntryVersion( byte version, Class<? extends Enum<? extends LogEntryParser>> cls )
     {
         this.entryTypes = new LogEntryParser[highestCode( cls ) + 1];
-        for ( Enum<? extends LogEntryParser<? extends LogEntry>> parser : cls.getEnumConstants() )
+        for ( Enum<? extends LogEntryParser> parser : cls.getEnumConstants() )
         {
-            LogEntryParser<LogEntry> candidate = (LogEntryParser<LogEntry>) parser;
+            LogEntryParser candidate = (LogEntryParser) parser;
             this.entryTypes[candidate.byteCode()] = candidate;
         }
         this.version = version;
@@ -106,9 +106,9 @@ public enum LogEntryVersion
      * @return a {@link LogEntryParser} capable of reading a {@link LogEntry} of the given type for this
      * log entry version.
      */
-    public LogEntryParser<LogEntry> entryParser( byte type )
+    public LogEntryParser entryParser( byte type )
     {
-        LogEntryParser<LogEntry> candidate = (type >= 0 && type < entryTypes.length) ? entryTypes[type] : null;
+        LogEntryParser candidate = (type >= 0 && type < entryTypes.length) ? entryTypes[type] : null;
         if ( candidate == null )
         {
             throw new IllegalArgumentException( "Unknown entry type " + type + " for version " + version );
@@ -154,13 +154,12 @@ public enum LogEntryVersion
                 version, LOWEST_VERSION ) );
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static int highestCode( Class<? extends Enum<? extends LogEntryParser<? extends LogEntry>>> cls )
+    private static int highestCode( Class<? extends Enum<? extends LogEntryParser>> cls )
     {
         int highestCode = 0;
-        for ( Enum<? extends LogEntryParser<? extends LogEntry>> parser : cls.getEnumConstants() )
+        for ( Enum<? extends LogEntryParser> parser : cls.getEnumConstants() )
         {
-            LogEntryParser<LogEntry> candidate = (LogEntryParser<LogEntry>) parser;
+            LogEntryParser candidate = (LogEntryParser) parser;
             highestCode = Math.max( highestCode, candidate.byteCode() );
         }
         return highestCode;

@@ -30,11 +30,11 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 /**
- * A buffering implementation of {@link ReadableClosableChannel}. This class also allows subclasses to read content
+ * A buffering implementation of {@link ReadableChannel}. This class also allows subclasses to read content
  * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
  * @param <T> The type of StoreChannel wrapped
  */
-public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel, PositionableChannel
+public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel, PositionableChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = toIntExact( kibiBytes( 4 ) );
 

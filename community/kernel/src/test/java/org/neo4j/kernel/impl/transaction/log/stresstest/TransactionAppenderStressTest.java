@@ -120,7 +120,7 @@ public class TransactionAppenderStressTest
             try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
                   ReadableLogChannel channel = openLogFile( fs, 0 ) )
             {
-                LogEntryReader<ReadableLogChannel> reader = logEntryReader();
+                LogEntryReader reader = logEntryReader();
                 LogEntry logEntry = reader.readLogEntry( channel );
                 for ( ; logEntry != null; logEntry = reader.readLogEntry( channel ) )
                 {

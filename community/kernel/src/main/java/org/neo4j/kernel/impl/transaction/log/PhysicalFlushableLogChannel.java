@@ -24,14 +24,14 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 
-public class PhysicalFlushableLogChannel extends PhysicalFlushableChannel
+class PhysicalFlushableLogChannel extends PhysicalFlushableChannel
 {
-    public PhysicalFlushableLogChannel( StoreChannel channel )
+    PhysicalFlushableLogChannel( StoreChannel channel )
     {
         super( channel );
     }
 
-    public PhysicalFlushableLogChannel( StoreChannel channel, ByteBuffer byteBuffer )
+    PhysicalFlushableLogChannel( StoreChannel channel, ByteBuffer byteBuffer )
     {
         super( channel, byteBuffer );
     }

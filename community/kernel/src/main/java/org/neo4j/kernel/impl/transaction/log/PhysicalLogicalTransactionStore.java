@@ -41,14 +41,14 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private final LogEntryReader logEntryReader;
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
     private final LogFiles logFiles;
 
     public PhysicalLogicalTransactionStore( LogFiles logFiles,
             TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors,
+            LogEntryReader logEntryReader, Monitors monitors,
             boolean failOnCorruptedLogFiles )
     {
         this.logFiles = logFiles;
@@ -62,7 +62,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     @Override
     public TransactionCursor getTransactions( LogPosition position ) throws IOException
     {
-        return new PhysicalTransactionCursor<>( logFile.getReader( position ), logEntryReader );
+        return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
     }
 
     @Override
@@ -86,7 +86,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             {
                 // we're good
                 ReadableLogChannel channel = logFile.getReader( transactionMetadata.getStartPosition() );
-                return new PhysicalTransactionCursor<>( channel, logEntryReader );
+                return new PhysicalTransactionCursor( channel, logEntryReader );
             }
 
             // ask logFiles about the version it may be in
@@ -98,7 +98,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                     new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
             logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
             LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
-            return new PhysicalTransactionCursor<>( logFile.getReader( position ), logEntryReader );
+            return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
         }
         catch ( FileNotFoundException e )
         {
@@ -113,12 +113,12 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     public static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
-        private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+        private final LogEntryReader logEntryReader;
         private LogEntryStart startEntryForFoundTransaction;
         private long commitTimestamp;
 
         TransactionPositionLocator( long startTransactionId,
-                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+                LogEntryReader logEntryReader )
         {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
