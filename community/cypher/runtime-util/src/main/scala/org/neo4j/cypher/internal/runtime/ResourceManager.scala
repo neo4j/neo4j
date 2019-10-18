@@ -19,16 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.util
-
 import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CloseListener}
 
-import scala.collection.JavaConverters._
-
 class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource with CloseListener {
-  protected val resources: util.Collection[AutoCloseablePlus] = new util.HashSet[AutoCloseablePlus](INITIAL_CAPACITY)
+  protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor)
 
   /**
    * Trace a resource
@@ -60,31 +56,13 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
     }
   }
 
-  def allResources: Iterable[AutoCloseablePlus] = resources.asScala
+  def allResources: Iterator[AutoCloseablePlus] = resources.all()
 
-  override def close(): Unit = {
-    val iterator = resources.iterator()
-    var error: Throwable = null
-    while (iterator.hasNext) {
-      try {
-        val resource = iterator.next()
-        monitor.close(resource)
-        resource.setCloseListener(null) // We don't want a call to onClosed any longer
-        resource.close()
-      }
-      catch {
-        case t: Throwable => error = Exceptions.chain(error, t)
-      }
-    }
-    if (error != null) throw error
-    else {
-      resources.clear()
-    }
-  }
+  override def close(): Unit = resources.closeAll()
 }
 
 class ThreadSafeResourceManager(monitor: ResourceMonitor) extends ResourceManager(monitor) {
-  override protected val resources: util.Collection[AutoCloseablePlus] = new util.concurrent.ConcurrentLinkedQueue[AutoCloseablePlus]()
+  override protected val resources:ResourcePool = new ThreadSafeResourcePool(monitor)
 }
 
 object ResourceManager {
@@ -102,5 +80,135 @@ object ResourceMonitor {
     def trace(resource: AutoCloseablePlus): Unit = {}
     def untrace(resource: AutoCloseablePlus): Unit = {}
     def close(resource: AutoCloseablePlus): Unit = {}
+  }
+}
+
+trait ResourcePool {
+  def add(resource: AutoCloseablePlus): Unit
+  def remove(resource: AutoCloseablePlus): Boolean
+  def all(): Iterator[AutoCloseablePlus]
+  def clear(): Unit
+  def closeAll(): Unit
+}
+
+/**
+  * Similar to an ArrayList[AutoCloseablePlus] but does faster removes since it simply set the element to null and
+  * does not reorder the backing array.
+  * @param capacity the intial capacity of the pool
+  * @param monitor the monitor to call on close
+  */
+class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor) extends ResourcePool {
+  private var highMark: Int = 0
+  private var closeables: Array[AutoCloseablePlus] = new Array[AutoCloseablePlus](capacity)
+
+  def add(resource: AutoCloseablePlus): Unit = {
+    ensureCapacity()
+    closeables(highMark) = resource
+    highMark += 1
+  }
+
+  def remove(resource: AutoCloseablePlus): Boolean = {
+    var i = 0
+    while (i < highMark) {
+      if (closeables(i) eq resource) {
+        closeables(i) = null
+        if (i == highMark - 1) { //we removed the last item, hence no holes
+          highMark -= 1
+        }
+        return true
+      }
+      i += 1
+    }
+    false
+  }
+
+  def all(): Iterator[AutoCloseablePlus] = new Iterator[AutoCloseablePlus] {
+    private var offset = 0
+
+    override def hasNext: Boolean = {
+      while (offset < highMark && closeables(offset) == null) {
+        offset += 1
+      }
+
+      offset < highMark
+    }
+
+    override def next(): AutoCloseablePlus = {
+      if (!hasNext) {
+        throw new IndexOutOfBoundsException
+      }
+      val closeable = closeables(offset)
+      offset += 1
+      closeable
+    }
+  }
+
+  def clear(): Unit = {
+    highMark = 0
+  }
+
+  def closeAll(): Unit = {
+    var error: Throwable = null
+    var i = 0
+    while (i < highMark) {
+      try {
+        val resource = closeables(i)
+        if (resource != null) {
+          monitor.close(resource)
+          resource.setCloseListener(null) // We don't want a call to onClosed any longer
+          resource.close()
+        }
+      }
+      catch {
+        case t: Throwable => error = Exceptions.chain(error, t)
+      }
+      i += 1
+    }
+    if (error != null) throw error
+    else {
+      clear()
+    }
+  }
+  private def ensureCapacity(): Unit = {
+    if (closeables.length <= highMark) {
+      val temp = closeables
+      closeables = new Array[AutoCloseablePlus](closeables.length * 2)
+      System.arraycopy(temp, 0, closeables, 0, temp.length)
+    }
+  }
+}
+
+class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {
+  import scala.collection.JavaConverters._
+
+  val resources: java.util.Collection[AutoCloseablePlus] = new java.util.concurrent.ConcurrentLinkedQueue[AutoCloseablePlus]()
+
+  override def add(resource: AutoCloseablePlus): Unit =
+    resources.add(resource)
+
+  override def remove(resource: AutoCloseablePlus): Boolean = resources.remove(resource)
+
+  override def all(): Iterator[AutoCloseablePlus] = resources.iterator().asScala
+
+  override def clear(): Unit = resources.clear()
+
+  override def closeAll(): Unit = {
+    val iterator = resources.iterator()
+    var error: Throwable = null
+    while (iterator.hasNext) {
+      try {
+        val resource = iterator.next()
+        monitor.close(resource)
+        resource.setCloseListener(null) // We don't want a call to onClosed any longer
+        resource.close()
+      }
+      catch {
+        case t: Throwable => error = Exceptions.chain(error, t)
+      }
+    }
+    if (error != null) throw error
+    else {
+      resources.clear()
+    }
   }
 }

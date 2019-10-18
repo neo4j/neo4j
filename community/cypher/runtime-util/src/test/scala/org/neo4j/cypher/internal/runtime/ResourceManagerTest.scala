@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
+import org.mockito.Mockito.{never, verify, verifyNoMoreInteractions, when}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 
@@ -131,6 +131,85 @@ class ResourceManagerTest extends CypherFunSuite {
     verifyClose(resource3, monitor)
     verifyNoMoreInteractions(resource1, resource2, resource3, monitor)
     Set(throwable) ++ throwable.getSuppressed shouldBe Set(exception1, exception2)
+  }
+
+  test("Resource pool should be able to grow beyond initial capacity") {
+    //given
+    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+
+    //when
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+
+    //then
+    pool.all().size shouldBe 5
+  }
+
+  test("Should be able to remove resource") {
+    val resources = Array(mock[AutoCloseablePlus],
+                          mock[AutoCloseablePlus],
+                          mock[AutoCloseablePlus],
+                          mock[AutoCloseablePlus],
+                          mock[AutoCloseablePlus])
+    for(i <- resources.indices) {
+      //given
+      val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+      resources.foreach(pool.add)
+      val toRemove = resources(i)
+
+      //when
+      pool.remove(toRemove)
+
+      //then
+      val closeables = pool.all().toList
+      closeables.size shouldBe 4
+      closeables shouldNot contain(toRemove)
+    }
+  }
+
+  test("Should be able to clear") {
+    //given
+    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+    pool.add(mock[AutoCloseablePlus])
+
+    //when
+    pool.clear()
+
+    //then
+    pool.all() shouldBe empty
+  }
+
+  test("Should not call close on removed item") {
+    for(i <- 0 until 5) {
+      //given
+      val resources = Array(mock[AutoCloseablePlus],
+                            mock[AutoCloseablePlus],
+                            mock[AutoCloseablePlus],
+                            mock[AutoCloseablePlus],
+                            mock[AutoCloseablePlus])
+      val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+      resources.foreach(pool.add)
+      pool.remove(resources(i))
+
+      //when
+      pool.closeAll()
+
+      //then
+      for(j <- 0 until 5) {
+        if (i == j) {
+          verify(resources(j), never).close()
+        } else {
+          verify(resources(j)).close()
+        }
+      }
+    }
   }
 
   private def verifyTrace(resource: AutoCloseablePlus, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
