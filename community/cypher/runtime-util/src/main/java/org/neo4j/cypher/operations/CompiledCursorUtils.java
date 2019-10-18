@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.operations;
 
+import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -29,8 +31,18 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
+
+import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Utilities for working with cursors from within generated code
@@ -176,6 +188,56 @@ public final class CompiledCursorUtils
             Direction direction )
     {
         return nodeGetRelationships( read, cursors, node, nodeId, direction, null );
+    }
+
+    public static AnyValue propertyGet( String key,
+            AnyValue container,
+            Read read,
+            DbAccess dbAccess,
+            NodeCursor nodeCursor,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor )
+    {
+        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( container instanceof VirtualNodeValue )
+        {
+            return nodeGetProperty(
+                    read,
+                    nodeCursor,
+                    ((VirtualNodeValue) container).id(),
+                    propertyCursor,
+                    dbAccess.propertyKey( key ) );
+        }
+        else if ( container instanceof VirtualRelationshipValue )
+        {
+            return relationshipGetProperty(
+                    read,
+                    relationshipScanCursor,
+                    ((VirtualRelationshipValue) container).id(),
+                    propertyCursor,
+                    dbAccess.propertyKey( key ) );
+        }
+        else if ( container instanceof MapValue )
+        {
+            return ((MapValue) container).get( key );
+        }
+        else if ( container instanceof TemporalValue<?,?> )
+        {
+            return ((TemporalValue) container).get( key );
+        }
+        else if ( container instanceof DurationValue )
+        {
+            return ((DurationValue) container).get( key );
+        }
+        else if ( container instanceof PointValue )
+        {
+            return ((PointValue) container).get( key );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", container.toString() ),
+                    null );
+        }
     }
 }
 
