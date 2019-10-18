@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionC
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.operations.CursorUtils
 import org.neo4j.exceptions.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphalgo.BasicEvaluationContext
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -136,12 +137,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = {
-    if (label == StatementConstants.NO_SUCH_LABEL) false
-    else {
-      reads().singleNode(node, nodeCursor)
-      if (!nodeCursor.next()) false
-      else nodeCursor.hasLabel(label)
-    }
+    CursorUtils.nodeHasLabel(reads(), nodeCursor, node, label)
   }
 
   override def getOrCreateLabelId(labelName: String): Int = {
@@ -440,18 +436,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getProperty(id: Long, propertyKeyId: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor, throwOnDeleted: Boolean): Value = {
-      reads().singleNode(id, nodeCursor)
-      if (!nodeCursor.next()) {
-        if (throwOnDeleted && isDeletedInThisTx(id)) throw new EntityNotFoundException(
-          s"Node with id $id has been deleted in this transaction")
-        else Values.NO_VALUE
-      } else {
-        nodeCursor.properties(propertyCursor)
-        while (propertyCursor.next()) {
-          if (propertyCursor.propertyKey() == propertyKeyId) return propertyCursor.propertyValue()
-        }
-        Values.NO_VALUE
-      }
+     CursorUtils.nodeGetProperty(reads(), nodeCursor, id, propertyCursor, propertyKeyId, throwOnDeleted)
     }
 
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Value =
@@ -563,18 +548,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getProperty(id: Long, propertyKeyId: Int, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor, throwOnDeleted: Boolean): Value = {
-      reads().singleRelationship(id, relationshipCursor)
-      if (!relationshipCursor.next()) {
-        if (throwOnDeleted && isDeletedInThisTx(id)) throw new EntityNotFoundException(
-          s"Relationship with id $id has been deleted in this transaction")
-        else Values.NO_VALUE
-      } else {
-        relationshipCursor.properties(propertyCursor)
-        while (propertyCursor.next()) {
-          if (propertyCursor.propertyKey() == propertyKeyId) return propertyCursor.propertyValue()
-        }
-        Values.NO_VALUE
-      }
+     CursorUtils.relationshipGetProperty(reads(), relationshipCursor, id, propertyCursor, propertyKeyId, throwOnDeleted)
     }
 
     override def hasProperty(id: Long, propertyKey: Int, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Boolean = {

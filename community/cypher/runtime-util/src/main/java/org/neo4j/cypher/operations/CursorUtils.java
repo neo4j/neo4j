@@ -47,12 +47,13 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 /**
  * Utilities for working with cursors from within generated code
  */
-public final class CompiledCursorUtils
+@SuppressWarnings( {"Duplicates", "unused"} )
+public final class CursorUtils
 {
     /**
      * Do not instantiate this class
      */
-    private CompiledCursorUtils()
+    private CursorUtils()
     {
         throw new UnsupportedOperationException();
     }
@@ -68,8 +69,36 @@ public final class CompiledCursorUtils
      * @return The value of the given property
      * @throws EntityNotFoundException If the node was deleted in transaction.
      */
-    public static Value nodeGetProperty( Read read, NodeCursor nodeCursor, long node, PropertyCursor propertyCursor,
-            int prop ) throws EntityNotFoundException
+    public static Value nodeGetProperty(
+            Read read,
+            NodeCursor nodeCursor,
+            long node,
+            PropertyCursor propertyCursor,
+            int prop
+    ) throws EntityNotFoundException
+    {
+        return nodeGetProperty( read, nodeCursor, node, propertyCursor, prop, true );
+    }
+    /**
+     * Fetches a given property from a node
+     *
+     * @param read The current Read instance
+     * @param nodeCursor The node cursor to use
+     * @param node The id of the node
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @param throwOnDeleted if <code>true</code> and exception will be thrown if node has been deleted
+     * @return The value of the given property
+     * @throws EntityNotFoundException If the node was deleted in transaction.
+     */
+    public static Value nodeGetProperty(
+            Read read,
+            NodeCursor nodeCursor,
+            long node,
+            PropertyCursor propertyCursor,
+            int prop,
+            boolean throwOnDeleted
+    ) throws EntityNotFoundException
     {
         if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
@@ -78,7 +107,7 @@ public final class CompiledCursorUtils
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
-            if ( read.nodeDeletedInTransaction( node ) )
+            if ( throwOnDeleted && read.nodeDeletedInTransaction( node ) )
             {
                 throw new EntityNotFoundException( String.format("Node with id %d has been deleted in this transaction", node ) );
             }
@@ -151,8 +180,37 @@ public final class CompiledCursorUtils
      * @return The value of the given property
      * @throws EntityNotFoundException If the node cannot be find.
      */
-    public static Value relationshipGetProperty( Read read, RelationshipScanCursor relationshipCursor, long relationship, PropertyCursor propertyCursor,
-            int prop ) throws EntityNotFoundException
+    public static Value relationshipGetProperty(
+            Read read,
+            RelationshipScanCursor relationshipCursor,
+            long relationship,
+            PropertyCursor propertyCursor,
+            int prop
+    ) throws EntityNotFoundException
+    {
+        return relationshipGetProperty( read, relationshipCursor, relationship, propertyCursor, prop, true );
+    }
+
+    /**
+     * Fetches a given property from a relationship
+     *
+     * @param read The current Read instance
+     * @param relationshipCursor The relationship cursor to use
+     * @param relationship The id of the relationship
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @param throwOnDeleted if <code>true</code> and exception will be thrown if node has been deleted
+     * @return The value of the given property
+     * @throws EntityNotFoundException If the node cannot be find.
+     */
+    public static Value relationshipGetProperty(
+            Read read,
+            RelationshipScanCursor relationshipCursor,
+            long relationship,
+            PropertyCursor propertyCursor,
+            int prop,
+            boolean throwOnDeleted
+    ) throws EntityNotFoundException
     {
         if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
@@ -161,7 +219,7 @@ public final class CompiledCursorUtils
         read.singleRelationship( relationship, relationshipCursor );
         if ( !relationshipCursor.next() )
         {
-            if ( read.relationshipDeletedInTransaction( relationship ) )
+            if ( throwOnDeleted && read.relationshipDeletedInTransaction( relationship ) )
             {
                 throw new EntityNotFoundException(
                         String.format( "Relationship with id %d has been deleted in this transaction", relationship ) );
