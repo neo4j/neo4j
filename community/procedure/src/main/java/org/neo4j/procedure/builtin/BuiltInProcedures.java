@@ -30,9 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -276,8 +274,8 @@ public class BuiltInProcedures
         String name = index.getName();
         IndexStatus status = getIndexStatus( schemaRead, index );
         String uniqueness = IndexUniqueness.getUniquenessOf( index );
-        String type = IndexType.getIndexTypeOf( index );
-        String entityType = IndexEntityType.entityTypeOf( index );
+        String type = index.getIndexType().name();
+        String entityType = index.schema().entityType().name();
         List<String> labelsOrTypes = Arrays.asList( tokenLookup.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
         List<String> properties = propertyNames( tokenLookup, index );
         String provider = index.getIndexProvider().name();
@@ -291,8 +289,8 @@ public class BuiltInProcedures
         String name = index.getName();
         IndexStatus status = getIndexStatus( schemaRead, index );
         String uniqueness = IndexUniqueness.getUniquenessOf( index );
-        String type = IndexType.getIndexTypeOf( index );
-        String entityType = IndexEntityType.entityTypeOf( index );
+        String type = index.getIndexType().name();
+        String entityType = index.schema().entityType().name();
         SchemaDescriptor schema = index.schema();
         List<String> labelsOrTypes = Arrays.asList( tokenLookup.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
         List<String> properties = propertyNames( tokenLookup, index );
@@ -755,31 +753,6 @@ public class BuiltInProcedures
         public final Relationship relationship;
     }
 
-    //When we have decided on what to call different indexes
-    //this should probably be moved to some more central place
-    private enum IndexType
-    {
-        FULLTEXT,
-        BTREE,
-        FUSION;
-
-        private static String getIndexTypeOf( IndexDescriptor index )
-        {
-            if ( index.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT )
-            {
-                return FULLTEXT.name();
-            }
-            else if ( index.getIndexProvider().getKey().equals( GraphDatabaseSettings.SchemaIndex.NATIVE30.providerKey() ) )
-            {
-                return FUSION.name();
-            }
-            else
-            {
-                return BTREE.name();
-            }
-        }
-    }
-
     private enum IndexUniqueness
     {
         UNIQUE,
@@ -789,24 +762,6 @@ public class BuiltInProcedures
         {
             return index.isUnique() ? UNIQUE.name() : NONUNIQUE.name();
 
-        }
-    }
-
-    private enum IndexEntityType
-    {
-        NODE,
-        RELATIONSHIP;
-
-        private static String entityTypeOf( IndexDescriptor index )
-        {
-            if ( index.schema().entityType() == EntityType.NODE )
-            {
-                return NODE.name();
-            }
-            else
-            {
-                return RELATIONSHIP.name();
-            }
         }
     }
 }

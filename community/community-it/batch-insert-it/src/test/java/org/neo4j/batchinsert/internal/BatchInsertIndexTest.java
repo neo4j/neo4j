@@ -19,6 +19,7 @@
  */
 package org.neo4j.batchinsert.internal;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -27,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -36,19 +36,23 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
@@ -92,7 +96,6 @@ class BatchInsertIndexTest
         awaitIndexesOnline( db );
         try ( Transaction tx = db.beginTx() )
         {
-            DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
             KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
@@ -164,6 +167,33 @@ class BatchInsertIndexTest
             Schema.IndexState indexState = schema.getIndexState( index );
             assertEquals( Schema.IndexState.FAILED, indexState );
             assertFalse( indexes.hasNext() );
+            tx.commit();
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void shouldCreateFullTextIndexForFullTextIndexType() throws Exception
+    {
+        Config config = Config.newBuilder()
+                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
+        BatchInserter inserter = newBatchInserter( config );
+        inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).withIndexType( IndexType.FULLTEXT ).withName( "fts" ).create();
+        inserter.shutdown();
+        GraphDatabaseService db = graphDatabaseService( config );
+        awaitIndexesOnline( db );
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "fts" );
+            assertEquals( Iterables.single( index.getLabels() ).name(), TestLabels.LABEL_ONE.name() );
+            assertEquals( Iterables.single( index.getPropertyKeys() ), "key" );
+            assertEquals( index.getIndexType(), IndexType.FULLTEXT );
+
+            IndexProviderDescriptor provider = ((IndexDefinitionImpl) index).getIndexReference().getIndexProvider();
+            assertEquals( provider, FulltextIndexProviderFactory.DESCRIPTOR );
             tx.commit();
         }
         finally

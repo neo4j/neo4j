@@ -62,6 +62,12 @@ public interface IndexDefinition
     Iterable<String> getPropertyKeys();
 
     /**
+     * Get the {@linkplain IndexType index type} of this index.
+     * @return The {@link IndexType} this index was defined with.
+     */
+    IndexType getIndexType();
+
+    /**
      * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
      * and any related background jobs and files will be stopped and removed.
      */

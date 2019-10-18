@@ -20,20 +20,38 @@
 package org.neo4j.internal.schema;
 
 /**
- * The type of index defined by this schema.
+ * This is the internal equivalent of {@link org.neo4j.graphdb.schema.IndexType}.
  * <p>
  * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
 public enum IndexType
 {
     /**
-     * For GBPTree based indexes. All types of values are indexed and stored in sort-order. This means they are good at all types of exact matching,
-     * and range queries. They also support index-backed order-by.
+     * @see org.neo4j.graphdb.schema.IndexType#BTREE
      */
     BTREE,
     /**
-     * For the fulltext schema indexes. These indexes do not index all value types, and cannot answer all types of queries.
-     * On the other hand, they are good at CONTAINS and ENDS_WITH queries, and they can do fuzzy matching, and scoring.
+     * @see org.neo4j.graphdb.schema.IndexType#FULLTEXT
      */
-    FULLTEXT
+    FULLTEXT;
+
+    public static IndexType fromPublicApi( org.neo4j.graphdb.schema.IndexType type )
+    {
+        switch ( type )
+        {
+        case BTREE: return BTREE;
+        case FULLTEXT: return FULLTEXT;
+        default: throw new IllegalArgumentException( "Unknown index type: " + type );
+        }
+    }
+
+    public org.neo4j.graphdb.schema.IndexType toPublicApi()
+    {
+        switch ( this )
+        {
+        case BTREE: return org.neo4j.graphdb.schema.IndexType.BTREE;
+        case FULLTEXT: return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+        default: throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
+        }
+    }
 }

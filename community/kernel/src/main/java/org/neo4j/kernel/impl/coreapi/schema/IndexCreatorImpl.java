@@ -26,6 +26,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 
 public class IndexCreatorImpl implements IndexCreator
 {
@@ -33,18 +34,20 @@ public class IndexCreatorImpl implements IndexCreator
     private final Label label;
     private final InternalSchemaActions actions;
     private final String indexName;
+    private final IndexType indexType;
 
     public IndexCreatorImpl( InternalSchemaActions actions, Label label )
     {
-        this( actions, label, null, new ArrayList<>() );
+        this( actions, label, null, new ArrayList<>(), IndexType.BTREE );
     }
 
-    private IndexCreatorImpl( InternalSchemaActions actions, Label label, String indexName, Collection<String> propertyKeys )
+    private IndexCreatorImpl( InternalSchemaActions actions, Label label, String indexName, Collection<String> propertyKeys, IndexType indexType )
     {
         this.actions = actions;
         this.label = label;
         this.indexName = indexName;
         this.propertyKeys = propertyKeys;
+        this.indexType = indexType;
 
         assertInUnterminatedTransaction();
     }
@@ -53,14 +56,21 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, copyAndAdd( propertyKeys, propertyKey) );
+        return new IndexCreatorImpl( actions, label, indexName, copyAndAdd( propertyKeys, propertyKey ), indexType );
     }
 
     @Override
     public IndexCreator withName( String indexName )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, propertyKeys );
+        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType );
+    }
+
+    @Override
+    public IndexCreator withIndexType( IndexType indexType )
+    {
+        assertInUnterminatedTransaction();
+        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType );
     }
 
     @Override
@@ -73,7 +83,7 @@ public class IndexCreatorImpl implements IndexCreator
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
         }
 
-        return actions.createIndexDefinition( label, indexName, propertyKeys.toArray( new String[0] ) );
+        return actions.createIndexDefinition( label, indexName, indexType, propertyKeys.toArray( new String[0] ) );
     }
 
     private void assertInUnterminatedTransaction()

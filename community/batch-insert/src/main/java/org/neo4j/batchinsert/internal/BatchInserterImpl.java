@@ -53,6 +53,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -181,6 +182,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -506,11 +508,11 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private IndexDescriptor createIndex( LabelSchemaDescriptor schema, String indexName )
+    private IndexDescriptor createIndex( IndexPrototype prototype )
     {
-        IndexProvider provider = indexProviderMap.getDefaultProvider();
+        IndexProvider provider = isFullTextIndexType( prototype ) ? indexProviderMap.getFulltextProvider() : indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor ).withName( indexName );
+        prototype = prototype.withIndexProvider( providerDescriptor );
         prototype = ensureSchemaHasName( prototype );
 
         IndexDescriptor index = prototype.materialise( schemaStore.nextId() );
@@ -528,6 +530,11 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw kernelExceptionToUserException( e );
         }
+    }
+
+    private boolean isFullTextIndexType( IndexPrototype prototype )
+    {
+        return prototype.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT;
     }
 
     private void repopulateAllIndexes( NativeLabelScanStore labelIndex ) throws IOException
@@ -1211,15 +1218,16 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String indexName, String... propertyKeys )
+        public IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, String... propertyKeys )
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
             LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
             validateIndexCanBeCreated( schema );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema ).withName( indexName ).withIndexType( fromPublicApi( indexType ) );
 
-            IndexDescriptor index = createIndex( schema, indexName );
+            IndexDescriptor index = createIndex( prototype );
             return new IndexDefinitionImpl( this, index, new Label[]{label}, propertyKeys, false );
         }
 

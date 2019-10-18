@@ -41,13 +41,17 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
@@ -871,6 +875,21 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             assertThat( count( tx.schema().getIndexes() ), is( 0L ) );
             assertThat( count( tx.schema().getConstraints() ), is( 0L ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustCreateFullTextIndexBySettingIndexType()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator creator = tx.schema().indexFor( label ).on( propertyKey ).withIndexType( IndexType.FULLTEXT );
+            IndexDefinition definition = creator.create();
+            assertEquals( IndexType.FULLTEXT, definition.getIndexType() );
+
+            IndexProviderDescriptor provider = ((IndexDefinitionImpl) definition).getIndexReference().getIndexProvider();
+            assertEquals( provider, FulltextIndexProviderFactory.DESCRIPTOR );
             tx.commit();
         }
     }

@@ -41,6 +41,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexPopulationProgress;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -57,6 +58,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundExcepti
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -82,6 +84,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.map;
+import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
@@ -547,7 +550,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String indexName, String... propertyKeys )
+        public IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, String... propertyKeys )
         {
             try ( Statement ignore = transaction.acquireStatement() )
             {
@@ -556,8 +559,11 @@ public class SchemaImpl implements Schema
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
-                    LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyIds );
-                    IndexDescriptor indexReference = transaction.schemaWrite().indexCreate( descriptor, indexName );
+                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                    IndexPrototype prototype = IndexPrototype.forSchema( schema );
+                    prototype = prototype.withName( indexName );
+                    prototype = prototype.withIndexType( fromPublicApi( indexType ) );
+                    IndexDescriptor indexReference = transaction.schemaWrite().indexCreate( prototype );
                     return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
                 }
                 catch ( IllegalTokenNameException e )

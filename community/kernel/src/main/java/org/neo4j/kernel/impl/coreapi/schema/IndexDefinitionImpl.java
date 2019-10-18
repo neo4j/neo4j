@@ -25,6 +25,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.schema.IndexDescriptor;
 
@@ -92,6 +93,12 @@ public class IndexDefinitionImpl implements IndexDefinition
     {
         assertInUnterminatedTransaction();
         return asList( propertyKeys );
+    }
+
+    @Override
+    public IndexType getIndexType()
+    {
+        return indexReference.getIndexType().toPublicApi();
     }
 
     /**

@@ -24,6 +24,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
 /**
@@ -32,7 +33,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
  */
 public interface InternalSchemaActions
 {
-    IndexDefinition createIndexDefinition( Label label, String indexName, String... propertyKey );
+    IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, String... propertyKey );
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 
