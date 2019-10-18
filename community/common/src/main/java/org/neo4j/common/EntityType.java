@@ -23,6 +23,8 @@ package org.neo4j.common;
  * Type of graph entity. The two types, Nodes and Relationships, represent objects that can have properties
  * associated with them, as well as labeled with additional type information. Nodes have labels, and relationships
  * have relationship types.
+ * <p>
+ * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
 public enum EntityType
 {

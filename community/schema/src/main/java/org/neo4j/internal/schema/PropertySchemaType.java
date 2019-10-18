@@ -25,6 +25,8 @@ package org.neo4j.internal.schema;
  * i.e. when all properties are present. If you are unsure then this is probably what you want.
  * {@link PropertySchemaType#PARTIAL_ANY_TOKEN} signifies that this schema unit should be affected by any update that is partial match of the schema,
  *  i.e. at least one of the properties of this schema unit is present.
+ * <p>
+ * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
 public enum PropertySchemaType
 {

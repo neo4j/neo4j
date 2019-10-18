@@ -101,8 +101,6 @@ class SchemaRuleTest
         assertName( existsLabelConstraint, "constraint_b23c1483" );
         assertName( nodeKeyConstraint, "constraint_7b8dd387" );
         assertName( existsRelTypeConstraint, "constraint_ef4bbcac" );
-
-        System.out.println(SchemaRule.generateName( ConstraintDescriptorFactory.nodeKeyForLabel( 0, 0 ), new String[]{"Label"}, new String[]{"prop"} ));
     }
 
     @Test
@@ -167,7 +165,7 @@ class SchemaRuleTest
     }
 
     @Test
-    void sanitiseNameMustAcceptValudNames()
+    void sanitiseNameMustAcceptValidNames()
     {
         List<String> validNames = List.of(
                 ".", ",", "'", "a", " a", "a ", "a b", "a\n", "a\nb", "\"", "@", "#", "$", "%", "{", "}", "\uD83D\uDE02", ":", ";", "[", "]", "-", "_" );

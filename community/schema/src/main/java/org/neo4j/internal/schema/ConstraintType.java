@@ -19,6 +19,12 @@
  */
 package org.neo4j.internal.schema;
 
+/**
+ * The enum of all the types of constraints that we support.
+ * This is the internal version of {@link org.neo4j.graphdb.schema.ConstraintType}.
+ * <p>
+ * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
+ */
 public enum ConstraintType
 {
     UNIQUE( true, false ),

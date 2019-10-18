@@ -21,6 +21,8 @@ package org.neo4j.internal.schema;
 
 /**
  * The type of index defined by this schema.
+ * <p>
+ * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
 public enum IndexType
 {
