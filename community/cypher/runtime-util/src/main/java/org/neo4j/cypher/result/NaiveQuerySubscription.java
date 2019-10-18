@@ -30,7 +30,8 @@ import org.neo4j.values.AnyValue;
  * pieces of reactive results in the code. Implements {@link org.neo4j.kernel.impl.query.QuerySubscription} by simply reading
  * the entire result in to memory and serves it in chunks as demanded by the client.
  */
-public abstract class NaiveQuerySubscription extends EagerQuerySubscription implements VisitableRuntimeResult
+public abstract class NaiveQuerySubscription extends EagerQuerySubscription implements VisitableRuntimeResult,
+        QueryResult.QueryResultVisitor<Exception>
 {
     private List<AnyValue[]> materializedResult;
 
@@ -102,20 +103,24 @@ public abstract class NaiveQuerySubscription extends EagerQuerySubscription impl
         subscriber.onResult( length );
         try
         {
-            accept( record -> {
-                subscriber.onRecord();
-                for ( AnyValue field : record.fields() )
-                {
-                    subscriber.onField( field );
-                }
-                subscriber.onRecordCompleted();
-                record.release();
-                return true;
-            } );
+            accept( this );
         }
         catch ( Exception t )
         {
             this.error = t;
         }
+    }
+
+    @Override
+    public boolean visit( QueryResult.Record record ) throws Exception
+    {
+        subscriber.onRecord();
+        for ( AnyValue field : record.fields() )
+        {
+            subscriber.onField( field );
+        }
+        subscriber.onRecordCompleted();
+        record.release();
+        return true;
     }
 }
