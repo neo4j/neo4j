@@ -23,6 +23,7 @@ import java.io.File
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME, default_database}
+import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager, DefaultSystemGraphInitializer}
 import org.neo4j.exceptions.DatabaseAdministrationException
@@ -35,6 +36,7 @@ import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 import scala.collection.Map
 
 class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
+  private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val defaultConfig = Config.defaults()
 
   test("should fail at startup when config setting for default database name is invalid") {
@@ -85,6 +87,71 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     } should have message startOfError + "The provided database name must have a length between 3 and 63 characters."
   }
 
+  // Tests for showing databases
+
+  test(s"should show database $DEFAULT_DATABASE_NAME") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME")
+
+    // THEN
+    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true)))
+  }
+
+  test("should give nothing when showing a non-existing database") {
+    // GIVEN
+    setup(defaultConfig)
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // WHEN
+    val result = execute("SHOW DATABASE foo")
+
+    // THEN
+    result.toList should be(List.empty)
+
+    // and an invalid (non-existing) one
+    // WHEN
+    val result2 = execute("SHOW DATABASE ``")
+
+    // THEN
+    result2.toList should be(List.empty)
+  }
+
+  test("should fail when showing a database when not on system database") {
+    setup(defaultConfig)
+    selectDatabase(DEFAULT_DATABASE_NAME)
+    the[DatabaseAdministrationException] thrownBy {
+      // WHEN
+      execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME")
+      // THEN
+    } should have message
+      "This is an administration command and it should be executed against the system database: SHOW DATABASE"
+  }
+
+  test("should show default databases") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES")
+
+    // THEN
+    result.toSet should be(Set(db(DEFAULT_DATABASE_NAME, default = true), db(SYSTEM_DATABASE_NAME)))
+  }
+
+  test("should fail when showing databases when not on system database") {
+    setup(defaultConfig)
+    selectDatabase(DEFAULT_DATABASE_NAME)
+    the[DatabaseAdministrationException] thrownBy {
+      // WHEN
+      execute("SHOW DATABASES")
+      // THEN
+    } should have message
+      "This is an administration command and it should be executed against the system database: SHOW DATABASES"
+  }
+
   // SHOW DEFAULT DATABASE tests
 
   test("should show default database") {
@@ -95,7 +162,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME)))
+    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME, "status" -> onlineStatus)))
   }
 
   test("should show custom default database using show default database command") {
@@ -108,7 +175,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(Map("name" -> "foo")))
+    result.toList should be(List(Map("name" -> "foo", "status" -> onlineStatus)))
   }
 
   test("should show correct default database for switch of default database") {
@@ -120,7 +187,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toSet should be(Set(Map("name" -> DEFAULT_DATABASE_NAME)))
+    result.toSet should be(Set(Map("name" -> DEFAULT_DATABASE_NAME, "status" -> onlineStatus)))
 
     // GIVEN
     config.set(default_database, "foo")
@@ -130,7 +197,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result2 = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result2.toSet should be(Set(Map("name" -> "foo")))
+    result2.toSet should be(Set(Map("name" -> "foo", "status" -> onlineStatus)))
   }
 
   test("should fail when showing default database when not on system database") {
@@ -145,22 +212,6 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   }
 
   // Test for non-valid community commands
-
-  test("should fail on showing database from community") {
-    setup( defaultConfig )
-    assertFailure(s"SHOW DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: SHOW DATABASE $DEFAULT_DATABASE_NAME")
-  }
-
-  test("should fail on showing non-existing database with correct error message") {
-    setup( defaultConfig )
-    assertFailure("SHOW DATABASE foo", "Unsupported administration command: SHOW DATABASE foo")
-  }
-
-  test("should fail on showing databases from community") {
-    setup( defaultConfig )
-    assertFailure("SHOW DATABASES", "Unsupported administration command: SHOW DATABASES")
-  }
 
   test("should fail on creating database from community") {
     setup( defaultConfig )
@@ -213,6 +264,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     setup( defaultConfig )
     assertFailure("STOP DATABASE foo", "Unsupported administration command: STOP DATABASE foo")
   }
+
+  private def db(name: String, status: String = onlineStatus, default: Boolean = false) =
+    Map("name" -> name, "status" -> status, "default" -> default)
 
   // Disable normal database creation because we need different settings on each test
   override protected def initTest() {}
