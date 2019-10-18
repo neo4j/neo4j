@@ -47,6 +47,7 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -173,8 +174,8 @@ public class FullCheck
 
             if ( checkIndexStructure )
             {
-                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes, reporter,
-                        progressFactory );
+                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes,
+                        nativeStores.idGenerators(), reporter, progressFactory );
             }
 
             List<ConsistencyCheckerTask> tasks =
@@ -199,26 +200,31 @@ public class FullCheck
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
             IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, IndexAccessors indexes,
-            ConsistencyReporter report, ProgressMonitorFactory progressMonitorFactory )
+            List<IdGenerator> idGenerators, ConsistencyReporter report, ProgressMonitorFactory progressMonitorFactory )
     {
         final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
-        final long additionalCount = 1 /*LabelScanStore*/ + 1 /*IndexStatisticsStore*/;
-        final long totalCount = schemaIndexCount + additionalCount;
+        final long additionalCount = 1 /*LabelScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
+        final long idGeneratorsCount = idGenerators.size();
+        final long totalCount = schemaIndexCount + additionalCount + idGeneratorsCount;
         final ProgressListener listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
         listener.started();
 
-        consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore, countsStore );
+        consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore, countsStore, idGenerators );
         consistencyCheckSchemaIndexes( indexes, report, listener );
 
         listener.done();
     }
 
     private static void consistencyCheckNonSchemaIndexes( ConsistencyReporter report, ProgressListener listener,
-            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, CountsStore countsStore )
+            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, List<IdGenerator> idGenerators )
     {
         consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT );
         consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS );
         consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS );
+        for ( IdGenerator idGenerator : idGenerators )
+        {
+            consistencyCheckSingleCheckable( report, listener, idGenerator, RecordType.ID_STORE );
+        }
     }
 
     private static void consistencyCheckSingleCheckable( ConsistencyReporter report, ProgressListener listener, ConsistencyCheckable checkable,

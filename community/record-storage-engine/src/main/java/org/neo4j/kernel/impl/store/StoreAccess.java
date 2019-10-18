@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -64,6 +68,7 @@ public class StoreAccess
     // internal state
     private boolean closeable;
     private final NeoStores neoStores;
+    private List<IdGenerator> idGenerators = new ArrayList<>();
 
     public StoreAccess( NeoStores store )
     {
@@ -87,21 +92,66 @@ public class StoreAccess
      */
     public StoreAccess initialize()
     {
-        this.schemaStore = neoStores.getSchemaStore();
-        this.nodeStore = wrapStore( neoStores.getNodeStore() );
-        this.relStore = wrapStore( neoStores.getRelationshipStore() );
-        this.propStore = wrapStore( neoStores.getPropertyStore() );
-        this.stringStore = wrapStore( neoStores.getPropertyStore().getStringStore() );
-        this.arrayStore = wrapStore( neoStores.getPropertyStore().getArrayStore() );
-        this.relationshipTypeTokenStore = wrapStore( neoStores.getRelationshipTypeTokenStore() );
-        this.labelTokenStore = wrapStore( neoStores.getLabelTokenStore() );
-        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( neoStores.getNodeStore().getDynamicLabelStore() ) );
-        this.propertyKeyTokenStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore() );
-        this.relationshipTypeNameStore = wrapStore( neoStores.getRelationshipTypeTokenStore().getNameStore() );
-        this.labelNameStore = wrapStore( neoStores.getLabelTokenStore().getNameStore() );
-        this.propertyKeyNameStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
-        this.relGroupStore = wrapStore( neoStores.getRelationshipGroupStore() );
+        // All stores
+        final SchemaStore schemaStore = neoStores.getSchemaStore();
+        final NodeStore nodeStore = neoStores.getNodeStore();
+        final RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+        final PropertyStore propertyStore = neoStores.getPropertyStore();
+        final DynamicStringStore propertyStringStore = propertyStore.getStringStore();
+        final DynamicArrayStore propertyArrayStore = propertyStore.getArrayStore();
+        final RelationshipTypeTokenStore relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
+        final LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
+        final DynamicArrayStore dynamicLabelStore = nodeStore.getDynamicLabelStore();
+        final PropertyKeyTokenStore propertyKeyTokenStore = propertyStore.getPropertyKeyTokenStore();
+        final DynamicStringStore relationshipTypeTokenNameStore = relationshipTypeTokenStore.getNameStore();
+        final DynamicStringStore labelTokenNameStore = labelTokenStore.getNameStore();
+        final DynamicStringStore propertyTypeTokenNameStore = propertyKeyTokenStore.getNameStore();
+        final RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        final MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+
+        // Extract idGenerators
+        extractIdGenerators(
+                schemaStore,
+                nodeStore,
+                relationshipStore,
+                propertyStore,
+                propertyStringStore,
+                propertyArrayStore,
+                relationshipTypeTokenStore,
+                labelTokenStore,
+                dynamicLabelStore,
+                propertyKeyTokenStore,
+                relationshipTypeTokenNameStore,
+                labelTokenNameStore,
+                propertyTypeTokenNameStore,
+                relationshipGroupStore,
+                metaDataStore );
+
+        // Wrap stores and assign to fields
+        this.schemaStore = schemaStore;
+        this.nodeStore = wrapStore( nodeStore );
+        this.relStore = wrapStore( relationshipStore );
+        this.propStore = wrapStore( propertyStore );
+        this.stringStore = wrapStore( propertyStringStore );
+        this.arrayStore = wrapStore( propertyArrayStore );
+        this.relationshipTypeTokenStore = wrapStore( relationshipTypeTokenStore );
+        this.labelTokenStore = wrapStore( labelTokenStore );
+        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( dynamicLabelStore ) );
+        this.propertyKeyTokenStore = wrapStore( propertyKeyTokenStore );
+        this.relationshipTypeNameStore = wrapStore( relationshipTypeTokenNameStore );
+        this.labelNameStore = wrapStore( labelTokenNameStore );
+        this.propertyKeyNameStore = wrapStore( propertyTypeTokenNameStore );
+        this.relGroupStore = wrapStore( relationshipGroupStore );
+
         return this;
+    }
+
+    private void extractIdGenerators( CommonAbstractStore... commonAbstractStores )
+    {
+        for ( CommonAbstractStore commonAbstractStore : commonAbstractStores )
+        {
+            idGenerators.add( commonAbstractStore.getIdGenerator() );
+        }
     }
 
     public NeoStores getRawNeoStores()
@@ -177,6 +227,11 @@ public class StoreAccess
     public RecordStore<DynamicRecord> getPropertyKeyNameStore()
     {
         return propertyKeyNameStore;
+    }
+
+    public List<IdGenerator> idGenerators()
+    {
+        return idGenerators;
     }
 
     private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )

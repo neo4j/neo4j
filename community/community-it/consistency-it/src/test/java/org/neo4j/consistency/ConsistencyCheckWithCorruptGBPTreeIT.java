@@ -570,6 +570,24 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    void corruptionInIdGenerator() throws Exception
+    {
+        MutableObject<Long> rootNode = new MutableObject<>();
+        File[] idStoreFiles = idStoreFiles();
+        final LayoutBootstrapper countsLayoutBootstrapper = ( indexFile, pageCache, meta ) -> new CountsLayout();
+        corruptIndexes( fs, true, ( tree, inspection ) -> {
+            rootNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
+        }, idStoreFiles );
+
+        ConsistencyFlags flags = new ConsistencyFlags( false, false, true, false, false );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
+        assertFalse( result.isSuccessful() );
+        assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
+        assertResultContainsMessage( result, "Number of inconsistent ID_STORE records: " + idStoreFiles.length );
+    }
+
+    @Test
     void multipleCorruptionsInFusionIndex() throws Exception
     {
         // Because NATIVE30 provider use Lucene internally we can not use the snapshot from ephemeral file system because
@@ -706,6 +724,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         final File dataDir = databaseLayout.databaseDirectory();
         return new File( dataDir, DatabaseFile.COUNTS_STORE.getName() );
+    }
+
+    private File[] idStoreFiles()
+    {
+        return databaseLayout.idFiles().toArray( File[]::new );
     }
 
     private File[] schemaIndexFiles() throws IOException

@@ -46,6 +46,7 @@ public enum RecordType
 
     LABEL_SCAN_DOCUMENT,
     INDEX_STATISTICS,
+    ID_STORE,
     INDEX,
     COUNTS,
 }

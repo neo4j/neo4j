@@ -28,11 +28,11 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 /**
  * {@link Layout} for a {@link GBPTree} writing and reading the ID ranges that make up the contents of an {@link IndexedIdGenerator}.
  */
-class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
+public class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
 {
     private final int longsPerEntry;
 
-    IdRangeLayout( int idsPerEntry )
+    public IdRangeLayout( int idsPerEntry )
     {
         super( true, 3735929054L + idsPerEntry, 1, 2 );
         requirePowerOfTwo( idsPerEntry );
