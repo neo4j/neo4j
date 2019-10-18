@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.archive;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -34,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Random;
 
 import org.neo4j.configuration.Config;
@@ -45,6 +48,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -102,6 +107,27 @@ class LoaderTest
 
         IncorrectFormat incorrectFormat = assertThrows( IncorrectFormat.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( archive.toString(), incorrectFormat.getMessage() );
+    }
+
+    @Test
+    void shouldGiveAClearErrorMessageIfTheArchiveEntryPointsToRandomPlace() throws IOException, IncorrectFormat
+    {
+        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+
+        assertTrue( databaseLayout.databaseDirectory().delete() );
+        assertTrue( databaseLayout.getTransactionLogsDirectory().delete() );
+
+        final File testFile = testDirectory.file( "testFile" );
+        try ( TarArchiveOutputStream tar = new TarArchiveOutputStream(
+                new GzipCompressorOutputStream( Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW ) ) ) )
+        {
+            ArchiveEntry archiveEntry = tar.createArchiveEntry( testFile, "../../../../etc/shadow" );
+            tar.putArchiveEntry( archiveEntry );
+            tar.closeArchiveEntry();
+        }
+        final InvalidDumpEntryException exception =
+                assertThrows( InvalidDumpEntryException.class, () -> new Loader().load( archive, databaseLayout ) );
+        assertThat( exception.getMessage(), containsString( "points to a location outside of the destination database." ) );
     }
 
     @Test
