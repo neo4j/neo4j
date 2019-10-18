@@ -220,7 +220,7 @@ public class BuiltInProcedures
 
     @SystemProcedure
     @Description( "List all statements for creating and dropping existing indexes and constraints." )
-    @Procedure( name = "db.schemaStatements", mode = SCHEMA )
+    @Procedure( name = "db.schemaStatements", mode = READ )
     public Stream<SchemaStatementResult> schemaStatements()
     {
         if ( callContext.isSystemDatabase() )
