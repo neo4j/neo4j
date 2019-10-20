@@ -173,7 +173,7 @@ public class NeoStoresTest
 
         neoStores.close();
 
-        var e = assertThrows(IllegalStateException.class, neoStores::getMetaDataStore );
+        var e = assertThrows( IllegalStateException.class, neoStores::getMetaDataStore );
         assertEquals( "Specified store was already closed.", e.getMessage() );
     }
 
