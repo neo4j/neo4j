@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.schema;
 
+import java.util.Map;
+
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -120,4 +122,10 @@ public interface IndexDefinition
      * @return the unique name of the index.
      */
     String getName();
+
+    /**
+     * Get the index configuration that this index was created with.
+     * @return The index configuration as a read-only map.
+     */
+    Map<String,Object> getIndexConfiguration();
 }

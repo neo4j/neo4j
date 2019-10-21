@@ -27,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -68,6 +69,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -893,6 +895,52 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             tx.commit();
         }
     }
+
+    @Test
+    void mustBeAbleToGetIndexConfig()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withName( "my_index" ).create();
+            Map<String,Object> config = index.getIndexConfiguration();
+            assertNotNull( config );
+            assertTrue( config.containsKey( "spatial.cartesian.dimensions" ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "my_index" );
+            Map<String,Object> config = index.getIndexConfiguration();
+            assertNotNull( config );
+            assertTrue( config.containsKey( "spatial.cartesian.dimensions" ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustBeAbleToGetFullTextIndexConfig()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create();
+            Map<String,Object> config = index.getIndexConfiguration();
+            assertNotNull( config );
+            assertTrue( config.containsKey( "fulltext.analyzer" ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "my_index" );
+            Map<String,Object> config = index.getIndexConfiguration();
+            assertNotNull( config );
+            assertTrue( config.containsKey( "fulltext.analyzer" ) );
+            tx.commit();
+        }
+    }
+    // todo must be able ot set full text index config
+    // todo must not allow spatial values in index config
+    // todo must not allow temporal types in index config
+    // todo must not allow index config settings where values have wrong type
 
     private static String alreadyExistsIndexMessage( String indexName )
     {
