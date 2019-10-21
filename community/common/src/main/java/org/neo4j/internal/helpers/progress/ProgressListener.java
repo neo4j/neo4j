@@ -40,6 +40,13 @@ public interface ProgressListener
 
     void failed( Throwable e );
 
+    ProgressListener threadLocalReporter( int threshold );
+
+    default ProgressListener threadLocalReporter()
+    {
+        return threadLocalReporter( 1_000 );
+    }
+
     class Adapter implements ProgressListener
     {
         @Override
@@ -67,9 +74,62 @@ public interface ProgressListener
         public void failed( Throwable e )
         {
         }
+
+        @Override
+        public ProgressListener threadLocalReporter( int threshold )
+        {
+            return new ThreadLocalReporter( threshold, this );
+        }
     }
 
     ProgressListener NONE = new Adapter();
+
+    class ThreadLocalReporter extends Adapter
+    {
+        private final int threshold;
+        private final ProgressListener parent;
+        private int localUnreportedProgress;
+
+        ThreadLocalReporter( int threshold, ProgressListener parent )
+        {
+            this.threshold = threshold;
+            this.parent = parent;
+        }
+
+        @Override
+        public void add( long progress )
+        {
+            localUnreportedProgress += progress;
+            if ( localUnreportedProgress >= threshold )
+            {
+                reportToParent();
+            }
+        }
+
+        @Override
+        public void done()
+        {
+            reportToParent();
+        }
+
+        private void reportToParent()
+        {
+            parent.add( localUnreportedProgress );
+            localUnreportedProgress = 0;
+        }
+
+        @Override
+        public void failed( Throwable e )
+        {
+            parent.failed( e );
+        }
+
+        @Override
+        public ProgressListener threadLocalReporter( int threshold )
+        {
+            return this;
+        }
+    }
 
     class SinglePartProgressListener extends Adapter
     {

@@ -333,6 +333,49 @@ class ProgressMonitorTest
         }
     }
 
+    @Test
+    void shouldAllowConcurrentProgressReportingForMultipartProgressWithLocalReporting( TestInfo testInfo )
+    {
+        // given
+        ProgressMonitorFactory.MultiPartBuilder builder = factory.multipleParts( testInfo.getDisplayName() );
+        int numberOfThreads = 4;
+        int localReportingSize = 2;
+        int part1ReportCount = 12345;
+        int part2ReportCount = 54321;
+        int part1TotalCount = numberOfThreads * part1ReportCount * localReportingSize;
+        int part2TotalCount = numberOfThreads * part2ReportCount * localReportingSize;
+        ProgressListener part1 = builder.progressForPart( "part1", part1TotalCount );
+        ProgressListener part2 = builder.progressForPart( "part2", part2TotalCount );
+
+        // when
+        Race race = new Race();
+        race.addContestants( numberOfThreads, () ->
+        {
+            ProgressListener local = part1.threadLocalReporter( localReportingSize );
+            for ( int i = 0; i < part1ReportCount * localReportingSize; i++ )
+            {
+                local.add( 1 );
+            }
+            local.done();
+        } );
+        race.addContestants( numberOfThreads, () ->
+        {
+            ProgressListener local = part2.threadLocalReporter( localReportingSize );
+            for ( int i = 0; i < part2ReportCount * localReportingSize; i++ )
+            {
+                local.add( 1 );
+            }
+            local.done();
+        } );
+        race.goUnchecked();
+
+        // then
+        for ( int i = 0; i < 10; i++ )
+        {
+            verify( indicator ).progress( i, i + 1 );
+        }
+    }
+
     private static Indicator indicatorMock()
     {
         Indicator indicator = mock( Indicator.class, Mockito.CALLS_REAL_METHODS );
