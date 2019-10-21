@@ -128,12 +128,8 @@ public class User
     public static class Builder
     {
         private String name;
-        private Credential credential = Credential.INACCESSIBLE;
+        private Credential credential;
         private TreeSet<String> flags = new TreeSet<>();
-
-        public Builder()
-        {
-        }
 
         public Builder( String name, Credential credential )
         {
@@ -146,12 +142,6 @@ public class User
             name = base.name;
             credential = base.credential;
             flags.addAll( base.flags );
-        }
-
-        public Builder withName( String name )
-        {
-            this.name = name;
-            return this;
         }
 
         public Builder withCredentials( Credential creds )

@@ -56,9 +56,7 @@ public class UserSerialization extends FileRepositorySerializer<User>
             ) );
         }
 
-        User.Builder b = new User.Builder()
-                .withName( parts[0] )
-                .withCredentials( deserializeCredentials( parts[1], lineNumber ) );
+        User.Builder b = new User.Builder( parts[0], deserializeCredentials( parts[1], lineNumber ) );
 
         for ( String flag : parts[2].split( ",", -1 ) )
         {

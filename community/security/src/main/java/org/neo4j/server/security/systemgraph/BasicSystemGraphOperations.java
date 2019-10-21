@@ -112,18 +112,14 @@ public class BasicSystemGraphOperations
 
                 if ( suspended )
                 {
-                    user[0] = new User.Builder()
-                            .withName( username )
-                            .withCredentials( credential )
+                    user[0] = new User.Builder( username, credential )
                             .withRequiredPasswordChange( requirePasswordChange )
                             .withFlag( BasicSystemGraphRealm.IS_SUSPENDED )
                             .build();
                 }
                 else
                 {
-                    user[0] = new User.Builder()
-                            .withName( username )
-                            .withCredentials( credential )
+                    user[0] = new User.Builder( username, credential )
                             .withRequiredPasswordChange( requirePasswordChange )
                             .withoutFlag( BasicSystemGraphRealm.IS_SUSPENDED )
                             .build();

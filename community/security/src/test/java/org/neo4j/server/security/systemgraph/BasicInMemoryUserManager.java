@@ -74,9 +74,7 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
             passwordPolicy.validatePassword( initialPassword );
 
             Credential credential = SystemGraphCredential.createCredentialForPassword( initialPassword, secureHasher );
-            User user = new User.Builder()
-                    .withName( username )
-                    .withCredentials( credential )
+            User user = new User.Builder( username, credential )
                     .withRequiredPasswordChange( requirePasswordChange )
                     .withoutFlag( IS_SUSPENDED )
                     .build();
