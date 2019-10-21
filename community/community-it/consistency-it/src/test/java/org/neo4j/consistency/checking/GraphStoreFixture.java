@@ -223,7 +223,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
             labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors, readOnly );
             IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
             indexStatisticsStore = startIndexStatisticsStore( readOnly );
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore ), indexStatisticsStore );
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore ), indexStatisticsStore,
+                    idGeneratorFactory );
             storeReader = new RecordStorageReader( neoStore );
         }
         return directStoreAccess;

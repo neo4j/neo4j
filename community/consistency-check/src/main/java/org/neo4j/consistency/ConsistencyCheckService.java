@@ -196,8 +196,9 @@ public class ConsistencyCheckService
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
 
         LifeSupport life = new LifeSupport();
+        final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory =
-                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, logProvider );
+                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider );
         CountsManager countsManager = new CountsManager( pageCache, databaseLayout );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
@@ -250,7 +251,7 @@ public class ConsistencyCheckService
                 storeAccess = new StoreAccess( neoStores );
             }
             storeAccess.initialize();
-            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders, indexStatisticsStore );
+            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config );
             summary = check.execute( stores, countsManager, new DuplicatingLog( log, reportLog ) );
         }

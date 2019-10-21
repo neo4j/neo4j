@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -126,7 +127,8 @@ public class DetectAllRelationshipInconsistenciesIT
                     db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
                     db.getDependencyResolver().resolveDependency( IndexProviderMap.class ),
                     db.getDependencyResolver().resolveDependency( TokenHolders.class ),
-                    db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ) );
+                    db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ),
+                    db.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ) );
 
             int threads = random.intBetween( 2, 10 );
             FullCheck checker = new FullCheck( ConsistencyFlags.DEFAULT,

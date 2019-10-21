@@ -48,6 +48,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -179,7 +180,7 @@ public class FullCheck
             if ( checkIndexStructure )
             {
                 consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes,
-                        nativeStores.idGenerators(), reporter, progressFactory );
+                        allIdGenerators( directStoreAccess ), reporter, progressFactory );
             }
 
             List<ConsistencyCheckerTask> tasks =
@@ -191,6 +192,17 @@ public class FullCheck
         {
             throw new ConsistencyCheckIncompleteException( e );
         }
+    }
+
+    private List<IdGenerator> allIdGenerators( DirectStoreAccess directStoreAccess )
+    {
+        final IdType[] idTypes = IdType.values();
+        List<IdGenerator> idGenerators = new ArrayList<>();
+        for ( IdType idType : idTypes )
+        {
+            idGenerators.add( directStoreAccess.idGeneratorFactory().get( idType ) );
+        }
+        return idGenerators;
     }
 
     static RecordAccess recordAccess( StoreAccess store, CacheAccess cacheAccess )
