@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -304,7 +303,7 @@ class KernelTransactionTerminationTest
                     LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                    mock( AvailabilityGuard.class ), new TestDatabaseIdRepository().defaultDatabase(), EpochSupplier.NO_EPOCHS );
+                    new TestDatabaseIdRepository().defaultDatabase(), EpochSupplier.NO_EPOCHS );
 
             this.monitor = monitor;
         }

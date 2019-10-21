@@ -49,7 +49,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -390,11 +389,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * API call is made while this cursor is used, it might get corrupted and return wrong results.
      */
     PropertyCursor ambientPropertyCursor();
-
-    /**
-     * @return database availability guard of database this transaction was started against.
-     */
-    AvailabilityGuard getAvailabilityGuard();
 
     /**
      * @return whether or not this transaction is a schema transaction. Type of transaction is decided

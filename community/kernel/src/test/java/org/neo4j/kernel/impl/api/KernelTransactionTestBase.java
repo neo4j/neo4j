@@ -189,7 +189,7 @@ class KernelTransactionTestBase
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, availabilityGuard,
+                mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
                 new TestDatabaseIdRepository().defaultDatabase(), epochSupplier );
     }
 

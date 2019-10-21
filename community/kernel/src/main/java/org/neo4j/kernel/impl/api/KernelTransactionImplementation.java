@@ -72,7 +72,6 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -150,7 +149,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
-    private final AvailabilityGuard databaseAvailabilityGuard;
     private final DatabaseId databaseId;
     private final EpochSupplier epochSupplier;
     private final StorageReader storageReader;
@@ -210,7 +208,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            AvailabilityGuard databaseAvailabilityGuard, DatabaseId databaseId, EpochSupplier epochSupplier )
+            DatabaseId databaseId, EpochSupplier epochSupplier )
     {
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -225,7 +223,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
-        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.databaseId = databaseId;
         this.epochSupplier = epochSupplier;
         this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, databaseId );
@@ -442,12 +439,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertOpen();
         this.userMetaData = data;
-    }
-
-    @Override
-    public AvailabilityGuard getAvailabilityGuard()
-    {
-        return databaseAvailabilityGuard;
     }
 
     @Override

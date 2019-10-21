@@ -410,7 +410,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             transactionTracer, lockTracer, pageCursorTracerSupplier, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies, databaseAvailabilityGuard,
+                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies,
                             databaseId, epoch );
             this.transactions.add( tx );
             return tx;
