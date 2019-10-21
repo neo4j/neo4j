@@ -35,14 +35,10 @@ import org.neo4j.kernel.database.DatabaseId;
  */
 public interface BoltGraphDatabaseServiceSPI
 {
-    BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata );
+    BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
+            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata );
 
     boolean isPeriodicCommit( String query );
-
-    void awaitUpToDate( List<Bookmark> bookmarks, Duration perBookmarkTimeout );
-
-    long newestEncounteredTxId();
 
     DatabaseId getDatabaseId();
 }

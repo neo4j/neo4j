@@ -33,13 +33,13 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionStateMachineSPI
 {
-    void awaitUpToDate( List<Bookmark> bookmarks );
+    Bookmark newestBookmark( BoltTransaction tx );
 
-    Bookmark newestBookmark();
+    BoltTransaction beginTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetaData );
 
-    BoltTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
-
-    BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
+    BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetaData );
 
     boolean isPeriodicCommit( String query );
 

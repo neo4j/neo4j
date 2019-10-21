@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import java.time.Duration;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
@@ -37,10 +36,9 @@ public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionSta
     public TransactionStateMachineSPIProviderV4( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             String defaultDatabaseName,
             BoltChannel boltChannel,
-            Duration bookmarkAwaitDuration,
             SystemNanoClock clock )
     {
-        super( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, bookmarkAwaitDuration, clock );
+        super( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
     }
 
     @Override
@@ -53,6 +51,6 @@ public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionSta
     protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
-        return new TransactionStateMachineV4SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, bookmarkAwaitDuration, clock, resourceReleaseManger );
+        return new TransactionStateMachineV4SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
     }
 }

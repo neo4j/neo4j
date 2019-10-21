@@ -20,8 +20,10 @@
 package org.neo4j.bolt.dbapi.impl;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.dbapi.BoltTransaction;
+import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -33,12 +35,14 @@ public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl impleme
 {
     private volatile KernelTransaction transaction;
     private final InternalTransaction internalTransaction;
+    private final Supplier<BookmarkMetadata> bookmarkSupplier;
 
     public PeriodicBoltKernelTransaction( QueryExecutionEngine queryExecutionEngine,
-            TransactionalContextFactory transactionalContextFactory, InternalTransaction transaction )
+            TransactionalContextFactory transactionalContextFactory, InternalTransaction transaction, Supplier<BookmarkMetadata> bookmarkSupplier )
     {
         super( queryExecutionEngine, transactionalContextFactory, transaction );
         this.internalTransaction = transaction;
+        this.bookmarkSupplier = bookmarkSupplier;
     }
 
     @Override
@@ -69,5 +73,11 @@ public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl impleme
     public Optional<Status> getReasonIfTerminated()
     {
         return internalTransaction.kernelTransaction().getReasonIfTerminated();
+    }
+
+    @Override
+    public BookmarkMetadata getBookmark()
+    {
+        return bookmarkSupplier.get();
     }
 }

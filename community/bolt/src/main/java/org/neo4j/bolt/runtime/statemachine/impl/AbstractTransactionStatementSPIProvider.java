@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime.statemachine.impl;
 
-import java.time.Duration;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
@@ -40,18 +39,16 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 public abstract class AbstractTransactionStatementSPIProvider implements TransactionStateMachineSPIProvider
 {
-    protected final Duration bookmarkAwaitDuration;
     protected final SystemNanoClock clock;
     protected final BoltChannel boltChannel;
     protected final String defaultDatabaseName;
     private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
 
     public AbstractTransactionStatementSPIProvider( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, String defaultDatabaseName,
-            BoltChannel boltChannel, Duration bookmarkAwaitDuration, SystemNanoClock clock )
+            BoltChannel boltChannel, SystemNanoClock clock )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.defaultDatabaseName = defaultDatabaseName;
-        this.bookmarkAwaitDuration = bookmarkAwaitDuration;
         this.clock = clock;
         this.boltChannel = boltChannel;
     }

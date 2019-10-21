@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.Duration;
+
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
@@ -97,7 +99,7 @@ class BoltStateMachineFactoryImplTest
     {
         var config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
         var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
-        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), CLOCK );
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), CLOCK, Duration.ZERO );
         return new BoltStateMachineFactoryImpl( dbProvider, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
     }
 

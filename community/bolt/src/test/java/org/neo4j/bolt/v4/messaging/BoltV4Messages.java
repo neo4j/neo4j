@@ -22,6 +22,7 @@ package org.neo4j.bolt.v4.messaging;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
@@ -69,7 +70,7 @@ public class BoltV4Messages
 
     public static RequestMessage begin( DatabaseIdRepository repository, MapValue bookmarks ) throws BoltIOException
     {
-        var bookmarkList = new BookmarksParserV4( repository ).parseBookmarks( bookmarks );
+        var bookmarkList = new BookmarksParserV4( repository, CustomBookmarkFormatParser.DEFAULT ).parseBookmarks( bookmarks );
         return new BeginMessage( MapValue.EMPTY, bookmarkList, null, AccessMode.WRITE, Map.of(), ABSENT_DB_NAME );
     }
 

@@ -19,9 +19,11 @@
  */
 package org.neo4j.bolt.v4.runtime.bookmarking;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
@@ -45,10 +47,12 @@ public final class BookmarksParserV4 implements BookmarksParser
     private static final long ABSENT_BOOKMARK_ID = -1L;
 
     private final DatabaseIdRepository databaseIdRepository;
+    private final CustomBookmarkFormatParser customBookmarkFormatParser;
 
-    public BookmarksParserV4( DatabaseIdRepository databaseIdRepository )
+    public BookmarksParserV4( DatabaseIdRepository databaseIdRepository, CustomBookmarkFormatParser customBookmarkFormatParser )
     {
         this.databaseIdRepository = databaseIdRepository;
+        this.customBookmarkFormatParser = customBookmarkFormatParser;
     }
 
     @Override
@@ -77,41 +81,57 @@ public final class BookmarksParserV4 implements BookmarksParser
         DatabaseId userDbId = null;
         var maxUserDbTxId = ABSENT_BOOKMARK_ID;
 
+        List<String> customBookmarkStrings = new ArrayList<>();
+
         for ( var bookmark : bookmarks )
         {
             if ( bookmark != Values.NO_VALUE )
             {
-                var parsedBookmark = parse( bookmark );
+                var bookmarkString = toBookmarkString( bookmark );
 
-                if ( SYSTEM_DATABASE_ID.equals( parsedBookmark.databaseId ) )
+                if ( customBookmarkFormatParser.isCustomBookmark( bookmarkString ) )
                 {
-                    maxSystemDbTxId = Math.max( maxSystemDbTxId, parsedBookmark.txId );
+                    customBookmarkStrings.add( bookmarkString );
                 }
                 else
                 {
-                    if ( userDbId == null )
+                    var parsedBookmark = parse( bookmarkString );
+
+                    if ( SYSTEM_DATABASE_ID.equals( parsedBookmark.databaseId ) )
                     {
-                        userDbId = parsedBookmark.databaseId;
+                        maxSystemDbTxId = Math.max( maxSystemDbTxId, parsedBookmark.txId );
                     }
                     else
                     {
-                        assertSameDatabaseId( userDbId, parsedBookmark.databaseId, bookmarks );
+                        if ( userDbId == null )
+                        {
+                            userDbId = parsedBookmark.databaseId;
+                        }
+                        else
+                        {
+                            assertSameDatabaseId( userDbId, parsedBookmark.databaseId, bookmarks );
+                        }
+                        maxUserDbTxId = Math.max( maxUserDbTxId, parsedBookmark.txId );
                     }
-                    maxUserDbTxId = Math.max( maxUserDbTxId, parsedBookmark.txId );
                 }
             }
         }
 
-        return buildBookmarks( SYSTEM_DATABASE_ID, maxSystemDbTxId, userDbId, maxUserDbTxId );
+        if ( customBookmarkStrings.isEmpty() )
+        {
+            return buildBookmarks( SYSTEM_DATABASE_ID, maxSystemDbTxId, userDbId, maxUserDbTxId );
+        }
+
+        if ( maxUserDbTxId != ABSENT_BOOKMARK_ID )
+        {
+            throw newInvalidBookmarkMixtureError( bookmarks );
+        }
+
+        return customBookmarkFormatParser.parse( customBookmarkStrings, maxSystemDbTxId );
     }
 
-    private ParsedBookmark parse( AnyValue bookmark ) throws BookmarkParsingException
+    private ParsedBookmark parse( String bookmarkString ) throws BookmarkParsingException
     {
-        if ( !(bookmark instanceof TextValue) )
-        {
-            throw newInvalidSingleBookmarkError( bookmark );
-        }
-        var bookmarkString = ((TextValue) bookmark).stringValue();
         var split = bookmarkString.split( ":" );
         if ( split.length != 2 )
         {
@@ -124,6 +144,15 @@ public final class BookmarksParserV4 implements BookmarksParser
         var txId = parseTxId( split[1], bookmarkString );
 
         return new ParsedBookmark( databaseId, txId );
+    }
+
+    private String toBookmarkString( AnyValue bookmark ) throws BookmarkParsingException
+    {
+        if ( !(bookmark instanceof TextValue) )
+        {
+            throw newInvalidSingleBookmarkError( bookmark );
+        }
+        return  ((TextValue) bookmark).stringValue();
     }
 
     private static UUID parseDatabaseId( String uuid, String bookmark ) throws BookmarkParsingException

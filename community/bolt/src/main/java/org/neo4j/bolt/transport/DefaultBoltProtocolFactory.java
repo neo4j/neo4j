@@ -21,6 +21,7 @@ package org.neo4j.bolt.transport;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.v3.BoltProtocolV3;
@@ -37,12 +38,12 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     private final BookmarksParserV4 bookmarksParserV4;
 
     public DefaultBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            LogService logService, DatabaseIdRepository databaseIdRepository )
+            LogService logService, DatabaseIdRepository databaseIdRepository, CustomBookmarkFormatParser customBookmarkFormatParser )
     {
         this.connectionFactory = connectionFactory;
         this.stateMachineFactory = stateMachineFactory;
         this.logService = logService;
-        this.bookmarksParserV4 = new BookmarksParserV4( databaseIdRepository );
+        this.bookmarksParserV4 = new BookmarksParserV4( databaseIdRepository, customBookmarkFormatParser );
     }
 
     @Override

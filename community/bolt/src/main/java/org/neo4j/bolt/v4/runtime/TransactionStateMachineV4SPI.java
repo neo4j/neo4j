@@ -20,12 +20,11 @@
 package org.neo4j.bolt.v4.runtime;
 
 import java.time.Clock;
-import java.time.Duration;
-import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
+import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.Bookmark;
@@ -42,24 +41,18 @@ public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachin
 {
     private final DatabaseId databaseId;
 
-    public TransactionStateMachineV4SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration txAwaitDuration,
-            SystemNanoClock clock, StatementProcessorReleaseManager resourceReleaseManger )
+    public TransactionStateMachineV4SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
-        super( boltGraphDatabaseServiceSPI, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
+        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
         this.databaseId = boltGraphDatabaseServiceSPI.getDatabaseId();
     }
 
     @Override
-    public void awaitUpToDate( List<Bookmark> bookmarks )
+    public Bookmark newestBookmark( BoltTransaction tx )
     {
-        awaitAllBookmarks( bookmarks );
-    }
-
-    @Override
-    public Bookmark newestBookmark()
-    {
-        var txId = super.newestEncounteredTxId();
-        return new BookmarkWithDatabaseId( txId, databaseId );
+        var bookmarkMetadata = tx.getBookmark();
+        return bookmarkMetadata.toBookmark( BookmarkWithDatabaseId::new );
     }
 
     @Override

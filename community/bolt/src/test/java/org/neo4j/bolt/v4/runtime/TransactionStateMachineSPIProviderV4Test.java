@@ -109,7 +109,7 @@ class TransactionStateMachineSPIProviderV4Test
     {
         var clock = mock( SystemNanoClock.class );
         var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, NullLogService.getInstance() );
-        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), clock );
-        return new TransactionStateMachineSPIProviderV4( dbProvider, "neo4j", mock( BoltChannel.class ), Duration.ZERO, clock );
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), clock, Duration.ZERO );
+        return new TransactionStateMachineSPIProviderV4( dbProvider, "neo4j", mock( BoltChannel.class ), clock );
     }
 }

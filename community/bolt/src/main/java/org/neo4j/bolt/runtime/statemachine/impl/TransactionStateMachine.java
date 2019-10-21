@@ -97,8 +97,9 @@ public class TransactionStateMachine implements StatementProcessor
     {
         try
         {
+            BoltTransaction tx = ctx.currentTransaction;
             state = state.commitTransaction( ctx, spi );
-            return newestBookmark( spi );
+            return newestBookmark( spi, tx );
         }
         catch ( TransactionFailureException ex )
         {
@@ -186,8 +187,7 @@ public class TransactionStateMachine implements StatementProcessor
                     State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
                             AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
                     {
-                        spi.awaitUpToDate( bookmarks );
-                        beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata, false );
+                        beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, false );
                         return EXPLICIT_TRANSACTION;
                     }
 
@@ -196,16 +196,15 @@ public class TransactionStateMachine implements StatementProcessor
                             Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
                             throws KernelException
                     {
-                        spi.awaitUpToDate( bookmarks );
-                        execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ), txTimeout, accessMode, txMetadata );
+                        execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ), bookmarks, txTimeout, accessMode, txMetadata );
                         return AUTO_COMMIT;
                     }
 
                     void execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, boolean isPeriodicCommit,
-                            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
+                            List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
                             throws KernelException
                     {
-                        beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata, isPeriodicCommit );
+                        beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, isPeriodicCommit );
 
                         boolean failed = true;
                         try
@@ -232,14 +231,14 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                     }
 
-                    private void beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Duration txTimeout,
+                    private void beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
                             AccessMode accessMode, Map<String,Object> txMetadata, boolean isPeriodicCommit )
                     {
                         try
                         {
                             ctx.currentTransaction = isPeriodicCommit ?
-                                                     spi.beginPeriodicCommitTransaction( ctx.loginContext, txTimeout, accessMode, txMetadata ) :
-                                                     spi.beginTransaction( ctx.loginContext, txTimeout, accessMode, txMetadata );
+                                                     spi.beginPeriodicCommitTransaction( ctx.loginContext, bookmarks, txTimeout, accessMode, txMetadata ) :
+                                                     spi.beginTransaction( ctx.loginContext, bookmarks, txTimeout, accessMode, txMetadata );
                         }
                         catch ( Throwable e )
                         {
@@ -265,9 +264,10 @@ public class TransactionStateMachine implements StatementProcessor
                             consumeResult( ctx, statementId, outcome, resultConsumer );
                             if ( !resultConsumer.hasMore() )
                             {
+                                var tx = ctx.currentTransaction;
                                 closeTransaction( ctx, spi, true );
                                 success = true;
-                                return newestBookmark( spi );
+                                return newestBookmark( spi, tx );
                             }
                             success = true;
                         }
@@ -542,9 +542,9 @@ public class TransactionStateMachine implements StatementProcessor
 
     }
 
-    private static Bookmark newestBookmark( TransactionStateMachineSPI spi )
+    private static Bookmark newestBookmark( TransactionStateMachineSPI spi, BoltTransaction tx )
     {
-        return spi.newestBookmark();
+        return spi.newestBookmark( tx );
     }
 
     static class MutableTransactionState

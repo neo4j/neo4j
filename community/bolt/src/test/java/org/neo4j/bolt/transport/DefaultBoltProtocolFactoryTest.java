@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
@@ -54,7 +55,7 @@ class DefaultBoltProtocolFactoryTest
         BoltChannel channel = BoltTestUtil.newTestBoltChannel();
         BoltProtocolFactory factory =
                 new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance(), new TestDatabaseIdRepository() );
+                        NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
 
         BoltProtocol protocol = factory.create( protocolVersion, channel );
 
@@ -77,8 +78,8 @@ class DefaultBoltProtocolFactoryTest
         BoltConnection connection = mock( BoltConnection.class );
         when( connectionFactory.newConnection( boltChannel, stateMachine ) ).thenReturn( connection );
 
-        BoltProtocolFactory factory =
-                new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance(), new TestDatabaseIdRepository() );
+        BoltProtocolFactory factory = new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance(),
+                new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
 
         BoltProtocol protocol = factory.create( protocolVersion, boltChannel );
 

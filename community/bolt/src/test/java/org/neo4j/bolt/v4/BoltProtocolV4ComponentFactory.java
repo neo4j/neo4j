@@ -21,6 +21,7 @@ package org.neo4j.bolt.v4;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
@@ -59,7 +60,7 @@ public class BoltProtocolV4ComponentFactory
     public static BoltRequestMessageReader requestMessageReader( BoltStateMachine stateMachine )
     {
         return new BoltRequestMessageReaderV4( new SynchronousBoltConnection( stateMachine ), mock( BoltResponseMessageWriter.class ),
-                new BookmarksParserV4( new TestDatabaseIdRepository() ), NullLogService.getInstance() );
+                new BookmarksParserV4( new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT ), NullLogService.getInstance() );
     }
 
     public static byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException

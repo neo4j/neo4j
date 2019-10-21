@@ -21,11 +21,12 @@ package org.neo4j.bolt.v4.runtime;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.BoltTransaction;
+import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
@@ -35,6 +36,8 @@ import org.neo4j.time.SystemNanoClock;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,44 +47,44 @@ class TransactionStateMachineV4SPITest
     private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     @Test
-    void shouldCheckDatabaseIdInBookmark() throws Throwable
+    void shouldCheckDatabaseIdInBookmark()
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         var databaseId = databaseIdRepository.getRaw( "molly" );
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
-        var bookmarkAwaitDuration = Duration.ofMinutes( 10 );
-        var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), bookmarkAwaitDuration, mock( SystemNanoClock.class ),
+        var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
                 mock( StatementProcessorReleaseManager.class ) );
 
         var bookmarks = List.<Bookmark>of( new BookmarkWithDatabaseId( 42, databaseId ) );
 
         // When
-        spi.awaitUpToDate( bookmarks );
+        spi.beginTransaction( null,  bookmarks, null, null, null );
 
         // Then
-        verify( dbSpi ).awaitUpToDate( bookmarks, bookmarkAwaitDuration );
+        verify( dbSpi ).beginTransaction( any(), any(),any(), eq(bookmarks), any(), any(), any());
     }
 
     @Test
-    void shouldReturnBookmarkWithPrefix() throws Throwable
+    void shouldReturnBookmarkWithPrefix()
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        when( dbSpi.newestEncounteredTxId() ).thenReturn( 42L );
+        var tx = mock( BoltTransaction.class );
+
         var databaseId = databaseIdRepository.getRaw( "molly" );
+        when( tx.getBookmark() ).thenReturn( new BookmarkMetadata( 42L, databaseId ));
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
-        var txDuration = Duration.ofMinutes( 10 );
-        var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), txDuration, mock( SystemNanoClock.class ),
+        var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
                 mock( StatementProcessorReleaseManager.class ) );
 
         // When
-        var bookmark = spi.newestBookmark();
+        var bookmark = spi.newestBookmark( tx );
 
         // Then
-        verify( dbSpi ).newestEncounteredTxId();
+        verify( tx ).getBookmark();
         assertThat( bookmark, instanceOf( BookmarkWithDatabaseId.class ) );
         assertThat( bookmark.txId(), equalTo( 42L ) );
     }

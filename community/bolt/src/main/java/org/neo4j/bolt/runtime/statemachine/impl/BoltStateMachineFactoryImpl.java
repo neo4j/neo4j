@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.runtime.statemachine.impl;
 
-import java.time.Duration;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
@@ -76,24 +74,15 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
-        var transactionSpiProvider = new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel,
-                getBookmarkAwaitDuration(), clock );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );
     }
 
     private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
     {
-        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel,
-                getBookmarkAwaitDuration(), clock );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV4( boltSPI, boltChannel, clock );
-    }
-
-    private Duration getBookmarkAwaitDuration()
-    {
-        var bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
-
-        return Duration.ofMillis( bookmarkReadyTimeout );
     }
 }

@@ -55,6 +55,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.time.Duration.ofSeconds;
+
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
     private final Supplier<TestDatabaseManagementServiceBuilder> builderFactory;
@@ -115,7 +117,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         SystemNanoClock clock = Clocks.nanoClock();
         var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
         BoltGraphDatabaseManagementServiceSPI databaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService,
-                reconciledTxTracker, new Monitors(), clock );
+                reconciledTxTracker, new Monitors(), clock, ofSeconds( 30 ) );
         boltFactory = new BoltStateMachineFactoryImpl(
                 databaseManagementService,
                 authentication,

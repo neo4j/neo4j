@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.dbapi.impl;
 
+import java.time.Duration;
+
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.txtracking.ReconciledTransactionTracker;
@@ -36,12 +38,14 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
 {
     private final DatabaseManagementService managementService;
     private final TransactionIdTracker transactionIdTracker;
+    private final Duration bookmarkAwaitDuration;
 
     public BoltKernelDatabaseManagementServiceProvider( DatabaseManagementService managementService,
-            ReconciledTransactionTracker reconciledTxTracker, Monitors monitors, SystemNanoClock clock )
+            ReconciledTransactionTracker reconciledTxTracker, Monitors monitors, SystemNanoClock clock, Duration bookmarkAwaitDuration )
     {
         this.managementService = managementService;
         this.transactionIdTracker = new TransactionIdTracker( managementService, reconciledTxTracker, monitors, clock );
+        this.bookmarkAwaitDuration = bookmarkAwaitDuration;
     }
 
     @Override
@@ -53,6 +57,6 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
         {
             throw new UnavailableException( format( "Database `%s` is unavailable.", databaseName ) );
         }
-        return new BoltKernelGraphDatabaseServiceProvider( databaseAPI, transactionIdTracker );
+        return new BoltKernelGraphDatabaseServiceProvider( databaseAPI, transactionIdTracker, bookmarkAwaitDuration );
     }
 }

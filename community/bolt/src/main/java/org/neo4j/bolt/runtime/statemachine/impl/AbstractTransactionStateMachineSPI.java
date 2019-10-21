@@ -49,53 +49,38 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 public abstract class AbstractTransactionStateMachineSPI implements TransactionStateMachineSPI
 {
     private final BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI;
-    private final Duration bookmarkAwaitDuration;
     private final Clock clock;
     private final BoltChannel boltChannel;
     private final StatementProcessorReleaseManager resourceReleaseManager;
 
-    public AbstractTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration bookmarkAwaitDuration,
-            SystemNanoClock clock, StatementProcessorReleaseManager resourceReleaseManger )
+    public AbstractTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
         this.boltGraphDatabaseServiceSPI = boltGraphDatabaseServiceSPI;
         this.boltChannel = boltChannel;
-        this.bookmarkAwaitDuration = bookmarkAwaitDuration;
         this.clock = clock;
         this.resourceReleaseManager = resourceReleaseManger;
     }
 
     @Override
-    public void awaitUpToDate( List<Bookmark> bookmarks )
+    public Bookmark newestBookmark( BoltTransaction tx )
     {
-        if ( !bookmarks.isEmpty() && bookmarks.size() != 1 )
-        {
-            throw new IllegalArgumentException( "Expected zero or one bookmark. Received: " + bookmarks );
-        }
-        awaitAllBookmarks( bookmarks );
+        var bookmarkMetadata = tx.getBookmark();
+        return bookmarkMetadata.toBookmark( ( txId, dbId ) -> new BookmarkWithPrefix( txId ) );
     }
 
     @Override
-    public Bookmark newestBookmark()
+    public BoltTransaction beginTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetadata )
     {
-        var txId = newestEncounteredTxId();
-        return new BookmarkWithPrefix( txId );
-    }
-
-    protected long newestEncounteredTxId()
-    {
-        return boltGraphDatabaseServiceSPI.newestEncounteredTxId();
+        return boltGraphDatabaseServiceSPI.beginTransaction( explicit, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata );
     }
 
     @Override
-    public BoltTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
+    public BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetadata )
     {
-        return boltGraphDatabaseServiceSPI.beginTransaction( explicit, loginContext, boltChannel.info(), txTimeout, accessMode, txMetadata  );
-    }
-
-    @Override
-    public BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
-    {
-        return boltGraphDatabaseServiceSPI.beginTransaction( implicit, loginContext, boltChannel.info(), txTimeout, accessMode, txMetadata  );
+        return boltGraphDatabaseServiceSPI.beginTransaction( implicit, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata );
     }
 
     @Override
@@ -123,11 +108,6 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     }
 
     protected abstract BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor );
-
-    protected final void awaitAllBookmarks( List<Bookmark> bookmarks )
-    {
-        boltGraphDatabaseServiceSPI.awaitUpToDate( bookmarks, bookmarkAwaitDuration );
-    }
 
     public abstract class AbstractBoltResultHandle implements BoltResultHandle
     {

@@ -19,13 +19,20 @@
  */
 package org.neo4j.bolt.v4.runtime.bookmarking;
 
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.kernel.database.DatabaseId;
@@ -42,6 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmark;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmarkMixture;
 import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
@@ -49,7 +57,7 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 class BookmarksParserV4Test
 {
     private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final BookmarksParser parser = new BookmarksParserV4( databaseIdRepository );
+    private final BookmarksParser parser = new BookmarksParserV4( databaseIdRepository, CustomBookmarkFormatParser.DEFAULT );
 
     @Test
     void shouldIgnoreSingleBookmarkMetadata() throws Exception
@@ -158,7 +166,7 @@ class BookmarksParserV4Test
             }
         };
 
-        var parser = new BookmarksParserV4( unknownDatabaseIdRepo );
+        var parser = new BookmarksParserV4( unknownDatabaseIdRepo, CustomBookmarkFormatParser.DEFAULT );
 
         var bookmarkString = bookmarkString();
 
@@ -302,6 +310,64 @@ class BookmarksParserV4Test
         assertTrue( error.causesFailureMessage() );
     }
 
+    @Test
+    void shouldParseCustomBookmarks() throws BoltIOException
+    {
+        var parser = new BookmarksParserV4( databaseIdRepository, new CustomParser() );
+
+        var metadata = metadata( List.of( customBookmarkString( "text1" ), customBookmarkString( "text2" ) ) );
+
+        var bookmarks = parser.parseBookmarks( metadata );
+
+        assertEquals( List.of( new CustomBookmark( "text1" ), new CustomBookmark( "text2" ) ), bookmarks );
+    }
+
+    @Test
+    void shouldParseCustomBookmarksAndSystemDbBookmark() throws BoltIOException
+    {
+        var parser = new BookmarksParserV4( databaseIdRepository, new CustomParser() );
+
+        var metadata = metadata( List.of(
+                customBookmarkString( "text1" ),
+                bookmarkString( 1234, SYSTEM_DATABASE_ID ),
+                customBookmarkString( "text2" )
+                ) );
+
+        var bookmarks = parser.parseBookmarks( metadata );
+
+        assertEquals( List.of(
+                new CustomBookmark( "text1" ),
+                new CustomBookmark( "text2" ),
+                new BookmarkWithDatabaseId( 1234, SYSTEM_DATABASE_ID )
+        ), bookmarks );
+    }
+
+    @Test
+    void shouldParseCustomBookmarksMixUp()
+    {
+        var parser = new BookmarksParserV4( databaseIdRepository, new CustomParser() );
+
+        var metadata = metadata( List.of(
+                customBookmarkString( "text1" ),
+                bookmarkString( 1234, databaseIdRepository.getRaw( "molly" ) ),
+                customBookmarkString( "text2" )
+        ) );
+
+        try
+        {
+            parser.parseBookmarks( metadata );
+            fail( "Exception expected" );
+        }
+        catch ( BookmarkParsingException e )
+        {
+            assertThat( e.getMessage(), StringContains.containsString( "Supplied bookmarks are from different databases" ) );
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception", e );
+        }
+    }
+
     private static MapValue metadata( Object bookmarks )
     {
         return singletonMap( "bookmarks", bookmarks );
@@ -319,6 +385,11 @@ class BookmarksParserV4Test
         return new BookmarkWithDatabaseId( txId, databaseId ).toString();
     }
 
+    private static String customBookmarkString( String text )
+    {
+        return "custom:" + text;
+    }
+
     /**
      * Create a random bookmark
      */
@@ -326,5 +397,92 @@ class BookmarksParserV4Test
     {
         var dbId = databaseIdRepository.getRaw( "molly" );
         return bookmarkString( 123, dbId );
+    }
+
+    private static class CustomParser implements CustomBookmarkFormatParser
+    {
+
+        @Override
+        public boolean isCustomBookmark( String bookmark )
+        {
+            return bookmark.startsWith( "custom:" );
+        }
+
+        @Override
+        public List<Bookmark> parse( List<String> customBookmarks, long systemDbTxId )
+        {
+            List<Bookmark> bookmarks = customBookmarks.stream()
+                    .map( bookmark -> bookmark.substring( "custom:".length() ) )
+                    .map( CustomBookmark::new )
+                    .collect( Collectors.toList() );
+
+            if ( systemDbTxId != -1 )
+            {
+                bookmarks.add( new BookmarkWithDatabaseId( systemDbTxId, SYSTEM_DATABASE_ID ) );
+            }
+
+            return bookmarks;
+        }
+    }
+
+    private static class CustomBookmark implements Bookmark
+    {
+
+        private final String text;
+
+        CustomBookmark( String text )
+        {
+            this.text = text;
+        }
+
+        @Override
+        public long txId()
+        {
+            throw new IllegalStateException( "ID requested on a custom bookmark" );
+        }
+
+        @Override
+        public DatabaseId databaseId()
+        {
+            throw new IllegalStateException( "Database ID requested on a custom bookmark" );
+        }
+
+        @Override
+        public void attachTo( BoltResponseHandler state )
+        {
+
+        }
+
+        public String getText()
+        {
+            return text;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            CustomBookmark that = (CustomBookmark) o;
+            return Objects.equals( text, that.text );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( text );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "CustomBookmark{" + "text='" + text + '\'' + '}';
+        }
     }
 }

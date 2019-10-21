@@ -219,7 +219,8 @@ public class BoltServer extends LifecycleAdapter
 
     private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory )
     {
-        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService, databaseIdRepository );
+        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService, databaseIdRepository,
+                boltGraphDatabaseManagementServiceSPI.getCustomBookmarkFormatParser() );
     }
 
     private BoltStateMachineFactory createBoltStateMachineFactory( Authentication authentication, SystemNanoClock clock )

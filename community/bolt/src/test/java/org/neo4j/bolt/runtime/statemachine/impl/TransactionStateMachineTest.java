@@ -38,21 +38,15 @@ import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.MutableTransactionState;
 import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.StatementOutcome;
-import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
-import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
-import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -150,53 +144,6 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldAwaitSingleBookmark() throws Exception
-    {
-        MapValue params = map( "bookmark", "neo4j:bookmark:v1:tx15" );
-        var bookmarks = BookmarksParserV3.INSTANCE.parseBookmarks( params );
-        beginTx( stateMachine, bookmarks );
-        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithPrefix( 15 ) ) );
-    }
-
-    @Test
-    void shouldAwaitMultipleBookmarks() throws Exception
-    {
-        MapValue params = map( "bookmarks", asList(
-                "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx9" )
-        );
-        var bookmarks = BookmarksParserV3.INSTANCE.parseBookmarks( params );
-        beginTx( stateMachine, bookmarks );
-        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithPrefix( 92 ) ) );
-    }
-
-    @Test
-    void shouldAwaitMultipleNewBookmarks() throws Exception
-    {
-        var databaseIdRepository = new TestDatabaseIdRepository();
-        var databaseId = databaseIdRepository.getRaw( "kittenDB" );
-        var uuid = databaseId.uuid().toString();
-
-        MapValue params = map( "bookmarks", asList( uuid + ":15", uuid + ":5", uuid + ":92", uuid + ":9" ) );
-
-        var bookmarksParser = new BookmarksParserV4( databaseIdRepository );
-        var bookmarks = bookmarksParser.parseBookmarks( params );
-        beginTx( stateMachine, bookmarks );
-
-        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithDatabaseId( 92, databaseId ) ) );
-    }
-
-    @Test
-    void shouldAwaitMultipleBookmarksWhenBothSingleAndMultipleSupplied() throws Exception
-    {
-        MapValue params = map(
-                "bookmark", "neo4j:bookmark:v1:tx42",
-                "bookmarks", asList( "neo4j:bookmark:v1:tx47", "neo4j:bookmark:v1:tx67", "neo4j:bookmark:v1:tx45" )
-        );
-        beginTx( stateMachine, BookmarksParserV3.INSTANCE.parseBookmarks( params ) );
-        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithPrefix( 67 ) ) );
-    }
-
-    @Test
     void shouldStartWithAutoCommitState()
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
@@ -237,7 +184,7 @@ class TransactionStateMachineTest
         doThrow( new RuntimeException( "You shall not pass" ) ).doThrow( new RuntimeException( "Not pass twice" ) ).when( resultHandle ).terminate();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any() , anyString(), any() ) ).thenReturn( resultHandle );
         when( stateMachineSPI.supportsNestedStatementsInTransaction() ).thenReturn( true ); // V4
 
@@ -426,7 +373,7 @@ class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
         final BoltTransaction periodicTransaction = mock( BoltTransaction.class );
-        when( stateMachineSPI.beginPeriodicCommitTransaction( any(), any(), any(), any() )).thenReturn( periodicTransaction );
+        when( stateMachineSPI.beginPeriodicCommitTransaction( any(), any(), any(), any(), any() )).thenReturn( periodicTransaction );
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -438,7 +385,7 @@ class TransactionStateMachineTest
         InOrder inOrder = inOrder( stateMachineSPI );
         inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
         // implicit transaction was started for periodic query execution
-        inOrder.verify( stateMachineSPI ).beginPeriodicCommitTransaction( any( LoginContext.class ), any(), any(), any() );
+        inOrder.verify( stateMachineSPI ).beginPeriodicCommitTransaction( any( LoginContext.class ), any(), any(), any(), any() );
         // periodic commit query was executed after specific transaction started
         inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ) );
     }
@@ -519,7 +466,7 @@ class TransactionStateMachineTest
         BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
@@ -530,7 +477,7 @@ class TransactionStateMachineTest
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;

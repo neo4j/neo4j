@@ -28,4 +28,15 @@ import org.neo4j.kernel.availability.UnavailableException;
 public interface BoltGraphDatabaseManagementServiceSPI
 {
     BoltGraphDatabaseServiceSPI database( String databaseName ) throws UnavailableException, DatabaseNotFoundException;
+
+    /**
+     * The state-carrying part of a bookmark consists of a long representing a transaction ID, if a transaction state cannot be represented as a single long,
+     * a custom format can be used for bookmarks. This method returns a parsing part of the custom bookmark logic.
+     * The serialization part is represented by {@link BookmarkMetadata#toBookmark(java.util.function.BiFunction)}
+     * and {@link org.neo4j.bolt.runtime.Bookmark#attachTo(org.neo4j.bolt.runtime.BoltResponseHandler)}
+     */
+    default CustomBookmarkFormatParser getCustomBookmarkFormatParser()
+    {
+        return CustomBookmarkFormatParser.DEFAULT;
+    }
 }

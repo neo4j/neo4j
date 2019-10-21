@@ -22,6 +22,7 @@ package org.neo4j.bolt.v4;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
@@ -38,7 +39,7 @@ import static org.mockito.Mockito.mock;
 
 class BoltProtocolV4Test
 {
-    private final BookmarksParserV4 bookmarksParser = new BookmarksParserV4( new TestDatabaseIdRepository() );
+    private final BookmarksParserV4 bookmarksParser = new BookmarksParserV4( new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
 
     @Test
     void shouldCreatePackForBoltV4() throws Throwable

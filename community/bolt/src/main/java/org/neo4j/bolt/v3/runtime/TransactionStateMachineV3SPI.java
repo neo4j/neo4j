@@ -21,31 +21,61 @@ package org.neo4j.bolt.v3.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
+import org.neo4j.bolt.dbapi.BoltTransaction;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractTransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltAdapterSubscriber;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV3SPI extends AbstractTransactionStateMachineSPI
 {
-    public TransactionStateMachineV3SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration txAwaitDuration,
-            SystemNanoClock clock, StatementProcessorReleaseManager resourceReleaseManger )
+    public TransactionStateMachineV3SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
-        super( boltGraphDatabaseServiceSPI, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
+        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
+    }
+
+    @Override
+    public BoltTransaction beginTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetadata )
+    {
+        checkBookmarks( bookmarks );
+        return super.beginTransaction( loginContext, bookmarks, txTimeout, accessMode, txMetadata );
+    }
+
+    @Override
+    public BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetadata )
+    {
+        checkBookmarks( bookmarks );
+        return super.beginPeriodicCommitTransaction( loginContext, bookmarks, txTimeout, accessMode, txMetadata );
     }
 
     @Override
     protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
     {
         return new BoltResultHandleV3( statement, params, boltQueryExecutor );
+    }
+
+    private void checkBookmarks( List<Bookmark> bookmarks )
+    {
+        if ( !bookmarks.isEmpty() && bookmarks.size() != 1 )
+        {
+            throw new IllegalArgumentException( "Expected zero or one bookmark. Received: " + bookmarks );
+        }
     }
 
     private class BoltResultHandleV3 extends AbstractBoltResultHandle

@@ -268,7 +268,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
             DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService )
     {
+        var config = dependencies.resolveDependency( Config.class );
+        var bookmarkAwaitDuration =  config.get( GraphDatabaseSettings.bookmark_ready_timeout );
         var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, logService );
-        return new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, monitors, clock );
+        return new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, monitors, clock, bookmarkAwaitDuration );
     }
 }

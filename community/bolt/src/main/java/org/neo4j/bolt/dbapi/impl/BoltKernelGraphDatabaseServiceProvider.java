@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltTransaction;
+import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
@@ -48,14 +49,16 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionalContextFactory transactionalContextFactory;
     private final DatabaseId databaseId;
+    private final Duration perBookmarkTimeout;
 
-    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker )
+    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker, Duration perBookmarkTimeout )
     {
         this.databaseAPI = databaseAPI;
         this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
         this.transactionIdTracker = transactionIdTracker;
         this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
         this.databaseId = resolveDependency( databaseAPI, Database.class ).getDatabaseId();
+        this.perBookmarkTimeout = perBookmarkTimeout;
     }
 
     private static <T> T resolveDependency( GraphDatabaseAPI databaseContext, Class<T> clazz )
@@ -69,8 +72,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         return Neo4jTransactionalContextFactory.create( queryService );
     }
 
-    @Override
-    public void awaitUpToDate( List<Bookmark> bookmarks, Duration perBookmarkTimeout )
+    private void awaitUpToDate( List<Bookmark> bookmarks )
     {
         for ( var bookmark : bookmarks )
         {
@@ -79,24 +81,25 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         }
     }
 
-    @Override
-    public long newestEncounteredTxId()
+    private BookmarkMetadata bookmarkWithTxId()
     {
-        return transactionIdTracker.newestTransactionId( databaseId );
+        return new BookmarkMetadata( transactionIdTracker.newestTransactionId( databaseId ), databaseId );
     }
 
     @Override
-    public BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata )
+    public BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
+            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
     {
+        awaitUpToDate( bookmarks );
         InternalTransaction topLevelInternalTransaction = beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
         KernelTransaction kernelTransaction = topLevelInternalTransaction.kernelTransaction();
         if ( KernelTransaction.Type.implicit == type )
         {
             return new PeriodicBoltKernelTransaction( queryExecutionEngine, transactionalContextFactory,
-                    topLevelInternalTransaction );
+                    topLevelInternalTransaction, this::bookmarkWithTxId );
         }
-        return new BoltKernelTransaction( queryExecutionEngine, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction );
+        return new BoltKernelTransaction( queryExecutionEngine, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction,
+                this::bookmarkWithTxId );
     }
 
     @Override
