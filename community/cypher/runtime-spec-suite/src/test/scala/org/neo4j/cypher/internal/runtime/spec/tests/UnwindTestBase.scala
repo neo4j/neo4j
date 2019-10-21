@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util
+import java.util.Collections
 
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+
 import scala.collection.JavaConverters._
 
 abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
@@ -85,6 +87,20 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("i").withNoRows()
+  }
+
+  test("should unwind a list of lists") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .unwind("[[1,2,3],[4,5,6]] AS i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("i").withRows(singleColumn(Seq(util.Arrays.asList(1, 2, 3), util.Arrays.asList(4, 5, 6))))
   }
 
   test("should produce no rows on top of empty input") {
