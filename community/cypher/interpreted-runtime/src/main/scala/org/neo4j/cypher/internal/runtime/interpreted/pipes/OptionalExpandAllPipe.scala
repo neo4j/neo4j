@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.{InternalException, ParameterWrongTypeException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
@@ -32,7 +32,8 @@ import scala.collection.Iterator
 
 abstract class OptionalExpandAllPipe(source: Pipe,
                                      fromName: String,
-                                     relName: String, toName: String,
+                                     relName: String,
+                                     toName: String,
                                      dir: SemanticDirection,
                                      types: RelationshipTypes)
   extends PipeWithSource(source) {
@@ -55,7 +56,7 @@ abstract class OptionalExpandAllPipe(source: Pipe,
             Iterator(withNulls(row))
 
           case value =>
-            throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
+            throw new ParameterWrongTypeException(s"Expected to find a node at '$fromName' but found $value instead")
         }
     }
   }
