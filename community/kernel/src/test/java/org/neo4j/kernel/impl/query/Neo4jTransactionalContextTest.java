@@ -125,7 +125,7 @@ class Neo4jTransactionalContextTest
         QueryRegistry initialQueryRegistry = mock( QueryRegistry.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
 
-        Statement secondStatement = mock( Statement.class );
+        KernelStatement secondStatement = mock( KernelStatement.class );
         KernelTransaction secondKTX = mockTransaction( secondStatement );
         QueryRegistry secondQueryRegistry = mock( QueryRegistry.class );
 
@@ -181,12 +181,12 @@ class Neo4jTransactionalContextTest
         when( userTransaction.terminationReason() ).thenReturn( Optional.empty() );
 
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        Statement initialStatement = mock( Statement.class );
+        KernelStatement initialStatement = mock( KernelStatement.class );
         KernelTransaction initialKTX = mockTransaction( initialStatement );
         QueryRegistry initialQueryRegistry = mock( QueryRegistry.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
 
-        Statement secondStatement = mock( Statement.class );
+        KernelStatement secondStatement = mock( KernelStatement.class );
         KernelTransaction secondKTX = mockTransaction( secondStatement );
         QueryRegistry secondQueryRegistry = mock( QueryRegistry.class );
 

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.query;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.values.virtual.MapValue;
@@ -69,7 +69,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     @Override
     public final Neo4jTransactionalContext newContext( InternalTransaction tx, String queryText, MapValue queryParameters )
     {
-        Statement initialStatement = tx.kernelTransaction().acquireStatement();
+        KernelStatement initialStatement = (KernelStatement) tx.kernelTransaction().acquireStatement();
         var executingQuery = initialStatement.queryRegistration().startQueryExecution( queryText, queryParameters );
         return contextCreator.create( tx, initialStatement, executingQuery );
     }

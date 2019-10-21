@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
@@ -49,7 +50,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
     private final InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
-    private Statement statement;
+    private KernelStatement statement;
     private final ValueMapper<Object> valueMapper;
     private final KernelTransactionFactory transactionFactory;
     private volatile boolean isOpen = true;
@@ -58,7 +59,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private long pageMisses;
 
     public Neo4jTransactionalContext( GraphDatabaseQueryService graph, InternalTransaction transaction,
-            Statement initialStatement, ExecutingQuery executingQuery, KernelTransactionFactory transactionFactory )
+            KernelStatement initialStatement, ExecutingQuery executingQuery, KernelTransactionFactory transactionFactory )
     {
         this.graph = graph;
         this.transactionType = transaction.transactionType();
@@ -175,7 +176,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // (2) Create and register new transaction
         kernelTransaction = transactionFactory.beginKernelTransaction( transactionType, securityContext, clientInfo );
-        statement = kernelTransaction.acquireStatement();
+        statement = (KernelStatement) kernelTransaction.acquireStatement();
         statement.queryRegistration().registerExecutingQuery( executingQuery );
         transaction.setTransaction( kernelTransaction );
 
@@ -202,7 +203,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         if ( !isOpen )
         {
-            statement = kernelTransaction.acquireStatement();
+            statement = (KernelStatement) kernelTransaction.acquireStatement();
             statement.queryRegistration().registerExecutingQuery( executingQuery );
             isOpen = true;
         }
@@ -285,7 +286,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         Neo4jTransactionalContext create(
                 InternalTransaction tx,
-                Statement initialStatement,
+                KernelStatement initialStatement,
                 ExecutingQuery executingQuery
         );
     }

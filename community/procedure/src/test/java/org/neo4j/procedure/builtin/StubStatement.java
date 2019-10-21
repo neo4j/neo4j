@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 
@@ -28,12 +27,6 @@ public class StubStatement extends ResourceTracker.EmptyResourceTracker implemen
 
     @Override
     public void close()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public QueryRegistry queryRegistration()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

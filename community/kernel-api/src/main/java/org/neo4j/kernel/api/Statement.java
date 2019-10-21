@@ -33,8 +33,4 @@ import org.neo4j.graphdb.Resource;
  */
 public interface Statement extends Resource, ResourceTracker
 {
-    /**
-     * @return interface exposing operations for associating metadata with this statement
-     */
-    QueryRegistry queryRegistration();
 }

@@ -98,7 +98,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         this.versionContextSupplier = versionContextSupplier;
     }
 
-    @Override
+//    @Override
     public QueryRegistry queryRegistration()
     {
         return queryRegistry;
