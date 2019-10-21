@@ -72,7 +72,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * possible if you don't intend to exhaust the iterator.
  *
  * <p>
- * <strong>Note that transactions are not synchronized.</strong>
+ * <strong>Note that transactions should be used by a single thread only.</strong>
  * It is generally not safe to use a transaction from multiple threads.
  * Doing so will lead to undefined behavior.
  */
