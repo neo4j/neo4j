@@ -796,11 +796,5 @@ class QueryExecutionLocksIT
         {
             return internal.isSchemaTransaction();
         }
-
-        @Override
-        public DatabaseId getDatabaseId()
-        {
-            return internal.getDatabaseId();
-        }
     }
 }

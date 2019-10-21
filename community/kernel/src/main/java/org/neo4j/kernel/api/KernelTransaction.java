@@ -49,7 +49,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
@@ -395,12 +394,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * on first write operation, be it data or schema operation.
      */
     boolean isSchemaTransaction();
-
-    /**
-     * DatabaseId of the database this transaction is executed against.
-     * @return underlying databaseId
-     */
-    DatabaseId getDatabaseId();
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

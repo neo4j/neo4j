@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -67,7 +66,6 @@ class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
         kernelTransaction = mock( KernelTransaction.class );
-        when( kernelTransaction.getDatabaseId() ).thenReturn( TestDatabaseIdRepository.randomDatabaseId() );
         statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         when( kernelTransaction.acquireStatement() ).thenReturn( statement );
 

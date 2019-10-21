@@ -389,12 +389,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return writeState == TransactionWriteState.SCHEMA;
     }
 
-    @Override
-    public DatabaseId getDatabaseId()
-    {
-        return databaseId;
-    }
-
     private boolean markForTerminationIfPossible( Status reason )
     {
         if ( canBeTerminated() )
