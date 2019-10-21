@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.UTF8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;

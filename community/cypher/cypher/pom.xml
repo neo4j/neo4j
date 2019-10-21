@@ -244,6 +244,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-core</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.github.salat</groupId>
             <artifactId>salat-core_${scala.binary.version}</artifactId>
             <exclusions>

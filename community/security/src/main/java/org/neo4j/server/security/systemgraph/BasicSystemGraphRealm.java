@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -53,7 +55,6 @@ import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
-import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.ShiroAuthToken;
 
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
@@ -390,18 +391,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         {
             AuthToken.clearCredentials( authToken );
         }
-    }
-
-    @Override
-    public Credential createCredentialForPassword( byte[] password )
-    {
-        return SystemGraphCredential.createCredentialForPassword( password, secureHasher );
-    }
-
-    @Override
-    public Credential deserialize( String part ) throws Throwable
-    {
-        return SystemGraphCredential.deserialize( part, secureHasher );
     }
 
     @Override

@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;

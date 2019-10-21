@@ -22,11 +22,12 @@ package org.neo4j.server.security.systemgraph;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;

@@ -21,8 +21,8 @@ package org.neo4j.server.security.auth;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.server.security.systemgraph.SystemGraphCredential;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;

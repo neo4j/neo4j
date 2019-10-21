@@ -32,6 +32,15 @@ Apache Software License, Version 2.0
   Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
+  Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
   Caffeine cache
   jPowerShell
   jProcesses
@@ -73,6 +82,9 @@ Eclipse Public License - v 1.0
 
 GNU Lesser General Public License, Version 2.1
   Java Native Access
+
+MIT License
+  SLF4J API Module
 
 Dependencies with multiple licenses
 -----------------------------------

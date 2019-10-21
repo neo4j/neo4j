@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -36,7 +38,6 @@ import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.ListSnapshot;
-import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 

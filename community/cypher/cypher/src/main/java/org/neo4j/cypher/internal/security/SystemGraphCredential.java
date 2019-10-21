@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.systemgraph;
+package org.neo4j.cypher.internal.security;
 
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SaltedAuthenticationInfo;
@@ -27,8 +27,6 @@ import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.ByteSource;
 
 import org.neo4j.kernel.impl.security.Credential;
-import org.neo4j.server.security.auth.SecureHasher;
-import org.neo4j.server.security.auth.exception.FormatException;
 
 public class SystemGraphCredential implements Credential
 {
@@ -97,7 +95,7 @@ public class SystemGraphCredential implements Credential
         return serialize( this );
     }
 
-    static String serialize( SystemGraphCredential credential )
+    public static String serialize( SystemGraphCredential credential )
     {
         String algorithm = credential.hashedCredentials.getAlgorithmName();
         String iterations = Integer.toString( credential.hashedCredentials.getIterations() );

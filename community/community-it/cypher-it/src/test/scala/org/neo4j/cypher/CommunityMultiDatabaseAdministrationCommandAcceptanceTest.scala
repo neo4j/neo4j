@@ -25,12 +25,13 @@ import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME, default_database}
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager, DefaultSystemGraphInitializer}
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.logging.Log
-import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
-import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, UserSecurityGraphInitializer}
+import org.neo4j.server.security.auth.InMemoryUserRepository
+import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import scala.collection.Map

@@ -25,11 +25,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.exception.FormatException;
 
 import static org.neo4j.server.security.auth.ListSnapshot.FROM_MEMORY;
 import static org.neo4j.server.security.auth.ListSnapshot.FROM_PERSISTED;

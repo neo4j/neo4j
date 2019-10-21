@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs._
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.security.{SecureHasher, SystemGraphCredential}
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
@@ -112,7 +113,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             Array("name", "credentials", "passwordChangeRequired"),
             Array(
               Values.stringValue(userName),
-              Values.stringValue(authManager.createCredentialForPassword(initialPassword).serialize()),
+              Values.stringValue(SystemGraphCredential.createCredentialForPassword(initialPassword, new SecureHasher).serialize()),
               Values.booleanValue(requirePasswordChange))),
           QueryHandler
             .handleNoResult(() => Some(new IllegalStateException(s"Failed to create the specified user '$userName'.")))
@@ -164,7 +165,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
         VirtualValues.map(Array("name", "credentials"),
-          Array(Values.stringValue(currentUser), Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
+          Array(Values.stringValue(currentUser), Values.stringValue(SystemGraphCredential.createCredentialForPassword(validatePassword(newPassword), new SecureHasher).serialize()))),
         QueryHandler
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
@@ -172,7 +173,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case error => new IllegalStateException(s"User '$currentUser' failed to alter their own password.", error)
           }
           .handleResult((_, value) => {
-            val oldCredentials = authManager.deserialize(value.asInstanceOf[TextValue].stringValue())
+            val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), new SecureHasher)
             if (!oldCredentials.matchesPassword(currentPassword))
               Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Invalid principal or credentials."))
             else if (oldCredentials.matchesPassword(newPassword))

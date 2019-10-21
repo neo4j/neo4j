@@ -25,6 +25,7 @@ import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
@@ -33,7 +34,6 @@ import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;

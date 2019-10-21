@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.cypher.internal.security.FormatException;
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.impl.security.Credential;
@@ -32,8 +35,6 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.SecureHasher;
-import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.UTF8;
 import org.neo4j.time.Clocks;
 

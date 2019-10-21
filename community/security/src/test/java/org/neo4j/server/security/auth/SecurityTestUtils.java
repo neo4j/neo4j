@@ -22,7 +22,8 @@ package org.neo4j.server.security.auth;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
- import org.neo4j.server.security.systemgraph.SystemGraphCredential;
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
 
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 

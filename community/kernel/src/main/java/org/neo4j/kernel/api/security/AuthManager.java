@@ -24,7 +24,6 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -42,10 +41,6 @@ public interface AuthManager extends Lifecycle
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */
     LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
-
-    Credential createCredentialForPassword( byte[] password );
-
-    Credential deserialize( String part ) throws Throwable;
 
     void log( String message, SecurityContext securityContext );
 
@@ -79,18 +74,6 @@ public interface AuthManager extends Lifecycle
         {
             AuthToken.clearCredentials( authToken );
             return LoginContext.AUTH_DISABLED;
-        }
-
-        @Override
-        public Credential createCredentialForPassword( byte[] password )
-        {
-            return Credential.INACCESSIBLE;
-        }
-
-        @Override
-        public Credential deserialize( String part )
-        {
-            return Credential.INACCESSIBLE;
         }
 
         @Override
