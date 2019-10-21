@@ -65,6 +65,9 @@ object expandSolverStep {
                             context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
 
+    /*
+     * Recursive method for finding the arguments from the leaf plans.
+     */
     def leafArguments(plan:LogicalPlan): Set[String] = plan match {
       case _: Argument => Set.empty
       case p: LogicalLeafPlan => p.argumentIds
@@ -73,6 +76,7 @@ object expandSolverStep {
         val rhs = plan.rhs.map(inner => leafArguments(inner)).toSet.flatten
         lhs ++ rhs
     }
+    // Remove the leaf arguments as to not try and join disjoint plans only on arguments
     val symbols = availableSymbols -- leafArguments(sourcePlan)
 
     if (symbols(nodeId)) {
