@@ -510,6 +510,24 @@ public interface Status
         }
     }
 
+    enum Fabric implements Status
+    {
+        RemoteExecutionFailed( DatabaseError, "The database was unable to execute a remote part of the statement." );
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        Fabric( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     Code code();
 
     class Code
