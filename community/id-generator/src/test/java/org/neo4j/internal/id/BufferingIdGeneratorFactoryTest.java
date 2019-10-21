@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -34,6 +35,7 @@ import java.util.stream.Stream;
 import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -50,18 +52,26 @@ class BufferingIdGeneratorFactoryTest
     @Inject
     private EphemeralFileSystemAbstraction fs;
 
+    private MockedIdGeneratorFactory actual;
+    private ControllableSnapshotSupplier boundaries;
+    private PageCache pageCache;
+    private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
+    private IdGenerator idGenerator;
+
+    @BeforeEach
+    void setup()
+    {
+        actual = new MockedIdGeneratorFactory();
+        boundaries = new ControllableSnapshotSupplier();
+        pageCache = mock( PageCache.class );
+        bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
+        bufferingIdGeneratorFactory.initialize( boundaries );
+        idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, false );
+    }
+
     @Test
     void shouldDelayFreeingOfDeletedIds()
     {
-        // GIVEN
-        MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
-        ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
-        PageCache pageCache = mock( PageCache.class );
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
-        bufferingIdGeneratorFactory.initialize( boundaries );
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE,
-                false );
-
         // WHEN
         try ( Marker marker = idGenerator.marker() )
         {
@@ -81,6 +91,29 @@ class BufferingIdGeneratorFactoryTest
 
         // THEN
         verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );
+    }
+
+    @Test
+    void shouldDelayFreeingOfDeletedIdsUntilCheckpoint()
+    {
+        // WHEN
+        try ( CommitMarker marker = idGenerator.commitMarker() )
+        {
+            marker.markDeleted( 7 );
+        }
+        verify( actual.commitMarkers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
+        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
+
+        // after some maintenance and transaction still not closed
+        idGenerator.checkpoint( IOLimiter.UNLIMITED );
+        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
+
+        // although after transactions have all closed
+        boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
+        idGenerator.checkpoint( IOLimiter.UNLIMITED );
+
+        // THEN
+        verify( actual.reuseMarkers[STRING_BLOCK.ordinal()] ).markFree( 7 );
     }
 
     private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>

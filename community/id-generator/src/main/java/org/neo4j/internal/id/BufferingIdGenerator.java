@@ -22,6 +22,8 @@ package org.neo4j.internal.id;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.io.pagecache.IOLimiter;
+
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
     private DelayedBuffer<IdController.ConditionSnapshot> buffer;
@@ -107,6 +109,14 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     void clear()
     {
         buffer.clear();
+    }
+
+    @Override
+    public void checkpoint( IOLimiter ioLimiter )
+    {
+        // Flush buffered data to consumer
+        buffer.maintenance();
+        super.checkpoint( ioLimiter );
     }
 
     @Override
