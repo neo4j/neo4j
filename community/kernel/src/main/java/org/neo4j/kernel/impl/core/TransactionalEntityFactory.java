@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
 public interface TransactionalEntityFactory
 {
-    RelationshipEntity newRelationshipEntity( long id );
+    Relationship newRelationshipEntity( long id );
 
-    RelationshipEntity newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId );
+    Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId );
 
-    NodeEntity newNodeEntity( long nodeId );
+    Node newNodeEntity( long nodeId );
 
     RelationshipType getRelationshipTypeById( int type );
 }

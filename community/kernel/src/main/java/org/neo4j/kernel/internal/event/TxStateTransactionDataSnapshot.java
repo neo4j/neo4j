@@ -333,7 +333,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private Relationship relationship( long relId )
     {
-        RelationshipEntity relationship = internalTransaction.newRelationshipEntity( relId );
+        RelationshipEntity relationship = (RelationshipEntity) internalTransaction.newRelationshipEntity( relId );
         if ( !state.relationshipVisit( relId, relationship ) )
         {   // This relationship has been created or changed in this transaction
             RelationshipEntity cached = relationshipsReadFromStore.get( relId );
