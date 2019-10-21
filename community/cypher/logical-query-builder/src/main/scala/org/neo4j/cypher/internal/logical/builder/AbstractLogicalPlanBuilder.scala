@@ -163,7 +163,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
-  def optionalExpandAll(pattern: String, predicate: Option[String]): IMPL = {
+  def optionalExpandAll(pattern: String, predicate: Option[String] = None): IMPL = {
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
@@ -175,7 +175,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def optionalExpandInto(pattern: String, predicate: Option[String]): IMPL = {
+  def optionalExpandInto(pattern: String, predicate: Option[String] = None): IMPL = {
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>

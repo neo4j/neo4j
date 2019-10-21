@@ -310,7 +310,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     //CREATE S
     tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
-    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
+    execute(executablePlan) should beColumns("x", "y").withRows(RowCount(1))
 
     //CREATE R
     tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
