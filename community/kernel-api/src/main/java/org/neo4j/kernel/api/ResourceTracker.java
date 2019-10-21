@@ -21,6 +21,8 @@ package org.neo4j.kernel.api;
 
 public interface ResourceTracker
 {
+    ResourceTracker EMPTY_RESOURCE_TRACKER = new EmptyResourceTracker();
+
     /**
      * Register a closeable resource that needs to be closed on statement cleanup.
      *
@@ -33,4 +35,30 @@ public interface ResourceTracker
      * @see #registerCloseableResource
      */
     void unregisterCloseableResource( AutoCloseable closeableResource );
+
+    /**
+     * Closes and unregisters all the registered resources
+     */
+    void closeAllCloseableResources();
+
+    class EmptyResourceTracker implements ResourceTracker
+    {
+        @Override
+        public void closeAllCloseableResources()
+        {
+            // empty
+        }
+
+        @Override
+        public void registerCloseableResource( AutoCloseable closeableResource )
+        {
+            // empty
+        }
+
+        @Override
+        public void unregisterCloseableResource( AutoCloseable closeableResource )
+        {
+            //empty
+        }
+    }
 }

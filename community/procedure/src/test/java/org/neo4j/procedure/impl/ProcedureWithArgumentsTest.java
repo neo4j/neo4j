@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -86,7 +86,7 @@ public class ProcedureWithArgumentsTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> out = procedure
-                .apply( prepareContext(), new AnyValue[]{stringValue( "Pontus" ), longValue( 35L )}, EMPTY_RESOURCE_MANAGER );
+                .apply( prepareContext(), new AnyValue[]{stringValue( "Pontus" ), longValue( 35L )}, EMPTY_RESOURCE_TRACKER );
 
         // Then
         List<AnyValue[]> collect = asList( out );
@@ -104,7 +104,7 @@ public class ProcedureWithArgumentsTest
                         VirtualValues.list( stringValue( "Roland" ), stringValue( "Eddie" ), stringValue( "Susan" ),
                                 stringValue( "Jake" ) ),
                         VirtualValues.list( longValue( 1000L ), longValue( 23L ), longValue( 29L ), longValue( 12L ) )},
-                EMPTY_RESOURCE_MANAGER );
+                EMPTY_RESOURCE_TRACKER );
 
         // Then
         List<AnyValue[]> collect = asList( out );

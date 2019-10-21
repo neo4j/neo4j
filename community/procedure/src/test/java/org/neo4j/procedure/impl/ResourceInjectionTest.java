@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -99,7 +99,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithInjectedAPI.class, null, true ).get( 0 );
 
         // Then
-        List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER ) );
+        List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new AnyValue[]{stringValue( "Bonnie" )} ) );
@@ -123,7 +123,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, null, true ).get( 0 );
 
         // Then
-        List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER ) );
+        List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new AnyValue[]{stringValue( "Morpheus" )} ) );
@@ -142,7 +142,7 @@ public class ResourceInjectionTest
 
         assertThat( procList.size(), equalTo( 1 ) );
         ProcedureException exception =
-                assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER ) );
+                assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
         assertThat( exception.getMessage(), notAvailableMessageMatcher( "org.neo4j.procedure.impl.listCoolPeople" ) );
     }
 

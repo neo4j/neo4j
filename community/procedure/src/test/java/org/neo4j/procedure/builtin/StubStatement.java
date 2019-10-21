@@ -20,10 +20,10 @@
 package org.neo4j.procedure.builtin;
 
 import org.neo4j.kernel.api.QueryRegistry;
-import org.neo4j.kernel.api.ResourceManager.EmptyResourceManager;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 
-public class StubStatement extends EmptyResourceManager implements Statement
+public class StubStatement extends ResourceTracker.EmptyResourceTracker implements Statement
 {
 
     @Override

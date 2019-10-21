@@ -47,7 +47,7 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class BuiltInDbmsProceduresIT extends KernelIntegrationTest
@@ -124,7 +124,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<AnyValue[],ProcedureException> callResult =
                 dbmsOperations()
                         .procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), transaction, dependencyResolver,
-                                AUTH_DISABLED, EMPTY_RESOURCE_MANAGER, new DefaultValueMapper( transaction ) );
+                                AUTH_DISABLED, EMPTY_RESOURCE_TRACKER, new DefaultValueMapper( transaction ) );
         return asList( callResult );
     }
 }

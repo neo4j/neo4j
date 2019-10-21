@@ -23,10 +23,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.ResourceManager;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 
-public class CloseableResourceManager implements ResourceManager
+public class CloseableResourceManager implements ResourceTracker
 {
     private Collection<AutoCloseable> closeableResources;
 

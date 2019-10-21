@@ -49,7 +49,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -98,7 +98,7 @@ class ProceduresTest
         // When
         RawIterator<AnyValue[], ProcedureException> result =
                 procs.callProcedure( buildContext( dependencyResolver, valueMapper ).context(), procHandle.id(),
-                        new AnyValue[]{longValue( 1337 )}, EMPTY_RESOURCE_MANAGER );
+                        new AnyValue[]{longValue( 1337 )}, EMPTY_RESOURCE_TRACKER );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new AnyValue[]{longValue( 1337 )} ) ) );
@@ -171,7 +171,7 @@ class ProceduresTest
         ProcedureHandle procedureHandle = procs.procedure( signature.name() );
 
         // When
-        RawIterator<AnyValue[], ProcedureException> result = procs.callProcedure( ctx, procedureHandle.id(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[], ProcedureException> result = procs.callProcedure( ctx, procedureHandle.id(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new AnyValue[]{ stringValue( Thread.currentThread().getName() ) } ) ) );

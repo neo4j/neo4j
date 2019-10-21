@@ -67,7 +67,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -98,7 +98,7 @@ public class ProcedureTest
                 procedureCompiler.compileProcedure( LoggingProcedure.class, null, true ).get( 0 );
 
         // When
-        procedure.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+        procedure.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
         verify( log ).debug( "1" );
@@ -128,7 +128,7 @@ public class ProcedureTest
         CallableProcedure proc = compile( SingleReadOnlyProcedure.class ).get( 0 );
 
         // When
-        RawIterator<AnyValue[],ProcedureException> out = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[],ProcedureException> out = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
         assertThat( asList( out ), Matchers.contains(
@@ -156,8 +156,8 @@ public class ProcedureTest
         CallableProcedure coolPeople = compiled.get( 1 );
 
         // When
-        RawIterator<AnyValue[],ProcedureException> coolOut = coolPeople.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
-        RawIterator<AnyValue[],ProcedureException> bananaOut = bananaPeople.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[],ProcedureException> coolOut = coolPeople.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
+        RawIterator<AnyValue[],ProcedureException> bananaOut = bananaPeople.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
         assertThat( asList( coolOut ), Matchers.contains(
@@ -197,7 +197,7 @@ public class ProcedureTest
 
         // Then
         assertEquals( 0, proc.signature().outputSignature().size() );
-        assertFalse( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER ).hasNext() );
+        assertFalse( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ).hasNext() );
     }
 
     @Test
@@ -262,7 +262,7 @@ public class ProcedureTest
         // Given
         CallableProcedure proc = compile( ProcedureThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
         assertThat( exception.getMessage(), equalTo( "Failed to invoke procedure `org.neo4j.procedure.impl.throwsAtInvocation`: " +
                                                     "Caused by: java.lang.IndexOutOfBoundsException" ) );
     }
@@ -275,7 +275,7 @@ public class ProcedureTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
         {
-            RawIterator<AnyValue[],ProcedureException> stream = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+            RawIterator<AnyValue[],ProcedureException> stream = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
             if ( stream.hasNext() )
             {
                 stream.next();
@@ -330,7 +330,7 @@ public class ProcedureTest
         for ( CallableProcedure proc : procs )
         {
             String name = proc.signature().name().name();
-            proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+            proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
             switch ( name )
             {
             case "newProc":
@@ -362,7 +362,7 @@ public class ProcedureTest
         CallableProcedure proc =
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false ).get( 0 );
         // When
-        RawIterator<AnyValue[],ProcedureException> result = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[],ProcedureException> result = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
         assertEquals( result.next()[0], stringValue( "Bonnie" ) );
@@ -401,7 +401,7 @@ public class ProcedureTest
         CallableProcedure proc =
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, true ).get( 0 );
         // Then
-        RawIterator<AnyValue[],ProcedureException> result = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[],ProcedureException> result = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
         assertEquals( result.next()[0], stringValue( "Bonnie" ) );
     }
 
@@ -432,7 +432,7 @@ public class ProcedureTest
         // When
         RawIterator<AnyValue[],ProcedureException> out =
                 proc.apply( prepareContext(), new AnyValue[]{longValue( 42 ), stringValue( "hello" ),
-                        Values.TRUE}, EMPTY_RESOURCE_MANAGER );
+                        Values.TRUE}, EMPTY_RESOURCE_TRACKER );
 
         // Then
         assertThat( out.next(), equalTo(

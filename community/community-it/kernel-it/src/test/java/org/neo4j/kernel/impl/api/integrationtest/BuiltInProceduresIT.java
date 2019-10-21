@@ -71,7 +71,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -185,7 +185,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     {
         assertThrows( ProcedureException.class,
             () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction, dependencyResolver, AnonymousContext.access().authorize(
-                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, new DefaultValueMapper( transaction ) ) );
+                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_TRACKER, new DefaultValueMapper( transaction ) ) );
     }
 
     @Test

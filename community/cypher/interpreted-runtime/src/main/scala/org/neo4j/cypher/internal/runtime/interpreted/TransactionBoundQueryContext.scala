@@ -51,7 +51,7 @@ import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.{ConstraintType, IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema._
-import org.neo4j.kernel.api.{ResourceManager => _, _}
+import org.neo4j.kernel.api.{ResourceTracker => _, _}
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}

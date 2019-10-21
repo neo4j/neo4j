@@ -70,7 +70,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.procedure_unrestrict
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 @SuppressWarnings( "WeakerAccess" )
@@ -102,7 +102,7 @@ public class ProcedureJarLoaderTest
                 procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" )
                         .out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER ) ),
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) ),
                 contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 1337L )} ) ) );
     }
 
@@ -121,7 +121,7 @@ public class ProcedureJarLoaderTest
         assertThat( signatures,
                 contains( procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_MANAGER ) ),
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) ),
                 contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 1337L )} ) ) );
     }
 
@@ -143,7 +143,7 @@ public class ProcedureJarLoaderTest
                         .build() ));
 
         assertThat( asList( procedures.get( 0 )
-                        .apply( prepareContext(), new AnyValue[]{Values.longValue( 42 )}, EMPTY_RESOURCE_MANAGER ) ),
+                        .apply( prepareContext(), new AnyValue[]{Values.longValue( 42 )}, EMPTY_RESOURCE_TRACKER ) ),
                 contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 42 )} ) ) );
     }
 

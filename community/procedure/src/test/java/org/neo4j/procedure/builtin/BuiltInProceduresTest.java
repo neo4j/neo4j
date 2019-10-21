@@ -96,7 +96,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
@@ -548,7 +548,7 @@ class BuiltInProceduresTest
         AnyValue[] input = Arrays.stream( args ).map( ValueUtils::of ).toArray( AnyValue[]::new );
         int procId = procs.procedure( ProcedureSignature.procedureName( name.split( "\\." ) ) ).id();
         List<AnyValue[]> anyValues =
-                Iterators.asList( procs.callProcedure( ctx, procId, input, EMPTY_RESOURCE_MANAGER ) );
+                Iterators.asList( procs.callProcedure( ctx, procId, input, EMPTY_RESOURCE_TRACKER ) );
         ArrayList<Object[]> toReturn = new ArrayList<>( anyValues.size() );
         for ( AnyValue[] anyValue : anyValues )
         {

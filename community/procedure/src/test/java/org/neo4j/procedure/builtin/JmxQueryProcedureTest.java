@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class JmxQueryProcedureTest
@@ -85,7 +85,7 @@ class JmxQueryProcedureTest
 
         // when
         RawIterator<AnyValue[],ProcedureException> result =
-                procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_MANAGER );
+                procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
 
         // then
         assertThat( asList( result ), contains(
@@ -113,7 +113,7 @@ class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
 
         // then
         assertThat( asList( result ), contains(
@@ -157,7 +157,7 @@ class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
 
         // then
         assertThat( asList( result ), contains(
@@ -182,7 +182,7 @@ class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_MANAGER );
+        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
 
         // then we verify that we respond with the expected number of beans without error
         //      .. we don't assert more than this, this is more of a smoke test to ensure

@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Resource;
  * accessing the graph now, see {@link org.neo4j.internal.kernel.api.Transaction}. The only remainder
  * the QueryRegistry, which will eventually also move from here.
  */
-public interface Statement extends Resource, ResourceManager
+public interface Statement extends Resource, ResourceTracker
 {
     /**
      * @return interface exposing operations for associating metadata with this statement
