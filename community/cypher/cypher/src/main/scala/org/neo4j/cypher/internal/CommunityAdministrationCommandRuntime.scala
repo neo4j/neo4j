@@ -62,6 +62,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   private lazy val authManager = {
     resolver.resolveDependency(classOf[AuthManager])
   }
+  private val secureHasher = new SecureHasher
 
   // When the community commands are run within enterprise, this allows the enterprise commands to be chained
   private def fullLogicalToExecutable = extraLogicalToExecutable orElse logicalToExecutable
@@ -113,7 +114,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             Array("name", "credentials", "passwordChangeRequired"),
             Array(
               Values.stringValue(userName),
-              Values.stringValue(SystemGraphCredential.createCredentialForPassword(initialPassword, new SecureHasher).serialize()),
+              Values.stringValue(SystemGraphCredential.createCredentialForPassword(initialPassword, secureHasher).serialize()),
               Values.booleanValue(requirePasswordChange))),
           QueryHandler
             .handleNoResult(() => Some(new IllegalStateException(s"Failed to create the specified user '$userName'.")))
@@ -165,7 +166,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
         VirtualValues.map(Array("name", "credentials"),
-          Array(Values.stringValue(currentUser), Values.stringValue(SystemGraphCredential.createCredentialForPassword(validatePassword(newPassword), new SecureHasher).serialize()))),
+          Array(Values.stringValue(currentUser), Values.stringValue(SystemGraphCredential.createCredentialForPassword(validatePassword(newPassword), secureHasher).serialize()))),
         QueryHandler
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
@@ -173,7 +174,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case error => new IllegalStateException(s"User '$currentUser' failed to alter their own password.", error)
           }
           .handleResult((_, value) => {
-            val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), new SecureHasher)
+            val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
             if (!oldCredentials.matchesPassword(currentPassword))
               Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Invalid principal or credentials."))
             else if (oldCredentials.matchesPassword(newPassword))
