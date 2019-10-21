@@ -49,42 +49,31 @@ public final class RelationshipSelections
      * @return A cursor that allows traversing the relationship chain.
      */
     public static RelationshipSelectionCursor outgoingCursor( CursorFactory cursors,
-            NodeCursor node,
-            int[] types )
+                                                              NodeCursor node,
+                                                              int[] types )
     {
         if ( node.isDense() )
         {
-            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-            try
-            {
-                setupOutgoingDense( selectionCursor, group, traversal, node, types );
-            }
-            catch ( Throwable t )
-            {
-                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
-                throw t;
-            }
-            return selectionCursor;
+            return outgoingDenseCursor(
+                    cursors.allocateRelationshipGroupCursor(),
+                    cursors.allocateRelationshipTraversalCursor(),
+                    node,
+                    types );
         }
         else
         {
-            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-            try
-            {
-                setupOutgoingSparse( selectionCursor, traversal, node, types );
-            }
-            catch ( Throwable t )
-            {
-                traversal.close();
-                throw t;
-            }
-            return selectionCursor;
+            return outgoingSparseCursor( cursors.allocateRelationshipTraversalCursor(), node, types );
         }
     }
 
+    /**
+     * Returns an outgoing selection cursor given the provided cursors and relationship types.
+     * @param groupCursor A group cursor that will be used when traversing
+     * @param traversalCursor A traversal a cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
     public static RelationshipSelectionCursor outgoingCursor( RelationshipGroupCursor groupCursor,
                                                               RelationshipTraversalCursor traversalCursor,
                                                               NodeCursor node,
@@ -92,16 +81,65 @@ public final class RelationshipSelections
     {
         if ( node.isDense() )
         {
-            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            setupOutgoingDense( selectionCursor, groupCursor, traversalCursor, node, types );
-            return selectionCursor;
+            return outgoingDenseCursor( groupCursor, traversalCursor, node, types );
         }
         else
         {
-            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            setupOutgoingSparse( selectionCursor, traversalCursor, node, types );
-            return selectionCursor;
+            return outgoingSparseCursor( traversalCursor, node, types );
         }
+    }
+
+    /**
+     * Returns an outgoing selection cursor for a sparse node given the provided cursors and relationship types.
+     * @param traversal A cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor outgoingSparseCursor( RelationshipTraversalCursor traversal,
+                                                                    NodeCursor node,
+                                                                    int[] types )
+    {
+        assert !node.isDense();
+        RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
+        try
+        {
+            setupOutgoingSparse( selectionCursor, traversal, node, types );
+        }
+        catch ( Throwable t )
+        {
+            traversal.close();
+            throw t;
+        }
+        return selectionCursor;
+    }
+
+    /**
+     * Returns an outgoing selection cursor for a dense node given the provided cursors and relationship types.
+     * @param group A cursor that will be used when traversing
+     * @param traversal A cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor outgoingDenseCursor( RelationshipGroupCursor group,
+                                                                   RelationshipTraversalCursor traversal,
+                                                                   NodeCursor node,
+                                                                   int[] types )
+    {
+        assert node.isDense();
+        RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
+
+        try
+        {
+            setupOutgoingDense( selectionCursor, group, traversal, node, types );
+        }
+        catch ( Throwable t )
+        {
+            IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+            throw t;
+        }
+        return selectionCursor;
     }
 
     /**
@@ -118,37 +156,23 @@ public final class RelationshipSelections
     {
         if ( node.isDense() )
         {
-            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-            try
-            {
-                setupIncomingDense( selectionCursor, group, traversal, node, types );
-            }
-            catch ( Throwable t )
-            {
-                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
-                throw t;
-            }
-            return selectionCursor;
+            return incomingDenseCursor( cursors.allocateRelationshipGroupCursor(),
+                    cursors.allocateRelationshipTraversalCursor(), node, types );
         }
         else
         {
-            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-            try
-            {
-                setupIncomingSparse( selectionCursor, traversal, node, types );
-            }
-            catch ( Throwable t )
-            {
-                traversal.close();
-                throw t;
-            }
-            return selectionCursor;
+            return incomingSparseCursor( cursors.allocateRelationshipTraversalCursor(), node, types );
         }
     }
 
+    /**
+     * Returns an incoming selection cursor given the provided cursors and relationship types.
+     * @param groupCursor A group cursor that will be used when traversing
+     * @param traversalCursor A traversal a cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
     public static RelationshipSelectionCursor incomingCursor( RelationshipGroupCursor groupCursor,
                                                               RelationshipTraversalCursor traversalCursor,
                                                               NodeCursor node,
@@ -156,16 +180,65 @@ public final class RelationshipSelections
     {
         if ( node.isDense() )
         {
-            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            setupIncomingDense( selectionCursor, groupCursor, traversalCursor, node, types );
-            return selectionCursor;
+            return incomingDenseCursor( groupCursor, traversalCursor, node, types );
         }
         else
         {
-            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            setupIncomingSparse( selectionCursor, traversalCursor, node, types );
-            return selectionCursor;
+            return incomingSparseCursor( traversalCursor, node, types );
         }
+    }
+
+    /**
+     * Returns an incoming selection cursor for a sparse node given the provided cursors and relationship types.
+     * @param traversal A cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor incomingSparseCursor( RelationshipTraversalCursor traversal,
+                                                                    NodeCursor node,
+                                                                    int[] types )
+    {
+        assert !node.isDense();
+        RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
+
+        try
+        {
+            setupIncomingSparse( selectionCursor, traversal, node, types );
+        }
+        catch ( Throwable t )
+        {
+            traversal.close();
+            throw t;
+        }
+        return selectionCursor;
+    }
+
+    /**
+     * Returns an incoming selection cursor for a dense node given the provided cursors and relationship types.
+     * @param group A cursor that will be used when traversing
+     * @param traversal A cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor incomingDenseCursor( RelationshipGroupCursor group,
+                                                                   RelationshipTraversalCursor traversal,
+                                                                   NodeCursor node,
+                                                                   int[] types )
+    {
+        assert node.isDense();
+        RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
+        try
+        {
+            setupIncomingDense( selectionCursor, group, traversal, node, types );
+        }
+        catch ( Throwable t )
+        {
+            IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+            throw t;
+        }
+        return selectionCursor;
     }
 
     /**
@@ -182,37 +255,23 @@ public final class RelationshipSelections
     {
         if ( node.isDense() )
         {
-            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-            try
-            {
-                setupAllDense( selectionCursor, group, traversal, node, types );
-            }
-            catch ( Throwable t )
-            {
-                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
-                throw t;
-            }
-            return selectionCursor;
+            return allDenseCursor( cursors.allocateRelationshipGroupCursor(),
+                    cursors.allocateRelationshipTraversalCursor(), node, types );
         }
         else
         {
-            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-            try
-            {
-                setupAllSparse( selectionCursor, traversal, node, types );
-            }
-            catch ( Throwable t )
-            {
-                traversal.close();
-                throw t;
-            }
-            return selectionCursor;
+            return allSparseCursor( cursors.allocateRelationshipTraversalCursor(), node, types );
         }
     }
 
+    /**
+     * Returns a multi-directed selection cursor given the provided cursors and relationship types.
+     * @param groupCursor A group cursor that will be used when traversing
+     * @param traversalCursor A traversal a cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
     public static RelationshipSelectionCursor allCursor( RelationshipGroupCursor groupCursor,
                                                          RelationshipTraversalCursor traversalCursor,
                                                          NodeCursor node,
@@ -220,16 +279,64 @@ public final class RelationshipSelections
     {
         if ( node.isDense() )
         {
-            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            setupAllDense( selectionCursor, groupCursor, traversalCursor, node, types );
-            return selectionCursor;
+            return allDenseCursor( groupCursor, traversalCursor, node, types );
         }
         else
         {
-            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            setupAllSparse( selectionCursor, traversalCursor, node, types );
-            return selectionCursor;
+            return allSparseCursor( traversalCursor, node, types );
         }
+    }
+
+    /**
+     * Returns a multi-directed selection cursor for a sparse node given the provided cursors and relationship types.
+     * @param traversal A cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor allSparseCursor( RelationshipTraversalCursor traversal,
+                                                               NodeCursor node,
+                                                               int[] types )
+    {
+        assert !node.isDense();
+        RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
+        try
+        {
+            setupAllSparse( selectionCursor, traversal, node, types );
+        }
+        catch ( Throwable t )
+        {
+            traversal.close();
+            throw t;
+        }
+        return selectionCursor;
+    }
+
+    /**
+     * Returns a multi-directed selection cursor for a dense node given the provided cursors and relationship types.
+     * @param group A cursor that will be used when traversing
+     * @param traversal A cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor allDenseCursor( RelationshipGroupCursor group,
+                                                              RelationshipTraversalCursor traversal,
+                                                              NodeCursor node,
+                                                              int[] types )
+    {
+        assert node.isDense();
+        RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
+        try
+        {
+            setupAllDense( selectionCursor, group, traversal, node, types );
+        }
+        catch ( Throwable t )
+        {
+            IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+            throw t;
+        }
+        return selectionCursor;
     }
 
     /**
