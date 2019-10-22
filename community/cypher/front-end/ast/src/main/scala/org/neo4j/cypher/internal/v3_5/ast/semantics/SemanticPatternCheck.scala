@@ -103,13 +103,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             case (Match, _) => None
             case (_, RelationshipChain(l: NodePattern, _, r: NodePattern)) =>
               if (l.variable.isEmpty)
-                SemanticError(s"${
+                SemanticError(s"A ${
                   x.name
-                }(...) that is not part of a MATCH clause requires bound nodes", x.position, l.position)
+                }(...) requires bound nodes when not part of a MATCH clause.", x.position, l.position)
               else if (r.variable.isEmpty)
-                SemanticError(s"${
+                SemanticError(s"A ${
                   x.name
-                }(...) that is not part of a MATCH clause requires bound nodes", x.position, r.position)
+                }(...) requires bound nodes when not part of a MATCH clause.", x.position, r.position)
               else
                 None
             case (_, _) =>
