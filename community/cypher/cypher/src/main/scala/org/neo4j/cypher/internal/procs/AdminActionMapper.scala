@@ -19,44 +19,8 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.{ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.graphdb.security.AuthorizationViolationException
-import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
-import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
-import org.neo4j.internal.kernel.api.security.{AdminActionOnResource, SecurityContext, PrivilegeAction => KernelPrivilegeAction}
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
-import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.values.virtual.MapValue
-
-case class AdministrativeCommandPrivilegeExecutionPlan(securityContext: SecurityContext, action: AdminAction, database: DatabaseScope,
-                                                       userName: Option[String] = None) extends ExecutionPlan {
-  override def run(ctx: QueryContext,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   ignore: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult = {
-    if (securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), database))) {
-      userName.foreach(name => if( securityContext.subject().hasUsername(name))
-        throw new InvalidArgumentsException(s"Failed to alter the specified user '$name': Changing your own activation status is not allowed.")
-      )
-      NoRuntimeResult(subscriber)
-    } else {
-      throw new AuthorizationViolationException(PERMISSION_DENIED)
-    }
-  }
-
-  override def runtimeName: RuntimeName = SystemCommandRuntimeName
-
-  override def metadata: Seq[Argument] = Nil
-
-  override def notifications: Set[InternalNotification] = Set.empty
-}
+import org.neo4j.internal.kernel.api.security.{PrivilegeAction => KernelPrivilegeAction}
 
 object AdminActionMapper {
   def asKernelAction(action: AdminAction): KernelPrivilegeAction = action match {

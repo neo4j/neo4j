@@ -111,50 +111,22 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           prettifier.asString(c)))
 
       // ALTER USER foo
-      case c@AlterUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended) =>
+      case c@AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+        val initialPasswordString = initialStringPassword.map(UTF8.encode)
+        val admin = plans.AssertDbmsAdmin(AlterUserAction)
         val assertionSubPlan =
-        if(suspended.isDefined){
-          plans.AssertDbmsAdminAndNotCurrentUser(AlterUserAction, userName)
-        } else {
-          plans.AssertDbmsAdmin(AlterUserAction)
-        }
+          if(suspended.isDefined) plans.AssertNotCurrentUser(Some(admin), userName)
+          else admin
         Some(plans.LogSystemCommand(
-          plans.AlterUser(Some(assertionSubPlan), userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended),
-          prettifier.asString(c)))
-      // ALTER USER foo
-      case c@AlterUser(userName, None, initialParameterPassword, requirePasswordChange, suspended) =>
-        val assertionSubPlan =
-          if(suspended.isDefined){
-            plans.AssertDbmsAdminAndNotCurrentUser(AlterUserAction, userName)
-          } else {
-            plans.AssertDbmsAdmin(AlterUserAction)
-          }
-        Some(plans.LogSystemCommand(
-          plans.AlterUser(Some(assertionSubPlan), userName, None, initialParameterPassword, requirePasswordChange, suspended),
+          plans.AlterUser(Some(assertionSubPlan), userName, initialPasswordString, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
-      case c@SetOwnPassword(Some(newStringPassword), newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
+      case c@SetOwnPassword(newStringPassword, newParameterPassword, currentStringPassword, currentParameterPassword) =>
+        val newPasswordString = newStringPassword.map(UTF8.encode)
+        val currentPasswordString = currentStringPassword.map(UTF8.encode)
         Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword),
-          prettifier.asString(c)))
-
-      // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO $newPassword
-      case c@SetOwnPassword(None, newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
-        Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(None, newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword),
-          prettifier.asString(c)))
-
-      // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO newPassword
-      case c@SetOwnPassword(Some(newStringPassword), newParameterPassword, None, currentParameterPassword) =>
-        Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, None, currentParameterPassword),
-          prettifier.asString(c)))
-
-      // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword
-      case c@SetOwnPassword(None, newParameterPassword, None, currentParameterPassword) =>
-        Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(None, newParameterPassword, None, currentParameterPassword),
+          plans.SetOwnPassword(newPasswordString, newParameterPassword, currentPasswordString, currentParameterPassword),
           prettifier.asString(c)))
 
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
@@ -191,7 +163,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>
         val admin = Some(plans.AssertDbmsAdmin(DropRoleAction))
-        val source = if (ifExists) Some(plans.DoNothingIfNotExists(admin, "Role", roleName)) else Some(plans.EnsureNodeExists(admin, "Role", roleName))
+        val checkFrozenRole = Some(plans.CheckFrozenRole(admin, roleName))
+        val source = if (ifExists) Some(plans.DoNothingIfNotExists(checkFrozenRole, "Role", roleName)) else Some(plans.EnsureNodeExists(checkFrozenRole, "Role", roleName))
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users

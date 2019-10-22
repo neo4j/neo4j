@@ -24,11 +24,12 @@ import java.util
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs.{AdministrativeCommandPrivilegeExecutionPlan, QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
+import org.neo4j.cypher.internal.procs._
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
-import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.internal.kernel.api.security.{AdminActionOnResource, SecurityContext}
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
 import org.neo4j.kernel.api.exceptions.{InvalidArgumentsException, Status}
@@ -61,15 +62,31 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = {
 
-    // Check Admin Rights
+    // Special case where the admin role cannot be deleted (only in 4.0)
+    case CheckFrozenRole(source, roleName) => (context, parameterMapping, securityContext) =>
+      AuthorizationPredicateExecutionPlan(() => roleName != "admin",
+        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext)))
+
+    // Check Admin Rights for DBMS commands
     case AssertDbmsAdmin(action) => (_, _, securityContext) =>
-      AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, DatabaseScope.ALL)
+      AuthorizationPredicateExecutionPlan(() =>
+        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), DatabaseScope.ALL)),
+        violationMessage = PERMISSION_DENIED
+      )
 
-    case AssertDbmsAdminAndNotCurrentUser(action, userName) => (_, _, securityContext) =>
-      AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, DatabaseScope.ALL, Some(userName))
+    // Check that the specified user is not the logged in user (eg. for some ALTER USER commands)
+    case AssertNotCurrentUser(source, userName) => (context, parameterMapping, securityContext) =>
+      AuthorizationPredicateExecutionPlan(() => !securityContext.subject().hasUsername(userName),
+        violationMessage = s"Failed to alter the specified user '$userName': Changing your own activation status is not allowed.",
+        source = source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+      )
 
+    // Check Admin Rights for some Database commands
     case AssertDatabaseAdmin(action, database) => (_, _, securityContext) =>
-      AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, new DatabaseScope(database.name()))
+      AuthorizationPredicateExecutionPlan(() =>
+        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), new DatabaseScope(database.name()))),
+        violationMessage = PERMISSION_DENIED
+      )
 
     // SHOW USERS
     case ShowUsers(source) => (context, parameterMapping, securityContext) =>

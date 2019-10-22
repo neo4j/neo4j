@@ -35,63 +35,55 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
-  */
+ * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
+ */
 case class UpdatingSystemCommandExecutionPlan(name: String,
                                               normalExecutionEngine: ExecutionEngine,
                                               query: String,
                                               systemParams: MapValue,
                                               queryHandler: QueryHandler,
                                               source: Option[ExecutionPlan] = None)
-  extends ExecutionPlan {
+  extends ChainedExecutionPlan(source) {
 
-  override def run(originalCtx: QueryContext,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   ignore: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult = {
+  override def runSpecific(ctx: SystemUpdateCountingQueryContext,
+                           executionMode: ExecutionMode,
+                           params: MapValue,
+                           prePopulateResults: Boolean,
+                           ignore: InputDataStream,
+                           subscriber: QuerySubscriber): RuntimeResult = {
 
-    val ctx = SystemUpdateCountingQueryContext.from(originalCtx)
-    // Only the outermost query should be tied into the reactive results stream. The source queries should use an empty subscriber
-    val sourceResult = source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, new QuerySubscriberAdapter(){
-      override def onResultCompleted(statistics: QueryStatistics): Unit = if(statistics.containsUpdates()) ctx.systemUpdates.increase()
-    }))
-    sourceResult match {
-      case Some(IgnoredRuntimeResult) => IgnoredRuntimeResult
-      case _ =>
-        val tc = ctx.kernelTransactionalContext
+    val tc = ctx.kernelTransactionalContext
 
-        var revertAccessModeChange: KernelTransaction.Revertable = null
-        try {
-          val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
-          revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
+    var revertAccessModeChange: KernelTransaction.Revertable = null
+    try {
+      val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
+      revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
-          val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler)
-          try {
-            tc.kernelTransaction().dataWrite() // assert that we are allowed to write
-          } catch {
-            case e: Throwable =>
-              systemSubscriber.onError(e)
-          }
-          systemSubscriber.assertNotFailed()
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler)
+      try {
+        tc.kernelTransaction().dataWrite() // assert that we are allowed to write
+      } catch {
+        case e: Throwable =>
+          systemSubscriber.onError(e)
+      }
+      systemSubscriber.assertNotFailed()
 
-          val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
-          try {
-            execution.consumeAll()
-          } catch {
-            case _: Throwable =>
-              // do nothing, exceptions are handled by SystemCommandQuerySubscriber
-          }
-          systemSubscriber.assertNotFailed()
+      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      try {
+        execution.consumeAll()
+      } catch {
+        case _: Throwable =>
+        // do nothing, exceptions are handled by SystemCommandQuerySubscriber
+      }
+      systemSubscriber.assertNotFailed()
 
-          if (systemSubscriber.shouldIgnoreResult())
-            IgnoredRuntimeResult
-          else
-            UpdatingSystemCommandRuntimeResult(ctx)
-        } finally {
-          if(revertAccessModeChange != null ) revertAccessModeChange
-        }
+      if (systemSubscriber.shouldIgnoreResult()) {
+        IgnoredRuntimeResult
+      } else {
+        UpdatingSystemCommandRuntimeResult(ctx)
+      }
+    } finally {
+      if (revertAccessModeChange != null) revertAccessModeChange
     }
   }
 

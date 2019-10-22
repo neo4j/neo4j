@@ -65,9 +65,11 @@ case class CopyRolePrivileges(source: Option[SecurityAdministrationLogicalPlan],
 
 abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 
+case class CheckFrozenRole(source: Option[PrivilegePlan], roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+
 case class AssertDbmsAdmin(action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertDatabaseAdmin(action: AdminAction, database: NormalizedDatabaseName)(implicit idGen: IdGen) extends PrivilegePlan
-case class AssertDbmsAdminAndNotCurrentUser(action: AdminAction, userName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertNotCurrentUser(source: Option[PrivilegePlan], userName: String)(implicit idGen: IdGen) extends PrivilegePlan
 
 case class GrantDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
