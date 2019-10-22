@@ -246,7 +246,7 @@
         <plugin>
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.11.0</version>
+          <version>0.11.1</version>
           <configuration>
             <skip>true</skip>
             <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
@@ -257,44 +257,13 @@
                   <behavior>report</behavior>
                   <ignoreMissingAnnotations>false</ignoreMissingAnnotations>
                 </missing-classes>
-                <filter>
-                  <classes>
-                    <regex>true</regex>
-                    <include>
-                      <item>org\.neo4j\.helpers\.collection\.BoundedIterable</item>
-                    </include>
-                    <exclude>
-                      <item>org\.neo4j\.graphdb\.Path</item>
-                    </exclude>
-                  </classes>
-                  <packages>
-                    <regex>true</regex>
-                    <include>
-                      <item>org\.neo4j\.graphalgo(\..+)?</item>
-                      <item>org\.neo4j\.cypher\.export(\..+)?</item>
-                      <item>org\.neo4j\.cypher\.javacompat(\..+)?</item>
-                      <item>org\.neo4j\.graphdb(\..+)?</item>
-                      <item>org\.neo4j\.server\.helpers(\..+)?</item>
-                      <item>org\.neo4j\.server\.plugins(\..+)?</item>
-                      <item>org\.neo4j\.server\.rest\.repr(\..+)?</item>
-                      <item>org\.neo4j\.server\.rest\.web(\..+)?</item>
-                      <item>org\.neo4j\.batchinsert(\..+)?</item>
-                      <item>org\.neo4j\.logging(\..+)?</item>
-                      <item>org\.neo4j\.procedure(\..+)?</item>
-                      <item>org\.neo4j\.harness\.junit(\..+)?</item>
-                      <item>com\.neo4j\.harness\.junit(\..+)?</item>
-                    </include>
-                    <exclude>
-                      <item>.*\.impl(\..+)?</item>
-                      <item>.*\.internal(\..+)?</item>
-                      <item>org\.neo4j\.helpers\.progress</item>
-                      <item>org\.neo4j\.logging\.async</item>
-                      <item>org\.neo4j\.server\.rest\.repr\.formats</item>
-                      <item>org\.neo4j\.server\.rest\.repr\.util</item>
-                    </exclude>
-                  </packages>
-                </filter>
               </revapi.java>
+              <revapi.java.filter.annotated>
+                <regex>true</regex>
+                <include>
+                  <item>@org\.neo4j\.annotations\.api\.PublicApi</item>
+                </include>
+              </revapi.java.filter.annotated>
               <revapi.reclassify>
                 <item>
                   <code>java.class.added</code>
@@ -304,12 +273,6 @@
                   </classify>
                 </item>
               </revapi.reclassify>
-              <revapi.ignore>
-                <item>
-                  <!-- Ignore for now since some are already published, should be removed in 4.0 -->
-                  <code>java.class.nonPublicPartOfAPI</code>
-                </item>
-              </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
                 <versionIncreaseAllows>
@@ -317,10 +280,6 @@
                   <minor>nonBreaking</minor>
                   <patch>equivalent</patch>
                 </versionIncreaseAllows>
-                <passThroughDifferences>
-                  <!-- Let revapi.ignore handle this -->
-                  <item>java.class.nonPublicPartOfAPI</item>
-                </passThroughDifferences>
               </revapi.semver.ignore>
             </analysisConfiguration>
           </configuration>
@@ -329,11 +288,6 @@
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
               <version>0.19.1</version>
-            </dependency>
-            <dependency>
-              <groupId>org.revapi</groupId>
-              <artifactId>revapi-basic-features</artifactId>
-              <version>0.8.1</version>
             </dependency>
           </dependencies>
           <executions>
