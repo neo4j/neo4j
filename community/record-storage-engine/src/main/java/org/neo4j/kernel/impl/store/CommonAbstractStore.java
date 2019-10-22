@@ -1096,7 +1096,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         if ( idGenerator != null )
         {
-            try ( IdGenerator.Marker marker = idGenerator.lessStrictMarker() )
+            try ( IdGenerator.Marker marker = idGenerator.idempotentMarker() )
             {
                 while ( ids.hasNext() )
                 {

@@ -34,7 +34,7 @@ public interface IdGenerator extends IdSequence, Closeable
     long getHighId();
     long getHighestPossibleIdInUse();
     Marker marker();
-    Marker lessStrictMarker();
+    Marker idempotentMarker();
 
     @Override
     void close();
@@ -125,9 +125,9 @@ public interface IdGenerator extends IdSequence, Closeable
         }
 
         @Override
-        public Marker lessStrictMarker()
+        public Marker idempotentMarker()
         {
-            return delegate.lessStrictMarker();
+            return delegate.idempotentMarker();
         }
 
         @Override

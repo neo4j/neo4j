@@ -307,7 +307,7 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public Marker lessStrictMarker()
+    public Marker idempotentMarker()
     {
         return internalMarker( false );
     }
