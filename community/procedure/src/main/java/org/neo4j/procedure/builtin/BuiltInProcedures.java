@@ -370,9 +370,9 @@ public class BuiltInProcedures
     }
 
     @SystemProcedure
-    @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." )
+    @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\"MyIndex\"))." )
     @Procedure( name = "db.resampleIndex", mode = READ )
-    public void resampleIndex( @Name( "index" ) String index ) throws ProcedureException
+    public void resampleIndex( @Name( "indexName" ) String indexName ) throws ProcedureException
     {
         if ( callContext.isSystemDatabase() )
         {
@@ -381,7 +381,7 @@ public class BuiltInProcedures
 
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            indexProcedures.resampleIndex( index );
+            indexProcedures.resampleIndex( indexName );
         }
     }
 

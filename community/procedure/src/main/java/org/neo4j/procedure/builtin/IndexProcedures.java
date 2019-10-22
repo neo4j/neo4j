@@ -70,9 +70,9 @@ public class IndexProcedures implements AutoCloseable
         waitUntilOnline( getIndex( specifier ), specifier, timeout, timeoutUnits );
     }
 
-    void resampleIndex( String indexSpecification ) throws ProcedureException
+    void resampleIndex( String indexName ) throws ProcedureException
     {
-        IndexSpecifier specifier = IndexSpecifier.byPattern( indexSpecification );
+        IndexSpecifier specifier = IndexSpecifier.byName( indexName );
         triggerSampling( getIndex( specifier ) );
     }
 

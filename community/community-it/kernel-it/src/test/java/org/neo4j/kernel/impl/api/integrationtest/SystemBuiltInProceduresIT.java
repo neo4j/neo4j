@@ -234,7 +234,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.resampleIndex('Person')" ).hasNext());
+            assertFalse( tx.execute( "CALL db.resampleIndex('person foo index')" ).hasNext());
         }
     }
 
