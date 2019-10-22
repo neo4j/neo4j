@@ -179,7 +179,7 @@ class BatchInsertIndexTest
     void shouldCreateFullTextIndexForFullTextIndexType() throws Exception
     {
         Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
+                .set( neo4j_home, testDirectory.homeDir().toPath() ).build();
         BatchInserter inserter = newBatchInserter( config );
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).withIndexType( IndexType.FULLTEXT ).withName( "fts" ).create();
         inserter.shutdown();
