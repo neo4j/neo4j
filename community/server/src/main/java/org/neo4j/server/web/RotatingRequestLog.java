@@ -62,8 +62,7 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
         // %h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] "%r" %s %b "%i{Referer}" "%i{User-Agent}" %D
         String remoteHost = swallowExceptions( request, HttpServletRequest::getRemoteHost );
         String user = swallowExceptions( request, HttpServletRequest::getRemoteUser );
-        String requestURL = swallowExceptions( request, HttpServletRequest::getRequestURI ) + "?" +
-                swallowExceptions( request, HttpServletRequest::getQueryString );
+        String requestURL = findRequestURI( request );
         int statusCode = response.getStatus();
         long length = response.getContentLength();
         String referer = swallowExceptions( request, r -> r.getHeader( "Referer" ) );
@@ -105,5 +104,17 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
     @Override
     public void eventCount( long count )
     {
+    }
+
+    private String findRequestURI( Request request )
+    {
+        var requestURI = swallowExceptions( request, HttpServletRequest::getRequestURI );
+        var queryString = swallowExceptions( request, HttpServletRequest::getQueryString );
+
+        if ( queryString == null || queryString.isBlank() )
+        {
+            return requestURI;
+        }
+        return requestURI + "?" + queryString;
     }
 }
