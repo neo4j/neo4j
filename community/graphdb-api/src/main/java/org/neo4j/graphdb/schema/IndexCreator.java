@@ -70,7 +70,15 @@ public interface IndexCreator
      */
     IndexCreator withIndexType( IndexType type );
 
-//    IndexCreator withIndexConfig( Map<String,Object> config );
+    /**
+     * Set index-specific index configurations.
+     * <p>
+     * This call will override the settings from any previous call to this method.
+     *
+     * @param indexConfiguration The index settings in the index configuration that differ from their defaults.
+     * @return an {@link IndexCreator} instance to be used for further interaction.
+     */
+    IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration );
 
     /**
      * Creates an index with the details specified by the other methods in this interface.

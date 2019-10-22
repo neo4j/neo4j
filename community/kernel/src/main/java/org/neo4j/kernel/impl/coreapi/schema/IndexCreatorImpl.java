@@ -21,12 +21,18 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public class IndexCreatorImpl implements IndexCreator
 {
@@ -35,19 +41,22 @@ public class IndexCreatorImpl implements IndexCreator
     private final InternalSchemaActions actions;
     private final String indexName;
     private final IndexType indexType;
+    private final IndexConfig indexConfig;
 
     public IndexCreatorImpl( InternalSchemaActions actions, Label label )
     {
-        this( actions, label, null, new ArrayList<>(), IndexType.BTREE );
+        this( actions, label, null, new ArrayList<>(), IndexType.BTREE, IndexConfig.empty() );
     }
 
-    private IndexCreatorImpl( InternalSchemaActions actions, Label label, String indexName, Collection<String> propertyKeys, IndexType indexType )
+    private IndexCreatorImpl( InternalSchemaActions actions, Label label, String indexName, Collection<String> propertyKeys, IndexType indexType,
+            IndexConfig indexConfig )
     {
         this.actions = actions;
         this.label = label;
         this.indexName = indexName;
         this.propertyKeys = propertyKeys;
         this.indexType = indexType;
+        this.indexConfig = indexConfig;
 
         assertInUnterminatedTransaction();
     }
@@ -56,21 +65,43 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, copyAndAdd( propertyKeys, propertyKey ), indexType );
+        return new IndexCreatorImpl( actions, label, indexName, copyAndAdd( propertyKeys, propertyKey ), indexType, indexConfig );
     }
 
     @Override
     public IndexCreator withName( String indexName )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType );
+        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType, indexConfig );
     }
 
     @Override
     public IndexCreator withIndexType( IndexType indexType )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType );
+        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType, indexConfig );
+    }
+
+    @Override
+    public IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
+    {
+        assertInUnterminatedTransaction();
+        Map<String,Value> collectingMap = new HashMap<>();
+        for ( Map.Entry<IndexSetting,Object> entry : indexConfiguration.entrySet() )
+        {
+            IndexSetting setting = entry.getKey();
+            Class<?> type = setting.getType();
+            Object value = entry.getValue();
+            if ( value == null || !type.isAssignableFrom( value.getClass() ) )
+            {
+                throw new IllegalArgumentException( "Invalid value type for '" + setting.name() + "' setting. " +
+                        "Expected a value of type " + type.getName() + ", " +
+                        "but got value '" + value + "' of type " + ( value == null ? "null" : value.getClass().getName() ) + "." );
+            }
+            collectingMap.put( setting.getSettingName(), Values.of( value ) );
+        }
+        IndexConfig indexConfig = IndexConfig.with( collectingMap );
+        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType, indexConfig );
     }
 
     @Override
@@ -83,7 +114,7 @@ public class IndexCreatorImpl implements IndexCreator
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
         }
 
-        return actions.createIndexDefinition( label, indexName, indexType, propertyKeys.toArray( new String[0] ) );
+        return actions.createIndexDefinition( label, indexName, indexType, indexConfig, propertyKeys.toArray( new String[0] ) );
     }
 
     private void assertInUnterminatedTransaction()

@@ -40,6 +40,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
@@ -63,6 +64,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -902,17 +904,17 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withName( "my_index" ).create();
-            Map<String,Object> config = index.getIndexConfiguration();
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( "spatial.cartesian.dimensions" ) );
+            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
-            Map<String,Object> config = index.getIndexConfiguration();
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( "spatial.cartesian.dimensions" ) );
+            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
             tx.commit();
         }
     }
@@ -923,24 +925,103 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create();
-            Map<String,Object> config = index.getIndexConfiguration();
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( "fulltext.analyzer" ) );
+            assertTrue( config.containsKey( IndexSetting.FULLTEXT_ANALYZER ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
-            Map<String,Object> config = index.getIndexConfiguration();
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( "fulltext.analyzer" ) );
+            assertTrue( config.containsKey( IndexSetting.FULLTEXT_ANALYZER ) );
             tx.commit();
         }
     }
-    // todo must be able ot set full text index config
-    // todo must not allow spatial values in index config
-    // todo must not allow temporal types in index config
-    // todo must not allow index config settings where values have wrong type
+
+    @Test
+    void mustBeAbleToSetFullTextIndexConfig()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey )
+                    .withIndexType( IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, "swedish" ) )
+                    .create();
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            assertEquals( "swedish", config.get( IndexSetting.FULLTEXT_ANALYZER ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "my_index" );
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            assertEquals( "swedish", config.get( IndexSetting.FULLTEXT_ANALYZER ) );
+            tx.commit();
+        }
+    }
+
+    /**
+     * This is the example used in {@link IndexSetting}.
+     */
+    @Test
+    void indexConfigurationExample()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().indexFor( Label.label( "Email" ) ).on( "from" ).on( "to" ).on( "cc" ).on( "bcc" )
+                    .withName( "email-addresses" )
+                    .withIndexType( IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, "email" ) )
+                    .create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "email-addresses" );
+            assertThat( index.getPropertyKeys(), containsInAnyOrder( "from", "to", "cc", "bcc" ) );
+            assertThat( index.getIndexConfiguration().get( IndexSetting.FULLTEXT_ANALYZER ), is( "email" ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void indexSettingValuesMustHaveCorrectType()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator creator = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexType( IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, 1 ) )
+                    .create() );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexType( IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, true ) )
+                    .create() );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexType( IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, "true" ) )
+                    .create() );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexType( IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, 1 ) )
+                    .create() );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, "1" ) )
+                    .create() );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, "1" ) )
+                    .create() );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, 1 ) )
+                    .create() );
+            assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, 1.0 ) )
+                    .create() );
+        }
+    }
 
     private static String alreadyExistsIndexMessage( String indexName )
     {

@@ -30,11 +30,15 @@ public enum IndexType
     /**
      * For B+Tree based indexes. All types of values are indexed and stored in sort-order. This means they are good at all types of exact matching,
      * and range queries. They can also support index-backed order-by.
+     * <p>
+     * BTREE indexes can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "SPATIAL_".
      */
     BTREE,
     /**
      * For full-text indexes. These indexes only index string values, and cannot answer all types of queries.
      * On the other hand, they are good at matching sub-strings of the indexed values, and they can do fuzzy matching, and scoring.
+     * <p>
+     * FULLTEXT indexes can have their behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "FULLTEXT_".
      */
     FULLTEXT
 }

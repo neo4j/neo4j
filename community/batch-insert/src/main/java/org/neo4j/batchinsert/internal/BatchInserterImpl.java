@@ -79,6 +79,7 @@ import org.neo4j.internal.recordstorage.SchemaCache;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -1218,7 +1219,8 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, String... propertyKeys )
+        public IndexDefinition createIndexDefinition(
+                Label label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
@@ -1226,6 +1228,7 @@ public class BatchInserterImpl implements BatchInserter
 
             validateIndexCanBeCreated( schema );
             IndexPrototype prototype = IndexPrototype.forSchema( schema ).withName( indexName ).withIndexType( fromPublicApi( indexType ) );
+            prototype = prototype.withIndexConfig( indexConfig );
 
             IndexDescriptor index = createIndex( prototype );
             return new IndexDefinitionImpl( this, index, new Label[]{label}, propertyKeys, false );

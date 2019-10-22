@@ -127,5 +127,5 @@ public interface IndexDefinition
      * Get the index configuration that this index was created with.
      * @return The index configuration as a read-only map.
      */
-    Map<String,Object> getIndexConfiguration();
+    Map<IndexSetting,Object> getIndexConfiguration();
 }

@@ -57,6 +57,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -550,7 +551,8 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, String... propertyKeys )
+        public IndexDefinition createIndexDefinition(
+                Label label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
         {
             try ( Statement ignore = transaction.acquireStatement() )
             {
@@ -563,6 +565,7 @@ public class SchemaImpl implements Schema
                     IndexPrototype prototype = IndexPrototype.forSchema( schema );
                     prototype = prototype.withName( indexName );
                     prototype = prototype.withIndexType( fromPublicApi( indexType ) );
+                    prototype = prototype.withIndexConfig( indexConfig );
                     IndexDescriptor indexReference = transaction.schemaWrite().indexCreate( prototype );
                     return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
                 }

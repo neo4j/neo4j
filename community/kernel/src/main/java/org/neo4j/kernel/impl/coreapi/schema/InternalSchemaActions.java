@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import java.util.Map;
+
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -26,6 +28,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 
 /**
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseNodeConstraintCreator} for re-use
@@ -33,7 +36,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
  */
 public interface InternalSchemaActions
 {
-    IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, String... propertyKey );
+    IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey );
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 
