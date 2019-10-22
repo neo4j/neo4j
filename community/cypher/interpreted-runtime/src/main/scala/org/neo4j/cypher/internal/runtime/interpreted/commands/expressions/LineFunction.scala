@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import java.net.URLDecoder
+
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ResourceLinenumber}
@@ -41,7 +43,7 @@ case class Linenumber() extends Expression {
 
 case class File() extends Expression {
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getLinenumber match {
-    case Some(ResourceLinenumber(name, _, _)) => Values.stringValue(name)
+    case Some(ResourceLinenumber(name, _, _)) => Values.stringValue(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
     case _ => Values.NO_VALUE
   }
 
