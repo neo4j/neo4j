@@ -363,6 +363,27 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // No assertion on the expand because db hits can vary, given that the nodes have 2 relationships.
   }
 
+  test("should profile dbhits with optional expand all") {
+    // given
+    starGraph(sizeHint, "Center", "Ring")
+    val extraNodes = 20
+    nodeGraph(extraNodes, "Ring")
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .optionalExpandAll("(x)-->(y)")
+      .nodeByLabelScan("x", "Ring")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * costOfExpand + extraNodes) // optional expand all
+    queryProfile.operatorProfile(2).dbHits() should be (sizeHint + extraNodes + 1 + costOfLabelLookup) // label scan
+  }
+
   test("should profile dbHits with node hash join") {
     // given
     nodePropertyGraph(sizeHint,{

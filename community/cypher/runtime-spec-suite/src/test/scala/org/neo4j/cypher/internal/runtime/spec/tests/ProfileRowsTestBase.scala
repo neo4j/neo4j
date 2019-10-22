@@ -158,6 +158,29 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() should be >= (sizeHint * 2L) // all node scan
   }
 
+  test("should profile rows with optional expand all") {
+    // given
+    val nodesPerLabel = 100
+    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val extraANodes = 20
+    nodeGraph(extraANodes, "A")
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .optionalExpandAll("(a)-->(b)")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel + extraANodes) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel + extraANodes) // optional expand all
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel + extraANodes).toLong // nodeByLabelScan
+  }
+
   test("should profile rows with expand into") {
     // given
     val nodesPerLabel = 100
