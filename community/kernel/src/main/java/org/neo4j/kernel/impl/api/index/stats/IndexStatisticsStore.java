@@ -200,10 +200,13 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
-        // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
-        clearTree();
-        writeCacheContentsIntoTree();
-        tree.checkpoint( ioLimiter );
+        if ( !readOnly )
+        {
+            // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
+            clearTree();
+            writeCacheContentsIntoTree();
+            tree.checkpoint( ioLimiter );
+        }
     }
 
     @Override
