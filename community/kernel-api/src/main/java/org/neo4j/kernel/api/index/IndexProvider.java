@@ -255,9 +255,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public void validatePrototype( IndexPrototype prototype )
     {
         // By default we only accept BTREE indexes.
-        if ( prototype.getIndexType() != IndexType.BTREE )
+        IndexType indexType = prototype.getIndexType();
+        if ( indexType != IndexType.BTREE )
         {
-            throw new IllegalArgumentException( "The '" + getProviderDescriptor().name() + "' index provider do not support SPECIAL indexes: " + prototype );
+            String providerName = getProviderDescriptor().name();
+            throw new IllegalArgumentException( "The '" + providerName + "' index provider does not support " + indexType + " indexes: " + prototype );
         }
     }
 

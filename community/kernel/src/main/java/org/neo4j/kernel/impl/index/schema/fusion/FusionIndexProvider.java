@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.SpatialIndexConfig;
 import org.neo4j.memory.ByteBufferFactory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -167,6 +169,16 @@ public class FusionIndexProvider extends IndexProvider
         }
         // This means that all parts are ONLINE
         return InternalIndexState.ONLINE;
+    }
+
+    @Override
+    public void validatePrototype( IndexPrototype prototype )
+    {
+        super.validatePrototype( prototype );
+        for ( IndexSlot slot : IndexSlot.values() )
+        {
+            providers.select( slot ).validatePrototype( prototype );
+        }
     }
 
     @Override

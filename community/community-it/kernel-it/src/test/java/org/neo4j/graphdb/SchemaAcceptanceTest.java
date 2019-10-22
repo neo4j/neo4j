@@ -69,6 +69,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -947,10 +948,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey )
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, "swedish" ) )
+                    .withIndexConfiguration( Map.of(
+                            IndexSetting.FULLTEXT_ANALYZER, "swedish",
+                            IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, true ) )
                     .create();
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertEquals( "swedish", config.get( IndexSetting.FULLTEXT_ANALYZER ) );
+            assertEquals( true, config.get( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -958,6 +962,30 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertEquals( "swedish", config.get( IndexSetting.FULLTEXT_ANALYZER ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustBeAbleToSetBtreeIndexConfig()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey )
+                    .withIndexConfiguration( Map.of(
+                            IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, 5,
+                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0} ) )
+                    .create();
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "my_index" );
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
             tx.commit();
         }
     }
@@ -1020,6 +1048,29 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, 1.0 ) )
                     .create() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void indexSettingsWithNonsensicalValuesMustBeRejected()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Exception e;
+            IndexCreator creator = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey );
+            e = assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexType( IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, "analyzer that does not exist" ) )
+                    .create() );
+            assertThat( e.getMessage(), containsString( "'analyzer that does not exist'" ) );
+
+            e = assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {100.0, 10.0, 1.0} ) )
+                    .create() );
+            assertThat( e.getMessage(), containsString( "Invalid spatial index settings" ) );
+
+            tx.commit();
         }
     }
 

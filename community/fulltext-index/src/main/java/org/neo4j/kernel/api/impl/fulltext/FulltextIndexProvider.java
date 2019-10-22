@@ -61,12 +61,16 @@ import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 
 public class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 {
@@ -231,6 +235,22 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         {
             throw new IllegalArgumentException( "The '" + getProviderDescriptor().name() + "' only supports FULLTEXT index types: " + prototype );
         }
+        Value value = prototype.getIndexConfig().get( ANALYZER );
+        if ( value != null )
+        {
+            if ( value.valueGroup() == ValueGroup.TEXT )
+            {
+                String analyzerName = ((TextValue) value).stringValue();
+                if ( listAvailableAnalyzers().noneMatch( analyzer -> analyzer.getName().equals( analyzerName ) ) )
+                {
+                    throw new IllegalArgumentException( "No such full-text analyzer: '" + analyzerName + "'." );
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Wrong index setting value type for fulltext analyzer: '" + value + "'." );
+            }
+        }
     }
 
     @Override
@@ -274,7 +294,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
 
     private IndexConfig addMissingDefaultIndexConfig( IndexConfig indexConfig )
     {
-        indexConfig = indexConfig.withIfAbsent( FulltextIndexSettingsKeys.ANALYZER, Values.stringValue( defaultAnalyzerName ) );
+        indexConfig = indexConfig.withIfAbsent( ANALYZER, Values.stringValue( defaultAnalyzerName ) );
         indexConfig = indexConfig.withIfAbsent( FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
         return indexConfig;
     }

@@ -23,7 +23,7 @@ import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Index settings are used for fine-tuning the behaviour of schema indexes.
- * All indexes schema indexes have a configuration associated with them, and it is only necessary to specify the particular settings in that configuration,
+ * All indexes have a configuration associated with them, and it is only necessary to specify the particular settings in that configuration,
  * that should differ from their defaults.
  * <p>
  * Index settings can only be specified when the index is created.
@@ -50,11 +50,15 @@ public enum IndexSetting
      * Configure the analyzer used in a full-text index, indexes of type {@link IndexType#FULLTEXT}.
      * <p>
      * The list of possible analyzers are available via the {@code db.index.fulltext.listAvailableAnalyzers()} procedure.
+     * <p>
+     * This setting is given as a String.
      */
     FULLTEXT_ANALYZER( "fulltext.analyzer", String.class ),
     /**
      * Configure if a full-text index is allowed to be eventually consistent.
      * By default full-text indexes are fully consistent, just like other schema indexes.
+     * <p>
+     * This setting is given as a boolean.
      */
     FULLTEXT_EVENTUALLY_CONSISTENT( "fulltext.eventually_consistent", Boolean.class ),
     SPATIAL_CARTESIAN_MAX_LEVELS( "spatial.cartesian.maxLevels", Integer.class ),

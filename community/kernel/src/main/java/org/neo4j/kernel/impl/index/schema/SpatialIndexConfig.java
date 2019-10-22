@@ -73,6 +73,14 @@ public final class SpatialIndexConfig
         map.put( key( crsName, MAX ), Values.doubleArray( max ) );
     }
 
+    /**
+     * Throws an {@link IllegalArgumentException} if the spatial settings in the given {@link IndexConfig} are invalid.
+     */
+    public static void validateSpatialConfig( IndexConfig indexConfig )
+    {
+       extractSpatialConfig( indexConfig );
+    }
+
     static IndexConfig addSpatialConfig( IndexConfig indexConfig, CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
     {
         Map<String,Value> spatialConfig = new HashMap<>();

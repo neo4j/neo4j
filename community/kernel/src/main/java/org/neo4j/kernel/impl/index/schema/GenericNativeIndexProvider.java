@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexLimitation;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -136,17 +137,23 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         IndexConfig indexConfig = index.getIndexConfig();
-        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
-        {
-            SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS( crs );
-            indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
-        }
+        indexConfig = completeSpatialConfiguration( indexConfig );
         index = index.withIndexConfig( indexConfig );
         if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
         {
             index = index.withIndexCapability( CAPABILITY );
         }
         return index;
+    }
+
+    private IndexConfig completeSpatialConfiguration( IndexConfig indexConfig )
+    {
+        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
+        {
+            SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS( crs );
+            indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
+        }
+        return indexConfig;
     }
 
     @Override
@@ -176,6 +183,22 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     {
         return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), configuration, readOnly );
+    }
+
+    @Override
+    public void validatePrototype( IndexPrototype prototype )
+    {
+        super.validatePrototype( prototype );
+        IndexConfig indexConfig = prototype.getIndexConfig();
+        indexConfig = completeSpatialConfiguration( indexConfig );
+        try
+        {
+            SpatialIndexConfig.validateSpatialConfig( indexConfig );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IllegalArgumentException( "Invalid spatial index settings.", e );
+        }
     }
 
     private static class GenericIndexCapability implements IndexCapability
