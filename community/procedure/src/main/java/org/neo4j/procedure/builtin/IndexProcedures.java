@@ -56,14 +56,7 @@ public class IndexProcedures implements AutoCloseable
         this.indexingService = indexingService;
     }
 
-    void awaitIndexByPattern( String indexPattern, long timeout, TimeUnit timeoutUnits )
-            throws ProcedureException
-    {
-        IndexSpecifier specifier = IndexSpecifier.byPattern( indexPattern );
-        waitUntilOnline( getIndex( specifier ), specifier, timeout, timeoutUnits );
-    }
-
-    public void awaitIndexByName( String indexName, long timeout, TimeUnit timeoutUnits )
+    void awaitIndexByName( String indexName, long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
         IndexSpecifier specifier = IndexSpecifier.byName( indexName );
@@ -263,7 +256,7 @@ public class IndexProcedures implements AutoCloseable
             case FAILED:
                 String cause = getFailure( specifier, index );
                 throw new ProcedureException( Status.Schema.IndexCreationFailed,
-                        IndexPopulationFailure.appendCauseOfFailure( "Index %s is in failed state.", cause ), specifier );
+                        IndexPopulationFailure.appendCauseOfFailure( "Index `%s` is in failed state.", cause ), specifier );
             default:
                 throw new IllegalStateException( "Unknown index state " + state );
         }

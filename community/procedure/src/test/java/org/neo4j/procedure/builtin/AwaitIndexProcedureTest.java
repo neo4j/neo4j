@@ -83,39 +83,6 @@ class AwaitIndexProcedureTest
     }
 
     @Test
-    void shouldThrowAnExceptionIfTheLabelDoesntExist()
-    {
-        when( tokenRead.nodeLabel( "NonExistentLabel" ) ).thenReturn( -1 );
-
-        ProcedureException exception =
-                assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":NonExistentLabel(prop)", TIMEOUT, TIME_UNIT ) );
-        assertThat( exception.status(), is( Status.Schema.LabelAccessFailed ) );
-    }
-
-    @Test
-    void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
-    {
-        when( tokenRead.propertyKey( "nonExistentProperty" ) ).thenReturn( -1 );
-
-        ProcedureException exception =
-                assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Label(nonExistentProperty)", TIMEOUT, TIME_UNIT ) );
-        assertThat( exception.status(), is( Status.Schema.PropertyKeyAccessFailed ) );
-    }
-
-    @Test
-    void shouldLookUpTheIndexByLabelIdAndPropertyKeyId() throws ProcedureException, IndexNotFoundKernelException
-    {
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
-        when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
-
-        procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
-
-        verify( schemaRead ).index( descriptor );
-    }
-
-    @Test
     void shouldLookUpTheIndexByIndexName() throws ProcedureException, IndexNotFoundKernelException
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
@@ -133,14 +100,14 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
         when( schemaRead.indexGetFailure( any( IndexDescriptor.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "index", TIMEOUT, TIME_UNIT ) );
         assertThat( exception.status(), is( Status.Schema.IndexCreationFailed ) );
         assertThat( exception.getMessage(), containsString( "Kilroy was here" ) );
-        assertThat( exception.getMessage(), containsString( ":Person(name)" ) );
+        assertThat( exception.getMessage(), containsString( "Index `index` is in failed state.: Cause of failure:" ) );
     }
 
     @Test
@@ -148,17 +115,11 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.emptyResourceIterator() );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         ProcedureException exception =
-                assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
+                assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "index", TIMEOUT, TIME_UNIT ) );
         assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
-    }
-
-    @Test
-    void shouldThrowAnExceptionIfGivenAnIndexName()
-    {
-        assertThrows( IllegalArgumentException.class, () -> procedure.awaitIndexByPattern( "`some index`", TIMEOUT, TIME_UNIT ) );
     }
 
     @Test
@@ -178,6 +139,7 @@ class AwaitIndexProcedureTest
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
@@ -187,7 +149,7 @@ class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
+                procedure.awaitIndexByName( "index", TIMEOUT, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {
@@ -208,7 +170,7 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();
@@ -217,7 +179,7 @@ class AwaitIndexProcedureTest
             try
             {
                 // We wait here, because we expect timeout
-                procedure.awaitIndexByPattern( ":Person(name)", 0, TIME_UNIT );
+                procedure.awaitIndexByName( "index", 0, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {
