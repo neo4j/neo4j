@@ -59,11 +59,6 @@ public class IndexSpecifier
     private final String[] properties;
     private final String name;
 
-    public static IndexSpecifier byPatternOrName( String specification )
-    {
-        return parse( specification, true, true );
-    }
-
     public static IndexSpecifier byPattern( String specification )
     {
         return parse( specification, false, true );
