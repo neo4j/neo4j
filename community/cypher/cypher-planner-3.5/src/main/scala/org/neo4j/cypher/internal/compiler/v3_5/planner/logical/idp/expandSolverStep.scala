@@ -76,7 +76,8 @@ object expandSolverStep {
         val rhs = plan.rhs.map(inner => leafArguments(inner)).toSet.flatten
         lhs ++ rhs
     }
-    // Remove the leaf arguments as to not try and join disjoint plans only on arguments
+    // Remove the leaf arguments as to not try and join disjoint plans only on arguments.
+    // This reduces the solution space for the expands generator, since the joins generator should consider these cases.
     val symbols = availableSymbols -- leafArguments(sourcePlan)
 
     if (symbols(nodeId)) {
