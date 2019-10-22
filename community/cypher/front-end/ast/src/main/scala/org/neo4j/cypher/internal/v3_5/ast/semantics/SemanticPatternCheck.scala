@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.ast.semantics
 
-import org.neo4j.cypher.internal.v3_5.expressions.Pattern.SemanticContext.{Construct, name}
+import org.neo4j.cypher.internal.v3_5.expressions.Pattern.SemanticContext.{Construct, Match, name}
 import org.neo4j.cypher.internal.v3_5.expressions.Pattern.{SemanticContext, findDuplicateRelationships}
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.util.UnboundedShortestPathNotification
@@ -98,6 +98,24 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               }(...) requires a pattern containing a single relationship", x.position, x.element.position)
           }
 
+        def checkKnownEnds: SemanticCheck =
+          (ctx, x.element) match {
+            case (Match, _) => None
+            case (_, RelationshipChain(l: NodePattern, _, r: NodePattern)) =>
+              if (l.variable.isEmpty)
+                SemanticError(s"A ${
+                  x.name
+                }(...) requires bound nodes when not part of a MATCH clause.", x.position, l.position)
+              else if (r.variable.isEmpty)
+                SemanticError(s"A ${
+                  x.name
+                }(...) requires bound nodes when not part of a MATCH clause.", x.position, r.position)
+              else
+                None
+            case (_, _) =>
+              None
+          }
+
         def checkLength: SemanticCheck =
           (state: SemanticState) =>
             x.element match {
@@ -137,6 +155,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
         checkContext chain
           checkContainsSingle chain
+          checkKnownEnds chain
           checkLength chain
           checkRelVariablesUnknown chain
           check(ctx, x.element)
