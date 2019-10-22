@@ -125,7 +125,7 @@ final class GenericConfigExtractor
                 max[i] = Double.longBitsToDouble( headerBytes.getLong() );
             }
             CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-            SpatialIndexConfig.addSpatialConfig( indexConfig, crs, dimensions, maxLevels, min, max );
+            SpatialIndexConfig.addSpatialConfig( indexConfig, crs, maxLevels, min, max );
         }
     }
 }

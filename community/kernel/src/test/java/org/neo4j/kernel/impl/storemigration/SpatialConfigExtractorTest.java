@@ -63,30 +63,18 @@ class SpatialConfigExtractorTest
 
     static
     {
-        staticExpectedIndexConfig.put( "spatial.wgs-84.tableId", Values.intValue( 1 ) );
-        staticExpectedIndexConfig.put( "spatial.wgs-84.code", Values.intValue( 4326 ) );
-        staticExpectedIndexConfig.put( "spatial.wgs-84.dimensions", Values.intValue( 2 ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84.maxLevels", Values.intValue( 15 ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84.min", Values.doubleArray( new double[]{-1.0, -2.0} ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84.max", Values.doubleArray( new double[]{3.0, 4.0} ) );
 
-        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.tableId", Values.intValue( 1 ) );
-        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.code", Values.intValue( 4979 ) );
-        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.dimensions", Values.intValue( 3 ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84-3d.maxLevels", Values.intValue( 10 ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84-3d.min", Values.doubleArray( new double[]{-5.0, -6.0, -7.0} ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84-3d.max", Values.doubleArray( new double[]{8.0, 9.0, 10.0} ) );
 
-        staticExpectedIndexConfig.put( "spatial.cartesian.tableId", Values.intValue( 2 ) );
-        staticExpectedIndexConfig.put( "spatial.cartesian.code", Values.intValue( 7203 ) );
-        staticExpectedIndexConfig.put( "spatial.cartesian.dimensions", Values.intValue( 2 ) );
         staticExpectedIndexConfig.put( "spatial.cartesian.maxLevels", Values.intValue( 15 ) );
         staticExpectedIndexConfig.put( "spatial.cartesian.min", Values.doubleArray( new double[]{-11.0, -12.0} ) );
         staticExpectedIndexConfig.put( "spatial.cartesian.max", Values.doubleArray( new double[]{13.0, 14.0} ) );
 
-        staticExpectedIndexConfig.put( "spatial.cartesian-3d.tableId", Values.intValue( 2 ) );
-        staticExpectedIndexConfig.put( "spatial.cartesian-3d.code", Values.intValue( 9157 ) );
-        staticExpectedIndexConfig.put( "spatial.cartesian-3d.dimensions", Values.intValue( 3 ) );
         staticExpectedIndexConfig.put( "spatial.cartesian-3d.maxLevels", Values.intValue( 10 ) );
         staticExpectedIndexConfig.put( "spatial.cartesian-3d.min", Values.doubleArray( new double[]{-15.0, -16.0, -17.0} ) );
         staticExpectedIndexConfig.put( "spatial.cartesian-3d.max", Values.doubleArray( new double[]{18.0, 19.0, 20.0} ) );

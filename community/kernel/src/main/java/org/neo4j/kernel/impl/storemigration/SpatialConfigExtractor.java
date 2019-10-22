@@ -93,7 +93,7 @@ final class SpatialConfigExtractor
                             max[i] = headerBytes.getDouble();
                         }
                         CoordinateReferenceSystem crs = spatialFile.getCrs();
-                        SpatialIndexConfig.addSpatialConfig( map, crs, dimensions, maxLevels, min, max );
+                        SpatialIndexConfig.addSpatialConfig( map, crs, maxLevels, min, max );
                     }
                     catch ( BufferUnderflowException e )
                     {

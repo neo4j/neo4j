@@ -41,9 +41,6 @@ import org.neo4j.values.storable.Values;
  */
 public final class SpatialIndexConfig
 {
-    static final String TABLE_ID = "tableId";
-    static final String CODE = "code";
-    static final String DIMENSIONS = "dimensions";
     static final String MAX_LEVELS = "maxLevels";
     static final String MIN = "min";
     static final String MAX = "max";
@@ -62,21 +59,15 @@ public final class SpatialIndexConfig
      */
     static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
     {
-        int dimensions = settings.getDimensions();
         int maxLevels = settings.getMaxLevels();
         double[] min = settings.indexExtents().getMin();
         double[] max = settings.indexExtents().getMax();
-        addSpatialConfig( map, crs, dimensions, maxLevels, min, max );
+        addSpatialConfig( map, crs, maxLevels, min, max );
     }
 
-    public static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, int dimensions, int maxLevels, double[] min, double[] max )
+    public static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, int maxLevels, double[] min, double[] max )
     {
         String crsName = crs.getName();
-        int tableId = crs.getTable().getTableId();
-        int code = crs.getCode();
-        map.put( key( crsName, TABLE_ID ), Values.intValue( tableId ) );
-        map.put( key( crsName, CODE ), Values.intValue( code ) );
-        map.put( key( crsName, DIMENSIONS ), Values.intValue( dimensions ) );
         map.put( key( crsName, MAX_LEVELS ), Values.intValue( maxLevels ) );
         map.put( key( crsName, MIN ), Values.doubleArray( min ) );
         map.put( key( crsName, MAX ), Values.doubleArray( max ) );
@@ -129,16 +120,13 @@ public final class SpatialIndexConfig
         for ( String key : configByCrsNames.keySet() )
         {
             Map<String,Value> configByCrsName = configByCrsNames.get( key );
-            int tableId = getIntValue( configByCrsName, TABLE_ID ).value();
-            int code = getIntValue( configByCrsName, CODE ).value();
-            int dimensions = getIntValue( configByCrsName, DIMENSIONS ).value();
             int maxLevels = getIntValue( configByCrsName, MAX_LEVELS ).value();
             double[] min = getDoubleArrayValue( configByCrsName, MIN ).asObjectCopy();
             double[] max = getDoubleArrayValue( configByCrsName, MAX ).asObjectCopy();
 
-            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
+            final CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( key );
             Envelope extents = new Envelope( min, max );
-            settings.put( crs, new SpaceFillingCurveSettings( dimensions, extents, maxLevels ) );
+            settings.put( crs, new SpaceFillingCurveSettings( crs.getDimension(), extents, maxLevels ) );
         }
         return settings;
     }

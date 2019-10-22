@@ -145,27 +145,15 @@ public class DefaultSchemaIndexConfigTest
             Map<String,Value> indexConfig = indexProxy.indexConfig();
 
             // Expected default values for schema index
-            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.cartesian.tableId" ) );
-            assertEquals( Values.intValue( 7203 ), indexConfig.get( "spatial.cartesian.code" ) );
-            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.cartesian.dimensions" ) );
             assertEquals( Values.intValue( 30 ), indexConfig.get( "spatial.cartesian.maxLevels" ) );
             assertEquals( Values.doubleArray( new double[]{-1000000.0, -1000000.0} ), indexConfig.get( "spatial.cartesian.min" ) );
             assertEquals( Values.doubleArray( new double[]{1000000.0, 1000000.0} ), indexConfig.get( "spatial.cartesian.max" ) );
-            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.cartesian-3d.tableId" ) );
-            assertEquals( Values.intValue( 9157 ), indexConfig.get( "spatial.cartesian-3d.code" ) );
-            assertEquals( Values.intValue( 3 ), indexConfig.get( "spatial.cartesian-3d.dimensions" ) );
             assertEquals( Values.intValue( 20 ), indexConfig.get( "spatial.cartesian-3d.maxLevels" ) );
             assertEquals( Values.doubleArray( new double[]{-1000000.0, -1000000.0, -1000000.0} ), indexConfig.get( "spatial.cartesian-3d.min" ) );
             assertEquals( Values.doubleArray( new double[]{1000000.0, 1000000.0, 1000000.0} ), indexConfig.get( "spatial.cartesian-3d.max" ) );
-            assertEquals( Values.intValue( 1 ), indexConfig.get( "spatial.wgs-84.tableId" ) );
-            assertEquals( Values.intValue( 4326 ), indexConfig.get( "spatial.wgs-84.code" ) );
-            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.wgs-84.dimensions" ) );
             assertEquals( Values.intValue( 30 ), indexConfig.get( "spatial.wgs-84.maxLevels" ) );
             assertEquals( Values.doubleArray( new double[]{-180.0, -90.0} ), indexConfig.get( "spatial.wgs-84.min" ) );
             assertEquals( Values.doubleArray( new double[]{180.0, 90.0} ), indexConfig.get( "spatial.wgs-84.max" ) );
-            assertEquals( Values.intValue( 1 ), indexConfig.get( "spatial.wgs-84-3d.tableId" ) );
-            assertEquals( Values.intValue( 4979 ), indexConfig.get( "spatial.wgs-84-3d.code" ) );
-            assertEquals( Values.intValue( 3 ), indexConfig.get( "spatial.wgs-84-3d.dimensions" ) );
             assertEquals( Values.intValue( 20 ), indexConfig.get( "spatial.wgs-84-3d.maxLevels" ) );
             assertEquals( Values.doubleArray( new double[]{-180.0, -90.0, -1000000.0} ), indexConfig.get( "spatial.wgs-84-3d.min" ) );
             assertEquals( Values.doubleArray( new double[]{180.0, 90.0, 1000000.0} ), indexConfig.get( "spatial.wgs-84-3d.max" ) );
