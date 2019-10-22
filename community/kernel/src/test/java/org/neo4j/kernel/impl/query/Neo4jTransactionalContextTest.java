@@ -63,7 +63,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 class Neo4jTransactionalContextTest
 {
     private GraphDatabaseQueryService queryService;
-    private KernelStatement initialStatement;
+    private KernelStatement statement;
     private ConfiguredExecutionStatistics statistics;
     private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private final KernelTransactionFactory transactionFactory = mock( KernelTransactionFactory.class );
@@ -76,15 +76,15 @@ class Neo4jTransactionalContextTest
     }
 
     @Test
-    void contextRollbackClosesAndRollbackTransaction() throws TransactionFailureException
+    void contextRollbackClosesAndRollbackTransaction()
     {
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         InternalTransaction internalTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
-        KernelTransaction kernelTransaction = mockTransaction( initialStatement );
+        KernelTransaction kernelTransaction = mockTransaction( statement );
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
 
         Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( null, internalTransaction, initialStatement, executingQuery, transactionFactory );
+                new Neo4jTransactionalContext( null, internalTransaction, statement, executingQuery, transactionFactory );
 
         transactionalContext.rollback();
 
@@ -98,11 +98,11 @@ class Neo4jTransactionalContextTest
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         when( executingQuery.databaseId() ).thenReturn( databaseId );
         InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
-        KernelTransaction kernelTransaction = mockTransaction( initialStatement );
+        KernelTransaction kernelTransaction = mockTransaction( statement );
         when( initialTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
 
         Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( null, initialTransaction, initialStatement, executingQuery, transactionFactory );
+                new Neo4jTransactionalContext( null, initialTransaction, statement, executingQuery, transactionFactory );
 
         transactionalContext.check();
 
@@ -113,7 +113,7 @@ class Neo4jTransactionalContextTest
     void neverStopsExecutingQueryDuringCommitAndRestartTx() throws TransactionFailureException
     {
         // Given
-        KernelTransaction initialKTX = mockTransaction( initialStatement );
+        KernelTransaction initialKTX = mockTransaction( statement );
         InternalTransaction userTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
         KernelTransaction.Type transactionType = KernelTransaction.Type.implicit;
         SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
@@ -133,12 +133,12 @@ class Neo4jTransactionalContextTest
         when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.databaseId() ).thenReturn( databaseId );
         when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
-        when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
+        when( statement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( userTransaction.kernelTransaction() ).thenReturn( initialKTX, initialKTX, secondKTX );
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( queryService, userTransaction, initialStatement,
+                new Neo4jTransactionalContext( queryService, userTransaction, statement,
                                                executingQuery, transactionFactory );
 
         // When
@@ -234,14 +234,14 @@ class Neo4jTransactionalContextTest
     {
         InternalTransaction userTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
         when( userTransaction.terminationReason() ).thenReturn( Optional.empty() );
-        var statementMock = mock( Statement.class, new ReturnsDeepStubs() );
+        var statementMock = mock( KernelStatement.class, new ReturnsDeepStubs() );
         var transaction = mockTransaction( statementMock );
         when( userTransaction.kernelTransaction() ).thenReturn( transaction );
         when( transactionFactory.beginKernelTransaction( any(), any(), any() ) ).thenReturn( transaction );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         when( executingQuery.databaseId() ).thenReturn( databaseId );
         Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext( queryService,
-                userTransaction, initialStatement, executingQuery, transactionFactory );
+                userTransaction, statement, executingQuery, transactionFactory );
 
         statistics.setFaults( 2 );
         statistics.setHits( 5 );
@@ -390,25 +390,25 @@ class Neo4jTransactionalContextTest
     {
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
-        initialStatement = mock( KernelStatement.class );
+        statement = mock( KernelStatement.class );
 
         statistics = new ConfiguredExecutionStatistics();
         QueryRegistry queryRegistry = mock( QueryRegistry.class );
         InternalTransaction internalTransaction = mock( InternalTransaction.class );
         when( internalTransaction.terminationReason() ).thenReturn( Optional.empty() );
 
-        when( initialStatement.queryRegistration() ).thenReturn( queryRegistry );
+        when( statement.queryRegistration() ).thenReturn( queryRegistry );
         when( queryService.getDependencyResolver() ).thenReturn( resolver );
         when( queryService.beginTransaction( any(), any(), any() ) ).thenReturn( internalTransaction );
 
-        KernelTransaction mockTransaction = mockTransaction( initialStatement );
+        KernelTransaction mockTransaction = mockTransaction( statement );
     }
 
     private Neo4jTransactionalContext newContext( InternalTransaction initialTx )
     {
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         when( executingQuery.databaseId() ).thenReturn( databaseId );
-        return new Neo4jTransactionalContext( queryService, initialTx, initialStatement, executingQuery, transactionFactory );
+        return new Neo4jTransactionalContext( queryService, initialTx, statement, executingQuery, transactionFactory );
     }
 
     private KernelTransaction mockTransaction( Statement statement )
