@@ -66,7 +66,7 @@ object expandSolverStep {
     val availableSymbols = sourcePlan.availableSymbols
 
     /*
-     * Recursive method for finding the arguments from the leaf plans.
+     * Method to find implicit leaf plan arguments, except explicit Argument
      */
     def leafArguments(plan:LogicalPlan): Set[String] = plan match {
       case _: Argument => Set.empty
