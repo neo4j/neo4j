@@ -152,7 +152,7 @@ public class FulltextProcedures
     public void createNodeFulltextIndex(
             @Name( "indexName" ) String name,
             @Name( "labels" ) List<String> labelNames,
-            @Name( "propertyNames" ) List<String> properties,
+            @Name( "properties" ) List<String> properties,
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
     {
         Label[] labels = labelNames.stream().map( Label::label ).toArray( Label[]::new );
@@ -171,7 +171,7 @@ public class FulltextProcedures
     public void createRelationshipFulltextIndex(
             @Name( "indexName" ) String name,
             @Name( "relationshipTypes" ) List<String> relTypes,
-            @Name( "propertyNames" ) List<String> properties,
+            @Name( "properties" ) List<String> properties,
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
     {
         RelationshipType[] types = relTypes.stream().map( RelationshipType::withName ).toArray( RelationshipType[]::new );

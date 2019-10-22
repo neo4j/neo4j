@@ -490,34 +490,36 @@ public class BuiltInProcedures
     }
 
     @Description( "Create a named schema index with specified index provider " +
-            "(for example: CALL db.createIndex(\"MyIndex\", \":Person(name)\", \"native-btree-1.0\")) - " +
-            "YIELD name, index, providerName, status" )
+            "(for example: CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+            "YIELD name, labels, properties, providerName, status" )
     @Procedure( name = "db.createIndex", mode = SCHEMA )
     public Stream<SchemaIndexInfo> createIndex(
             @Name( "indexName" ) String indexName,
-            @Name( "index" ) String index,
+            @Name( "labels" ) List<String> labels,
+            @Name( "properties" ) List<String> properties,
             @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            return indexProcedures.createIndex( indexName, index, providerName );
+            return indexProcedures.createIndex( indexName, labels, properties, providerName );
         }
     }
 
     @Description( "Create a named unique property constraint with index backed by specified index provider " +
-            "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", \":Person(name)\", \"native-btree-1.0\")) - " +
-            "YIELD name, index, providerName, status" )
+            "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+            "YIELD name, labels, properties, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
             @Name( "constraintName" ) String constraintName,
-            @Name( "index" ) String index,
+            @Name( "labels" ) List<String> labels,
+            @Name( "properties" ) List<String> properties,
             @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            return indexProcedures.createUniquePropertyConstraint( constraintName, index, providerName );
+            return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, providerName );
         }
     }
 
@@ -684,14 +686,16 @@ public class BuiltInProcedures
     public static class SchemaIndexInfo
     {
         public final String name;
-        public final String index;
+        public final List<String> labels;
+        public final List<String> properties;
         public final String providerName;
         public final String status;
 
-        public SchemaIndexInfo( String name, String index, String providerName, String status )
+        public SchemaIndexInfo( String name, List<String> labels, List<String> properties, String providerName, String status )
         {
             this.name = name;
-            this.index = index;
+            this.labels = labels;
+            this.properties = properties;
             this.providerName = providerName;
             this.status = status;
         }

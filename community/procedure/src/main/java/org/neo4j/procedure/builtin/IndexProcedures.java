@@ -19,14 +19,13 @@
  */
 package org.neo4j.procedure.builtin;
 
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -37,6 +36,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
@@ -59,14 +59,14 @@ public class IndexProcedures implements AutoCloseable
     void awaitIndexByName( String indexName, long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
-        IndexSpecifier specifier = IndexSpecifier.byName( indexName );
-        waitUntilOnline( getIndex( specifier ), specifier, timeout, timeoutUnits );
+        final IndexDescriptor index = getIndex( indexName );
+        waitUntilOnline( index, timeout, timeoutUnits );
     }
 
     void resampleIndex( String indexName ) throws ProcedureException
     {
-        IndexSpecifier specifier = IndexSpecifier.byName( indexName );
-        triggerSampling( getIndex( specifier ) );
+        final IndexDescriptor index = getIndex( indexName );
+        triggerSampling( index );
     }
 
     void resampleOutdatedIndexes()
@@ -86,45 +86,56 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexName, String indexSpecification, String providerName ) throws ProcedureException
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexName, List<String> labels, List<String> properties,
+            String providerName ) throws ProcedureException
     {
-        return createIndex( indexName, indexSpecification, providerName,
+        return createIndex( indexName, labels, properties, providerName,
                 "index created", ( schemaWrite, name, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, provider, name ) );
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String constraintName, String indexSpecification, String providerName )
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String constraintName, List<String> labels, List<String> properties,
+            String providerName )
             throws ProcedureException
     {
-        return createIndex( constraintName, indexSpecification, providerName,
+        return createIndex( constraintName, labels, properties, providerName,
                 "uniqueness constraint online",
                 ( schemaWrite, name, descriptor, provider ) -> schemaWrite.uniquePropertyConstraintCreate( descriptor, provider, name ) );
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, String indexSpecification, String providerName )
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, List<String> labels, List<String> properties, String providerName )
             throws ProcedureException
     {
-        return createIndex( constraintName, indexSpecification, providerName,
+        return createIndex( constraintName, labels, properties, providerName,
                 "node key constraint online",
                 ( schemaWrite, name, descriptor, provider ) -> schemaWrite.nodeKeyConstraintCreate( descriptor, provider, name ) );
     }
 
-    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, String indexSpecification, String providerName, String statusMessage,
-            IndexCreator indexCreator ) throws ProcedureException
+    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, List<String> labels, List<String> properties, String providerName,
+            String statusMessage, IndexCreator indexCreator ) throws ProcedureException
     {
         assertProviderNameNotNull( providerName );
-        IndexSpecifier index = IndexSpecifier.byPattern( indexSpecification );
-        int labelId = getOrCreateLabelId( index.label() );
-        int[] propertyKeyIds = getOrCreatePropertyIds( index.properties() );
+        assertSingleLabel( labels );
+        int labelId = getOrCreateLabelId( labels.get( 0 ) );
+        int[] propertyKeyIds = getOrCreatePropertyIds( properties );
         try
         {
             SchemaWrite schemaWrite = ktx.schemaWrite();
             LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
             indexCreator.create( schemaWrite, name, labelSchemaDescriptor, providerName );
-            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( name, indexSpecification, providerName, statusMessage ) );
+            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( name, labels, properties, providerName, statusMessage ) );
         }
         catch ( KernelException e )
         {
             throw new ProcedureException( e.status(), e, e.getMessage() );
+        }
+    }
+
+    private static void assertSingleLabel( List<String> labels ) throws ProcedureException
+    {
+        if ( labels.size() != 1 )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                    "Could not create index with specified label(s), need to provide exactly one but was " + labels );
         }
     }
 
@@ -179,14 +190,14 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private int[] getOrCreatePropertyIds( String[] propertyKeyNames ) throws ProcedureException
+    private int[] getOrCreatePropertyIds( List<String> propertyKeyNames ) throws ProcedureException
     {
-        int[] propertyKeyIds = new int[propertyKeyNames.length];
+        int[] propertyKeyIds = new int[propertyKeyNames.size()];
         for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
             try
             {
-                propertyKeyIds[i] = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyKeyNames[i] );
+                propertyKeyIds[i] = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyKeyNames.get( i ) );
             }
             catch ( KernelException e )
             {
@@ -196,57 +207,34 @@ public class IndexProcedures implements AutoCloseable
         return propertyKeyIds;
     }
 
-    private IndexDescriptor getIndex( IndexSpecifier specifier ) throws ProcedureException
+    private IndexDescriptor getIndex( String indexName ) throws ProcedureException
     {
-        if ( specifier.name() != null )
-        {
-            // Find index by name.
-            IndexDescriptor indexReference = ktx.schemaRead().indexGetForName( specifier.name() );
+        // Find index by name.
+        IndexDescriptor indexReference = ktx.schemaRead().indexGetForName( indexName );
 
-            if ( indexReference == IndexDescriptor.NO_INDEX )
-            {
-                throw new ProcedureException( Status.Schema.IndexNotFound, "No such index '%s'", specifier );
-            }
-            return indexReference;
-        }
-        else
+        if ( indexReference == IndexDescriptor.NO_INDEX )
         {
-            // Find index by label and properties.
-            int labelId = getLabelId( specifier.label() );
-            int[] propertyKeyIds = getPropertyIds( specifier.properties() );
-            Iterator<IndexDescriptor> iterator = ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyKeyIds ) );
-
-            if ( !iterator.hasNext() )
-            {
-                throw new ProcedureException( Status.Schema.IndexNotFound, "No such index %s", specifier );
-            }
-            IndexDescriptor index = iterator.next();
-            if ( iterator.hasNext() )
-            {
-                String names = Iterators.toString( Iterators.prependTo( iterator, index ), IndexDescriptor::getName, 5 );
-                throw new ProcedureException( Status.Schema.IndexMultipleFound,
-                        "Multiple indexes were found for %s. Try using an index name instead: %s.", specifier, names );
-            }
-            return index;
+            throw new ProcedureException( Status.Schema.IndexNotFound, "No such index '%s'", indexName );
         }
+        return indexReference;
     }
 
-    private void waitUntilOnline( IndexDescriptor index, IndexSpecifier indexDescription, long timeout, TimeUnit timeoutUnits ) throws ProcedureException
+    private void waitUntilOnline( IndexDescriptor index, long timeout, TimeUnit timeoutUnits ) throws ProcedureException
     {
         try
         {
-            Predicates.awaitEx( () -> isOnline( indexDescription, index ), timeout, timeoutUnits );
+            Predicates.awaitEx( () -> isOnline( index ), timeout, timeoutUnits );
         }
         catch ( TimeoutException e )
         {
             throw new ProcedureException( Status.Procedure.ProcedureTimedOut,
-                    "Index on %s did not come online within %s %s", indexDescription, timeout, timeoutUnits );
+                    "Index on '%s' did not come online within %s %s", index.userDescription( SilentTokenNameLookup.idTokenNameLookup ), timeout, timeoutUnits );
         }
     }
 
-    private boolean isOnline( IndexSpecifier specifier, IndexDescriptor index ) throws ProcedureException
+    private boolean isOnline( IndexDescriptor index ) throws ProcedureException
     {
-        InternalIndexState state = getState( specifier, index );
+        InternalIndexState state = getState( index );
         switch ( state )
         {
             case POPULATING:
@@ -254,15 +242,15 @@ public class IndexProcedures implements AutoCloseable
             case ONLINE:
                 return true;
             case FAILED:
-                String cause = getFailure( specifier, index );
+                String cause = getFailure( index );
                 throw new ProcedureException( Status.Schema.IndexCreationFailed,
-                        IndexPopulationFailure.appendCauseOfFailure( "Index `%s` is in failed state.", cause ), specifier );
+                        IndexPopulationFailure.appendCauseOfFailure( "Index '%s' is in failed state.", cause ), index.getName() );
             default:
                 throw new IllegalStateException( "Unknown index state " + state );
         }
     }
 
-    private InternalIndexState getState( IndexSpecifier specifier, IndexDescriptor index ) throws ProcedureException
+    private InternalIndexState getState( IndexDescriptor index ) throws ProcedureException
     {
         try
         {
@@ -270,11 +258,11 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", specifier );
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", index.getName() );
         }
     }
 
-    private String getFailure( IndexSpecifier indexDescription, IndexDescriptor index ) throws ProcedureException
+    private String getFailure( IndexDescriptor index ) throws ProcedureException
     {
         try
         {
@@ -282,7 +270,7 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", indexDescription );
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", index.getName() );
         }
     }
 

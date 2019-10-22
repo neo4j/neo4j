@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -44,6 +45,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
@@ -412,15 +414,26 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void checkCommunityProceduresThatAreNotAllowedOnSystem()
     {
         List<String> queries = List.of(
-                "CALL db.createIndex('MyIndex', ':Person(name)', 'lucene+native-2.0')",
+                "CALL db.createIndex('MyIndex', ['Person'], ['name'], 'lucene+native-3.0')",
                 "CALL db.createLabel('Foo')",
                 "CALL db.createProperty('bar')",
                 "CALL db.createRelationshipType('BAZ')",
-                "CALL db.createUniquePropertyConstraint('MyConstraint', ':Person(name)', 'lucene+native-2.0')",
+                "CALL db.createUniquePropertyConstraint('MyConstraint', ['Person'], ['age'], 'lucene+native-3.0')",
                 "CALL db.index.fulltext.createNodeIndex('businessNameIndex', ['Business'],['name'])",
-                "CALL db.index.fulltext.createRelationshipIndex('businessNameIndex', ['Business'],['name'])",
+                "CALL db.index.fulltext.createRelationshipIndex('owner of index', ['IS_OWNER_OF'],['name'])",
                 "CALL dbms.setTXMetaData( { User: 'Sascha' } )",
                 "CALL db.index.fulltext.drop('businessNameIndex')");
+
+        // First validate that all queries can actually run on normal db
+        final GraphDatabaseService defaultDb = openDatabase( DEFAULT_DATABASE_NAME );
+        for ( String q : queries )
+        {
+            try ( org.neo4j.graphdb.Transaction tx = defaultDb.beginTx() )
+            {
+                tx.execute( q ).close();
+                tx.commit();
+            }
+        }
 
         for ( String q : queries )
         {

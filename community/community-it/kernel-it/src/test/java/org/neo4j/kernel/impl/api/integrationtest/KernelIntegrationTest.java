@@ -192,6 +192,16 @@ public abstract class KernelIntegrationTest
         dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
     }
 
+    protected GraphDatabaseAPI openDatabase( String databaseName )
+    {
+        return (GraphDatabaseAPI) managementService.database( databaseName );
+    }
+
+    protected void shutdownDatabase( String databaseName )
+    {
+        managementService.shutdownDatabase( databaseName );
+    }
+
     protected DatabaseManagementService createDatabaseService()
     {
         TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory( testDir.homeDir() ) )

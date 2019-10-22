@@ -2401,7 +2401,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( "call db.createIndex( \"MyIndex\", \":User(searchableString)\", \"" + FulltextIndexProviderFactory.DESCRIPTOR.name() + "\" );" )
+            tx.execute( "call db.createIndex( \"MyIndex\", ['User'], ['searchableString'], \"" + FulltextIndexProviderFactory.DESCRIPTOR.name() + "\" );" )
                     .close();
             tx.commit();
         }

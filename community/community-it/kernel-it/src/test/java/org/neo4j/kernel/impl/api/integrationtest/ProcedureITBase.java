@@ -102,17 +102,17 @@ public interface ProcedureITBase
                         stringArray( "editor", "publisher", "architect", "admin" ), "WRITE", false ),
                 proc( "dbms.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", stringArray( "admin" ), "DBMS" ),
                 proc( "db.createIndex",
-                        "(indexName :: STRING?, index :: STRING?, providerName :: STRING?) :: (name :: STRING?, index :: STRING?, providerName :: STRING?, " +
-                                "status :: STRING?)",
+                        "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?) :: " +
+                                "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a named schema index with specified index provider " +
-                                "(for example: CALL db.createIndex(\"MyIndex\", \":Person(name)\", \"native-btree-1.0\")) - " +
-                                "YIELD name, index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
+                                "(for example: CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+                                "YIELD name, labels, properties, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.createUniquePropertyConstraint",
-                        "(constraintName :: STRING?, index :: STRING?, providerName :: STRING?) :: " +
-                                "(name :: STRING?, index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                        "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?) :: " +
+                                "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a named unique property constraint with index backed by specified index provider " +
-                                "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", \":Person(name)\", \"native-btree-1.0\")) - " +
-                                "YIELD name, index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
+                                "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+                                "YIELD name, labels, properties, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
                         "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
@@ -120,10 +120,10 @@ public interface ProcedureITBase
                         "Similar to db.awaitIndex(index, timeout), except instead of an index pattern, the index is specified by name. " +
                                 "The name can be quoted by backticks, if necessary.", stringArray( "reader", "editor", "publisher", "architect", "admin" ),
                         "READ" ), proc( "db.index.fulltext.createNodeIndex",
-                        "(indexName :: STRING?, labels :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, " + "config = {} :: MAP?) :: VOID",
+                        "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, " + "config = {} :: MAP?) :: VOID",
                         startsWith( "Create a node fulltext index for the given labels and properties." ), stringArray( "architect", "admin" ), "SCHEMA",
                         false ), proc( "db.index.fulltext.createRelationshipIndex",
-                        "(indexName :: STRING?, relationshipTypes :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
+                        "(indexName :: STRING?, relationshipTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
                         startsWith( "Create a relationship fulltext index for the given relationship types and properties." ),
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.index.fulltext.drop", "(indexName :: STRING?) :: VOID", "Drop the specified index.", stringArray( "architect", "admin" ), "SCHEMA",
@@ -202,11 +202,12 @@ public interface ProcedureITBase
                                 "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?)",
                         "List all queries currently executing at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "db.createNodeKey", "(constraintName :: STRING?, index :: STRING?, providerName :: STRING?) :: " +
-                                "(name :: STRING?, index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                proc( "db.createNodeKey",
+                        "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?) :: " +
+                                "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a named node key constraint with index backed by specified index provider " +
-                                "(for example: CALL db.createNodeKey(\"MyConstraint\", \":Person(name)\", \"native-btree-1.0\")) - " +
-                                "YIELD name, index, providerName, status",
+                                "(for example: CALL db.createNodeKey(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+                                "YIELD name, labels, properties, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "dbms.listActiveLocks", "(queryId :: STRING?) :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
                         "List the active lock requests granted for the transaction executing the query with the given query id.",
