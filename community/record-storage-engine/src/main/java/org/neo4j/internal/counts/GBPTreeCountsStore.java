@@ -75,7 +75,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 public class GBPTreeCountsStore implements CountsStore
 {
     public static final Monitor NO_MONITOR = txId -> {};
-    private static final int NEEDS_REBUILDING_HIGH_ID = -1;
+    private static final long NEEDS_REBUILDING_HIGH_ID = 0;
 
     private final GBPTree<CountsKey,CountsValue> tree;
     private final OutOfOrderSequence idSequence;

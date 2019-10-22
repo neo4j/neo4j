@@ -262,7 +262,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                     @Override
                     public long lastCommittedTxId()
                     {
-                        return TransactionIdStore.BASE_TX_ID;
+                        return 0;
                     }
                 }, true, NO_MONITOR );
                 counts.start();
