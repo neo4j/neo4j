@@ -41,6 +41,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
@@ -101,6 +102,7 @@ public class StoreUpgraderInterruptionTestIT
 
     private final FileSystemAbstraction fs = fileSystemRule.get();
     private JobScheduler jobScheduler;
+    private Neo4jLayout neo4jLayout;
     private DatabaseLayout workingDatabaseLayout;
     private File prepareDirectory;
     private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
@@ -109,7 +111,8 @@ public class StoreUpgraderInterruptionTestIT
     public void setUpLabelScanStore()
     {
         jobScheduler = new ThreadPoolJobScheduler();
-        workingDatabaseLayout = DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) );
+        neo4jLayout = Neo4jLayout.of( directory.homeDir() );
+        workingDatabaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
         prepareDirectory = directory.directory( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
     }
@@ -162,7 +165,7 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
-        startStopDatabase( workingDatabaseLayout.databaseDirectory() );
+        startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
     }
 
@@ -214,7 +217,7 @@ public class StoreUpgraderInterruptionTestIT
         pageCache.close();
 
         // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
-        startStopDatabase( workingDatabaseLayout.databaseDirectory() );
+        startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
     }
 
