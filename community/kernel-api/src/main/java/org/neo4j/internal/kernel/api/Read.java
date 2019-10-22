@@ -378,4 +378,9 @@ public interface Read
      *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
      */
     Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId );
+
+    /**
+     * @return whether there are changes in the transaction state.
+     */
+    boolean transactionStateHasChanges();
 }

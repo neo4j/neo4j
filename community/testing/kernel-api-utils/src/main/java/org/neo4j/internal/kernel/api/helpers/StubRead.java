@@ -229,4 +229,10 @@ public class StubRead implements Read
     {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean transactionStateHasChanges()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

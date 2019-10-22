@@ -918,6 +918,12 @@ public class AllStoreHolder extends Read
         schemaState.clear();
     }
 
+    @Override
+    public boolean transactionStateHasChanges()
+    {
+        return txState().hasChanges();
+    }
+
     private RawIterator<AnyValue[],ProcedureException> callProcedure(
             int id, AnyValue[] input, final AccessMode override, ProcedureCallContext procedureCallContext )
             throws ProcedureException
