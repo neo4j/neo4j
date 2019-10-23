@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -1070,6 +1072,58 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                     .create() );
             assertThat( e.getMessage(), containsString( "Invalid spatial index settings" ) );
 
+            tx.commit();
+        }
+    }
+
+    @Test
+    void creatingFullTextIndexOnMultipleLabelsMustBePossible()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().indexFor( label, otherLabel ).on( propertyKey )
+                    .withIndexType( IndexType.FULLTEXT ).withName( "index" ).create();
+            assertThat( index.getLabels(), containsInAnyOrder( label, otherLabel ) );
+            assertTrue( index.isMultiTokenIndex() );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "index" );
+            List<String> labelNames = new ArrayList<>();
+            index.getLabels().forEach( label -> labelNames.add( label.name() ) );
+            assertThat( labelNames, containsInAnyOrder( label.name(), otherLabel.name() ) );
+            assertTrue( index.isMultiTokenIndex() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustThrowWhenCreatingBtreeIndexWithZeroLabels()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor().on( propertyKey ).create() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustThrowWhenCreatingBtreeIndexWithMoreThanOneLabel()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( label, otherLabel ).on( propertyKey ).create() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustThrowWhenCreatingFullTextIndexWithZeroLabels()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor().on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create() );
             tx.commit();
         }
     }

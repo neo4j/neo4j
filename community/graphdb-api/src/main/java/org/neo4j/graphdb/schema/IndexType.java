@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.schema;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.graphdb.Label;
 
 /**
  * The index type describes the overall behaviour and performance profile of an index.
@@ -32,6 +33,8 @@ public enum IndexType
      * and range queries. They can also support index-backed order-by.
      * <p>
      * BTREE indexes can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "SPATIAL_".
+     * <p>
+     * BTREE indexes do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.
      */
     BTREE,
     /**
@@ -39,6 +42,8 @@ public enum IndexType
      * On the other hand, they are good at matching sub-strings of the indexed values, and they can do fuzzy matching, and scoring.
      * <p>
      * FULLTEXT indexes can have their behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "FULLTEXT_".
+     * <p>
+     * FULLTEXT indexes can be {@linkplain Schema#indexFor(Label...) created} as {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.
      */
     FULLTEXT
 }

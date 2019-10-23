@@ -36,7 +36,7 @@ import org.neo4j.internal.schema.IndexConfig;
  */
 public interface InternalSchemaActions
 {
-    IndexDefinition createIndexDefinition( Label label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey );
+    IndexDefinition createIndexDefinition( Label[] label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey );
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 

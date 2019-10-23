@@ -37,22 +37,22 @@ import org.neo4j.values.storable.Values;
 public class IndexCreatorImpl implements IndexCreator
 {
     private final Collection<String> propertyKeys;
-    private final Label label;
+    private final Label[] labels;
     private final InternalSchemaActions actions;
     private final String indexName;
     private final IndexType indexType;
     private final IndexConfig indexConfig;
 
-    public IndexCreatorImpl( InternalSchemaActions actions, Label label )
+    public IndexCreatorImpl( InternalSchemaActions actions, Label... labels )
     {
-        this( actions, label, null, new ArrayList<>(), IndexType.BTREE, IndexConfig.empty() );
+        this( actions, labels, null, new ArrayList<>(), IndexType.BTREE, IndexConfig.empty() );
     }
 
-    private IndexCreatorImpl( InternalSchemaActions actions, Label label, String indexName, Collection<String> propertyKeys, IndexType indexType,
+    private IndexCreatorImpl( InternalSchemaActions actions, Label[] labels, String indexName, Collection<String> propertyKeys, IndexType indexType,
             IndexConfig indexConfig )
     {
         this.actions = actions;
-        this.label = label;
+        this.labels = labels;
         this.indexName = indexName;
         this.propertyKeys = propertyKeys;
         this.indexType = indexType;
@@ -65,21 +65,21 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, copyAndAdd( propertyKeys, propertyKey ), indexType, indexConfig );
+        return new IndexCreatorImpl( actions, labels, indexName, copyAndAdd( propertyKeys, propertyKey ), indexType, indexConfig );
     }
 
     @Override
     public IndexCreator withName( String indexName )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType, indexConfig );
+        return new IndexCreatorImpl( actions, labels, indexName, propertyKeys, indexType, indexConfig );
     }
 
     @Override
     public IndexCreator withIndexType( IndexType indexType )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType, indexConfig );
+        return new IndexCreatorImpl( actions, labels, indexName, propertyKeys, indexType, indexConfig );
     }
 
     @Override
@@ -101,7 +101,7 @@ public class IndexCreatorImpl implements IndexCreator
             collectingMap.put( setting.getSettingName(), Values.of( value ) );
         }
         IndexConfig indexConfig = IndexConfig.with( collectingMap );
-        return new IndexCreatorImpl( actions, label, indexName, propertyKeys, indexType, indexConfig );
+        return new IndexCreatorImpl( actions, labels, indexName, propertyKeys, indexType, indexConfig );
     }
 
     @Override
@@ -114,7 +114,7 @@ public class IndexCreatorImpl implements IndexCreator
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
         }
 
-        return actions.createIndexDefinition( label, indexName, indexType, indexConfig, propertyKeys.toArray( new String[0] ) );
+        return actions.createIndexDefinition( labels, indexName, indexType, indexConfig, propertyKeys.toArray( new String[0] ) );
     }
 
     private void assertInUnterminatedTransaction()

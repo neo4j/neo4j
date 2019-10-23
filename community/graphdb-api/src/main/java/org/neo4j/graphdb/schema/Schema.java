@@ -50,7 +50,7 @@ public interface Schema
 
     /**
      * Returns an {@link IndexCreator} where details about the index to create can be
-     * specified. When all details have been entered {@link IndexCreator#create() create}
+     * specified. When all details have been entered, {@link IndexCreator#create() create}
      * must be called for it to actually be created.
      *
      * Creating an index enables indexing for nodes with the specified label. The index will
@@ -64,6 +64,31 @@ public interface Schema
      * an index for the given {@link Label label}.
      */
     IndexCreator indexFor( Label label );
+
+    /**
+     * Returns an {@link IndexCreator} where details about the index to create can be
+     * specified. When all details have been entered, {@link IndexCreator#create() create}
+     * must be called for it to actually be created.
+     *
+     * Creating an index enables indexing for nodes with any of the specified labels.
+     * The index will have the details supplied to the {@link IndexCreator returned index creator}.
+     * All existing and all future nodes matching the index definition will be indexed,
+     * speeding up future operations.
+     *
+     * This behaves similar to the {@link #indexFor(Label)} method, with the exception that
+     * multiple labels can be specified. Doing so will create a so-called
+     * {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} index.
+     *
+     * Note that not all index types support multi-token indexes.
+     * See {@link IndexType} for more information.
+     *
+     * The list of labels may not contain any duplicates.
+     *
+     * @param labels The list of labels for which nodes should be indexed.
+     * @return an {@link IndexCreator} capable of providing details for, as wel as creating
+     * an index for the given list of {@link Label labels}.
+     */
+    IndexCreator indexFor( Label... labels );
 
     /**
      * @param label the {@link Label} to get {@link IndexDefinition indexes} for.

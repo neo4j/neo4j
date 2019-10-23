@@ -458,7 +458,7 @@ public class BatchInserterImpl implements BatchInserter
         propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, ValueUtils.asValue( propertyValue ), propertyRecords );
     }
 
-    private void validateIndexCanBeCreated( LabelSchemaDescriptor schemaDescriptor )
+    private void validateIndexCanBeCreated( SchemaDescriptor schemaDescriptor )
     {
         verifyIndexOrUniquenessConstraintCanBeCreated( schemaDescriptor, "Index for given {label;property} already exists" );
     }
@@ -475,7 +475,7 @@ public class BatchInserterImpl implements BatchInserter
                 "It is not allowed to create node keys, uniqueness constraints or indexes on the same {label;property}" );
     }
 
-    private void verifyIndexOrUniquenessConstraintCanBeCreated( LabelSchemaDescriptor schemaDescriptor, String errorMessage )
+    private void verifyIndexOrUniquenessConstraintCanBeCreated( SchemaDescriptor schemaDescriptor, String errorMessage )
     {
         ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schemaDescriptor );
         ConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schemaDescriptor );
@@ -1220,18 +1220,30 @@ public class BatchInserterImpl implements BatchInserter
 
         @Override
         public IndexDefinition createIndexDefinition(
-                Label label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
+                Label[] labels, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
         {
-            int labelId = getOrCreateLabelId( label.name() );
+            int[] labelIds = Arrays.stream( labels ).mapToInt( label -> getOrCreateLabelId( label.name() ) ).toArray();
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
-            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
+            SchemaDescriptor schema;
+            if ( indexType == IndexType.FULLTEXT )
+            {
+                schema = SchemaDescriptor.fulltext( EntityType.NODE, labelIds, propertyKeyIds );
+            }
+            else if ( labelIds.length == 1 )
+            {
+                schema = SchemaDescriptor.forLabel( labelIds[0], propertyKeyIds );
+            }
+            else
+            {
+                throw new IllegalArgumentException( indexType + " indexes can only be created with exactly one label." );
+            }
 
             validateIndexCanBeCreated( schema );
             IndexPrototype prototype = IndexPrototype.forSchema( schema ).withName( indexName ).withIndexType( fromPublicApi( indexType ) );
             prototype = prototype.withIndexConfig( indexConfig );
 
             IndexDescriptor index = createIndex( prototype );
-            return new IndexDefinitionImpl( this, index, new Label[]{label}, propertyKeys, false );
+            return new IndexDefinitionImpl( this, index, labels, propertyKeys, false );
         }
 
         @Override

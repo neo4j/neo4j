@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
+import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -107,6 +108,12 @@ public class SchemaImpl implements Schema
     public IndexCreator indexFor( Label label )
     {
         return new IndexCreatorImpl( actions, label );
+    }
+
+    @Override
+    public IndexCreator indexFor( Label... labels )
+    {
+        return new IndexCreatorImpl( actions, labels );
     }
 
     @Override
@@ -552,22 +559,37 @@ public class SchemaImpl implements Schema
 
         @Override
         public IndexDefinition createIndexDefinition(
-                Label label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
+                Label[] labels, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
         {
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
                     TokenWrite tokenWrite = transaction.tokenWrite();
-                    int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
+                    String[] labelNames = Arrays.stream( labels ).map( Label::name ).toArray( String[]::new );
+                    int[] labelIds = new int[labels.length];
+                    tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
-                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                    SchemaDescriptor schema;
+                    if ( indexType == IndexType.FULLTEXT )
+                    {
+                        schema = fulltext( EntityType.NODE, labelIds, propertyKeyIds );
+                    }
+                    else if ( labelIds.length == 1 )
+                    {
+                        schema = forLabel( labelIds[0], propertyKeyIds );
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException( indexType + " indexes can only be created with exactly one label, " +
+                                "but got " + ( labelIds.length == 0 ? "no" : String.valueOf( labelIds.length ) ) + " labels." );
+                    }
                     IndexPrototype prototype = IndexPrototype.forSchema( schema );
                     prototype = prototype.withName( indexName );
                     prototype = prototype.withIndexType( fromPublicApi( indexType ) );
                     prototype = prototype.withIndexConfig( indexConfig );
                     IndexDescriptor indexReference = transaction.schemaWrite().indexCreate( prototype );
-                    return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
+                    return new IndexDefinitionImpl( this, indexReference, labels, propertyKeys, false );
                 }
                 catch ( IllegalTokenNameException e )
                 {
