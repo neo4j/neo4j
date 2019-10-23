@@ -766,32 +766,28 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "This is only used when integrating with proprietary storage technology." )
     public static final Setting<String> pagecache_swapper = newBuilder( "dbms.memory.pagecache.swapper", STRING, null ).build();
 
-    @Internal
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
             "warmup after a restart, reducing the mean time to performance. " +
             "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Duration> pagecache_warmup_profiling_interval =
-            newBuilder( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, ofMinutes( 1 ) ).build();
+            newBuilder( "dbms.memory.pagecache.warmup.profile.interval", DURATION, ofMinutes( 1 ) ).build();
 
-    @Internal
     @Description( "Page cache can be configured to perform usage sampling of loaded pages that can be used to construct active load profile. " +
             "According to that profile pages can be reloaded on the restart, replication, etc. " +
             "This setting allows disabling that behavior. " +
             "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Boolean> pagecache_warmup_enabled =
-            newBuilder( "unsupported.dbms.memory.pagecache.warmup.enable", BOOL, true ).build();
+            newBuilder( "dbms.memory.pagecache.warmup.enable", BOOL, true ).build();
 
-    @Internal
     @Description( "Page cache warmup can be configured to prefetch files, preferably when cache size is bigger than store size. " +
-            "Files to be prefetched can be filtered by 'unsupported.dbms.memory.pagecache.warmup.preload.whitelist'. " +
+            "Files to be prefetched can be filtered by 'dbms.memory.pagecache.warmup.preload.whitelist'. " +
             "Enabling this disables warmup by profile " )
     public static final Setting<Boolean> pagecache_warmup_prefetch =
-            newBuilder( "unsupported.dbms.memory.pagecache.warmup.preload", BOOL, false ).build();
+            newBuilder( "dbms.memory.pagecache.warmup.preload", BOOL, false ).build();
 
-    @Internal
     @Description( "Page cache warmup prefetch file whitelist regex. By default matches all files" )
     public static final Setting<String> pagecache_warmup_prefetch_whitelist =
-            newBuilder( "unsupported.dbms.memory.pagecache.warmup.preload.whitelist", STRING, ".*" ).build();
+            newBuilder( "dbms.memory.pagecache.warmup.preload.whitelist", STRING, ".*" ).build();
 
     @Description( "Allows the enabling or disabling of the file watcher service." +
             " This is an auxiliary service but should be left enabled in almost all cases." )
