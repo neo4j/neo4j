@@ -22,13 +22,10 @@ package org.neo4j.procedure.builtin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -37,10 +34,10 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
@@ -48,78 +45,48 @@ class ResampleIndexProcedureTest
 {
     private IndexingService indexingService;
     private IndexProcedures procedure;
-    private TokenRead tokenRead;
     private SchemaRead schemaRead;
 
     @BeforeEach
     void setup()
     {
-
         KernelTransaction transaction = mock( KernelTransaction.class );
-        tokenRead = mock( TokenRead.class );
         schemaRead = mock( SchemaRead.class );
-        procedure = new IndexProcedures( transaction, null );
-
-        when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
         indexingService = mock( IndexingService.class );
-        procedure =
-                new IndexProcedures( transaction, indexingService );
+        procedure = new IndexProcedures( transaction, indexingService );
     }
 
     @Test
-    void shouldThrowAnExceptionIfTheLabelDoesntExist()
-    {
-        when( tokenRead.nodeLabel( "NonExistentLabel" ) ).thenReturn( -1 );
-
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( ":NonExistentLabel(prop)" ) );
-        assertThat( exception.status(), is( Status.Schema.LabelAccessFailed ) );
-    }
-
-    @Test
-    void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
-    {
-        when( tokenRead.propertyKey( "nonExistentProperty" ) ).thenReturn( -1 );
-
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( ":Label(nonExistentProperty)" ) );
-        assertThat( exception.status(), is( Status.Schema.PropertyKeyAccessFailed ) );
-    }
-
-    @Test
-    void shouldLookUpTheIndexByLabelIdAndPropertyKeyId() throws ProcedureException
+    void shouldLookUpTheIndexByName() throws ProcedureException
     {
         IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0 ) ).withName( "index_42" ).materialise( 42 );
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 456 );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( index ) );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( index );
 
-        procedure.resampleIndex( ":Person(name)" );
+        procedure.resampleIndex( "index_42" );
 
-        verify( schemaRead ).index( forLabel( 123, 456 ) );
+        verify( schemaRead ).indexGetForName( "index_42" );
+        verifyNoMoreInteractions( schemaRead );
     }
 
     @Test
-    void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId() throws ProcedureException
+    void shouldLookUpTheCompositeIndexByName() throws ProcedureException
     {
         IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0, 1 ) ).withName( "index_42" ).materialise( 42 );
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
-        when( tokenRead.propertyKey( "name" ) ).thenReturn( 0 );
-        when( tokenRead.propertyKey( "lastName" ) ).thenReturn( 1 );
-        when( schemaRead.index( forLabel( 123, 0, 1 ) ) ).thenReturn( Iterators.iterator( index ) );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( index );
 
-        procedure.resampleIndex( ":Person(name, lastName)" );
+        procedure.resampleIndex( "index_42" );
 
-        verify( schemaRead ).index( forLabel( 123, 0, 1 ) );
+        verify( schemaRead ).indexGetForName( "index_42" );
+        verifyNoMoreInteractions( schemaRead );
     }
 
     @Test
     void shouldThrowAnExceptionIfTheIndexDoesNotExist()
     {
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.emptyResourceIterator() );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( ":Person(name)" ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( "index_42" ) );
         assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
     }
 
@@ -127,9 +94,9 @@ class ResampleIndexProcedureTest
     void shouldTriggerResampling() throws ProcedureException
     {
         IndexDescriptor index = IndexPrototype.forSchema( forLabel( 123, 456 ) ).withName( "index_42" ).materialise( 42 );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( index ) );
+        when( schemaRead.indexGetForName( anyString() ) ).thenReturn( index );
 
-        procedure.resampleIndex( ":Person(name)" );
+        procedure.resampleIndex( "index_42" );
 
         verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }

@@ -30,7 +30,6 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -60,33 +59,24 @@ class AwaitIndexProcedureTest
 {
     private static final int TIMEOUT = 10;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-    private KernelTransaction transaction;
-    private TokenRead tokenRead;
     private SchemaRead schemaRead;
     private IndexProcedures procedure;
-    private LabelSchemaDescriptor descriptor;
-    private LabelSchemaDescriptor anyDescriptor;
     private IndexDescriptor anyIndex ;
 
     @BeforeEach
     void setup()
     {
-        transaction = mock( KernelTransaction.class );
-        tokenRead = mock( TokenRead.class );
-        schemaRead = mock( SchemaRead.class );
-        procedure = new IndexProcedures( transaction, null );
-        descriptor = SchemaDescriptor.forLabel( 123, 456 );
-        anyDescriptor = SchemaDescriptor.forLabel( 0, 0 );
+        LabelSchemaDescriptor anyDescriptor = SchemaDescriptor.forLabel( 0, 0 );
         anyIndex = forSchema( anyDescriptor ).withName( "index" ).materialise( 13 );
-        when( transaction.tokenRead() ).thenReturn( tokenRead );
+        KernelTransaction transaction = mock( KernelTransaction.class );
+        schemaRead = mock( SchemaRead.class );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
+        procedure = new IndexProcedures( transaction, null );
     }
 
     @Test
     void shouldLookUpTheIndexByIndexName() throws ProcedureException, IndexNotFoundKernelException
     {
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
         when( schemaRead.indexGetForName( "my index" ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
@@ -98,8 +88,6 @@ class AwaitIndexProcedureTest
     @Test
     void shouldThrowAnExceptionIfTheIndexHasFailed() throws IndexNotFoundKernelException
     {
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
         when( schemaRead.indexGetFailure( any( IndexDescriptor.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
@@ -113,8 +101,6 @@ class AwaitIndexProcedureTest
     @Test
     void shouldThrowAnExceptionIfTheIndexDoesNotExist()
     {
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         ProcedureException exception =
@@ -125,8 +111,6 @@ class AwaitIndexProcedureTest
     @Test
     void shouldThrowAnExceptionIfTheIndexWithGivenNameDoesNotExist()
     {
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( schemaRead.indexGetForName( "some index" ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "some index", TIMEOUT, TIME_UNIT ) );
@@ -136,8 +120,6 @@ class AwaitIndexProcedureTest
     @Test
     void shouldBlockUntilTheIndexIsOnline() throws IndexNotFoundKernelException, InterruptedException
     {
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
 
@@ -168,8 +150,6 @@ class AwaitIndexProcedureTest
     @Test
     void shouldTimeoutIfTheIndexTakesTooLongToComeOnline() throws InterruptedException, IndexNotFoundKernelException
     {
-        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
