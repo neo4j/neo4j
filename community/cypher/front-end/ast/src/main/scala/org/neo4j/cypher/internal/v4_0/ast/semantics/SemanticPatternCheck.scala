@@ -209,6 +209,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     checkNoVarLengthWhenUpdating chain
       checkNoParamMapsWhenMatching(x.properties, ctx) chain
       checkProperties chain
+      checkValidPropertyKeyNamesInPattern(x.properties) chain
       checkNotUndirectedWhenCreating chain
       checkBaseVariable(ctx, x.baseRel, CTRelationship)
   }
@@ -265,7 +266,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def checkNodeProperties(ctx: SemanticContext, properties: Option[Expression]): SemanticCheck =
     checkNoParamMapsWhenMatching(properties, ctx) chain
-      checkValidPropertyKeyNamesInNodePattern(properties) chain
+      checkValidPropertyKeyNamesInPattern(properties) chain
       SemanticExpressionCheck.simple(properties) chain
       expectType(CTMap.covariant, properties)
 
@@ -314,7 +315,7 @@ object checkNoParamMapsWhenMatching {
   }
 }
 
-object checkValidPropertyKeyNamesInNodePattern {
+object checkValidPropertyKeyNamesInPattern {
   def apply(properties: Option[Expression]): SemanticCheck = properties match {
     case Some(e: MapExpression) => SemanticPatternCheck.checkValidPropertyKeyNames(e.items.map(i => i._1), e.position)
     case _ => None

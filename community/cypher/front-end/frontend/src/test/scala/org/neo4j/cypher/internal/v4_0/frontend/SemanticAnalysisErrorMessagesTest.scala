@@ -235,6 +235,74 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
   }
 
+  // Empty tokens for relationship properties
+
+  test("Should not allow empty relationship property key name in CREATE clause") {
+    val query = "CREATE ()-[:REL {``: 1}]->()"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship property key name in MERGE clause") {
+    val query = "MERGE ()-[r :REL {``: 1, prop: 42}]->() RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship property key name in MATCH clause") {
+    val query = "MATCH ()-[r {prop:1337, ``: 1}]->() RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship property key name in WHERE clause") {
+    val query = "MATCH (n)-[r]->() WHERE n.prop > r.`` RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship property key name in WITH clause") {
+    val query = "MATCH ()-[r]->() WITH r.`` AS prop, r.prop as prop2 RETURN prop, prop2"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship property key name in RETURN clause") {
+    val query = "MATCH ()-[r]->() RETURN r.`` as result"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
