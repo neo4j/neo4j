@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
+import org.neo4j.cypher.internal.v4_0.ast.ReturnItemsDef
 import org.neo4j.cypher.internal.v4_0.expressions.Pattern.SemanticContext.{Construct, Match, name}
 import org.neo4j.cypher.internal.v4_0.expressions.Pattern.{SemanticContext, findDuplicateRelationships}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.UnboundedShortestPathNotification
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, UnboundedShortestPathNotification}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 object SemanticPatternCheck extends SemanticAnalysisTooling {
@@ -264,6 +265,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def checkNodeProperties(ctx: SemanticContext, properties: Option[Expression]): SemanticCheck =
     checkNoParamMapsWhenMatching(properties, ctx) chain
+      checkValidPropertyKeyNamesInNodePattern(properties) chain
       SemanticExpressionCheck.simple(properties) chain
       expectType(CTMap.covariant, properties)
 
@@ -276,6 +278,27 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         }
         ) chain implicitVariable(variable, expectedType)
     }
+
+  def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItemsDef, position: InputPosition): SemanticCheck = {
+    val propertyKeys = returnItems.items.collect { case item if item.expression.isInstanceOf[Property] => item.expression.asInstanceOf[Property].propertyKey }
+    SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys, position)
+  }
+
+  def checkValidPropertyKeyNames(propertyKeys: Seq[PropertyKeyName], pos: InputPosition): SemanticCheck = {
+    val errorMessage = propertyKeys.collectFirst { case key if checkValidTokenName(key.name).nonEmpty =>
+      checkValidTokenName(key.name).get
+    }
+    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
+  }
+
+  private def checkValidTokenName(name: String): Option[String] = {
+    if (name == null || name.isEmpty || name.contains("\0") || name.contains("`")) {
+      Some(String.format("%s is not a valid token name. " + "Token names cannot be empty, or contain any null-bytes or back-ticks.",
+        if (name != null) "'" + name + "'" else "Null"))
+    } else {
+      None
+    }
+  }
 }
 
 object checkNoParamMapsWhenMatching {
@@ -288,5 +311,12 @@ object checkNoParamMapsWhenMatching {
       SemanticError("Parameter maps cannot be used in GRAPH OF patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case _ =>
       None
+  }
+}
+
+object checkValidPropertyKeyNamesInNodePattern {
+  def apply(properties: Option[Expression]): SemanticCheck = properties match {
+    case Some(e: MapExpression) => SemanticPatternCheck.checkValidPropertyKeyNames(e.items.map(i => i._1), e.position)
+    case _ => None
   }
 }

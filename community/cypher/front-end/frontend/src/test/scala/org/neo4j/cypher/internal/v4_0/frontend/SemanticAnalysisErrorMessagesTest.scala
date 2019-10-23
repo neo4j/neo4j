@@ -167,6 +167,74 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
   }
 
+  // EMPTY TOKENS for node property
+
+  test("Should not allow empty node property key name in CREATE clause") {
+    val query = "CREATE ({prop: 5, ``: 1})"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty node property key name in MERGE clause") {
+    val query = "MERGE (n {``: 1}) RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty node property key name in MATCH clause") {
+    val query = "MATCH (n {``: 1}) RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty node property key name in WHERE clause") {
+    val query = "MATCH (n) WHERE n.``= 1 RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty node property key name in WITH clause") {
+    val query = "MATCH (n) WITH n.`` AS prop RETURN prop"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty node property key name in RETURN clause") {
+    val query = "MATCH (n) RETURN n.``"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
