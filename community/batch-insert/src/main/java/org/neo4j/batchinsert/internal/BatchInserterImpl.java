@@ -477,13 +477,23 @@ public class BatchInserterImpl implements BatchInserter
 
     private void verifyIndexOrUniquenessConstraintCanBeCreated( SchemaDescriptor schemaDescriptor, String errorMessage )
     {
-        ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schemaDescriptor );
-        ConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schemaDescriptor );
-        if ( schemaCache.hasIndex( schemaDescriptor ) ||
-             schemaCache.hasConstraintRule( constraintDescriptor ) ||
-             schemaCache.hasConstraintRule( nodeKeyDescriptor ) )
+        if ( schemaDescriptor.isFulltextSchemaDescriptor() )
         {
-            throw new ConstraintViolationException( errorMessage );
+            if ( schemaCache.hasIndex( schemaDescriptor ) )
+            {
+                throw new ConstraintViolationException( errorMessage );
+            }
+        }
+        else
+        {
+            ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schemaDescriptor );
+            ConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schemaDescriptor );
+            if ( schemaCache.hasIndex( schemaDescriptor ) ||
+                    schemaCache.hasConstraintRule( constraintDescriptor ) ||
+                    schemaCache.hasConstraintRule( nodeKeyDescriptor ) )
+            {
+                throw new ConstraintViolationException( errorMessage );
+            }
         }
     }
 
