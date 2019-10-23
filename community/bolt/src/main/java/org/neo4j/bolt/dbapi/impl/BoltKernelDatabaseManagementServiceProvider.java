@@ -55,7 +55,7 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
 
         if ( !databaseAPI.isAvailable( 0 ) )
         {
-            throw new UnavailableException( format( "Database `%s` is unavailable.", databaseName ) );
+            throw new UnavailableException( format( "Database '%s' is unavailable.", databaseName ) );
         }
         return new BoltKernelGraphDatabaseServiceProvider( databaseAPI, transactionIdTracker, bookmarkAwaitDuration );
     }
