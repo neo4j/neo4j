@@ -133,7 +133,7 @@ public class FullCheck
 
     private void checkCountsStoreConsistency( InconsistencyReport report, CountsBuilderDecorator countsBuilder, RecordAccess records, CountsStore countsStore )
     {
-        if ( checkGraph )
+        if ( checkGraph && countsStore != CountsStore.nullInstance )
         {
             countsBuilder.checkCounts( countsStore, new ConsistencyReporter( records, report ), progressFactory );
         }
