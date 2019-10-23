@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.logical.plans.{ExpandAll, ExpandInto, LogicalPlan, VariablePredicate}
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
@@ -66,7 +66,23 @@ object expandSolverStep {
                             interestingOrder: InterestingOrder,
                             context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
-    if (availableSymbols(nodeId)) {
+
+    /*
+     * Method to find implicit leaf plan arguments, except explicit Argument
+     */
+    def leafArguments(plan:LogicalPlan): Set[String] = plan match {
+      case _: Argument => Set.empty
+      case p: LogicalLeafPlan => p.argumentIds
+      case _ =>
+        val lhs = plan.lhs.map(inner => leafArguments(inner)).toSet.flatten
+        val rhs = plan.rhs.map(inner => leafArguments(inner)).toSet.flatten
+        lhs ++ rhs
+    }
+    // Remove the leaf arguments as to not try and join disjoint plans only on arguments.
+    // This reduces the solution space for the expands generator, since the joins generator should consider these cases.
+    val symbols = availableSymbols -- leafArguments(sourcePlan)
+
+    if (symbols(nodeId)) {
       Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, interestingOrder, context))
     } else {
       None
