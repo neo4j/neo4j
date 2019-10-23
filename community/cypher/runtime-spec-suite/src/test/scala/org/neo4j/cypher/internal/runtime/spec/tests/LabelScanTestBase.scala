@@ -30,9 +30,11 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label") {
     // given
-    val nodes = nodeGraph(sizeHint, "Honey")
-    nodeGraph(sizeHint, "Butter")
-    nodeGraph(sizeHint, "Almond")
+    val nodes = given {
+      nodeGraph(sizeHint, "Butter")
+      nodeGraph(sizeHint, "Almond")
+      nodeGraph(sizeHint, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -61,7 +63,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple scans") {
     // given
-    val nodes = nodeGraph(10, "Honey")
+    val nodes = given { nodeGraph(10, "Honey") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

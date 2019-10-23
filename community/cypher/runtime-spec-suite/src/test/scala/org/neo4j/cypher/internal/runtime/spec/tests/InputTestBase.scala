@@ -30,7 +30,9 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should produce input") {
     // given
-    val nodes = nodeGraph(3)
+    val nodes = given {
+      nodeGraph(3)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

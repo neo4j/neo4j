@@ -29,9 +29,11 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     test("should support simple hash join between two identifiers") {
       // given
-      val nodes = nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      val nodes = given {
+        nodePropertyGraph(sizeHint, {
+          case i => Map("prop" -> i)
+        })
+      }
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -49,9 +51,11 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should handle additional data when joining on two identifiers") {
     // given
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i => Map("prop" -> i, "otherProp" -> i)
-    })
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i, "otherProp" -> i)
+      })
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -71,9 +75,11 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should join on a cached-property") {
     // given
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i => Map("prop" -> i)
-    })
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -93,16 +99,18 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should handle multiple columns") {
     // given
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i => Map("prop" -> i)
-    })
     val relTuples = (for (i <- 0 until sizeHint) yield {
       Seq(
         (i, (i + 1) % sizeHint, "R")
-        )
+      )
     }).reduce(_ ++ _)
-
-    connect(nodes, relTuples)
+    val nodes = given {
+      val nodes = nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+      connect(nodes, relTuples)
+      nodes
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -124,9 +132,11 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   }
 
   test("should handle cached properties from both lhs and rhs") {
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i => Map("prop" -> i)
-    })
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

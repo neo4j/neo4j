@@ -34,11 +34,12 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
   private val SIZE = 5000
 
   test("should profile page cache stats of linear plan") {
-    // given
-    nodePropertyGraph(SIZE,{
-      case i => Map("prop" -> i)
-    })
-    restartTx()
+    given {
+      nodePropertyGraph(SIZE, {
+        case i => Map("prop" -> i)
+      })
+      () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -58,13 +59,13 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
   }
 
   test("should profile page cache stats of branched plan") {
-    // given
-    index("M", "prop")
-    nodePropertyGraph(SIZE, {
-      case i => Map("prop" -> i)
-    },"N", "M")
-    restartTx()
-
+    given {
+      index("M", "prop")
+      nodePropertyGraph(SIZE, {
+        case i => Map("prop" -> i)
+      }, "N", "M")
+      () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+    }
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n") // Populates results, thus can have page cache hits & misses

@@ -163,8 +163,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
   }
 
   test("should handle cancel stream and close cursors") {
-    //Given
-    val nodes = nodeGraph(3)
+    val nodes = given { nodeGraph(3) }
 
     val subscriber = new TestSubscriber
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -189,8 +188,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
   }
 
   test("should handle multiple times cancel stream and close cursors") {
-    //Given
-    val nodes = nodeGraph(3)
+    val nodes = given { nodeGraph(3) }
 
     val subscriber = new TestSubscriber
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -219,8 +217,8 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
   }
 
   test("should not exhaust input when there is no demand") {
-    // Given
-    val (nodes, _) = circleGraph(1000)
+    val (nodes, _) = given { circleGraph(1000) }
+
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .expand("(x)-->(y)")

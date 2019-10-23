@@ -30,7 +30,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should not explode on cached properties") {
     // given
-    val nodes = nodePropertyGraph(sizeHint, { case i => Map("p" -> i)})
+    val nodes = given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i)}) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

@@ -37,8 +37,10 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
 
-    val nodes = nodeGraph(n)
-    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+    val nodeConnections = given {
+      val nodes = nodeGraph(n)
+      randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -66,7 +68,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand - all nulls") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n)
+    val nodes = given { nodeGraph(n) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -90,8 +92,11 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
   test("should support chained optionals") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n)
-    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+
+    val nodeConnections = given {
+      val nodes = nodeGraph(n)
+      randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -120,8 +125,11 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
   test("should support optional under nested apply") {
     // given
     val n = Math.sqrt(sizeHint).toInt
-    val nodes = nodeGraph(n, "Honey")
-    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "NEXT"))
+
+    val nodeConnections = given {
+      val nodes = nodeGraph(n, "Honey")
+      randomlyConnect(nodes, Connectivity(0, 5, "NEXT"))
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -153,8 +161,11 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
   test("should support optional with hash join") {
     // given
     val n = Math.sqrt(sizeHint).toInt
-    val nodes = nodeGraph(n, "Honey")
-    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+
+    val nodeConnections = given {
+      val nodes = nodeGraph(n, "Honey")
+      randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -186,10 +197,13 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
   test("should support optional with limit") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
-    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
-      case NodeConnections(node, connections) => (node.getId, connections)
-    }.toMap
+
+    val nodeConnections = given {
+      val nodes = nodeGraph(n, "Honey")
+      randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
+        case NodeConnections(node, connections) => (node.getId, connections)
+      }.toMap
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -271,8 +285,10 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
 
-    val nodes = nodeGraph(n)
-    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+    val  nodeConnections = given {
+      val nodes = nodeGraph(n)
+      randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

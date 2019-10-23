@@ -30,8 +30,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile rows of all nodes scan + aggregation + produce results") {
-    // given
-    nodeGraph(sizeHint)
+    given { nodeGraph(sizeHint) }
 
     val aggregationGroups = sizeHint / 2
 
@@ -53,8 +52,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows of all nodes scan + produce results") {
-    // given
-    nodeGraph(sizeHint)
+    given { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -73,7 +71,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
   test("should profile rows of input + produce results") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given { nodeGraph(sizeHint) }
     val input = inputColumns(sizeHint / 4, 4, i => nodes(i % nodes.size))
 
     // when
@@ -92,10 +90,11 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows of sort + filter") {
-    // given
-    nodePropertyGraph(sizeHint,{
-      case i => Map("prop" -> i)
-    })
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -116,8 +115,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows of limit") {
-    // given
-    nodeGraph(sizeHint)
+    given { nodeGraph(sizeHint) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -136,9 +134,10 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows with limit + expand") {
-    // given
-    val nodes = nodeGraph(sizeHint * 10)
-    connect(nodes, Seq((1, 2, "REL")))
+    given {
+      val nodes = nodeGraph(sizeHint * 10)
+      connect(nodes, Seq((1, 2, "REL")))
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -161,9 +160,11 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with optional expand all") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
     val extraANodes = 20
-    nodeGraph(extraANodes, "A")
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      nodeGraph(extraANodes, "A")
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
@@ -184,7 +185,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with expand into") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -207,7 +208,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with optional expand into") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -228,10 +229,11 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows with node hash join") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i => Map("prop" -> i)
-    })
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -255,12 +257,12 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(5).rows() shouldBe sizeHint // all node scan
   }
 
-  // FIXME
-  ignore("should profile rows with cartesian product") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i => Map("prop" -> i)
-    })
+  test("should profile rows with cartesian product") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -284,9 +286,11 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with apply") {
     // given
     val size = sizeHint / 10
-    nodePropertyGraph(size,{
-      case i => Map("prop" -> i)
-    })
+    given {
+      nodePropertyGraph(size, {
+        case i => Map("prop" -> i)
+      })
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -311,9 +315,10 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows of labelscan + produce results") {
-    // given
-    nodeGraph(sizeHint, "L1")
-    nodeGraph(sizeHint, "L2")
+    given {
+      nodeGraph(sizeHint, "L1")
+      nodeGraph(sizeHint, "L2")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -331,12 +336,13 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows of nodeIndexSeek + produce results") {
-    // given
-    index("L1", "prop")
-    nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("prop" -> i)
-    },"L1")
-    nodeGraph(sizeHint, "L2")
+    given {
+      index("L1", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "L1")
+      nodeGraph(sizeHint, "L2")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -354,9 +360,8 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows of cartesian product") {
-    // given
     val size = Math.sqrt(sizeHint).toInt
-    nodeGraph(size)
+    given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

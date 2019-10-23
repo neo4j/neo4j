@@ -34,7 +34,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find single node") {
     // given
-    val nodes = nodeGraph(17)
+    val nodes = given { nodeGraph(17) }
     val toFind = nodes(random.nextInt(nodes.length))
 
     // when
@@ -51,7 +51,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find by floating point") {
     // given
-    val Seq(node) = nodeGraph(1)
+    val Seq(node) = given { nodeGraph(1) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -67,7 +67,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should not find non-existing node") {
     // given
-    val toNotFind = nodeGraph(sizeHint).map(_.getId).max + 1
+    val toNotFind = given { nodeGraph(sizeHint) }.map(_.getId).max + 1
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -83,7 +83,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find multiple nodes") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given { nodeGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
 
     // when
@@ -100,7 +100,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find some nodes and not others") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given { nodeGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toNotFind1 = nodes.map(_.getId).max + 1
     val toNotFind2 = toNotFind1 + 1
@@ -120,7 +120,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle nodeById + filter") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given{ nodeGraph(sizeHint) }
     val toSeekFor = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     // when
@@ -138,7 +138,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on rhs of apply") {
     // given
-    val nodes = nodeGraph(10)
+    val nodes = given { nodeGraph(10) }
     val toSeekFor = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
 

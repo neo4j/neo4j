@@ -45,12 +45,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
     test(s"expand keeps index provided $orderString order") {
       // given
-      index("Honey", "prop")
       val n = sizeHint
-      val nodes = nodePropertyGraph(n, {
-        case i if i % 10 == 0 => Map("prop" -> i)
-      },"Honey")
-
       val relTuples = (for(i <- 0 until n) yield {
         Seq(
           (i, (2 * i) % n, "OTHER"),
@@ -61,8 +56,15 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
           (i, i, "SELF")
         )
       }).reduce(_ ++ _)
+      val nodes = given {
+        index("Honey", "prop")
+        val nodes = nodePropertyGraph(n, {
+          case i if i % 10 == 0 => Map("prop" -> i)
+        },"Honey")
+        connect(nodes, relTuples)
+        nodes
+      }
 
-      connect(nodes, relTuples)
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -82,11 +84,13 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
     test(s"aggregation keeps index provided $orderString order") {
       // given
-      index("Honey", "prop")
       val n = sizeHint
-      nodePropertyGraph(n, {
-        case i => Map("prop" -> i % 100)
-      },"Honey")
+      given {
+        index("Honey", "prop")
+        nodePropertyGraph(n, {
+          case i => Map("prop" -> i % 100)
+        }, "Honey")
+      }
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -109,16 +113,20 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val modulo = 100
       val zGreaterThanFilter = 10
 
-      index("Honey", "prop")
-      val nodes = nodePropertyGraph(n, {
-        case i => Map("prop" -> i % modulo)
-      },"Honey")
 
       val relTuples = (for(i <- 0 until n) yield {
         Seq.fill(fillFactor)((i, i, "SELF"))
       }).reduce(_ ++ _)
 
-      connect(nodes, relTuples)
+      val nodes = given {
+        index("Honey", "prop")
+        val nodes = nodePropertyGraph(n, {
+          case i => Map("prop" -> i % modulo)
+        }, "Honey")
+        connect(nodes, relTuples)
+        nodes
+      }
+
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -158,16 +166,18 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val modulo = 100
       val zGreaterThanFilter = 10
 
-      index("Honey", "prop")
-      val nodes = nodePropertyGraph(n, {
-        case i => Map("prop" -> i % modulo)
-      },"Honey")
-
       val relTuples = (for(i <- 0 until n) yield {
         Seq.fill(fillFactor)((i, i, "SELF"))
       }).reduce(_ ++ _)
 
-      connect(nodes, relTuples)
+      val nodes = given {
+        index("Honey", "prop")
+        val nodes = nodePropertyGraph(n, {
+          case i => Map("prop" -> i % modulo)
+        }, "Honey")
+        connect(nodes, relTuples)
+        nodes
+      }
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -198,10 +208,12 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val modulo = 100
       val zGTFilter = 50
 
-      index("Honey", "prop")
-      val nodes = nodePropertyGraph(n, {
-        case i => Map("prop" -> i % modulo)
-      },"Honey")
+      val nodes = given {
+        index("Honey", "prop")
+        nodePropertyGraph(n, {
+          case i => Map("prop" -> i % modulo)
+        }, "Honey")
+      }
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)

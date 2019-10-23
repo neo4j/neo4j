@@ -30,9 +30,11 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes") {
     // given
-    val nodes = nodeGraph(sizeHint, "Honey") ++
-      nodeGraph(sizeHint, "Butter") ++
-      nodeGraph(sizeHint, "Almond")
+    val nodes = given {
+      nodeGraph(sizeHint, "Honey") ++
+        nodeGraph(sizeHint, "Butter") ++
+        nodeGraph(sizeHint, "Almond")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -49,7 +51,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes - single label") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -78,7 +80,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple scans") {
     // given
-    val nodes = nodeGraph(10, "Honey")
+    val nodes = given { nodeGraph(10, "Honey") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -104,7 +106,7 @@ trait AllNodeScanWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should handle allNodeScan and filter") {
     // given
-    val nodes = nodeGraph(11)
+    val nodes = given { nodeGraph(11) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

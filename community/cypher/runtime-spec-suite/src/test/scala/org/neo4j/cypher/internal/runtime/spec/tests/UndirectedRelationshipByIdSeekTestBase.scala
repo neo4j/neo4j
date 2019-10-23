@@ -34,7 +34,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
   test("should find single relationship") {
     // given
-    val (_, relationships) = circleGraph(17)
+    val (_, relationships) = given { circleGraph(17) }
     val relToFind = relationships(random.nextInt(relationships.length))
 
     // when
@@ -53,7 +53,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
   test("should find by floating point") {
     // given
-    val (_, Seq(rel, _)) = circleGraph(2)
+    val (_, Seq(rel, _)) = given { circleGraph(2) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -69,7 +69,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
   test("should not find non-existing relationship") {
     // given
-    val (_, relationships) = circleGraph(17)
+    val (_, relationships) = given { circleGraph(17) }
     val toNotFind = relationships.map(_.getId).max + 1
 
     // when
@@ -86,7 +86,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
   test("should find multiple relationships") {
     // given
-    val (_, relationships) = circleGraph(sizeHint)
+    val (_, relationships) = given { circleGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     restartTx()
 
@@ -108,7 +108,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
   test("should find some relationships and not others") {
     // given
-    val (_, relationships) = circleGraph(sizeHint)
+    val (_, relationships) = given { circleGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     val toNotFind1 = relationships.map(_.getId).max + 1
     val toNotFind2 = toNotFind1 + 1
@@ -133,7 +133,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
   test("should handle relById + filter") {
     // given
-    val (_, relationships) = circleGraph(sizeHint)
+    val (_, relationships) = given { circleGraph(sizeHint) }
     val toSeekFor = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     restartTx()

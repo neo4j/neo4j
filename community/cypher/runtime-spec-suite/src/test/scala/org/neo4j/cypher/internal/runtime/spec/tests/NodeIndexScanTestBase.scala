@@ -30,12 +30,13 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should scan all nodes of an index with a property") {
-    // given
-    index("Honey", "calories")
-    nodeGraph(5, "Milk")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("calories" -> i)
-    },"Honey")
+    val nodes = given {
+      index("Honey", "calories")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("calories" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -51,12 +52,13 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should scan all nodes of a unique index with a property") {
-    // given
-    uniqueIndex("Honey", "calories")
-    nodeGraph(5, "Milk")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("calories" -> i)
-    },"Honey")
+    val nodes = given {
+      uniqueIndex("Honey", "calories")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("calories" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -72,13 +74,14 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should scan all nodes of an index with multiple properties") {
-    // given
-    index("Honey", "calories", "taste")
-    nodeGraph(5, "Milk")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
-      case i if i % 5 == 0 => Map("calories" -> i)
-    },"Honey")
+    val nodes = given {
+      index("Honey", "calories", "taste")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
+        case i if i % 5 == 0 => Map("calories" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -94,12 +97,13 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties") {
-    // given
-    index("Honey", "calories")
-    nodeGraph(5, "Milk")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("calories" -> i)
-    },"Honey")
+    val nodes = given {
+      index("Honey", "calories")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("calories" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -116,12 +120,13 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties with a unique index") {
-    // given
-    uniqueIndex("Honey", "calories")
-    nodeGraph(5, "Milk")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("calories" -> i)
-    },"Honey")
+    val nodes = given {
+      uniqueIndex("Honey", "calories")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("calories" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

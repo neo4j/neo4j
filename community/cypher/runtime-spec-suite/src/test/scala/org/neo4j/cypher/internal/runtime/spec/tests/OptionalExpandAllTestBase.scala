@@ -34,7 +34,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand and provide variables for relationship and end node - outgoing") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -42,7 +41,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -64,7 +67,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, one type") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -72,7 +74,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -94,7 +100,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, two types") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -103,7 +108,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -125,7 +134,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand and provide variables for relationship and end node - incoming") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -133,7 +141,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -156,7 +168,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - incoming, one type") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -164,7 +175,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -187,7 +202,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - incoming, two types") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -196,7 +210,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -219,7 +237,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand and provide variables for relationship and end node - undirected") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 1 until n by 4) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -227,7 +244,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -250,7 +271,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - undirected, one type") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 1 until n by 4) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -258,7 +278,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -283,7 +307,6 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - undirected, two types") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 1 until n by 4) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
@@ -292,7 +315,11 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -317,14 +344,17 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and handle self loops") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, i, "ME")
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -359,10 +389,12 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle types missing on compile") {
-    // given
-    val n1 = tx.createNode()
-    val n2 = tx.createNode()
-    n1.createRelationshipTo(n2, RelationshipType.withName("BASE"))
+    val (n1, n2) = given {
+      val n1 = tx.createNode()
+      val n2 = tx.createNode()
+      n1.createRelationshipTo(n2, RelationshipType.withName("BASE"))
+      (n1, n2)
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -376,35 +408,43 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     ))
 
     //CREATE S
-    val n3 = tx.createNode()
-    val n4 = tx.createNode()
-    n3.createRelationshipTo(n4, RelationshipType.withName("S"))
+    val (m1, m2, m3, m4) = given {
+      val m3 = tx.createNode()
+      val m4 = tx.createNode()
+      m3.createRelationshipTo(m4, RelationshipType.withName("S"))
+      (n1, n2, m3, m4)
+    }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(Seq(
-      Array(n1, null),
-      Array(n2, null),
-      Array(n3, n4),
-      Array(n4, null)
+      Array(m1, null),
+      Array(m2, null),
+      Array(m3, m4),
+      Array(m4, null)
     ))
 
     //CREATE R
-    val n5 = tx.createNode()
-    val n6 = tx.createNode()
-    n5.createRelationshipTo(n6, RelationshipType.withName("R"))
+    val (o1, o2, o3, o4, o5, o6) = given {
+      val o5 = tx.createNode()
+      val o6 = tx.createNode()
+      o5.createRelationshipTo(o6, RelationshipType.withName("R"))
+      (m1, m2, m3, m4, o5, o6)
+    }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(Seq(
-      Array(n1, null),
-      Array(n2, null),
-      Array(n3, n4),
-      Array(n4, null),
-      Array(n5, n6),
-      Array(n6, null)
+      Array(o1, null),
+      Array(o2, null),
+      Array(o3, o4),
+      Array(o4, null),
+      Array(o5, o6),
+      Array(o6, null)
     ))
   }
 
   test("cached plan should adapt to new relationship types") {
-    // given
-    val n1 = tx.createNode()
-    val n2 = tx.createNode()
-    n1.createRelationshipTo(n2, RelationshipType.withName("BASE"))
+    val (n1, n2) = given {
+      val n1 = tx.createNode()
+      val n2 = tx.createNode()
+      n1.createRelationshipTo(n2, RelationshipType.withName("BASE"))
+      (n1, n2)
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -420,27 +460,33 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     ))
 
     //CREATE S
-    val n3 = tx.createNode()
-    val n4 = tx.createNode()
-    n3.createRelationshipTo(n4, RelationshipType.withName("S"))
+    val (m1, m2, m3, m4) = given {
+      val m3 = tx.createNode()
+      val m4 = tx.createNode()
+      m3.createRelationshipTo(m4, RelationshipType.withName("S"))
+      (n1, n2, m3, m4)
+    }
     execute(executablePlan) should beColumns("x", "y").withRows(Seq(
-      Array(n1, null),
-      Array(n2, null),
-      Array(n3, n4),
-      Array(n4, null)
+      Array(m1, null),
+      Array(m2, null),
+      Array(m3, m4),
+      Array(m4, null)
     ))
 
     //CREATE R
-    val n5 = tx.createNode()
-    val n6 = tx.createNode()
-    n5.createRelationshipTo(n6, RelationshipType.withName("R"))
+    val (o1, o2, o3, o4, o5, o6) = given {
+      val o5 = tx.createNode()
+      val o6 = tx.createNode()
+      o5.createRelationshipTo(o6, RelationshipType.withName("R"))
+      (m1, m2, m3, m4, o5, o6)
+    }
     execute(executablePlan) should beColumns("x", "y").withRows(Seq(
-      Array(n1, null),
-      Array(n2, null),
-      Array(n3, n4),
-      Array(n4, null),
-      Array(n5, n6),
-      Array(n6, null)
+      Array(o1, null),
+      Array(o2, null),
+      Array(o3, o4),
+      Array(o4, null),
+      Array(o5, o6),
+      Array(o6, null)
     ))
   }
 
@@ -463,16 +509,20 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle node reference as input") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
-    val input = inputValues(nodes.map(n => Array[Any](n)): _*).stream()
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
+
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -509,10 +559,13 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should support expandInto on RHS of apply") {
     // given
     val size = sizeHint / 16
-    val (as, bs) = bipartiteGraph(size, "A", "B", "R")
-    // Some not connected nodes as well
-    val moreAs = nodeGraph(size, "A")
-    nodeGraph(size, "B")
+    val (as, bs, moreAs) = given {
+      val (as, bs) = bipartiteGraph(size, "A", "B", "R")
+      // Some not connected nodes as well
+      val moreAs = nodeGraph(size, "A")
+      nodeGraph(size, "B")
+      (as, bs, moreAs)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -535,13 +588,16 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support undirected expandInto on RHS of apply") {
-    val size = sizeHint / 16
     // given
-    val (as, bs) = bipartiteGraph(size, "A", "B", "R")
-    val (bs2, as2) = bipartiteGraph(size, "B", "A", "R2")
-    // Some not connected nodes as well
-    val moreAs = nodeGraph(size, "A")
-    nodeGraph(size, "B")
+    val size = sizeHint / 16
+    val (as, bs, as2, bs2, moreAs) = given {
+      val (as, bs) = bipartiteGraph(size, "A", "B", "R")
+      val (bs2, as2) = bipartiteGraph(size, "B", "A", "R2")
+      // Some not connected nodes as well
+      val moreAs = nodeGraph(size, "A")
+      nodeGraph(size, "B")
+      (as, bs, as2, bs2, moreAs)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -567,16 +623,19 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should filter with a predicate") {
     // given
     val n = sizeHint
-    val nodes = nodePropertyGraph(n, {
-      case i: Int => Map("num" -> i)
-    }, "Honey")
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER")
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodePropertyGraph(n, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

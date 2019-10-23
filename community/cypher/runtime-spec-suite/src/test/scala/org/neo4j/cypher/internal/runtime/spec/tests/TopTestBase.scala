@@ -49,11 +49,12 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null values, one column") {
-    // when
-    val nodes = select(nodeGraph(sizeHint), nullProbability = 0.52)
+    val unfilteredNodes = given { nodeGraph(sizeHint) }
+    val nodes = select(unfilteredNodes, nullProbability = 0.52)
     val limit = nodes.size - 1
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .top(Seq(Ascending("x")), limit)
@@ -87,7 +88,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
   test("should top under apply") {
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel - 10
 
     // when
@@ -185,7 +186,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
   test("should top twice in a row") {
     // given
-    val nodes = nodeGraph(1000)
+    val nodes = given { nodeGraph(1000) }
     val limit1 = 100
     val limit2 = 50
 
@@ -208,7 +209,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
   test("should top on top of apply with expand and top on rhs of apply") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit1 = nodesPerLabel / 2
     val limit2 = limit1 / 2
@@ -238,7 +239,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
   test("should top on top of apply") {
     // given
     val nodeCount = 10
-    val (nodes, _) = circleGraph(nodeCount)
+    val (nodes, _) = given { circleGraph(nodeCount) }
     val limit = nodeCount / 2
 
     // when
@@ -269,7 +270,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
   test("should apply apply top") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit1 = nodesPerLabel / 2
     val limit2 = limit1 / 2
 

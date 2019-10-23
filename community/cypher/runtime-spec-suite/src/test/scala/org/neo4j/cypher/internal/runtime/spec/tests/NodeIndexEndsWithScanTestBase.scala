@@ -31,12 +31,13 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for ENDS WITH with indexes") {
-    // given
-    index("Label", "text")
-    nodePropertyGraph(sizeHint, {
-      case i if i % 2 == 0 => Map("text" -> "CASE")
-      case i if i % 2 == 1 => Map("text" -> "case")
-    },"Label")
+    given {
+      index("Label", "text")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("text" -> "CASE")
+        case i if i % 2 == 1 => Map("text" -> "case")
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -53,12 +54,13 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should be case sensitive for ENDS WITH with unique indexes") {
-    // given
-    uniqueIndex("Label", "text")
-    nodePropertyGraph(sizeHint, {
-      case i if i % 2 == 0 => Map("text" -> s"$i CASE")
-      case i if i % 2 == 1 => Map("text" -> s"$i case")
-    },"Label")
+    given {
+      uniqueIndex("Label", "text")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("text" -> s"$i CASE")
+        case i if i % 2 == 1 => Map("text" -> s"$i case")
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -75,12 +77,13 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null input") {
-    // given
-    index("Label", "text")
-    nodePropertyGraph(sizeHint, {
-      case i if i % 2 == 0 => Map("text" -> "CASE")
-      case i if i % 2 == 1 => Map("text" -> "case")
-    },"Label")
+    given {
+      index("Label", "text")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("text" -> "CASE")
+        case i if i % 2 == 1 => Map("text" -> "case")
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -96,12 +99,13 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle non-text input") {
-    // given
-    index("Label", "text")
-    nodePropertyGraph(sizeHint, {
-      case i if i % 2 == 0 => Map("text" -> "CASE")
-      case i if i % 2 == 1 => Map("text" -> "case")
-    },"Label")
+    given {
+      index("Label", "text")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("text" -> "CASE")
+        case i if i % 2 == 1 => Map("text" -> "case")
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -116,11 +120,12 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties") {
-    // given
-    index("Label", "text")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i => Map("text" -> i.toString)
-    },"Label")
+    val nodes = given {
+      index("Label", "text")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("text" -> i.toString)
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -137,11 +142,12 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties with a unique index") {
-    // given
-    uniqueIndex("Label", "text")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i => Map("text" -> i.toString)
-    },"Label")
+    val nodes = given {
+      uniqueIndex("Label", "text")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("text" -> i.toString)
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

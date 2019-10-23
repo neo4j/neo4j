@@ -31,7 +31,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should get count for single label node") {
     // given
-    val nodes = nodeGraph(actualSize, "LabelA")
+    val nodes = given { nodeGraph(actualSize, "LabelA") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -47,7 +47,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should get count for label wildcard") {
     // given
-    val nodes = nodeGraph(actualSize, "LabelA")
+    val nodes = given { nodeGraph(actualSize, "LabelA") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -63,7 +63,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should return zero for count when non-existent label") {
     // given
-    nodeGraph(actualSize, "LabelA")
+    given { nodeGraph(actualSize, "LabelA") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -79,7 +79,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle label not present at compile time") {
     // given
-    nodeGraph(actualSize, "LabelA")
+    given { nodeGraph(actualSize, "LabelA") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -90,7 +90,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
 
-    tx.createNode(Label.label("NotThereYet"))
+    given { tx.createNode(Label.label("NotThereYet")) }
 
     // then
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
@@ -98,7 +98,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should return zero for count when one label is non-existent") {
     // given
-    nodeGraph(actualSize, "LabelA")
+    given { nodeGraph(actualSize, "LabelA") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -114,7 +114,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should get count for cartesian product of labels") {
     // given
-    val nodes = nodeGraph(actualSize, "LabelA", "LabelB")
+    val nodes = given { nodeGraph(actualSize, "LabelA", "LabelB") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -130,7 +130,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should work when followed by other operators") {
     // given
-    val nodes = nodeGraph(actualSize, "LabelA", "LabelB")
+    val nodes = given { nodeGraph(actualSize, "LabelA", "LabelB") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -147,7 +147,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on rhs of apply") {
     // given
-    val nodes = nodeGraph(actualSize, "LabelA", "LabelB")
+    val nodes = given { nodeGraph(actualSize, "LabelA", "LabelB") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

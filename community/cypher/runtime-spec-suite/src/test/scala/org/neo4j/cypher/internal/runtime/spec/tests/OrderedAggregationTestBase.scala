@@ -52,7 +52,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive ordered grouping column") {
     // given
-    val (nodes, _) = circleGraph(sizeHint)
+    val (nodes, _) = given { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -72,11 +72,12 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on single ordered grouping column with nulls") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
-      case i: Int if i % 2 == 1 => Map("num" -> i)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
+        case i: Int if i % 2 == 1 => Map("num" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -97,7 +98,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive ordered grouping column with nulls") {
     // given
-    val (unfilteredNodes, _) = circleGraph(sizeHint)
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -161,7 +162,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on two primitive grouping columns with nulls, one ordered") {
     // given
-    val (unfilteredNodes, _) = circleGraph(sizeHint)
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -184,7 +185,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on two primitive grouping columns with nulls, two ordered") {
     // given
-    val (unfilteredNodes, _) = circleGraph(sizeHint)
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 

@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{Entity, Node, Path, Relationship}
 /**
   * Test org.neo4j.graphdb.Path implementation, used for runtime spec suite assertions.
   */
-class TestPath(override val startNode: Node, _relationships: Seq[Relationship]) extends Path {
+case class TestPath(override val startNode: Node, _relationships: Seq[Relationship]) extends Path {
 
   import scala.collection.JavaConverters._
 

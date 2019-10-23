@@ -41,8 +41,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should count(*)") {
-    // given
-    nodeGraph(sizeHint, "Honey")
+    given { nodeGraph(sizeHint, "Honey") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -59,7 +58,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) with limit") {
     // given
-    nodeGraph(sizeHint, "Honey")
+    given { nodeGraph(sizeHint, "Honey") }
     val limit = sizeHint / 10
 
     // when
@@ -78,7 +77,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) under apply") {
     val nodesPerLabel = 100
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel / 2
 
     // when
@@ -100,10 +99,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on single grouping column") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -145,7 +145,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single grouping column under apply") {
     val nodesPerLabel = 100
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel / 2
 
     // when
@@ -168,7 +168,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive grouping column") {
     // given
-    val (nodes, _) = circleGraph(sizeHint)
+    val (nodes, _) = given { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -187,11 +187,12 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on single grouping column with nulls") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
-      case i: Int if i % 2 == 1 => Map("num" -> i)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
+        case i: Int if i % 2 == 1 => Map("num" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -210,7 +211,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive grouping column with nulls") {
     // given
-    val (unfilteredNodes, _) = circleGraph(sizeHint)
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -230,10 +231,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on two grouping columns") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}")
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}")
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -252,7 +254,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on two primitive grouping columns with nulls") {
     // given
-    val (unfilteredNodes, _) = circleGraph(sizeHint)
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -273,10 +275,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on three grouping columns") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}", "dead" -> i % 2)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}", "dead" -> i % 2)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -294,10 +297,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(n.prop)") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> i)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -313,10 +317,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should collect(n.prop)") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> i)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -335,10 +340,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should sum(n.prop)") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> i)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -403,10 +409,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should min(n.prop)") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> i)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -439,10 +446,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should max(n.prop)") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> i)
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -475,10 +483,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop)") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> (i + 1))
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> (i + 1))
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -496,10 +505,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop) with grouping") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int => Map("num" -> (i + 1), "name" -> s"bob${i % 10}")
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> (i + 1), "name" -> s"bob${i % 10}")
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -532,10 +542,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop) with durations") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 2 == 0 => Map("num" -> Duration.of(i + 1, ChronoUnit.NANOS))
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> Duration.of(i + 1, ChronoUnit.NANOS))
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -554,11 +565,12 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop) without numerical overflow") {
-    // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int if i % 1000 == 0 => Map("num" -> (Double.MaxValue - 2.0))
-      case i: Int if i % 1000 == 1 => Map("num" -> (Double.MaxValue - 1.0))
-    }, "Honey")
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 1000 == 0 => Map("num" -> (Double.MaxValue - 2.0))
+        case i: Int if i % 1000 == 1 => Map("num" -> (Double.MaxValue - 1.0))
+      }, "Honey")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -600,7 +612,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should aggregate twice in a row") {
     // given
-    val nodes = nodeGraph(1000)
+    val nodes = given { nodeGraph(1000) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -621,7 +633,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = nodesPerLabel / 2
 
@@ -647,7 +659,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate with no grouping on top of apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -668,7 +680,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -690,7 +702,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should perform aggregation with multiple nested apply plans") {
     // given
     val nodesPerLabel = 4
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

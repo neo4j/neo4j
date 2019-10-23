@@ -94,7 +94,7 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
   }
 
   private def someGraphAndQuery: LogicalQuery = {
-    nodeGraph(3)
+    given { nodeGraph(3) }
     new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()

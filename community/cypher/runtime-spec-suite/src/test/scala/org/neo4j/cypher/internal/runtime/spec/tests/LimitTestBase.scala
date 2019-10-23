@@ -116,7 +116,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support limit in the first of two pipelines") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -134,7 +134,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support apply-limit") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -155,7 +155,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support limit on top of apply") {
     // given
     val nodesPerLabel = 50
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel * nodesPerLabel - 1
 
     // when
@@ -177,7 +177,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support reduce -> limit on the RHS of apply") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -205,7 +205,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     // given
     val NODES_PER_LABEL = 100
     val LIMIT = 10
-    val (aNodes, bNodes) = bipartiteGraph(NODES_PER_LABEL, "A", "B", "R")
+    given { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -226,7 +226,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support chained limits") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -250,7 +250,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support chained limits in the same pipeline") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     // This is a hypothetical query used to excersise some logic
@@ -276,10 +276,12 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   }
 
   test("should support limit with expand") {
-    val nodes = nodeGraph(sizeHint)
-    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
-      case NodeConnections(node, connections) => (node.getId, connections)
-    }.toMap
+    val nodeConnections = given {
+      val nodes = nodeGraph(sizeHint)
+      randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
+        case NodeConnections(node, connections) => (node.getId, connections)
+      }.toMap
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

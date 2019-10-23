@@ -32,14 +32,17 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
   test("should expand into and provide variables for relationship - outgoing") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n) yield {
       Seq(
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
 
-    val rels = connect(nodes, relTuples)
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -59,27 +62,8 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
 
-  //Drop is not supported
-  ignore("should drop result") {
-    // given
-    nodeGraph(sizeHint)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .dropResult()
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x").withNoRows
-  }
-
   test("should get exception with error plan") {
-    // given
-    nodeGraph(10)
+    given { nodeGraph(10) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

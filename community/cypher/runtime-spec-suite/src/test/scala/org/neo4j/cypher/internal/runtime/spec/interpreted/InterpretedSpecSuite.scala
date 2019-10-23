@@ -81,3 +81,4 @@ class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY
 class InterpretedMemoryManagementDisabledTest extends MemoryManagementDisabledTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedSubscriberErrorTest extends SubscriberErrorTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+                                with ExpressionWithTxStateChangesTests[CommunityRuntimeContext]

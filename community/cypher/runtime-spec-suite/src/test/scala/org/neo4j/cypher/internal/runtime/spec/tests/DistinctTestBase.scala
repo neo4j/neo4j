@@ -160,7 +160,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   test("should support distinct on top of apply") {
     // given
     val nodesPerLabel = 50
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

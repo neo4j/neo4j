@@ -30,11 +30,13 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should check if label is set on node") {
     // given
     val size = 100
-    for (i <- 0 until size) {
-      if (i % 2 == 0) {
-        tx.createNode(Label.label("Label"))
-      } else {
-        tx.createNode()
+    given {
+      for (i <- 0 until size) {
+        if (i % 2 == 0) {
+          tx.createNode(Label.label("Label"))
+        } else {
+          tx.createNode()
+        }
       }
     }
     // when
@@ -50,27 +52,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     runtimeResult should beColumns("hasLabel").withRows(singleColumn((0 until size).map(_ % 2 == 0)))
   }
 
-  test("hasLabel is false on deleted node") {
-    // given
-    val node = tx.createNode(Label.label("Label"))
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("hasLabel")
-      .projection("x:Label AS hasLabel")
-      .input(nodes = Seq("x"))
-      .build()
-
-    node.delete()
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(node)))
-
-    // then
-    runtimeResult should beColumns("hasLabel").withRows(singleColumn(Seq(false)))
-  }
-
   test("hasLabel is false on non-existing node") {
     // given
-    tx.createNode(Label.label("Label"))
+    given { tx.createNode(Label.label("Label")) }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
 
@@ -90,9 +74,11 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle node property access") {
     // given
     val size = 100
-    nodePropertyGraph(size, {
-      case i: Int => Map("prop" -> i)
-    }, "Label")
+    given {
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i)
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -110,9 +96,11 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should return null if node property is not there") {
     // given
     val size = 100
-    nodePropertyGraph(size, {
-      case i: Int => Map("prop" -> i)
-    }, "Label")
+    given {
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i)
+      }, "Label")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -127,28 +115,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     runtimeResult should beColumns("prop").withRows(singleColumn((0 until size).map(_ => null)))
   }
 
-  test("should throw if node was deleted before accessing node property") {
-    // given
-    val nodes = nodePropertyGraph(1, {
-      case i: Int => Map("prop" -> i)
-    }, "Label")
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("prop")
-      .projection("x.prop AS prop")
-      .input(nodes = Seq("x"))
-      .build()
-    nodes.head.delete()
-    val input = inputValues(nodes.map(n => Array[Any](n)): _*).stream()
-
-    // then
-    an [EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
-  }
-
   test("should ignore if trying to get node property from node that isn't there") {
     // given
-    nodePropertyGraph(1, { case i: Int => Map("prop" -> i)}, "Label")
+    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i)}, "Label") }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
 
@@ -167,8 +136,11 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle relationship property access") {
     // given
     val size = 100
-    val (_, rels) = circleGraph(size, "L")
-    rels.foreach(_.setProperty("prop", 42))
+    val  rels = given {
+      val (_, rels) = circleGraph(size, "L")
+      rels.foreach(_.setProperty("prop", 42))
+      rels
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -186,8 +158,11 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should return null if relationship property is not there") {
     // given
     val size = 100
-    val (_, rels) = circleGraph(size, "L")
-    rels.foreach(_.setProperty("prop", 42))
+    val  rels = given {
+      val (_, rels) = circleGraph(size, "L")
+      rels.foreach(_.setProperty("prop", 42))
+      rels
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -203,27 +178,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     runtimeResult should beColumns("prop").withRows(singleColumn((0 until size).map(_ => null)))
   }
 
-  test("should throw if relationship was deleted before accessing relationship property") {
-    // given
-    val (_, rels) = circleGraph(2, "L")
-    rels.foreach(_.setProperty("prop", 42))
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("prop")
-      .projection("x.prop AS prop")
-      .input(relationships = Seq("x"))
-      .build()
-    rels.head.delete()
-    val input = inputValues(rels.map(r => Array[Any](r)): _*).stream()
-
-    // then
-    an [EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
-  }
-
   test("should ignore if trying to get relationship property from relationship that isn't there") {
     // given
-    nodePropertyGraph(1, { case i: Int => Map("prop" -> i)}, "Label")
+    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i)}, "Label") }
     val relationship = mock[Relationship]
     when(relationship.getId).thenReturn(1337L)
 
@@ -238,5 +195,70 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
     // then
     runtimeResult should beColumns("prop").withRows(singleColumn(Seq(null)))
+  }
+}
+
+// Supported by all runtimes that can deal with changes in the tx-state
+trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
+  self: ExpressionTestBase[CONTEXT] =>
+
+  test("hasLabel is false on deleted node") {
+    // given
+    val node = given { tx.createNode(Label.label("Label")) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasLabel")
+      .projection("x:Label AS hasLabel")
+      .input(nodes = Seq("x"))
+      .build()
+
+    node.delete()
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(node)))
+
+    // then
+    runtimeResult should beColumns("hasLabel").withRows(singleColumn(Seq(false)))
+  }
+
+  test("should throw if node was deleted before accessing node property") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(1, {
+        case i: Int => Map("prop" -> i)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("x.prop AS prop")
+      .input(nodes = Seq("x"))
+      .build()
+    nodes.head.delete()
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*).stream()
+
+    // then
+    an [EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+  }
+
+  test("should throw if relationship was deleted before accessing relationship property") {
+    // given
+    val  rels = given {
+      val (_, rels) = circleGraph(2, "L")
+      rels.foreach(_.setProperty("prop", 42))
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("x.prop AS prop")
+      .input(relationships = Seq("x"))
+      .build()
+    rels.head.delete()
+    val input = inputValues(rels.map(r => Array[Any](r)): _*).stream()
+
+    // then
+    an [EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 }

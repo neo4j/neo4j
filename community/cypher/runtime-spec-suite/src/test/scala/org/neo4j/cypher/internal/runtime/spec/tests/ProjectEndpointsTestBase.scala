@@ -31,7 +31,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - directed - start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes) = bipartiteGraph(nNodes, "A", "B", "R")
+    val (aNodes, bNodes) = given { bipartiteGraph(nNodes, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -57,7 +57,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - undirected - start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    val (aNodes, bNodes, _, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -86,7 +86,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R")
+    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -112,7 +112,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - undirected - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R")
+    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -141,7 +141,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints with hash join under apply - directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R")
+    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -175,7 +175,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints with hash join under apply - undirected/directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R")
+    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -209,7 +209,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints with hash join under apply - directed/undirected - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R")
+    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -243,7 +243,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - chained directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R")
+    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -273,7 +273,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - chained undirected/directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R")
+    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

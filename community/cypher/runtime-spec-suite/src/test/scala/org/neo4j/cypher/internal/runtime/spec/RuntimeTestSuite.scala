@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.{InputDataStream, InputDataStreamTestSupport, NoInput, QueryStatistics}
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, ExecutionPlan, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.result.RuntimeResult
@@ -112,6 +113,43 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
     super.test(testName, Tag(runtime.name) +: testTags: _*)(testFun)
+  }
+
+  /**
+   * This method should be invoked with the complete graph setup given as a block.
+   * It creates a new transaction and converts the result to entities that are valid in the new transaction.
+   * It could be overridden to simply call `f` to test the case where the data is created in the same transaction
+   *
+   * There is no need to call this method if the setup does not create any graph entities, e.g. if you use input.
+   *
+   * @param f the graph creation
+   * @return the graph, with entities that are valid in the new transaction
+   */
+  def given[T <: AnyRef](f: => T): T = {
+    val result = f
+    restartTx()
+    reattachEntitiesToNewTransaction(result).asInstanceOf[T]
+  }
+
+  /**
+   * This method should be invoked with the complete graph setup given as a block, if the graph is not needed later on (e.g. for assertions).
+   * It creates a new transaction.
+   * It could be overridden to simply call `f` to test the case where the data is created in the same transaction
+   *
+   * There is no need to call this method if the setup does not create any graph entities, e.g. if you use input.
+   *
+   * @param f the graph creation
+   */
+  def given(f: => Unit): Unit = {
+    f
+    restartTx()
+  }
+
+  private val reattachEntitiesToNewTransaction: Rewriter = topDown {
+    Rewriter.lift {
+      case n: Node => tx.getNodeById(n.getId)
+      case r: Relationship => tx.getRelationshipById(r.getId)
+    }
   }
 
   // HELPERS
@@ -304,7 +342,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
             previous = n
             r
           }
-        new TestPath(head, relationships)
+        TestPath(head, relationships)
       }
   }
 
