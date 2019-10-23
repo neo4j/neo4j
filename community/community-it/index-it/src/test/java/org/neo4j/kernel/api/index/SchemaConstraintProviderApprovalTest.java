@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -213,7 +214,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         @Override
         public int hashCode()
         {
-            return ArrayUtil.hashCode( array );
+            return ArrayUtils.hashCode( array );
         }
 
         @Override

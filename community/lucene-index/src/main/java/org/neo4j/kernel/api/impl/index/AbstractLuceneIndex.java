@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
@@ -36,7 +37,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
@@ -164,7 +164,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
             {
                 // it is ok for index directory to be empty
                 // this can happen if it is opened and closed without any writes in between
-                if ( !ArrayUtil.isEmpty( directory.listAll() ) )
+                if ( ArrayUtils.isNotEmpty(  directory.listAll() ) )
                 {
                     try ( CheckIndex checker = new CheckIndex( directory ) )
                     {

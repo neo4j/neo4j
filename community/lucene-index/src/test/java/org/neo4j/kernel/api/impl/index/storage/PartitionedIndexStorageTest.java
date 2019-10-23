@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,6 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -91,7 +91,7 @@ class PartitionedIndexStorageTest
         storage.prepareFolder( folder );
 
         assertTrue( fs.fileExists( folder ) );
-        assertTrue( ArrayUtil.isEmpty( fs.listFiles( folder ) ) );
+        assertTrue( isEmpty( fs.listFiles( folder ) ) );
     }
 
     @Test
@@ -100,12 +100,12 @@ class PartitionedIndexStorageTest
         File folder = createRandomFolder( testDir.homeDir() );
         Directory dir = createRandomLuceneDir( folder );
 
-        assertFalse( ArrayUtil.isEmpty( dir.listAll() ) );
+        assertFalse( isEmpty( dir.listAll() ) );
 
         storage.prepareFolder( folder );
 
         assertTrue( fs.fileExists( folder ) );
-        assertTrue( ArrayUtil.isEmpty( dir.listAll() ) );
+        assertTrue( isEmpty( dir.listAll() ) );
     }
 
     @Test
@@ -131,7 +131,7 @@ class PartitionedIndexStorageTest
             assertEquals( 2, directories.size() );
             for ( Directory dir : directories.values() )
             {
-                assertFalse( ArrayUtil.isEmpty( dir.listAll() ) );
+                assertFalse( isEmpty( dir.listAll() ) );
             }
         }
         finally

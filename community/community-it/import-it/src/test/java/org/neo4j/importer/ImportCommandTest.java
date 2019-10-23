@@ -89,7 +89,9 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static java.lang.String.join;
 import static java.lang.System.currentTimeMillis;
+import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.StringUtils.repeat;
@@ -106,7 +108,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_p
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.helpers.ArrayUtil.join;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
@@ -704,9 +705,9 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes=" + join( firstLabels, ":" ) + "=" +
+                "--nodes=" + join( ":", firstLabels ) + "=" +
                 nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
-                "--nodes=" + join( secondLabels, ":" ) + "=" +
+                "--nodes=" + join( ":", secondLabels ) + "=" +
                 nodeData( true, config, nodeIds, lines( NODE_COUNT / 2, NODE_COUNT ) ).getAbsolutePath(),
                 "--relationships=" + firstType + "=" +
                 relationshipData( true, config, nodeIds, lines( 0, RELATIONSHIP_COUNT / 2 ), false ).getAbsolutePath(),
@@ -2010,7 +2011,7 @@ class ImportCommandTest
                 return;
             }
         }
-        fail( "Expected error lines " + join( errorLines.toArray( new String[0] ), format( "%n" ) ) +
+        fail( "Expected error lines " + join( lineSeparator(), errorLines.toArray( new String[0] ) ) +
               " to have at least one line containing the string '" + string + "'" );
     }
 

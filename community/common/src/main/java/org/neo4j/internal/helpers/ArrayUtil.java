@@ -22,7 +22,6 @@ package org.neo4j.internal.helpers;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
 
 import static java.util.Arrays.copyOf;
 
@@ -33,19 +32,6 @@ import static java.util.Arrays.copyOf;
 public abstract class ArrayUtil
 {
     public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
-    public static int hashCode( Object array )
-    {
-        assert array.getClass().isArray() : array + " is not an array";
-
-        int length = Array.getLength( array );
-        int result = length;
-        for ( int i = 0; i < length; i++ )
-        {
-            result = 31 * result + Array.get( array, i ).hashCode();
-        }
-        return result;
-    }
 
     public interface ArrayEquality
     {
@@ -105,47 +91,6 @@ public abstract class ArrayUtil
             return true;
         }
         return false;
-    }
-
-    public static Object clone( Object array )
-    {
-        if ( array instanceof Object[] )
-        {
-            return ((Object[]) array).clone();
-        }
-        if ( array instanceof boolean[] )
-        {
-            return ((boolean[]) array).clone();
-        }
-        if ( array instanceof byte[] )
-        {
-            return ((byte[]) array).clone();
-        }
-        if ( array instanceof short[] )
-        {
-            return ((short[]) array).clone();
-        }
-        if ( array instanceof char[] )
-        {
-            return ((char[]) array).clone();
-        }
-        if ( array instanceof int[] )
-        {
-            return ((int[]) array).clone();
-        }
-        if ( array instanceof long[] )
-        {
-            return ((long[]) array).clone();
-        }
-        if ( array instanceof float[] )
-        {
-            return ((float[]) array).clone();
-        }
-        if ( array instanceof double[] )
-        {
-            return ((double[]) array).clone();
-        }
-        throw new IllegalArgumentException( "Not an array type: " + array.getClass() );
     }
 
     /**
@@ -275,55 +220,6 @@ public abstract class ArrayUtil
         }
         assert missing == 0;
         return union;
-    }
-
-    /**
-     * Check if provided array is empty
-     * @param array - array to check
-     * @return true if array is null or empty
-     */
-    public static boolean isEmpty( Object[] array )
-    {
-        return (array == null) || (array.length == 0);
-    }
-
-    /**
-     * Convert an array to a String using a custom delimiter.
-     *
-     * @param items The array to convert
-     * @param delimiter The delimiter to use
-     * @param <T> The type of the array
-     * @return a {@link String} representation of {@code items} with a custom delimiter in between.
-     */
-    public static <T> String join( T[] items, String delimiter )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < items.length; i++ )
-        {
-            builder.append( i > 0 ? delimiter : "" ).append( items[i] );
-        }
-        return builder.toString();
-    }
-
-    /**
-     * Create new array with all items converted into a new type using a supplied transformer.
-     *
-     * @param from original array
-     * @param transformer transformer that converts an item from the original to the target type
-     * @param toClass target type for items
-     * @param <FROM> type of original items
-     * @param <TO> type of the converted items
-     * @return a new array with all items from {@code from} converted into type {@code toClass}.
-     */
-    public static <FROM, TO> TO[] map( FROM[] from, Function<FROM,TO> transformer, Class<TO> toClass )
-    {
-        @SuppressWarnings( "unchecked" )
-        TO[] result = (TO[]) Array.newInstance( toClass, from.length );
-        for ( int i = 0; i < from.length; i++ )
-        {
-            result[i] = transformer.apply( from[i] );
-        }
-        return result;
     }
 
     /**
