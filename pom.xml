@@ -187,6 +187,7 @@
               <artifactId>annotations</artifactId>
               <version>${project.version}</version>
             </docletArtifact>
+
             <header>Neo4j</header>
             <doctitle>Neo4j ${project.version} API</doctitle>
             <windowtitle>Neo4j ${project.version} API</windowtitle>
@@ -236,7 +237,7 @@
             </subpackages>
             <!-- ...unless the package contains -->
             <excludePackageNames>
-              *.impl.*:*.internal.*:org.neo4j.logging.async:org.neo4j.server.rest.repr.formats:org.neo4j.server.rest.repr.util:org.neo4j.graphdb.factory:org.neo4j.graphdb.facade
+              *.impl.*:*.internal.*
             </excludePackageNames>
           </configuration>
         </plugin>
