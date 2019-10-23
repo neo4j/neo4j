@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.PatternExpressionSolver
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.v3_5.expressions.{Ands, Expression, LogicalVariable}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, ExpandAll, ExpandInto, LogicalLeafPlan, LogicalPlan}
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
@@ -64,7 +64,23 @@ object expandSolverStep {
                             nodeId: String,
                             context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
-    if (availableSymbols(nodeId)) {
+
+    /*
+     * Method to find implicit leaf plan arguments, except explicit Argument
+     */
+    def leafArguments(plan:LogicalPlan): Set[String] = plan match {
+      case _: Argument => Set.empty
+      case p: LogicalLeafPlan => p.argumentIds
+      case _ =>
+        val lhs = plan.lhs.map(inner => leafArguments(inner)).toSet.flatten
+        val rhs = plan.rhs.map(inner => leafArguments(inner)).toSet.flatten
+        lhs ++ rhs
+    }
+    // Remove the leaf arguments as to not try and join disjoint plans only on arguments.
+    // This reduces the solution space for the expands generator, since the joins generator should consider these cases.
+    val symbols = availableSymbols -- leafArguments(sourcePlan)
+
+    if (symbols(nodeId)) {
       Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, context))
     } else {
       None
