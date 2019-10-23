@@ -48,7 +48,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -196,12 +195,8 @@ public class FullCheck
 
     private List<IdGenerator> allIdGenerators( DirectStoreAccess directStoreAccess )
     {
-        final IdType[] idTypes = IdType.values();
         List<IdGenerator> idGenerators = new ArrayList<>();
-        for ( IdType idType : idTypes )
-        {
-            idGenerators.add( directStoreAccess.idGeneratorFactory().get( idType ) );
-        }
+        directStoreAccess.idGeneratorFactory().visit( idGenerators::add );
         return idGenerators;
     }
 
