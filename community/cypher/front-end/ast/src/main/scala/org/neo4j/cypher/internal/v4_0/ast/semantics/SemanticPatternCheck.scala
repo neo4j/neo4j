@@ -211,6 +211,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       checkNoParamMapsWhenMatching(x.properties, ctx) chain
       checkProperties chain
       checkValidPropertyKeyNamesInPattern(x.properties) chain
+      checkValidRelTypes(x.types, x.position) chain
       checkNotUndirectedWhenCreating chain
       checkBaseVariable(ctx, x.baseRel, CTRelationship)
   }
@@ -296,6 +297,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def checkValidLabels(labelNames: Seq[LabelName], pos: InputPosition): SemanticCheck = {
     val errorMessage = labelNames.collectFirst { case label if checkValidTokenName(label.name).nonEmpty =>
       checkValidTokenName(label.name).get
+    }
+    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
+  }
+
+  def checkValidRelTypes(relTypeNames: Seq[RelTypeName], pos: InputPosition): SemanticCheck = {
+    val errorMessage = relTypeNames.collectFirst { case relType if checkValidTokenName(relType.name).nonEmpty =>
+      checkValidTokenName(relType.name).get
     }
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }

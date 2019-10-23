@@ -338,6 +338,52 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
   }
 
+  // Empty tokens for relationship type
+
+  test("Should not allow empty relationship type in CREATE clause") {
+    val query = "CREATE ()-[:``]->()"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship type in MERGE clause") {
+    val query = "MERGE ()-[r :``]->() RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship type in MATCH clause") {
+    val query = "MATCH ()-[r :``]->() RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
+  test("Should not allow empty relationship type in variable length pattern") {
+    val query = "MATCH ()-[r :``*1..5]->() RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+  }
+
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
