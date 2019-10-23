@@ -94,7 +94,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
 
       case CallSubqueryHorizon(callSubquery) =>
         val (subPlan, _) =  plannerQueryPartPlanner.plan(callSubquery, context)
-        context.logicalPlanProducer.planSubqueryApply(plan, subPlan, context)
+        context.logicalPlanProducer.planSubqueryCartesianProduct(plan, subPlan, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")

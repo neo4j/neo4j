@@ -167,3 +167,28 @@ Feature: SubqueryAcceptance
       | count |
       | 4     |
     And no side effects
+
+  Scenario: Should work with preceding MATCH and aggregation
+    And having executed:
+    """
+    CREATE (:Person {age: 20, name: 'Alice'}),
+           (:Person {age: 27, name: 'Bob'}),
+           (:Person {age: 65, name: 'Charlie'}),
+           (:Person {age: 30, name: 'Dora'})
+    """
+    When executing query:
+      """
+      MATCH (p:Person)
+      CALL {
+        UNWIND range(1, 5) AS i
+        RETURN count(i) AS numberOfClones
+      }
+      RETURN p.name, numberOfClones
+      """
+    Then the result should be:
+      | p.name    | numberOfClones |
+      | 'Alice'   | 5              |
+      | 'Bob'     | 5              |
+      | 'Charlie' | 5              |
+      | 'Dora'    | 5              |
+    And no side effects
