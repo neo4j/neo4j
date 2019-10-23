@@ -55,10 +55,10 @@ public class BasicAuthIT
         dbRule.withSetting( GraphDatabaseSettings.auth_enabled, false );
         dbRule.ensureStarted();
 
-        // WHEN
         GraphDatabaseService database = dbRule.getManagementService().database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         try ( Transaction tx = database.beginTx() )
         {
+            // WHEN
             tx.execute( "CREATE USER foo SET PASSWORD 'bar'" ).close();
             tx.commit();
         }
@@ -66,7 +66,9 @@ public class BasicAuthIT
 
         // THEN
         AuthManager authManager = dbRule.resolveDependency( AuthManager.class );
-        LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "bar" ) );
+        LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "wrong" ) );
+        assertThat( loginContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+        loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "bar" ) );
         assertThat( loginContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
     }
 }
