@@ -90,7 +90,7 @@ class AwaitIndexProcedureTest
         when( schemaRead.indexGetForName( "my index" ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
-        procedure.awaitIndexByName( "`my index`", TIMEOUT, TIME_UNIT );
+        procedure.awaitIndexByName( "my index", TIMEOUT, TIME_UNIT );
 
         verify( schemaRead ).indexGetForName( "my index" );
     }
@@ -129,7 +129,7 @@ class AwaitIndexProcedureTest
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( schemaRead.indexGetForName( "some index" ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "`some index`", TIMEOUT, TIME_UNIT ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "some index", TIMEOUT, TIME_UNIT ) );
         assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
     }
 
