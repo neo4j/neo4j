@@ -19,9 +19,8 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
@@ -32,26 +31,25 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
-import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
@@ -63,11 +61,10 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.util.FeatureToggles;
-import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 import static org.neo4j.procedure.Mode.READ;
@@ -154,17 +151,13 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.createNodeIndex", mode = SCHEMA )
     public void createNodeFulltextIndex(
             @Name( "indexName" ) String name,
-            @Name( "labels" ) List<String> labels,
+            @Name( "labels" ) List<String> labelNames,
             @Name( "propertyNames" ) List<String> properties,
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
-            throws KernelException
     {
-        createIndex( name, labels, properties, config, EntityType.NODE );
-    }
-
-    private String[] stringArray( List<String> strings )
-    {
-        return strings.toArray( ArrayUtils.EMPTY_STRING_ARRAY );
+        Label[] labels = labelNames.stream().map( Label::label ).toArray( Label[]::new );
+        IndexCreator indexCreator = transaction.schema().indexFor( labels );
+        createIndex( indexCreator, name, properties, config );
     }
 
     @Description( "Create a relationship fulltext index for the given relationship types and properties. " +
@@ -180,50 +173,54 @@ public class FulltextProcedures
             @Name( "relationshipTypes" ) List<String> relTypes,
             @Name( "propertyNames" ) List<String> properties,
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
-            throws KernelException
     {
-        createIndex( name, relTypes, properties, config, EntityType.RELATIONSHIP );
+        RelationshipType[] types = relTypes.stream().map( RelationshipType::withName ).toArray( RelationshipType[]::new );
+        IndexCreator indexCreator = transaction.schema().indexFor( types );
+        createIndex( indexCreator, name, properties, config );
     }
 
-    private void createIndex( String name, List<String> labelsOrTypes, List<String> properties,
-            Map<String,String> config, EntityType entityType ) throws KernelException
+    private void createIndex( IndexCreator indexCreator, String name, List<String> properties, Map<String,String> config )
     {
-        SchemaDescriptor schema = accessor.schemaFor( entityType, stringArray( labelsOrTypes ), stringArray( properties ) );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR );
-        prototype = prototype.withIndexType( IndexType.FULLTEXT );
-        prototype = prototype.withName( name );
-        IndexConfig indexConfig = createIndexConfig( config );
-        prototype = prototype.withIndexConfig( indexConfig );
-        tx.schemaWrite().indexCreate( prototype );
-    }
+        indexCreator = indexCreator.withName( name );
+        indexCreator = indexCreator.withIndexType( FULLTEXT );
 
-    private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> configMap )
-    {
-        IndexConfig configObject = IndexConfig.empty();
-
-        String analyzer = configMap.remove( PROCEDURE_ANALYZER );
-        if ( analyzer != null )
+        for ( String property : properties )
         {
-            configObject = configObject.withIfAbsent( ANALYZER, Values.stringValue( analyzer ) );
+            indexCreator = indexCreator.on( property );
         }
 
-        String eventuallyConsistent = configMap.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
-        if ( eventuallyConsistent != null )
+        if ( !config.isEmpty() )
         {
-            configObject = configObject.withIfAbsent( EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
+            Map<IndexSetting,Object> parsedConfig = new EnumMap<>( IndexSetting.class );
+
+            String analyzer = config.remove( PROCEDURE_ANALYZER );
+            if ( analyzer != null )
+            {
+                parsedConfig.put( IndexSetting.FULLTEXT_ANALYZER, analyzer );
+            }
+
+            String eventuallyConsistent = config.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
+            if ( eventuallyConsistent != null )
+            {
+                parsedConfig.put( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, Boolean.parseBoolean( eventuallyConsistent ) );
+            }
+
+            indexCreator = indexCreator.withIndexConfiguration( parsedConfig );
         }
 
-        // Ignore any other entries that the map might contain.
-
-        return configObject;
+        indexCreator.create();
     }
 
     @Description( "Drop the specified index." )
     @Procedure( name = "db.index.fulltext.drop", mode = SCHEMA )
-    public void drop( @Name( "indexName" ) String name ) throws InvalidTransactionTypeKernelException, SchemaKernelException
+    public void drop( @Name( "indexName" ) String name )
     {
-        IndexDescriptor indexReference = getValidIndex( name );
-        tx.schemaWrite().indexDrop( indexReference );
+        IndexDefinition index = transaction.schema().getIndexByName( name );
+        if ( index.getIndexType() != FULLTEXT )
+        {
+            throw new IllegalArgumentException( "The index called '" + name + "' is not a full-text index." );
+        }
+        index.drop();
     }
 
     @SystemProcedure
@@ -239,7 +236,7 @@ public class FulltextProcedures
         IndexDescriptor indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
-        if ( entityType != EntityType.NODE )
+        if ( entityType != NODE )
         {
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for nodes." );
@@ -285,7 +282,7 @@ public class FulltextProcedures
         IndexDescriptor indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
-        if ( entityType != EntityType.RELATIONSHIP )
+        if ( entityType != RELATIONSHIP )
         {
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for relationships." );
