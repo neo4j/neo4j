@@ -38,7 +38,7 @@ import static org.junit.Assert.fail;
 
 public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
 {
-    private static final String CUSTOM_SWAPPER = "CustomSwapper";
+    protected static final String CUSTOM_SWAPPER = "CustomSwapper";
     private static final Semaphore SEMAPHORE = new Semaphore( 0 );
 
     /**
