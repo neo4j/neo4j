@@ -175,7 +175,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: NodePattern =>
         checkBaseVariable(ctx, x.baseNode, CTNode) chain
-          checkNodeProperties(ctx, x.properties)
+          checkNodeProperties(ctx, x.properties) chain
+          checkValidLabels(x.labels, x.position)
 
     }
 
@@ -288,6 +289,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def checkValidPropertyKeyNames(propertyKeys: Seq[PropertyKeyName], pos: InputPosition): SemanticCheck = {
     val errorMessage = propertyKeys.collectFirst { case key if checkValidTokenName(key.name).nonEmpty =>
       checkValidTokenName(key.name).get
+    }
+    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
+  }
+
+  def checkValidLabels(labelNames: Seq[LabelName], pos: InputPosition): SemanticCheck = {
+    val errorMessage = labelNames.collectFirst { case label if checkValidTokenName(label.name).nonEmpty =>
+      checkValidTokenName(label.name).get
     }
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }
