@@ -73,5 +73,5 @@ object coerce {
   }
 
   private def cantCoerce(value: Any, typ: CypherType, cause: Option[Throwable] = None) =
-    new CypherTypeException(s"Can't coerce `$value` to $typ", cause.orNull)
+    new CypherTypeException(s"Wrong argument type: Can't coerce `$value` to $typ", cause.orNull)
 }
