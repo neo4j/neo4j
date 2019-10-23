@@ -117,6 +117,18 @@ public class SchemaImpl implements Schema
     }
 
     @Override
+    public IndexCreator indexFor( RelationshipType type )
+    {
+        return new IndexCreatorImpl( actions, type );
+    }
+
+    @Override
+    public IndexCreator indexFor( RelationshipType... types )
+    {
+        return new IndexCreatorImpl( actions, types );
+    }
+
+    @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
         try ( Statement ignore = transaction.acquireStatement() )
@@ -563,48 +575,88 @@ public class SchemaImpl implements Schema
         {
             try ( Statement ignore = transaction.acquireStatement() )
             {
-                try
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                String[] labelNames = Arrays.stream( labels ).map( Label::name ).toArray( String[]::new );
+                int[] labelIds = new int[labels.length];
+                tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
+                int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
+                SchemaDescriptor schema;
+                if ( indexType == IndexType.FULLTEXT )
                 {
-                    TokenWrite tokenWrite = transaction.tokenWrite();
-                    String[] labelNames = Arrays.stream( labels ).map( Label::name ).toArray( String[]::new );
-                    int[] labelIds = new int[labels.length];
-                    tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
-                    SchemaDescriptor schema;
-                    if ( indexType == IndexType.FULLTEXT )
-                    {
-                        schema = fulltext( EntityType.NODE, labelIds, propertyKeyIds );
-                    }
-                    else if ( labelIds.length == 1 )
-                    {
-                        schema = forLabel( labelIds[0], propertyKeyIds );
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException( indexType + " indexes can only be created with exactly one label, " +
-                                "but got " + ( labelIds.length == 0 ? "no" : String.valueOf( labelIds.length ) ) + " labels." );
-                    }
-                    IndexPrototype prototype = IndexPrototype.forSchema( schema );
-                    prototype = prototype.withName( indexName );
-                    prototype = prototype.withIndexType( fromPublicApi( indexType ) );
-                    prototype = prototype.withIndexConfig( indexConfig );
-                    IndexDescriptor indexReference = transaction.schemaWrite().indexCreate( prototype );
-                    return new IndexDefinitionImpl( this, indexReference, labels, propertyKeys, false );
+                    schema = fulltext( EntityType.NODE, labelIds, propertyKeyIds );
                 }
-                catch ( IllegalTokenNameException e )
+                else if ( labelIds.length == 1 )
                 {
-                    throw new IllegalArgumentException( e );
+                    schema = forLabel( labelIds[0], propertyKeyIds );
                 }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+                else
                 {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                    throw new IllegalArgumentException( indexType + " indexes can only be created with exactly one label, " +
+                            "but got " + ( labelIds.length == 0 ? "no" : String.valueOf( labelIds.length ) ) + " labels." );
                 }
-                catch ( KernelException e )
-                {
-                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
-                }
+                IndexDescriptor indexReference = createIndex( indexName, schema, indexType, indexConfig );
+                return new IndexDefinitionImpl( this, indexReference, labels, propertyKeys, false );
             }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( KernelException e )
+            {
+                throw new TransactionFailureException( "Unknown error trying to create token ids", e );
+            }
+        }
+
+        @Override
+        public IndexDefinition createIndexDefinition( RelationshipType[] types, String indexName, IndexType indexType, IndexConfig indexConfig,
+                String... propertyKeys )
+        {
+            try ( Statement ignore = transaction.acquireStatement() )
+            {
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                String[] typeNames = Arrays.stream( types ).map( RelationshipType::name ).toArray( String[]::new );
+                int[] typeIds = new int[types.length];
+                tokenWrite.relationshipTypeGetOrCreateForNames( typeNames, typeIds );
+                int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
+                SchemaDescriptor schema;
+                if ( indexType == IndexType.FULLTEXT )
+                {
+                    schema = fulltext( EntityType.RELATIONSHIP, typeIds, propertyKeyIds );
+                }
+                else
+                {
+                    throw new IllegalArgumentException( indexType + " indexes cannot be created on relationship types." );
+                }
+                IndexDescriptor indexReference = createIndex( indexName, schema, indexType, indexConfig );
+                return new IndexDefinitionImpl( this, indexReference, types, propertyKeys, false );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( KernelException e )
+            {
+                throw new TransactionFailureException( "Unknown error trying to create token ids", e );
+            }
+        }
+
+        public IndexDescriptor createIndex( String indexName, SchemaDescriptor schema, IndexType indexType, IndexConfig indexConfig ) throws KernelException
+        {
+            IndexPrototype prototype = IndexPrototype.forSchema( schema );
+            prototype = prototype.withName( indexName );
+            prototype = prototype.withIndexType( fromPublicApi( indexType ) );
+            prototype = prototype.withIndexConfig( indexConfig );
+            return transaction.schemaWrite().indexCreate( prototype );
         }
 
         @Override

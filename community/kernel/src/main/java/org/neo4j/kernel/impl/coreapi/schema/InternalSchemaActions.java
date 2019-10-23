@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.Map;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -37,6 +35,8 @@ import org.neo4j.internal.schema.IndexConfig;
 public interface InternalSchemaActions
 {
     IndexDefinition createIndexDefinition( Label[] label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey );
+
+    IndexDefinition createIndexDefinition( RelationshipType[] types, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey );
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 

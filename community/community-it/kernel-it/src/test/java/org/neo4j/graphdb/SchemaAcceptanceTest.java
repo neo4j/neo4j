@@ -95,16 +95,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     @Inject
     private GraphDatabaseService db;
 
-    private final Label label = Labels.MY_LABEL;
-    private final Label otherLabel = Labels.MY_OTHER_LABEL;
+    private final Label label = Label.label( "MY_LABEL" );
+    private final Label otherLabel = Label.label( "MY_OTHER_LABEL" );
+    private final RelationshipType relType = RelationshipType.withName( "MY_REL_TYPE" );
+    private final RelationshipType otherRelType = RelationshipType.withName( "MY_OTHER_REL_TYPE" );
     private final String propertyKey = "my_property_key";
     private final String secondPropertyKey = "my_second_property_key";
-
-    private enum Labels implements Label
-    {
-        MY_LABEL,
-        MY_OTHER_LABEL
-    }
 
     @Test
     void addingAnIndexingRuleShouldSucceed()
@@ -511,7 +507,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
-        createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
+        createUniquenessConstraint( otherLabel, propertyKey );
 
         // WHEN THEN
         try ( Transaction tx = db.beginTx() )
@@ -524,8 +520,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     void shouldListAddedConstraints()
     {
         // GIVEN
-        ConstraintDefinition constraint1 = createUniquenessConstraint( Labels.MY_LABEL, propertyKey );
-        ConstraintDefinition constraint2 = createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
+        ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
+        ConstraintDefinition constraint2 = createUniquenessConstraint( otherLabel, propertyKey );
 
         // WHEN THEN
         try ( Transaction tx = db.beginTx() )
@@ -1103,7 +1099,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor().on( propertyKey ).create() );
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( new Label[0] ).on( propertyKey ).create() );
             tx.commit();
         }
     }
@@ -1123,7 +1119,92 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor().on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create() );
+            assertThrows( IllegalArgumentException.class,
+                    () -> tx.schema().indexFor( new Label[0] ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void creatingFullTextIndexOnRelationshipTypeMustBePossible()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().indexFor( relType ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).withName( "index" ).create();
+            assertTrue( index.isRelationshipIndex() );
+            assertThat( index.getRelationshipTypes(), containsInAnyOrder( relType ) );
+            assertThat( index.getIndexType(), is( IndexType.FULLTEXT ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "index" );
+            assertTrue( index.isRelationshipIndex() );
+            assertThat( index.getRelationshipTypes(), containsInAnyOrder( relType ) );
+            assertThat( index.getIndexType(), is( IndexType.FULLTEXT ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void creatingMultiTokenFullTextIndexOnRelationshipTypesMustBePossible()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().indexFor( relType, otherRelType )
+                    .on( propertyKey ).withIndexType( IndexType.FULLTEXT ).withName( "index" ).create();
+            assertTrue( index.isRelationshipIndex() );
+            assertThat( index.getRelationshipTypes(), containsInAnyOrder( relType, otherRelType ) );
+            assertThat( index.getIndexType(), is( IndexType.FULLTEXT ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "index" );
+            assertTrue( index.isRelationshipIndex() );
+            assertThat( index.getRelationshipTypes(), containsInAnyOrder( relType, otherRelType ) );
+            assertThat( index.getIndexType(), is( IndexType.FULLTEXT ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustThrowWhenCreatingFullTextIndexOnZeroRelationshipTypes()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class,
+                    () -> tx.schema().indexFor( new RelationshipType[0] ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustThrowWhenCreatingBtreeIndexOnRelationshipType()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( relType ).on( propertyKey ).create() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustThrowWhenCreatingBtreeIndexOnZeroRelationshipTypes()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( new RelationshipType[0] ).on( propertyKey ).create() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void mustThrowWhenCreatingBtreeIndexOnMultipleRelationshipTypes()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( relType, otherRelType ).on( propertyKey ).create() );
             tx.commit();
         }
     }

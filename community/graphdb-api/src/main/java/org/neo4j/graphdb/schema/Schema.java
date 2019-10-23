@@ -49,9 +49,11 @@ public interface Schema
     }
 
     /**
+     * Begin specifying an index for all nodes with the given label.
+     *
      * Returns an {@link IndexCreator} where details about the index to create can be
      * specified. When all details have been entered, {@link IndexCreator#create() create}
-     * must be called for it to actually be created.
+     * must be called for the index to actually be created.
      *
      * Creating an index enables indexing for nodes with the specified label. The index will
      * have the details supplied to the {@link IndexCreator returned index creator}.
@@ -66,9 +68,11 @@ public interface Schema
     IndexCreator indexFor( Label label );
 
     /**
+     * Begin specifying an index for all nodes with any of the given labels.
+     *
      * Returns an {@link IndexCreator} where details about the index to create can be
      * specified. When all details have been entered, {@link IndexCreator#create() create}
-     * must be called for it to actually be created.
+     * must be called for the index to actually be created.
      *
      * Creating an index enables indexing for nodes with any of the specified labels.
      * The index will have the details supplied to the {@link IndexCreator returned index creator}.
@@ -85,10 +89,46 @@ public interface Schema
      * The list of labels may not contain any duplicates.
      *
      * @param labels The list of labels for which nodes should be indexed.
-     * @return an {@link IndexCreator} capable of providing details for, as wel as creating
+     * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given list of {@link Label labels}.
      */
     IndexCreator indexFor( Label... labels );
+
+    /**
+     * Begin specifying an index for all relationships with the given relationship type.
+     *
+     * Returns an {@link IndexCreator} where details about the index to create can be
+     * specified. When all details have been entered, {@link IndexCreator#create() create}
+     * must be called for the index to actually be created.
+     *
+     * Creating an index enables indexing for relationships with the specified relationship type.
+     * The index will have the details supplied to the {@link IndexCreator returned index creator}.
+     * All existing and all future relationships matching the index definition will be indexed,
+     * speeding up future operations.
+     *
+     * @param type {@link RelationshipType relationship type} on relationships to be indexed.
+     * @return an {@link IndexCreator} capable of providing details for, as well as creating
+     * an index for the given {@link RelationshipType}.
+     */
+    IndexCreator indexFor( RelationshipType type );
+
+    /**
+     * Begin specifying an index for all relationships with any of the given relationship types.
+     *
+     * Returns an {@link IndexCreator} where details about the index to create can be
+     * specified. When all details have been entered, {@link IndexCreator#create() create}
+     * must be called for the index to actually be created.
+     *
+     * Creating an index enables indexing for relationships with any of the specified relationship types.
+     * The index will have the details supplied to the {@link IndexCreator returned index creator}.
+     * All existing and all future relationships matching the index definition will be indexes,
+     * speeding up future operations.
+     *
+     * @param types {@link RelationshipType relationship types} on relationships to be indexed.
+     * @return an {@link IndexCreator} capable of providing details for, as well as creating
+     * an index for the given {@link RelationshipType RelationshipTypes}.
+     */
+    IndexCreator indexFor( RelationshipType... types );
 
     /**
      * @param label the {@link Label} to get {@link IndexDefinition indexes} for.

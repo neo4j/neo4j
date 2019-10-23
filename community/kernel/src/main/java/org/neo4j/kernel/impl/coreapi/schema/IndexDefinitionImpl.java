@@ -69,7 +69,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         assertInUnterminatedTransaction();
     }
 
-    IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
+    public IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
         this.indexReference = ref;

@@ -1247,6 +1247,30 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
+        public IndexDefinition createIndexDefinition( RelationshipType[] types, String indexName, IndexType indexType, IndexConfig indexConfig,
+                String... propertyKeys )
+        {
+            int[] typeIds = Arrays.stream( types ).mapToInt( type -> getOrCreateRelationshipTypeId( type.name() ) ).toArray();
+            int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
+            SchemaDescriptor schema;
+            if ( indexType == IndexType.FULLTEXT )
+            {
+                schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, typeIds, propertyKeyIds );
+            }
+            else
+            {
+                throw new IllegalArgumentException( indexType + " indexes cannot be created on relationship types." );
+            }
+
+            validateIndexCanBeCreated( schema );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema ).withName( indexName ).withIndexType( fromPublicApi( indexType ) );
+            prototype = prototype.withIndexConfig( indexConfig );
+
+            IndexDescriptor index = createIndex( prototype );
+            return new IndexDefinitionImpl( this, index, types, propertyKeys, false );
+        }
+
+        @Override
         public void dropIndexDefinitions( IndexDefinition indexDefinition )
         {
             throw unsupportedException();
