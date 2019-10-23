@@ -55,8 +55,8 @@ public class IndexCreatorImpl implements IndexCreator
         this( actions, null, types, null, new ArrayList<>(), IndexType.BTREE, IndexConfig.empty() );
     }
 
-    private IndexCreatorImpl( InternalSchemaActions actions, Label[] labels, RelationshipType[] types, String indexName, Collection<String> propertyKeys, IndexType indexType,
-            IndexConfig indexConfig )
+    private IndexCreatorImpl( InternalSchemaActions actions, Label[] labels, RelationshipType[] types, String indexName, Collection<String> propertyKeys,
+            IndexType indexType, IndexConfig indexConfig )
     {
         this.actions = actions;
         this.labels = labels;
