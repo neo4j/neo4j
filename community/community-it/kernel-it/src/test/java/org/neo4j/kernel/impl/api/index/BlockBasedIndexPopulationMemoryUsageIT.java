@@ -89,7 +89,7 @@ class BlockBasedIndexPopulationMemoryUsageIT
         // given all parameters of data size, number of workers and number of indexes will amount
         // to a maximum of 10 MiB. Previously this would easily be 10-fold of that for this scenario.
         long targetMemoryConsumption = TEST_BLOCK_SIZE * (8 /*mergeFactor*/ + 1 /*write buffer*/) * 8 /*numberOfWorkers*/;
-        assertThat( monitor.peakDirectMemoryUsage, lessThan( targetMemoryConsumption + 1 ) );
+        assertThat( monitor.peakDirectMemoryUsage, lessThan( targetMemoryConsumption * 2 + 1 ) );
     }
 
     private void createLotsOfIndexesInOneTransaction()
