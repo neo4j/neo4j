@@ -102,6 +102,7 @@ class BufferingIdGeneratorFactoryTest
             marker.markDeleted( 7 );
         }
         verify( actual.markers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
+        verify( actual.markers[STRING_BLOCK.ordinal()] ).close();
         verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // after some maintenance and transaction still not closed
