@@ -21,6 +21,7 @@ package org.neo4j.graphdb.schema;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 
 /**
  * The index type describes the overall behaviour and performance profile of an index.
@@ -35,6 +36,8 @@ public enum IndexType
      * BTREE indexes can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "SPATIAL_".
      * <p>
      * BTREE indexes do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.
+     * <p>
+     * BTREE indexes cannot be created on {@link Schema#indexFor(RelationshipType) relationship types}.
      */
     BTREE,
     /**
@@ -44,6 +47,8 @@ public enum IndexType
      * FULLTEXT indexes can have their behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "FULLTEXT_".
      * <p>
      * FULLTEXT indexes can be {@linkplain Schema#indexFor(Label...) created} as {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.
+     * <p>
+     * FULLTEXT indexes can be created on both labels, and {@link Schema#indexFor(RelationshipType) relationship types}.
      */
     FULLTEXT
 }

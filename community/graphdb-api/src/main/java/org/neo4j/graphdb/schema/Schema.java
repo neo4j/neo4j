@@ -58,7 +58,7 @@ public interface Schema
      * Creating an index enables indexing for nodes with the specified label. The index will
      * have the details supplied to the {@link IndexCreator returned index creator}.
      * All existing and all future nodes matching the index definition will be indexed,
-     * speeding up future operations.
+     * speeding up future read operations.
      *
      * @param label {@link Label label} on nodes to be indexed
      *
@@ -77,7 +77,7 @@ public interface Schema
      * Creating an index enables indexing for nodes with any of the specified labels.
      * The index will have the details supplied to the {@link IndexCreator returned index creator}.
      * All existing and all future nodes matching the index definition will be indexed,
-     * speeding up future operations.
+     * speeding up future read operations.
      *
      * This behaves similar to the {@link #indexFor(Label)} method, with the exception that
      * multiple labels can be specified. Doing so will create a so-called
@@ -104,7 +104,7 @@ public interface Schema
      * Creating an index enables indexing for relationships with the specified relationship type.
      * The index will have the details supplied to the {@link IndexCreator returned index creator}.
      * All existing and all future relationships matching the index definition will be indexed,
-     * speeding up future operations.
+     * speeding up future read operations.
      *
      * @param type {@link RelationshipType relationship type} on relationships to be indexed.
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
@@ -122,7 +122,7 @@ public interface Schema
      * Creating an index enables indexing for relationships with any of the specified relationship types.
      * The index will have the details supplied to the {@link IndexCreator returned index creator}.
      * All existing and all future relationships matching the index definition will be indexes,
-     * speeding up future operations.
+     * speeding up future read operations.
      *
      * @param types {@link RelationshipType relationship types} on relationships to be indexed.
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
