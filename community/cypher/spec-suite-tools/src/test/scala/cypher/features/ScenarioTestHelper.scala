@@ -76,18 +76,11 @@ object ScenarioTestHelper {
                   // If, on the other hand, the scenario expects results and the test is blacklisted, only compile
                   // time failures are acceptable.
                   if (phase == Phase.runtime && !scenarioExpectsError) {
-
-                    // TODO hack because of wrong scenario in the TCK
-                    if (scenario.featureName == "OrderByAcceptance" &&
-                      scenario.name == "ORDER BY with negative parameter for LIMIT should not generate errors") {
-                      // We skip throwing the exception here until the TCK is fixed
-                    } else {
-                      // That's not OK
-                      throw new Exception(
-                        s"""Failed at $phase in scenario $name for query
-                           |(NOTE: This test is marked as expected to fail, but failing at $phase is not ok)
-                           |""".stripMargin, cause.cause)
-                    }
+                    // That's not OK
+                    throw new Exception(
+                      s"""Failed at $phase in scenario $name for query
+                         |(NOTE: This test is marked as expected to fail, but failing at $phase is not ok)
+                         |""".stripMargin, cause.cause)
                   }
                   // else failed as expected
                   // Not supported

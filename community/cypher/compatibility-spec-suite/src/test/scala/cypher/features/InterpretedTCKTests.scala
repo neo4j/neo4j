@@ -26,12 +26,12 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
-class CostInterpretedTCKTests extends BaseTCKTests {
+class InterpretedTCKTests extends BaseTCKTests {
 
   // If you want to only run a specific feature or scenario, go to the BaseTCKTests
 
   @TestFactory
-  def runCostInterpreted(): util.Collection[DynamicTest] = {
+  def runInterpreted(): util.Collection[DynamicTest] = {
     createTests(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
   }
 
