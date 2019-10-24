@@ -64,6 +64,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     exception.getMessage should include("Must be a non-negative integer")
   }
 
+  test("limit -1 on an empty input") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(-1)
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputValues()
+
+    // then
+    val exception = intercept[InvalidArgumentException] {
+      consume(execute(logicalQuery, runtime, input))
+    }
+    exception.getMessage should include("Must be a non-negative integer")
+  }
+
   test("limit higher than amount of rows") {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

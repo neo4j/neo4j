@@ -35,9 +35,6 @@ case class LimitPipe(source: Pipe, exp: Expression)
   exp.registerOwningPipe(this)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-
-    if (input.isEmpty) return empty
-
     val limitNumber = NumericHelper.asNumber(exp(state.newExecutionContext(executionContextFactory), state))
     if (limitNumber.isInstanceOf[FloatingPointValue]) {
       val limit = limitNumber.doubleValue()
@@ -48,6 +45,8 @@ case class LimitPipe(source: Pipe, exp: Expression)
     if (limit < 0) {
       throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")
     }
+
+    if (limit == 0 || input.isEmpty) return empty
 
     new AbstractIterator[ExecutionContext] {
       private var remaining = limit

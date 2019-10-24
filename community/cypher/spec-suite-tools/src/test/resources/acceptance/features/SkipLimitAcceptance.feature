@@ -25,6 +25,72 @@ Feature: SkipLimitAcceptance
   Background:
     Given an empty graph
 
+  Scenario: Negative parameter for LIMIT with ORDER BY and an empty graph should fail
+    And parameters are:
+      | _limit | -1 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      ORDER BY name LIMIT $_limit
+      """
+    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+
+  Scenario: Negative parameter for LIMIT and an empty graph should fail
+    And parameters are:
+      | _limit | -1 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      LIMIT $_limit
+      """
+    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+
+  Scenario: Negative parameter for SKIP and an empty graph should fail
+    And parameters are:
+      | limit | -1 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP $limit
+      """
+    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+
+  Scenario: Floating point parameter for LIMIT and an empty graph should fail
+    And parameters are:
+      | limit | 1.0 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      LIMIT $limit
+      """
+    Then a SyntaxError should be raised at runtime: InvalidArgumentType
+
+  Scenario: Floating point parameter for LIMIT with ORDER BY and an empty graph should fail
+    And parameters are:
+      | limit | 1.0 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      ORDER BY name LIMIT $limit
+      """
+    Then a SyntaxError should be raised at runtime: InvalidArgumentType
+
+  Scenario: Floating point parameter for SKIP and an empty graph should fail
+    And parameters are:
+      | limit | 1.0 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP $limit
+      """
+    Then a SyntaxError should be raised at runtime: InvalidArgumentType
+
   Scenario: Negative parameter for LIMIT should fail
     And having executed:
       """

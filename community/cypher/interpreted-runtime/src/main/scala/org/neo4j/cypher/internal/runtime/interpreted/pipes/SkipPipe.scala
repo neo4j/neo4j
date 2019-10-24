@@ -32,9 +32,6 @@ case class SkipPipe(source: Pipe, exp: Expression)
   exp.registerOwningPipe(this)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    if(input.isEmpty)
-      return Iterator.empty
-
     val skipNumber = NumericHelper.asNumber(exp(state.newExecutionContext(executionContextFactory), state))
     if (skipNumber.isInstanceOf[FloatingPointValue]) {
       val skip = skipNumber.doubleValue()
@@ -45,6 +42,9 @@ case class SkipPipe(source: Pipe, exp: Expression)
     if (skip < 0) {
       throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")
     }
+
+    if(input.isEmpty)
+      return Iterator.empty
 
     input.drop(skip)
   }
