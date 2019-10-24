@@ -93,6 +93,40 @@ public class SchemaIndexWaitingAcceptanceTest
     }
 
     @Test
+    public void shouldTimeoutWaitingForIndexByNameToComeOnline()
+    {
+        // given
+        GraphDatabaseService db = rule.getGraphDatabaseAPI();
+        DoubleLatch latch = provider.installPopulationJobCompletionLatch();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).withName( "my_index" ).create();
+            tx.commit();
+        }
+
+        latch.waitForAllToStart();
+
+        // when
+        try ( Transaction tx = db.beginTx() )
+        {
+            // then
+            tx.schema().awaitIndexOnline( "my_index", 1, TimeUnit.MILLISECONDS );
+
+            fail( "Expected IllegalStateException to be thrown" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // good
+            assertThat( e.getMessage(), containsString( "come online" ) );
+        }
+        finally
+        {
+            latch.finish();
+        }
+    }
+
+    @Test
     public void shouldTimeoutWaitingForAllIndexesToComeOnline()
     {
         // given

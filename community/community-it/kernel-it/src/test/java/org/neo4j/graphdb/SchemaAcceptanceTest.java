@@ -383,6 +383,21 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
+    void awaitingIndexComingOnlineByNameWorks()
+    {
+        IndexDefinition index = createIndex( db, "my_index", label, propertyKey );
+
+        // PASS
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( "my_index", 1L, TimeUnit.MINUTES );
+
+            // THEN
+            assertEquals( Schema.IndexState.ONLINE, tx.schema().getIndexState( index ) );
+        }
+    }
+
+    @Test
     void awaitingAllIndexesComingOnlineWorks()
     {
         // GIVEN

@@ -334,7 +334,7 @@ public class FulltextProcedures
         {
             // If the index was not created in this transaction, then wait for it to come online before querying.
             Schema schema = transaction.schema();
-            schema.awaitIndexOnline( schema.getIndexByName( index.getName() ), INDEX_ONLINE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS );
+            schema.awaitIndexOnline( index.getName(), INDEX_ONLINE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS );
         }
         // If the index was created in this transaction, then we skip this check entirely.
         // We will get an exception later, when we try to get an IndexReader, so this is fine.

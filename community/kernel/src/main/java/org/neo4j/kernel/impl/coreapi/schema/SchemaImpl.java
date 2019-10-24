@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -221,17 +222,72 @@ public class SchemaImpl implements Schema
                         .appendCauseOfFailure( String.format( "Index %s entered a %s state. Please see database logs.", index, state ), cause );
                 throw new IllegalStateException( message );
             default:
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException e )
-                {
-                    // Ignore interrupted exceptions here.
-                }
+                sleepIgnoreInterrupt();
                 break;
             }
         } while ( !startTime.hasTimedOut( duration, unit ) );
+
+        throw new IllegalStateException( "Expected index to come online within a reasonable time." );
+    }
+
+    private static void sleepIgnoreInterrupt()
+    {
+        try
+        {
+            Thread.sleep( 100 );
+        }
+        catch ( InterruptedException e )
+        {
+            // Ignore interrupted exceptions here.
+        }
+    }
+
+    @Override
+    public void awaitIndexOnline( String indexName, long duration, TimeUnit unit )
+    {
+        Objects.requireNonNull( indexName );
+        actions.assertInOpenTransaction();
+        Stopwatch startTime = Stopwatch.start();
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            do
+            {
+                SchemaRead schemaRead = transaction.schemaRead();
+                IndexDescriptor index = schemaRead.indexGetForName( indexName );
+                if ( index == IndexDescriptor.NO_INDEX )
+                {
+                    sleepIgnoreInterrupt();
+                }
+                else
+                {
+                    try
+                    {
+                        InternalIndexState indexState = schemaRead.indexGetState( index );
+                        if ( indexState == InternalIndexState.ONLINE )
+                        {
+                            return;
+                        }
+                        else if ( indexState == InternalIndexState.FAILED )
+                        {
+                            String cause = schemaRead.indexGetFailure( index );
+                            String message = IndexPopulationFailure.appendCauseOfFailure(
+                                    String.format( "Index `%s` entered a %s state. Please see database logs.", indexName, indexState ), cause );
+                            throw new IllegalStateException( message );
+                        }
+                        else
+                        {
+                            sleepIgnoreInterrupt();
+                        }
+                    }
+                    catch ( IndexNotFoundKernelException e )
+                    {
+                        // Weird that the index vanished, but we'll just wait and see if it comes back until we time out.
+                        sleepIgnoreInterrupt();
+                    }
+                }
+            }
+            while ( !startTime.hasTimedOut( duration, unit ) );
+        }
 
         throw new IllegalStateException( "Expected index to come online within a reasonable time." );
     }
@@ -308,7 +364,6 @@ public class SchemaImpl implements Schema
     {
         try ( Statement ignore = transaction.acquireStatement() )
         {
-
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor reference = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             InternalIndexState indexState = schemaRead.indexGetState( reference );
