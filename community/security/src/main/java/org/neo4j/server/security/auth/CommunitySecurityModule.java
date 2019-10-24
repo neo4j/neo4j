@@ -146,8 +146,6 @@ public class CommunitySecurityModule extends SecurityModule
         return new BasicSystemGraphRealm(
                 systemGraphOperations,
                 securityGraphInitializer, // always init on start in community
-                secureHasher,
-                new BasicPasswordPolicy(),
                 createAuthenticationStrategy( config ),
                 true // native authentication in always enabled in community
         );

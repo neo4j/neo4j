@@ -19,61 +19,12 @@
  */
 package org.neo4j.kernel.api.security;
 
-import java.util.Arrays;
-
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.security.User;
-
 public interface UserManager
 {
     String INITIAL_USER_NAME = "neo4j";
     String INITIAL_PASSWORD = "neo4j";
 
-    /**
-     * NOTE: The initialPassword byte array will be cleared (overwritten with zeroes)
-     */
-    User newUser( String username, byte[] initialPassword, boolean requirePasswordChange ) throws InvalidArgumentsException;
-
-    User getUser( String username ) throws InvalidArgumentsException;
-
-    User silentlyGetUser( String username );
-
-    /**
-     * NOTE: The password byte array will be cleared (overwritten with zeroes)
-     */
-    void setUserPassword( String username, byte[] password, boolean requirePasswordChange ) throws InvalidArgumentsException;
-
     UserManager NO_AUTH = new UserManager()
     {
-        @Override
-        public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange )
-        {
-            if ( initialPassword != null )
-            {
-                Arrays.fill( initialPassword, (byte) 0 );
-            }
-            return null;
-        }
-
-        @Override
-        public User getUser( String username )
-        {
-            return null;
-        }
-
-        @Override
-        public User silentlyGetUser( String username )
-        {
-            return null;
-        }
-
-        @Override
-        public void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
-        {
-            if ( password != null )
-            {
-                Arrays.fill( password, (byte) 0 );
-            }
-        }
     };
 }

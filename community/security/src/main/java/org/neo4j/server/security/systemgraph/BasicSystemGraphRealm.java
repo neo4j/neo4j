@@ -31,14 +31,10 @@ import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.subject.SimplePrincipalCollection;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -46,11 +42,9 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
@@ -64,10 +58,8 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, UserManager, UserManagerSupplier, CredentialsMatcher
 {
     private final SecurityGraphInitializer systemGraphInitializer;
-    private final PasswordPolicy passwordPolicy;
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
-    private final SecureHasher secureHasher;
     private final BasicSystemGraphOperations basicSystemGraphOperations;
 
     /**
@@ -79,8 +71,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     public BasicSystemGraphRealm(
             BasicSystemGraphOperations basicSystemGraphOperations,
             SecurityGraphInitializer systemGraphInitializer,
-            SecureHasher secureHasher,
-            PasswordPolicy passwordPolicy,
             AuthenticationStrategy authenticationStrategy,
             boolean authenticationEnabled )
     {
@@ -88,8 +78,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
         this.basicSystemGraphOperations = basicSystemGraphOperations;
         this.systemGraphInitializer = systemGraphInitializer;
-        this.secureHasher = secureHasher;
-        this.passwordPolicy = passwordPolicy;
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
 
@@ -244,40 +232,11 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         return null;
     }
 
-    @Override
-    public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange ) throws InvalidArgumentsException
-    {
-        try
-        {
-            assertValidUsername( username );
-            passwordPolicy.validatePassword( initialPassword );
-
-            Credential credential = SystemGraphCredential.createCredentialForPassword( initialPassword, secureHasher );
-            User user = new User.Builder( username, credential )
-                    .withRequiredPasswordChange( requirePasswordChange )
-                    .withoutFlag( IS_SUSPENDED )
-                    .build();
-
-            basicSystemGraphOperations.addUser( user );
-            return user;
-        }
-        finally
-        {
-            // Clear password
-            if ( initialPassword != null )
-            {
-                Arrays.fill( initialPassword, (byte) 0 );
-            }
-        }
-    }
-
-    @Override
     public User getUser( String username ) throws InvalidArgumentsException
     {
-        return basicSystemGraphOperations.getUser( username, false );
+        return basicSystemGraphOperations.getUser( username );
     }
 
-    @Override
     public User silentlyGetUser( String username )
     {
         try
@@ -287,33 +246,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         catch ( InvalidArgumentsException e )
         {
             return null;
-        }
-    }
-
-    @Override
-    public void setUserPassword( String username, byte[] password, boolean requirePasswordChange ) throws InvalidArgumentsException
-    {
-        try
-        {
-            User existingUser = getUser( username );
-            passwordPolicy.validatePassword( password );
-
-            if ( existingUser.credentials().matchesPassword( password ) )
-            {
-                throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
-            }
-
-            String newCredentials = SystemGraphCredential.serialize( SystemGraphCredential.createCredentialForPassword( password, secureHasher ) );
-            basicSystemGraphOperations.setUserCredentials( username, newCredentials, requirePasswordChange );
-            clearCacheForUser( username );
-        }
-        finally
-        {
-            // Clear password
-            if ( password != null )
-            {
-                Arrays.fill( password, (byte) 0 );
-            }
         }
     }
 
@@ -331,11 +263,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             throw new InvalidArgumentsException(
                     "Username '" + username + "' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
         }
-    }
-
-    private void clearCacheForUser( String username )
-    {
-        clearCache( new SimplePrincipalCollection( username, this.getName() ) );
     }
 
     @Override

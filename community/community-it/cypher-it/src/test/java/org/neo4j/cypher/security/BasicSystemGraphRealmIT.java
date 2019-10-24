@@ -30,20 +30,15 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.admin.security.SetInitialPasswordCommand;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -52,7 +47,6 @@ import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAu
 import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
-import static org.neo4j.server.security.auth.BasicSystemGraphRealmTest.clearedPasswordWithSameLengthAs;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 @TestDirectoryExtension
@@ -146,13 +140,15 @@ public class BasicSystemGraphRealmIT
     @Test
     void shouldNotLoadInitialUserWithInitialPasswordOnRestartWhenAlreadyChanged() throws Throwable
     {
-        // Given started and stopped database
+        // Given
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( dbManager, testDirectory, defaultConfig );
-        realm.setUserPassword( INITIAL_USER_NAME, UTF8.encode( "neo4j2" ), false );
         realm.stop();
-        simulateSetInitialPasswordCommand(testDirectory);
+        simulateSetInitialPasswordCommand( testDirectory, "neo4j2" );
+        realm.start();
+        realm.stop();
 
         // When
+        simulateSetInitialPasswordCommand(testDirectory);
         realm.start();
 
         // Then
@@ -207,78 +203,6 @@ public class BasicSystemGraphRealmIT
     }
 
     @Test
-    void shouldClearPasswordOnNewUser() throws Throwable
-    {
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice", "bob" );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
-
-        byte[] password = password( "jake" );
-
-        // When
-        realm.newUser( "jake", password, true );
-
-        // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "jake" ) ) );
-        assertAuthenticationSucceeds( realm, "jake" );
-    }
-
-    @Test
-    void shouldClearPasswordOnNewUserAlreadyExists() throws Throwable
-    {
-        // Given
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice", "bob" );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
-
-        realm.newUser( "jake", password( "jake" ), true );
-        byte[] password = password( "abc123" );
-
-        InvalidArgumentsException exception = assertThrows( InvalidArgumentsException.class, () -> realm.newUser( "jake", password, true ) );
-        assertThat( exception.getMessage(), equalTo( "The specified user 'jake' already exists." ) );
-
-        // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-        assertAuthenticationSucceeds( realm, "jake" );
-    }
-
-    @Test
-    void shouldClearPasswordOnSetUserPassword() throws Throwable
-    {
-        // Given
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice", "bob" );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
-
-        realm.newUser( "jake", password( "abc123" ), false );
-
-        byte[] newPassword = password( "jake" );
-
-        // When
-        realm.setUserPassword( "jake", newPassword, false );
-
-        // Then
-        assertThat( newPassword, equalTo( clearedPasswordWithSameLengthAs( "jake" ) ) );
-        assertAuthenticationSucceeds( realm, "jake" );
-    }
-
-    @Test
-    void shouldClearPasswordOnSetUserPasswordWithInvalidPassword() throws Throwable
-    {
-        // Given
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice", "bob" );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
-
-        realm.newUser( "jake", password( "jake" ), false );
-        byte[] newPassword = password( "jake" );
-
-        // When
-        InvalidArgumentsException exception = assertThrows( InvalidArgumentsException.class, () -> realm.setUserPassword( "jake", newPassword, false ) );
-        assertThat( exception.getMessage(), equalTo( "Old password and new password cannot be the same." ) );
-
-        // Then
-        assertThat( newPassword, equalTo( clearedPasswordWithSameLengthAs( "jake" ) ) );
-        assertAuthenticationSucceeds( realm, "jake" );
-    }
-
-    @Test
     void shouldHandleCustomDefaultDatabase() throws Throwable
     {
         defaultConfig.set( default_database, "foo" );
@@ -320,11 +244,17 @@ public class BasicSystemGraphRealmIT
 
     public static void simulateSetInitialPasswordCommand( TestDirectory testDirectory )
     {
+        simulateSetInitialPasswordCommand( testDirectory, SIMULATED_INITIAL_PASSWORD );
+    }
+
+    public static void simulateSetInitialPasswordCommand( TestDirectory testDirectory, String newPwd )
+    {
+
         SetInitialPasswordCommand command =
                 new SetInitialPasswordCommand( new ExecutionContext( testDirectory.homeDir().toPath(), testDirectory.directory( "conf" ).toPath(),
                         mock( PrintStream.class ), mock( PrintStream.class ), testDirectory.getFileSystem() ) );
 
-        CommandLine.populateCommand( command, SIMULATED_INITIAL_PASSWORD );
+        CommandLine.populateCommand( command, newPwd );
         command.execute();
     }
 

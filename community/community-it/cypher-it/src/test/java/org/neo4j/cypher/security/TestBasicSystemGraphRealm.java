@@ -31,7 +31,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
-import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
@@ -96,8 +95,6 @@ public class TestBasicSystemGraphRealm
         BasicSystemGraphRealm realm = new BasicSystemGraphRealm(
                 systemGraphOperations,
                 securityGraphInitializer,
-                new SecureHasher(),
-                new BasicPasswordPolicy(),
                 authStrategy,
                 true
         );

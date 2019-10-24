@@ -53,20 +53,14 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
     {
         super( null,
                 SecurityGraphInitializer.NO_OP,
-                new SecureHasher(),
-                new BasicPasswordPolicy(),
                 authStategy,
                 true );
-        setupDefaultUser();
-    }
 
-    private void setupDefaultUser() throws InvalidArgumentsException
-    {
+        // Setup initial user
         newUser( INITIAL_USER_NAME,  UTF8.encode( INITIAL_PASSWORD ), true );
     }
 
-    @Override
-    public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange ) throws InvalidArgumentsException
+    public void newUser( String username, byte[] initialPassword, boolean requirePasswordChange ) throws InvalidArgumentsException
     {
         try
         {
@@ -80,7 +74,6 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
                     .build();
 
             addUser( user );
-            return user;
         }
         finally
         {
@@ -127,7 +120,6 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
         }
     }
 
-    @Override
     public void setUserPassword( String username, byte[] password, boolean requirePasswordChange ) throws InvalidArgumentsException
     {
         try

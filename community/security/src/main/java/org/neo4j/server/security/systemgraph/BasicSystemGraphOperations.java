@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
@@ -44,20 +43,7 @@ public class BasicSystemGraphOperations
         this.secureHasher = secureHasher;
     }
 
-    public void addUser( User user ) throws InvalidArgumentsException
-    {
-        // NOTE: If username already exists we will violate a constraint
-        String query = "CREATE (u:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: $suspended})";
-        Map<String,Object> params =
-                MapUtil.map( "name", user.name(),
-                        "credentials", user.credentials().serialize(),
-                        "passwordChangeRequired", user.passwordChangeRequired(),
-                        "suspended", user.hasFlag( BasicSystemGraphRealm.IS_SUSPENDED ) );
-        queryExecutor.executeQueryWithConstraint( query, params,
-                "The specified user '" + user.name() + "' already exists." );
-    }
-
-    public User getUser( String username, boolean silent ) throws InvalidArgumentsException
+    User getUser( String username ) throws InvalidArgumentsException
     {
         User[] user = new User[1];
 
@@ -114,24 +100,11 @@ public class BasicSystemGraphOperations
 
         queryExecutor.executeQuery( query, params, subscriber );
 
-        if ( user[0] == null && !silent )
+        if ( user[0] == null )
         {
             throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
         }
 
         return user[0];
-    }
-
-    protected void setUserCredentials( String username, String newCredentials, boolean requirePasswordChange ) throws InvalidArgumentsException
-    {
-        String query = "MATCH (u:User {name: $name}) SET u.credentials = $credentials, " +
-                "u.passwordChangeRequired = $passwordChangeRequired RETURN u.name";
-        Map<String,Object> params =
-                map( "name", username,
-                        "credentials", newCredentials,
-                        "passwordChangeRequired", requirePasswordChange );
-        String errorMsg = "User '" + username + "' does not exist.";
-
-        queryExecutor.executeQueryWithParamCheck( query, params, errorMsg );
     }
 }
