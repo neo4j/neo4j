@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
  * Reads properties of a set of nodes or relationships and caches them in the current row.
- * Later accesses to this property can then read fro this cache instead of reading from the store.
+ * Later accesses to this property can then read from this cache instead of reading from the store.
  */
 case class CacheProperties(source: LogicalPlan, properties: Set[LogicalProperty])(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
