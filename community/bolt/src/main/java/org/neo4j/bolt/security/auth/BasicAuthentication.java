@@ -19,20 +19,13 @@
  */
 package org.neo4j.bolt.security.auth;
 
-import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-
-import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
-import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 
 /**
  * Performs basic authentication with user name and password.
@@ -40,25 +33,16 @@ import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 public class BasicAuthentication implements Authentication
 {
     private final AuthManager authManager;
-    private final UserManagerSupplier userManagerSupplier;
 
-    public BasicAuthentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
+    public BasicAuthentication( AuthManager authManager )
     {
         this.authManager = authManager;
-        this.userManagerSupplier = userManagerSupplier;
     }
 
     @Override
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
-        if ( authToken.containsKey( NEW_CREDENTIALS ) )
-        {
-            return update( authToken );
-        }
-        else
-        {
-            return doAuthenticate( authToken );
-        }
+        return doAuthenticate( authToken );
     }
 
     private AuthenticationResult doAuthenticate( Map<String,Object> authToken ) throws AuthenticationException
@@ -83,41 +67,6 @@ public class BasicAuthentication implements Authentication
         catch ( InvalidAuthTokenException e )
         {
             throw new AuthenticationException( e.status(), e.getMessage() );
-        }
-    }
-
-    private AuthenticationResult update( Map<String,Object> authToken )
-            throws AuthenticationException
-    {
-        try
-        {
-            // We need to copy the new password here since it will be cleared by login()
-            byte[] newPassword = AuthToken.safeCastCredentials( NEW_CREDENTIALS, authToken ).clone();
-
-            LoginContext loginContext = authManager.login( authToken );
-
-            switch ( loginContext.subject().getAuthenticationResult() )
-            {
-            case SUCCESS:
-            case PASSWORD_CHANGE_REQUIRED:
-                String username = AuthToken.safeCast( PRINCIPAL, authToken );
-                userManagerSupplier.getUserManager( loginContext.subject(), false )
-                        .setUserPassword( username, newPassword, false ); // NOTE: This will overwrite newPassword with zeroes
-                loginContext.subject().setPasswordChangeNoLongerRequired();
-                break;
-            default:
-                throw new AuthenticationException( Status.Security.Unauthorized );
-            }
-
-            return new BasicAuthenticationResult( loginContext );
-        }
-        catch ( AuthorizationViolationException | InvalidArgumentsException | InvalidAuthTokenException e )
-        {
-            throw new AuthenticationException( e.status(), e.getMessage(), e );
-        }
-        catch ( IOException e )
-        {
-            throw new AuthenticationException( Status.Security.Unauthorized, e.getMessage(), e );
         }
     }
 }

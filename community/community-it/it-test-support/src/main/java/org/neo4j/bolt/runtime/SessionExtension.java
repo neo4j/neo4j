@@ -111,8 +111,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         managementService = builderFactory.get().impermanent().setConfig( GraphDatabaseSettings.auth_enabled, authEnabled ).build();
         gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         DependencyResolver resolver = gdb.getDependencyResolver();
-        Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
-                resolver.resolveDependency( UserManagerSupplier.class ) );
+        Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ) );
         Config config = resolver.resolveDependency( Config.class );
         SystemNanoClock clock = Clocks.nanoClock();
         var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
@@ -153,9 +152,9 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         }
     }
 
-    private static Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
+    private static Authentication authentication( AuthManager authManager )
     {
-        return new BasicAuthentication( authManager, userManagerSupplier );
+        return new BasicAuthentication( authManager );
     }
 
     public long lastClosedTxId()

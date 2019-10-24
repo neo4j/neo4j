@@ -33,8 +33,6 @@ import java.util.Map;
  *      value depends on the authentication scheme.</li>
  * </ul>
  * <p>
- *
- * For updating the credentials the new credentials is supplied with the key <code>new_credentials</code>.
  */
 public interface Authentication
 {

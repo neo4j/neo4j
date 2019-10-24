@@ -107,24 +107,4 @@ class BoltConnectionAuthIT
         // ...and
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.Unauthorized ) );
     }
-
-    @Test
-    void shouldBeAbleToActOnSessionWhenUpdatingCredentials() throws Throwable
-    {
-        BoltStateMachine machine = newStateMachine();
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
-
-        // when
-        var message = BoltV4Messages.hello( map(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", UTF8.encode( "neo4j" ),
-                "new_credentials", UTF8.encode( "secret" ) ) );
-        machine.process( message, recorder );
-        machine.process( BoltV4Messages.run( "CREATE ()" ), recorder );
-
-        // then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
-    }
 }

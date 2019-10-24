@@ -215,7 +215,7 @@ public class BoltServer extends LifecycleAdapter
 
     private Authentication createAuthentication()
     {
-        return new BasicAuthentication( authManager, dependencyResolver.resolveDependency( UserManagerSupplier.class ) );
+        return new BasicAuthentication( authManager );
     }
 
     private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory )

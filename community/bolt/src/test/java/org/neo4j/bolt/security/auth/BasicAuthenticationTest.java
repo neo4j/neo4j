@@ -103,56 +103,16 @@ class BasicAuthenticationTest
     }
 
     @Test
-    void shouldBeAbleToUpdateCredentials() throws Exception
-    {
-        // When
-        authentication.authenticate(
-                map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ),
-                        "new_credentials", password( "secret" ) ) );
-
-        // Then
-        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password( "secret" ) ) );
-    }
-
-    @Test
     void shouldClearCredentialsAfterUse() throws Exception
     {
         // When
-        byte[] oldPassword = password( "secret2" );
-        byte[] newPassword1 = password( "secret" );
-        byte[] newPassword2 = password( "secret" );
+        byte[] password = password( "secret2" );
 
         authentication.authenticate(
-                map( "scheme", "basic", "principal", "mike", "credentials", oldPassword,
-                        "new_credentials", newPassword1 ) );
-
-        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", newPassword2 ) );
+                map( "scheme", "basic", "principal", "mike", "credentials", password ) );
 
         // Then
-        assertThat( oldPassword, isCleared() );
-        assertThat( newPassword1, isCleared() );
-        assertThat( newPassword2, isCleared() );
-    }
-
-    @Test
-    void shouldBeAbleToUpdateExpiredCredentials() throws Exception
-    {
-        // When
-        AuthenticationResult result = authentication.authenticate(
-                map( "scheme", "basic", "principal", "bob", "credentials", password( "secret" ), "new_credentials", password( "secret2" ) ) );
-
-        // Then
-        assertThat(result.credentialsExpired(), equalTo( false ));
-    }
-
-    @Test
-    void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws Exception
-    {
-        var e = assertThrows( AuthenticationException.class, () ->
-                authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ),
-                        "new_credentials", password( "secret2" ) ) ) );
-        assertEquals( Status.Security.Unauthorized, e.status() );
-        assertEquals( "The client is unauthorized due to authentication failure.", e.getMessage() );
+        assertThat( password, isCleared() );
     }
 
     @Test
@@ -190,7 +150,7 @@ class BasicAuthenticationTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, maxFailedAttempts );
         BasicInMemoryUserManager manager = new BasicInMemoryUserManager( config );
-        Authentication authentication = new BasicAuthentication( manager, manager );
+        Authentication authentication = new BasicAuthentication( manager );
         manager.newUser( "bob", password( "secret" ), true );
         manager.newUser( "mike", password( "secret2" ), false );
 

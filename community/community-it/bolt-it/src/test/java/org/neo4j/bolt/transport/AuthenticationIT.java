@@ -104,7 +104,6 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     }
 
     private HostnamePort address;
-    private final String version = "Neo4j/" + Version.getNeo4jVersion();
 
     @Before
     public void setup()
@@ -162,11 +161,15 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     @Test
     public void shouldFailIfWrongCredentialsFollowingSuccessfulLogin() throws Throwable
     {
-        // When change password
+        // When
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth( map( "principal", "neo4j",
-                                "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) );
+                .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
+
+        // change password
+        connection.send( util.defaultRunAutoCommitTx( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", singletonMap( "password", "secret" ),
+                SYSTEM_DATABASE_NAME ) );
+
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
@@ -321,55 +324,6 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateCredentials() throws Throwable
-    {
-        // When
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) );
-
-        // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-
-        // If I reconnect I cannot use the old password
-        reconnect();
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                "The client is unauthorized due to authentication failure." ) ) );
-
-        // But the new password works fine
-        reconnect();
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-    }
-
-    @Test
-    public void shouldBeAuthenticatedAfterUpdatingCredentials() throws Throwable
-    {
-        // When
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) );
-
-        // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-
-        // When
-        connection.send( util.defaultRunAutoCommitTx( "MATCH (n) RETURN n" ) );
-
-        // Then
-        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    @Test
     public void shouldBeAbleToChangePasswordUsingSystemCommand() throws Throwable
     {
         // When
@@ -515,11 +469,6 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 specialMessage = msg;
             }
             return true;
-        }
-
-        public boolean gotSpecialMessage()
-        {
-            return specialMessage != null;
         }
     }
 

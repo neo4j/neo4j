@@ -78,7 +78,7 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
     }
 
     @Override
-    protected void testShouldDecodeAuthToken( Map<String,Object> authToken, boolean checkDecodingResult ) throws Exception
+    protected void testShouldDecodeAuthToken( Map<String,Object> authToken ) throws Exception
     {
         Neo4jPack neo4jPack = newNeo4jPack();
         authToken.put( "user_agent", "My Driver" );
@@ -93,10 +93,7 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
 
         RequestMessage deserializedMessage = decoder.decode( unpacker );
 
-        if ( checkDecodingResult )
-        {
-            assertHelloMessageMatches( originalMessage, deserializedMessage );
-        }
+        assertHelloMessageMatches( originalMessage, deserializedMessage );
     }
 
     private static void assertHelloMessageMatches( HelloMessage expected, RequestMessage actual )
