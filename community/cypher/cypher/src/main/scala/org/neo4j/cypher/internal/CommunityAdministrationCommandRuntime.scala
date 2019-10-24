@@ -40,7 +40,9 @@ import org.neo4j.values.virtual.VirtualValues
 /**
   * This runtime takes on queries that require no planning, such as multidatabase administration commands
   */
-case class CommunityAdministrationCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver) extends AdministrationCommandRuntime {
+case class CommunityAdministrationCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver,
+                                                 extraLogicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = CommunityAdministrationCommandRuntime.emptyLogicalToExecutable
+                                                ) extends AdministrationCommandRuntime {
   override def name: String = "community administration-commands"
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
@@ -60,12 +62,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     resolver.resolveDependency(classOf[AuthManager])
   }
 
-  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = {
+  // When the community commands are run within enterprise, this allows the enterprise commands to be chained
+  private def fullLogicalToExecutable = extraLogicalToExecutable orElse logicalToExecutable
 
-    // Special case where the admin role cannot be deleted (only in 4.0)
-    case CheckFrozenRole(source, roleName) => (context, parameterMapping, securityContext) =>
-      AuthorizationPredicateExecutionPlan(() => roleName != "admin",
-        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext)))
+  def logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = {
 
     // Check Admin Rights for DBMS commands
     case AssertDbmsAdmin(action) => (_, _, securityContext) =>
@@ -75,10 +75,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // Check that the specified user is not the logged in user (eg. for some ALTER USER commands)
-    case AssertNotCurrentUser(source, userName) => (context, parameterMapping, securityContext) =>
+    case AssertNotCurrentUser(source, userName, violationMessage) => (context, parameterMapping, securityContext) =>
       AuthorizationPredicateExecutionPlan(() => !securityContext.subject().hasUsername(userName),
-        violationMessage = s"Failed to alter the specified user '$userName': Changing your own activation status is not allowed.",
-        source = source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        violationMessage = violationMessage,
+        source = source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // Check Admin Rights for some Database commands
@@ -94,7 +94,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         """MATCH (u:User)
           |RETURN u.name as user, u.passwordChangeRequired AS passwordChangeRequired""".stripMargin,
         VirtualValues.EMPTY_MAP,
-        source = source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        source = source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD password
@@ -121,7 +121,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
                 new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e)
               case _ => new IllegalStateException(s"Failed to create the specified user '$userName'.", e)
             }),
-          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+          source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
         )
       } finally {
         // Clear password
@@ -149,7 +149,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new IllegalStateException(s"Failed to delete the specified user '$userName': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified user '$userName'.", error)
           },
-        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
@@ -232,7 +232,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
-        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     case DoNothingIfExists(source, label, name) => (context, parameterMapping, securityContext) =>
@@ -248,7 +248,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
-        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // Ensure that the role or user exists before being dropped
@@ -264,7 +264,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
-        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
@@ -273,7 +273,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Ignore the log command in community
     case LogSystemCommand(source, _) => (context, parameterMapping, securityContext) =>
-      logicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext)
+      fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext)
   }
 
   override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {
@@ -291,4 +291,13 @@ object DatabaseStatus extends Enumeration {
 
   val Online: TextValue = Values.stringValue("online")
   val Offline: TextValue = Values.stringValue("offline")
+}
+
+object CommunityAdministrationCommandRuntime {
+  def emptyLogicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] =
+    new PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] {
+      override def isDefinedAt(x: LogicalPlan): Boolean = false
+
+      override def apply(v1: LogicalPlan): (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan = ???
+    }
 }

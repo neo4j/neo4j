@@ -115,7 +115,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         val initialPasswordString = initialStringPassword.map(UTF8.encode)
         val admin = plans.AssertDbmsAdmin(AlterUserAction)
         val assertionSubPlan =
-          if(suspended.isDefined) plans.AssertNotCurrentUser(Some(admin), userName)
+          if(suspended.isDefined) plans.AssertNotCurrentUser(Some(admin), userName, s"Failed to alter the specified user '$userName': Changing your own activation status is not allowed.")
           else admin
         Some(plans.LogSystemCommand(
           plans.AlterUser(Some(assertionSubPlan), userName, initialPasswordString, initialParameterPassword, requirePasswordChange, suspended),
