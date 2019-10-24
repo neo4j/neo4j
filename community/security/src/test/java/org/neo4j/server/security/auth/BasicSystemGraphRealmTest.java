@@ -140,44 +140,6 @@ public class BasicSystemGraphRealmTest
     }
 
     @Test
-    void shouldDeleteUser() throws Throwable
-    {
-        // Given
-        manager.newUser( "jake", password( "abc123" ), true );
-
-        // When
-        manager.deleteUser( "jake" );
-
-        // Then
-        assertNull( manager.silentlyGetUser( "jake" ) );
-    }
-
-    @Test
-    void shouldFailToDeleteUnknownUser() throws Throwable
-    {
-        // Given
-        manager.newUser( "jake", password( "abc123" ), true );
-
-        try
-        {
-            // When
-            manager.deleteUser( "nonExistentUser" );
-            fail("User 'nonExistentUser' should no longer exist, expected exception.");
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            assertThat( e.getMessage(), containsString( "User 'nonExistentUser' does not exist." ) );
-        }
-        catch ( Throwable t )
-        {
-            assertThat( t.getClass(), IsEqual.equalTo( InvalidArgumentsException.class ) );
-        }
-
-        // Then
-        assertNotNull( manager.silentlyGetUser( "jake" ) );
-    }
-
-    @Test
     void shouldSetPassword() throws Throwable
     {
         // Given

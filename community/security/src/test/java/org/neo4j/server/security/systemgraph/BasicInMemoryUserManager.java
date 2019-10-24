@@ -22,7 +22,6 @@ package org.neo4j.server.security.systemgraph;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.security.FormatException;
@@ -102,23 +101,6 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
             throw new InvalidArgumentsException( "The specified user '" + username + "' already exists." );
         }
         users.put( username, user );
-    }
-
-    @Override
-    public Set<String> getAllUsernames()
-    {
-        return users.keySet();
-    }
-
-    @Override
-    public boolean deleteUser( String username ) throws InvalidArgumentsException
-    {
-        User removed = users.remove( username );
-        if ( removed == null )
-        {
-            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
-        }
-        return true;
     }
 
     @Override

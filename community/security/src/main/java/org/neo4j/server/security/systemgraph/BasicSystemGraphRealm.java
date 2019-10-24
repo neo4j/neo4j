@@ -35,7 +35,6 @@ import org.apache.shiro.subject.SimplePrincipalCollection;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.neo4j.cypher.internal.security.SecureHasher;
@@ -273,14 +272,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     }
 
     @Override
-    public boolean deleteUser( String username ) throws InvalidArgumentsException
-    {
-        boolean success = basicSystemGraphOperations.deleteUser( username );
-        clearCacheForUser( username );
-        return success;
-    }
-
-    @Override
     public User getUser( String username ) throws InvalidArgumentsException
     {
         return basicSystemGraphOperations.getUser( username, false );
@@ -324,12 +315,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
                 Arrays.fill( password, (byte) 0 );
             }
         }
-    }
-
-    @Override
-    public Set<String> getAllUsernames()
-    {
-        return basicSystemGraphOperations.getAllUsernames();
     }
 
     // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file

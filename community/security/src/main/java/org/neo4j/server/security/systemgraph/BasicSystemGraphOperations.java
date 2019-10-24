@@ -20,7 +20,6 @@
 package org.neo4j.server.security.systemgraph;
 
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
@@ -56,21 +55,6 @@ public class BasicSystemGraphOperations
                         "suspended", user.hasFlag( BasicSystemGraphRealm.IS_SUSPENDED ) );
         queryExecutor.executeQueryWithConstraint( query, params,
                 "The specified user '" + user.name() + "' already exists." );
-    }
-
-    public Set<String> getAllUsernames()
-    {
-        String query = "MATCH (u:User) RETURN u.name";
-        return queryExecutor.executeQueryWithResultSet( query );
-    }
-
-    public boolean deleteUser( String username ) throws InvalidArgumentsException
-    {
-        String query = "MATCH (u:User {name: $name}) DETACH DELETE u RETURN 0";
-        Map<String,Object> params = map("name", username );
-        String errorMsg = "User '" + username + "' does not exist.";
-
-        return queryExecutor.executeQueryWithParamCheck( query, params, errorMsg );
     }
 
     public User getUser( String username, boolean silent ) throws InvalidArgumentsException
