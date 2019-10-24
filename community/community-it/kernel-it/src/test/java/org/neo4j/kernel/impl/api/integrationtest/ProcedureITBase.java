@@ -201,7 +201,8 @@ public interface ProcedureITBase
                                 "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?)",
                         "List all queries currently executing at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "db.createNodeKey", "(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                proc( "db.createNodeKey", "(constraintName :: STRING?, index :: STRING?, providerName :: STRING?) :: " +
+                                "(name :: STRING?, index :: STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a named node key constraint with index backed by specified index provider " +
                                 "(for example: CALL db.createNodeKey(\"MyConstraint\", \":Person(name)\", \"native-btree-1.0\")) - " +
                                 "YIELD name, index, providerName, status",
