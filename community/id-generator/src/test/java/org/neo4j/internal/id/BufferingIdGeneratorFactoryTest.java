@@ -97,23 +97,23 @@ class BufferingIdGeneratorFactoryTest
     void shouldDelayFreeingOfDeletedIdsUntilCheckpoint()
     {
         // WHEN
-        try ( CommitMarker marker = idGenerator.commitMarker() )
+        try ( Marker marker = idGenerator.marker() )
         {
             marker.markDeleted( 7 );
         }
-        verify( actual.commitMarkers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
-        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
+        verify( actual.markers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
+        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // after some maintenance and transaction still not closed
         idGenerator.checkpoint( IOLimiter.UNLIMITED );
-        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
+        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         idGenerator.checkpoint( IOLimiter.UNLIMITED );
 
         // THEN
-        verify( actual.reuseMarkers[STRING_BLOCK.ordinal()] ).markFree( 7 );
+        verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );
     }
 
     private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>

@@ -512,15 +512,9 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldNotCommitMarkerIfReadOnly() throws IOException
+    void shouldNotMarkerIfReadOnly() throws IOException
     {
-        assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::commitMarker );
-    }
-
-    @Test
-    void shouldNotReuseMarkerIfReadOnly() throws IOException
-    {
-        assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::reuseMarker );
+        assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::marker );
     }
 
     @Test

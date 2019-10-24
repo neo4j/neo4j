@@ -226,14 +226,14 @@ public class IndexedIdGenerator implements IdGenerator
         }
 
         this.layout = new IdRangeLayout( idsPerEntry );
-        this.tree = instatiateTree( pageCache, file, recoveryCleanupWorkCollector, readOnly, openOptions );
+        this.tree = instantiateTree( pageCache, file, recoveryCleanupWorkCollector, readOnly, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
         this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
                 () -> lockAndInstantiateMarker( true, true ), generation, strictlyPrioritizeFreelist );
     }
 
-    private GBPTree<IdRangeKey,IdRange> instatiateTree( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+    private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly, OpenOption[] openOptions )
     {
         try
