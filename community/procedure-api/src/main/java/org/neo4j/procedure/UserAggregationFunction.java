@@ -24,6 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Declares a method as an aggregation function, meaning the method can be called from the
  * cypher query language.
@@ -57,6 +59,7 @@ import java.lang.annotation.Target;
  */
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
+@PublicApi
 public @interface UserAggregationFunction
 {
     /**

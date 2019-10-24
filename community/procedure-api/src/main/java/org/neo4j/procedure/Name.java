@@ -24,6 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * This defines the name of an input argument for a procedure. This is used to determine which values from
  * to use as arguments for the procedure when it is called. For instance, if you are invoking a procedure
@@ -31,6 +33,7 @@ import java.lang.annotation.Target;
  */
 @Target( ElementType.PARAMETER )
 @Retention( RetentionPolicy.RUNTIME )
+@PublicApi
 public @interface Name
 {
     /**

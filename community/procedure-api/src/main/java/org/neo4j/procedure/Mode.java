@@ -18,10 +18,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.procedure;
+
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * The procedure mode affects how the procedure will execute, and which capabilities
  * it requires.
  */
+@PublicApi
 public enum Mode
 {
     /** This procedure will only perform read operations against the graph */

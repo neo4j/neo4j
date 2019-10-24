@@ -24,6 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Declares a method as the result method of an aggregation.
  * <p>
@@ -50,6 +52,7 @@ import java.lang.annotation.Target;
  */
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
+@PublicApi
 public @interface UserAggregationResult
 {
 

@@ -24,6 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * This marks a field in a class with {@link Procedure} methods as part of the context the procedure is invoked in.
  * Practically, this means that before the procedure is called, fields with this annotation are automatically
@@ -36,6 +38,7 @@ import java.lang.annotation.Target;
  */
 @Target( ElementType.FIELD )
 @Retention( RetentionPolicy.RUNTIME )
+@PublicApi
 public @interface Context
 {
 }
