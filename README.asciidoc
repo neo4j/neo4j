@@ -65,6 +65,12 @@ Or, if you are not interested in the tarballs and just want to run Neo4j you can
 
 to start Neo4j.
 
+== Neo4j Desktop ==
+
+Neo4j Desktop is a convenient way for developers to work with local Neo4j databases.
+
+To install Neo4j Desktop, go to https://neo4j.com/download-center/[Neo4j Download Center] and follow the instructions. 
+
 == Licensing ==
 
 Neo4j Community Edition is an open source product licensed under GPLv3.
