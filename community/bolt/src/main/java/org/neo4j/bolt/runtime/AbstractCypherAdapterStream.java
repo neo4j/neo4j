@@ -148,11 +148,8 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         QueryExecutionType qt = queryExecution.executionType();
         recordConsumer.addMetadata( TYPE, queryTypeCode( qt.queryType() ) );
 
-        if ( statistics.containsUpdates() )
-        {
-            MapValue stats = queryStats( statistics );
-            recordConsumer.addMetadata( STATS, stats );
-        }
+        addQueryStatistics( statistics, recordConsumer );
+
         if ( qt.requestedExecutionPlanDescription() )
         {
             ExecutionPlanDescription rootPlanTreeNode = queryExecution.executionPlanDescription();
@@ -164,6 +161,20 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         if ( notifications.iterator().hasNext() )
         {
             recordConsumer.addMetadata( NOTIFICATIONS, NotificationConverter.convert( notifications ) );
+        }
+    }
+
+    private void addQueryStatistics( QueryStatistics statistics, RecordConsumer recordConsumer )
+    {
+        if ( statistics.containsUpdates() )
+        {
+            MapValue stats = queryStats( statistics );
+            recordConsumer.addMetadata( STATS, stats );
+        }
+        else if ( statistics.containsSystemUpdates() )
+        {
+            MapValue stats = systemQueryStats( statistics );
+            recordConsumer.addMetadata( STATS, stats );
         }
     }
 
@@ -188,6 +199,13 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         addIfNonZero( builder, "indexes-removed", queryStatistics.getIndexesRemoved() );
         addIfNonZero( builder, "constraints-added", queryStatistics.getConstraintsAdded() );
         addIfNonZero( builder, "constraints-removed", queryStatistics.getConstraintsRemoved() );
+        return builder.build();
+    }
+
+    private MapValue systemQueryStats( QueryStatistics queryStatistics )
+    {
+        MapValueBuilder builder = new MapValueBuilder();
+        addIfNonZero( builder, "system-updates", queryStatistics.getSystemUpdates() );
         return builder.build();
     }
 

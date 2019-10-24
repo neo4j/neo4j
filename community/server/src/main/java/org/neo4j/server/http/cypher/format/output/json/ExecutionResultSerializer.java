@@ -323,6 +323,8 @@ class ExecutionResultSerializer
             out.writeNumberField( "indexes_removed", stats.getIndexesRemoved() );
             out.writeNumberField( "constraints_added", stats.getConstraintsAdded() );
             out.writeNumberField( "constraints_removed", stats.getConstraintsRemoved() );
+            out.writeBooleanField( "contains_system_updates", stats.containsSystemUpdates() );
+            out.writeNumberField( "system_updates", stats.getSystemUpdates() );
         }
         finally
         {

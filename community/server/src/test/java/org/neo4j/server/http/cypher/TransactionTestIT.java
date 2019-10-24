@@ -355,6 +355,9 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         assertThat( firstResult, hasKey( "stats" ) );
         Map<String,Object> stats = (Map<String,Object>) firstResult.get( "stats" );
         assertThat( stats.get( "nodes_created" ), equalTo( 1 ) );
+        assertThat( stats.get( "contains_updates" ), equalTo( true ) );
+        assertThat( stats.get( "contains_system_updates" ), equalTo( false ) );
+        assertThat( stats.get( "system_updates" ), equalTo( 0 ) );
     }
 
     private void assertNoErrors( Map<String, Object> response )

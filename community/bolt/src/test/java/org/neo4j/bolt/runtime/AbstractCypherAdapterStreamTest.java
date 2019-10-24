@@ -223,6 +223,34 @@ class AbstractCypherAdapterStreamTest
     }
 
     @Test
+    void shouldIncludeSystemUpdates() throws Throwable
+    {
+        // Given
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsSystemUpdates() ).thenReturn( true );
+        when( queryStatistics.getSystemUpdates() ).thenReturn( 11 );
+
+        QueryExecution result = mock( QueryExecution.class );
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
+        when( result.fieldNames() ).thenReturn( new String[0] );
+        when( result.executionType() ).thenReturn( query( READ_WRITE ) );
+        subscriber.onResultCompleted( queryStatistics );
+        when( result.getNotifications() ).thenReturn( Collections.emptyList() );
+
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 0L, 1337L );
+
+        var stream = new TestAbstractCypherAdapterStream( result, subscriber, clock );
+
+        // When
+        MapValue meta = metadataOf( stream );
+
+        // Then
+        assertThat( meta.get( "type" ), equalTo( stringValue( "rw" ) ) );
+        assertThat( meta.get( "stats" ), equalTo( mapValues( "system-updates", intValue( 11 ) ) ) );
+    }
+
+    @Test
     void shouldIncludePlanIfPresent() throws Throwable
     {
         // Given
