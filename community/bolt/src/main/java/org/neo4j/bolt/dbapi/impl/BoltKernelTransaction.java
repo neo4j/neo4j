@@ -80,7 +80,7 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
     }
 
     @Override
-    public BookmarkMetadata getBookmark()
+    public BookmarkMetadata getBookmarkMetadata()
     {
         return bookmarkSupplier.get();
     }

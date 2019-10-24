@@ -65,7 +65,7 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     @Override
     public Bookmark newestBookmark( BoltTransaction tx )
     {
-        var bookmarkMetadata = tx.getBookmark();
+        var bookmarkMetadata = tx.getBookmarkMetadata();
         return bookmarkMetadata.toBookmark( ( txId, dbId ) -> new BookmarkWithPrefix( txId ) );
     }
 

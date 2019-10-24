@@ -74,7 +74,7 @@ class TransactionStateMachineV4SPITest
         var tx = mock( BoltTransaction.class );
 
         var databaseId = databaseIdRepository.getRaw( "molly" );
-        when( tx.getBookmark() ).thenReturn( new BookmarkMetadata( 42L, databaseId ));
+        when( tx.getBookmarkMetadata() ).thenReturn( new BookmarkMetadata( 42L, databaseId ));
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
@@ -84,7 +84,7 @@ class TransactionStateMachineV4SPITest
         var bookmark = spi.newestBookmark( tx );
 
         // Then
-        verify( tx ).getBookmark();
+        verify( tx ).getBookmarkMetadata();
         assertThat( bookmark, instanceOf( BookmarkWithDatabaseId.class ) );
         assertThat( bookmark.txId(), equalTo( 42L ) );
     }

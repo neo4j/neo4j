@@ -73,7 +73,7 @@ class TransactionStateMachineV3SPITest
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         var tx = mock( BoltTransaction.class );
 
-        when( tx.getBookmark() ).thenReturn( new BookmarkMetadata( 42L ) );
+        when( tx.getBookmarkMetadata() ).thenReturn( new BookmarkMetadata( 42L ) );
         var spi = new TestAbstractTransactionStateMachineSPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
                 mock( StatementProcessorReleaseManager.class ) );
 
@@ -81,7 +81,7 @@ class TransactionStateMachineV3SPITest
         var bookmark = spi.newestBookmark( tx );
 
         // Then
-        verify( tx ).getBookmark();
+        verify( tx ).getBookmarkMetadata();
         assertThat( bookmark, instanceOf( BookmarkWithPrefix.class ) );
         assertEquals( bookmark.txId(), 42L );
     }

@@ -34,7 +34,6 @@ import static org.neo4j.values.storable.Values.stringValue;
  */
 public class BookmarkWithPrefix implements Bookmark
 {
-    static final String BOOKMARK_KEY = "bookmark";
     static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
 
     private final long txId;

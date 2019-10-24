@@ -47,5 +47,5 @@ public interface BoltTransaction extends BoltQueryExecutor
 
     Optional<Status> getReasonIfTerminated();
 
-    BookmarkMetadata getBookmark();
+    BookmarkMetadata getBookmarkMetadata();
 }

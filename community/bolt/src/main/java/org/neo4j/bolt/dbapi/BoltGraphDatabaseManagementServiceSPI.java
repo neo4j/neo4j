@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.dbapi;
 
+import java.util.Optional;
+
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.UnavailableException;
 
@@ -35,8 +37,8 @@ public interface BoltGraphDatabaseManagementServiceSPI
      * The serialization part is represented by {@link BookmarkMetadata#toBookmark(java.util.function.BiFunction)}
      * and {@link org.neo4j.bolt.runtime.Bookmark#attachTo(org.neo4j.bolt.runtime.BoltResponseHandler)}
      */
-    default CustomBookmarkFormatParser getCustomBookmarkFormatParser()
+    default Optional<CustomBookmarkFormatParser> getCustomBookmarkFormatParser()
     {
-        return CustomBookmarkFormatParser.DEFAULT;
+        return Optional.empty();
     }
 }

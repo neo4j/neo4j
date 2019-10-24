@@ -23,6 +23,8 @@ import org.neo4j.kernel.database.DatabaseId;
 
 public interface Bookmark
 {
+    String BOOKMARK_KEY = "bookmark"; // used in response messages
+
     long txId();
 
     DatabaseId databaseId();

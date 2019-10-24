@@ -51,7 +51,7 @@ public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachin
     @Override
     public Bookmark newestBookmark( BoltTransaction tx )
     {
-        var bookmarkMetadata = tx.getBookmark();
+        var bookmarkMetadata = tx.getBookmarkMetadata();
         return bookmarkMetadata.toBookmark( BookmarkWithDatabaseId::new );
     }
 

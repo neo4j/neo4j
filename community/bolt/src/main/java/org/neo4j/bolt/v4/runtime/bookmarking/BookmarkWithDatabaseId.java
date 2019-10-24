@@ -33,8 +33,6 @@ import static org.neo4j.values.storable.Values.stringValue;
  */
 public class BookmarkWithDatabaseId implements Bookmark
 {
-    private static final String BOOKMARK_KEY = "bookmark"; // used in response messages
-
     private final long txId;
     private final DatabaseId databaseId;
 
