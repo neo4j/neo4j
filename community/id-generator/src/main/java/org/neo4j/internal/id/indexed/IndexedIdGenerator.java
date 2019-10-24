@@ -229,7 +229,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.tree = instantiateTree( pageCache, file, recoveryCleanupWorkCollector, readOnly, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
-        this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
+        this.scanner = readOnly ? null : new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
                 () -> lockAndInstantiateMarker( true, true ), generation, strictlyPrioritizeFreelist );
     }
 
@@ -436,8 +436,11 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void clearCache()
     {
-        // Make the scanner clear it because it needs to coordinate with the scan lock
-        scanner.clearCache();
+        if ( !readOnly )
+        {
+            // Make the scanner clear it because it needs to coordinate with the scan lock
+            scanner.clearCache();
+        }
     }
 
     @Override
