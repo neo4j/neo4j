@@ -27,7 +27,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.Label;
@@ -45,7 +44,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -71,6 +69,7 @@ public class LuceneFulltextTestSupport
     static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
     static final String PROP = "prop";
     static final String PROP2 = "prop2";
+    static final String PROP3 = "prop3";
 
     DbmsRule db = new EmbeddedDbmsRule();
     private RepeatRule repeatRule = createRepeatRule();
@@ -223,26 +222,6 @@ public class LuceneFulltextTestSupport
     {
         Node node = transaction.getNodeById( nodeId );
         node.setProperty( propertyKey, value );
-    }
-
-    void await( SchemaDescriptor descriptor ) throws Exception
-    {
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
-        {
-            Iterator<IndexDescriptor> iterator;
-            while ( !(iterator = tx.schemaRead().index( descriptor.schema() )).hasNext() )
-            {
-                Thread.sleep( 100 );
-            }
-            while ( iterator.hasNext() )
-            {
-                IndexDescriptor index = iterator.next();
-                while ( tx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
-                {
-                    Thread.sleep( 100 );
-                }
-            }
-        }
     }
 
     void await( IndexDescriptor index ) throws Exception

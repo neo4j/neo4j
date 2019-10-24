@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.neo4j.graphdb.schema.IndexSetting;
+
 /**
  * Responsible for naming of
  */
 public final class FulltextIndexSettingsKeys
 {
-    // Config keys used by index config. Belonging to 'fulltext' namespace to differentiate from other index config.
-    private static final String FULLTEXT_CONFIG_PREFIX = "fulltext.";
-    public static final String ANALYZER = FULLTEXT_CONFIG_PREFIX + "analyzer";
-    public static final String EVENTUALLY_CONSISTENT = FULLTEXT_CONFIG_PREFIX + "eventually_consistent";
+    public static final String ANALYZER = IndexSetting.FULLTEXT_ANALYZER.getSettingName();
+    public static final String EVENTUALLY_CONSISTENT = IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName();
 
     // Config keys used as arguments by user in procedure call. No name space needed because implicit from procedure.
     public static final String PROCEDURE_ANALYZER = "analyzer";

@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
@@ -30,20 +31,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RepeatRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.internal.schema.IndexType.FULLTEXT;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 
 /**
  * Concurrent updates and index changes should result in valid state, and not create conflicts or exceptions during
@@ -70,37 +64,25 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         race = new Race();
     }
 
-    private SchemaDescriptor getNewDescriptor( String[] entityTokens )
+    private void createInitialIndex()
     {
-        return indexProvider.schemaFor( NODE, entityTokens, "otherProp" );
-    }
-
-    private SchemaDescriptor getExistingDescriptor( String[] entityTokens )
-    {
-        return indexProvider.schemaFor( NODE, entityTokens, PROP );
-    }
-
-    private IndexDescriptor createInitialIndex( SchemaDescriptor schema ) throws Exception
-    {
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaWrite schemaWrite = transaction.schemaWrite();
-            index = schemaWrite.indexCreate( prototype );
-            transaction.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
+            tx.commit();
         }
-        await( index );
-        return index;
     }
 
-    private void raceContestantsAndVerifyResults( SchemaDescriptor schema, Runnable aliceWork, Runnable changeConfig, Runnable bobWork ) throws Throwable
+    private void raceContestantsAndVerifyResults( Runnable aliceWork, Runnable changeConfig, Runnable bobWork ) throws Throwable
     {
         race.addContestants( aliceThreads, aliceWork );
         race.addContestant( changeConfig );
         race.addContestants( bobThreads, bobWork );
         race.go();
-        await( schema );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+        }
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
@@ -153,19 +135,17 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         };
     }
 
-    private ThrowingAction<Exception> dropAndReCreateIndex( IndexDescriptor descriptor, SchemaDescriptor schema )
+    private ThrowingAction<Exception> dropAndReCreateIndex()
     {
         return () ->
         {
             aliceLatch.await();
             bobLatch.await();
-            try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+            try ( Transaction tx = db.beginTx() )
             {
-                SchemaWrite schemaWrite = transaction.schemaWrite();
-                schemaWrite.indexDrop( descriptor );
-                IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
-                schemaWrite.indexCreate( prototype );
-                transaction.success();
+                tx.schema().getIndexByName( "nodes" ).drop();
+                tx.schema().indexFor( LABEL ).on( "otherProp" ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
+                tx.commit();
             }
         };
     }
@@ -173,10 +153,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
     @Test
     public void labelledNodesCoreAPI() throws Throwable
     {
-        String[] entityTokens = {LABEL.name()};
-        SchemaDescriptor schema = getExistingDescriptor( entityTokens );
-        SchemaDescriptor newSchema = getNewDescriptor( entityTokens );
-        IndexDescriptor initialIndex = createInitialIndex( schema );
+        createInitialIndex();
 
         Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
@@ -188,17 +165,14 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
             tx.getNodeById( createNodeWithProperty( tx, LABEL, "otherProp", "bob" ) );
             bobLatch.countDown();
         } );
-        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newSchema ).apply() );
-        raceContestantsAndVerifyResults( newSchema, aliceWork, changeConfig, bobWork );
+        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex().apply() );
+        raceContestantsAndVerifyResults( aliceWork, changeConfig, bobWork );
     }
 
     @Test
     public void labelledNodesCypherCurrent() throws Throwable
     {
-        String[] entityTokens = {LABEL.name()};
-        SchemaDescriptor schema = getExistingDescriptor( entityTokens );
-        SchemaDescriptor newSchema = getNewDescriptor( entityTokens );
-        IndexDescriptor initialIndex = createInitialIndex( schema );
+        createInitialIndex();
 
         Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
@@ -210,7 +184,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
             tx.execute( "create (:LABEL {otherProp: \"bob\"})" ).close();
             bobLatch.countDown();
         } );
-        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newSchema ).apply() );
-        raceContestantsAndVerifyResults( newSchema, aliceWork, changeConfig, bobWork );
+        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex().apply() );
+        raceContestantsAndVerifyResults( aliceWork, changeConfig, bobWork );
     }
 }

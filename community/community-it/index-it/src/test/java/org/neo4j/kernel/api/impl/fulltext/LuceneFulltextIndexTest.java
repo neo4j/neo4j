@@ -21,9 +21,12 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
@@ -49,9 +52,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.IndexType.FULLTEXT;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 
@@ -63,15 +63,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
         long firstID;
         long secondID;
         try ( Transaction tx = db.beginTx() )
@@ -97,15 +97,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         long firstID;
         long secondID;
@@ -142,15 +142,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         long firstID;
         long secondID;
@@ -185,15 +185,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotFindRemovedProperties() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "prop", "prop2" );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).on( PROP2 ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
         long firstID;
         long secondID;
         long thirdID;
@@ -217,13 +217,13 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             Node node2 = tx.getNodeById( secondID );
             Node node3 = tx.getNodeById( thirdID );
 
-            node.setProperty( "prop", "tomtar" );
-            node.setProperty( "prop2", "tomtar" );
+            node.setProperty( PROP, "tomtar" );
+            node.setProperty( PROP2, "tomtar" );
 
-            node2.setProperty( "prop", "tomtar" );
-            node2.setProperty( "prop2", "Hello" );
+            node2.setProperty( PROP, "tomtar" );
+            node2.setProperty( PROP2, "Hello" );
 
-            node3.removeProperty( "prop" );
+            node3.removeProperty( PROP );
 
             tx.commit();
         }
@@ -241,25 +241,25 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         long firstID;
         try ( Transaction tx = db.beginTx() )
         {
             firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
-            setNodeProp( tx, firstID, "prop2", "zebra" );
+            setNodeProp( tx, firstID, PROP2, "zebra" );
 
             Node node2 = tx.createNode( LABEL );
-            node2.setProperty( "prop2", "zebra" );
-            node2.setProperty( "prop3", "hello" );
+            node2.setProperty( PROP2, "zebra" );
+            node2.setProperty( PROP3, "hello" );
 
             tx.commit();
         }
@@ -275,15 +275,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "prop", "prop2" );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).on( PROP2 ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         long firstID;
         long secondID;
@@ -292,11 +292,11 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         {
             firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Tomtar tomtar oftsat i tomteutstyrsel." );
             secondID = createNodeIndexableByPropertyValue( tx, LABEL, "Olof och Hans" );
-            setNodeProp( tx, secondID, "prop2", "och karl" );
+            setNodeProp( tx, secondID, PROP2, "och karl" );
 
             Node node3 = tx.createNode( LABEL );
             thirdID = node3.getId();
-            node3.setProperty( "prop2", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
+            node3.setProperty( PROP2, "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
 
             tx.commit();
         }
@@ -311,15 +311,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "first", "last" );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( "first" ).on( "last" ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
         long firstID;
         long secondID;
         long thirdID;
@@ -352,20 +352,17 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, PROP );
-        IndexDescriptor nodesIndex;
-        IndexDescriptor relsIndex;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            IndexPrototype prototypeNodes = IndexPrototype.forSchema( nodes, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            IndexPrototype prototypeRels = IndexPrototype.forSchema( rels, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( REL_INDEX_NAME );
-            nodesIndex = tx.schemaWrite().indexCreate( prototypeNodes );
-            relsIndex = tx.schemaWrite().indexCreate( prototypeRels );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.schema().indexFor( RELTYPE ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( REL_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( nodesIndex );
-        await( relsIndex );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
         long firstNodeID;
         long secondNodeID;
         long firstRelID;
@@ -398,28 +395,25 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotReturnNonMatches() throws Exception
     {
-        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, PROP );
-        IndexDescriptor nodesIndex;
-        IndexDescriptor relsIndex;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            IndexPrototype prototypeNodes = IndexPrototype.forSchema( nodes, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            IndexPrototype prototypeRels = IndexPrototype.forSchema( rels, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( REL_INDEX_NAME );
-            nodesIndex = tx.schemaWrite().indexCreate( prototypeNodes );
-            relsIndex = tx.schemaWrite().indexCreate( prototypeRels );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.schema().indexFor( RELTYPE ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( REL_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( nodesIndex );
-        await( relsIndex );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
         try ( Transaction tx = db.beginTx() )
         {
             long firstNode = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
-            long secondNode = createNodeWithProperty( tx, LABEL, "prop2",
+            long secondNode = createNodeWithProperty( tx, LABEL, PROP2,
                     "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                             "cross between a zebra and any other equine: essentially, a zebra hybrid." );
             createRelationshipIndexableByPropertyValue( tx, firstNode, secondNode, "Hello. Hello again." );
-            createRelationshipWithProperty( tx, secondNode, firstNode, "prop2",
+            createRelationshipWithProperty( tx, secondNode, firstNode, PROP2,
                     "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                             "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -456,20 +450,18 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.commit();
         }
 
-        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, PROP );
-        IndexDescriptor nodesIndex;
-        IndexDescriptor relsIndex;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            IndexPrototype prototypeNodes = IndexPrototype.forSchema( nodes, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            IndexPrototype prototypeRels = IndexPrototype.forSchema( rels, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( REL_INDEX_NAME );
-            nodesIndex = tx.schemaWrite().indexCreate( prototypeNodes );
-            relsIndex = tx.schemaWrite().indexCreate( prototypeRels );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.schema().indexFor( RELTYPE ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( REL_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( nodesIndex );
-        await( relsIndex );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
+
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
@@ -488,15 +480,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         long firstID;
         long secondID;
@@ -507,7 +499,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             firstID = createNodeIndexableByPropertyValue( tx, LABEL, "thing" );
 
             secondID = tx.createNode( LABEL ).getId();
-            setNodeProp( tx, secondID, "prop2", "zebra" );
+            setNodeProp( tx, secondID, PROP2, "zebra" );
 
             thirdID = createNodeIndexableByPropertyValue( tx, LABEL, "zebra" );
             tx.commit();
@@ -519,22 +511,23 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "thing zebra", firstID, thirdID );
         }
 
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "prop2" );
-            tx.schemaWrite().indexDrop( index );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().getIndexByName( NODE_INDEX_NAME ).drop();
+            tx.schema().indexFor( LABEL ).on( PROP2 ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         try ( Transaction tx = db.beginTx() )
         {
-            setNodeProp( tx, firstID, "prop2", "thing" );
+            setNodeProp( tx, firstID, PROP2, "thing" );
 
             fourthID = tx.createNode( LABEL ).getId();
-            setNodeProp( tx, fourthID, "prop2", "zebra" );
+            setNodeProp( tx, fourthID, PROP2, "zebra" );
             tx.commit();
         }
 
@@ -548,15 +541,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToDropAndReadIndex() throws Exception
     {
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         long firstID;
         long secondID;
@@ -569,17 +562,20 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.commit();
         }
 
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.schemaWrite().indexDrop( index );
-            tx.success();
+            tx.schema().getIndexByName( NODE_INDEX_NAME ).drop();
+            tx.commit();
         }
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -678,17 +674,17 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void fulltextIndexMustNotAnswerCoreApiIndexQueries() throws Exception
+    public void fulltextIndexMustNotAnswerCoreApiIndexQueries()
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -704,17 +700,17 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void fulltextIndexMustNotAnswerCoreApiCompositeIndexQueries() throws Exception
+    public void fulltextIndexMustNotAnswerCoreApiCompositeIndexQueries()
     {
-        IndexDescriptor index;
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP, PROP2 );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
-            index = tx.schemaWrite().indexCreate( prototype );
-            tx.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).on( PROP2 ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
         }
-        await( index );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {

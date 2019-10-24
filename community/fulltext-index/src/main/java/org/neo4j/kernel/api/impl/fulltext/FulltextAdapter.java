@@ -21,14 +21,10 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.util.stream.Stream;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
-import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface FulltextAdapter
 {
-    SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, String... properties );
-
     void awaitRefresh();
 
     Stream<AnalyzerProvider> listAvailableAnalyzers();

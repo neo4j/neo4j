@@ -80,7 +80,6 @@ public enum IndexSetting
 
     IndexSetting( String settingName, Class<?> valueType )
     {
-
         this.settingName = settingName;
         this.valueType = valueType;
     }

@@ -23,13 +23,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.stream.Stream;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
@@ -38,7 +34,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -61,6 +56,9 @@ import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -251,44 +249,23 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
                 throw new IllegalArgumentException( "Wrong index setting value type for fulltext analyzer: '" + value + "'." );
             }
         }
-    }
 
-    @Override
-    public SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, String... properties )
-    {
-        if ( entityTokens.length == 0 )
+        TokenHolder propertyKeyTokens = tokenHolders.propertyKeyTokens();
+        for ( int propertyId : prototype.schema().getPropertyIds() )
         {
-            throw new BadSchemaException(
-                    "At least one " + ( type == EntityType.NODE ? "label" : "relationship type" ) + " must be specified when creating a fulltext index." );
-        }
-        if ( properties.length == 0 )
-        {
-            throw new BadSchemaException( "At least one property name must be specified when creating a fulltext index." );
-        }
-        if ( Arrays.asList( properties ).contains( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) )
-        {
-            throw new BadSchemaException( "Unable to index the property, the name is reserved for internal use " +
-                    LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
-        }
-        int[] entityTokenIds = new int[entityTokens.length];
-        try
-        {
-            if ( type == EntityType.NODE )
+            try
             {
-                tokenHolders.labelTokens().getOrCreateIds( entityTokens, entityTokenIds );
+                NamedToken token = propertyKeyTokens.getTokenById( propertyId );
+                if ( token.name().equals( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) )
+                {
+                    throw new IllegalArgumentException( "Unable to index the property, the name is reserved for internal use " +
+                            LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
+                }
             }
-            else
+            catch ( TokenNotFoundException e )
             {
-                tokenHolders.relationshipTypeTokens().getOrCreateIds( entityTokens, entityTokenIds );
+                throw new IllegalArgumentException( "Schema references non-existing property key token id: " + propertyId + ".", e );
             }
-            int[] propertyIds = new int[properties.length];
-            tokenHolders.propertyKeyTokens().getOrCreateIds( properties, propertyIds );
-
-            return SchemaDescriptor.fulltext( type, entityTokenIds, propertyIds );
-        }
-        catch ( KernelException e )
-        {
-            throw new TransactionFailureException( "Error creating token", e );
         }
     }
 

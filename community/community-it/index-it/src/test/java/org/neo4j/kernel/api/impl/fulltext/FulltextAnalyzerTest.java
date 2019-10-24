@@ -21,18 +21,14 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.internal.schema.IndexType.FULLTEXT;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
@@ -45,16 +41,15 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
 
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
-        IndexDescriptor nodes;
-        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( prototype );
-            transaction.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
+            tx.commit();
         }
-        await( nodes );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+        }
 
         long id;
         try ( Transaction tx = db.beginTx() )
@@ -81,16 +76,16 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, SWEDISH );
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
-        IndexDescriptor nodes;
-        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( prototype );
-            transaction.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
+            tx.commit();
         }
-        await( nodes );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+        }
 
         long id;
         try ( Transaction tx = db.beginTx() )
@@ -117,16 +112,16 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifyFoldingAnalyzer() throws Exception
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, FOLDING );
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
-        IndexDescriptor nodes;
-        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( prototype );
-            transaction.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
+            tx.commit();
         }
-        await( nodes );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+        }
 
         long id;
         try ( Transaction tx = db.beginTx() )
@@ -153,16 +148,16 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         long secondID;
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
-        IndexDescriptor nodes;
-        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+
+        try ( Transaction tx = db.beginTx() )
         {
-            SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( prototype );
-            transaction.success();
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
+            tx.commit();
         }
-        await( nodes );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+        }
 
         try ( Transaction tx = db.beginTx() )
         {

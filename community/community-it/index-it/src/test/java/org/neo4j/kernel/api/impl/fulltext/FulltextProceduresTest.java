@@ -121,8 +121,8 @@ public class FulltextProceduresTest
 {
 
     private static final String SCORE = "score";
-    public static final String NODE = "node";
-    public static final String RELATIONSHIP = "relationship";
+    private static final String NODE = "node";
+    private static final String RELATIONSHIP = "relationship";
     private static final String DESCARTES_MEDITATIONES = "/meditationes--rene-descartes--public-domain.txt";
     private static final Label LABEL = Label.label( "Label" );
     private static final RelationshipType REL = RelationshipType.withName( "REL" );
@@ -2686,7 +2686,8 @@ public class FulltextProceduresTest
     {
         db = createDatabase();
 
-        final Exception e = assertThrows( Exception.class, () -> {
+        final Exception e = assertThrows( Exception.class, () ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label" ), asCypherStringsList( "id", "id" ) ) );
@@ -2701,7 +2702,8 @@ public class FulltextProceduresTest
     {
         db = createDatabase();
 
-        final Exception e = assertThrows( Exception.class, () -> {
+        final Exception e = assertThrows( Exception.class, () ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label", "Label" ), asCypherStringsList( "id" ) ) );
@@ -2716,7 +2718,8 @@ public class FulltextProceduresTest
     {
         db = createDatabase();
 
-        final Exception e = assertThrows( Exception.class, () -> {
+        final Exception e = assertThrows( Exception.class, () ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 tx.execute( format( RELATIONSHIP_CREATE, "myindex", asCypherStringsList( "RelType", "RelType" ), asCypherStringsList( "id" ) ) );
@@ -2724,6 +2727,25 @@ public class FulltextProceduresTest
         } );
         final Throwable cause = getRootCause( e );
         assertThat( cause, instanceOf( RepeatedRelationshipTypeInSchemaException.class ) );
+    }
+
+    @Test
+    public void attemptingToIndexOnPropertyUsedForInternalReferenceMustThrow()
+    {
+        db = createDatabase();
+
+        var e = assertThrows( Exception.class, () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.execute( format( NODE_CREATE, "myindex",
+                        asCypherStringsList( "Label" ),
+                        asCypherStringsList( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) ) )
+                        .close();
+                tx.commit();
+            }
+        });
+        assertThat( e.getMessage(), containsString( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) );
     }
 
     private void assertNoIndexSeeks( Result result )
