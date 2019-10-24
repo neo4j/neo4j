@@ -69,7 +69,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.EpochSupplier;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -207,7 +207,7 @@ public class Database extends LifecycleAdapter
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final LockTracer lockTracer;
     private final AccessCapabilityFactory accessCapabilityFactory;
-    private final EpochSupplier epoch;
+    private final LeaseService leaseService;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
@@ -289,7 +289,7 @@ public class Database extends LifecycleAdapter
         this.pageCursorTracerSupplier = globalTracers.getPageCursorTracerSupplier();
         this.lockTracer = globalTracers.getLockTracer();
         this.fileLockerService = context.getFileLockerService();
-        this.epoch = context.getEpoch();
+        this.leaseService = context.getLeaseService();
     }
 
     @Override
@@ -425,7 +425,7 @@ public class Database extends LifecycleAdapter
                     transactionIdStore,
                     databaseAvailabilityGuard,
                     clock,
-                    indexStatisticsStore, databaseFacade, epoch );
+                    indexStatisticsStore, databaseFacade, leaseService );
 
             kernelModule.satisfyDependencies( databaseDependencies );
 
@@ -619,7 +619,7 @@ public class Database extends LifecycleAdapter
             StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore, GraphDatabaseFacade facade,
-            EpochSupplier epoch )
+            LeaseService leaseService )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
         AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
@@ -643,7 +643,7 @@ public class Database extends LifecycleAdapter
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
-                        databaseDependencies, databaseTracer, pageCursorTracerSupplier, lockTracer, epoch ) );
+                        databaseDependencies, databaseTracer, pageCursorTracerSupplier, lockTracer, leaseService ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

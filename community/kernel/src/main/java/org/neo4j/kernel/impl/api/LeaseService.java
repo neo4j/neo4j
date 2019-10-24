@@ -19,9 +19,24 @@
  */
 package org.neo4j.kernel.impl.api;
 
-public interface EpochSupplier
+public interface LeaseService
 {
-    EpochSupplier NO_EPOCHS = () -> Epoch.NO_EPOCHS;
+    int NO_LEASE = -1;
 
-    Epoch get();
+    LeaseClient newClient();
+
+    LeaseService NO_LEASES = () -> new LeaseClient()
+    {
+        @Override
+        public int leaseId()
+        {
+            return NO_LEASE;
+        }
+
+        @Override
+        public void ensureValid() throws LeaseException
+        {
+            // always valid
+        }
+    };
 }

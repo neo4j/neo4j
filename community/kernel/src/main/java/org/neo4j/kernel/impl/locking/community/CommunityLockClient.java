@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.api.Epoch;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
@@ -80,9 +80,9 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void initialize( Epoch epoch )
+    public void initialize( LeaseClient leaseClient )
     {
-        // we don't need epoch here
+        // we don't need lease here
     }
 
     @Override

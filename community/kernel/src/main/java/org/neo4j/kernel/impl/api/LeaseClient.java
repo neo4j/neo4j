@@ -19,26 +19,23 @@
  */
 package org.neo4j.kernel.impl.api;
 
-public interface Epoch
+public interface LeaseClient
 {
-    int NO_EPOCH = -1;
+    /**
+     * The ID of an acquired lease.
+     *
+     * Will be {@link LeaseService#NO_LEASE} before ensureValid() has been called and keeps
+     * its value even if the lease becomes invalid.
+     */
+    int leaseId();
 
-    Epoch NO_EPOCHS = new Epoch()
-    {
-        @Override
-        public int tokenId()
-        {
-            return NO_EPOCH;
-        }
-
-        @Override
-        public void ensureHoldingToken()
-        {
-            // no-op
-        }
-    };
-
-    int tokenId();
-
-    void ensureHoldingToken() throws EpochException;
+    /**
+     * Ensures that a valid lease is held or throws an exception.
+     *
+     * If no lease is held, then an attempt it made to acquire the lease.
+     * If a previously valid lease has become invalid, then no new lease will be acquired.
+     *
+     * @throws LeaseException if a valid lease isn't held.
+     */
+    void ensureValid() throws LeaseException;
 }

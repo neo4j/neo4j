@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class EpochException extends RuntimeException implements Status.HasStatus
+public class LeaseException extends RuntimeException implements Status.HasStatus
 {
     private final Status status;
 
-    public EpochException( String message, Status status )
+    public LeaseException( String message, Status status )
     {
         this( message, null, status );
     }
 
-    public EpochException( String message, Throwable cause, Status status )
+    public LeaseException( String message, Throwable cause, Status status )
     {
         super( message, cause );
         this.status = status;

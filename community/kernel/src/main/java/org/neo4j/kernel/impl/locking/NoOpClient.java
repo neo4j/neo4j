@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.api.Epoch;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -29,7 +29,7 @@ import org.neo4j.lock.ResourceType;
 public class NoOpClient implements Locks.Client
 {
     @Override
-    public void initialize( Epoch epoch )
+    public void initialize( LeaseClient leaseClient )
     {
     }
 

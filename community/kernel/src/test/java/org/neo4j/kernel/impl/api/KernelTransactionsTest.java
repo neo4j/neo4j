@@ -700,7 +700,8 @@ class KernelTransactionsTest
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
-                createDependencies(), tracers.getDatabaseTracer(), tracers.getPageCursorTracerSupplier(), tracers.getLockTracer(), EpochSupplier.NO_EPOCHS );
+                createDependencies(), tracers.getDatabaseTracer(), tracers.getPageCursorTracerSupplier(), tracers.getLockTracer(),
+                LeaseService.NO_LEASES );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -776,7 +777,7 @@ class KernelTransactionsTest
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                     DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
                     databaseDependencies, tracers.getDatabaseTracer(), tracers.getPageCursorTracerSupplier(), tracers.getLockTracer(),
-                    EpochSupplier.NO_EPOCHS );
+                    LeaseService.NO_LEASES );
         }
 
         @Override

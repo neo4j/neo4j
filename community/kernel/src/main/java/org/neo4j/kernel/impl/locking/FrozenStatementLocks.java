@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
-import org.neo4j.kernel.impl.api.Epoch;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.LockTracer;
 
 /**
@@ -50,9 +50,9 @@ public class FrozenStatementLocks implements StatementLocks
     // StatementLocks
 
     @Override
-    public void initialize( Epoch epoch )
+    public void initialize( LeaseClient leaseClient )
     {
-        realStatementLocks.initialize( epoch );
+        realStatementLocks.initialize( leaseClient );
     }
 
     @Override

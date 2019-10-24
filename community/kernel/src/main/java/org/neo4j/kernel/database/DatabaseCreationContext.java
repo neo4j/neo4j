@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.EpochSupplier;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -137,5 +137,5 @@ public interface DatabaseCreationContext
 
     AccessCapabilityFactory getAccessCapabilityFactory();
 
-    EpochSupplier getEpoch();
+    LeaseService getLeaseService();
 }

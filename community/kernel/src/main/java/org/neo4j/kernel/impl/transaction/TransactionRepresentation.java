@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.impl.api.Epoch;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.CommandStream;
 
@@ -51,8 +51,8 @@ public interface TransactionRepresentation extends CommandStream
     long getTimeCommitted();
 
     /**
-     * @return the identifier for the epoch token associated with this transaction, or {@value Epoch#NO_EPOCH}.
-     * This is only used for distributed commits.
+     * @return the identifier for the lease associated with this transaction, or {@value LeaseService#NO_LEASE}.
+     * This is only used for coordinating transaction validity in a cluster.
      */
-    int getEpochTokenId();
+    int getLeaseId();
 }

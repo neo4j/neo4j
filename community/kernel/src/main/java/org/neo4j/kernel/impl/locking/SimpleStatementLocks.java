@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.api.Epoch;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.LockTracer;
 
 /**
@@ -38,9 +38,9 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public void initialize( Epoch epoch )
+    public void initialize( LeaseClient leaseClient )
     {
-        client.initialize( epoch );
+        client.initialize( leaseClient );
     }
 
     @Override

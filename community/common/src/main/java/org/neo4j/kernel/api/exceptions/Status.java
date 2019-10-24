@@ -53,7 +53,7 @@ public interface Status
     Broadly, the naming convention here uses one of three types of name:
 
     1. For unexpected events, name with a leading noun followed by a short problem term in the past tense. For example,
-       EntityNotFound or LockSessionExpired. As a variant, names may omit the leading noun; in this case, the current
+       EntityNotFound or LeaseExpired. As a variant, names may omit the leading noun; in this case, the current
        ongoing operation is implied.
 
     2. For conditions that prevent the current ongoing operation from being performed (or being performed correctly),
@@ -145,8 +145,8 @@ public interface Status
         // transient errors
         BookmarkTimeout( TransientError,
                 "Bookmark wait timed out. Database has not reached the specified version" ),
-        LockSessionExpired( TransientError,
-                "The lock session under which this transaction was started is no longer valid." ),
+        LeaseExpired( TransientError,
+                "The lease under which this transaction was started is no longer valid." ),
         DeadlockDetected( TransientError,
                 "This transaction, and at least one more transaction, has acquired locks in a way that it will wait " +
                 "indefinitely, and the database has aborted it. Retrying this transaction will most likely be " +
@@ -486,9 +486,6 @@ public interface Status
     enum Cluster implements Status
     {
         // transient errors
-        NoLeaderAvailable( TransientError,
-                "No leader available at the moment. Retrying your request at a later time may succeed." ),
-
         ReplicationFailure( TransientError,
                 "Replication failure." ),
 

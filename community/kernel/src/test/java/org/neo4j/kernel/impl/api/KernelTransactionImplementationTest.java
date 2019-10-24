@@ -712,15 +712,28 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     }
 
     @Test
-    void includeEpochInToString()
+    void includeLeaseInToString()
     {
-        int epochTokenId = 11;
-        Epoch epoch = mock( Epoch.class );
-        when( epoch.tokenId() ).thenReturn( epochTokenId );
-        KernelTransactionImplementation transaction = newNotInitializedTransaction( () -> epoch );
+        int leaseId = 11;
+        LeaseService leaseClient = mock( LeaseService.class );
+        when( leaseClient.newClient() ).thenReturn( new LeaseClient()
+        {
+            @Override
+            public int leaseId()
+            {
+                return leaseId;
+            }
+
+            @Override
+            public void ensureValid() throws LeaseException
+            {
+
+            }
+        } );
+        KernelTransactionImplementation transaction = newNotInitializedTransaction( leaseClient );
         transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.implicit,
                 mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
-        assertEquals( "KernelTransaction[epoch:" + epochTokenId + "]", transaction.toString() );
+        assertEquals( "KernelTransaction[lease:" + leaseId + "]", transaction.toString() );
     }
 
     private LoginContext loginContext( boolean isWriteTx )

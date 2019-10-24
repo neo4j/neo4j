@@ -148,8 +148,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
-    private final DatabaseId databaseId;
-    private final EpochSupplier epochSupplier;
+    private final LeaseService leaseService;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final ClockContext clocks;
@@ -164,7 +163,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private volatile long userTransactionId;
-    private Epoch epoch;
+    private LeaseClient leaseClient;
     private volatile boolean closing;
     private volatile boolean closed;
     private boolean failure;
@@ -207,7 +206,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            DatabaseId databaseId, EpochSupplier epochSupplier )
+            DatabaseId databaseId, LeaseService leaseService )
     {
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -221,8 +220,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
-        this.databaseId = databaseId;
-        this.epochSupplier = epochSupplier;
+        this.leaseService = leaseService;
         this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, databaseId );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
@@ -259,8 +257,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.type = type;
         this.statementLocks = statementLocks;
         this.userTransactionId = userTransactionId;
-        this.epoch = epochSupplier.get();
-        this.statementLocks.initialize( epoch );
+        this.leaseClient = leaseService.newClient();
+        this.statementLocks.initialize( leaseClient );
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;
@@ -470,11 +468,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement.executingQuery();
     }
 
-    private void ensureEpochAcquired()
-    {
-        epoch.ensureHoldingToken();
-    }
-
     void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
     {
         writeState = writeState.upgradeToDataWrites();
@@ -503,7 +496,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( txState == null )
         {
-            ensureEpochAcquired();
+            leaseClient.ensureValid();
             transactionMonitor.upgradeToWriteTransaction();
             txState = new TxState( collectionsFactory );
         }
@@ -713,7 +706,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
                     long timeCommitted = clocks.systemClock().millis();
-                    transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, epoch.tokenId() );
+                    transactionRepresentation.setHeader(
+                            EMPTY_BYTE_ARRAY, startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, leaseClient.leaseId() );
 
                     // Commit the transaction
                     success = true;
@@ -1081,7 +1075,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        return String.format( "KernelTransaction[epoch:%d]", epoch.tokenId() );
+        return String.format( "KernelTransaction[lease:%d]", leaseClient.leaseId() );
     }
 
     public void dispose()

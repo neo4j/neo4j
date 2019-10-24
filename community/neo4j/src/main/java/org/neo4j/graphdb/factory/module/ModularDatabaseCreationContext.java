@@ -45,7 +45,7 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.EpochSupplier;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -109,11 +109,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final StorageEngineFactory storageEngineFactory;
     private final FileLockerService fileLockerService;
     private final AccessCapabilityFactory accessCapabilityFactory;
-    private final EpochSupplier epoch;
+    private final LeaseService leaseService;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, EpochSupplier epoch )
+                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -155,7 +155,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
-        this.epoch = epoch;
+        this.leaseService = leaseService;
     }
 
     @Override
@@ -381,9 +381,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public EpochSupplier getEpoch()
+    public LeaseService getLeaseService()
     {
-        return epoch;
+        return leaseService;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )

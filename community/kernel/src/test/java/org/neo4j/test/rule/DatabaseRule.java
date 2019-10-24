@@ -54,7 +54,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.EpochSupplier;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
@@ -167,7 +167,7 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
-                storageEngineFactory, new GlobalLockerService(), EpochSupplier.NO_EPOCHS ) );
+                storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES ) );
         return database;
     }
 
@@ -202,7 +202,7 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseId databaseId;
         private final DatabaseLayout databaseLayout;
         private final Config config;
-        private final EpochSupplier epoch;
+        private final LeaseService leaseService;
         private final DatabaseConfig databaseConfig;
         private final IdGeneratorFactory idGeneratorFactory;
         private final DatabaseLogService logService;
@@ -245,12 +245,12 @@ public class DatabaseRule extends ExternalResource
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
-                FileLockerService fileLockerService, EpochSupplier epoch )
+                FileLockerService fileLockerService, LeaseService leaseService )
         {
             this.databaseId = databaseId;
             this.databaseLayout = databaseLayout;
             this.config = config;
-            this.epoch = epoch;
+            this.leaseService = leaseService;
             this.databaseConfig = new DatabaseConfig( config, databaseId );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), logService );
@@ -517,9 +517,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public EpochSupplier getEpoch()
+        public LeaseService getLeaseService()
         {
-            return epoch;
+            return leaseService;
         }
     }
 

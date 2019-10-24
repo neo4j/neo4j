@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.api.Epoch;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
@@ -65,11 +65,11 @@ public interface Locks
         int NO_LOCK_SESSION_ID = -1;
 
         /**
-         * Initializes this locks client with an {@link Epoch} for the owning transaction. Must be called before any lock can be acquired.
-         * An epoch can act as a simple way to fail-fast for a transaction if a new epoch is started mid-transaction.
-         * @param epoch {@link Epoch} of the owning transaction.
+         * Initializes this locks client with a {@link LeaseClient} for the owning transaction. Must be called before any lock can be acquired.
+         * An lease that has become invalid can abort a transaction midway.
+         * @param leaseClient {@link LeaseClient} of the owning transaction.
          */
-        void initialize( Epoch epoch );
+        void initialize( LeaseClient leaseClient );
 
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
@@ -123,7 +123,6 @@ public interface Locks
         @Override
         void close();
 
-        /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
 
         Stream<? extends ActiveLock> activeLocks();
