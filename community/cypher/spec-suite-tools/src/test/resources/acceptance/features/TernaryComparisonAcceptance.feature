@@ -30,7 +30,7 @@ Feature: TernaryComparisonAcceptance
       """
       RETURN $lhs < $rhs AS lt, $lhs <= $rhs AS lte, $lhs > $rhs AS gt, $lhs >= $rhs AS gte
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | lt   | lte   | gt   | gte   |
       | <lt> | <lte> | <gt> | <gte> |
     And no side effects
@@ -51,7 +51,7 @@ Feature: TernaryComparisonAcceptance
       """
       RETURN $lhs < $rhs AS lt, $lhs <= $rhs AS lte, $lhs > $rhs AS gt, $lhs >= $rhs AS gte
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | lt   | lte   | gt   | gte   |
       | <lt> | <lte> | <gt> | <gte> |
     And no side effects
@@ -71,7 +71,7 @@ Feature: TernaryComparisonAcceptance
       WITH point(<map1>) AS p1, point(<map2>) AS p2
       RETURN p1 < p2 AS lt, p1 <= p2 AS lte, p1 > p2 AS gt, p1 >= p2 AS gte
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | lt   | lte   | gt   | gte   |
       | <lt> | <lte> | <gt> | <gte> |
     And no side effects
@@ -96,7 +96,7 @@ Feature: TernaryComparisonAcceptance
       MATCH (n:L)
       RETURN n.d < n.d AS lt, n.d <= n.d AS lte, n.d > n.d AS gt, n.d >= n.d AS gte
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | lt   | lte   | gt    | gte  |
       | false | true | false | true |
     And no side effects
@@ -113,7 +113,7 @@ Feature: TernaryComparisonAcceptance
       MATCH (n:L)
       RETURN n.d1 < n.d2 AS lt, n.d1 <= n.d2 AS lte, n.d1 > n.d2 AS gt, n.d1 >= n.d2 AS gte
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | lt   | lte   | gt   | gte  |
       | null | null  | null | null |
     And no side effects

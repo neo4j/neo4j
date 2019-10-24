@@ -35,7 +35,7 @@ Feature: PatternExpressionAcceptance
       MATCH (n)
       RETURN [x IN (n)-->() | head(nodes(x))] AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p            |
       | [(:A), (:A)] |
       | []           |
@@ -56,7 +56,7 @@ Feature: PatternExpressionAcceptance
       WITH [x IN (n)-->() | head(nodes(x))] AS p, count(n) AS c
       RETURN p, c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p            | c |
       | [(:A), (:A)] | 1 |
     And no side effects
@@ -75,7 +75,7 @@ Feature: PatternExpressionAcceptance
       WHERE n IN [x IN (n)-->() | head(nodes(x))]
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n    |
       | (:A) |
     And no side effects
@@ -100,7 +100,7 @@ Feature: PatternExpressionAcceptance
                           END) > 1
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n    |
       | (:A) |
       | ()   |
@@ -119,7 +119,7 @@ Feature: PatternExpressionAcceptance
       RETURN (liker)--() AS isNew
         ORDER BY liker.time
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | isNew                               |
       | [<({time: 10})-[:T]->({time: 20})>] |
       | [<({time: 20})<-[:T]-({time: 10})>] |
@@ -138,7 +138,7 @@ Feature: PatternExpressionAcceptance
       MATCH (n)
       RETURN (n)-->() AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                                      |
       | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] |
       | []                                     |
@@ -159,7 +159,7 @@ Feature: PatternExpressionAcceptance
       MATCH (n:A)
       RETURN (n)-->(:B)
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | (n)-->(:B)          |
       | [<(:A)-[:T]->(:B)>] |
     And no side effects
@@ -176,7 +176,7 @@ Feature: PatternExpressionAcceptance
       MATCH (a:A), (b:B)
       RETURN (a)-[*]->(b) AS path
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | path                |
       | [<(:A)-[:T]->(:B)>] |
     And no side effects
@@ -195,7 +195,7 @@ Feature: PatternExpressionAcceptance
       WITH (n)-->() AS p, count(b) AS c
       RETURN p, c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                                      | c |
       | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] | 2 |
     And no side effects
@@ -212,7 +212,7 @@ Feature: PatternExpressionAcceptance
       WITH (a)-[*]->(b) AS path, count(a) AS c
       RETURN path, c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | path                | c |
       | [<(:A)-[:T]->(:B)>] | 1 |
     And no side effects
@@ -229,7 +229,7 @@ Feature: PatternExpressionAcceptance
       MATCH (n:A)
       RETURN (n)-[:HAS]->() AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                   |
       | [<(:A)-[:HAS]->()>] |
       | []                  |
@@ -248,7 +248,7 @@ Feature: PatternExpressionAcceptance
       MATCH (n:A)
       RETURN count((n)-[:HAS]->()) AS c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c |
       | 3 |
     And no side effects
@@ -271,7 +271,7 @@ Feature: PatternExpressionAcceptance
       WHERE size((n)-->()) > 2
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n           |
       | (:X {n: 1}) |
     And no side effects
@@ -294,7 +294,7 @@ Feature: PatternExpressionAcceptance
       WHERE size((n)<--()) > 2
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n           |
       | (:X {n: 2}) |
     And no side effects
@@ -317,7 +317,7 @@ Feature: PatternExpressionAcceptance
       WHERE size((n)--()) > 2
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n           |
       | (:X {n: 1}) |
       | (:X {n: 2}) |
@@ -341,7 +341,7 @@ Feature: PatternExpressionAcceptance
       WHERE size((n)-[:X|Y]-()) > 2
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n |
     And no side effects
 
@@ -357,7 +357,7 @@ Feature: PatternExpressionAcceptance
       MATCH (n:X)
       RETURN n, exists((n)--()) AS b
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n               | b     |
       | (:X {prop: 42}) | true  |
       | (:X {prop: 43}) | false |
@@ -381,7 +381,7 @@ Feature: PatternExpressionAcceptance
       MATCH p = (n:X)-->(b)
       RETURN n, [x IN nodes(p) | size((x)-->(:Y))] AS list
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n           | list   |
       | (:X {n: 1}) | [1, 2] |
       | (:X {n: 2}) | [0, 1] |
@@ -419,7 +419,7 @@ Feature: PatternExpressionAcceptance
       MATCH (a:X)
       RETURN size((a)-->()) AS size
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | size |
       | 3    |
     And no side effects
@@ -439,7 +439,7 @@ Feature: PatternExpressionAcceptance
       MATCH (a:X)
       RETURN size((a)-[:T]->()) AS size
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | size |
       | 3    |
     And no side effects
@@ -459,7 +459,7 @@ Feature: PatternExpressionAcceptance
       MATCH (a:X)
       RETURN size((a)-[:T|OTHER]->()) AS size
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | size |
       | 4    |
     And no side effects
@@ -482,7 +482,7 @@ Feature: PatternExpressionAcceptance
         ]
       ] as result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | [[[:HAS_ALBUM {}], (:Album {name: 'Reload'}), [[[:HAS_ALBUM {}], (:Artist {name: 'Metallica'})]], [], [[[:RECORDED_AT {}], (:Studio {name: 'The Plant Studios in Sausalito'})]]]] |
     And no side effects
@@ -517,7 +517,7 @@ Feature: PatternExpressionAcceptance
         ]
       ] as result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | [[[[:HAS_ALBUM {}], (:Album {name: 'Reload'}), [[[[:HAS_ALBUM {}], (:Artist {name: 'Metallica'})]], [], [[[:RECORDED_AT {}], (:Studio {name: 'The Plant Studios in Sausalito'})]]]]], [[[:GUEST_ALBUM {}], (:Album {name: 'Guest album'}), [[], [[[:GUEST_ALBUM {}], (:Artist {name: 'Metallica'})]], []]]]] |
     And no side effects
@@ -542,7 +542,7 @@ Feature: PatternExpressionAcceptance
       MATCH (s:Studio)
       RETURN result, s
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result | s |
       | [[[:HAS_ALBUM {}], (:Album {name: 'Reload'}), [[[:HAS_ALBUM {}], (:Artist {name: 'Metallica'})]], [], [[[:RECORDED_AT {}], (:Studio {name: 'The Plant Studios in Sausalito'})]]]] | (:Studio {name: 'The Plant Studios in Sausalito'}) |
     And no side effects
@@ -560,7 +560,7 @@ Feature: PatternExpressionAcceptance
       RETURN r0, n, [ [ (n)-[r_p1:HAS_ALBUM]-(i1:Album) | [ r_p1, i1, [ [ (i1)-[r_p2:HAS_ALBUM]-(i2:Album) | [ r_p2, i2 ] ] ] ] ] ] as pattern1,
         m, [ [ (m)-[r_p1:HAS_ALBUM]-(i1:`Artist`) | [ r_p1, i1, [ [ (i1)-[r_p2:HAS_ALBUM]-(i2:Artist) | [ r_p2, i2 ] ] ] ] ] ] as pattern2
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | r0              | n | pattern1 | m | pattern2 |
       | [:HAS_ALBUM {}] | (:Artist {name: 'Metallica'}) | [[[[:HAS_ALBUM {}], (:Album {name: 'Reload'}), [[]]]]] | (:Album {name: 'Reload'}) | [[[[:HAS_ALBUM {}], (:Artist {name: 'Metallica'}), [[]]]]] |
     And no side effects
@@ -579,7 +579,7 @@ Feature: PatternExpressionAcceptance
     UNWIND innerp as elem
     RETURN elem
     """
-    Then the result should be:
+    Then the result should be, in any order:
     | elem       |
     | (:Chicken) |
     | (:Ham)     |

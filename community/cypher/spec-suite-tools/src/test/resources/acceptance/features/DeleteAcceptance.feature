@@ -35,7 +35,7 @@ Feature: DeleteAcceptance
       DELETE n
       RETURN props
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | props                    |
       | {prop1: 42, prop2: 1337} |
     And the side effects should be:

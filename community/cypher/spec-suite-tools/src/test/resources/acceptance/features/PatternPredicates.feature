@@ -38,7 +38,7 @@ Feature: PatternPredicates
       WHERE (n)-[{rel: 1}]->()
       RETURN n.node AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 1  |
     And no side effects
@@ -57,7 +57,7 @@ Feature: PatternPredicates
       WHERE NOT (n)-[{rel: 1}]->()
       RETURN n.node AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 2  |
       | 3  |
@@ -78,7 +78,7 @@ Feature: PatternPredicates
       WHERE (n)-[*2 {prop: 42}]->()
       RETURN n.p AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p  |
       | 12 |
     And no side effects
@@ -97,7 +97,7 @@ Feature: PatternPredicates
       WHERE n.p = 12 OR (n)-[*2 {prop: 42}]->()
       RETURN n.p AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p  |
       | 33 |
       | 12 |
@@ -117,7 +117,7 @@ Feature: PatternPredicates
       WHERE n.p = 12 OR (n)-[*2 {prop: 42}]->() OR n.p = 25
       RETURN n.p AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p  |
       | 33 |
       | 12 |
@@ -138,7 +138,7 @@ Feature: PatternPredicates
       WHERE n.p = 12 OR NOT (n)-[*2 {prop: 42}]->()
       RETURN n.p AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p  |
       | 25 |
       | 12 |
@@ -158,7 +158,7 @@ Feature: PatternPredicates
       WHERE (n)-->({prop: 42}) OR NOT (n)-->()
       RETURN n.id AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 1  |
       | 3  |
@@ -178,7 +178,7 @@ Feature: PatternPredicates
       WHERE NOT (n)-->() OR (n)-->({prop: 42})
       RETURN n.id AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 1  |
       | 3  |
@@ -198,7 +198,7 @@ Feature: PatternPredicates
       WHERE (n)-->({prop: 42}) OR (n)-->({prop: 411})
       RETURN n.id AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 1  |
       | 2  |
@@ -218,7 +218,7 @@ Feature: PatternPredicates
       WHERE n.prop = 21 OR NOT (n)-->() OR (n)-->({prop: 42})
       RETURN n.id AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 1  |
       | 3  |
@@ -241,7 +241,7 @@ Feature: PatternPredicates
       WHERE n.prop = 21 OR NOT (n)-->() OR (n)-->({prop: 42}) OR (n)-->({prop: 1})
       RETURN n.id AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 1  |
       | 3  |
@@ -265,7 +265,7 @@ Feature: PatternPredicates
       WHERE n.prop = 21 OR (n)-->({prop: 42}) OR NOT (n)-->() OR (n)-->({prop: 1})
       RETURN n.id AS id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | id |
       | 1  |
       | 3  |
@@ -284,7 +284,7 @@ Feature: PatternPredicates
       WHERE (owner)-->()
       RETURN owner
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | owner |
       | (:A)  |
     And no side effects
@@ -301,7 +301,7 @@ Feature: PatternPredicates
       WHERE (owner)-->()
       RETURN owner
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | owner |
       | (:A)  |
     And no side effects
@@ -317,7 +317,7 @@ Feature: PatternPredicates
       WHERE ()-[r]-(:B)
       RETURN r
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | r    |
       | [:T] |
     And no side effects
@@ -337,7 +337,7 @@ Feature: PatternPredicates
       WHERE (a)--(b:Bar)--()
       RETURN b
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | b                  |
       | (:Bar {name: 'b'}) |
       | (:Bar {name: 'b'}) |
@@ -349,7 +349,7 @@ Feature: PatternPredicates
       WHERE NOT ((a)--(b:Bar)--())
       RETURN b
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | b                  |
       | (:Bar {name: 'e'}) |
       | null               |
@@ -368,7 +368,7 @@ Feature: PatternPredicates
       WHERE (n)-[:HAS]->()
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n    |
       | (:A) |
     And no side effects
@@ -386,7 +386,7 @@ Feature: PatternPredicates
       WHERE (a)-[:T1|:T2]->()
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a    |
       | (:A) |
       | (:B) |
@@ -403,7 +403,7 @@ Feature: PatternPredicates
       WHERE (a)-[:T]->()
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a    |
       | (:A) |
     And no side effects
@@ -420,7 +420,7 @@ Feature: PatternPredicates
       WHERE (x)-->()
       RETURN x
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x    |
       | null |
     And no side effects
@@ -439,7 +439,7 @@ Feature: PatternPredicates
         AND a.id = $id
       RETURN b
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | b |
     And no side effects
 
@@ -457,7 +457,7 @@ Feature: PatternPredicates
         AND ((a)-[:T]->(b:Label) OR (a)-[:T]->(b:MissingLabel))
       RETURN b
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | b                |
       | (:Label {id: 1}) |
     And no side effects
@@ -479,7 +479,7 @@ Feature: PatternPredicates
       WHERE (b)-->(c)
       RETURN b
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | b    |
       | null |
     And no side effects
@@ -501,7 +501,7 @@ Feature: PatternPredicates
       WHERE (b)-->(c)
       RETURN b
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | b               |
       | (:A {prop: 42}) |
     And no side effects
@@ -520,7 +520,7 @@ Feature: PatternPredicates
       WHERE NOT((leaf)-->())
       RETURN p, leaf
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                            | leaf |
       | <(:A)-[:X]->(:B)>            | (:B) |
       | <(:A)-[:X]->(:C)-[:X]->(:D)> | (:D) |
@@ -543,7 +543,7 @@ Feature: PatternPredicates
       """
       MATCH (a:A)-[r]-(b:B) WHERE (b)-[r]-(a) RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a               |
       | (:A)            |
     And no side effects
@@ -565,7 +565,7 @@ Feature: PatternPredicates
       """
       MATCH (a:A)-[r]-(b:B) WHERE (a)-[r]-(b) RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a               |
       | (:A)            |
     And no side effects

@@ -34,7 +34,7 @@ Feature: MatchAcceptance
       WHERE all(i IN nodes(p) WHERE i.foo = 'bar')
       RETURN pB
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | pB                |
       | (:D {foo: 'bar'}) |
     And no side effects
@@ -54,7 +54,7 @@ Feature: MatchAcceptance
       WHERE n:X OR (n:Y AND n.id = 42)
       RETURN n.foo ORDER BY n.foo
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n.foo |
       | 1     |
       | 3     |
@@ -74,7 +74,7 @@ Feature: MatchAcceptance
       OR (c.prop1 = 11 AND c.prop2 = 11))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                               |
       | (:User {prop1: 1, prop2: 1})    |
       | (:User {prop1: 11, prop2: 11})  |
@@ -93,7 +93,7 @@ Feature: MatchAcceptance
       OR (c.prop1 > 10 AND c.prop2 <= 11))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                               |
       | (:User {prop1: 1, prop2: 1})    |
       | (:User {prop1: 11, prop2: 11})  |
@@ -112,7 +112,7 @@ Feature: MatchAcceptance
       OR (c.prop1 STARTS WITH '11_' AND c.prop2 STARTS WITH '11_'))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                                           |
       | (:User {prop1: '1_val', prop2: '1_val'})    |
       | (:User {prop1: '11_val', prop2: '11_val'})  |
@@ -131,7 +131,7 @@ Feature: MatchAcceptance
       OR (c.prop1 =~ '11_.*' AND c.prop2 =~ '11_.*'))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                                           |
       | (:User {prop1: '1_val', prop2: '1_val'})    |
       | (:User {prop1: '11_val', prop2: '11_val'})  |
@@ -149,7 +149,7 @@ Feature: MatchAcceptance
       WHERE c.prop =~ '1_.*' OR c.prop =~ '11_.*'
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                         |
       | (:User {prop: '1_val'})   |
       | (:User {prop: '11_val'})  |
@@ -171,7 +171,7 @@ Feature: MatchAcceptance
       WHERE a.foo = c.bar
       RETURN a.foo
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a.foo |
       | 42    |
     And no side effects
@@ -200,7 +200,7 @@ Feature: MatchAcceptance
       MATCH (ts)-[:R]->(f)
       RETURN k, ts, f, d
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | k    | ts    | f    | d           |
       | (:K) | (:TS) | (:F) | (:A {Id: 1})|
     And no side effects
@@ -221,7 +221,7 @@ Feature: MatchAcceptance
     WHERE a2.foo = c.bar
     RETURN c.baz
     """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.baz |
       | 'apa' |
     And no side effects
@@ -238,7 +238,7 @@ Feature: MatchAcceptance
       WHERE a:A:B
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a      |
       | (:A:B) |
     And no side effects
@@ -255,7 +255,7 @@ Feature: MatchAcceptance
       WHERE (a:A:B OR a:A:C)
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a      |
       | (:A:B) |
       | (:A:C) |
@@ -274,7 +274,7 @@ Feature: MatchAcceptance
       MATCH (a { })-[r:R { }]->(b { }) WHERE a.foo = 3 AND b.foo = 4
       RETURN r.bar
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | r.bar |
       | 2     |
     And no side effects
@@ -293,7 +293,7 @@ Feature: MatchAcceptance
       MATCH (a:A {id: 1})-[:S]->(b:B {id: 2}), (a)-[:T*1..2]->(b)
       RETURN DISTINCT a.id, b.id
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a.id | b.id |
       | 1    | 2    |
     And no side effects
@@ -310,7 +310,7 @@ Feature: MatchAcceptance
       OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
       RETURN t, a.Status as s, exists(a.Status) as e
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | t           | s    | e    |
       | (:TestNode) | null | null |
     And no side effects
@@ -327,7 +327,7 @@ Feature: MatchAcceptance
         OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
         RETURN t, SUM(CASE WHEN NOT EXISTS(a.Status) OR COALESCE(a.Status, 'Complete') <> 'Complete' THEN 1 ELSE 0 END) AS PendingCount
         """
-    Then the result should be:
+    Then the result should be, in any order:
       | t           | PendingCount |
       | (:TestNode) | 0            |
     And no side effects
@@ -346,7 +346,7 @@ Feature: MatchAcceptance
       WHERE p.prop2 IS NOT NULL
       RETURN p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p    |
       | null |
     And no side effects
@@ -367,7 +367,7 @@ Feature: MatchAcceptance
       WHERE p.prop2 IS NOT NULL
       RETURN p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p    |
       | null |
     And no side effects
@@ -382,7 +382,7 @@ Feature: MatchAcceptance
       """
       MATCH (n {prop: false}) RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n |
     And no side effects
 
@@ -396,6 +396,6 @@ Feature: MatchAcceptance
       """
       MATCH (x:V)-[:NON_EXISTENT]->(x) RETURN x
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x |
     And no side effects

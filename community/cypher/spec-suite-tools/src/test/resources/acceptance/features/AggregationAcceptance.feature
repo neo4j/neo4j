@@ -37,7 +37,7 @@ Feature: AggregationAcceptance
       OPTIONAL MATCH (z:Z)-[IS_A]->()
       RETURN aCount, count(distinct z.key) as zCount
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | aCount | zCount |
       | 1      | 1      |
     And no side effects
@@ -58,7 +58,7 @@ Feature: AggregationAcceptance
      RETURN b.book as book, count(r), count(distinct a)
      ORDER BY book
      """
-    Then the result should be:
+    Then the result should be, in any order:
       | book                | count(r) | count(distinct a) |
       | 'NW'                | 1        | 1                 |
       | 'On Beauty'         | 1        | 1                 |
@@ -87,7 +87,7 @@ Feature: AggregationAcceptance
         node.prop8 as p8,
         node.prop9 as p9
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p1      | p2      | p3      | p4      | p5      | p6  | p7      | p8      | p9      |
       | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '1' | 'prop7' | 'prop8' | 'prop9' |
       | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '2' | 'prop7' | 'prop8' | 'prop9' |
@@ -105,7 +105,7 @@ Feature: AggregationAcceptance
       """
        MATCH (n:FAKE) RETURN percentileDisc(n.x, 0.9) AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | null   |
     And no side effects

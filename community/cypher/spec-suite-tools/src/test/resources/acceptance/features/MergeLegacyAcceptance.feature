@@ -34,7 +34,7 @@ Feature: MergeLegacyAcceptance
       MERGE (a)-[r:TYPE]->()
       RETURN count(r)
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | count(r) |
       | 1        |
     And the side effects should be:
@@ -53,7 +53,7 @@ Feature: MergeLegacyAcceptance
       MERGE (a)-[r:TYPE]->()<-[:TYPE]-()
       RETURN count(r)
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | count(r) |
       | 1        |
     And the side effects should be:
@@ -72,7 +72,7 @@ Feature: MergeLegacyAcceptance
       MERGE (a)-[r1:TYPE]->(b)<-[r2:TYPE]-(c)
       RETURN type(r1), type(r2)
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | type(r1) | type(r2) |
       | 'TYPE'   | 'TYPE'   |
     And the side effects should be:
@@ -92,7 +92,7 @@ Feature: MergeLegacyAcceptance
       MERGE (a:A)-[r1:TYPE]->(b)<-[r2:TYPE]-(c:C)
       RETURN type(r1), type(r2)
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | type(r1) | type(r2) |
       | 'TYPE'   | 'TYPE'   |
     And the side effects should be:
@@ -108,7 +108,7 @@ Feature: MergeLegacyAcceptance
       MERGE p = (a)-[:R]->()
       RETURN p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p               |
       | <(:A)-[:R]->()> |
     And the side effects should be:

@@ -30,7 +30,7 @@ Feature: ReturnAcceptance
       RETURN n
       LIMIT 0
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n            |
     And no side effects
 
@@ -40,7 +40,7 @@ Feature: ReturnAcceptance
       """
       RETURN [1, 2, 3][null] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | null   |
     And no side effects
@@ -51,7 +51,7 @@ Feature: ReturnAcceptance
       """
       RETURN [1, 2, 3][null..5] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | null   |
     And no side effects
@@ -62,7 +62,7 @@ Feature: ReturnAcceptance
       """
       RETURN [1, 2, 3][1..null] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | null   |
     And no side effects
@@ -73,7 +73,7 @@ Feature: ReturnAcceptance
       """
       RETURN {key: 1337}[null] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | null   |
     And no side effects
@@ -84,7 +84,7 @@ Feature: ReturnAcceptance
       """
       RETURN [[1], [null], null] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result      |
       | [[1], [null], null] |
     And no side effects
@@ -95,7 +95,7 @@ Feature: ReturnAcceptance
       """
       RETURN {foo: null} AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result      |
       | {foo: null} |
     And no side effects
@@ -106,7 +106,7 @@ Feature: ReturnAcceptance
       """
       RETURN [null, [null, {a: null}], {b: [null, {c: [null]}]}] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result      |
       | [null, [null, {a: null}], {b: [null, {c: [null]}]}] |
     And no side effects
@@ -117,7 +117,7 @@ Feature: ReturnAcceptance
       """
       RETURN {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} as result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result      |
       | {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} |
 
@@ -132,7 +132,7 @@ Feature: ReturnAcceptance
       WITH 'prop' AS prop
       MATCH (n) RETURN n[prop] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | null   |
     And no side effects
@@ -147,7 +147,7 @@ Feature: ReturnAcceptance
       """
       MATCH (n) RETURN n['prop'] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | null   |
     And no side effects
@@ -160,7 +160,7 @@ Feature: ReturnAcceptance
       """
       RETURN true AND $list AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | false  |
     And no side effects
@@ -173,7 +173,7 @@ Feature: ReturnAcceptance
       """
       RETURN true AND $list AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | false   |
     And no side effects
@@ -184,7 +184,7 @@ Feature: ReturnAcceptance
       """
        WITH 2 AS number, 3 AS exponent RETURN number ^ exponent AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | 8.0 |
     And no side effects
@@ -195,7 +195,7 @@ Feature: ReturnAcceptance
       """
       WITH 1.0 AS a, 1000 AS b RETURN a * (b / 10) AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | 100.0  |
     And no side effects

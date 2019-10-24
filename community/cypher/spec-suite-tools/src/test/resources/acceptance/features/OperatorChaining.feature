@@ -31,7 +31,7 @@ Feature: OperatorChaining
              1 < 2 < 2 < 4 AS t3,
              1 < 2 <= 2 < 4 AS t4
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | t1   | t2    | t3    | t4   |
       | true | false | false | true |
     And no side effects
@@ -45,7 +45,7 @@ Feature: OperatorChaining
              1.0 < 2.1 < 2.1 < 4.6 AS t3,
              1.0 < 2.1 <= 2.1 < 4.6 AS t4
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | t1   | t2    | t3    | t4   |
       | true | false | false | true |
     And no side effects
@@ -59,7 +59,7 @@ Feature: OperatorChaining
              "a" < "b" < "b" < "d" AS t3,
              "a" < "b" <= "b" < "d" AS t4
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | t1   | t2    | t3    | t4   |
       | true | false | false | true |
     And no side effects

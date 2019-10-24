@@ -36,7 +36,7 @@ Feature: UnwindAcceptance
       RETURN i
       ORDER BY "no order"
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i                 |
       | 42                |
       | 0.7               |
@@ -61,7 +61,7 @@ Feature: UnwindAcceptance
       RETURN i
       ORDER BY "no order"
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i                      |
       | [42]                   |
       | [0.7]                  |
@@ -91,7 +91,7 @@ Feature: UnwindAcceptance
       RETURN i
       ORDER BY "no order"
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i                 |
       | {k: (:A)}         |
       | {k: [:R]}         |
@@ -118,7 +118,7 @@ Feature: UnwindAcceptance
       RETURN i
       ORDER BY "no order"
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i                        |
       | {k: [(:A)]}              |
       | {k: [[:R]]}              |
@@ -147,7 +147,7 @@ Feature: UnwindAcceptance
       RETURN j
       ORDER BY "no order"
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | j                        |
       | {k: [(:A)]}              |
       | {k: [[:R]]}              |
@@ -172,7 +172,7 @@ Feature: UnwindAcceptance
       RETURN i
       ORDER BY "no order"
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i    |
       | (:A) |
       | (:B) |
@@ -194,7 +194,7 @@ Feature: UnwindAcceptance
       RETURN i
       ORDER BY "no order"
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i    |
       | [:R] |
       | [:S] |
@@ -206,7 +206,7 @@ Feature: UnwindAcceptance
       """
       UNWIND [[1],[2],[3]] AS i RETURN i
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i   |
       | [1] |
       | [2] |
@@ -225,7 +225,7 @@ Feature: UnwindAcceptance
       UNWIND n.array AS array
       RETURN array
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | array |
       | 'a'   |
       | 'b'   |
@@ -241,7 +241,7 @@ Feature: UnwindAcceptance
           UNWIND x AS y
           RETURN y
       """
-    Then the result should be:
+    Then the result should be, in any order:
         | y |
         | 1 |
         | 2 |
@@ -259,7 +259,7 @@ Feature: UnwindAcceptance
           UNWIND x AS y
           RETURN y
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | y   |
       | 1.5 |
       | 2.5 |
@@ -277,7 +277,7 @@ Feature: UnwindAcceptance
           UNWIND x AS y
           RETURN y
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | y   |
       | 'a' |
       | 'b' |
@@ -295,7 +295,7 @@ Feature: UnwindAcceptance
           UNWIND x AS y
           RETURN y
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | y     |
       | 'a'   |
       | 'b'   |
@@ -313,7 +313,7 @@ Feature: UnwindAcceptance
         UNWIND [(a)-->(b) | b ] as c
         RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c |
     And no side effects
 
@@ -332,7 +332,7 @@ Feature: UnwindAcceptance
         UNWIND [(a)-->(b) | b ] as c
         RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c     |
       | (:B)  |
       | (:C)  |

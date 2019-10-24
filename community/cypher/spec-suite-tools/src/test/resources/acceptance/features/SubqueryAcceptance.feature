@@ -30,7 +30,7 @@ Feature: SubqueryAcceptance
       """
       CALL { RETURN 1 as x } RETURN x
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x |
       | 1 |
     And no side effects
@@ -40,7 +40,7 @@ Feature: SubqueryAcceptance
       """
       CALL { UNWIND [1, 2, 3, 4] AS x RETURN x } WITH x WHERE x > 2 RETURN sum(x) AS sum
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | sum |
       | 7   |
     And no side effects
@@ -51,7 +51,7 @@ Feature: SubqueryAcceptance
       UNWIND [1, 2, 3] AS i
       CALL { RETURN 'x' as x } RETURN i, x
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | i | x   |
       | 1 | 'x' |
       | 2 | 'x' |
@@ -65,7 +65,7 @@ Feature: SubqueryAcceptance
       CALL { UNWIND ['a', 'b'] AS y RETURN y }
       RETURN x, y
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x | y   |
       | 1 | 'a' |
       | 1 | 'b' |
@@ -80,7 +80,7 @@ Feature: SubqueryAcceptance
       """
       CALL { CALL { CALL { RETURN 1 as x } RETURN x } RETURN x } RETURN x
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x |
       | 1 |
     And no side effects
@@ -103,7 +103,7 @@ Feature: SubqueryAcceptance
       }
       RETURN a, b, c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a    | b    | c    |
       | (:A) | (:B) | (:C) |
     And no side effects
@@ -113,7 +113,7 @@ Feature: SubqueryAcceptance
       """
       CALL { RETURN 1 as x UNION RETURN 2 as x } RETURN x
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x |
       | 1 |
       | 2 |
@@ -124,7 +124,7 @@ Feature: SubqueryAcceptance
       """
       CALL { RETURN 1 as x, 2 AS y UNION RETURN 3 AS y, 2 as x } RETURN x, y
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x | y |
       | 1 | 2 |
       | 2 | 3 |
@@ -145,7 +145,7 @@ Feature: SubqueryAcceptance
       }
       RETURN sum(x.prop) AS sum
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | sum  |
       | 33   |
     And no side effects
@@ -163,7 +163,7 @@ Feature: SubqueryAcceptance
       }
       RETURN count(*) AS count
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | count |
       | 4     |
     And no side effects
@@ -185,7 +185,7 @@ Feature: SubqueryAcceptance
       }
       RETURN p.name, numberOfClones
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p.name    | numberOfClones |
       | 'Alice'   | 5              |
       | 'Bob'     | 5              |

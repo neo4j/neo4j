@@ -308,7 +308,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       LIMIT reduce(sum=0, x IN [0, 2] | sum + x)
       """
-    Then the result should be:
+    Then the result should be, in any order:
     | name     |
     | 'Steven' |
     | 'Craig'  |
@@ -327,7 +327,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       SKIP reduce(sum=0, x IN [0, 2] | sum + x)
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | name     |
     And no side effects
 

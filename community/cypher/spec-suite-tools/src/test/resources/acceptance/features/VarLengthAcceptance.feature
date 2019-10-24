@@ -42,7 +42,7 @@ Feature: VarLengthAcceptance
       MATCH (a)-[:T*]->(c {blocked: false})
       RETURN c.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.name |
       | 'n2'   |
       | 'n3'   |
@@ -56,7 +56,7 @@ Feature: VarLengthAcceptance
       WHERE ALL(n in nodes(p) WHERE n.blocked = false)
       RETURN c.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.name |
       | 'n2'   |
       | 'n3'   |
@@ -70,7 +70,7 @@ Feature: VarLengthAcceptance
       WHERE ALL(n in nodes(p) WHERE n.blocked = false)
       RETURN c.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.name |
       | 'n2'   |
       | 'n3'   |
@@ -83,7 +83,7 @@ Feature: VarLengthAcceptance
       MATCH (a)-[:T* {blocked: false}]->(c)
       RETURN c.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.name |
       | 'n2'   |
       | 'n3'   |
@@ -97,7 +97,7 @@ Feature: VarLengthAcceptance
       WHERE ALL(r in rels WHERE r.blocked = false)
       RETURN c.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.name |
       | 'n2'   |
       | 'n3'   |
@@ -111,7 +111,7 @@ Feature: VarLengthAcceptance
       WHERE ALL(r in relationships(p) WHERE r.blocked = false)
       RETURN c.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.name |
       | 'n2'   |
       | 'n3'   |
@@ -125,7 +125,7 @@ Feature: VarLengthAcceptance
       WHERE ALL(r in relationships(p) WHERE r.blocked = false)
       RETURN c.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c.name |
       | 'n2'   |
       | 'n3'   |

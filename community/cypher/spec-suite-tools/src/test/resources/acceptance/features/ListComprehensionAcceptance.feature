@@ -31,7 +31,7 @@ Feature: ListComprehensionAcceptance
         [x IN [1] WHERE x > 0 ] AS res2,
         [x IN [1]] AS res3
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | res1 | res2 | res3 |
       | [1]  | [1]  | [1]  |
     And no side effects
@@ -51,7 +51,7 @@ Feature: ListComprehensionAcceptance
         WHERE company.status IN ["ACTIVE", "INACTIVE"] AND NOT company.status IN ["INACTIVE", "DELETED"]
         RETURN company.nbr AS nbr
         """
-    Then the result should be:
+    Then the result should be, in any order:
       | nbr |
       | 1   |
     And no side effects
@@ -71,7 +71,7 @@ Feature: ListComprehensionAcceptance
         WHERE NOT company.status IN ["ACTIVE", "INACTIVE"] AND NOT company.status IN ["INACTIVE", "DELETED"]
         RETURN company.nbr AS nbr
         """
-    Then the result should be:
+    Then the result should be, in any order:
       | nbr |
       | 4   |
     And no side effects
@@ -92,7 +92,7 @@ Feature: ListComprehensionAcceptance
         WITH company.nbr AS nbr
         RETURN nbr ORDER BY nbr
         """
-    Then the result should be:
+    Then the result should be, in any order:
       | nbr |
       | 1   |
       | 2   |
@@ -115,7 +115,7 @@ Feature: ListComprehensionAcceptance
         WITH company.nbr AS nbr
         RETURN nbr ORDER BY nbr
         """
-    Then the result should be:
+    Then the result should be, in any order:
       | nbr |
       | 1   |
       | 3   |

@@ -28,7 +28,7 @@ Feature: BooleanExpression
       """
       RETURN (1 IN [1] AND FALSE) OR 1 in [2] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | false  |
     And no side effects
@@ -39,7 +39,7 @@ Feature: BooleanExpression
       """
       RETURN (1 IN [2] OR TRUE) AND 1 in [1] AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | true   |
     And no side effects

@@ -42,7 +42,7 @@ Feature: ForeachAcceptance
       WHERE NOT(n:Foo AND n:Bar)
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n |
 
   Scenario: Merging inside a FOREACH using a previously matched node
@@ -182,7 +182,7 @@ Feature: ForeachAcceptance
       FOREACH(x IN [1, 2, 3] | MERGE (a)-[:X]->({id: x}))
       RETURN a.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a.name  |
       | 'Start' |
     And the side effects should be:

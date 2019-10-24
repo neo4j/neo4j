@@ -43,7 +43,7 @@ Feature: IndexAcceptance
       WHERE 10 < p.unitsInStock
       RETURN p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                             |
       | (:Product {unitsInStock: 12}) |
     And no side effects
@@ -69,7 +69,7 @@ Feature: IndexAcceptance
       WHERE p.unitsInStock > 10
       RETURN p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                             |
       | (:Product {unitsInStock: 12}) |
     And no side effects
@@ -89,7 +89,7 @@ Feature: IndexAcceptance
       MERGE (person:Person {name: 'Lasse'})
       RETURN person.name
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | person.name |
       | 'Lasse'     |
     And the side effects should be:
@@ -223,7 +223,7 @@ Feature: IndexAcceptance
       OR (c.prop1 = 11 AND c.prop2 = 11))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                               |
       | (:User {prop1: 1, prop2: 1})    |
       | (:User {prop1: 11, prop2: 11})  |
@@ -255,7 +255,7 @@ Feature: IndexAcceptance
       OR (c.prop1 > 10 AND c.prop2 <= 11))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                               |
       | (:User {prop1: 1, prop2: 1})    |
       | (:User {prop1: 11, prop2: 11})  |
@@ -286,7 +286,7 @@ Feature: IndexAcceptance
       OR (c.prop1 STARTS WITH '11_' AND c.prop2 STARTS WITH '11_'))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                                           |
       | (:User {prop1: '1_val', prop2: '1_val'})    |
       | (:User {prop1: '11_val', prop2: '11_val'})  |
@@ -317,7 +317,7 @@ Feature: IndexAcceptance
       OR (c.prop1 =~ '11_.*' AND c.prop2 =~ '11_.*'))
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                                           |
       | (:User {prop1: '1_val', prop2: '1_val'})    |
       | (:User {prop1: '11_val', prop2: '11_val'})  |
@@ -343,7 +343,7 @@ Feature: IndexAcceptance
       WHERE c.prop =~ '1_.*' OR c.prop =~ '11_.*'
       RETURN c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | c                         |
       | (:User {prop: '1_val'})   |
       | (:User {prop: '11_val'})  |
@@ -376,7 +376,7 @@ Feature: IndexAcceptance
       WHERE n.name STARTS WITH 'x' OR n.number = 1
       RETURN variable, n.name, n.number
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | variable | n.name | n.number |
       | 100      | 'x'    | 0        |
       | 100      | 'y'    | 1        |
@@ -409,7 +409,7 @@ Feature: IndexAcceptance
       WHERE n.name STARTS WITH 'x' OR n.number = 1
       RETURN variable, n.name, n.number
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | variable | n.name | n.number |
       | 100      | 'x'    | 0        |
       | 100      | 'y'    | 1        |
@@ -436,7 +436,7 @@ Feature: IndexAcceptance
       WHERE p.name STARTS WITH null
       RETURN p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p |
     And no side effects
 
@@ -461,7 +461,7 @@ Feature: IndexAcceptance
       WHERE p.name = null
       RETURN p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                             |
     And no side effects
 

@@ -30,7 +30,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq   | neq   |
       | <eq> | <neq> |
     And no side effects
@@ -50,7 +50,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq   | neq   |
       | null | null |
     And no side effects
@@ -63,7 +63,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq    | neq  |
       | false | true |
     And no side effects
@@ -76,7 +76,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq    | neq  |
       | false | true |
     And no side effects
@@ -89,7 +89,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq   | neq   |
       | null | null |
     And no side effects
@@ -102,7 +102,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq    | neq   |
       | false | true |
     And no side effects
@@ -116,7 +116,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq   | neq   |
       | null | null |
     And no side effects
@@ -130,7 +130,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq    | neq  |
       | false | true |
     And no side effects
@@ -143,7 +143,7 @@ Feature: TernaryEqualityAcceptance
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq    | neq  |
       | false | true |
     And no side effects
@@ -154,7 +154,7 @@ Feature: TernaryEqualityAcceptance
       WITH point(<map1>) AS p1, point(<map2>) AS p2
       RETURN p1 = p2 AS eq, p1 <> p2 AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq   | neq   |
       | <eq> | <neq> |
     And no side effects
@@ -177,7 +177,7 @@ Feature: TernaryEqualityAcceptance
       MATCH (n:L)
       RETURN n.d = n.d AS eq, n.d <> n.d AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq   | neq  |
       | true | false |
     And no side effects
@@ -194,7 +194,7 @@ Feature: TernaryEqualityAcceptance
       MATCH (n:L)
       RETURN n.d1 = n.d2 AS eq, n.d1 <> n.d2 AS neq
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | eq    | neq   |
       | false | true  |
     And no side effects

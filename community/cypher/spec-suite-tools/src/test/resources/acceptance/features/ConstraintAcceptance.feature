@@ -37,7 +37,7 @@ Feature: ConstraintAcceptance
       MERGE (a:Label {prop: 42})
       RETURN a.prop
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a.prop |
       | 42     |
     And no side effects
@@ -57,7 +57,7 @@ Feature: ConstraintAcceptance
       MERGE (a:Label {prop: 11})
       RETURN a.prop
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a.prop |
       | 11     |
     And the side effects should be:
@@ -80,7 +80,7 @@ Feature: ConstraintAcceptance
         ON MATCH SET a.name = 'Emil'
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a                                                   |
       | (:Person {id: 23, country: 'Sweden', name: 'Emil'}) |
     And the side effects should be:
@@ -98,7 +98,7 @@ Feature: ConstraintAcceptance
         ON CREATE SET a.name = 'Emil'
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a                                                   |
       | (:Person {id: 23, country: 'Sweden', name: 'Emil'}) |
     And the side effects should be:
@@ -126,7 +126,7 @@ Feature: ConstraintAcceptance
         ON MATCH SET a.country = 'Sweden'
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a                                                            |
       | (:Person {id: 23, country: 'Sweden', email: 'smth@neo.com'}) |
     And the side effects should be:
@@ -152,7 +152,7 @@ Feature: ConstraintAcceptance
         ON MATCH SET a.country = 'Sweden'
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a                                                                 |
       | (:Person:User {id: 23, country: 'Sweden', email: 'smth@neo.com'}) |
     And the side effects should be:
@@ -178,7 +178,7 @@ Feature: ConstraintAcceptance
         ON MATCH SET a.country = 'Sweden'
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a                                          |
       | (:Person:User {id: 23, country: 'Sweden'}) |
     And the side effects should be:
@@ -200,7 +200,7 @@ Feature: ConstraintAcceptance
         ON CREATE SET a.country = 'Sweden'
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a                                                            |
       | (:Person {id: 23, email: 'smth@neo.com', country: 'Sweden'}) |
     And the side effects should be:
@@ -224,7 +224,7 @@ Feature: ConstraintAcceptance
         ON CREATE SET a.country = 'Sweden'
       RETURN a
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | a                                                                 |
       | (:Person:User {id: 23, email: 'smth@neo.com', country: 'Sweden'}) |
     And the side effects should be:
@@ -405,7 +405,7 @@ Feature: ConstraintAcceptance
         ON CREATE SET person = {ssn: 42, name: 'Robert Paulsen'}
       RETURN person.ssn
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | person.ssn |
       | 42         |
     And the side effects should be:
@@ -427,7 +427,7 @@ Feature: ConstraintAcceptance
         ON CREATE SET person = $p
       RETURN person.ssn
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | person.ssn |
       | 42         |
     And the side effects should be:

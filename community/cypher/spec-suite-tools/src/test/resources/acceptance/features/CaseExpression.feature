@@ -30,7 +30,7 @@ Feature: CaseExpression
       WITH (CASE WHEN x < 1 THEN 1 ELSE 2.0 END) AS x
       RETURN x + 1
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x + 1 |
       | 2     |
     And no side effects
@@ -43,7 +43,7 @@ Feature: CaseExpression
       WITH (CASE WHEN x < 1 THEN 'wow' ELSE true END) AS x
       RETURN x + '!'
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x + '!' |
       | 'wow!'  |
     And no side effects
@@ -64,7 +64,7 @@ Feature: CaseExpression
                ELSE 42
              END AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                                      |
       | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] |
       | []                                     |
@@ -87,7 +87,7 @@ Feature: CaseExpression
                ELSE 42
              END AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p  |
       | 42 |
       | 42 |
@@ -113,7 +113,7 @@ Feature: CaseExpression
                ELSE 42
              END AS p
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                                            |
       | [<(:A1)-[:T2]->(:B1)>, <(:A1)-[:T1]->(:B1)>] |
       | [<(:A2)-[:T2]->(:B2)>, <(:A2)-[:T1]->(:B2)>] |
@@ -138,7 +138,7 @@ Feature: CaseExpression
            END AS p, count(n) AS c
       RETURN p, c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                                      | c |
       | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] | 1 |
       | []                                     | 2 |
@@ -161,7 +161,7 @@ Feature: CaseExpression
            END AS p, count(n) AS c
       RETURN p, c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p  | c |
       | 42 | 3 |
     And no side effects
@@ -186,7 +186,7 @@ Feature: CaseExpression
            END AS p, count(n) AS c
       RETURN p, c
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | p                                            | c |
       | [<(:A1)-[:T2]->(:B1)>, <(:A1)-[:T1]->(:B1)>] | 1 |
       | [<(:A2)-[:T2]->(:B2)>, <(:A2)-[:T1]->(:B2)>] | 1 |
@@ -210,7 +210,7 @@ Feature: CaseExpression
              END) > 0
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n    |
       | (:A) |
     And no side effects
@@ -232,7 +232,7 @@ Feature: CaseExpression
              END) > 0
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n    |
       | (:A) |
       | (:B) |
@@ -256,7 +256,7 @@ Feature: CaseExpression
              END) > 0
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n    |
       | (:A) |
       | (:B) |
@@ -280,7 +280,7 @@ Feature: CaseExpression
              END) > 0
       RETURN n
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | n    |
       | (:A) |
       | (:B) |
@@ -304,7 +304,7 @@ Feature: CaseExpression
                ELSE (a)-->()
              END AS x
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | x  |
       | [] |
     And no side effects
@@ -326,7 +326,7 @@ Feature: CaseExpression
       END AS res
       RETURN COUNT(res) AS count
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | count  |
       | 1      |
     And no side effects

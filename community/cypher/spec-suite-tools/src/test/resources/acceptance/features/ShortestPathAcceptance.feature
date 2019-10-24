@@ -152,7 +152,7 @@ Feature: ShortestPathAcceptance
       WHERE ALL(r in rs WHERE type(rs[0]) = type(r)) AND ALL(r in rs WHERE NOT EXISTS(r.blocked) OR r.blocked <> true)
       RETURN p AS path
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | path                                                                       |
       | <(:A {name: 'A'})-[:REL {}]->(:X {name: 'X'})-[:REL {}]->(:D {name: 'D'})> |
     And no side effects
@@ -371,7 +371,7 @@ Feature: ShortestPathAcceptance
       MATCH p = allShortestPaths((src:A)-[*]->(dst:C))
       RETURN [n IN nodes(p) | n.name] AS nodes
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | nodes           |
       | ['A', 'B', 'C'] |
       | ['A', 'D', 'C'] |
@@ -395,7 +395,7 @@ Feature: ShortestPathAcceptance
     WITH pathNodes[0] AS p, pathNodes[3] as c
     RETURN size((c)-[:REL]-(:B)-[:REL]-(:B)-[:REL]-(p)) AS size
     """
-    Then the result should be:
+    Then the result should be, in any order:
       | size |
       | 1    |
     And no side effects

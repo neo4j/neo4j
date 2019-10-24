@@ -35,7 +35,7 @@ Feature: ExplainAcceptance
     """
     EXPLAIN CALL test.labels()
     """
-    Then the result should be:
+    Then the result should be, in any order:
       | label |
     And no side effects
 
@@ -51,6 +51,6 @@ Feature: ExplainAcceptance
     CALL test.labels() YIELD label
     RETURN *
     """
-    Then the result should be:
+    Then the result should be, in any order:
       | label |
     And no side effects
