@@ -19,6 +19,8 @@
  */
 package org.neo4j.batchinsert.internal;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -80,20 +82,32 @@ class BatchInsertIndexTest
     @Inject
     private DatabaseLayout databaseLayout;
 
+    private Config.Builder configBuilder;
     private DatabaseManagementService managementService;
+    private IllegalStateException indexOnlineFailure;
+
+    @BeforeEach
+    void setUp()
+    {
+        configBuilder = Config.newBuilder().set( neo4j_home, testDirectory.homeDir().toPath() );
+        indexOnlineFailure = null;
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        managementService.shutdown();
+    }
 
     @ParameterizedTest
     @EnumSource( SchemaIndex.class )
     void batchInserterShouldUseConfiguredIndexProvider( SchemaIndex schemaIndex ) throws Exception
     {
-        Config config = Config.newBuilder()
-                .set( default_schema_provider, schemaIndex.providerName() )
-                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
-        BatchInserter inserter = newBatchInserter( config );
+        configure( schemaIndex );
+        BatchInserter inserter = newBatchInserter();
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
-        GraphDatabaseService db = graphDatabaseService( config );
-        awaitIndexesOnline( db );
+        GraphDatabaseService db = graphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
@@ -106,40 +120,26 @@ class BatchInsertIndexTest
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getVersion() ), unexpectedIndexProviderMessage( index ) );
             tx.commit();
         }
-        finally
-        {
-            managementService.shutdown();
-        }
     }
 
     @ParameterizedTest
     @EnumSource( SchemaIndex.class )
     void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve( SchemaIndex schemaIndex ) throws Exception
     {
-        Config config = Config.newBuilder()
-                .set( default_schema_provider, schemaIndex.providerName() )
-                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
-        BatchInserter inserter = newBatchInserter( config );
-        Pair<PointValue,PointValue> collidingPoints = SpatialIndexValueTestUtil.pointsWithSameValueOnSpaceFillingCurve( config );
+        configure( schemaIndex );
+        BatchInserter inserter = newBatchInserter();
+        Pair<PointValue,PointValue> collidingPoints = SpatialIndexValueTestUtil.pointsWithSameValueOnSpaceFillingCurve( configBuilder.build() );
         inserter.createNode( MapUtil.map( "prop", collidingPoints.first() ), TestLabels.LABEL_ONE );
         inserter.createNode( MapUtil.map( "prop", collidingPoints.other() ), TestLabels.LABEL_ONE );
         inserter.createDeferredConstraint( TestLabels.LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
         inserter.shutdown();
 
-        GraphDatabaseService db = graphDatabaseService( config );
-        try
+        GraphDatabaseService db = graphDatabaseService();
+        try ( Transaction tx = db.beginTx() )
         {
-            awaitIndexesOnline( db );
-            try ( Transaction tx = db.beginTx() )
-            {
-                assertSingleCorrectHit( collidingPoints.first(), tx );
-                assertSingleCorrectHit( collidingPoints.other(), tx );
-                tx.commit();
-            }
-        }
-        finally
-        {
-            managementService.shutdown();
+            assertSingleCorrectHit( collidingPoints.first(), tx );
+            assertSingleCorrectHit( collidingPoints.other(), tx );
+            tx.commit();
         }
     }
 
@@ -147,17 +147,15 @@ class BatchInsertIndexTest
     @EnumSource( SchemaIndex.class )
     void shouldThrowWhenPopulatingWithNonUniquePoints( SchemaIndex schemaIndex ) throws Exception
     {
-        Config config = Config.newBuilder()
-                .set( default_schema_provider, schemaIndex.providerName() )
-                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
-        BatchInserter inserter = newBatchInserter( config );
+        configure( schemaIndex );
+        BatchInserter inserter = newBatchInserter();
         PointValue point = Values.pointValue( CoordinateReferenceSystem.WGS84, 0.0, 0.0 );
         inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
         inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
         inserter.createDeferredConstraint( TestLabels.LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
         inserter.shutdown();
 
-        GraphDatabaseService db = graphDatabaseService( config );
+        GraphDatabaseService db = graphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
             var schema = tx.schema();
@@ -169,22 +167,15 @@ class BatchInsertIndexTest
             assertFalse( indexes.hasNext() );
             tx.commit();
         }
-        finally
-        {
-            managementService.shutdown();
-        }
     }
 
     @Test
     void shouldCreateFullTextIndexForFullTextIndexType() throws Exception
     {
-        Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homeDir().toPath() ).build();
-        BatchInserter inserter = newBatchInserter( config );
+        BatchInserter inserter = newBatchInserter();
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).withIndexType( IndexType.FULLTEXT ).withName( "fts" ).create();
         inserter.shutdown();
-        GraphDatabaseService db = graphDatabaseService( config );
-        awaitIndexesOnline( db );
+        GraphDatabaseService db = graphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "fts" );
@@ -196,10 +187,11 @@ class BatchInsertIndexTest
             assertEquals( provider, FulltextIndexProviderFactory.DESCRIPTOR );
             tx.commit();
         }
-        finally
-        {
-            managementService.shutdown();
-        }
+    }
+
+    private void configure( SchemaIndex schemaIndex )
+    {
+        configBuilder = configBuilder.set( default_schema_provider, schemaIndex.providerName() );
     }
 
     private static void assertSingleCorrectHit( PointValue point, Transaction tx )
@@ -212,26 +204,32 @@ class BatchInsertIndexTest
         assertFalse( nodes.hasNext() );
     }
 
-    private BatchInserter newBatchInserter( Config config ) throws Exception
+    private BatchInserter newBatchInserter() throws Exception
     {
-        return BatchInserters.inserter( databaseLayout, fs, config );
+        return BatchInserters.inserter( databaseLayout, fs, configBuilder.build() );
     }
 
-    private GraphDatabaseService graphDatabaseService( Config config )
+    private GraphDatabaseService graphDatabaseService()
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fs )
-                .setConfig( config )
+                .setConfig( configBuilder.build() )
                 .build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+        awaitIndexesOnline( database );
+        return database;
     }
 
-    private static void awaitIndexesOnline( GraphDatabaseService db )
+    private void awaitIndexesOnline( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.commit();
+        }
+        catch ( IllegalStateException e )
+        {
+            this.indexOnlineFailure = e;
         }
     }
 
