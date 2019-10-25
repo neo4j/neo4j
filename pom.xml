@@ -72,6 +72,7 @@
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:+ExitOnOutOfMemoryError
       -Djdk.nio.maxCachedBufferSize=262144
+      -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data" -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
