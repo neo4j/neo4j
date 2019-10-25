@@ -21,6 +21,7 @@ package org.neo4j.graphdb.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.service.NamedService;
 
@@ -52,6 +53,7 @@ import static java.util.Objects.requireNonNull;
  * that contains the fully-qualified class names of all of the {@code AnalyzerProvider} implementations it contains.
  */
 @Service
+@PublicApi
 public abstract class AnalyzerProvider implements NamedService
 {
     private final String name;
