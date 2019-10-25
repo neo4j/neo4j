@@ -108,12 +108,7 @@ public final class Strings
      */
     public static String joinAsLines( String... elements )
     {
-        StringBuilder result = new StringBuilder();
-        for ( String line : elements )
-        {
-            result.append( line ).append( System.lineSeparator() );
-        }
-        return result.toString();
+        return String.join( System.lineSeparator(), elements );
     }
 
     public static void escape( Appendable output, String arg ) throws IOException
