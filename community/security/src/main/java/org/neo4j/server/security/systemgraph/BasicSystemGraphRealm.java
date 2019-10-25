@@ -35,6 +35,7 @@ import org.apache.shiro.subject.PrincipalCollection;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -147,7 +148,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         {
             user = getUser( username );
         }
-        catch ( InvalidArgumentsException e )
+        catch ( InvalidArgumentsException | FormatException e )
         {
             throw new UnknownAccountException();
         }
@@ -232,7 +233,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         return null;
     }
 
-    public User getUser( String username ) throws InvalidArgumentsException
+    public User getUser( String username ) throws InvalidArgumentsException, FormatException
     {
         return basicSystemGraphOperations.getUser( username );
     }
@@ -243,7 +244,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         {
             return getUser( username );
         }
-        catch ( InvalidArgumentsException e )
+        catch ( InvalidArgumentsException | FormatException e )
         {
             return null;
         }

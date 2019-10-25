@@ -36,8 +36,6 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.QueryExecutor;
-import org.neo4j.server.security.systemgraph.SystemGraphQueryExecutor;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -51,9 +49,7 @@ public class TestBasicSystemGraphRealm
 
     static BasicSystemGraphRealm testRealm( BasicImportOptionsBuilder importOptions, TestDatabaseManager dbManager, Config config ) throws Throwable
     {
-        var executor = new SystemGraphQueryExecutor( dbManager );
-        return testRealm( importOptions.migrationSupplier(), importOptions.initialUserSupplier(), newRateLimitedAuthStrategy(),
-                dbManager, executor, config );
+        return testRealm( importOptions.migrationSupplier(), importOptions.initialUserSupplier(), newRateLimitedAuthStrategy(), dbManager, config );
     }
 
     static BasicSystemGraphRealm testRealm( TestDatabaseManager dbManager, TestDirectory testDirectory, Config cfg ) throws Throwable
@@ -67,9 +63,7 @@ public class TestBasicSystemGraphRealm
 
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
-        var executor = new SystemGraphQueryExecutor( dbManager );
-        return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager,
-                executor, config );
+        return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager, config );
     }
 
     private static BasicSystemGraphRealm testRealm(
@@ -77,11 +71,10 @@ public class TestBasicSystemGraphRealm
             Supplier<UserRepository> initialUserSupplier,
             AuthenticationStrategy authStrategy,
             TestDatabaseManager manager,
-            QueryExecutor executor,
             Config config ) throws Throwable
     {
 
-        BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( executor, secureHasher );
+        BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( manager, secureHasher );
         UserSecurityGraphInitializer securityGraphInitializer =
                 new UserSecurityGraphInitializer(
                         manager,

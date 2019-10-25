@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SystemGraphQueryExecutor;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.time.Clocks;
 
@@ -131,10 +130,8 @@ public class CommunitySecurityModule extends SecurityModule
 
     private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
-        SystemGraphQueryExecutor queryExecutor = new SystemGraphQueryExecutor( databaseManager );
-
         SecureHasher secureHasher = new SecureHasher();
-        BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( queryExecutor, secureHasher );
+        BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( databaseManager, secureHasher );
 
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );

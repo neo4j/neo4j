@@ -19,92 +19,74 @@
  */
 package org.neo4j.server.security.systemgraph;
 
-import java.util.Map;
 
+import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.TextValue;
 
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public class BasicSystemGraphOperations
 {
-    protected final QueryExecutor queryExecutor;
     private final SecureHasher secureHasher;
+    private final DatabaseManager<?> databaseManager;
 
-    public BasicSystemGraphOperations( QueryExecutor queryExecutor, SecureHasher secureHasher )
+    public BasicSystemGraphOperations( DatabaseManager databaseManager, SecureHasher secureHasher )
     {
-        this.queryExecutor = queryExecutor;
+        this.databaseManager = databaseManager;
         this.secureHasher = secureHasher;
     }
 
-    User getUser( String username ) throws InvalidArgumentsException
+    User getUser( String username ) throws InvalidArgumentsException, FormatException
     {
-        User[] user = new User[1];
-
-        String query = "MATCH (u:User {name: $name}) RETURN u.credentials, u.passwordChangeRequired, u.suspended";
-        Map<String,Object> params = map( "name", username );
-
-        final ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
+        User user;
+        try ( Transaction tx = getSystemDb().beginTx() )
         {
-            private AnyValue[] fields;
-            private int currentOffset = -1;
+            Node userNode = tx.findNode( Label.label( "User" ), "name", username );
 
-            @Override
-            public void onResult( int numberOfFields )
+            if ( userNode == null )
             {
-                this.fields = new AnyValue[numberOfFields];
+                throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
             }
-
-            @Override
-            public void onRecord()
+            else
             {
-                currentOffset = 0;
-            }
-
-            @Override
-            public void onField( AnyValue value )
-            {
-                fields[currentOffset++] = value;
-            }
-
-            @Override
-            public void onRecordCompleted() throws Exception
-            {
-                currentOffset = -1;
-                Credential credential = SystemGraphCredential.deserialize( ((TextValue) fields[0]).stringValue(), secureHasher );
-                boolean requirePasswordChange = ((BooleanValue) fields[1]).booleanValue();
-                boolean suspended = ((BooleanValue) fields[2]).booleanValue();
+                Credential credential = SystemGraphCredential.deserialize((String) userNode.getProperty( "credentials" ) , secureHasher );
+                boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
+                boolean suspended = (boolean) userNode.getProperty( "suspended" );
 
                 if ( suspended )
                 {
-                    user[0] = new User.Builder( username, credential )
+                    user = new User.Builder( username, credential )
                             .withRequiredPasswordChange( requirePasswordChange )
                             .withFlag( BasicSystemGraphRealm.IS_SUSPENDED )
                             .build();
                 }
                 else
                 {
-                    user[0] = new User.Builder( username, credential )
+                    user = new User.Builder( username, credential )
                             .withRequiredPasswordChange( requirePasswordChange )
                             .withoutFlag( BasicSystemGraphRealm.IS_SUSPENDED )
                             .build();
                 }
             }
-        };
-
-        queryExecutor.executeQuery( query, params, subscriber );
-
-        if ( user[0] == null )
-        {
-            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
+            tx.commit();
         }
+        return user;
+    }
 
-        return user[0];
+    protected GraphDatabaseService getSystemDb()
+    {
+        return databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+                () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
     }
 }
