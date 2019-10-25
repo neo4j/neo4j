@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -469,34 +470,44 @@ public class BuiltInProcedures
         return result.stream();
     }
 
-    @Description( "Create a named schema index with specified index provider " +
-            "(for example: CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+    @Description( "Create a named schema index with specified index provider. " +
+            "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
+            "Note that settings keys might need to be escaped with back-ticks, " +
+            "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. " +
+            "Example: CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\", {`spatial.cartesian.maxLevels`: 5}) - " +
             "YIELD name, labels, properties, providerName, status" )
     @Procedure( name = "db.createIndex", mode = SCHEMA )
     public Stream<SchemaIndexInfo> createIndex(
             @Name( "indexName" ) String indexName,
             @Name( "labels" ) List<String> labels,
             @Name( "properties" ) List<String> properties,
-            @Name( "providerName" ) String providerName )
+            @Name( "providerName" ) String providerName,
+            @Name( value = "config", defaultValue = "{}" ) Map<String,Object> config )
             throws ProcedureException
     {
         IndexProcedures indexProcedures = indexProcedures();
-        return indexProcedures.createIndex( indexName, labels, properties, providerName );
+        final IndexProviderDescriptor indexProviderDescriptor = getIndexProviderDescriptor( providerName );
+        return indexProcedures.createIndex( indexName, labels, properties, indexProviderDescriptor, config );
     }
 
-    @Description( "Create a named unique property constraint with index backed by specified index provider " +
-            "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+    @Description( "Create a named unique property constraint with index backed by specified index provider. " +
+            "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
+            "Note that settings keys might need to be escaped with back-ticks, " +
+            "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. Example: " +
+            "CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\", {`spatial.cartesian.maxLevels`: 5}) - " +
             "YIELD name, labels, properties, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
             @Name( "constraintName" ) String constraintName,
             @Name( "labels" ) List<String> labels,
             @Name( "properties" ) List<String> properties,
-            @Name( "providerName" ) String providerName )
+            @Name( "providerName" ) String providerName,
+            @Name( value = "config", defaultValue = "{}" ) Map<String,Object> config )
             throws ProcedureException
     {
         IndexProcedures indexProcedures = indexProcedures();
-        return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, providerName );
+        final IndexProviderDescriptor indexProviderDescriptor = getIndexProviderDescriptor( providerName );
+        return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, indexProviderDescriptor, config );
     }
 
     private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
@@ -513,6 +524,11 @@ public class BuiltInProcedures
     private IndexProcedures indexProcedures()
     {
         return new IndexProcedures( kernelTransaction, resolver.resolveDependency( IndexingService.class ) );
+    }
+
+    private IndexProviderDescriptor getIndexProviderDescriptor( String providerName )
+    {
+        return resolver.resolveDependency( IndexingService.class ).indexProviderByName( providerName );
     }
 
     public static class LabelResult

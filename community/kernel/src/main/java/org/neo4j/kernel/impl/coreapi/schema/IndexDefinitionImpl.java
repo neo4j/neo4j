@@ -25,13 +25,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.schema.IndexConfig;
@@ -39,16 +39,11 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
-import static java.util.Map.entry;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 
 public class IndexDefinitionImpl implements IndexDefinition
 {
-    @SuppressWarnings( "unchecked" )
-    private static final Map<String,IndexSetting> INDEX_SETTING_REVERSE_LOOKUP = Map.ofEntries(
-            Stream.of( IndexSetting.values() ).map( s -> entry( s.getSettingName(), s ) ).toArray( Map.Entry[]::new ) );
-
     private final InternalSchemaActions actions;
 
     private final IndexDescriptor indexReference;
@@ -224,7 +219,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         Map<IndexSetting,Object> asMap = new EnumMap<>( IndexSetting.class );
         for ( Pair<String,Value> entry : indexConfig.entries() )
         {
-            IndexSetting key = INDEX_SETTING_REVERSE_LOOKUP.get( entry.getOne() );
+            IndexSetting key = IndexSettingUtil.fromString( entry.getOne() );
             if ( key != null )
             {
                 Object value = entry.getTwo().asObjectCopy();

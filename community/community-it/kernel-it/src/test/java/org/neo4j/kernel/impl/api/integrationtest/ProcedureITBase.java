@@ -102,17 +102,26 @@ public interface ProcedureITBase
                         stringArray( "editor", "publisher", "architect", "admin" ), "WRITE", false ),
                 proc( "dbms.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", stringArray( "admin" ), "DBMS" ),
                 proc( "db.createIndex",
-                        "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?) :: " +
+                        "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, config = {} :: MAP?) :: " +
                                 "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named schema index with specified index provider " +
-                                "(for example: CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
-                                "YIELD name, labels, properties, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
+                        "Create a named schema index with specified index provider. " +
+                                "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
+                                "Note that settings keys might need to be escaped with back-ticks, " +
+                                "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. Example: " +
+                                "CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\", {`spatial.cartesian.maxLevels`: 5}) - " +
+                                "YIELD name, labels, properties, providerName, status",
+                        stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.createUniquePropertyConstraint",
-                        "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?) :: " +
+                        "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
+                                "config = {} :: MAP?) :: " +
                                 "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named unique property constraint with index backed by specified index provider " +
-                                "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
-                                "YIELD name, labels, properties, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
+                        "Create a named unique property constraint with index backed by specified index provider. " +
+                                "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
+                                "Note that settings keys might need to be escaped with back-ticks, " +
+                                "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. Example: " +
+                                "CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\", " +
+                                "{`spatial.cartesian.maxLevels`: 5}) - YIELD name, labels, properties, providerName, status",
+                        stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
                         "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
@@ -203,10 +212,14 @@ public interface ProcedureITBase
                         "List all queries currently executing at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "db.createNodeKey",
-                        "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?) :: " +
-                                "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named node key constraint with index backed by specified index provider " +
-                                "(for example: CALL db.createNodeKey(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\")) - " +
+                        "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
+                                "config = {} :: MAP?) " +
+                                ":: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
+                        "Create a named node key constraint with index backed by specified index provider. " +
+                                "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
+                                "Note that settings keys might need to be escaped with back-ticks, " +
+                                "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. " +
+                                "Example: CALL db.createNodeKey(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\") - " +
                                 "YIELD name, labels, properties, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "dbms.listActiveLocks", "(queryId :: STRING?) :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",

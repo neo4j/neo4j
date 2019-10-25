@@ -20,20 +20,23 @@
 package org.neo4j.procedure.builtin;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.Indexes;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -85,35 +88,41 @@ public class IndexProcedures
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexName, List<String> labels, List<String> properties,
-            String providerName ) throws ProcedureException
+            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
     {
-        return createIndex( indexName, labels, properties, providerName,
-                "index created", ( schemaWrite, name, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, provider, name ) );
+        return createIndex( indexName, labels, properties, indexProviderDescriptor, configMap,
+                "index created", ( schemaWrite, name, descriptor, provider, indexConfig ) ->
+                {
+                    IndexPrototype prototype = IndexPrototype.forSchema( descriptor, provider )
+                            .withName( name )
+                            .withIndexConfig( indexConfig );
+                    schemaWrite.indexCreate( prototype );
+                } );
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String constraintName, List<String> labels, List<String> properties,
-            String providerName )
-            throws ProcedureException
+            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
     {
-        return createIndex( constraintName, labels, properties, providerName,
+        return createIndex( constraintName, labels, properties, indexProviderDescriptor, configMap,
                 "uniqueness constraint online",
-                ( schemaWrite, name, schema, provider ) -> schemaWrite.uniquePropertyConstraintCreate(
-                        IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) ) );
+                ( schemaWrite, name, schema, provider, indexConfig ) -> schemaWrite.uniquePropertyConstraintCreate(
+                        IndexPrototype.uniqueForSchema( schema, provider ).withName( name ) ) ); // todo add index config
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, List<String> labels, List<String> properties, String providerName )
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, List<String> labels, List<String> properties,
+            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
+    {
+        return createIndex( constraintName, labels, properties, indexProviderDescriptor, configMap,
+                "node key constraint online",
+                ( schemaWrite, name, schema, provider, indexConfig ) -> schemaWrite.nodeKeyConstraintCreate(
+                        IndexPrototype.uniqueForSchema( schema, provider ).withName( name ) ) ); // todo add index config
+    }
+
+    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, List<String> labels, List<String> properties,
+            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap, String statusMessage, IndexCreator indexCreator )
             throws ProcedureException
     {
-        return createIndex( constraintName, labels, properties, providerName,
-                "node key constraint online",
-                ( schemaWrite, name, schema, provider ) -> schemaWrite.nodeKeyConstraintCreate(
-                        IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) ) );
-    }
-
-    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, List<String> labels, List<String> properties, String providerName,
-            String statusMessage, IndexCreator indexCreator ) throws ProcedureException
-    {
-        assertProviderNameNotNull( providerName );
+        IndexConfig indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap( configMap );
         assertSingleLabel( labels );
         int labelId = getOrCreateLabelId( labels.get( 0 ) );
         int[] propertyKeyIds = getOrCreatePropertyIds( properties );
@@ -121,8 +130,8 @@ public class IndexProcedures
         {
             SchemaWrite schemaWrite = ktx.schemaWrite();
             LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
-            indexCreator.create( schemaWrite, name, labelSchemaDescriptor, providerName );
-            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( name, labels, properties, providerName, statusMessage ) );
+            indexCreator.create( schemaWrite, name, labelSchemaDescriptor, indexProviderDescriptor, indexConfig );
+            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( name, labels, properties, indexProviderDescriptor.name(), statusMessage ) );
         }
         catch ( KernelException e )
         {
@@ -137,45 +146,6 @@ public class IndexProcedures
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                     "Could not create index with specified label(s), need to provide exactly one but was " + labels );
         }
-    }
-
-    private static void assertProviderNameNotNull( String providerName ) throws ProcedureException
-    {
-        if ( providerName == null )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, indexProviderNullMessage() );
-        }
-    }
-
-    private static String indexProviderNullMessage()
-    {
-        return "Could not create index with specified index provider being null.";
-    }
-
-    private int getLabelId( String labelName ) throws ProcedureException
-    {
-        int labelId = ktx.tokenRead().nodeLabel( labelName );
-        if ( labelId == TokenRead.NO_TOKEN )
-        {
-            throw new ProcedureException( Status.Schema.LabelAccessFailed, "No such label %s", labelName );
-        }
-        return labelId;
-    }
-
-    private int[] getPropertyIds( String[] propertyKeyNames ) throws ProcedureException
-    {
-        int[] propertyKeyIds = new int[propertyKeyNames.length];
-        for ( int i = 0; i < propertyKeyIds.length; i++ )
-        {
-
-            int propertyKeyId = ktx.tokenRead().propertyKey( propertyKeyNames[i] );
-            if ( propertyKeyId == TokenRead.NO_TOKEN )
-            {
-                throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s", propertyKeyNames[i] );
-            }
-            propertyKeyIds[i] = propertyKeyId;
-        }
-        return propertyKeyIds;
     }
 
     private int getOrCreateLabelId( String labelName ) throws ProcedureException
@@ -282,6 +252,7 @@ public class IndexProcedures
     @FunctionalInterface
     private interface IndexCreator
     {
-        void create( SchemaWrite schemaWrite, String name, LabelSchemaDescriptor descriptor, String providerName ) throws KernelException;
+        void create( SchemaWrite schemaWrite, String name, LabelSchemaDescriptor descriptor, IndexProviderDescriptor indexProviderDescriptor,
+                IndexConfig indexConfig ) throws KernelException;
     }
 }
