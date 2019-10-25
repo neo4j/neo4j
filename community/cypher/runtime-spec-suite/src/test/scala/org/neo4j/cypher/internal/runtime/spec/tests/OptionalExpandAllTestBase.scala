@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.RelationshipType
 
-
 abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],

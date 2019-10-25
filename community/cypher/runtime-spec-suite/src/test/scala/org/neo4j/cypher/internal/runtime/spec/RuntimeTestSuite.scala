@@ -512,6 +512,15 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
+  def connectWithProperties(nodes: Seq[Node], rels: Seq[(Int, Int, String,Map[String, Any])]): Seq[Relationship] = {
+    rels.map {
+      case (from, to, typ, props) =>
+        val r = nodes(from).createRelationshipTo(nodes(to), RelationshipType.withName(typ))
+        props.foreach((r.setProperty _).tupled)
+        r
+    }
+  }
+
   // TX
 
   def tx: InternalTransaction = runtimeTestSupport.tx
