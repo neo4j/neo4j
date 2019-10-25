@@ -144,6 +144,15 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
 
         @Override
+        public void row( boolean hasRow )
+        {
+            if ( hasRow )
+            {
+                rowCount++;
+            }
+        }
+
+        @Override
         public void rows( int n )
         {
             rowCount += n;

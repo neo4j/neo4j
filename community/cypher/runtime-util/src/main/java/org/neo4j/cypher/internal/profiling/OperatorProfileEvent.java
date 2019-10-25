@@ -29,6 +29,8 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
 
     public abstract void row();
 
+    public abstract void row( boolean hasRow );
+
     public abstract void rows( int n );
 
     // AutoCloseable
@@ -95,6 +97,11 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
 
         @Override
         public void row()
+        {
+        }
+
+        @Override
+        public void row( boolean hasRow )
         {
         }
 
