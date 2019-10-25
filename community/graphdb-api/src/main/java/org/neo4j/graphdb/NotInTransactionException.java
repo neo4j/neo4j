@@ -19,11 +19,14 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Thrown when attempting to access or modify the graph outside of a transaction.
  *
  * @see Transaction
  */
+@PublicApi
 public class NotInTransactionException extends RuntimeException
 {
     public NotInTransactionException()

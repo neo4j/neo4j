@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -47,6 +49,7 @@ import static java.util.Objects.requireNonNull;
  * {@linkplain Result#getExecutionPlanDescription() get a description of the plan} that <i>would</i> be executed
  * if/when the query is executed normally (or under {@code PROFILE}).
  */
+@PublicApi
 public final class QueryExecutionType
 {
     /**

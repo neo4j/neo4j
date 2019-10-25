@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * The string search mode is used together with a value template to find nodes of interest.
  * The search mode can be one of:
@@ -29,6 +31,7 @@ package org.neo4j.graphdb;
  *   <li>CONTAINS: The value must contain the template. Only exact matches are supported.</li>
  * </ul>
  */
+@PublicApi
 public enum StringSearchMode
 {
     /**

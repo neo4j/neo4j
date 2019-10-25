@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * An input position refers to a specific point in a query string.
  */
+@PublicApi
 public final class InputPosition
 {
     private final int offset;

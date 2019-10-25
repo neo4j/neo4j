@@ -19,12 +19,15 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Thrown when the database is asked to modify data in a way that violates one or more
  * constraints that it is expected to uphold.
  *
  * For instance, if removing a node that still has relationships.
  */
+@PublicApi
 public class ConstraintViolationException extends RuntimeException
 {
     public ConstraintViolationException( String msg )

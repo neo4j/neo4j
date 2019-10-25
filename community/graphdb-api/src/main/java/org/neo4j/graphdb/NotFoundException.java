@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * This exception will be thrown if a request is made to a node, relationship or
  * property that does not exist. As an example, using
@@ -34,6 +36,7 @@ package org.neo4j.graphdb;
  *
  * @see GraphDatabaseService
  */
+@PublicApi
 public class NotFoundException extends RuntimeException
 {
     public NotFoundException()

@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * This exception will be thrown when one or less entities were expected,
  * yet multiple were found.
  */
+@PublicApi
 public class MultipleFoundException extends RuntimeException
 {
     public MultipleFoundException()

@@ -24,7 +24,7 @@ import java.util.function.Function;
 import org.neo4j.annotations.api.PublicApi;
 
 /**
- * Interface used in {@link GraphDatabaseService} for consuming and tranforming results of queries that are executed by the database service in
+ * Interface used in {@link GraphDatabaseService} for consuming and transforming results of queries that are executed by the database service in
  * separate isolated managed transaction.
  * Implementations should be able to process query results but should be aware that {@link Result} itself
  * and any other transactional entities will not gonna be usable after transaction completion.
