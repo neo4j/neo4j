@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,12 +49,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @TestDirectoryExtension
 class UniqueSpatialIndexIT
 {
     private static final String KEY = "prop";
-    private static final TestLabels LABEL = TestLabels.LABEL_ONE;
 
     @Inject
     private TestDirectory directory;
@@ -144,9 +143,9 @@ class UniqueSpatialIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node originNode = tx.createNode( LABEL );
+            Node originNode = tx.createNode( LABEL_ONE );
             originNode.setProperty( KEY, point1 );
-            Node centerNode = tx.createNode( LABEL );
+            Node centerNode = tx.createNode( LABEL_ONE );
             centerNode.setProperty( KEY, point1 );
             tx.commit();
         }
@@ -157,9 +156,9 @@ class UniqueSpatialIndexIT
         Pair<Long,Long> nodeIds;
         try ( Transaction tx = db.beginTx() )
         {
-            Node originNode = tx.createNode( LABEL );
+            Node originNode = tx.createNode( LABEL_ONE );
             originNode.setProperty( KEY, point1 );
-            Node centerNode = tx.createNode( LABEL );
+            Node centerNode = tx.createNode( LABEL_ONE );
             centerNode.setProperty( KEY, point2 );
 
             nodeIds = Pair.of( originNode.getId(), centerNode.getId() );
@@ -172,12 +171,12 @@ class UniqueSpatialIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> origin = tx.findNodes( LABEL, KEY, point1 );
+            ResourceIterator<Node> origin = tx.findNodes( LABEL_ONE, KEY, point1 );
             assertTrue( origin.hasNext() );
             assertEquals( nodeIds.first().longValue(), origin.next().getId() );
             assertFalse( origin.hasNext() );
 
-            ResourceIterator<Node> center = tx.findNodes( LABEL, KEY, point2 );
+            ResourceIterator<Node> center = tx.findNodes( LABEL_ONE, KEY, point2 );
             assertTrue( center.hasNext() );
             assertEquals( nodeIds.other().longValue(), center.next().getId() );
             assertFalse( center.hasNext() );
@@ -190,7 +189,7 @@ class UniqueSpatialIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().constraintFor( TestLabels.LABEL_ONE ).assertPropertyIsUnique( KEY ).create();
+            tx.schema().constraintFor( LABEL_ONE ).assertPropertyIsUnique( KEY ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )

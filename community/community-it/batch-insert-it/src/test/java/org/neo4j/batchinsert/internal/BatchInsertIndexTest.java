@@ -26,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.batchinsert.BatchInserter;
@@ -38,25 +39,20 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -66,11 +62,14 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @Neo4jLayoutExtension
 class BatchInsertIndexTest
@@ -84,19 +83,20 @@ class BatchInsertIndexTest
 
     private Config.Builder configBuilder;
     private DatabaseManagementService managementService;
-    private IllegalStateException indexOnlineFailure;
 
     @BeforeEach
     void setUp()
     {
         configBuilder = Config.newBuilder().set( neo4j_home, testDirectory.homeDir().toPath() );
-        indexOnlineFailure = null;
     }
 
     @AfterEach
     void tearDown()
     {
-        managementService.shutdown();
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
     }
 
     @ParameterizedTest
@@ -105,7 +105,7 @@ class BatchInsertIndexTest
     {
         configure( schemaIndex );
         BatchInserter inserter = newBatchInserter();
-        inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
+        inserter.createDeferredSchemaIndex( LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
         GraphDatabaseService db = graphDatabaseService();
         try ( Transaction tx = db.beginTx() )
@@ -113,7 +113,7 @@ class BatchInsertIndexTest
             KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
-            int labelId = tokenRead.nodeLabel( TestLabels.LABEL_ONE.name() );
+            int labelId = tokenRead.nodeLabel( LABEL_ONE.name() );
             int propertyId = tokenRead.propertyKey( "key" );
             IndexDescriptor index = single( schemaRead.index( SchemaDescriptor.forLabel( labelId, propertyId ) ) );
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getKey() ), unexpectedIndexProviderMessage( index ) );
@@ -129,9 +129,9 @@ class BatchInsertIndexTest
         configure( schemaIndex );
         BatchInserter inserter = newBatchInserter();
         Pair<PointValue,PointValue> collidingPoints = SpatialIndexValueTestUtil.pointsWithSameValueOnSpaceFillingCurve( configBuilder.build() );
-        inserter.createNode( MapUtil.map( "prop", collidingPoints.first() ), TestLabels.LABEL_ONE );
-        inserter.createNode( MapUtil.map( "prop", collidingPoints.other() ), TestLabels.LABEL_ONE );
-        inserter.createDeferredConstraint( TestLabels.LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
+        inserter.createNode( MapUtil.map( "prop", collidingPoints.first() ), LABEL_ONE );
+        inserter.createNode( MapUtil.map( "prop", collidingPoints.other() ), LABEL_ONE );
+        inserter.createDeferredConstraint( LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
         inserter.shutdown();
 
         GraphDatabaseService db = graphDatabaseService();
@@ -150,9 +150,9 @@ class BatchInsertIndexTest
         configure( schemaIndex );
         BatchInserter inserter = newBatchInserter();
         PointValue point = Values.pointValue( CoordinateReferenceSystem.WGS84, 0.0, 0.0 );
-        inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
-        inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
-        inserter.createDeferredConstraint( TestLabels.LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
+        inserter.createNode( MapUtil.map( "prop", point ), LABEL_ONE );
+        inserter.createNode( MapUtil.map( "prop", point ), LABEL_ONE );
+        inserter.createDeferredConstraint( LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
         inserter.shutdown();
 
         GraphDatabaseService db = graphDatabaseService();
@@ -170,22 +170,22 @@ class BatchInsertIndexTest
     }
 
     @Test
-    void shouldCreateFullTextIndexForFullTextIndexType() throws Exception
+    void creatingFulltextIndexIsUnsupported() throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
-        inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).withIndexType( IndexType.FULLTEXT ).withName( "fts" ).create();
-        inserter.shutdown();
-        GraphDatabaseService db = graphDatabaseService();
-        try ( Transaction tx = db.beginTx() )
+        try ( BatchInserter inserter = newBatchInserter() )
         {
-            IndexDefinition index = tx.schema().getIndexByName( "fts" );
-            assertEquals( Iterables.single( index.getLabels() ).name(), TestLabels.LABEL_ONE.name() );
-            assertEquals( Iterables.single( index.getPropertyKeys() ), "key" );
-            assertEquals( index.getIndexType(), IndexType.FULLTEXT );
+            assertThrows( UnsupportedOperationException.class,
+                    () -> inserter.createDeferredSchemaIndex( LABEL_ONE ).on( "key" ).withIndexType( FULLTEXT ).withName( "fts" ).create() );
+        }
+    }
 
-            IndexProviderDescriptor provider = ((IndexDefinitionImpl) index).getIndexReference().getIndexProvider();
-            assertEquals( provider, FulltextIndexProviderFactory.DESCRIPTOR );
-            tx.commit();
+    @Test
+    void creatingIndexesWithCustomConfigurationsIsUnsupported() throws Exception
+    {
+        try ( BatchInserter inserter = newBatchInserter() )
+        {
+            assertThrows( UnsupportedOperationException.class, () -> inserter.createDeferredSchemaIndex( LABEL_ONE ).on( "key" )
+                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, 3 ) ).create() );
         }
     }
 
@@ -196,7 +196,7 @@ class BatchInsertIndexTest
 
     private static void assertSingleCorrectHit( PointValue point, Transaction tx )
     {
-        ResourceIterator<Node> nodes = tx.findNodes( TestLabels.LABEL_ONE, "prop", point );
+        ResourceIterator<Node> nodes = tx.findNodes( LABEL_ONE, "prop", point );
         assertTrue( nodes.hasNext() );
         Node node = nodes.next();
         Object prop = node.getProperty( "prop" );
@@ -229,7 +229,7 @@ class BatchInsertIndexTest
         }
         catch ( IllegalStateException e )
         {
-            this.indexOnlineFailure = e;
+            e.printStackTrace();
         }
     }
 

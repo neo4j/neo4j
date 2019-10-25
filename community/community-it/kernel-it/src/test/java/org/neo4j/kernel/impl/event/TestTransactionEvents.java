@@ -1056,7 +1056,7 @@ class TestTransactionEvents
         var db = managementService.database( databaseName );
         try ( var tx = db.beginTx() )
         {
-            var node = tx.createNode( TestLabels.values() );
+            var node = tx.createNode( TestLabels.LABEL_ONE, TestLabels.LABEL_TWO, TestLabels.LABEL_THREE );
             node.createRelationshipTo( node, TestRelType.LOOP );
             tx.commit();
         }

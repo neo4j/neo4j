@@ -42,7 +42,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -104,7 +103,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -157,6 +155,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -164,6 +163,7 @@ import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -1072,35 +1072,20 @@ public class BatchInserterImpl implements BatchInserter
 
         flushStrategy.forceFlush();
 
-        try
+        try ( var ignore = new Lifespan( life ); locker; neoStores )
         {
             rebuildCounts();
             NativeLabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( IOLimiter.UNLIMITED );
+            createEmptyTransactionLog();
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-        finally
-        {
-            createEmptyTransactionLog();
-
-            neoStores.close();
-            try
-            {
-                locker.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Could not release store lock", e );
-            }
-
-            msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
-            life.shutdown();
-        }
+        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
     }
 
     private NativeLabelScanStore buildLabelIndex() throws IOException
@@ -1232,12 +1217,16 @@ public class BatchInserterImpl implements BatchInserter
         public IndexDefinition createIndexDefinition(
                 Label[] labels, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
         {
+            if ( indexConfig.entries().notEmpty() )
+            {
+                throw unsupportedException();
+            }
             int[] labelIds = Arrays.stream( labels ).mapToInt( label -> getOrCreateLabelId( label.name() ) ).toArray();
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
             SchemaDescriptor schema;
             if ( indexType == IndexType.FULLTEXT )
             {
-                schema = SchemaDescriptor.fulltext( EntityType.NODE, labelIds, propertyKeyIds );
+                throw unsupportedException();
             }
             else if ( labelIds.length == 1 )
             {
@@ -1250,7 +1239,6 @@ public class BatchInserterImpl implements BatchInserter
 
             validateIndexCanBeCreated( schema );
             IndexPrototype prototype = IndexPrototype.forSchema( schema ).withName( indexName ).withIndexType( fromPublicApi( indexType ) );
-            prototype = prototype.withIndexConfig( indexConfig );
 
             IndexDescriptor index = createIndex( prototype );
             return new IndexDefinitionImpl( this, index, labels, propertyKeys, false );
@@ -1260,24 +1248,7 @@ public class BatchInserterImpl implements BatchInserter
         public IndexDefinition createIndexDefinition( RelationshipType[] types, String indexName, IndexType indexType, IndexConfig indexConfig,
                 String... propertyKeys )
         {
-            int[] typeIds = Arrays.stream( types ).mapToInt( type -> getOrCreateRelationshipTypeId( type.name() ) ).toArray();
-            int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
-            SchemaDescriptor schema;
-            if ( indexType == IndexType.FULLTEXT )
-            {
-                schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, typeIds, propertyKeyIds );
-            }
-            else
-            {
-                throw new IllegalArgumentException( indexType + " indexes cannot be created on relationship types." );
-            }
-
-            validateIndexCanBeCreated( schema );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema ).withName( indexName ).withIndexType( fromPublicApi( indexType ) );
-            prototype = prototype.withIndexConfig( indexConfig );
-
-            IndexDescriptor index = createIndex( prototype );
-            return new IndexDefinitionImpl( this, index, types, propertyKeys, false );
+            throw unsupportedException();
         }
 
         @Override

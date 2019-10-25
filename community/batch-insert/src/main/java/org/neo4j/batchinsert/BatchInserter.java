@@ -41,7 +41,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
  * being in non consistent state and the insertion has to be re-done from
  * scratch.
  */
-public interface BatchInserter
+public interface BatchInserter extends AutoCloseable
 {
     /**
      * Creates a node assigning next available id to id and also adds any
@@ -128,8 +128,7 @@ public interface BatchInserter
      * @return True if the relationship has the named property - false
      *         otherwise.
      */
-    boolean relationshipHasProperty( long relationship,
-            String propertyName );
+    boolean relationshipHasProperty( long relationship, String propertyName );
 
     /**
      * Sets the property with name {@code propertyName} of node with id
@@ -140,8 +139,7 @@ public interface BatchInserter
      * @param propertyName The name of the property to set
      * @param propertyValue The value of the property to set
      */
-    void setNodeProperty( long node, String propertyName,
-            Object propertyValue );
+    void setNodeProperty( long node, String propertyName, Object propertyValue );
 
     /**
      * Sets the property with name {@code propertyName} of relationship with id
@@ -153,8 +151,7 @@ public interface BatchInserter
      * @param propertyName The name of the property to set
      * @param propertyValue The value of the property to set
      */
-    void setRelationshipProperty( long relationship,
-            String propertyName, Object propertyValue );
+    void setRelationshipProperty( long relationship, String propertyName, Object propertyValue );
     /**
      * Returns a map containing all the properties of this node.
      *
@@ -192,8 +189,7 @@ public interface BatchInserter
      * properties should be added.
      * @return the id of the created relationship.
      */
-    long createRelationship( long node1, long node2, RelationshipType
-        type, Map<String,Object> properties );
+    long createRelationship( long node1, long node2, RelationshipType type, Map<String,Object> properties );
 
     /**
      * Gets a relationship by id.
@@ -217,8 +213,7 @@ public interface BatchInserter
      * @param properties map containing the properties or <code>null</code> to
      * clear all properties.
      */
-    void setRelationshipProperties( long rel,
-        Map<String,Object> properties );
+    void setRelationshipProperties( long rel, Map<String,Object> properties );
 
     /**
      * Returns a map containing all the properties of the relationships.
@@ -297,6 +292,14 @@ public interface BatchInserter
      * inserter is illegal.
      */
     void shutdown();
+
+    /**
+     * Synonymous with {@link #shutdown()}, allowing the BatchInserter to be used in try-with-resources clauses.
+     */
+    default void close()
+    {
+        shutdown();
+    }
 
     /**
      * Returns the path to default neo4j database.

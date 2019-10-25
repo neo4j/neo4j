@@ -71,7 +71,7 @@ class LabelScanStoreTxApplyRaceIT
     private static final float CHANCE_TO_DELETE_BY_SAME_THREAD = 0.9f;
     private static final int LARGE_TX_SIZE = 3_000;
 
-    private static final Label[] LABELS = TestLabels.values();
+    private static final Label[] LABELS = new Label[] {TestLabels.LABEL_ONE, TestLabels.LABEL_TWO, TestLabels.LABEL_THREE};
 
     @Inject
     private GraphDatabaseAPI db;

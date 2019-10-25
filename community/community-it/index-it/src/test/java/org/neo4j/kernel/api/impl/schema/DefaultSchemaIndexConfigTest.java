@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -52,12 +51,12 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @RunWith( Parameterized.class )
 public class DefaultSchemaIndexConfigTest
 {
     private static final String KEY = "key";
-    private static final TestLabels LABEL = TestLabels.LABEL_ONE;
 
     @Rule
     public TestDirectory directory = TestDirectory.testDirectory();
@@ -175,7 +174,7 @@ public class DefaultSchemaIndexConfigTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( LABEL ).on( KEY ).create();
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( LABEL_ONE ).on( KEY ).create();
             index = indexDefinition.getIndexReference();
             tx.commit();
         }

@@ -21,9 +21,9 @@ package org.neo4j.test;
 
 import org.neo4j.graphdb.Label;
 
-public enum TestLabels implements Label
+public interface TestLabels
 {
-    LABEL_ONE,
-    LABEL_TWO,
-    LABEL_THREE
+    Label LABEL_ONE = Label.label( "LABEL_ONE" );
+    Label LABEL_TWO = Label.label( "LABEL_TWO" );
+    Label LABEL_THREE = Label.label( "LABEL_THREE" );
 }

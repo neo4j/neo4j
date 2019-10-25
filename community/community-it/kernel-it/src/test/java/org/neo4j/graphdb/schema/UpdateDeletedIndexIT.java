@@ -28,11 +28,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.neo4j.test.Race.throwing;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @ImpermanentDbmsExtension
 class UpdateDeletedIndexIT
@@ -40,14 +40,13 @@ class UpdateDeletedIndexIT
     @Inject
     private GraphDatabaseAPI db;
 
-    private static final TestLabels LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final int NODES = 100;
 
     @Test
     void shouldHandleUpdateRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
     {
-        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeLabel( LABEL ) );
+        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeLabel( LABEL_ONE ) );
     }
 
     @Test
@@ -111,7 +110,7 @@ class UpdateDeletedIndexIT
         {
             for ( int i = 0; i < NODES; i++ )
             {
-                Node node = tx.createNode( LABEL );
+                Node node = tx.createNode( LABEL_ONE );
                 node.setProperty( KEY, i );
                 nodes[i] = node.getId();
             }
@@ -126,14 +125,14 @@ class UpdateDeletedIndexIT
         {
             for ( int i = 0; i < NODES; i++ )
             {
-                tx.createNode( LABEL ).setProperty( KEY, i );
+                tx.createNode( LABEL_ONE ).setProperty( KEY, i );
             }
             tx.commit();
         }
         IndexDefinition indexDefinition;
         try ( Transaction tx = db.beginTx() )
         {
-            indexDefinition = tx.schema().indexFor( LABEL ).on( KEY ).create();
+            indexDefinition = tx.schema().indexFor( LABEL_ONE ).on( KEY ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
