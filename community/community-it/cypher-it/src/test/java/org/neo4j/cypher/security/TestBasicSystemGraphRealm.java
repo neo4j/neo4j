@@ -34,7 +34,6 @@ import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.test.rule.TestDirectory;
@@ -73,8 +72,6 @@ public class TestBasicSystemGraphRealm
             TestDatabaseManager manager,
             Config config ) throws Throwable
     {
-
-        BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( manager, secureHasher );
         UserSecurityGraphInitializer securityGraphInitializer =
                 new UserSecurityGraphInitializer(
                         manager,
@@ -86,8 +83,9 @@ public class TestBasicSystemGraphRealm
                 );
 
         BasicSystemGraphRealm realm = new BasicSystemGraphRealm(
-                systemGraphOperations,
                 securityGraphInitializer,
+                manager,
+                secureHasher,
                 authStrategy,
                 true
         );

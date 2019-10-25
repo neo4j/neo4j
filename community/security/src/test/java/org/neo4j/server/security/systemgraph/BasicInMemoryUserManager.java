@@ -51,10 +51,7 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
 
     public BasicInMemoryUserManager( AuthenticationStrategy authStategy ) throws InvalidArgumentsException
     {
-        super( null,
-                SecurityGraphInitializer.NO_OP,
-                authStategy,
-                true );
+        super( SecurityGraphInitializer.NO_OP, null, new SecureHasher(), authStategy, true );
 
         // Setup initial user
         newUser( INITIAL_USER_NAME,  UTF8.encode( INITIAL_PASSWORD ), true );

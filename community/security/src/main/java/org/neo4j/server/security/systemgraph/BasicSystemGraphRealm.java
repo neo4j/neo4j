@@ -36,6 +36,14 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.neo4j.cypher.internal.security.FormatException;
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -43,12 +51,15 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
 import org.neo4j.server.security.auth.ShiroAuthToken;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 /**
  * Shiro realm using a Neo4j graph to store users
@@ -56,9 +67,10 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, CredentialsMatcher
 {
     private final SecurityGraphInitializer systemGraphInitializer;
+    private final DatabaseManager<?> databaseManager;
+    private final SecureHasher secureHasher;
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
-    private final BasicSystemGraphOperations basicSystemGraphOperations;
 
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
@@ -67,15 +79,17 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     public static final String IS_SUSPENDED = "is_suspended";
 
     public BasicSystemGraphRealm(
-            BasicSystemGraphOperations basicSystemGraphOperations,
             SecurityGraphInitializer systemGraphInitializer,
+            DatabaseManager<?> databaseManager,
+            SecureHasher secureHasher,
             AuthenticationStrategy authenticationStrategy,
             boolean authenticationEnabled )
     {
         super();
 
-        this.basicSystemGraphOperations = basicSystemGraphOperations;
         this.systemGraphInitializer = systemGraphInitializer;
+        this.databaseManager = databaseManager;
+        this.secureHasher = secureHasher;
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
 
@@ -232,7 +246,40 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
     public User getUser( String username ) throws InvalidArgumentsException, FormatException
     {
-        return basicSystemGraphOperations.getUser( username );
+        User user;
+        try ( Transaction tx = getSystemDb().beginTx() )
+        {
+            Node userNode = tx.findNode( Label.label( "User" ), "name", username );
+
+            if ( userNode == null )
+            {
+                throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
+            }
+            else
+            {
+                Credential
+                        credential = SystemGraphCredential.deserialize((String) userNode.getProperty( "credentials" ) , secureHasher );
+                boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
+                boolean suspended = (boolean) userNode.getProperty( "suspended" );
+
+                if ( suspended )
+                {
+                    user = new User.Builder( username, credential )
+                            .withRequiredPasswordChange( requirePasswordChange )
+                            .withFlag( IS_SUSPENDED )
+                            .build();
+                }
+                else
+                {
+                    user = new User.Builder( username, credential )
+                            .withRequiredPasswordChange( requirePasswordChange )
+                            .withoutFlag( IS_SUSPENDED )
+                            .build();
+                }
+            }
+            tx.commit();
+        }
+        return user;
     }
 
     public User silentlyGetUser( String username )
@@ -307,5 +354,11 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         {
             throw invalidToken( ", scheme '" + scheme + "' is not supported." );
         }
+    }
+
+    protected GraphDatabaseService getSystemDb()
+    {
+        return databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+                () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
     }
 }

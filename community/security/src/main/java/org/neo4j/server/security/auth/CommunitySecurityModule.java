@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.time.Clocks;
@@ -121,7 +120,6 @@ public class CommunitySecurityModule extends SecurityModule
     private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
         SecureHasher secureHasher = new SecureHasher();
-        BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( databaseManager, secureHasher );
 
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
@@ -131,8 +129,9 @@ public class CommunitySecurityModule extends SecurityModule
                         migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher );
 
         return new BasicSystemGraphRealm(
-                systemGraphOperations,
                 securityGraphInitializer, // always init on start in community
+                databaseManager,
+                secureHasher,
                 createAuthenticationStrategy( config ),
                 true // native authentication in always enabled in community
         );
