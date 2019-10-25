@@ -21,7 +21,6 @@ package org.neo4j.bolt.security.auth;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthToken;
@@ -35,30 +34,23 @@ public abstract class AuthTokenDecoderTest
     @Test
     void shouldDecodeAuthTokenWithStringCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( "password" ) );
+        testShouldDecodeAuthToken( authTokenMapWithCredential( "password" ) );
     }
 
     @Test
     void shouldDecodeAuthTokenWithEmptyStringCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( "" ) );
+        testShouldDecodeAuthToken( authTokenMapWithCredential( "" ) );
     }
 
     @Test
     void shouldDecodeAuthTokenWithNullCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( null ) );
+        testShouldDecodeAuthToken( authTokenMapWithCredential( null ) );
     }
 
-    private static Map<String,Object> authTokenMapWith( Object fieldValue )
+    private static Map<String,Object> authTokenMapWithCredential( String pwd )
     {
-        return map( AuthToken.PRINCIPAL, "neo4j", AuthToken.CREDENTIALS, fieldValue );
+        return map( AuthToken.PRINCIPAL, "neo4j", AuthToken.CREDENTIALS, pwd );
     }
-
-    private static final Object[] VALUES_WITH_INVALID_TYPES = {
-            // This is not an exhaustive list
-            new char[]{ 'p', 'a', 's', 's' },
-            Collections.emptyList(),
-            Collections.emptyMap()
-    };
 }

@@ -24,7 +24,6 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 /**
@@ -41,11 +40,6 @@ public class BasicAuthentication implements Authentication
 
     @Override
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
-    {
-        return doAuthenticate( authToken );
-    }
-
-    private AuthenticationResult doAuthenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
         try
         {
