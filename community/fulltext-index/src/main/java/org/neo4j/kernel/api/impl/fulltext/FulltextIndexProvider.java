@@ -229,9 +229,15 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     @Override
     public void validatePrototype( IndexPrototype prototype )
     {
+        String providerName = getProviderDescriptor().name();
+        if ( !prototype.schema().isFulltextSchemaDescriptor() )
+        {
+            throw new IllegalArgumentException( "The " + prototype.schema() + " index schema is not a full-text index schema, " +
+                    "which it is required to be for the '" + providerName + "' index provider to be able to create an index." );
+        }
         if ( prototype.getIndexType() != IndexType.FULLTEXT )
         {
-            throw new IllegalArgumentException( "The '" + getProviderDescriptor().name() + "' only supports FULLTEXT index types: " + prototype );
+            throw new IllegalArgumentException( "The '" + providerName + "' index provider only supports FULLTEXT index types: " + prototype );
         }
         Value value = prototype.getIndexConfig().get( ANALYZER );
         if ( value != null )

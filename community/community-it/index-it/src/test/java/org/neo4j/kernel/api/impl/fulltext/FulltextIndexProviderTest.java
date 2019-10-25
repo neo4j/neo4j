@@ -44,13 +44,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -71,6 +70,7 @@ import org.neo4j.values.storable.Value;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -78,14 +78,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 
 public class FulltextIndexProviderTest
 {
@@ -449,6 +450,21 @@ public class FulltextIndexProviderTest
         }
     }
 
+    @Test
+    public void validateMustThrowIfSchemaIsNotFulltext() throws Exception
+    {
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+        {
+            int[] propertyIds = {propIdHa};
+            SchemaDescriptor schema = SchemaDescriptor.forLabel( labelIdHa, propertyIds );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema ).withIndexType( FULLTEXT ).withName( NAME );
+            SchemaWrite schemaWrite = transaction.schemaWrite();
+            var e = assertThrows( IllegalArgumentException.class, () -> schemaWrite.indexCreate( prototype ) );
+            assertThat( e.getMessage(), containsString( "schema is not a full-text index schema" ) );
+            transaction.success();
+        }
+    }
+
     private TokenRead tokenRead( Transaction tx )
     {
         return ((InternalTransaction) tx).kernelTransaction().tokenRead();
@@ -567,18 +583,11 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private void await( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    private void await( IndexDescriptor index )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            while ( getKernelTransaction().schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
-            {
-                Thread.sleep( 100 );
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
+            tx.schema().awaitIndexOnline( index.getName(), 30, TimeUnit.SECONDS );
         }
     }
 }
