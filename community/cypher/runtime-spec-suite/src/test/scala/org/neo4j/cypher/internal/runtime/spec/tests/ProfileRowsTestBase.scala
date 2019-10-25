@@ -510,6 +510,84 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(6).rows() shouldBe (nodesPerLabel * 2L) // all node scan
   }
 
+  test("should profile rows with many node-by id seek and expand") {
+    // given
+    val nodesPerLabel = 100
+    index("A", "prop")
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    aNodes.foreach(_.setProperty("prop", "hello"))
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expandInto("(x)-[r]->(y)")
+      .expandAll("(x)-->(y)")
+      .nodeByIdSeek("x", aNodes.map(_.getId):_*)
+      .build()
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand into
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand all
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel) // node-by-id
+  }
+
+  test("should not count invalid rows with many node-by id seek and expand") {
+    // given
+    val nodesPerLabel = 100
+    index("A", "prop")
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    aNodes.foreach(_.setProperty("prop", "hello"))
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expandInto("(x)-[r]->(y)")
+      .expandAll("(x)-->(y)")
+      .nodeByIdSeek("x", aNodes.indices.map(i => if (i % 2 ==0) aNodes(i).getId else -1): _* )
+      .build()
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe ((nodesPerLabel / 2) * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe ((nodesPerLabel / 2) * nodesPerLabel) // expand into
+    queryProfile.operatorProfile(2).rows() shouldBe ((nodesPerLabel / 2) * nodesPerLabel) // expand all
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel / 2) // node-by-id
+  }
+
+  test("should profile rows with unwind and expand") {
+    // given
+    val nodesPerLabel = 20
+    val unwindCardinality = 7
+    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.optional("x") // The optional is to prevent fusing the produce results
+      .|.expandAll("(x)-->(y)")
+      .|.unwind(s"range(1, $unwindCardinality) AS i")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel * unwindCardinality + nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * unwindCardinality + nodesPerLabel) // apply
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel * unwindCardinality + nodesPerLabel) // optional
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * nodesPerLabel * unwindCardinality) // expand all
+    queryProfile.operatorProfile(4).rows() shouldBe (nodesPerLabel * 2L * unwindCardinality) // unwind
+    queryProfile.operatorProfile(5).rows() shouldBe (nodesPerLabel * 2L) // argument
+    queryProfile.operatorProfile(6).rows() shouldBe (nodesPerLabel * 2L) // all node scan
+  }
+
   test("should profile rows with optional expand into") {
     // given
     val nodesPerLabel = 100
