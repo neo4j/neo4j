@@ -39,8 +39,8 @@ import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
-import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Parameters;
 

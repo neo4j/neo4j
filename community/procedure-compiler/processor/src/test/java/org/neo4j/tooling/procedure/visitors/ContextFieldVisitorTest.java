@@ -34,7 +34,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.TerminationGuard;
@@ -126,8 +125,7 @@ public class ContextFieldVisitorTest
                         warning( KernelTransaction.class.getName(),
                                 "RestrictedContextTypes#kernelTransaction" ) ), tuple( Diagnostic.Kind.WARNING,
                         warning( DependencyResolver.class.getName(),
-                                "RestrictedContextTypes#dependencyResolver" ) ), tuple( Diagnostic.Kind.WARNING,
-                        warning( UserManager.class.getName(), "RestrictedContextTypes#userManager" ) ) );
+                                "RestrictedContextTypes#dependencyResolver" ) ) );
     }
 
     @Test

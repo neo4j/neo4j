@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
-import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -50,9 +49,6 @@ public class AuthProcedures
 
     @Context
     public Transaction transaction;
-
-    @Context
-    public UserManager userManager;
 
     @Context
     public GraphDatabaseAPI graph;
@@ -101,7 +97,6 @@ public class AuthProcedures
         return Stream.of( new UserResult( username, false ) );
     }
 
-    @SuppressWarnings( "AccessStaticViaInstance" )
     @SystemProcedure
     @Deprecated
     @Description( "List all native users." )
@@ -150,7 +145,6 @@ public class AuthProcedures
         }
     }
 
-    @SuppressWarnings( "AccessStaticViaInstance" )
     private void runSystemCommand( String query, String procedureName ) throws ProcedureException
     {
         try

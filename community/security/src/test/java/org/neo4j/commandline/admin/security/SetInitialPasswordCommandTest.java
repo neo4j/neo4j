@@ -29,7 +29,7 @@ import java.io.PrintStream;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -138,7 +138,7 @@ class SetInitialPasswordCommandTest
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authInitFile,
                 NullLogProvider.getInstance() );
         userRepository.start();
-        User neo4j = userRepository.getUserByName( UserManager.INITIAL_USER_NAME );
+        User neo4j = userRepository.getUserByName( AuthManager.INITIAL_USER_NAME );
         assertNotNull( neo4j );
         assertTrue( neo4j.credentials().matchesPassword( password ) );
         assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );

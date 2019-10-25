@@ -45,8 +45,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFailsWithTooManyAttempts;
 import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
-import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
-import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 @TestDirectoryExtension

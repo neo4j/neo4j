@@ -38,7 +38,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
@@ -54,7 +53,7 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
     private static final Set<String> SUPPORTED_TYPES = new LinkedHashSet<>( List.of( GraphDatabaseService.class.getName(),
             Log.class.getName(), TerminationGuard.class.getName(), SecurityContext.class.getName(), Transaction.class.getName() ) );
     private static final Set<String> RESTRICTED_TYPES = new LinkedHashSet<>( List.of( GraphDatabaseAPI.class.getName(),
-            KernelTransaction.class.getName(), DependencyResolver.class.getName(), UserManager.class.getName(),
+            KernelTransaction.class.getName(), DependencyResolver.class.getName(),
                     // the following classes are not in the compiler classpath
                     "com.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager",
                     "com.neo4j.server.security.enterprise.log.SecurityLog" ) );

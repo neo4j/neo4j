@@ -49,7 +49,6 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -101,7 +100,7 @@ public class BoltServer extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws Exception
+    public void init()
     {
         Log log = logService.getInternalLog( BoltServer.class );
 
@@ -144,7 +143,7 @@ public class BoltServer extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Exception
+    public void shutdown()
     {
         life.shutdown(); // shutdown the nested lifecycle
     }

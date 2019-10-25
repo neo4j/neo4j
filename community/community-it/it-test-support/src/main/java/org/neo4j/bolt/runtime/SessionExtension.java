@@ -46,7 +46,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;

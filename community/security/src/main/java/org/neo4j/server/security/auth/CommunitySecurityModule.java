@@ -34,8 +34,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.kernel.api.security.UserManager;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
@@ -70,19 +68,11 @@ public class CommunitySecurityModule extends SecurityModule
         authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem );
 
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
-
-        globalProcedures.registerComponent( UserManager.class, ctx -> authManager, false );
         globalProcedures.registerProcedure( AuthProcedures.class );
     }
 
     @Override
     public AuthManager authManager()
-    {
-        return authManager;
-    }
-
-    @Override
-    public UserManagerSupplier userManagerSupplier()
     {
         return authManager;
     }

@@ -36,15 +36,12 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.neo4j.cypher.internal.security.FormatException;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.UserManager;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -56,7 +53,7 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 /**
  * Shiro realm using a Neo4j graph to store users
  */
-public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, UserManager, UserManagerSupplier, CredentialsMatcher
+public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, CredentialsMatcher
 {
     private final SecurityGraphInitializer systemGraphInitializer;
     private final AuthenticationStrategy authenticationStrategy;
@@ -264,18 +261,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             throw new InvalidArgumentsException(
                     "Username '" + username + "' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
         }
-    }
-
-    @Override
-    public UserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
-    {
-        return this;
-    }
-
-    @Override
-    public UserManager getUserManager()
-    {
-        return this;
     }
 
     @Override

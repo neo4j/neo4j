@@ -133,7 +133,6 @@ public class DatabaseManagementServiceFactory
         edition.createSecurityModule( globalModule );
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies( securityProvider.authManager() );
-        globalDependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
 
         globalLife.add( new DefaultDatabaseInitializer( databaseManager ) );
 

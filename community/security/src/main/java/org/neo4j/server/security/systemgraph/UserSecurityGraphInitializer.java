@@ -42,8 +42,8 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
-import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public class UserSecurityGraphInitializer implements SecurityGraphInitializer

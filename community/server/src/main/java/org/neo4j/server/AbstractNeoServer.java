@@ -40,7 +40,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -107,7 +106,6 @@ public abstract class AbstractNeoServer implements NeoServer
     protected final DatabaseService databaseService;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
-    private Supplier<UserManagerSupplier> userManagerSupplier;
     private Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private HttpTransactionManager httpTransactionManager;
     private CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
@@ -409,7 +407,6 @@ public abstract class AbstractNeoServer implements NeoServer
         binder.addLazyBinding( OutputFormatProvider.class, OutputFormat.class );
         binder.addSingletonBinding( httpTransactionManager, HttpTransactionManager.class );
         binder.addLazyBinding( authManagerSupplier, AuthManager.class );
-        binder.addLazyBinding( userManagerSupplier, UserManagerSupplier.class );
         binder.addSingletonBinding( userLogProvider, LogProvider.class );
         binder.addSingletonBinding( userLogProvider.getLog( NeoServer.class ), Log.class );
 
@@ -441,7 +438,6 @@ public abstract class AbstractNeoServer implements NeoServer
             DependencyResolver dependencyResolver = getSystemDatabaseDependencyResolver();
 
             authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
-            userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
             sslPolicyFactorySupplier = dependencyResolver.provideDependency( SslPolicyLoader.class );
             webServer = createWebServer();
 

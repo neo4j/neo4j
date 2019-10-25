@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 
-import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
 public class BasicImportOptionsBuilder

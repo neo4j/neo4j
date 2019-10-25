@@ -31,6 +31,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface AuthManager extends Lifecycle
 {
+    String INITIAL_USER_NAME = "neo4j";
+    String INITIAL_PASSWORD = "neo4j";
+
     /**
      * Log in using the provided authentication token
      *
