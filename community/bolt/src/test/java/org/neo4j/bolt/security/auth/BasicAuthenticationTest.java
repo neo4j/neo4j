@@ -58,7 +58,7 @@ class BasicAuthenticationTest
     }
 
     @Test
-    void shouldThrowAndLogOnFailure() throws Exception
+    void shouldThrowAndLogOnFailure()
     {
         var e = assertThrows( AuthenticationException.class,
                 () -> authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "banana" ) ) ) );
@@ -116,7 +116,7 @@ class BasicAuthenticationTest
     }
 
     @Test
-    void shouldThrowWithNoScheme() throws Exception
+    void shouldThrowWithNoScheme()
     {
         var e = assertThrows( AuthenticationException.class,
                 () -> authentication.authenticate( map( "principal", "bob", "credentials", password( "secret" ) ) ) );
@@ -124,14 +124,14 @@ class BasicAuthenticationTest
     }
 
     @Test
-    void shouldFailOnInvalidAuthToken() throws Exception
+    void shouldFailOnInvalidAuthToken()
     {
         var e = assertThrows( AuthenticationException.class, () -> authentication.authenticate( map( "this", "does", "not", "matter", "for", "test" ) ) );
         assertEquals( Status.Security.Unauthorized, e.status() );
     }
 
     @Test
-    void shouldFailOnMalformedToken() throws Exception
+    void shouldFailOnMalformedToken()
     {
         var e = assertThrows( AuthenticationException.class, () -> authentication
                 .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", password( "secret" ) ) ) );
@@ -155,11 +155,6 @@ class BasicAuthenticationTest
         manager.newUser( "mike", password( "secret2" ), false );
 
         return authentication;
-    }
-
-    private HasStatus hasStatus( Status status )
-    {
-        return new HasStatus( status );
     }
 
     static class HasStatus extends TypeSafeMatcher<Status.HasStatus>

@@ -30,6 +30,8 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.admin.security.SetInitialPasswordCommand;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.security.FormatException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.test.extension.Inject;
@@ -76,8 +78,7 @@ public class BasicSystemGraphRealmIT
     {
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( new BasicImportOptionsBuilder(), dbManager, defaultConfig );
 
-        final User user = realm.silentlyGetUser( INITIAL_USER_NAME );
-        assertNotNull( user );
+        final User user = getExistingUser( realm, INITIAL_USER_NAME );
         assertTrue( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
         assertTrue( user.passwordChangeRequired() );
     }
@@ -88,8 +89,7 @@ public class BasicSystemGraphRealmIT
         BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().initialUser( "123", false );
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
 
-        final User user = realm.silentlyGetUser( INITIAL_USER_NAME );
-        assertNotNull( user );
+        final User user = getExistingUser( realm, INITIAL_USER_NAME );
         assertTrue( user.credentials().matchesPassword( password("123") ) );
         assertFalse( user.passwordChangeRequired() );
     }
@@ -104,8 +104,7 @@ public class BasicSystemGraphRealmIT
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( dbManager, testDirectory, defaultConfig );
 
         // Then
-        final User user = realm.silentlyGetUser( INITIAL_USER_NAME );
-        assertNotNull( user );
+        final User user = getExistingUser( realm, INITIAL_USER_NAME );
         assertFalse( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
         assertTrue( user.credentials().matchesPassword( password( SIMULATED_INITIAL_PASSWORD ) ) );
         assertFalse( user.passwordChangeRequired() );
@@ -117,8 +116,7 @@ public class BasicSystemGraphRealmIT
         // Given
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( dbManager, testDirectory, defaultConfig );
 
-        User user = realm.silentlyGetUser( INITIAL_USER_NAME );
-        assertNotNull( user );
+        User user = getExistingUser( realm, INITIAL_USER_NAME );
         assertTrue( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
         assertTrue( user.passwordChangeRequired() );
 
@@ -130,8 +128,7 @@ public class BasicSystemGraphRealmIT
         realm.start();
 
         // Then
-        user = realm.silentlyGetUser( INITIAL_USER_NAME );
-        assertNotNull( user );
+        user = getExistingUser( realm, INITIAL_USER_NAME );
         assertFalse( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
         assertTrue( user.credentials().matchesPassword( password( SIMULATED_INITIAL_PASSWORD ) ) );
         assertFalse( user.passwordChangeRequired() );
@@ -152,8 +149,7 @@ public class BasicSystemGraphRealmIT
         realm.start();
 
         // Then
-        User user = realm.silentlyGetUser( INITIAL_USER_NAME );
-        assertNotNull( user );
+        User user = getExistingUser( realm, INITIAL_USER_NAME );
         assertFalse( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
         assertFalse( user.credentials().matchesPassword( password( SIMULATED_INITIAL_PASSWORD ) ) );
         assertTrue( user.credentials().matchesPassword( password("neo4j2") ) );
@@ -165,11 +161,10 @@ public class BasicSystemGraphRealmIT
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm(
                 new BasicImportOptionsBuilder().initialUser( "123", false ).migrateUser( "oldUser", "321", false ), dbManager, defaultConfig );
 
-        final User initUser = realm.silentlyGetUser( INITIAL_USER_NAME );
+        final User initUser = silentlyGetUser( realm, INITIAL_USER_NAME );
         assertNull( initUser );
 
-        final User oldUser = realm.silentlyGetUser( "oldUser" );
-        assertNotNull( oldUser );
+        final User oldUser = getExistingUser( realm, "oldUser" );
         assertTrue( oldUser.credentials().matchesPassword( password( "321" ) ) );
         assertFalse( oldUser.passwordChangeRequired() );
     }
@@ -182,8 +177,7 @@ public class BasicSystemGraphRealmIT
 
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
 
-        final User oldUser = realm.silentlyGetUser( INITIAL_USER_NAME );
-        assertNotNull( oldUser );
+        final User oldUser = getExistingUser( realm, INITIAL_USER_NAME );
         assertTrue( oldUser.credentials().matchesPassword( password( "oldPassword" ) ) );
         assertTrue( oldUser.passwordChangeRequired() );
     }
@@ -259,4 +253,23 @@ public class BasicSystemGraphRealmIT
     }
 
     public static final String SIMULATED_INITIAL_PASSWORD = "neo4j1";
+
+    public static User getExistingUser( BasicSystemGraphRealm realm, String username )
+    {
+        User user = silentlyGetUser( realm, username );
+        assertNotNull( user );
+        return user;
+    }
+
+    private static User silentlyGetUser( BasicSystemGraphRealm realm, String username )
+    {
+        try
+        {
+            return realm.getUser( username );
+        }
+        catch ( InvalidArgumentsException | FormatException e )
+        {
+            return null;
+        }
+    }
 }

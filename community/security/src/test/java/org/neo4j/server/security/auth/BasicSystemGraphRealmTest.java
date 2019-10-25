@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,11 +36,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicInMemoryUserManager;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -127,33 +122,6 @@ public class BasicSystemGraphRealmTest
     }
 
     @Test
-    void shouldCreateUser() throws Throwable
-    {
-        // When
-        manager.newUser( "foo", password( "bar" ), true );
-
-        // Then
-        User user = manager.getUser( "foo" );
-        assertNotNull( user );
-        assertTrue( user.passwordChangeRequired() );
-        assertTrue( user.credentials().matchesPassword( password( "bar" ) ) );
-    }
-
-    @Test
-    void shouldSetPassword() throws Throwable
-    {
-        // Given
-        manager.newUser( "jake", password( "abc123" ), true );
-
-        // When
-        manager.setUserPassword( "jake", password( "hello, world!" ), false );
-
-        // Then
-        User user = manager.getUser( "jake" );
-        assertTrue( user.credentials().matchesPassword( password( "hello, world!" ) ) );
-    }
-
-    @Test
     void shouldClearPasswordOnLogin() throws Throwable
     {
         // Given
@@ -191,96 +159,6 @@ public class BasicSystemGraphRealmTest
         }
         assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
         assertThat( authToken.get( AuthToken.CREDENTIALS ), equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-    }
-
-    @Test
-    void shouldClearPasswordOnNewUser() throws Throwable
-    {
-        // Given
-        byte[] password = password( "abc123" );
-
-        // When
-        manager.newUser( "jake", password, true );
-
-        // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-        User user = manager.getUser( "jake" );
-        assertTrue( user.credentials().matchesPassword( password( "abc123" ) ) );
-    }
-
-    @Test
-   void shouldClearPasswordOnNewUserAlreadyExists() throws Throwable
-    {
-        // Given
-        manager.newUser( "jake", password( "abc123" ), true );
-        byte[] password = password( "abc123" );
-
-        // When
-        try
-        {
-            manager.newUser( "jake", password, true );
-            fail( "exception expected" );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            // expected
-        }
-
-        // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-    }
-
-    @Test
-    void shouldClearPasswordOnSetUserPassword() throws Throwable
-    {
-        // Given
-        manager.newUser( "jake", password( "old" ), false );
-        byte[] newPassword = password( "abc123" );
-
-        // When
-        manager.setUserPassword( "jake", newPassword, false );
-
-        // Then
-        assertThat( newPassword, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-        User user = manager.getUser( "jake" );
-        assertTrue( user.credentials().matchesPassword( password( "abc123" ) ) );
-    }
-
-    @Test
-    void shouldClearPasswordOnSetUserPasswordWithInvalidPassword() throws Throwable
-    {
-        // Given
-        manager.newUser( "jake", password( "abc123" ), false );
-        byte[] newPassword = password( "abc123" );
-
-        // When
-        try
-        {
-            manager.setUserPassword( "jake", newPassword, false );
-            fail( "exception expected" );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            // expected
-        }
-
-        // Then
-        assertThat( newPassword, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-    }
-
-    @Test
-    void shouldReturnNullWhenSettingPasswordForUnknownUser()
-    {
-        // When
-        try
-        {
-            manager.setUserPassword( "unknown", password( "hello, world!" ), false );
-            fail( "exception expected" );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            // expected
-        }
     }
 
     @Test

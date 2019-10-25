@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -61,6 +60,10 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
     {
         try
         {
+            if ( users.containsKey( username ) )
+            {
+                throw new InvalidArgumentsException( "The specified user '" + username + "' already exists." );
+            }
             assertValidUsername( username );
             passwordPolicy.validatePassword( initialPassword );
 
@@ -70,7 +73,7 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
                     .withoutFlag( IS_SUSPENDED )
                     .build();
 
-            addUser( user );
+            users.put( username, user );
         }
         finally
         {
@@ -82,17 +85,6 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
         }
     }
 
-    private void addUser( User user ) throws InvalidArgumentsException
-    {
-        String username = user.name();
-        assertValidUsername( username );
-        if ( users.containsKey( username ) )
-        {
-            throw new InvalidArgumentsException( "The specified user '" + username + "' already exists." );
-        }
-        users.put( username, user );
-    }
-
     @Override
     public User getUser( String username ) throws InvalidArgumentsException
     {
@@ -102,65 +94,5 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
             throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
         }
         return user;
-    }
-
-    @Override
-    public User silentlyGetUser( String username )
-    {
-        try
-        {
-            return getUser( username );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            return null;
-        }
-    }
-
-    public void setUserPassword( String username, byte[] password, boolean requirePasswordChange ) throws InvalidArgumentsException
-    {
-        try
-        {
-            User existingUser = getUser( username );
-            passwordPolicy.validatePassword( password );
-
-            if ( existingUser.credentials().matchesPassword( password ) )
-            {
-                throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
-            }
-
-            String newCredentials = SystemGraphCredential.serialize( SystemGraphCredential.createCredentialForPassword( password, secureHasher ) );
-            setUserCredentials( username, newCredentials, requirePasswordChange );
-        }
-        finally
-        {
-            // Clear password
-            if ( password != null )
-            {
-                Arrays.fill( password, (byte) 0 );
-            }
-        }
-    }
-
-    private void setUserCredentials( String username, String newCredentials, boolean requirePasswordChange ) throws InvalidArgumentsException
-    {
-        User user = users.get( username );
-        if ( user == null )
-        {
-            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
-        }
-        User augmented;
-        try
-        {
-            augmented = user.augment()
-                    .withCredentials( SystemGraphCredential.deserialize( newCredentials, new SecureHasher() ) )
-                    .withRequiredPasswordChange( requirePasswordChange ).build();
-        }
-        catch ( FormatException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-        users.put( username, augmented );
     }
 }

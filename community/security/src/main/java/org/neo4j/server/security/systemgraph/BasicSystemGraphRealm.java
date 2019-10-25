@@ -257,8 +257,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             }
             else
             {
-                Credential
-                        credential = SystemGraphCredential.deserialize((String) userNode.getProperty( "credentials" ) , secureHasher );
+                Credential credential = SystemGraphCredential.deserialize((String) userNode.getProperty( "credentials" ) , secureHasher );
                 boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
                 boolean suspended = (boolean) userNode.getProperty( "suspended" );
 
@@ -280,18 +279,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             tx.commit();
         }
         return user;
-    }
-
-    public User silentlyGetUser( String username )
-    {
-        try
-        {
-            return getUser( username );
-        }
-        catch ( InvalidArgumentsException | FormatException e )
-        {
-            return null;
-        }
     }
 
     // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file
@@ -320,7 +307,15 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
             byte[] password = AuthToken.safeCastCredentials( AuthToken.CREDENTIALS, authToken );
 
-            User user = silentlyGetUser( username );
+            User user;
+            try
+            {
+                user = getUser( username );
+            }
+            catch ( InvalidArgumentsException | FormatException e )
+            {
+                user = null;
+            }
             AuthenticationResult result = AuthenticationResult.FAILURE;
             if ( user != null )
             {
