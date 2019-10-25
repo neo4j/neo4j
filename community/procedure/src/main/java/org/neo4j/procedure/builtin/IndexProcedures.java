@@ -227,8 +227,8 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( TimeoutException e )
         {
-            throw new ProcedureException( Status.Procedure.ProcedureTimedOut,
-                    "Index on '%s' did not come online within %s %s", index.userDescription( SilentTokenNameLookup.idTokenNameLookup ), timeout, timeoutUnits );
+            throw new ProcedureException( Status.Procedure.ProcedureTimedOut, "Index on '%s' did not come online within %s %s",
+                    index.userDescription( new SilentTokenNameLookup( ktx.tokenRead() ) ), timeout, timeoutUnits );
         }
     }
 
