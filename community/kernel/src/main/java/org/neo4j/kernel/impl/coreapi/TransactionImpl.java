@@ -260,14 +260,14 @@ public class TransactionImpl implements InternalTransaction
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
         checkInTransaction();
-        return new BidirectionalTraversalDescriptionImpl( () -> kernelTransaction().acquireStatement() );
+        return new BidirectionalTraversalDescriptionImpl();
     }
 
     @Override
     public TraversalDescription traversalDescription()
     {
         checkInTransaction();
-        return new MonoDirectionalTraversalDescription( () -> kernelTransaction().acquireStatement() );
+        return new MonoDirectionalTraversalDescription();
     }
 
     @Override

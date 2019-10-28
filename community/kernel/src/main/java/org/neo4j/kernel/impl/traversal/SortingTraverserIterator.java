@@ -25,22 +25,19 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-class SortingTraverserIterator extends PrefetchingResourceIterator<Path> implements TraverserIterator
+class SortingTraverserIterator extends PrefetchingIterator<Path> implements TraverserIterator
 {
     private final Comparator<? super Path> sortingStrategy;
     private final MonoDirectionalTraverserIterator source;
-    private final Resource resource;
     private Iterator<Path> sortedResultIterator;
 
-    SortingTraverserIterator( Resource resource, Comparator<? super Path> sortingStrategy, MonoDirectionalTraverserIterator source )
+    SortingTraverserIterator( Comparator<? super Path> sortingStrategy, MonoDirectionalTraverserIterator source )
     {
-        this.resource = resource;
         this.sortingStrategy = sortingStrategy;
         this.source = source;
     }
@@ -106,11 +103,5 @@ class SortingTraverserIterator extends PrefetchingResourceIterator<Path> impleme
         }
         result.sort( sortingStrategy );
         return result.iterator();
-    }
-
-    @Override
-    public void close()
-    {
-        resource.close();
     }
 }
