@@ -78,6 +78,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.graphdb.schema.IndexType.BTREE;
+import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.contains;
@@ -1223,6 +1225,79 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             tx.commit();
         }
     }
+
+    @Test
+    void uniquenessConstraintIndexesAreBtreeIndexTypeByDefault()
+    {
+        String name;
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition constraint = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            name = constraint.getName();
+            IndexDefinition index = tx.schema().getIndexByName( name );
+            assertThat( index.getIndexType(), is( BTREE ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( name );
+            assertThat( index.getIndexType(), is( BTREE ) );
+        }
+    }
+
+    @Test
+    void mustBeAbleToCreateUniquenessConstraintWithBtreeIndexType()
+    {
+        String name;
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition constraint = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withIndexType( BTREE ).create();
+            name = constraint.getName();
+            IndexDefinition index = tx.schema().getIndexByName( name );
+            assertThat( index.getIndexType(), is( BTREE ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( name );
+            assertThat( index.getIndexType(), is( BTREE ) );
+        }
+    }
+
+    @Test
+    void creatingUniquenessConstraintWithFullTextIndexTypeMustThrow()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintCreator creator = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withIndexType( FULLTEXT );
+            assertThrows( IllegalArgumentException.class, creator::create );
+        }
+    }
+
+    @Test
+    void creatingNodePropertyExistenceConstraintMustThrowWhenGivenIndexType()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintCreator creator = tx.schema().constraintFor( label ).assertPropertyExists( propertyKey ).withIndexType( BTREE );
+            assertThrows( IllegalArgumentException.class, creator::create );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void creatingRelationshipPropertyExistenceConstraintsMustThrowWhenGivenIndexType()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintCreator creator = tx.schema().constraintFor( relType ).assertPropertyExists( propertyKey ).withIndexType( BTREE );
+            assertThrows( IllegalArgumentException.class, creator::create );
+            tx.commit();
+        }
+    }
+    // todo must be able to specify index configuration for uniqueness constraint
+    // todo creating node property existence constraints must throw when given index configuration
+    // todo creating relationship property existence constraints must throw when given index configuration
 
     private static String alreadyExistsIndexMessage( String indexName )
     {

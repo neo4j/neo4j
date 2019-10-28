@@ -22,14 +22,15 @@ package org.neo4j.kernel.impl.coreapi.schema;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 
 public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstraintCreator
 {
     private final String propertyKey;
 
-    RelationshipPropertyExistenceCreator( InternalSchemaActions actions, String name, RelationshipType type, String propertyKey )
+    RelationshipPropertyExistenceCreator( InternalSchemaActions actions, String name, RelationshipType type, String propertyKey, IndexType indexType )
     {
-        super( actions, name, type );
+        super( actions, name, type, indexType );
         this.propertyKey = propertyKey;
     }
 
@@ -42,12 +43,23 @@ public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstr
     @Override
     public ConstraintDefinition create()
     {
+        if ( indexType != null )
+        {
+            throw new IllegalArgumentException( "Relationship property existence constraints cannot be created with an index type. " +
+                    "Was given index type " + indexType + "." );
+        }
         return actions.createPropertyExistenceConstraint( name, type, propertyKey );
     }
 
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey );
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType );
+    }
+
+    @Override
+    public ConstraintCreator withIndexType( IndexType indexType )
+    {
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType );
     }
 }

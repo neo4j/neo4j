@@ -21,7 +21,7 @@ package org.neo4j.graphdb;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class DatabaseShutdownException extends RuntimeException implements Status.HasStatus
+public class    DatabaseShutdownException extends RuntimeException implements Status.HasStatus
 {
     private static final String MESSAGE = "This database is shutdown.";
 

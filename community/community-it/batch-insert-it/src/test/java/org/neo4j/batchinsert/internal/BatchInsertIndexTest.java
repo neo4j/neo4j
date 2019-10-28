@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
@@ -186,6 +187,26 @@ class BatchInsertIndexTest
         {
             assertThrows( UnsupportedOperationException.class, () -> inserter.createDeferredSchemaIndex( LABEL_ONE ).on( "key" )
                     .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, 3 ) ).create() );
+        }
+    }
+
+    @Test
+    void creatingUniquenessConstraintWithIndexTypeIsUnsupported() throws Exception
+    {
+        try ( BatchInserter inserter = newBatchInserter() )
+        {
+            assertThrows( UnsupportedOperationException.class,
+                    () -> inserter.createDeferredConstraint( LABEL_ONE ).assertPropertyIsUnique( "key" ).withIndexType( BTREE ).create() );
+        }
+    }
+
+    @Test
+    void creatingNodeKeyConstraintWithIndexTypeIsUnsupported() throws Exception
+    {
+        try ( BatchInserter inserter = newBatchInserter() )
+        {
+            assertThrows( UnsupportedOperationException.class,
+                    () -> inserter.createDeferredConstraint( LABEL_ONE ).assertPropertyIsNodeKey( "key" ).withIndexType( BTREE ).create() );
         }
     }
 

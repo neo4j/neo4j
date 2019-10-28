@@ -20,14 +20,19 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 
 abstract class AbstractConstraintCreator
 {
     protected final InternalSchemaActions actions;
+    protected final String name;
+    protected final IndexType indexType;
 
-    AbstractConstraintCreator( InternalSchemaActions actions )
+    AbstractConstraintCreator( InternalSchemaActions actions, String name, IndexType indexType )
     {
         this.actions = actions;
+        this.name = name;
+        this.indexType = indexType;
     }
 
     public ConstraintDefinition create()

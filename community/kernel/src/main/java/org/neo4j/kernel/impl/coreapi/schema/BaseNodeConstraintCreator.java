@@ -23,16 +23,15 @@ import java.util.List;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.IndexType;
 
 public class BaseNodeConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
 {
-    protected final String name;
     protected final Label label;
 
-    public BaseNodeConstraintCreator( InternalSchemaActions actions, String name, Label label )
+    public BaseNodeConstraintCreator( InternalSchemaActions actions, String name, Label label, IndexType indexType )
     {
-        super( actions );
-        this.name = name;
+        super( actions, name, indexType );
         this.label = label;
 
         assertInUnterminatedTransaction();
@@ -41,24 +40,30 @@ public class BaseNodeConstraintCreator extends AbstractConstraintCreator impleme
     @Override
     public ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, List.of( propertyKey ) );
+        return new NodePropertyUniqueConstraintCreator( actions, name, label, List.of( propertyKey ), indexType );
     }
 
     @Override
     public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        return new NodePropertyExistenceConstraintCreator( actions, name, label, List.of( propertyKey ) );
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, List.of( propertyKey ), indexType );
     }
 
     @Override
     public ConstraintCreator assertPropertyIsNodeKey( String propertyKey )
     {
-        return new NodeKeyConstraintCreator( actions, name, label, List.of( propertyKey ) );
+        return new NodeKeyConstraintCreator( actions, name, label, List.of( propertyKey ), indexType );
     }
 
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new BaseNodeConstraintCreator( actions, name, label );
+        return new BaseNodeConstraintCreator( actions, name, label, indexType );
+    }
+
+    @Override
+    public ConstraintCreator withIndexType( IndexType indexType )
+    {
+        return new BaseNodeConstraintCreator( actions, name, label, indexType );
     }
 }

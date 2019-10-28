@@ -40,9 +40,9 @@ public interface InternalSchemaActions
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name );
+    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType );
 
-    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name );
+    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType );
 
     ConstraintDefinition createPropertyExistenceConstraint( String name, Label label, String... propertyKey );
 

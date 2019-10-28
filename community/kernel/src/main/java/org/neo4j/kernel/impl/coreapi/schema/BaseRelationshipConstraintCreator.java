@@ -21,16 +21,15 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.IndexType;
 
 public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
 {
-    final String name;
-    final RelationshipType type;
+    protected final RelationshipType type;
 
-    BaseRelationshipConstraintCreator( InternalSchemaActions actions, String name, RelationshipType type )
+    BaseRelationshipConstraintCreator( InternalSchemaActions actions, String name, RelationshipType type, IndexType indexType )
     {
-        super( actions );
-        this.name = name;
+        super( actions, name, indexType );
         this.type = type;
     }
 
@@ -43,7 +42,7 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
     @Override
     public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey );
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType );
     }
 
     @Override
@@ -55,6 +54,12 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new BaseRelationshipConstraintCreator( actions, name, type );
+        return new BaseRelationshipConstraintCreator( actions, name, type, indexType );
+    }
+
+    @Override
+    public ConstraintCreator withIndexType( IndexType indexType )
+    {
+        return new BaseRelationshipConstraintCreator( actions, name, type, indexType );
     }
 }

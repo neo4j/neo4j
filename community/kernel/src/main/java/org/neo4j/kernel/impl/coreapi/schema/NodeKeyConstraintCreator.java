@@ -24,14 +24,15 @@ import java.util.List;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 
 public class NodeKeyConstraintCreator extends BaseNodeConstraintCreator
 {
     private final List<String> propertyKeys;
 
-    NodeKeyConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys )
+    NodeKeyConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys, IndexType indexType )
     {
-        super( actions, name, label );
+        super( actions, name, label, indexType );
         this.propertyKeys = propertyKeys;
     }
 
@@ -53,13 +54,19 @@ public class NodeKeyConstraintCreator extends BaseNodeConstraintCreator
         String[] keys = new String[propertyKeys.size() + 1];
         propertyKeys.toArray( keys );
         keys[propertyKeys.size()] = propertyKey;
-        return new NodeKeyConstraintCreator( actions, name, label, List.of( keys ) );
+        return new NodeKeyConstraintCreator( actions, name, label, List.of( keys ), indexType );
     }
 
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new NodeKeyConstraintCreator( actions, name, label, propertyKeys );
+        return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType );
+    }
+
+    @Override
+    public ConstraintCreator withIndexType( IndexType indexType )
+    {
+        return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType );
     }
 
     @Override
@@ -68,6 +75,6 @@ public class NodeKeyConstraintCreator extends BaseNodeConstraintCreator
         assertInUnterminatedTransaction();
         IndexDefinitionImpl index =
                 new IndexDefinitionImpl( actions, null, new Label[]{label}, propertyKeys.toArray( new String[0] ), true );
-        return actions.createNodeKeyConstraint( index, name );
+        return actions.createNodeKeyConstraint( index, name, indexType );
     }
 }

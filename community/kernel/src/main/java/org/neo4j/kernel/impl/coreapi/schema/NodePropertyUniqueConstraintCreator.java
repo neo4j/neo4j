@@ -24,14 +24,15 @@ import java.util.List;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 
 public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
 {
     private final List<String> propertyKeys;
 
-    NodePropertyUniqueConstraintCreator( InternalSchemaActions internalCreator, String name, Label label, List<String> propertyKeys )
+    NodePropertyUniqueConstraintCreator( InternalSchemaActions internalCreator, String name, Label label, List<String> propertyKeys, IndexType indexType )
     {
-        super( internalCreator, name, label );
+        super( internalCreator, name, label, indexType );
         this.propertyKeys = propertyKeys;
     }
 
@@ -47,7 +48,7 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
         List<String> keys = List.of( propertyKey );
         if ( propertyKeys.equals( keys ) )
         {
-            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys );
+            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType );
         }
         throw new UnsupportedOperationException(
                 "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. " + keys + "." );
@@ -62,7 +63,13 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys );
+        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys, indexType );
+    }
+
+    @Override
+    public ConstraintCreator withIndexType( IndexType indexType )
+    {
+        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys, indexType );
     }
 
     @Override
@@ -72,6 +79,6 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
 
         IndexDefinitionImpl definition =
                 new IndexDefinitionImpl( actions, null, new Label[]{label}, propertyKeys.toArray( new String[0] ), true );
-        return actions.createPropertyUniquenessConstraint( definition, name );
+        return actions.createPropertyUniquenessConstraint( definition, name, indexType );
     }
 }

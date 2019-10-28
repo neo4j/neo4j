@@ -625,7 +625,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public ConstraintCreator createDeferredConstraint( Label label )
     {
-        return new BaseNodeConstraintCreator( new BatchSchemaActions(), null, label );
+        return new BaseNodeConstraintCreator( new BatchSchemaActions(), null, label, null );
     }
 
     private IndexBackedConstraintDescriptor createUniqueIndexAndOwningConstraint( LabelSchemaDescriptor schema, IndexBackedConstraintDescriptor constraint )
@@ -1258,8 +1258,12 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name )
+        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
         {
+            if ( indexType != null )
+            {
+                throw unsupportedException();
+            }
             int labelId = getOrCreateLabelId( single( indexDefinition.getLabels() ).name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
@@ -1270,8 +1274,12 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name )
+        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
         {
+            if ( indexType != null )
+            {
+                throw unsupportedException();
+            }
             int labelId = getOrCreateLabelId( single( indexDefinition.getLabels() ).name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );

@@ -75,6 +75,8 @@ public interface ConstraintCreator
      */
     ConstraintCreator withName( String name );
 
+    ConstraintCreator withIndexType( IndexType indexType );
+
     /**
      * Creates a constraint with the details specified by the other methods in this interface.
      *

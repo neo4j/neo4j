@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
-import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -425,14 +424,14 @@ public class SchemaImpl implements Schema
     public ConstraintCreator constraintFor( Label label )
     {
         actions.assertInOpenTransaction();
-        return new BaseNodeConstraintCreator( actions, null, label );
+        return new BaseNodeConstraintCreator( actions, null, label, null );
     }
 
     @Override
     public ConstraintCreator constraintFor( RelationshipType type )
     {
         actions.assertInOpenTransaction();
-        return new BaseRelationshipConstraintCreator( actions, null, type );
+        return new BaseRelationshipConstraintCreator( actions, null, type, null );
     }
 
     @Override
@@ -741,13 +740,17 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name )
+        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
         {
             if ( indexDefinition.isMultiTokenIndex() )
             {
                 throw new ConstraintViolationException( "A property uniqueness constraint does not support multi-token index definitions. " +
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
+            }
+            if ( indexType == IndexType.FULLTEXT )
+            {
+                throw new IllegalArgumentException( "Property uniqueness constraints cannot be created with index type " + indexType + "." );
             }
             try ( Statement ignore = transaction.acquireStatement() )
             {
@@ -786,13 +789,17 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name )
+        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
         {
             if ( indexDefinition.isMultiTokenIndex() )
             {
                 throw new ConstraintViolationException( "A node key constraint does not support multi-token index definitions. " +
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
+            }
+            if ( indexType == IndexType.FULLTEXT )
+            {
+                throw new IllegalArgumentException( "Node key constraints cannot be created with index type " + indexType + "." );
             }
             try ( Statement ignore = transaction.acquireStatement() )
             {

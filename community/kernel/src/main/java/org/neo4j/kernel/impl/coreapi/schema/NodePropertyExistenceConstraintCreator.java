@@ -24,14 +24,15 @@ import java.util.List;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 
 public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCreator
 {
     private final List<String> propertyKeys;
 
-    NodePropertyExistenceConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys )
+    NodePropertyExistenceConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys, IndexType indexType )
     {
-        super( actions, name, label );
+        super( actions, name, label, indexType );
         this.propertyKeys = propertyKeys;
     }
 
@@ -41,7 +42,7 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
         List<String> keys = List.of( propertyKey );
         if ( propertyKeys.equals( keys ) )
         {
-            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys );
+            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType );
         }
         throw new UnsupportedOperationException(
                 "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. " + keys + "." );
@@ -62,12 +63,23 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys );
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType );
+    }
+
+    @Override
+    public ConstraintCreator withIndexType( IndexType indexType )
+    {
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType );
     }
 
     @Override
     public ConstraintDefinition create()
     {
+        if ( indexType != null )
+        {
+            throw new IllegalArgumentException( "Node property existence constraints cannot be created with an index type. " +
+                    "Was given index type " + indexType + "." );
+        }
         return actions.createPropertyExistenceConstraint( name, label, propertyKeys.toArray( new String[0] ) );
     }
 }
