@@ -24,6 +24,7 @@ import java.time.Duration;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -48,6 +49,8 @@ public final class BoltConnector implements SettingsDeclaration
     public static final int DEFAULT_PORT = 7687;
     public static final String NAME = "bolt";
 
+    @Description( "Enable the bolt connector" )
+    @DocumentedDefaultValue( "true" ) // Should document server defaults.
     public static final Setting<Boolean> enabled = newBuilder( "dbms.connector.bolt.enabled", BOOL, false ).build();
 
     @Description( "Encryption level to require this connector to use" )

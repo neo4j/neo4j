@@ -936,6 +936,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     // Security settings
 
     @Description( "Enable auth requirement to access Neo4j." )
+    @DocumentedDefaultValue( "true" ) // Should document server defaults.
     public static final Setting<Boolean> auth_enabled = newBuilder( "dbms.security.auth_enabled", BOOL, false ).build();
 
     @Internal

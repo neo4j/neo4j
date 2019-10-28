@@ -22,6 +22,7 @@ package org.neo4j.configuration.connectors;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
@@ -39,6 +40,8 @@ public final class HttpConnector implements SettingsDeclaration
     public static final int DEFAULT_PORT = 7474;
     public static final String NAME = "http";
 
+    @Description( "Enable the http connector" )
+    @DocumentedDefaultValue( "true" ) // Should document server defaults.
     public static final Setting<Boolean> enabled = newBuilder( "dbms.connector.http.enabled", BOOL, false ).build();
 
     @Description( "Address the connector should bind to" )

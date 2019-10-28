@@ -39,6 +39,7 @@ public final class HttpsConnector implements SettingsDeclaration
     public static final int DEFAULT_PORT = 7473;
     public static final String NAME = "https";
 
+    @Description( "Enable the https connector" )
     public static final Setting<Boolean> enabled = newBuilder( "dbms.connector.https.enabled", BOOL, false ).build();
 
     @Description( "Address the connector should bind to" )
