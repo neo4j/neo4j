@@ -56,8 +56,10 @@ import org.neo4j.test.extension.Inject;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
@@ -122,7 +124,7 @@ class CheckPointerIntegrationTest
         // The scheduled job checking whether or not checkpoints are needed runs more frequently
         // now that we've set the time interval so low, so we can simply wait for it here
         long endTime = currentTimeMillis() + SECONDS.toMillis( 30 );
-        while ( !checkPointInTxLog( db ) )
+        while ( checkPointInTxLog( db ) == 0 )
         {
             Thread.sleep( millis );
             assertTrue( currentTimeMillis() < endTime, "Took too long to produce a checkpoint" );
@@ -137,7 +139,7 @@ class CheckPointerIntegrationTest
                 checkPoints.toString() );
     }
 
-    private static boolean checkPointInTxLog( GraphDatabaseService db ) throws IOException
+    private static int checkPointInTxLog( GraphDatabaseService db ) throws IOException
     {
         LogFiles logFiles = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( LogFiles.class );
         LogFile logFile = logFiles.getLogFile();
@@ -145,14 +147,15 @@ class CheckPointerIntegrationTest
         {
             LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
             LogEntry entry;
+            int counter = 0;
             while ( (entry = logEntryReader.readLogEntry( reader )) != null )
             {
                 if ( entry instanceof CheckPoint )
                 {
-                    return true;
+                    counter++;
                 }
             }
-            return false;
+            return counter;
         }
     }
 
@@ -176,14 +179,15 @@ class CheckPointerIntegrationTest
         // Instead of waiting 10s for the background job to do this check, perform the check right here
         triggerCheckPointAttempt( db );
 
-        assertTrue( checkPointInTxLog( db ) );
+        int counter = checkPointInTxLog( db );
+        assertThat( counter, greaterThan( 0 ) );
 
         managementService.shutdown();
 
-        // then - 2 check points have been written in the log
+        // then - checkpoints + shutdown checkpoint have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
 
-        assertEquals( 2, checkPoints.size() );
+        assertEquals( counter + 1, checkPoints.size() );
     }
 
     @Test
@@ -201,7 +205,7 @@ class CheckPointerIntegrationTest
         // nothing happens
 
         triggerCheckPointAttempt( db );
-        assertFalse( checkPointInTxLog( db ) );
+        assertThat( checkPointInTxLog( db ), equalTo( 0 ) );
 
         managementService.shutdown();
 
