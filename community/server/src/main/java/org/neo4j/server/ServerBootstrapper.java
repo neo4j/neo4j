@@ -96,7 +96,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         installSignalHandlers();
         Config config = Config.newBuilder()
                 .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
-                .fromFileNoThrow( configFile.orElse( null ) ) // TODO 4.0: Remove this, and require a neo4j.conf file to be present?
+                .fromFileNoThrow( configFile.orElse( null ) )
                 .setRaw( configOverrides )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )
                 .addValidators( configurationValidators() )
