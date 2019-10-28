@@ -35,7 +35,7 @@ public interface CustomBookmarkFormatParser
 {
     boolean isCustomBookmark( String string );
 
-    List<Bookmark> parse( List<String> customBookmarks, long systemDbTxId );
+    List<Bookmark> parse( List<String> customBookmarks );
 
     CustomBookmarkFormatParser DEFAULT = new CustomBookmarkFormatParser()
     {
@@ -47,7 +47,7 @@ public interface CustomBookmarkFormatParser
         }
 
         @Override
-        public List<Bookmark> parse( List<String> customBookmarks, long systemDbTxId )
+        public List<Bookmark> parse( List<String> customBookmarks )
         {
             throw new IllegalStateException( "Custom parser invoked for unsupported bookmarks" );
         }

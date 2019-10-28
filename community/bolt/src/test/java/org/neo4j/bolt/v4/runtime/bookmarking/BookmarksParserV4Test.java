@@ -409,19 +409,12 @@ class BookmarksParserV4Test
         }
 
         @Override
-        public List<Bookmark> parse( List<String> customBookmarks, long systemDbTxId )
+        public List<Bookmark> parse( List<String> customBookmarks )
         {
-            List<Bookmark> bookmarks = customBookmarks.stream()
+            return customBookmarks.stream()
                     .map( bookmark -> bookmark.substring( "custom:".length() ) )
                     .map( CustomBookmark::new )
                     .collect( Collectors.toList() );
-
-            if ( systemDbTxId != -1 )
-            {
-                bookmarks.add( new BookmarkWithDatabaseId( systemDbTxId, SYSTEM_DATABASE_ID ) );
-            }
-
-            return bookmarks;
         }
     }
 

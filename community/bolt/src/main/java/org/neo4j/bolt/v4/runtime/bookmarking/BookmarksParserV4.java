@@ -127,7 +127,14 @@ public final class BookmarksParserV4 implements BookmarksParser
             throw newInvalidBookmarkMixtureError( bookmarks );
         }
 
-        return customBookmarkFormatParser.parse( customBookmarkStrings, maxSystemDbTxId );
+        var customBookmarks =  customBookmarkFormatParser.parse( customBookmarkStrings );
+
+        if ( maxSystemDbTxId != ABSENT_BOOKMARK_ID )
+        {
+            customBookmarks.add( new BookmarkWithDatabaseId( maxSystemDbTxId, SYSTEM_DATABASE_ID ) );
+        }
+
+        return customBookmarks;
     }
 
     private ParsedBookmark parse( String bookmarkString ) throws BookmarkParsingException
