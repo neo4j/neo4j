@@ -62,7 +62,7 @@ import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 public final class HTTP
 {
     private static final Builder BUILDER = new Builder().withHeaders( ACCEPT, APPLICATION_JSON );
-    private static final HttpClient CLIENT = createClient();
+    private static final HttpClient CLIENT = newClient();
 
     private HTTP()
     {
@@ -114,7 +114,7 @@ public final class HTTP
         return BUILDER.request( method, uri, payload );
     }
 
-    private static HttpClient createClient()
+    public static HttpClient newClient()
     {
         try
         {
