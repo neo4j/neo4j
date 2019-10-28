@@ -176,7 +176,7 @@ public class FullCheck
 
             if ( checkIndexStructure )
             {
-                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), indexes, reporter, progressFactory );
+                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), indexes, report, progressFactory );
             }
 
             List<ConsistencyCheckerTask> tasks =
@@ -200,7 +200,7 @@ public class FullCheck
     }
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore, IndexAccessors indexes,
-            ConsistencyReporter report, ProgressMonitorFactory progressMonitorFactory )
+            InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory )
     {
         final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
         final long additionalCount = 1; // LabelScanStore
@@ -214,21 +214,21 @@ public class FullCheck
         listener.done();
     }
 
-    private static void consistencyCheckLabelScanStore( LabelScanStore labelScanStore, ConsistencyReporter report, ProgressListener listener )
+    private static void consistencyCheckLabelScanStore( LabelScanStore labelScanStore, InconsistencyReport report, ProgressListener listener )
     {
-        ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.LABEL_SCAN_DOCUMENT );
+        ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, RecordType.LABEL_SCAN_DOCUMENT );
         ReporterFactory proxyFactory = new ReporterFactory( handler );
         labelScanStore.consistencyCheck( proxyFactory );
         handler.updateSummary();
         listener.add( 1 );
     }
 
-    private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, ConsistencyReporter report, ProgressListener listener )
+    private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, InconsistencyReport report, ProgressListener listener )
     {
         List<StoreIndexDescriptor> rulesToRemove = new ArrayList<>();
         for ( StoreIndexDescriptor onlineRule : indexes.onlineRules() )
         {
-            ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.INDEX );
+            ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, RecordType.INDEX );
             ReporterFactory reporterFactory = new ReporterFactory( handler );
             IndexAccessor accessor = indexes.accessorFor( onlineRule );
             if ( !accessor.consistencyCheck( reporterFactory ) )

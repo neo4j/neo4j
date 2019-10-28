@@ -72,11 +72,11 @@ public class GBPTreeBootstrapper
         }
         catch ( Exception e )
         {
-            return new FailedBootstrap();
+            return new FailedBootstrap( e );
         }
     }
 
-    static PageCache pageCache( JobScheduler jobScheduler )
+    public static PageCache pageCache( JobScheduler jobScheduler )
     {
         SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -97,6 +97,13 @@ public class GBPTreeBootstrapper
 
     private static class FailedBootstrap implements Bootstrap
     {
+        private final Throwable cause;
+
+        FailedBootstrap( Throwable cause )
+        {
+            this.cause = cause;
+        }
+
         @Override
         public boolean isTree()
         {
@@ -106,31 +113,31 @@ public class GBPTreeBootstrapper
         @Override
         public GBPTree<?,?> getTree()
         {
-            throw new IllegalStateException( "Bootstrap failed" );
+            throw new IllegalStateException( "Bootstrap failed", cause );
         }
 
         @Override
         public Layout<?,?> getLayout()
         {
-            throw new IllegalStateException( "Bootstrap failed" );
+            throw new IllegalStateException( "Bootstrap failed", cause );
         }
 
         @Override
         public TreeNode<?,?> getTreeNode()
         {
-            throw new IllegalStateException( "Bootstrap failed" );
+            throw new IllegalStateException( "Bootstrap failed", cause );
         }
 
         @Override
         public TreeState getState()
         {
-            throw new IllegalStateException( "Bootstrap failed" );
+            throw new IllegalStateException( "Bootstrap failed", cause );
         }
 
         @Override
         public Meta getMeta()
         {
-            throw new IllegalStateException( "Bootstrap failed" );
+            throw new IllegalStateException( "Bootstrap failed", cause );
         }
     }
 
