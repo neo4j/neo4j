@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.{AbstractLogicalPlanBuilder, Resolver}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.attribution.Default
 
 /**
   * Test help utility for hand-writing logical queries.
@@ -34,12 +37,21 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
 
   private var semanticTable = new SemanticTable()
 
+  private val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
+    override val defaultValue: ProvidedOrder = ProvidedOrder.empty
+  }
+
   override def newNode(node: Variable): Unit = {
     semanticTable = semanticTable.addNode(node)
   }
 
   override def newRelationship(relationship: Variable): Unit = {
     semanticTable = semanticTable.addRelationship(relationship)
+  }
+
+  def withProvidedOrder(order: ProvidedOrder): this.type = {
+    providedOrders.set(idOfLastPlan, order)
+    this
   }
 
   def build(readOnly: Boolean = true): LogicalQuery = {
@@ -52,6 +64,7 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
                  resultColumns,
                  semanticTable,
                  cardinalities,
+                 providedOrders,
                  hasLoadCSV = false,
                  None)
   }

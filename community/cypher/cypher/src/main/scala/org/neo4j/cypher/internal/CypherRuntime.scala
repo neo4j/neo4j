@@ -25,7 +25,7 @@ import java.time.Clock
 import org.neo4j.cypher.{CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption, CypherRuntimeOption}
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.MemoryTrackingController
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
@@ -68,6 +68,7 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
   * @param resultColumns names of the returned result columns
   * @param semanticTable semantic table with type information on the expressions in the query
   * @param cardinalities cardinalities (estimated rows) of all operators in the logical plan tree
+  * @param providedOrders provided order of all operators in the logical plan tree
   * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
   * @param periodicCommitInfo periodic commit info if relevant
   */
@@ -77,6 +78,7 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
                         resultColumns: Array[String],
                         semanticTable: SemanticTable,
                         cardinalities: Cardinalities,
+                        providedOrders: ProvidedOrders,
                         hasLoadCSV: Boolean,
                         periodicCommitInfo: Option[PeriodicCommitInfo])
 

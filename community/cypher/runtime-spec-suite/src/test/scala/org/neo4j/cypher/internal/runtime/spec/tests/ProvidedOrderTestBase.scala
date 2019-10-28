@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.logical.builder.Parser
 import org.neo4j.cypher.internal.logical.plans.{DoNotGetValue, IndexOrder, IndexOrderAscending, IndexOrderDescending}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
@@ -30,16 +32,18 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   trait SeqMutator { def apply[X](in: Seq[X]): Seq[X]}
-  case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, expectedMutation: SeqMutator)
+  case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, providedOrderFactory: String => ProvidedOrder, expectedMutation: SeqMutator)
 
-  for(
-    ProvidedOrderTest(orderString, indexOrder, expectedMutation) <- Seq(
-      ProvidedOrderTest("ascending", IndexOrderAscending, new SeqMutator {
-        override def apply[X](in: Seq[X]): Seq[X] = in
-      }),
-      ProvidedOrderTest("descending", IndexOrderDescending, new SeqMutator {
-        override def apply[X](in: Seq[X]): Seq[X] = in.reverse
-      })
+  for (
+    ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
+      ProvidedOrderTest("ascending", IndexOrderAscending, Parser.parseExpression _ andThen ProvidedOrder.asc,
+        new SeqMutator {
+          override def apply[X](in: Seq[X]): Seq[X] = in
+        }),
+      ProvidedOrderTest("descending", IndexOrderDescending, Parser.parseExpression _ andThen ProvidedOrder.desc,
+        new SeqMutator {
+          override def apply[X](in: Seq[X]): Seq[X] = in.reverse
+        })
     )
   ) {
 
@@ -72,7 +76,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .projection("x.prop AS prop")
         .expand("(y)-->(z)") // 6x more rows
         .expand("(x)-->(y)") // 6x more rows
-        .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -96,7 +100,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("prop", "c")
         .aggregation(groupingExpressions = Seq("x.prop AS prop"), aggregationExpression = Seq("count(*) AS c"))
-        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -134,7 +138,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .projection("y.prop AS prop")
         .nodeHashJoin("y")
         .|.expand("(z)-->(y)")
-        .|.nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .|.nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
         .expand("(x)-->(y)")
         .filter("x.prop % 2 = 0")
         .nodeByLabelScan("x", "Honey")
@@ -187,7 +191,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .|.filter("y.prop % 2 = 0")
         .|.argument("y")
         .expand("(z)-->(y)")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -221,8 +225,8 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .projection("z.prop AS zProp")
         .apply()
         .|.optional("x")
-        .|.filter("x.prop % 2 = 0")
-        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = DoNotGetValue, argumentIds = Set("x"))
+        .|.filter("x.prop % 2 = 0").withProvidedOrder(providedOrderFactory("z.prop"))
+        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = DoNotGetValue, argumentIds = Set("x")).withProvidedOrder(providedOrderFactory("z.prop"))
         .input(Seq("x"))
         .build()
 
@@ -244,6 +248,57 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       } yield Array(x, zProp)
 
       runtimeResult should beColumns("x", "zProp").withRows(inOrder(expected))
+    }
+  }
+}
+
+// Supported by interpreted, slotted
+trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
+  self: ProvidedOrderTestBase[CONTEXT] =>
+
+  for (
+    ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
+      ProvidedOrderTest("ascending", IndexOrderAscending, Parser.parseExpression _ andThen ProvidedOrder.asc,
+        new SeqMutator {
+          override def apply[X](in: Seq[X]): Seq[X] = in
+        }),
+      ProvidedOrderTest("descending", IndexOrderDescending, Parser.parseExpression _ andThen ProvidedOrder.desc,
+        new SeqMutator {
+          override def apply[X](in: Seq[X]): Seq[X] = in.reverse
+        })
+    )
+  ) {
+    test(s"cartesian product keeps LHS index provided $orderString order") {
+      // given
+      val n = sizeHint / 10
+      val modulo = 100
+      val zGreaterThanFilter = 10
+
+      given {
+        index("Honey", "prop")
+        nodePropertyGraph(n, {
+          case i => Map("prop" -> i % modulo)
+        }, "Honey")
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("z.prop AS prop")
+        .cartesianProduct()
+        .|.allNodeScan("y")
+        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = for {
+        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGreaterThanFilter).sorted)
+        _ <- 0 until n
+      } yield z
+
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
   }
 }

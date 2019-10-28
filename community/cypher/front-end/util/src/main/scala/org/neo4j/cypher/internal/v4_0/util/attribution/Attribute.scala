@@ -104,6 +104,16 @@ trait Attribute[KEY <: Identifiable, VALUE] {
 }
 
 /**
+ * Mixin trait to override behavior of `get`. Does not alter behavior of other methods.
+ */
+trait Default[KEY <: Identifiable, VALUE] extends Attribute[KEY, VALUE] {
+
+  def defaultValue: VALUE
+
+  override def get(id: Id): VALUE = if (isDefinedAt(id)) super.get(id) else defaultValue
+}
+
+/**
   * This class encapsulates attributes and allows to copy them from one ID to another without having explicit
   * read or write access. This allows rewriters to set some attributes manually on a new ID, but copying
   * others over from an old id.
