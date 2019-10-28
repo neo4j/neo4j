@@ -98,18 +98,14 @@ public class Neo4jJsonCodec extends ObjectMapper
         if ( value instanceof Entity )
         {
             var context = transactionHandle.getContext();
-            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( context ) )
-            {
-                writeEntity( out, (Entity) value, txStateChecker, context );
-            }
+            TransactionStateChecker txStateChecker = TransactionStateChecker.create( context );
+            writeEntity( out, (Entity) value, txStateChecker, context );
         }
         else if ( value instanceof Path )
         {
             var context = transactionHandle.getContext();
-            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( context ) )
-            {
-                writePath( out, ((Path) value).iterator(), txStateChecker, context );
-            }
+            TransactionStateChecker txStateChecker = TransactionStateChecker.create( context );
+            writePath( out, ((Path) value).iterator(), txStateChecker, context );
         }
         else if ( value instanceof Iterable )
         {
@@ -292,19 +288,15 @@ public class Neo4jJsonCodec extends ObjectMapper
         if ( value instanceof Node )
         {
             Node node = (Node) value;
-            try ( TransactionStateChecker stateChecker = TransactionStateChecker.create( transactionHandle.getContext() ) )
-            {
-                writeNodeOrRelationshipMeta( out, node.getId(), Neo4jJsonMetaType.NODE, stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
-            }
+            TransactionStateChecker stateChecker = TransactionStateChecker.create( transactionHandle.getContext() );
+            writeNodeOrRelationshipMeta( out, node.getId(), Neo4jJsonMetaType.NODE, stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
         }
         else if ( value instanceof Relationship )
         {
             Relationship relationship = (Relationship) value;
-            try ( TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( transactionHandle.getContext() ) )
-            {
-                writeNodeOrRelationshipMeta( out, relationship.getId(), Neo4jJsonMetaType.RELATIONSHIP,
-                        transactionStateChecker.isRelationshipDeletedInCurrentTx( relationship.getId() ) );
-            }
+            TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( transactionHandle.getContext() );
+            writeNodeOrRelationshipMeta( out, relationship.getId(), Neo4jJsonMetaType.RELATIONSHIP,
+                    transactionStateChecker.isRelationshipDeletedInCurrentTx( relationship.getId() ) );
         }
         else if ( value instanceof Path )
         {
