@@ -271,31 +271,31 @@ public class TransactionImpl implements InternalTransaction
     }
 
     @Override
-    public ResourceIterable<Label> getAllLabelsInUse()
+    public Iterable<Label> getAllLabelsInUse()
     {
         return allInUse( TokenAccess.LABELS );
     }
 
     @Override
-    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    public Iterable<RelationshipType> getAllRelationshipTypesInUse()
     {
         return allInUse( TokenAccess.RELATIONSHIP_TYPES );
     }
 
     @Override
-    public ResourceIterable<Label> getAllLabels()
+    public Iterable<Label> getAllLabels()
     {
         return all( TokenAccess.LABELS );
     }
 
     @Override
-    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    public Iterable<RelationshipType> getAllRelationshipTypes()
     {
         return all( TokenAccess.RELATIONSHIP_TYPES );
     }
 
     @Override
-    public ResourceIterable<String> getAllPropertyKeys()
+    public Iterable<String> getAllPropertyKeys()
     {
         return all( TokenAccess.PROPERTY_KEYS );
     }
@@ -844,13 +844,13 @@ public class TransactionImpl implements InternalTransaction
         return invalidQuery;
     }
 
-    private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
+    private <T> Iterable<T> allInUse( final TokenAccess<T> tokens )
     {
         var transaction = kernelTransaction();
         return () -> tokens.inUse( transaction );
     }
 
-    private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
+    private <T> Iterable<T> all( final TokenAccess<T> tokens )
     {
         var transaction = kernelTransaction();
         return () -> tokens.all( transaction );

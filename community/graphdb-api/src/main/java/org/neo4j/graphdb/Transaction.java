@@ -161,7 +161,7 @@ public interface Transaction extends AutoCloseable
      *
      * @return all labels in the underlying store.
      */
-    ResourceIterable<Label> getAllLabelsInUse();
+    Iterable<Label> getAllLabelsInUse();
 
     /**
      * Returns all relationship types currently in the underlying store.
@@ -172,7 +172,7 @@ public interface Transaction extends AutoCloseable
      *
      * @return all relationship types in the underlying store
      */
-    ResourceIterable<RelationshipType> getAllRelationshipTypesInUse();
+    Iterable<RelationshipType> getAllRelationshipTypesInUse();
 
     /**
      * Returns all labels currently in the underlying store. Labels are added to the store the first time
@@ -184,7 +184,7 @@ public interface Transaction extends AutoCloseable
      *
      * @return all labels in the underlying store.
      */
-    ResourceIterable<Label> getAllLabels();
+    Iterable<Label> getAllLabels();
 
     /**
      * Returns all relationship types currently in the underlying store.
@@ -198,7 +198,7 @@ public interface Transaction extends AutoCloseable
      *
      * @return all relationship types in the underlying store
      */
-    ResourceIterable<RelationshipType> getAllRelationshipTypes();
+    Iterable<RelationshipType> getAllRelationshipTypes();
 
     /**
      * Returns all property keys currently in the underlying store. This method guarantees that it will return all
@@ -210,7 +210,7 @@ public interface Transaction extends AutoCloseable
      *
      * @return all property keys in the underlying store.
      */
-    ResourceIterable<String> getAllPropertyKeys();
+    Iterable<String> getAllPropertyKeys();
 
     /**
      * Returns all nodes having a given label, and a property value of type String or Character matching the
