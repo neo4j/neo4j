@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.annotations.service.Service;
-import org.neo4j.service.NamedService;
+package org.neo4j.service;
 
 /**
- * Factory for lock managers that can be loaded over service loading.
+ * Helper interface to be implemented by services if there's a need to load service provider base on priority.
  */
-@Service
-public interface DynamicLocksFactory extends LocksFactory, NamedService
+public interface PrioritizedService
 {
+    /**
+     * @return the priority of the service, lowest value takes precedent.
+     */
+    int getPriority();
 }

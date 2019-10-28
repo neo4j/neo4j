@@ -21,10 +21,14 @@ package org.neo4j.kernel.impl.locking;
 
 import java.time.Clock;
 
+import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.service.NamedService;
+import org.neo4j.service.PrioritizedService;
 
-public interface LocksFactory
+@Service
+public interface LocksFactory extends NamedService, PrioritizedService
 {
     Locks newInstance( Config config, Clock clock, ResourceType[] resourceTypes );
 }

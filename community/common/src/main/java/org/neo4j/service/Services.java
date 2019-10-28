@@ -22,6 +22,7 @@ package org.neo4j.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -105,6 +106,16 @@ public final class Services
         }
 
         return matches.isEmpty() ? Optional.empty() : Optional.of( matches.get( 0 ) );
+    }
+
+    /**
+     * Load the service with the highest priority.
+     */
+    public static <T extends PrioritizedService> Optional<T> loadByPriority( Class<T> service )
+    {
+        final List<T> all = (List<T>) loadAll( service );
+        all.sort( Comparator.comparingInt( PrioritizedService::getPriority ) );
+        return all.isEmpty() ? Optional.empty() : Optional.of( all.get( 0 ) );
     }
 
     /**

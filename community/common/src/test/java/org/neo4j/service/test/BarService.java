@@ -27,4 +27,10 @@ public class BarService implements SomeService
     {
         return "bar";
     }
+
+    @Override
+    public int getPriority()
+    {
+        return 3;
+    }
 }

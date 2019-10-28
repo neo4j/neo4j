@@ -27,4 +27,10 @@ public class BazService implements SomeService
     {
         return "baz";
     }
+
+    @Override
+    public int getPriority()
+    {
+        return 2;
+    }
 }

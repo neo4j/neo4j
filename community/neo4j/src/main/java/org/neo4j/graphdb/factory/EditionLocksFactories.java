@@ -23,11 +23,10 @@ import java.time.Clock;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.locking.DynamicLocksFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 
 public final class EditionLocksFactories
@@ -37,22 +36,21 @@ public final class EditionLocksFactories
         return locksFactory.newInstance( config, clock, ResourceTypes.values() );
     }
 
-    public static LocksFactory createLockFactory( Config config )
+    public static LocksFactory createLockFactory( Config config, LogService logService )
     {
-        String key = config.get( GraphDatabaseSettings.lock_manager );
-        for ( DynamicLocksFactory candidate : Services.loadAll( DynamicLocksFactory.class ) )
+        LocksFactory locksFactory = getLocksFactory( config.get( GraphDatabaseSettings.lock_manager ) );
+        logService.getInternalLog( EditionLocksFactories.class ).info( "Locking implementation '" + locksFactory.getName() + "' selected." );
+        return locksFactory;
+    }
+
+    private static LocksFactory getLocksFactory( String key )
+    {
+        if ( key.isEmpty() )
         {
-            if ( key.equals( candidate.getName() ) )
-            {
-                return candidate;
-            }
+            return Services.loadByPriority( LocksFactory.class ).orElseThrow( () -> new IllegalArgumentException( "No lock manager found" ) );
         }
 
-        if ( CommunityLocksFactory.NAME.equals( key ) )
-        {
-            return new CommunityLocksFactory();
-        }
-
-        throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
+        return Services.load( LocksFactory.class, key )
+                .orElseThrow(() -> new IllegalArgumentException( "No lock manager found with the name '" + key + "'." ) );
     }
 }

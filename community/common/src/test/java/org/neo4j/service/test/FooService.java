@@ -27,4 +27,10 @@ public class FooService implements SomeService
     {
         return "foo";
     }
+
+    @Override
+    public int getPriority()
+    {
+        return 1;
+    }
 }

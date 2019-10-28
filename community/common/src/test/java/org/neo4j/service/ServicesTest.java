@@ -115,6 +115,14 @@ class ServicesTest
     }
 
     @Test
+    void loadByPriority()
+    {
+        final Optional<SomeService> foo = Services.loadByPriority( SomeService.class );
+        assertTrue( foo.isPresent() );
+        assertThat( foo.get(), instanceOf( FooService.class ) );
+    }
+
+    @Test
     void loadAllFromCurrentAndContextClassLoadersNoDuplicates()
     {
         withContextClassLoader( new TestClassLoader(), () ->
@@ -143,6 +151,17 @@ class ServicesTest
             final Optional<SomeService> baz = Services.load( SomeService.class, "baz" );
             assertTrue( baz.isPresent() );
             assertThat( baz.get(), instanceOf( BazService.class ) );
+        } );
+    }
+
+    @Test
+    void loadByPriorityFromCurrentAndContextClassLoaders()
+    {
+        withContextClassLoader( new TestClassLoader(), () ->
+        {
+            final Optional<SomeService> foo = Services.loadByPriority( SomeService.class );
+            assertTrue( foo.isPresent() );
+            assertThat( foo.get(), instanceOf( FooService.class ) );
         } );
     }
 

@@ -21,17 +21,30 @@ package org.neo4j.kernel.impl.locking.community;
 
 import java.time.Clock;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.lock.ResourceType;
 
+@ServiceProvider
 public class CommunityLocksFactory implements LocksFactory
 {
-    public static final String NAME = "community";
     @Override
     public Locks newInstance( Config config, Clock clock, ResourceType[] resourceTypes )
     {
         return new CommunityLockManger( config, clock );
+    }
+
+    @Override
+    public String getName()
+    {
+        return "community";
+    }
+
+    @Override
+    public int getPriority()
+    {
+        return 20;
     }
 }
