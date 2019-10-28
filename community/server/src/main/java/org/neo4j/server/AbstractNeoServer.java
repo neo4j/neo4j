@@ -110,6 +110,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private Supplier<UserManagerSupplier> userManagerSupplier;
     private Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private HttpTransactionManager httpTransactionManager;
+    private CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
 
     private ConnectorPortRegister connectorPortRegister;
     private RotatingRequestLog requestLog;
@@ -337,8 +338,10 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             // Although the globalGuard availability guard is shutdown as part of LifeSupport#stop(), we never hit that if we're
             // blocking in LifeSupport#start() and the blocked starting components may be using this guard as a bail out signal
-            var globalGuard = getSystemDatabaseDependencyResolver().resolveDependency( CompositeDatabaseAvailabilityGuard.class );
-            globalGuard.shutdown();
+            if ( globalAvailabilityGuard != null )
+            {
+                globalAvailabilityGuard.shutdown();
+            }
         }
         catch ( Throwable t )
         {
@@ -462,6 +465,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             connectorPortRegister = dependencyResolver.resolveDependency( ConnectorPortRegister.class );
             httpTransactionManager = createHttpTransactionManager();
+            globalAvailabilityGuard = dependencyResolver.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
 
             configureWebServer();
 
