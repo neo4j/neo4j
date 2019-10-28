@@ -19,37 +19,47 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
+import java.util.Iterator;
 
 /**
- * Limits the amount of items returned by an {@link ResourceIterable}, or rather
- * {@link ResourceIterator}s spawned from it.
+ * Limits the amount of items returned by an {@link Iterator}.
  *
- * @param <T> the type of items in this {@link Iterable}.
- * @see LimitingResourceIterator
+ * @param <T> the type of items in this {@link Iterator}.
  */
-public class LimitingResourceIterable<T> implements ResourceIterable<T>
+public class LimitingIterator<T> extends PrefetchingIterator<T>
 {
-    private final Iterable<T> source;
+    private int returned;
+    private final Iterator<T> source;
     private final int limit;
 
     /**
-     * Instantiates a new limiting {@link Iterable} which can limit the number
-     * of items returned from iterators it spawns.
+     * Instantiates a new limiting iterator which iterates over {@code source}
+     * and if {@code limit} items have been returned the next {@link #hasNext()}
+     * will return {@code false}.
      *
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
-    public LimitingResourceIterable( ResourceIterable<T> source, int limit )
+    LimitingIterator( Iterator<T> source, int limit )
     {
         this.source = source;
         this.limit = limit;
     }
 
     @Override
-    public ResourceIterator<T> iterator()
+    protected T fetchNextOrNull()
     {
-        return new LimitingResourceIterator<>( Iterators.asResourceIterator( source.iterator() ), limit );
+        if ( !source.hasNext() || returned >= limit )
+        {
+            return null;
+        }
+        try
+        {
+            return source.next();
+        }
+        finally
+        {
+            returned++;
+        }
     }
 }

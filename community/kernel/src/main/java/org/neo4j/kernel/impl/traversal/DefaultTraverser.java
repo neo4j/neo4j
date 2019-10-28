@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.Iterator;
+
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 public class DefaultTraverser implements Traverser
 {
@@ -41,9 +41,9 @@ public class DefaultTraverser implements Traverser
     }
 
     @Override
-    public ResourceIterable<Node> nodes()
+    public Iterable<Node> nodes()
     {
-        return new ResourcePathIterableWrapper<>( this )
+        return new PathIterableWrapper<>( this )
         {
             @Override
             protected Node convert( Path path )
@@ -54,22 +54,16 @@ public class DefaultTraverser implements Traverser
     }
 
     @Override
-    public ResourceIterable<Relationship> relationships()
+    public Iterable<Relationship> relationships()
     {
-        return new ResourcePathIterableWrapper<>( this )
+        return new PathIterableWrapper<>( this )
         {
             @Override
-            public ResourceIterator<Relationship> iterator()
+            public Iterator<Relationship> iterator()
             {
-                final ResourceIterator<Path> pathIterator = pathIterator();
-                return new PrefetchingResourceIterator<>()
+                var pathIterator = pathIterator();
+                return new PrefetchingIterator<>()
                 {
-                    @Override
-                    public void close()
-                    {
-                        pathIterator.close();
-                    }
-
                     @Override
                     protected Relationship fetchNextOrNull()
                     {
@@ -95,7 +89,7 @@ public class DefaultTraverser implements Traverser
     }
 
     @Override
-    public ResourceIterator<Path> iterator()
+    public Iterator<Path> iterator()
     {
         TraverserIterator traverserIterator = traverserIteratorFactory.newInstance();
         lastIterator = traverserIterator;
@@ -108,32 +102,26 @@ public class DefaultTraverser implements Traverser
         return lastIterator;
     }
 
-    private abstract static class ResourcePathIterableWrapper<T> implements ResourceIterable<T>
+    private abstract static class PathIterableWrapper<T> implements Iterable<T>
     {
-        private final ResourceIterable<Path> iterableToWrap;
+        private final Iterable<Path> iterableToWrap;
 
-        ResourcePathIterableWrapper( ResourceIterable<Path> iterableToWrap )
+        PathIterableWrapper( Iterable<Path> iterableToWrap )
         {
             this.iterableToWrap = iterableToWrap;
         }
 
-        ResourceIterator<Path> pathIterator()
+        Iterator<Path> pathIterator()
         {
             return iterableToWrap.iterator();
         }
 
         @Override
-        public ResourceIterator<T> iterator()
+        public Iterator<T> iterator()
         {
-            final ResourceIterator<Path> iterator = pathIterator();
-            return new PrefetchingResourceIterator<>()
+            var iterator = pathIterator();
+            return new PrefetchingIterator<>()
             {
-                @Override
-                public void close()
-                {
-                    iterator.close();
-                }
-
                 @Override
                 protected T fetchNextOrNull()
                 {
