@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 
 import static org.neo4j.function.Predicates.instanceOfAny;
 
-public class Exceptions
+public final class Exceptions
 {
     public static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = ( t, e ) ->
     {   // Don't print about it
@@ -253,7 +253,7 @@ public class Exceptions
             return current;
         }
 
-        if ( current != null )
+        if ( current != null && initial != current )
         {
             initial.addSuppressed( current );
         }

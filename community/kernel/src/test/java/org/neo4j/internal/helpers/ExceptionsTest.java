@@ -21,17 +21,21 @@ package org.neo4j.internal.helpers;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TestExceptions
+class ExceptionsTest
 {
     @Test
     void shouldDetectContainsOneOfSome()
     {
         // GIVEN
-        Throwable cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
+        var cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
 
         // THEN
         assertTrue( Exceptions.contains( cause, "words", NullPointerException.class ) );
@@ -42,15 +46,59 @@ class TestExceptions
     void shouldSetMessage()
     {
         // GIVEN
-        String initialMessage = "Initial message";
-        LevelOneException exception = new LevelOneException( initialMessage );
+        var initialMessage = "Initial message";
+        var exception = new LevelOneException( initialMessage );
 
         // WHEN
-        String prependedMessage = "Prepend this: " + exception.getMessage();
+        var prependedMessage = "Prepend this: " + exception.getMessage();
         Exceptions.withMessage( exception, prependedMessage );
 
         // THEN
         assertEquals( prependedMessage, exception.getMessage() );
+    }
+
+    @Test
+    void shouldChainExceptionsWhenInitialExceptionIsNull()
+    {
+        var exception = new RuntimeException();
+
+        var chainedException = Exceptions.chain( null, exception );
+
+        assertSame( exception, chainedException );
+    }
+
+    @Test
+    void shouldChainExceptionsWhenCurrentExceptionIsNull()
+    {
+        var exception = new RuntimeException();
+
+        var chainedException = Exceptions.chain( exception, null );
+
+        assertSame( exception, chainedException );
+        assertThat( chainedException.getSuppressed(), emptyArray() );
+    }
+
+    @Test
+    void shouldChainExceptions()
+    {
+        var exception1 = new RuntimeException();
+        var exception2 = new RuntimeException();
+
+        var chainedException = Exceptions.chain( exception1, exception2 );
+
+        assertSame( exception1, chainedException );
+        assertThat( chainedException.getSuppressed(), arrayContaining( exception2 ) );
+    }
+
+    @Test
+    void shouldNotChainSameException()
+    {
+        var exception = new RuntimeException();
+
+        var chainedException = Exceptions.chain( exception, exception );
+
+        assertSame( exception, chainedException );
+        assertThat( chainedException.getSuppressed(), emptyArray() );
     }
 
     private static class LevelOneException extends Exception
