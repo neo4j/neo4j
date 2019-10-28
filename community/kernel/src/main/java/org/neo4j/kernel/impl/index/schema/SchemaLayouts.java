@@ -50,6 +50,16 @@ public class SchemaLayouts implements LayoutBootstrapper
                 ( indexFile, pageCache, meta ) -> new IndexStatisticsLayout() ) );
     }
 
+    public static String[] layoutDescriptions()
+    {
+        return new String[]{
+                "Generic layout",
+                "Id range layout",
+                "Label scan layout",
+                "Index statistics layout"
+        };
+    }
+
     @Override
     public Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta ) throws IOException
     {

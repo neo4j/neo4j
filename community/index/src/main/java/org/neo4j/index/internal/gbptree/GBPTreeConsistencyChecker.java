@@ -61,11 +61,12 @@ class GBPTreeConsistencyChecker<KEY>
     private final long lastId;
     private final long stableGeneration;
     private final long unstableGeneration;
+    private final boolean allowCrashPointers;
     private final GenerationKeeper generationTarget = new GenerationKeeper();
     private final MutableLongList offloadIds = new LongArrayList();
 
     GBPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, IdProvider idProvider, long stableGeneration,
-            long unstableGeneration )
+            long unstableGeneration, boolean allowCrashPointers )
     {
         this.node = node;
         this.comparator = node.keyComparator();
@@ -74,6 +75,7 @@ class GBPTreeConsistencyChecker<KEY>
         this.lastId = idProvider.lastId();
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
+        this.allowCrashPointers = allowCrashPointers;
     }
 
     /**
@@ -197,11 +199,11 @@ class GBPTreeConsistencyChecker<KEY>
 
         // check header pointers
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.leftSibling(), TreeNode.BYTE_POS_LEFTSIBLING, visitor );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.leftSibling(), TreeNode.BYTE_POS_LEFTSIBLING, visitor, allowCrashPointers );
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.rightSibling(), TreeNode.BYTE_POS_RIGHTSIBLING, visitor );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.rightSibling(), TreeNode.BYTE_POS_RIGHTSIBLING, visitor, allowCrashPointers );
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, visitor );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, visitor, allowCrashPointers );
 
         boolean reasonableKeyCount = node.reasonableKeyCount( keyCount );
         if ( !reasonableKeyCount )
@@ -289,7 +291,7 @@ class GBPTreeConsistencyChecker<KEY>
             long child;
             long childGeneration;
             assertNoCrashOrBrokenPointerInGSPP( file,
-                    cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor );
+                    cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor, allowCrashPointers );
             do
             {
                 child = childAt( cursor, pos, generationTarget );
@@ -322,7 +324,7 @@ class GBPTreeConsistencyChecker<KEY>
         long child;
         long childGeneration;
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor, allowCrashPointers );
         do
         {
             child = childAt( cursor, pos, generationTarget );
@@ -393,7 +395,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     static <KEY> void assertNoCrashOrBrokenPointerInGSPP( File file, PageCursor cursor, long stableGeneration, long unstableGeneration,
-            GBPTreePointerType pointerType, int offset, GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
+            GBPTreePointerType pointerType, int offset, GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean allowCrashPointers ) throws IOException
     {
         long currentNodeId = cursor.getCurrentPageId();
 
@@ -433,10 +435,13 @@ class GBPTreeConsistencyChecker<KEY>
         }
         while ( cursor.shouldRetry() );
 
-        if ( stateA == GenerationSafePointerPair.CRASH || stateB == GenerationSafePointerPair.CRASH )
+        if ( !allowCrashPointers )
         {
-            visitor.crashedPointer( currentNodeId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB,
-                    file );
+            if ( stateA == GenerationSafePointerPair.CRASH || stateB == GenerationSafePointerPair.CRASH )
+            {
+                visitor.crashedPointer( currentNodeId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB,
+                        file );
+            }
         }
         if ( stateA == GenerationSafePointerPair.BROKEN || stateB == GenerationSafePointerPair.BROKEN )
         {

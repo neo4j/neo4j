@@ -179,7 +179,7 @@ public class FullCheck
             if ( checkIndexStructure )
             {
                 consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes,
-                        allIdGenerators( directStoreAccess ), reporter, progressFactory );
+                        allIdGenerators( directStoreAccess ), report, progressFactory );
             }
 
             List<ConsistencyCheckerTask> tasks =
@@ -211,7 +211,7 @@ public class FullCheck
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
             IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, IndexAccessors indexes,
-            List<IdGenerator> idGenerators, ConsistencyReporter report, ProgressMonitorFactory progressMonitorFactory )
+            List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory )
     {
         final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
         final long additionalCount = 1 /*LabelScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
@@ -226,7 +226,7 @@ public class FullCheck
         listener.done();
     }
 
-    private static void consistencyCheckNonSchemaIndexes( ConsistencyReporter report, ProgressListener listener,
+    private static void consistencyCheckNonSchemaIndexes( InconsistencyReport report, ProgressListener listener,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, List<IdGenerator> idGenerators )
     {
         consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT );
@@ -238,10 +238,10 @@ public class FullCheck
         }
     }
 
-    private static void consistencyCheckSingleCheckable( ConsistencyReporter report, ProgressListener listener, ConsistencyCheckable checkable,
+    private static void consistencyCheckSingleCheckable( InconsistencyReport report, ProgressListener listener, ConsistencyCheckable checkable,
             RecordType recordType )
     {
-        ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( recordType );
+        ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, recordType );
         ReporterFactory proxyFactory = new ReporterFactory( handler );
 
         checkable.consistencyCheck( proxyFactory );
@@ -249,12 +249,12 @@ public class FullCheck
         listener.add( 1 );
     }
 
-    private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, ConsistencyReporter report, ProgressListener listener )
+    private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, InconsistencyReport report, ProgressListener listener )
     {
         List<IndexDescriptor> rulesToRemove = new ArrayList<>();
         for ( IndexDescriptor onlineRule : indexes.onlineRules() )
         {
-            ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.INDEX );
+            ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, RecordType.INDEX );
             ReporterFactory reporterFactory = new ReporterFactory( handler );
             IndexAccessor accessor = indexes.accessorFor( onlineRule );
             if ( !accessor.consistencyCheck( reporterFactory ) )

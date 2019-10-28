@@ -1655,7 +1655,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         long currentPageId = readCursor.getCurrentPageId();
         root.goTo( readCursor );
         GBPTreeConsistencyChecker<KEY> consistencyChecker =
-                new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration );
+                new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration, false );
         ThrowingConsistencyCheckVisitor<KEY> visitor = new ThrowingConsistencyCheckVisitor<>();
         consistencyChecker.check( null, readCursor, root, visitor );
         goTo( readCursor, currentPageId );
@@ -1818,7 +1818,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     private void assertSuccessorPointerNotCrashOrBroken() throws IOException
     {
         assertNoCrashOrBrokenPointerInGSPP( null, readCursor, stableGeneration, unstableGeneration,
-                GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, new ThrowingConsistencyCheckVisitor<>() );
+                GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, new ThrowingConsistencyCheckVisitor<>(), false );
     }
 
     private void assertKeyAssociatedWithValue( KEY key, VALUE expectedValue )
