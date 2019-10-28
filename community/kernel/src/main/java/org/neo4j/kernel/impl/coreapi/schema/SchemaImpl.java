@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
@@ -74,6 +73,7 @@ import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.time.Stopwatch;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -129,6 +129,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
+        transaction.assertOpen();
         TokenRead tokenRead = transaction.tokenRead();
         SchemaRead schemaRead = transaction.schemaRead();
         List<IndexDefinition> definitions = new ArrayList<>();
@@ -145,6 +146,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes()
     {
+        transaction.assertOpen();
         SchemaRead schemaRead = transaction.schemaRead();
         List<IndexDefinition> definitions = new ArrayList<>();
 
@@ -198,7 +200,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
-        actions.assertInOpenTransaction();
+        transaction.assertOpen();
         Stopwatch startTime = Stopwatch.start();
         do
         {
@@ -231,7 +233,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexesOnline( long duration, TimeUnit unit )
     {
-        actions.assertInOpenTransaction();
+        transaction.assertOpen();
         long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
         Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
 
@@ -257,7 +259,8 @@ public class SchemaImpl implements Schema
     @Override
     public ConstraintDefinition getConstraintByName( String constraintName )
     {
-        Objects.requireNonNull( constraintName );
+        transaction.assertOpen();
+        requireNonNull( constraintName );
         ConstraintDescriptor constraint = transaction.schemaRead().constraintGetForName( constraintName );
         if ( constraint == null )
         {
@@ -269,7 +272,8 @@ public class SchemaImpl implements Schema
     @Override
     public IndexDefinition getIndexByName( String indexName )
     {
-        Objects.requireNonNull( indexName );
+        transaction.assertOpen();
+        requireNonNull( indexName );
         Iterator<IndexDefinition> indexes = getIndexes().iterator();
         IndexDefinition index = null;
         while ( indexes.hasNext() )
@@ -297,6 +301,7 @@ public class SchemaImpl implements Schema
     {
         try
         {
+            transaction.assertOpen();
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor reference = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             InternalIndexState indexState = schemaRead.indexGetState( reference );
@@ -328,6 +333,7 @@ public class SchemaImpl implements Schema
     {
         try
         {
+            transaction.assertOpen();
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             PopulationProgress progress = schemaRead.indexGetPopulationProgress( descriptor );
@@ -344,6 +350,7 @@ public class SchemaImpl implements Schema
     {
         try
         {
+            transaction.assertOpen();
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             return schemaRead.indexGetFailure( descriptor );
@@ -357,26 +364,28 @@ public class SchemaImpl implements Schema
     @Override
     public ConstraintCreator constraintFor( Label label )
     {
-        actions.assertInOpenTransaction();
+        transaction.assertOpen();
         return new BaseNodeConstraintCreator( actions, null, label );
     }
 
     @Override
     public ConstraintCreator constraintFor( RelationshipType type )
     {
-        actions.assertInOpenTransaction();
+        transaction.assertOpen();
         return new BaseRelationshipConstraintCreator( actions, null, type );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
+        transaction.assertOpen();
         return asConstraintDefinitions( transaction.schemaRead().constraintsGetAll(), transaction.tokenRead() );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
+        transaction.assertOpen();
         TokenRead tokenRead = transaction.tokenRead();
         SchemaRead schemaRead = transaction.schemaRead();
         int labelId = tokenRead.nodeLabel( label.name() );
@@ -390,6 +399,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
+        transaction.assertOpen();
         TokenRead tokenRead = transaction.tokenRead();
         SchemaRead schemaRead = transaction.schemaRead();
         int typeId = tokenRead.relationshipType( type.name() );
