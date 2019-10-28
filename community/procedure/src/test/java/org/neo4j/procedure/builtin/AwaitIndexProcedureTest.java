@@ -30,7 +30,10 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -64,13 +67,19 @@ class AwaitIndexProcedureTest
     private IndexDescriptor anyIndex ;
 
     @BeforeEach
-    void setup()
+    void setup() throws LabelNotFoundKernelException, PropertyKeyIdNotFoundKernelException
     {
-        LabelSchemaDescriptor anyDescriptor = SchemaDescriptor.forLabel( 0, 0 );
+        final int labelId = 0;
+        final int propId = 0;
+        LabelSchemaDescriptor anyDescriptor = SchemaDescriptor.forLabel( labelId, propId );
         anyIndex = forSchema( anyDescriptor ).withName( "index" ).materialise( 13 );
         KernelTransaction transaction = mock( KernelTransaction.class );
         schemaRead = mock( SchemaRead.class );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
+        TokenRead tokenRead = mock( TokenRead.class );
+        when( tokenRead.nodeLabelName( labelId ) ).thenReturn( "label_0" );
+        when( tokenRead.propertyKeyName( propId ) ).thenReturn( "prop_0" );
+        when( transaction.tokenRead() ).thenReturn( tokenRead );
         procedure = new IndexProcedures( transaction, null );
     }
 
