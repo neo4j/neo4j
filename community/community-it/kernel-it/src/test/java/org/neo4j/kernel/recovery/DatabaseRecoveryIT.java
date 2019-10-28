@@ -75,8 +75,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -111,14 +111,12 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.lang.Long.max;
-import static java.time.Duration.ofMillis;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -261,74 +259,71 @@ class DatabaseRecoveryIT
     @Test
     void recoveryShouldFixPartiallyAppliedSchemaIndexUpdates()
     {
-        assertTimeoutPreemptively( ofMillis( 60_000 ), () ->
-        {
-            Label label = Label.label( "Foo" );
-            String property = "Bar";
+        Label label = Label.label( "Foo" );
+        String property = "Bar";
 
-            // cause failure during 'relationship.delete()' command application
-            ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
+        // cause failure during 'relationship.delete()' command application
+        ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
+        adversary.disable();
+
+        File storeDir = directory.homeDir();
+        DatabaseManagementService managementService =
+                AdversarialPageCacheGraphDatabaseFactory.create( storeDir, fileSystem, adversary ).build();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+                tx.commit();
+            }
+
+            long relationshipId = createRelationship( db );
+
+            TransactionFailureException txFailure = null;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode( label );
+                node.setProperty( property, "B" );
+                tx.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
+                adversary.enable();
+                tx.commit();
+            }
+            catch ( TransactionFailureException e )
+            {
+                txFailure = e;
+            }
+            assertNotNull( txFailure );
             adversary.disable();
 
-            File storeDir = directory.homeDir();
-            DatabaseManagementService managementService =
-                    AdversarialPageCacheGraphDatabaseFactory.create( storeDir, fileSystem, adversary ).build();
-            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-            try
+            healthOf( db ).healed(); // heal the db so it is possible to inspect the data
+
+            // now we can observe partially committed state: node is in the index and relationship still present
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-                    tx.commit();
-                }
-
-                long relationshipId = createRelationship( db );
-
-                TransactionFailureException txFailure = null;
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Node node = tx.createNode( label );
-                    node.setProperty( property, "B" );
-                    tx.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
-                    adversary.enable();
-                    tx.commit();
-                }
-                catch ( TransactionFailureException e )
-                {
-                    txFailure = e;
-                }
-                assertNotNull( txFailure );
-                adversary.disable();
-
-                healthOf( db ).healed(); // heal the db so it is possible to inspect the data
-
-                // now we can observe partially committed state: node is in the index and relationship still present
-                try ( Transaction tx = db.beginTx() )
-                {
-                    assertNotNull( findNode( label, property, "B", tx ) );
-                    assertNotNull( tx.getRelationshipById( relationshipId ) );
-                    tx.commit();
-                }
-
-                healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
-
-                // restart the database, now with regular page cache
-                managementService.shutdown();
-                db = startDatabase( storeDir );
-
-                // now we observe correct state: node is in the index and relationship is removed
-                try ( Transaction tx = db.beginTx() )
-                {
-                    assertNotNull( findNode( label, property, "B", tx ) );
-                    assertRelationshipNotExist( tx, relationshipId );
-                    tx.commit();
-                }
+                assertNotNull( findNode( label, property, "B", tx ) );
+                assertNotNull( tx.getRelationshipById( relationshipId ) );
+                tx.commit();
             }
-            finally
+
+            healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
+
+            // restart the database, now with regular page cache
+            managementService.shutdown();
+            db = startDatabase( storeDir );
+
+            // now we observe correct state: node is in the index and relationship is removed
+            try ( Transaction tx = db.beginTx() )
             {
-                managementService.shutdown();
+                assertNotNull( findNode( label, property, "B", tx ) );
+                assertRelationshipNotExist( tx, relationshipId );
+                tx.commit();
             }
-        } );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
     }
 
     @Test
