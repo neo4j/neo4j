@@ -302,7 +302,7 @@ public class SchemaImpl implements Schema
         {
             if ( millisLeft < 0 )
             {
-                throw new IllegalStateException( "Expected all indexes to come online within a reasonable time."
+                throw new IllegalStateException( "Expected all indexes to come online within a reasonable time. "
                                                  + "Indexes brought online: " + onlineIndexes
                                                  + ". Indexes not guaranteed to be online: " + asCollection( iterator ) );
             }
@@ -760,7 +760,12 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
-                    ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( schema, name );
+                    IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( name );
+                    if ( indexType != null )
+                    {
+                        prototype = prototype.withIndexType( fromPublicApi( indexType ) );
+                    }
+                    ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
                     return new UniquenessConstraintDefinition( this, constraint, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
@@ -809,7 +814,8 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
-                    ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( schema, name );
+                    IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( name );
+                    ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( prototype );
                     return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |

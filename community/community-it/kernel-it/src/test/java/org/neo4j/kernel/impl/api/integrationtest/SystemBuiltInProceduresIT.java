@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -50,6 +49,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -144,7 +144,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "constraint name" );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
         transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
         commit();
 
@@ -175,7 +175,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "constraint name" );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
         transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
         commit();
 
@@ -211,13 +211,13 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     {
         // Given
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( 1,1 ),"Test" );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( 1, 1 ) ).withName( "my_constraint" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             // When & Then
-            assertFalse( tx.execute( "CALL db.constraints" ).hasNext());
+            assertFalse( tx.execute( "CALL db.constraints" ).hasNext() );
         }
     }
 

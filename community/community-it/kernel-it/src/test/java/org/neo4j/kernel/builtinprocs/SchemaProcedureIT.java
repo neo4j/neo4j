@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -43,6 +42,8 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
@@ -80,8 +81,8 @@ class SchemaProcedureIT extends KernelIntegrationTest
         commit();
 
         SchemaWrite schemaOps = schemaWriteInNewTransaction();
-        schemaOps.indexCreate( SchemaDescriptor.forLabel( labelId, propertyIdName ), "my index" );
-        schemaOps.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propertyIdAge ), "constraint name" );
+        schemaOps.indexCreate( forLabel( labelId, propertyIdName ), "my index" );
+        schemaOps.uniquePropertyConstraintCreate( uniqueForSchema( forLabel( labelId, propertyIdAge ) ).withName( "constraint name" ) );
         commit();
 
         // When

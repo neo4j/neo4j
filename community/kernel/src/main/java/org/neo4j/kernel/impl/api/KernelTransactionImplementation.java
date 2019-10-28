@@ -60,8 +60,8 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -450,9 +450,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( IndexBackedConstraintDescriptor constraint, String provider )
+    public IndexDescriptor indexUniqueCreate( IndexPrototype prototype )
     {
-        return operations.indexUniqueCreate( constraint, provider );
+        return operations.indexUniqueCreate( prototype );
     }
 
     @Override

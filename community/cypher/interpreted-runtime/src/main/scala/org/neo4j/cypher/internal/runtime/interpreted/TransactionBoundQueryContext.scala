@@ -48,7 +48,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, 
 import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
-import org.neo4j.internal.schema.{ConstraintType, IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
+import org.neo4j.internal.schema.{ConstraintType, IndexDescriptor, IndexPrototype, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema._
 import org.neo4j.kernel.api.{ResourceTracker => _, _}
@@ -700,14 +700,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(name)
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
+    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(
+      IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)).withName(name.orNull))
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), ConstraintType.UNIQUE_EXISTS)
 
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
+    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(
+      IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)).withName(name.orNull))
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()

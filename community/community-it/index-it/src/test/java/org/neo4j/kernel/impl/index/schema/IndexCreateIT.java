@@ -27,6 +27,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
@@ -42,7 +43,8 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 public class IndexCreateIT extends KernelIntegrationTest
 {
     private static final IndexCreator INDEX_CREATOR = SchemaWrite::indexCreate;
-    private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = SchemaWrite::uniquePropertyConstraintCreate;
+    private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = ( schemaWrite, schema, provider, name ) -> schemaWrite.uniquePropertyConstraintCreate(
+            IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) );
 
     @Test
     void shouldCreateIndexWithSpecificExistingProviderName() throws KernelException
@@ -71,17 +73,6 @@ public class IndexCreateIT extends KernelIntegrationTest
     @Test
     void shouldFailCreateIndexWithDuplicateLabels() throws KernelException
     {
-        shouldFailWithDuplicateLabels( INDEX_CREATOR );
-    }
-
-    @Test
-    void shouldFailUniquePropertyConstraintWithDuplicateLabels() throws KernelException
-    {
-        shouldFailWithDuplicateLabels( UNIQUE_CONSTRAINT_CREATOR );
-    }
-
-    protected void shouldFailWithDuplicateLabels( IndexCreator creator ) throws KernelException
-    {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
@@ -94,17 +85,6 @@ public class IndexCreateIT extends KernelIntegrationTest
     @Test
     void shouldFailCreateIndexWithDuplicateRelationshipTypes() throws KernelException
     {
-        shouldFailWithDuplicateRelationshipTypes( INDEX_CREATOR );
-    }
-
-    @Test
-    void shouldFailCreateUniquePropertyConstraintWithDuplicateRelationshipTypes() throws KernelException
-    {
-        shouldFailWithDuplicateRelationshipTypes( INDEX_CREATOR );
-    }
-
-    protected void shouldFailWithDuplicateRelationshipTypes( IndexCreator creator ) throws KernelException
-    {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
@@ -116,17 +96,6 @@ public class IndexCreateIT extends KernelIntegrationTest
 
     @Test
     void shouldFailCreateIndexWithDuplicateProperties() throws KernelException
-    {
-        shouldFailWithDuplicateProperties( INDEX_CREATOR );
-    }
-
-    @Test
-    void shouldFailCreateUniquePropertyConstraintWithDuplicateProperties() throws KernelException
-    {
-        shouldFailWithDuplicateProperties( UNIQUE_CONSTRAINT_CREATOR );
-    }
-
-    protected void shouldFailWithDuplicateProperties( IndexCreator creator ) throws KernelException
     {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();

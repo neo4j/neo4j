@@ -25,6 +25,8 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -34,6 +36,25 @@ import org.neo4j.internal.schema.SchemaDescriptor;
  */
 public interface SchemaWrite
 {
+    /**
+     * Translate an index provider name, into an {@link IndexProviderDescriptor}.
+     *
+     * This method is only used when creating indexes using custom or specific index providers.
+     * Normally, {@link IndexType} would be used instead, but this is not always accurate enough.
+     *
+     * @param providerName The name of the index provider to resolve the descriptor for.
+     * @return The provider descriptor with the given provider name.
+     * @throws RuntimeException if there is no index provider by the given name.
+     */
+    IndexProviderDescriptor indexProviderByName( String providerName );
+
+    /**
+     * Create index using the given {@link IndexPrototype}.
+     *
+     * @param prototype the prototype specifying the relevant schema and configuration of the index to create.
+     * @return the {@link IndexDescriptor} for the created index.
+     * @throws KernelException if the index cannot be created for some reason.
+     */
     IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException;
 
     /**
@@ -76,34 +97,22 @@ public interface SchemaWrite
     void indexDrop( String indexName ) throws SchemaKernelException;
 
     /**
-     * Create unique property constraint
+     * Create a unique property constraint based on the given uniqueness index prototype.
      *
-     * @param schema description of the constraint
+     * @param prototype a prototype that describes the constraint index, and includes the schema of the constraint.
+     * @return The {@link ConstraintDescriptor} of the created constraint.
+     * @throws KernelException if the constraint cannot be created for some reason.
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String name ) throws KernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( IndexPrototype prototype ) throws KernelException;
 
     /**
-     * Create unique property constraint
+     * Create node key constraint based on the given uniqueness index prototype.
      *
-     * @param schema description of the constraint
-     * @param provider name of the desired index provider implementation
+     * @param prototype the index prototype for which to create a node key constraint.
+     * @return the created constraint.
+     * @throws KernelException if the constraint cannot be created for some reason.
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException;
-
-    /**
-     * Create node key constraint
-     *
-     * @param schema description of the constraint
-     */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException;
-
-    /**
-     * Create node key constraint
-     *
-     * @param schema description of the constraint
-     * @param provider name of the desired index provider implementation
-     */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String provider, String name ) throws KernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate( IndexPrototype prototype ) throws KernelException;
 
     /**
      * Create node property existence constraint

@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.Indexes;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -99,7 +100,8 @@ public class IndexProcedures implements AutoCloseable
     {
         return createIndex( constraintName, labels, properties, providerName,
                 "uniqueness constraint online",
-                ( schemaWrite, name, descriptor, provider ) -> schemaWrite.uniquePropertyConstraintCreate( descriptor, provider, name ) );
+                ( schemaWrite, name, schema, provider ) -> schemaWrite.uniquePropertyConstraintCreate(
+                        IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) ) );
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, List<String> labels, List<String> properties, String providerName )
@@ -107,7 +109,8 @@ public class IndexProcedures implements AutoCloseable
     {
         return createIndex( constraintName, labels, properties, providerName,
                 "node key constraint online",
-                ( schemaWrite, name, descriptor, provider ) -> schemaWrite.nodeKeyConstraintCreate( descriptor, provider, name ) );
+                ( schemaWrite, name, schema, provider ) -> schemaWrite.nodeKeyConstraintCreate(
+                        IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) ) );
     }
 
     private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, List<String> labels, List<String> properties, String providerName,

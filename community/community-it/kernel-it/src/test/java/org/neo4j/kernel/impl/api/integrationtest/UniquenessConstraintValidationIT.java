@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class UniquenessConstraintValidationIT extends KernelIntegrationTest
@@ -404,7 +405,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         commit();
 
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        ConstraintDescriptor constraint = schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ), null );
+        ConstraintDescriptor constraint = schemaWrite.uniquePropertyConstraintCreate( uniqueForSchema( forLabel( labelId, propertyKeyId ) ) );
         commit();
 
         return constraint;

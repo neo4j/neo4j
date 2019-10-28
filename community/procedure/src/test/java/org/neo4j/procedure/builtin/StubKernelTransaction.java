@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -61,7 +61,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( IndexBackedConstraintDescriptor constraint, String provider )
+    public IndexDescriptor indexUniqueCreate( IndexPrototype prototype )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

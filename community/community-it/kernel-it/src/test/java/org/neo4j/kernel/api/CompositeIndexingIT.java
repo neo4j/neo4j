@@ -88,7 +88,7 @@ class CompositeIndexingIT
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             if ( prototype.isUnique() )
             {
-                ConstraintDescriptor constraint = ktx.schemaWrite().uniquePropertyConstraintCreate( prototype.schema(), null );
+                ConstraintDescriptor constraint = ktx.schemaWrite().uniquePropertyConstraintCreate( prototype );
                 index = ktx.schemaRead().indexGetForName( constraint.getName() );
             }
             else

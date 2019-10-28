@@ -44,11 +44,11 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -115,7 +115,8 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                schemaWrite.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propKey ), "constraint name" );
+                IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propKey ) ).withName( "constraint name" );
+                schemaWrite.uniquePropertyConstraintCreate( prototype );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();
@@ -218,7 +219,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "constraint name" );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
         transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
         commit();
 
@@ -322,7 +323,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         LabelSchemaDescriptor personBazDescriptor = forLabel( labelId1, propertyKeyId3 );
         transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "age foo constraint" );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( ageFooDescriptor ).withName( "age foo constraint" ) );
         transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
         commit();
 
@@ -341,8 +342,8 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                ConstraintDescriptor personBazConstraint =
-                        schemaWrite.uniquePropertyConstraintCreate( personBazDescriptor, "person baz constraint" );
+                ConstraintDescriptor personBazConstraint = schemaWrite.uniquePropertyConstraintCreate(
+                        IndexPrototype.uniqueForSchema( personBazDescriptor ).withName( "person baz constraint" ) );
                 personBazIndexId.set( personBazConstraint.asIndexBackedConstraint().ownedIndexId() );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
@@ -378,7 +379,6 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // Then
         try
         {
-            IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
             assertThat( result, containsInAnyOrder(
                     dbIndexesResult(
                             ageFooIndex.getId(),

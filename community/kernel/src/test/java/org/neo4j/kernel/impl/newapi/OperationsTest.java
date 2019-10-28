@@ -55,6 +55,7 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
@@ -90,10 +91,12 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -104,8 +107,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
@@ -128,7 +129,7 @@ class OperationsTest
     private DefaultRelationshipScanCursor relationshipCursor;
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
-    private final LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 123, 456 );
+    private final LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( 123, 456 );
     private StorageReader storageReader;
     private StorageSchemaReader storageReaderSnapshot;
     private ConstraintIndexCreator constraintIndexCreator;
@@ -453,33 +454,33 @@ class OperationsTest
     void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
     {
         // WHEN
-        allStoreHolder.constraintsGetForSchema( descriptor );
+        allStoreHolder.constraintsGetForSchema( schema );
 
         // THEN
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
-        order.verify( storageReader ).constraintsGetForSchema( descriptor );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, schema.getLabelId() );
+        order.verify( storageReader ).constraintsGetForSchema( schema );
     }
 
     @Test
     void shouldNotAcquireSchemaReadLockBeforeGettingIndexesByLabelAndProperty()
     {
         // WHEN
-        allStoreHolder.index( descriptor );
+        allStoreHolder.index( schema );
 
         // THEN
         verifyNoMoreInteractions( locks );
-        verify( storageReader ).indexGetForSchema( descriptor );
+        verify( storageReader ).indexGetForSchema( schema );
     }
 
     @Test
     void shouldNotAcquireSchemaReadLockWhenGettingIndexesByLabelAndPropertyFromSnapshot()
     {
         // WHEN
-        allStoreHolder.snapshot().index( descriptor );
+        allStoreHolder.snapshot().index( schema );
 
         // THEN
         verifyNoMoreInteractions( locks );
-        verify( storageReaderSnapshot ).indexGetForSchema( descriptor );
+        verify( storageReaderSnapshot ).indexGetForSchema( schema );
     }
 
     @Test
@@ -530,7 +531,7 @@ class OperationsTest
     void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints()
     {
         // WHEN
-        allStoreHolder.constraintExists( ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
+        allStoreHolder.constraintExists( ConstraintDescriptorFactory.uniqueForSchema( schema ) );
 
         // THEN
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 123 );
@@ -668,39 +669,38 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
-        String defaultProvider = Config.defaults().get( default_schema_provider );
-        IndexDescriptor constraintIndex = IndexPrototype.uniqueForSchema( descriptor ).withName( "index_42" ).materialise( 42 );
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, constraint, defaultProvider ) ).thenReturn( constraintIndex );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( "constraint name" );
+        IndexDescriptor constraintIndex = prototype.materialise( 42 );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
         when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
-        when( storageReader.constraintsGetForSchema( descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
-        when( storageReader.indexGetForSchema( descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.constraintsGetForSchema( schema.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( schema.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
-        operations.uniquePropertyConstraintCreate( descriptor, "constraint name" );
+        operations.uniquePropertyConstraintCreate( prototype );
 
         // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
-        order.verify( txState ).constraintDoAdd( ConstraintDescriptorFactory.uniqueForSchema( descriptor ), constraintIndex );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, schema.getLabelId() );
+        order.verify( txState ).constraintDoAdd( ConstraintDescriptorFactory.uniqueForSchema( schema ), constraintIndex );
     }
 
     @Test
     void shouldReleaseAcquiredSchemaWriteLockIfConstraintCreationFails() throws Exception
     {
         // given
-        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
+        UniquenessConstraintDescriptor constraint = uniqueForSchema( schema );
         storageReaderWithConstraints( constraint );
-        int labelId = descriptor.getLabelId();
-        int propertyId = descriptor.getPropertyId();
+        int labelId = schema.getLabelId();
+        int propertyId = schema.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( propertyId ) ).thenReturn( new NamedToken( "prop", labelId ) );
 
         // when
         try
         {
-            operations.uniquePropertyConstraintCreate( descriptor, "constraint name" );
+            operations.uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( schema ).withName( "constraint name" ) );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -710,36 +710,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintsGetForSchema( descriptor );
-        order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
-    }
-
-    @Test
-    void shouldReleaseAcquiredSchemaWriteLockIfConstraintWithIndexProviderCreationFails() throws Exception
-    {
-        // given
-        String indexProvider = Config.defaults().get( default_schema_provider );
-        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        storageReaderWithConstraints( constraint );
-        int labelId = descriptor.getLabelId();
-        int propertyId = descriptor.getPropertyId();
-        when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
-        when( tokenHolders.propertyKeyTokens().getTokenById( propertyId ) ).thenReturn( new NamedToken( "prop", labelId ) );
-
-        // when
-        try
-        {
-            operations.uniquePropertyConstraintCreate( descriptor, indexProvider, "constraint name" );
-            fail( "Expected an exception because this schema should already be constrained." );
-        }
-        catch ( AlreadyConstrainedException ignore )
-        {
-            // Good.
-        }
-
-        // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintsGetForSchema( descriptor );
+        order.verify( storageReader ).constraintsGetForSchema( schema );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -747,17 +718,17 @@ class OperationsTest
     void shouldReleaseAcquiredSchemaWriteLockIfNodeKeyConstraintCreationFails() throws Exception
     {
         // given
-        NodeKeyConstraintDescriptor constraint = nodeKeyForSchema( descriptor );
+        NodeKeyConstraintDescriptor constraint = nodeKeyForSchema( schema );
         storageReaderWithConstraints( constraint );
-        int labelId = descriptor.getLabelId();
-        int propertyId = descriptor.getPropertyId();
+        int labelId = schema.getLabelId();
+        int propertyId = schema.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( propertyId ) ).thenReturn( new NamedToken( "prop", labelId ) );
 
         // when
         try
         {
-            operations.nodeKeyConstraintCreate( descriptor, "constraint name" );
+            operations.nodeKeyConstraintCreate( IndexPrototype.uniqueForSchema( schema ).withName( "constraint name" ) );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -767,36 +738,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintsGetForSchema( descriptor );
-        order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
-    }
-
-    @Test
-    void shouldReleaseAcquiredSchemaWriteLockIfNodeKeyConstraintWithIndexProviderCreationFails() throws Exception
-    {
-        // given
-        String indexProvider = Config.defaults().get( default_schema_provider );
-        NodeKeyConstraintDescriptor constraint = nodeKeyForSchema( descriptor );
-        when( storageReader.constraintsGetForSchema( descriptor ) ).thenReturn( asIterator( constraint ) );
-        int labelId = descriptor.getLabelId();
-        int propertyId = descriptor.getPropertyId();
-        when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
-        when( tokenHolders.propertyKeyTokens().getTokenById( propertyId ) ).thenReturn( new NamedToken( "prop", labelId ) );
-
-        // when
-        try
-        {
-            operations.nodeKeyConstraintCreate( descriptor, indexProvider, "constraint name" );
-            fail( "Expected an exception because this schema should already be constrained." );
-        }
-        catch ( AlreadyConstrainedException ignore )
-        {
-            // Good.
-        }
-
-        // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintsGetForSchema( descriptor );
+        order.verify( storageReader ).constraintsGetForSchema( schema );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -804,17 +746,17 @@ class OperationsTest
     void shouldReleaseAcquiredSchemaWriteLockIfNodePropertyExistenceConstraintCreationFails() throws Exception
     {
         // given
-        NodeExistenceConstraintDescriptor constraint = existsForSchema( descriptor );
+        NodeExistenceConstraintDescriptor constraint = existsForSchema( schema );
         storageReaderWithConstraints( constraint );
-        int labelId = descriptor.getLabelId();
-        int propertyId = descriptor.getPropertyId();
+        int labelId = schema.getLabelId();
+        int propertyId = schema.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( propertyId ) ).thenReturn( new NamedToken( "prop", labelId ) );
 
         // when
         try
         {
-            operations.nodePropertyExistenceConstraintCreate( descriptor, "constraint name" );
+            operations.nodePropertyExistenceConstraintCreate( schema, "constraint name" );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -824,7 +766,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintsGetForSchema( descriptor );
+        order.verify( storageReader ).constraintsGetForSchema( schema );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -861,8 +803,8 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
     {
         // given
-        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor ).withName( "constraint" );
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( 13 );
+        UniquenessConstraintDescriptor constraint = uniqueForSchema( schema ).withName( "constraint" );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).materialise( 13 );
         storageReaderWithConstraints( constraint );
         when( storageReader.indexExists( index ) ).thenReturn( true );
         when( storageReader.indexGetForName( "constraint" ) ).thenReturn( index );
@@ -871,7 +813,7 @@ class OperationsTest
         operations.constraintDrop( constraint );
 
         // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, schema.getLabelId() );
         order.verify( txState ).constraintDoDrop( constraint );
         order.verify( txState ).indexDoDrop( index );
     }
@@ -880,8 +822,8 @@ class OperationsTest
     void shouldAcquireSchemaNameWriteLockBeforeDroppingConstraintByName() throws Exception
     {
         // given
-        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor ).withName( "constraint" );
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( 13 );
+        UniquenessConstraintDescriptor constraint = uniqueForSchema( schema ).withName( "constraint" );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).materialise( 13 );
         storageReaderWithConstraints( constraint );
         when( storageReader.indexExists( index ) ).thenReturn( true );
         when( storageReader.indexGetForName( "constraint" ) ).thenReturn( index );
@@ -1058,12 +1000,23 @@ class OperationsTest
     }
 
     @Test
-    void uniqueIndexesMustBeNamedAfterTheirConstraints()
+    void uniqueIndexesMustBeNamedAfterTheirConstraints() throws KernelException
     {
         when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
-        operations.indexUniqueCreate( ConstraintDescriptorFactory.uniqueForLabel( 1, 1 ).withName( "My bla bla constraint" ), "provider-1.0" );
-        IndexDescriptor indexDescriptor = single( txState.indexChanges().getAdded() );
-        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "My bla bla constraint" ) );
+        when( storageReader.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
+        when( storageReader.indexGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
+        String constraintName = "my_constraint";
+        when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), any() ) ).thenAnswer( i ->
+                {
+                    IndexPrototype prototype = i.getArgument( 2 );
+                    Optional<String> name = prototype.getName();
+                    assertTrue( name.isPresent() );
+                    assertThat( name.get(), is( constraintName ) );
+                    return prototype.materialise( 2 );
+                } );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( constraintName );
+        IndexBackedConstraintDescriptor constraint = operations.uniquePropertyConstraintCreate( prototype ).asIndexBackedConstraint();
+        assertThat( constraint.ownedIndexId(), is( 2L ) );
     }
 
     @Test
@@ -1165,7 +1118,7 @@ class OperationsTest
                 mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults() );
 
         // when
-        operations.indexCreate( IndexPrototype.forSchema( descriptor ).withName( "name" ) );
+        operations.indexCreate( IndexPrototype.forSchema( schema ).withName( "name" ) );
 
         // then
         InOrder inOrder = inOrder( ktx, commandCreationContext );

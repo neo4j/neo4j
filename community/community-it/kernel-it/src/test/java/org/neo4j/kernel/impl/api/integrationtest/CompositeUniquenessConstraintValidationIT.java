@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
@@ -121,7 +122,7 @@ public class CompositeUniquenessConstraintValidationIT
         commit();
 
         newTransaction();
-        constraintDescriptor = transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ), null );
+        constraintDescriptor = transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( forLabel( label, propertyIds() ) ) );
         commit();
     }
 

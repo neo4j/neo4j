@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.Kernel;
@@ -92,7 +93,7 @@ public class ConstraintIndexCreator
      * </ol>
      */
     public IndexDescriptor createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
-            IndexBackedConstraintDescriptor constraint, String provider )
+            IndexBackedConstraintDescriptor constraint, IndexPrototype prototype )
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
@@ -105,7 +106,7 @@ public class ConstraintIndexCreator
         try
         {
             SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( transaction.tokenRead() );
-            index = checkAndCreateConstraintIndex( schemaRead, tokenLookup, constraint, provider );
+            index = checkAndCreateConstraintIndex( schemaRead, tokenLookup, constraint, prototype );
         }
         catch ( AlreadyConstrainedException e )
         {
@@ -232,7 +233,8 @@ public class ConstraintIndexCreator
     }
 
     private IndexDescriptor checkAndCreateConstraintIndex(
-            SchemaRead schemaRead, TokenNameLookup tokenLookup, IndexBackedConstraintDescriptor constraint, String provider ) throws SchemaKernelException
+            SchemaRead schemaRead, TokenNameLookup tokenLookup, IndexBackedConstraintDescriptor constraint,
+            IndexPrototype prototype ) throws SchemaKernelException
     {
         IndexDescriptor descriptor = schemaRead.indexGetForName( constraint.getName() );
         if ( descriptor != IndexDescriptor.NO_INDEX )
@@ -245,14 +247,14 @@ public class ConstraintIndexCreator
             // There's already an index for the schema of this constraint, which isn't of the type we're after.
             throw new AlreadyIndexedException( constraint.schema(), CONSTRAINT_CREATION );
         }
-        return createConstraintIndex( constraint, provider );
+        return createConstraintIndex( prototype );
     }
 
-    public IndexDescriptor createConstraintIndex( IndexBackedConstraintDescriptor constraint, String provider )
+    public IndexDescriptor createConstraintIndex( IndexPrototype prototype )
     {
         try ( KernelTransaction transaction = kernelSupplier.get().beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
-            IndexDescriptor index = transaction.indexUniqueCreate( constraint, provider );
+            IndexDescriptor index = transaction.indexUniqueCreate( prototype );
             transaction.commit();
             return index;
         }

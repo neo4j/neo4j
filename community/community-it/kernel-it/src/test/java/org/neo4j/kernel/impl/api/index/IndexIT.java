@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -47,16 +46,16 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -69,12 +68,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 
 class IndexIT extends KernelIntegrationTest
 {
@@ -219,9 +218,9 @@ class IndexIT extends KernelIntegrationTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
-        String defaultProvider = Config.defaults().get( default_schema_provider );
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema ).withName( "constraint name" );
-        IndexDescriptor constraintIndex = creator.createConstraintIndex( constraint, defaultProvider );
+        IndexProviderDescriptor provider = GenericNativeIndexProvider.DESCRIPTOR;
+        IndexPrototype prototype = uniqueForSchema( schema ).withName( "constraint name" ).withIndexProvider( provider );
+        IndexDescriptor constraintIndex = creator.createConstraintIndex( prototype );
         // then
         KernelTransaction transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().constraintsGetForLabel( labelId ) ) );
@@ -319,7 +318,7 @@ class IndexIT extends KernelIntegrationTest
         ConstraintDescriptor constraint;
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
-            constraint = statement.uniquePropertyConstraintCreate( schema, "constraint name" );
+            constraint = statement.uniquePropertyConstraintCreate( uniqueForSchema( schema ).withName( "constraint name" ) );
             commit();
         }
         {
@@ -342,7 +341,7 @@ class IndexIT extends KernelIntegrationTest
         String constraintName = "my constraint";
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
-            statement.uniquePropertyConstraintCreate( schema, "constraint name" );
+            statement.uniquePropertyConstraintCreate( uniqueForSchema( schema ).withName( "constraint name" ) );
             commit();
         }
 
@@ -359,7 +358,7 @@ class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
-            statement.uniquePropertyConstraintCreate( schema, "constraint name" );
+            statement.uniquePropertyConstraintCreate( uniqueForSchema( schema ).withName( "constraint name" ) );
             commit();
         }
 
@@ -382,7 +381,7 @@ class IndexIT extends KernelIntegrationTest
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
         int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "property1" );
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( schema, "constraint name" );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( schema ).withName( "constraint name" ) );
         commit();
 
         // when
@@ -520,7 +519,8 @@ class IndexIT extends KernelIntegrationTest
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
         IndexDescriptor index1 = schemaWrite.indexCreate( schema, "my index" );
-        IndexBackedConstraintDescriptor constraint = schemaWrite.uniquePropertyConstraintCreate( schema2, "constraint name" ).asIndexBackedConstraint();
+        IndexBackedConstraintDescriptor constraint = schemaWrite.uniquePropertyConstraintCreate( uniqueForSchema( schema2 ).withName( "constraint name" ) )
+                .asIndexBackedConstraint();
         commit();
 
         // then/when

@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -253,7 +254,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         KernelTransaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyIds );
-        ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( schema, null );
+        ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( schema ) );
         IndexDescriptor index = transaction.schemaRead().indexGetForName( constraint.getName() );
         commit();
         return index;

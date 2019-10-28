@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -43,7 +41,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -60,6 +57,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.lock.ResourceTypes;
@@ -73,7 +71,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -89,9 +86,11 @@ class ConstraintIndexCreatorTest
     private static final int LABEL_ID = 123;
     private static final long INDEX_ID = 0L;
 
+    private final IndexProviderDescriptor providerDescriptor = GenericNativeIndexProvider.DESCRIPTOR;
     private final LabelSchemaDescriptor schema = forLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema ).withName( "constraint" );
-    private final IndexDescriptor index = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).materialise( INDEX_ID );
+    private final IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).withIndexProvider( providerDescriptor );
+    private final IndexDescriptor index = prototype.materialise( INDEX_ID );
     private final SchemaRead schemaRead = schemaRead();
     private final SchemaWrite schemaWrite = mock( SchemaWrite.class );
     private final TokenRead tokenRead = mock( TokenRead.class );
@@ -110,7 +109,7 @@ class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
-        IndexDescriptor constraintIndex = creator.createUniquenessConstraintIndex( createTransaction(), constraint, getDefaultProvider() );
+        IndexDescriptor constraintIndex = creator.createUniquenessConstraintIndex( createTransaction(), constraint, prototype );
 
         // then
         assertEquals( INDEX_ID, constraintIndex.getId() );
@@ -143,13 +142,13 @@ class ConstraintIndexCreatorTest
         // when
         KernelTransactionImplementation transaction = createTransaction();
         UniquePropertyValueValidationException exception = assertThrows( UniquePropertyValueValidationException.class,
-                () -> creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() ) );
+                () -> creator.createUniquenessConstraintIndex( transaction, constraint, prototype ) );
         assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
                 "ASSERT (label[123].property[456]) IS UNIQUE: Both node 2 and node 1 share the property value ( String(\"a\") )",
                 exception.getMessage() );
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
-        verify( tx1 ).indexUniqueCreate( eq( constraint ), eq( getDefaultProvider() ) );
+        verify( tx1 ).indexUniqueCreate( prototype );
         verify( schemaRead, times( 2 ) ).indexGetForName( constraint.getName() );
         verifyNoMoreInteractions( schemaRead );
         KernelTransactionImplementation kti2 = kernel.transactions.get( 1 );
@@ -190,7 +189,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
         // then
         verify( transaction.statementLocks().pessimistic() )
@@ -222,7 +221,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        assertThrows( AlreadyConstrainedException.class, () -> creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() ) );
+        assertThrows( AlreadyConstrainedException.class, () -> creator.createUniquenessConstraintIndex( transaction, constraint, prototype ) );
 
         // then
         assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
@@ -252,7 +251,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
         // then
         assertEquals( 1, kernel.transactions.size() );
@@ -279,7 +278,7 @@ class ConstraintIndexCreatorTest
         assertThrows( AlreadyConstrainedException.class, () ->
         {
             KernelTransactionImplementation transaction = createTransaction();
-            creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
+            creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
         } );
 
         // then
@@ -299,16 +298,17 @@ class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "Groovy", "1.2" );
+        IndexPrototype prototype = this.prototype.withIndexProvider( providerDescriptor );
         when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, constraint, providerDescriptor.name() );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
         // then
         assertEquals( 1, kernel.transactions.size() );
         KernelTransactionImplementation transactionInstance = kernel.transactions.get( 0 );
-        verify( transactionInstance ).indexUniqueCreate( eq( constraint ), eq( providerDescriptor.name() ) );
+        verify( transactionInstance ).indexUniqueCreate( prototype );
         verify( schemaRead ).indexGetForName( constraint.getName() );
         verifyNoMoreInteractions( schemaRead );
     }
@@ -326,7 +326,7 @@ class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         KernelTransactionImplementation transaction = createTransaction();
 
-        creator.createUniquenessConstraintIndex( transaction, constraint, "indexProviderByName-1.0" );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
         logProvider.rawMessageMatcher().assertContains( "Starting constraint creation: %s." );
         logProvider.rawMessageMatcher().assertContains( "Constraint %s populated, starting verification." );
@@ -412,9 +412,8 @@ class ConstraintIndexCreatorTest
             when( transaction.schemaWrite() ).thenReturn( schemaWrite );
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
-            when( transaction.indexUniqueCreate( any( IndexBackedConstraintDescriptor.class ), any( String.class ) ) ).thenAnswer(
-                    i -> IndexPrototype.uniqueForSchema( i.<IndexBackedConstraintDescriptor>getArgument( 0 ).schema() )
-                            .withName( "constraint" ).materialise( INDEX_ID ) );
+            when( transaction.indexUniqueCreate( any( IndexPrototype.class ) ) ).thenAnswer(
+                    i -> i.<IndexPrototype>getArgument( 0 ).materialise( INDEX_ID ) );
             when( transaction.newStorageReader() ).thenReturn( mock( StorageReader.class ) );
         }
         catch ( InvalidTransactionTypeKernelException e )
@@ -422,10 +421,5 @@ class ConstraintIndexCreatorTest
             fail( "Expected write transaction" );
         }
         return transaction;
-    }
-
-    private static String getDefaultProvider()
-    {
-        return Config.defaults().get( GraphDatabaseSettings.default_schema_provider );
     }
 }

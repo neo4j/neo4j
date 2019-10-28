@@ -789,6 +789,13 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
+    public IndexProviderDescriptor indexProviderByName( String providerName )
+    {
+        ktx.assertOpen();
+        return indexProviders.indexProviderByName( providerName );
+    }
+
+    @Override
     public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
         exclusiveSchemaLock( prototype.schema() );
@@ -820,11 +827,8 @@ public class Operations implements Write, SchemaWrite
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
-    public IndexDescriptor indexUniqueCreate( IndexBackedConstraintDescriptor constraint, String provider )
+    public IndexDescriptor indexUniqueCreate( IndexPrototype prototype )
     {
-        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexPrototype prototype = IndexPrototype.uniqueForSchema( constraint.schema(), providerDescriptor );
-        prototype = prototype.withName( constraint.getName() );
         return indexDoCreate( prototype );
     }
 
@@ -973,37 +977,37 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String name ) throws KernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
-        String provider = config.get( GraphDatabaseSettings.default_schema_provider );
-        return uniquePropertyConstraintCreate( schema, provider, name );
-    }
-
-    @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
-    {
-        //Lock
+        SchemaDescriptor schema = prototype.schema();
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
-        UniquenessConstraintDescriptor constraint;
+        prototype = ensureIndexPrototypeHasIndexProvider( prototype );
 
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
         try
         {
-            //Check data integrity
             assertValidDescriptor( schema, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-            constraint = ConstraintDescriptorFactory.uniqueForSchema( schema ).withName( name );
-            constraint = ensureConstraintHasName( constraint );
+            if ( prototype.getName().isEmpty() )
+            {
+                constraint = ensureConstraintHasName( constraint );
+                prototype = prototype.withName( constraint.getName() );
+            }
+            else
+            {
+                constraint = constraint.withName( prototype.getName().get() );
+            }
             exclusiveSchemaNameLock( constraint.getName() );
             assertNoBlockingSchemaRulesExists( constraint );
         }
-        catch ( SchemaKernelException e )
+        catch ( KernelException e )
         {
             exclusiveSchemaUnlock( schema ); // Try not to hold on to exclusive schema locks when we don't strictly need them.
             throw e;
         }
 
         // Create constraints
-        constraint = indexBackedConstraintCreate( constraint, provider );
+        constraint = indexBackedConstraintCreate( constraint, prototype );
         return constraint;
     }
 
@@ -1113,25 +1117,29 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
-        return nodeKeyConstraintCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), name );
-    }
-
-    @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String provider, String name ) throws KernelException
-    {
-        //Lock
+        SchemaDescriptor schema = prototype.schema();
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
-        NodeKeyConstraintDescriptor constraint;
+        prototype = ensureIndexPrototypeHasIndexProvider( prototype );
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
 
         try
         {
             //Check data integrity
             assertValidDescriptor( schema, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-            constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema ).withName( name );
-            constraint = ensureConstraintHasName( constraint );
+
+            if ( prototype.getName().isEmpty() )
+            {
+                constraint = ensureConstraintHasName( constraint );
+                prototype = prototype.withName( constraint.getName() );
+            }
+            else
+            {
+                constraint = constraint.withName( prototype.getName().get() );
+            }
+
             exclusiveSchemaNameLock( constraint.getName() );
             assertNoBlockingSchemaRulesExists( constraint );
         }
@@ -1145,11 +1153,11 @@ public class Operations implements Write, SchemaWrite
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
             allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
-            constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema );
+            constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor() );
         }
 
         //create constraint
-        indexBackedConstraintCreate( constraint, provider );
+        indexBackedConstraintCreate( constraint, prototype );
         return constraint;
     }
 
@@ -1388,7 +1396,7 @@ public class Operations implements Write, SchemaWrite
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T extends IndexBackedConstraintDescriptor> T indexBackedConstraintCreate( T constraint, String provider )
+    private <T extends IndexBackedConstraintDescriptor> T indexBackedConstraintCreate( T constraint, IndexPrototype prototype )
             throws KernelException
     {
         try
@@ -1397,7 +1405,11 @@ public class Operations implements Write, SchemaWrite
             {
                 throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, tokenNameLookup );
             }
-            IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, constraint, provider );
+            // todo throw if prototype.getIndexType() == FULLTEXT
+            // todo throw if schema is fulltext
+            // todo throw if schema is for relationships
+            // todo throw if prototype is not unique
+            IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, constraint, prototype );
             if ( !allStoreHolder.constraintExists( constraint ) )
             {
                 // This looks weird, but since we release the label lock while awaiting population of the index

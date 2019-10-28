@@ -29,6 +29,8 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -53,6 +55,13 @@ public class RestrictedSchemaWrite implements SchemaWrite
         {
             throw accessMode.onViolation( format( "Schema operation '%s' is not allowed for %s.", action.toString(), securityContext.description() ) );
         }
+    }
+
+    @Override
+    public IndexProviderDescriptor indexProviderByName( String providerName )
+    {
+        assertSchemaWrites( PrivilegeAction.ACCESS );
+        return inner.indexProviderByName( providerName );
     }
 
     @Override
@@ -98,31 +107,17 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String name ) throws KernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.uniquePropertyConstraintCreate( schema, name );
+        return inner.uniquePropertyConstraintCreate( prototype );
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.uniquePropertyConstraintCreate( schema, provider, name );
-    }
-
-    @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
-    {
-        assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.nodeKeyConstraintCreate( schema, name );
-    }
-
-    @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String provider, String name ) throws KernelException
-    {
-        assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.nodeKeyConstraintCreate( schema, provider, name );
+        return inner.nodeKeyConstraintCreate( prototype );
     }
 
     @Override
