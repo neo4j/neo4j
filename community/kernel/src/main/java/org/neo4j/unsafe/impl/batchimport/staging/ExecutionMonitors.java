@@ -48,6 +48,11 @@ public class ExecutionMonitors
                 new OnDemandDetailsExecutionMonitor( System.out, in, monitor, jobScheduler ) );
     }
 
+    public static ExecutionMonitor humanUnderstandable()
+    {
+        return new HumanUnderstandableExecutionMonitor( NO_MONITOR, new ProgressRestoringMonitor() );
+    }
+
     private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()
     {
         @Override
