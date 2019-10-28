@@ -24,7 +24,6 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 
 /**
  * Manages user-facing locks.
@@ -33,45 +32,39 @@ class EntityLocker
 {
     Lock exclusiveLock( KernelTransaction ktx, Entity entity )
     {
-        try ( Statement ignore = ktx.acquireStatement() )
+        long id = entity.getId();
+        if ( entity instanceof Node )
         {
-            long id = entity.getId();
-            if ( entity instanceof Node )
-            {
-                ktx.locks().acquireExclusiveNodeLock( id );
-                return new CoreAPILock( () -> ktx.locks().releaseExclusiveNodeLock( id ) );
-            }
-            else if ( entity instanceof Relationship )
-            {
-                ktx.locks().acquireExclusiveRelationshipLock( id );
-                return new CoreAPILock( () -> ktx.locks().releaseExclusiveRelationshipLock( id ) );
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
-            }
+            ktx.locks().acquireExclusiveNodeLock( id );
+            return new CoreAPILock( () -> ktx.locks().releaseExclusiveNodeLock( id ) );
+        }
+        else if ( entity instanceof Relationship )
+        {
+            ktx.locks().acquireExclusiveRelationshipLock( id );
+            return new CoreAPILock( () -> ktx.locks().releaseExclusiveRelationshipLock( id ) );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
         }
     }
 
     Lock sharedLock( KernelTransaction ktx, Entity entity )
     {
-        try ( Statement ignore = ktx.acquireStatement() )
+        long id = entity.getId();
+        if ( entity instanceof Node )
         {
-            long id = entity.getId();
-            if ( entity instanceof Node )
-            {
-                ktx.locks().acquireSharedNodeLock( id );
-                return new CoreAPILock( () -> ktx.locks().releaseSharedNodeLock( id ) );
-            }
-            else if ( entity instanceof Relationship )
-            {
-                ktx.locks().acquireSharedRelationshipLock( id );
-                return new CoreAPILock( () -> ktx.locks().releaseSharedRelationshipLock( id ) );
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
-            }
+            ktx.locks().acquireSharedNodeLock( id );
+            return new CoreAPILock( () -> ktx.locks().releaseSharedNodeLock( id ) );
+        }
+        else if ( entity instanceof Relationship )
+        {
+            ktx.locks().acquireSharedRelationshipLock( id );
+            return new CoreAPILock( () -> ktx.locks().releaseSharedRelationshipLock( id ) );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
         }
     }
 
