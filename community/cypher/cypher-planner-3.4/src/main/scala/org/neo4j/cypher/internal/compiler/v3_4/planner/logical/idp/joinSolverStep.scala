@@ -69,7 +69,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
         val overlappingNodes = computeOverlappingNodes(lhs, rhs, solveds, argumentsToRemove)
         if (overlappingNodes.nonEmpty) {
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
-          if (overlappingSymbols == overlappingNodes) {
+          if (overlappingNodes.forall(overlappingSymbols.contains)) {
             if (VERBOSE) {
               println(s"${show(leftGoal, nodes(lhs, solveds))} overlap ${show(rightGoal, nodes(rhs, solveds))} on ${showNames(overlappingNodes)}")
             }

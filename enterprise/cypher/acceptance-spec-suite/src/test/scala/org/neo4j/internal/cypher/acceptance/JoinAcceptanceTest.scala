@@ -248,7 +248,7 @@ test("larger optional match join should not crash") {
       """.stripMargin
 
     // WHEN
-    val result = executeWith(Configs.Interpreted, query, expectedDifferentResults = Configs.SlottedInterpreted)
+    val result = executeWith(Configs.Interpreted, query)
 
     // THEN
     result.toComparableResult should be(Seq(Map(
