@@ -42,13 +42,11 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -75,10 +73,8 @@ class Neo4jJsonCodecTest
         var context = mock( TransitionalTxManagementKernelTransaction.class );
         var internalTransaction = mock( InternalTransaction.class );
         var kernelTransaction = mock( KernelTransaction.class );
-        var kernelStatement = mock( KernelStatement.class, RETURNS_MOCKS );
 
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
-        when( kernelTransaction.acquireStatement() ).thenReturn( kernelStatement );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );
         when( transactionHandle.getContext() ).thenReturn( context );
         jsonCodec = new Neo4jJsonCodec( transactionHandle );
