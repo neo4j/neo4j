@@ -31,8 +31,6 @@ import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -104,7 +102,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         return Iterables.firstOrNull( findPaths( start, end, false ) );
     }
 
-    private ResourceIterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
+    private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
     {
         PathInterest interest;
         if ( multiplePaths )
@@ -123,7 +121,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
                 new SelectorFactory( end, interest ) )
                 .evaluator( includeWhereEndNodeIs( end ) )
                 .traverse( start );
-        return () -> (ResourceIterator<WeightedPath>) new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight );
+        return () -> new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight );
     }
 
     @Override
