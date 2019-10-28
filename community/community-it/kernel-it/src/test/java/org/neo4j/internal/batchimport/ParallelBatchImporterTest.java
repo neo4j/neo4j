@@ -96,6 +96,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
@@ -400,7 +401,7 @@ public class ParallelBatchImporterTest
             assertEquals( nodeCount, verifiedNodes );
 
             // Labels
-            long labelScanStoreEntryCount = tx.getAllLabels().stream()
+            long labelScanStoreEntryCount = stream( tx.getAllLabels() )
                 .flatMap( l -> tx.findNodes( l ).stream() )
                 .count();
 

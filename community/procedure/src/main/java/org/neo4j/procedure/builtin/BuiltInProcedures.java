@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -52,7 +51,6 @@ import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
-import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -66,7 +64,11 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
+import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
+import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
+import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 
@@ -102,8 +104,7 @@ public class BuiltInProcedures
         }
 
         boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "nodeCount" ) );
-        List<LabelResult> labelResults =
-                TokenAccess.LABELS.all( kernelTransaction ).stream().map( label ->
+        List<LabelResult> labelResults = stream( LABELS.all( kernelTransaction ) ).map( label ->
                 {
                     int labelId = kernelTransaction.tokenRead().nodeLabel( label.name() );
                     long count = shouldCount ? kernelTransaction.dataRead().countsForNode( labelId ) : LONG_FIELD_NOT_CALCULATED;
@@ -122,8 +123,7 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        List<PropertyKeyResult> propertyKeys =
-                TokenAccess.PROPERTY_KEYS.all( kernelTransaction ).stream().map( PropertyKeyResult::new ).collect( Collectors.toList() );
+        List<PropertyKeyResult> propertyKeys = stream( PROPERTY_KEYS.all( kernelTransaction ) ).map( PropertyKeyResult::new ).collect( Collectors.toList() );
         return propertyKeys.stream();
     }
 
@@ -138,8 +138,7 @@ public class BuiltInProcedures
         }
 
         boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "relationshipCount" ) );
-        List<RelationshipTypeResult> relationshipTypes =
-                TokenAccess.RELATIONSHIP_TYPES.all( kernelTransaction ).stream().map( type ->
+        List<RelationshipTypeResult> relationshipTypes = stream( RELATIONSHIP_TYPES.all( kernelTransaction ) ).map( type ->
                 {
                     int typeId = kernelTransaction.tokenRead().relationshipType( type.name() );
                     long count = shouldCount ? kernelTransaction.dataRead().countsForRelationship( ANY_LABEL, typeId, ANY_LABEL ) : LONG_FIELD_NOT_CALCULATED;
@@ -233,12 +232,12 @@ public class BuiltInProcedures
 
             // Indexes
             // If index is backing an existing constraint, it will be overwritten later.
-            Iterators.stream( schemaRead.indexesGetAll() )
+            stream( schemaRead.indexesGetAll() )
                     .map( index -> new SchemaStatementResult( index.getName(), "INDEX", createStatement( index ), dropStatement( index ) ) )
                     .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
 
             // Constraints
-            Iterators.stream( schemaRead.constraintsGetAll() )
+            stream( schemaRead.constraintsGetAll() )
                     .map( constraint -> new SchemaStatementResult( constraint.getName(), "CONSTRAINT", createStatement( constraint ),
                             dropStatement( constraint ) ) )
                     .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
@@ -463,7 +462,7 @@ public class BuiltInProcedures
         {
             return Stream.empty();
         }
-        return Stream.of( new SchemaProcedure( graphDatabaseAPI, (InternalTransaction) transaction ).buildSchemaGraph() );
+        return Stream.of( new SchemaProcedure( (InternalTransaction) transaction ).buildSchemaGraph() );
     }
 
     @SystemProcedure

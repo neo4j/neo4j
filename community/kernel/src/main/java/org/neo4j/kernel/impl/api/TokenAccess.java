@@ -24,12 +24,10 @@ import java.util.Iterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.token.api.NamedToken;
 
 import static org.neo4j.graphdb.Label.label;
@@ -103,7 +101,7 @@ public abstract class TokenAccess<R>
         }
     };
 
-    private static <T> ResourceIterator<T> inUse( KernelTransaction transaction, TokenAccess<T> access )
+    private static <T> Iterator<T> inUse( KernelTransaction transaction, TokenAccess<T> access )
     {
         SchemaReadCore schemaReadCore = transaction.schemaRead().snapshot();
         return new TokenIterator<>( transaction, access )
@@ -119,13 +117,12 @@ public abstract class TokenAccess<R>
                         return this.access.token( token );
                     }
                 }
-                close();
                 return null;
             }
         };
     }
 
-    private static <T> ResourceIterator<T> all( KernelTransaction transaction, TokenAccess<T> access )
+    private static <T> Iterator<T> all( KernelTransaction transaction, TokenAccess<T> access )
     {
         return new TokenIterator<>( transaction, access )
         {
@@ -138,19 +135,18 @@ public abstract class TokenAccess<R>
                 }
                 else
                 {
-                    close();
                     return null;
                 }
             }
         };
     }
 
-    public final ResourceIterator<R> inUse( KernelTransaction transaction )
+    public final Iterator<R> inUse( KernelTransaction transaction )
     {
         return inUse( transaction, this );
     }
 
-    public final ResourceIterator<R> all( KernelTransaction transaction )
+    public final Iterator<R> all( KernelTransaction transaction )
     {
         return all( transaction, this );
     }
@@ -168,35 +164,15 @@ public abstract class TokenAccess<R>
         return false;
     }
 
-    private abstract static class TokenIterator<T> extends PrefetchingResourceIterator<T>
+    private abstract static class TokenIterator<T> extends PrefetchingIterator<T>
     {
-        private Statement statement;
         protected final TokenAccess<T> access;
         protected final Iterator<NamedToken> tokens;
 
         private TokenIterator( KernelTransaction transaction, TokenAccess<T> access )
         {
             this.access = access;
-            this.statement = transaction.acquireStatement();
-            try
-            {
-                this.tokens = access.tokens( transaction.tokenRead() );
-            }
-            catch ( Exception e )
-            {
-                close();
-                throw e;
-            }
-        }
-
-        @Override
-        public void close()
-        {
-            if ( statement != null )
-            {
-                statement.close();
-                statement = null;
-            }
+            this.tokens = access.tokens( transaction.tokenRead() );
         }
     }
 

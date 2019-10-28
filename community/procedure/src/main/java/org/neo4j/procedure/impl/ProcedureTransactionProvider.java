@@ -125,31 +125,31 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
-        public ResourceIterable<Label> getAllLabelsInUse()
+        public Iterable<Label> getAllLabelsInUse()
         {
             return transaction.getAllLabelsInUse();
         }
 
         @Override
-        public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+        public Iterable<RelationshipType> getAllRelationshipTypesInUse()
         {
             return transaction.getAllRelationshipTypesInUse();
         }
 
         @Override
-        public ResourceIterable<Label> getAllLabels()
+        public Iterable<Label> getAllLabels()
         {
             return transaction.getAllLabels();
         }
 
         @Override
-        public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+        public Iterable<RelationshipType> getAllRelationshipTypes()
         {
             return transaction.getAllRelationshipTypes();
         }
 
         @Override
-        public ResourceIterable<String> getAllPropertyKeys()
+        public Iterable<String> getAllPropertyKeys()
         {
             return transaction.getAllPropertyKeys();
         }
