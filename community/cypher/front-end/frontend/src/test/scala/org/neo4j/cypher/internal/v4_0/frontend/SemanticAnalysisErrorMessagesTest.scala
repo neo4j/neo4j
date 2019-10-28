@@ -177,7 +177,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in MERGE clause") {
@@ -188,7 +188,29 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in ON CREATE SET") {
+    val query = "MERGE (n :Label) ON CREATE SET n.`` = 1 RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in ON MATCH SET") {
+    val query = "MERGE (n :Label) ON MATCH SET n.`` = 1 RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in MATCH clause") {
@@ -199,7 +221,29 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in SET clause") {
+    val query = "MATCH (n) SET n.``= 1 RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in REMOVE clause") {
+    val query = "MATCH (n) REMOVE n.`` RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in WHERE clause") {
@@ -210,7 +254,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in WITH clause") {
@@ -221,7 +265,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in RETURN clause") {
@@ -232,7 +276,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   // Empty tokens for relationship properties
@@ -245,7 +289,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in MERGE clause") {
@@ -256,7 +300,29 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in ON CREATE SET") {
+    val query = "MERGE ()-[r:REL]->() ON CREATE SET r.`` = 1 RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in ON MATCH SET") {
+    val query = "MERGE ()-[r:REL]->() ON MATCH SET r.`` = 1 RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in MATCH clause") {
@@ -267,7 +333,29 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in SET clause") {
+    val query = "MATCH ()-[r]->() SET r.``= 1 RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in REMOVE clause") {
+    val query = "MATCH ()-[r]->() REMOVE r.`` RETURN r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in WHERE clause") {
@@ -278,7 +366,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in WITH clause") {
@@ -289,7 +377,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in RETURN clause") {
@@ -300,7 +388,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   // Empty tokens for labels
@@ -313,7 +401,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty label in MERGE clause") {
@@ -324,7 +412,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty label in MATCH clause") {
@@ -335,7 +423,29 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty label in SET clause") {
+    val query = "MATCH (n) SET n:`` RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty label in REMOVE clause") {
+    val query = "MATCH (n) REMOVE n:`` RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   // Empty tokens for relationship type
@@ -348,7 +458,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship type in MERGE clause") {
@@ -359,7 +469,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship type in MATCH clause") {
@@ -370,7 +480,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship type in variable length pattern") {
@@ -381,8 +491,10 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List("'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."))
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
+
+  private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)

@@ -26,7 +26,8 @@ sealed trait SetItem extends ASTNode with SemanticCheckable
 case class SetLabelItem(variable: Variable, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
   def semanticCheck =
     SemanticExpressionCheck.simple(variable) chain
-    SemanticExpressionCheck.expectType(CTNode.covariant, variable)
+      SemanticPatternCheck.checkValidLabels(labels, position) chain
+      SemanticExpressionCheck.expectType(CTNode.covariant, variable)
 }
 
 sealed trait SetProperty extends SetItem with SemanticAnalysisTooling
@@ -34,6 +35,7 @@ sealed trait SetProperty extends SetItem with SemanticAnalysisTooling
 case class SetPropertyItem(property: LogicalProperty, expression: Expression)(val position: InputPosition) extends SetProperty {
   def semanticCheck =
     SemanticExpressionCheck.simple(property) chain
+      SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey), property.position) chain
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTNode.covariant | CTRelationship.covariant, property.map)
 }
