@@ -161,7 +161,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile time with optional expand all") {
     // given
     val size = sizeHint / 10
-    circleGraph(size)
+    given { circleGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")

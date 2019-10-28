@@ -366,9 +366,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbhits with optional expand all") {
     // given
-    starGraph(sizeHint, "Center", "Ring")
     val extraNodes = 20
-    nodeGraph(extraNodes, "Ring")
+    given {
+      starGraph(sizeHint, "Center", "Ring")
+      nodeGraph(extraNodes, "Ring")
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
