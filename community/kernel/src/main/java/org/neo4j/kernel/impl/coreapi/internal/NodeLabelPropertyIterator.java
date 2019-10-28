@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.Statement;
 
 public class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
 {
@@ -40,11 +39,10 @@ public class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
             NodeLabelIndexCursor nodeLabelCursor,
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
-            Statement statement,
             NodeFactory nodeFactory,
             IndexQuery... queries )
     {
-        super( statement, nodeFactory );
+        super( nodeFactory );
         this.read = read;
         this.nodeLabelCursor = nodeLabelCursor;
         this.nodeCursor = nodeCursor;
@@ -74,9 +72,9 @@ public class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
     }
 
     @Override
-    void closeResources( Statement statement )
+    void closeResources()
     {
-        IOUtils.closeAllSilently( statement, nodeLabelCursor, nodeCursor, propertyCursor );
+        IOUtils.closeAllSilently( nodeLabelCursor, nodeCursor, propertyCursor );
     }
 
     private boolean hasPropertiesWithValues()
