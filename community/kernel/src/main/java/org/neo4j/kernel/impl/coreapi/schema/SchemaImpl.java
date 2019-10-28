@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
-import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -66,7 +65,6 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -131,34 +129,28 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        TokenRead tokenRead = transaction.tokenRead();
+        SchemaRead schemaRead = transaction.schemaRead();
+        List<IndexDefinition> definitions = new ArrayList<>();
+        int labelId = tokenRead.nodeLabel( label.name() );
+        if ( labelId == TokenRead.NO_TOKEN )
         {
-            TokenRead tokenRead = transaction.tokenRead();
-            SchemaRead schemaRead = transaction.schemaRead();
-            List<IndexDefinition> definitions = new ArrayList<>();
-            int labelId = tokenRead.nodeLabel( label.name() );
-            if ( labelId == TokenRead.NO_TOKEN )
-            {
-                return emptyList();
-            }
-            Iterator<IndexDescriptor> indexes = schemaRead.indexesGetForLabel( labelId );
-            addDefinitions( definitions, tokenRead, IndexDescriptor.sortByType( indexes ) );
-            return definitions;
+            return emptyList();
         }
+        Iterator<IndexDescriptor> indexes = schemaRead.indexesGetForLabel( labelId );
+        addDefinitions( definitions, tokenRead, IndexDescriptor.sortByType( indexes ) );
+        return definitions;
     }
 
     @Override
     public Iterable<IndexDefinition> getIndexes()
     {
         SchemaRead schemaRead = transaction.schemaRead();
-        try ( Statement ignore = transaction.acquireStatement() )
-        {
-            List<IndexDefinition> definitions = new ArrayList<>();
+        List<IndexDefinition> definitions = new ArrayList<>();
 
-            Iterator<IndexDescriptor> indexes = schemaRead.indexesGetAll();
-            addDefinitions( definitions, transaction.tokenRead(), IndexDescriptor.sortByType( indexes ) );
-            return definitions;
-        }
+        Iterator<IndexDescriptor> indexes = schemaRead.indexesGetAll();
+        addDefinitions( definitions, transaction.tokenRead(), IndexDescriptor.sortByType( indexes ) );
+        return definitions;
     }
 
     private IndexDefinition descriptorToDefinition( final TokenRead tokenRead, IndexDescriptor index )
@@ -266,15 +258,12 @@ public class SchemaImpl implements Schema
     public ConstraintDefinition getConstraintByName( String constraintName )
     {
         Objects.requireNonNull( constraintName );
-        try ( Statement ignore = transaction.acquireStatement() )
+        ConstraintDescriptor constraint = transaction.schemaRead().constraintGetForName( constraintName );
+        if ( constraint == null )
         {
-            ConstraintDescriptor constraint = transaction.schemaRead().constraintGetForName( constraintName );
-            if ( constraint == null )
-            {
-                throw new IllegalArgumentException( "No constraint found with the name '" + constraintName + "'." );
-            }
-            return asConstraintDefinition( constraint, transaction.tokenRead() );
+            throw new IllegalArgumentException( "No constraint found with the name '" + constraintName + "'." );
         }
+        return asConstraintDefinition( constraint, transaction.tokenRead() );
     }
 
     @Override
@@ -306,9 +295,8 @@ public class SchemaImpl implements Schema
     @Override
     public IndexState getIndexState( final IndexDefinition index )
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        try
         {
-
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor reference = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             InternalIndexState indexState = schemaRead.indexGetState( reference );
@@ -338,7 +326,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        try
         {
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
@@ -354,7 +342,7 @@ public class SchemaImpl implements Schema
     @Override
     public String getIndexFailure( IndexDefinition index )
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        try
         {
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
@@ -383,42 +371,33 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
-        try ( Statement ignore = transaction.acquireStatement() )
-        {
-            return asConstraintDefinitions( transaction.schemaRead().constraintsGetAll(), transaction.tokenRead() );
-        }
+        return asConstraintDefinitions( transaction.schemaRead().constraintsGetAll(), transaction.tokenRead() );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        TokenRead tokenRead = transaction.tokenRead();
+        SchemaRead schemaRead = transaction.schemaRead();
+        int labelId = tokenRead.nodeLabel( label.name() );
+        if ( labelId == TokenRead.NO_TOKEN )
         {
-            TokenRead tokenRead = transaction.tokenRead();
-            SchemaRead schemaRead = transaction.schemaRead();
-            int labelId = tokenRead.nodeLabel( label.name() );
-            if ( labelId == TokenRead.NO_TOKEN )
-            {
-                return emptyList();
-            }
-            return asConstraintDefinitions( schemaRead.constraintsGetForLabel( labelId ), tokenRead );
+            return emptyList();
         }
+        return asConstraintDefinitions( schemaRead.constraintsGetForLabel( labelId ), tokenRead );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        TokenRead tokenRead = transaction.tokenRead();
+        SchemaRead schemaRead = transaction.schemaRead();
+        int typeId = tokenRead.relationshipType( type.name() );
+        if ( typeId == TokenRead.NO_TOKEN )
         {
-            TokenRead tokenRead = transaction.tokenRead();
-            SchemaRead schemaRead = transaction.schemaRead();
-            int typeId = tokenRead.relationshipType( type.name() );
-            if ( typeId == TokenRead.NO_TOKEN )
-            {
-                return emptyList();
-            }
-            return asConstraintDefinitions( schemaRead.constraintsGetForRelationshipType( typeId ), tokenRead );
+            return emptyList();
         }
+        return asConstraintDefinitions( schemaRead.constraintsGetForRelationshipType( typeId ), tokenRead );
     }
 
     private static IndexDescriptor getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinitionImpl index ) throws SchemaRuleException
@@ -573,7 +552,7 @@ public class SchemaImpl implements Schema
         public IndexDefinition createIndexDefinition(
                 Label[] labels, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKeys )
         {
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
                 TokenWrite tokenWrite = transaction.tokenWrite();
                 String[] labelNames = Arrays.stream( labels ).map( Label::name ).toArray( String[]::new );
@@ -616,7 +595,7 @@ public class SchemaImpl implements Schema
         public IndexDefinition createIndexDefinition( RelationshipType[] types, String indexName, IndexType indexType, IndexConfig indexConfig,
                 String... propertyKeys )
         {
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
                 TokenWrite tokenWrite = transaction.tokenWrite();
                 String[] typeNames = Arrays.stream( types ).map( RelationshipType::name ).toArray( String[]::new );
@@ -662,26 +641,23 @@ public class SchemaImpl implements Schema
         @Override
         public void dropIndexDefinitions( IndexDefinition indexDefinition )
         {
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
-                try
-                {
-                    IndexDescriptor reference = getIndexReference( transaction.schemaRead(), transaction.tokenRead(), (IndexDefinitionImpl) indexDefinition );
-                    transaction.schemaWrite().indexDrop( reference );
-                }
-                catch ( NotFoundException e )
-                {
-                    // Silently ignore invalid label and property names
-                }
-                catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
-                {
-                    throw new ConstraintViolationException( e.getUserMessage(
-                            new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
+                IndexDescriptor reference = getIndexReference( transaction.schemaRead(), transaction.tokenRead(), (IndexDefinitionImpl) indexDefinition );
+                transaction.schemaWrite().indexDrop( reference );
+            }
+            catch ( NotFoundException e )
+            {
+                // Silently ignore invalid label and property names
+            }
+            catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
+            {
+                throw new ConstraintViolationException( e.getUserMessage(
+                        new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
             }
         }
 
@@ -694,39 +670,36 @@ public class SchemaImpl implements Schema
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
             }
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
-                try
-                {
-                    TokenWrite tokenWrite = transaction.tokenWrite();
-                    int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
-                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
-                    ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( schema, name );
-                    return new UniquenessConstraintDefinition( this, constraint, indexDefinition );
-                }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
-                        RepeatedSchemaComponentException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( IllegalTokenNameException e )
-                {
-                    throw new IllegalArgumentException( e );
-                }
-                catch ( TokenCapacityExceededKernelException e )
-                {
-                    throw new IllegalStateException( e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
-                catch ( KernelException e )
-                {
-                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
-                }
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
+                int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
+                LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( schema, name );
+                return new UniquenessConstraintDefinition( this, constraint, indexDefinition );
+            }
+            catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
+                    RepeatedSchemaComponentException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( TokenCapacityExceededKernelException e )
+            {
+                throw new IllegalStateException( e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
+            }
+            catch ( KernelException e )
+            {
+                throw new TransactionFailureException( "Unknown error trying to create token ids", e );
             }
         }
 
@@ -739,144 +712,129 @@ public class SchemaImpl implements Schema
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
             }
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
-                try
-                {
-                    TokenWrite tokenWrite = transaction.tokenWrite();
-                    int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
-                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
-                    ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( schema, name );
-                    return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
-                }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
-                        RepeatedSchemaComponentException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( IllegalTokenNameException e )
-                {
-                    throw new IllegalArgumentException( e );
-                }
-                catch ( TokenCapacityExceededKernelException e )
-                {
-                    throw new IllegalStateException( e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
-                catch ( KernelException e )
-                {
-                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
-                }
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
+                int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
+                LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( schema, name );
+                return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
+            }
+            catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
+                    RepeatedSchemaComponentException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( TokenCapacityExceededKernelException e )
+            {
+                throw new IllegalStateException( e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
+            }
+            catch ( KernelException e )
+            {
+                throw new TransactionFailureException( "Unknown error trying to create token ids", e );
             }
         }
 
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( String name, Label label, String... propertyKeys )
         {
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
-                try
-                {
-                    TokenWrite tokenWrite = transaction.tokenWrite();
-                    int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
-                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
-                    ConstraintDescriptor constraint = transaction.schemaWrite().nodePropertyExistenceConstraintCreate( schema, name );
-                    return new NodePropertyExistenceConstraintDefinition( this, constraint, label, propertyKeys );
-                }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException |
-                        RepeatedSchemaComponentException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( IllegalTokenNameException e )
-                {
-                    throw new IllegalArgumentException( e );
-                }
-                catch ( TokenCapacityExceededKernelException e )
-                {
-                    throw new IllegalStateException( e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
-                catch ( KernelException e )
-                {
-                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
-                }
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
+                int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
+                LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                ConstraintDescriptor constraint = transaction.schemaWrite().nodePropertyExistenceConstraintCreate( schema, name );
+                return new NodePropertyExistenceConstraintDefinition( this, constraint, label, propertyKeys );
+            }
+            catch ( AlreadyConstrainedException | CreateConstraintFailureException |
+                    RepeatedSchemaComponentException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( TokenCapacityExceededKernelException e )
+            {
+                throw new IllegalStateException( e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
+            }
+            catch ( KernelException e )
+            {
+                throw new TransactionFailureException( "Unknown error trying to create token ids", e );
             }
         }
 
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( String name, RelationshipType type, String propertyKey )
         {
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
-                try
-                {
-                    TokenWrite tokenWrite = transaction.tokenWrite();
-                    int typeId = tokenWrite.relationshipTypeGetOrCreateForName( type.name() );
-                    int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
-                    RelationTypeSchemaDescriptor schema = forRelType( typeId, propertyKeyId );
-                    ConstraintDescriptor constraint = transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate( schema, name );
-                    return new RelationshipPropertyExistenceConstraintDefinition( this, constraint, type, propertyKey );
-                }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException |
-                        RepeatedSchemaComponentException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( IllegalTokenNameException e )
-                {
-                    throw new IllegalArgumentException( e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
-                catch ( KernelException e )
-                {
-                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
-                }
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                int typeId = tokenWrite.relationshipTypeGetOrCreateForName( type.name() );
+                int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
+                RelationTypeSchemaDescriptor schema = forRelType( typeId, propertyKeyId );
+                ConstraintDescriptor constraint = transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate( schema, name );
+                return new RelationshipPropertyExistenceConstraintDefinition( this, constraint, type, propertyKey );
+            }
+            catch ( AlreadyConstrainedException | CreateConstraintFailureException |
+                    RepeatedSchemaComponentException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
+            }
+            catch ( KernelException e )
+            {
+                throw new TransactionFailureException( "Unknown error trying to create token ids", e );
             }
         }
 
         @Override
         public void dropConstraint( ConstraintDescriptor constraint )
         {
-            try ( Statement ignore = transaction.acquireStatement() )
+            try
             {
-                try
-                {
-                    transaction.schemaWrite().constraintDrop( constraint );
-                }
-                catch ( DropConstraintFailureException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
+                transaction.schemaWrite().constraintDrop( constraint );
+            }
+            catch ( DropConstraintFailureException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
             }
         }
 
         @Override
         public String getUserMessage( KernelException e )
         {
-            try ( Statement ignore = transaction.acquireStatement() )
-            {
-                return e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) );
-            }
+            return e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) );
         }
 
         @Override
