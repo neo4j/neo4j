@@ -59,7 +59,6 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
@@ -82,7 +81,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -119,10 +117,8 @@ class ExecutionResultSerializerTest
         var context = mock( TransitionalTxManagementKernelTransaction.class );
         internalTransaction = mock( InternalTransaction.class );
         var kernelTransaction = mock( KernelTransaction.class );
-        var kernelStatement = mock( KernelStatement.class, RETURNS_MOCKS );
 
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
-        when( kernelTransaction.acquireStatement() ).thenReturn( kernelStatement );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );
         when( transactionHandle.getContext() ).thenReturn( context );
         serializer = getSerializerWith( output );

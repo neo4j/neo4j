@@ -61,7 +61,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -793,8 +792,7 @@ public class NeoStoresTest
             throws IOException
     {
         int count = 0;
-        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-                StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
+        try ( StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
@@ -883,8 +881,7 @@ public class NeoStoresTest
         assertEquals( 3, count );
         count = 0;
 
-        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-                StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
+        try ( StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
@@ -1153,8 +1150,7 @@ public class NeoStoresTest
 
     private void assertHasRelationships( long node )
     {
-        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-                StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
+        try ( StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
@@ -1264,8 +1260,7 @@ public class NeoStoresTest
 
     private void deleteRelationships( long nodeId )
     {
-        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-                StorageNodeCursor nodeCursor = allocateNodeCursor( nodeId ) )
+        try ( StorageNodeCursor nodeCursor = allocateNodeCursor( nodeId ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
