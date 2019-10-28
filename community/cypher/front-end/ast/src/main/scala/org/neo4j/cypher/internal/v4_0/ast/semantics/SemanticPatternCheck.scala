@@ -283,7 +283,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItemsDef, position: InputPosition): SemanticCheck = {
-    val propertyKeys = returnItems.items.collect { case item if item.expression.isInstanceOf[Property] => item.expression.asInstanceOf[Property].propertyKey }
+    val propertyKeys = returnItems.items.collect { case item => item.expression.findByAllClass[Property]map(prop => prop.propertyKey) }.flatten
     SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys, position)
   }
 

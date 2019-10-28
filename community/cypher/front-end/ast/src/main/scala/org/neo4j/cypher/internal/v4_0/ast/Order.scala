@@ -16,10 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckable
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticExpressionCheck
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable, Property}
 import org.neo4j.cypher.internal.v4_0.util.ASTNode
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
@@ -32,7 +30,8 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 
 sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
-  def semanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression)
+  def semanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain
+    SemanticPatternCheck.checkValidPropertyKeyNames(expression.findByAllClass[Property].map(prop => prop.propertyKey), expression.position)
 
   def mapExpression(f: Expression => Expression): SortItem
 }

@@ -268,6 +268,17 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
+  test("Should not allow empty node property key name in ORDER BY in WITH") {
+    val query = "MATCH (n) WITH n ORDER BY n.`` RETURN n"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
   test("Should not allow empty node property key name in RETURN clause") {
     val query = "MATCH (n) RETURN n.``"
 
@@ -278,6 +289,116 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
     context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
+
+  test("Should not allow empty node property key name in DISTINCT RETURN clause") {
+    val query = "MATCH (n) RETURN DISTINCT n.``"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in aggregation in RETURN clause") {
+    val query = "MATCH (n) RETURN count(n.``)"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in ORDER BY in RETURN") {
+    val query = "MATCH (n) RETURN n ORDER BY n.`` DESC LIMIT 2"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in CASE clause") {
+    val query =
+      """
+        |MATCH (n)
+        |RETURN
+        |CASE n.``
+        |WHEN 'val'
+        |THEN 1
+        |ELSE 2 END AS result
+      """.stripMargin
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in CASE WHEN clause") {
+    val query =
+      """
+        |MATCH (n)
+        |RETURN
+        |CASE
+        |WHEN n.`` = 'blue'
+        |THEN 1
+        |ELSE 2 END AS result
+      """.stripMargin
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in CASE THEN clause") {
+    val query =
+      """
+        |MATCH (n)
+        |RETURN
+        |CASE
+        |WHEN n.prop = 'blue'
+        |THEN n.``
+        |ELSE 2 END AS result
+      """.stripMargin
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty node property key name in CASE ELSE clause") {
+    val query =
+      """
+        |MATCH (n)
+        |RETURN
+        |CASE
+        |WHEN n.prop = 'blue'
+        |THEN 1
+        |ELSE n.`` END AS result
+      """.stripMargin
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
 
   // Empty tokens for relationship properties
 
@@ -380,8 +501,128 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
+  test("Should not allow empty relationship property key name in ORDER BY in WITH") {
+    val query = "MATCH ()-[r]->()WITH r ORDER BY r.`` RETURN r.prop"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
   test("Should not allow empty relationship property key name in RETURN clause") {
     val query = "MATCH ()-[r]->() RETURN r.`` as result"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in DISTINCT RETURN clause") {
+    val query = "MATCH ()-[r]->() RETURN DISTINCT r.`` as result"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in aggregation in RETURN clause") {
+    val query = "MATCH ()-[r]->() RETURN max(r.``)"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in ORDER BY in RETURN") {
+    val query = "MATCH ()-[r]->() RETURN r AS result ORDER BY r.``"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in CASE clause") {
+    val query =
+      """
+        |MATCH ()-[r]->()
+        |RETURN
+        |CASE r.``
+        |WHEN 'val'
+        |THEN 1
+        |ELSE 2 END AS result
+      """.stripMargin
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in CASE WHEN clause") {
+    val query =
+      """
+        |MATCH ()-[r]->()
+        |RETURN
+        |CASE
+        |WHEN r.`` = 'blue'
+        |THEN 1
+        |ELSE 2 END AS result
+      """.stripMargin
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in CASE THEN clause") {
+    val query =
+      """
+        |MATCH ()-[r]->()
+        |RETURN
+        |CASE
+        |WHEN r.prop = 'blue'
+        |THEN r.``
+        |ELSE 2 END AS result
+      """.stripMargin
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+  }
+
+  test("Should not allow empty relationship property key name in CASE ELSE clause") {
+    val query =
+      """
+        |MATCH ()-[r]->()
+        |RETURN
+        |CASE
+        |WHEN r.prop = 'blue'
+        |THEN 1
+        |ELSE r.`` END AS result
+      """.stripMargin
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()
