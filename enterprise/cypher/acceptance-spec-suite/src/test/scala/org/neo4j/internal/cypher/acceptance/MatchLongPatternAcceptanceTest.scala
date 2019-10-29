@@ -136,8 +136,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
       // THEN
       val plan = result.executionPlanDescription()
-      val counts = countExpandsAndJoins(plan)
-      counts("expands") should equal(numberOfPatternRelationships)
+      assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> 0))
     }
   }
 
