@@ -108,7 +108,7 @@ trait Attribute[KEY <: Identifiable, VALUE] {
  */
 trait Default[KEY <: Identifiable, VALUE] extends Attribute[KEY, VALUE] {
 
-  def defaultValue: VALUE
+  protected def defaultValue: VALUE
 
   override def get(id: Id): VALUE = if (isDefinedAt(id)) super.get(id) else defaultValue
 }

@@ -76,7 +76,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .projection("x.prop AS prop")
         .expand("(y)-->(z)") // 6x more rows
         .expand("(x)-->(y)") // 6x more rows
-        .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("x.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -100,7 +100,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("prop", "c")
         .aggregation(groupingExpressions = Seq("x.prop AS prop"), aggregationExpression = Seq("count(*) AS c"))
-        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("x.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
