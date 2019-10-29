@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -43,6 +42,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -76,7 +76,6 @@ import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.time.Stopwatch;
 
 import static java.util.Collections.emptyList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
@@ -84,7 +83,6 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
-import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -207,26 +205,112 @@ public class SchemaImpl implements Schema
     public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
         actions.assertInOpenTransaction();
-        Stopwatch startTime = Stopwatch.start();
-        do
-        {
-            IndexState state = getIndexState( index );
-            switch ( state )
-            {
-            case ONLINE:
-                return;
-            case FAILED:
-                String cause = getIndexFailure( index );
-                String message = IndexPopulationFailure
-                        .appendCauseOfFailure( String.format( "Index %s entered a %s state. Please see database logs.", index, state ), cause );
-                throw new IllegalStateException( message );
-            default:
-                sleepIgnoreInterrupt();
-                break;
-            }
-        } while ( !startTime.hasTimedOut( duration, unit ) );
 
-        throw new IllegalStateException( "Expected index to come online within a reasonable time." );
+        IndexDescriptor reference = ((IndexDefinitionImpl) index).getIndexReference();
+        Iterable<IndexDescriptor> iterable = () -> Iterators.iterator( reference );
+        if ( awaitIndexesOnline( iterable, String::valueOf, duration, unit ) )
+        {
+            throw new IllegalStateException( "Expected index to come online within a reasonable time." );
+        }
+    }
+
+    @Override
+    public void awaitIndexOnline( String indexName, long duration, TimeUnit unit )
+    {
+        Objects.requireNonNull( indexName );
+        actions.assertInOpenTransaction();
+
+        SchemaRead schemaRead = transaction.schemaRead();
+        Iterable<IndexDescriptor> iterable = () -> Iterators.iterator( schemaRead.indexGetForName( indexName ) );
+        if ( awaitIndexesOnline( iterable, index -> "`" + indexName + "`", duration, unit ) )
+        {
+            throw new IllegalStateException( "Expected index to come online within a reasonable time." );
+        }
+    }
+
+    @Override
+    public void awaitIndexesOnline( long duration, TimeUnit unit )
+    {
+        actions.assertInOpenTransaction();
+
+        Iterable<IndexDescriptor> iterable = () -> Iterators.map( def -> ((IndexDefinitionImpl) def).getIndexReference(), getIndexes().iterator() );
+        if ( awaitIndexesOnline( iterable, String::valueOf, duration, unit ) )
+        {
+            List<IndexDefinition> online = new ArrayList<>();
+            List<IndexDefinition> notOnline = new ArrayList<>();
+            for ( IndexDefinition index : getIndexes() )
+            {
+                try
+                {
+                    if ( getIndexState( index ) == ONLINE )
+                    {
+                        online.add( index );
+                        continue;
+                    }
+                }
+                catch ( Exception ignore )
+                {
+                }
+                notOnline.add( index );
+            }
+            throw new IllegalStateException( "Expected all indexes to come online within a reasonable time. "
+                    + "Indexes brought online: " + online
+                    + ". Indexes not guaranteed to be online: " + notOnline );
+        }
+    }
+
+    private boolean awaitIndexesOnline( Iterable<IndexDescriptor> indexes, Function<IndexDescriptor,String> describe, long duration, TimeUnit unit )
+    {
+        Stopwatch startTime = Stopwatch.start();
+
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            do
+            {
+                boolean allOnline = true;
+                SchemaRead schemaRead = transaction.schemaRead();
+                for ( IndexDescriptor index : indexes )
+                {
+                    if ( index == IndexDescriptor.NO_INDEX )
+                    {
+                        allOnline = false;
+                        break;
+                    }
+
+                    try
+                    {
+                        InternalIndexState indexState = schemaRead.indexGetState( index );
+                        if ( indexState == InternalIndexState.POPULATING )
+                        {
+                            allOnline = false;
+                            break;
+                        }
+                        if ( indexState == InternalIndexState.FAILED )
+                        {
+                            String cause = schemaRead.indexGetFailure( index );
+                            String message = "Index " + describe.apply( index ) + " entered a " + indexState + " state. Please see database logs.";
+                            message = IndexPopulationFailure.appendCauseOfFailure( message, cause );
+                            throw new IllegalStateException( message );
+                        }
+                    }
+                    catch ( IndexNotFoundKernelException e )
+                    {
+                        // Weird that the index vanished, but we'll just wait and see if it comes back until we time out.
+                        allOnline = false;
+                        break;
+                    }
+                }
+
+                if ( allOnline )
+                {
+                    return false;
+                }
+                sleepIgnoreInterrupt();
+            }
+            while ( !startTime.hasTimedOut( duration, unit ) );
+        }
+
+        return true;
     }
 
     private static void sleepIgnoreInterrupt()
@@ -238,82 +322,6 @@ public class SchemaImpl implements Schema
         catch ( InterruptedException e )
         {
             // Ignore interrupted exceptions here.
-        }
-    }
-
-    @Override
-    public void awaitIndexOnline( String indexName, long duration, TimeUnit unit )
-    {
-        Objects.requireNonNull( indexName );
-        actions.assertInOpenTransaction();
-        Stopwatch startTime = Stopwatch.start();
-        try ( Statement ignore = transaction.acquireStatement() )
-        {
-            do
-            {
-                SchemaRead schemaRead = transaction.schemaRead();
-                IndexDescriptor index = schemaRead.indexGetForName( indexName );
-                if ( index == IndexDescriptor.NO_INDEX )
-                {
-                    sleepIgnoreInterrupt();
-                }
-                else
-                {
-                    try
-                    {
-                        InternalIndexState indexState = schemaRead.indexGetState( index );
-                        if ( indexState == InternalIndexState.ONLINE )
-                        {
-                            return;
-                        }
-                        else if ( indexState == InternalIndexState.FAILED )
-                        {
-                            String cause = schemaRead.indexGetFailure( index );
-                            String message = IndexPopulationFailure.appendCauseOfFailure(
-                                    String.format( "Index `%s` entered a %s state. Please see database logs.", indexName, indexState ), cause );
-                            throw new IllegalStateException( message );
-                        }
-                        else
-                        {
-                            sleepIgnoreInterrupt();
-                        }
-                    }
-                    catch ( IndexNotFoundKernelException e )
-                    {
-                        // Weird that the index vanished, but we'll just wait and see if it comes back until we time out.
-                        sleepIgnoreInterrupt();
-                    }
-                }
-            }
-            while ( !startTime.hasTimedOut( duration, unit ) );
-        }
-
-        throw new IllegalStateException( "Expected index to come online within a reasonable time." );
-    }
-
-    @Override
-    public void awaitIndexesOnline( long duration, TimeUnit unit )
-    {
-        actions.assertInOpenTransaction();
-        long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
-        Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
-
-        for ( Iterator<IndexDefinition> iterator = getIndexes().iterator(); iterator.hasNext(); )
-        {
-            if ( millisLeft < 0 )
-            {
-                throw new IllegalStateException( "Expected all indexes to come online within a reasonable time. "
-                                                 + "Indexes brought online: " + onlineIndexes
-                                                 + ". Indexes not guaranteed to be online: " + asCollection( iterator ) );
-            }
-
-            IndexDefinition index = iterator.next();
-
-            Stopwatch stopWatch = Stopwatch.start();
-            awaitIndexOnline( index, millisLeft, TimeUnit.MILLISECONDS );
-            millisLeft -= stopWatch.elapsed( MILLISECONDS );
-
-            onlineIndexes.add( index );
         }
     }
 
