@@ -241,7 +241,7 @@ public interface Schema
      * @param indexName the name of the index that we want to wait for.
      * @param duration duration to wait for the index to come online
      * @param unit TimeUnit of duration
-     * throws IllegalStateException if the index did not enter the ONLINE state
+     * @throws IllegalStateException if the index did not enter the ONLINE state
      * within the given duration, or if the index entered the FAILED state.
      */
     void awaitIndexOnline( String indexName, long duration, TimeUnit unit );

@@ -108,7 +108,7 @@ class BatchInsertIndexTest
         BatchInserter inserter = newBatchInserter();
         inserter.createDeferredSchemaIndex( LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
-        GraphDatabaseService db = graphDatabaseService();
+        GraphDatabaseService db = startGraphDatabaseServiceAndAwaitIndexes();
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
@@ -135,7 +135,7 @@ class BatchInsertIndexTest
         inserter.createDeferredConstraint( LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
         inserter.shutdown();
 
-        GraphDatabaseService db = graphDatabaseService();
+        GraphDatabaseService db = startGraphDatabaseServiceAndAwaitIndexes();
         try ( Transaction tx = db.beginTx() )
         {
             assertSingleCorrectHit( collidingPoints.first(), tx );
@@ -156,7 +156,11 @@ class BatchInsertIndexTest
         inserter.createDeferredConstraint( LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
         inserter.shutdown();
 
-        GraphDatabaseService db = graphDatabaseService();
+        GraphDatabaseService db = startGraphDatabaseService();
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS ) );
+        }
         try ( Transaction tx = db.beginTx() )
         {
             var schema = tx.schema();
@@ -230,15 +234,20 @@ class BatchInsertIndexTest
         return BatchInserters.inserter( databaseLayout, fs, configBuilder.build() );
     }
 
-    private GraphDatabaseService graphDatabaseService()
+    private GraphDatabaseService startGraphDatabaseServiceAndAwaitIndexes()
+    {
+        GraphDatabaseService database = startGraphDatabaseService();
+        awaitIndexesOnline( database );
+        return database;
+    }
+
+    private GraphDatabaseService startGraphDatabaseService()
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fs )
                 .setConfig( configBuilder.build() )
                 .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        awaitIndexesOnline( database );
-        return database;
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void awaitIndexesOnline( GraphDatabaseService db )
@@ -247,10 +256,6 @@ class BatchInsertIndexTest
         {
             tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.commit();
-        }
-        catch ( IllegalStateException e )
-        {
-            e.printStackTrace();
         }
     }
 
