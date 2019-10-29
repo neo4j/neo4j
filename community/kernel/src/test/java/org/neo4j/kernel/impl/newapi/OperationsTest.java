@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -91,8 +92,12 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -1130,6 +1135,96 @@ class OperationsTest
         inOrder.verify( ktx ).txState();
         inOrder.verify( commandCreationContext ).reserveSchema();
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void indexedBackedConstraintCreateMustThrowOnIndexTypeFullText() throws Exception
+    {
+        // given
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
+                .withName( "constraint name" )
+                .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR )
+                .withIndexType( IndexType.FULLTEXT );
+        IndexDescriptor constraintIndex = prototype.materialise( 42 );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
+        when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
+        when( storageReader.constraintsGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+
+        // when
+        var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ), containsString( "FULLTEXT" ) );
+    }
+
+    @Test
+    void indexedBackedConstraintCreateMustThrowOnFulltextSchemas() throws Exception
+    {
+        // given
+        when( tokenHolders.labelTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "Label", 123 ) );
+        when( tokenHolders.propertyKeyTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "prop", 456 ) );
+        SchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, this.schema.getEntityTokenIds(), this.schema.getPropertyIds() );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
+                .withName( "constraint name" )
+                .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+        IndexDescriptor constraintIndex = prototype.materialise( 42 );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
+        when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
+        when( storageReader.constraintsGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+
+        // when
+        var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ), containsString( "full-text schema" ) );
+    }
+
+    @Test
+    void indexedBackedConstraintCreateMustThrowOnRelationshipSchemas() throws Exception
+    {
+        // given
+        when( tokenHolders.relationshipTypeTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "RelType", 123 ) );
+        when( tokenHolders.propertyKeyTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "prop", 456 ) );
+        SchemaDescriptor schema = SchemaDescriptor.forRelType( this.schema.getEntityTokenIds()[0], this.schema.getPropertyIds() );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
+                .withName( "constraint name" )
+                .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+        IndexDescriptor constraintIndex = prototype.materialise( 42 );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
+        when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
+        when( storageReader.constraintsGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+
+        // when
+        var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ), containsString( "relationship type schema" ) );
+    }
+
+    @Test
+    void indexedBackedConstraintCreateMustThrowOnNonUniqueIndexPrototypes() throws Exception
+    {
+        // given
+        when( tokenHolders.labelTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "Label", 123 ) );
+        when( tokenHolders.propertyKeyTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "prop", 456 ) );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema )
+                .withName( "constraint name" )
+                .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+        IndexDescriptor constraintIndex = prototype.materialise( 42 );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
+        when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
+        when( storageReader.constraintsGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+
+        // when
+        var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ),
+                allOf( containsStringIgnoringCase( "index prototype" ), containsStringIgnoringCase( "not unique" ) ) );
     }
 
     private static Iterator<ConstraintDescriptor> asIterator( ConstraintDescriptor constraint )

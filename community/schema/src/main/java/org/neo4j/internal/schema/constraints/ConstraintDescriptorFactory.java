@@ -82,21 +82,11 @@ public class ConstraintDescriptorFactory
 
     public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        if ( schema.isLabelSchemaDescriptor() )
-        {
-            return new ConstraintDescriptorImplementation( UNIQUE, schema.asLabelSchemaDescriptor() );
-        }
-        throw new UnsupportedOperationException(
-                "Cannot create uniqueness constraint for schema '" + schema.userDescription( TokenNameLookup.idTokenNameLookup ) + "'." );
+        return new ConstraintDescriptorImplementation( UNIQUE, schema );
     }
 
     public static NodeKeyConstraintDescriptor nodeKeyForSchema( SchemaDescriptor schema )
     {
-        if ( schema.isLabelSchemaDescriptor() )
-        {
-            return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema.asLabelSchemaDescriptor() ).asNodeKeyConstraint();
-        }
-        throw new UnsupportedOperationException(
-                "Cannot create node key constraint for schema '" + schema.userDescription( TokenNameLookup.idTokenNameLookup ) + "'." );
+        return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema ).asNodeKeyConstraint();
     }
 }

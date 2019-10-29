@@ -1405,10 +1405,27 @@ public class Operations implements Write, SchemaWrite
             {
                 throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, tokenNameLookup );
             }
-            // todo throw if prototype.getIndexType() == FULLTEXT
-            // todo throw if schema is fulltext
-            // todo throw if schema is for relationships
-            // todo throw if prototype is not unique
+            if ( prototype.getIndexType() != IndexType.BTREE )
+            {
+                throw new CreateConstraintFailureException(
+                        constraint, "Cannot create backing constraint index with index type " + prototype.getIndexType() + "." );
+            }
+            if ( prototype.schema().isFulltextSchemaDescriptor() )
+            {
+                throw new CreateConstraintFailureException( constraint, "Cannot create backing constraint index using a full-text schema: " +
+                        prototype.schema().userDescription( tokenNameLookup ) );
+            }
+            if ( prototype.schema().isRelationshipTypeSchemaDescriptor() )
+            {
+                throw new CreateConstraintFailureException( constraint, "Cannot create backing constraint index using a relationship type schema: " +
+                        prototype.schema().userDescription( tokenNameLookup ) );
+            }
+            if ( !prototype.isUnique() )
+            {
+                throw new CreateConstraintFailureException( constraint,
+                        "Cannot create index backed constraint using an index prototype that is not unique: " + prototype.userDescription( tokenNameLookup ) );
+            }
+
             IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, constraint, prototype );
             if ( !allStoreHolder.constraintExists( constraint ) )
             {

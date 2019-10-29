@@ -112,7 +112,7 @@ public class ConstraintIndexCreator
         {
             throw e;
         }
-        catch ( SchemaKernelException e )
+        catch ( KernelException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
@@ -234,7 +234,7 @@ public class ConstraintIndexCreator
 
     private IndexDescriptor checkAndCreateConstraintIndex(
             SchemaRead schemaRead, TokenNameLookup tokenLookup, IndexBackedConstraintDescriptor constraint,
-            IndexPrototype prototype ) throws SchemaKernelException
+            IndexPrototype prototype ) throws KernelException
     {
         IndexDescriptor descriptor = schemaRead.indexGetForName( constraint.getName() );
         if ( descriptor != IndexDescriptor.NO_INDEX )
@@ -250,17 +250,13 @@ public class ConstraintIndexCreator
         return createConstraintIndex( prototype );
     }
 
-    public IndexDescriptor createConstraintIndex( IndexPrototype prototype )
+    public IndexDescriptor createConstraintIndex( IndexPrototype prototype ) throws KernelException
     {
         try ( KernelTransaction transaction = kernelSupplier.get().beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             IndexDescriptor index = transaction.indexUniqueCreate( prototype );
             transaction.commit();
             return index;
-        }
-        catch ( KernelException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 }
