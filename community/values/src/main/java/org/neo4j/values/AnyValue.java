@@ -19,6 +19,9 @@
  */
 package org.neo4j.values;
 
+import org.neo4j.values.storable.FloatingPointValue;
+import org.neo4j.values.storable.NumberValue;
+
 public abstract class AnyValue
 {
     private int hash;
@@ -93,5 +96,23 @@ public abstract class AnyValue
     public static long pad( long value )
     {
         return ((value + 7) / 8) * 8;
+    }
+
+    /**
+     * @return {@code true} if at least one operand is NaN and the other is a number
+     */
+    public static boolean isNanAndNumber( AnyValue value1, AnyValue value2 )
+    {
+        return (value1 instanceof FloatingPointValue && ((FloatingPointValue) value1).isNaN() && value2 instanceof NumberValue)
+               || (value2 instanceof FloatingPointValue && ((FloatingPointValue) value2).isNaN() && value1 instanceof NumberValue);
+    }
+
+    /**
+     * @return {@code true} if at least one operand is NaN
+     */
+    public static boolean hasNaNOperand( AnyValue value1, AnyValue value2 )
+    {
+        return (value1 instanceof FloatingPointValue && ((FloatingPointValue) value1).isNaN())
+               || (value2 instanceof FloatingPointValue && ((FloatingPointValue) value2).isNaN());
     }
 }

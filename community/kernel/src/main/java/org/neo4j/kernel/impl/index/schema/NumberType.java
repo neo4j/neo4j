@@ -43,7 +43,7 @@ class NumberType extends Type
 
     NumberType( byte typeId )
     {
-        super( ValueGroup.NUMBER, typeId, Values.of( Double.NEGATIVE_INFINITY ), Values.of( Double.POSITIVE_INFINITY ) );
+        super( ValueGroup.NUMBER, typeId, Values.of( Double.NEGATIVE_INFINITY ), Values.of( Double.NaN ) );
     }
 
     @Override

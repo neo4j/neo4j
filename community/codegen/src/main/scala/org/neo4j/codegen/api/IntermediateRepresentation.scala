@@ -642,7 +642,9 @@ object IntermediateRepresentation {
 
   def trueValue: IntermediateRepresentation = getStatic[Values, BooleanValue]("TRUE")
 
-  def falseValue: IntermediateRepresentation =  getStatic[Values, BooleanValue]("FALSE")
+  def falseValue: IntermediateRepresentation = getStatic[Values, BooleanValue]("FALSE")
+
+  def isNaN(value: IntermediateRepresentation): IntermediateRepresentation = and(instanceOf[FloatingPointValue](value), invoke(cast[FloatingPointValue](value), method[FloatingPointValue, Boolean]("isNaN")))
 
   def constant(value: Any): IntermediateRepresentation = Constant(value)
 

@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.values.storable.NumberValues.hash;
-import static org.neo4j.values.utils.AnyValueTestUtil.assertIncomparable;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.toAnyValue;
 
 class NumberValuesTest
@@ -49,9 +49,9 @@ class NumberValuesTest
     @Test
     void shouldHandleNaNCorrectly()
     {
-        assertIncomparable( toAnyValue(Double.NaN), toAnyValue( Double.NaN ) );
-        assertIncomparable( toAnyValue( 1 ), toAnyValue( Double.NaN ) );
-        assertIncomparable( toAnyValue( Double.NaN ), toAnyValue( 1 ) );
+        assertNotEqual( toAnyValue(Double.NaN), toAnyValue( Double.NaN ) );
+        assertNotEqual( toAnyValue( 1 ), toAnyValue( Double.NaN ) );
+        assertNotEqual( toAnyValue( Double.NaN ), toAnyValue( 1 ) );
     }
 
     @Test

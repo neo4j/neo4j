@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
 import org.neo4j.storageengine.api.RelationshipVisitor
-import org.neo4j.values.storable.{TextValue, Value, Values}
+import org.neo4j.values.storable.{FloatingPointValue, TextValue, Value, Values}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}
 
@@ -217,7 +217,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val impossiblePredicate =
       predicates.exists {
-        case p: IndexQuery.ExactPredicate => p.value() eq Values.NO_VALUE
+        case p: IndexQuery.ExactPredicate => (p.value() eq Values.NO_VALUE) || (p.value().isInstanceOf[FloatingPointValue] && p.value().asInstanceOf[FloatingPointValue].isNaN)
         case _: IndexQuery.ExistsPredicate if predicates.length > 1 => false
         case p: IndexQuery =>
           !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())

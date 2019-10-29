@@ -35,11 +35,13 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
@@ -815,26 +817,99 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
     }
 
-    private void shouldRangeSeekInOrder( IndexOrder order, Object o0, Object o1, Object o2, Object o3, Object o4, Object o5 ) throws Exception
+    @Test
+    public void shouldRangeSeekAscendingWithoutFindingNanForOpenEnd() throws Exception
     {
-        IndexQuery range = range( 100, Values.of( o0 ), true, Values.of( o5 ), true );
+        Object o0 = 0;
+        Object o1 = 1.0;
+        Object o2 = 2.5;
+        Object o3 = 3;
+        Object o4 = 4;
+        Object o5 = 5;
+        Object o6 = Double.POSITIVE_INFINITY;
+        Object o7 = Double.NaN;
+
+        shouldRangeSeekInOrderWithExpectedSize( IndexOrder.ASCENDING, RangeSeekMode.OPEN_END, 7, o0, o1, o2, o3, o4, o5, o6, o7 );
+    }
+
+    @Test
+    public void shouldRangeSeekDescendingWithoutFindingNanForOpenEnd() throws Exception
+    {
+        Object o0 = 0;
+        Object o1 = 1.0;
+        Object o2 = 2.5;
+        Object o3 = 3;
+        Object o4 = 4;
+        Object o5 = 5;
+        Object o6 = Double.POSITIVE_INFINITY;
+        Object o7 = Double.NaN;
+
+        shouldRangeSeekInOrderWithExpectedSize( IndexOrder.DESCENDING, RangeSeekMode.OPEN_END, 7, o0, o1, o2, o3, o4, o5, o6, o7 );
+    }
+
+    @Test
+    public void shouldRangeSeekAscendingWithoutFindingNanForOpenStart() throws Exception
+    {
+        Object o0 = Double.NaN;
+        Object o1 = 1.0;
+        Object o2 = 2.5;
+        Object o3 = 3;
+        Object o4 = 4;
+        Object o5 = 5;
+        Object o6 = Double.POSITIVE_INFINITY;
+
+        shouldRangeSeekInOrderWithExpectedSize( IndexOrder.ASCENDING, RangeSeekMode.OPEN_START, 6, o0, o1, o2, o3, o4, o5, o6 );
+    }
+
+    @Test
+    public void shouldRangeSeekDescendingWithoutFindingNanForOpenStart() throws Exception
+    {
+        Object o0 = Double.NaN;
+        Object o1 = 1.0;
+        Object o2 = 2.5;
+        Object o3 = 3;
+        Object o4 = 4;
+        Object o5 = 5;
+        Object o6 = Double.POSITIVE_INFINITY;
+
+        shouldRangeSeekInOrderWithExpectedSize( IndexOrder.DESCENDING, RangeSeekMode.OPEN_START, 6, o0, o1, o2, o3, o4, o5, o6 );
+    }
+
+    private void shouldRangeSeekInOrder( IndexOrder order, Object... objects ) throws Exception
+    {
+        shouldRangeSeekInOrderWithExpectedSize( order, RangeSeekMode.CLOSED, objects.length, objects );
+    }
+
+    private void shouldRangeSeekInOrderWithExpectedSize( IndexOrder order, RangeSeekMode rangeSeekMode, int expectedSize, Object... objects ) throws Exception
+    {
+        IndexQuery range;
+        switch ( rangeSeekMode )
+        {
+        case CLOSED:
+            range = range( 100, Values.of( objects[0] ), true, Values.of( objects[objects.length - 1] ), true );
+            break;
+        case OPEN_END:
+            range = range( 100, Values.of( objects[0] ), true, null, false );
+            break;
+        case OPEN_START:
+            range = range( 100, null, false, Values.of( objects[objects.length - 1] ), true );
+            break;
+        default:
+            throw new IllegalStateException();
+        }
+
         IndexOrder[] indexOrders = orderCapability( range );
         Assume.assumeTrue( "Assume support for order " + order, ArrayUtils.contains( indexOrders, order ) );
 
-        updateAndCommit( asList(
-                add( 1, descriptor.schema(), o0 ),
-                add( 1, descriptor.schema(), o5 ),
-                add( 1, descriptor.schema(), o1 ),
-                add( 1, descriptor.schema(), o4 ),
-                add( 1, descriptor.schema(), o2 ),
-                add( 1, descriptor.schema(), o3 )
-        ) );
+        List<IndexEntryUpdate<?>> additions = Arrays.stream( objects ).map( o -> add( 1, descriptor.schema(), o ) ).collect( Collectors.toList() );
+        Collections.shuffle( additions, random.random() );
+        updateAndCommit( additions );
 
         SimpleNodeValueClient client = new SimpleNodeValueClient();
         try ( AutoCloseable ignored = query( client, order, range ) )
         {
             List<Long> seenIds = assertClientReturnValuesInOrder( client, order );
-            assertThat( seenIds.size(), equalTo( 6 ) );
+            assertThat( seenIds.size(), equalTo( expectedSize ) );
         }
     }
 
@@ -1162,5 +1237,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             assertThat( query( exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
             assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
         }
+    }
+
+    private enum RangeSeekMode
+    {
+        CLOSED,
+        OPEN_END,
+        OPEN_START
     }
 }

@@ -139,6 +139,10 @@ public final class CypherBoolean
 
     public static Value lessThan( AnyValue lhs, AnyValue rhs )
     {
+        if ( AnyValue.isNanAndNumber(lhs, rhs) )
+        {
+            return FALSE;
+        }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
         switch ( comparison )
         {
@@ -158,6 +162,10 @@ public final class CypherBoolean
 
     public static Value lessThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
+        if ( AnyValue.isNanAndNumber(lhs, rhs) )
+        {
+            return FALSE;
+        }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
         switch ( comparison )
         {
@@ -177,6 +185,10 @@ public final class CypherBoolean
 
     public static Value greaterThan( AnyValue lhs, AnyValue rhs )
     {
+        if ( AnyValue.isNanAndNumber(lhs, rhs) )
+        {
+            return FALSE;
+        }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
         switch ( comparison )
         {
@@ -196,6 +208,10 @@ public final class CypherBoolean
 
     public static Value greaterThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
+        if ( AnyValue.isNanAndNumber(lhs, rhs) )
+        {
+            return FALSE;
+        }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
         switch ( comparison )
         {
@@ -241,11 +257,6 @@ public final class CypherBoolean
         }
 
         return seenUndefined ? NO_VALUE : Values.FALSE;
-    }
-
-    private static boolean isNan( AnyValue value )
-    {
-        return value instanceof FloatingPointValue && ((FloatingPointValue) value).isNaN();
     }
 
     private static final class BooleanMapper implements ValueMapper<Value>

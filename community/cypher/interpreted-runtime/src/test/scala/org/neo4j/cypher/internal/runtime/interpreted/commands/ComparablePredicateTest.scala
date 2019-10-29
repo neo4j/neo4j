@@ -48,7 +48,6 @@ class ComparablePredicateTest extends CypherFunSuite {
     Long.MaxValue,
     Double.MaxValue,
     Double.PositiveInfinity,
-    Double.NaN,
     null
   ).flatMap {
     case null => Seq(null)

@@ -45,23 +45,23 @@ public class AnyValueTestUtil
     {
         assertEquals( a, b, a + " should be equivalent to " + b );
         assertEquals( b, a, a + " should be equivalent to " + b );
-        assertEquals( a.ternaryEquals( b ), Equality.TRUE, a + " should be equal to " + b );
-        assertEquals( b.ternaryEquals( a ), Equality.TRUE, a + " should be equal to " + b );
+        assertEquals( Equality.TRUE, a.ternaryEquals( b ), a + " should be equal to " + b );
+        assertEquals( Equality.TRUE, b.ternaryEquals( a ), a + " should be equal to " + b );
     }
 
     public static void assertNotEqual( AnyValue a, AnyValue b )
     {
         assertNotEquals( a, b, a + " should not be equivalent to " + b );
         assertNotEquals( b, a, b + " should not be equivalent to " + a );
-        assertNotEquals( a.ternaryEquals( b ), Equality.TRUE, a + " should not equal " + b );
-        assertNotEquals( b.ternaryEquals( a ), Equality.TRUE, b + " should not equal " + a );
+        assertEquals( Equality.FALSE, a.ternaryEquals( b ), a + " should not equal " + b );
+        assertEquals( Equality.FALSE, b.ternaryEquals( a ), b + " should not equal " + a );
     }
 
     public static void assertIncomparable( AnyValue a, AnyValue b )
     {
         assertNotEquals( a, b, a + " should not be equivalent to " + b );
         assertNotEquals( b, a, b + " should not be equivalent to " + a );
-        assertEquals( a.ternaryEquals( b ), Equality.UNDEFINED, a + " should be incomparable to " + b );
-        assertEquals( b.ternaryEquals( a ), Equality.UNDEFINED, b + " should be incomparable to " + a );
+        assertEquals( Equality.UNDEFINED, a.ternaryEquals( b ), a + " should be incomparable to " + b );
+        assertEquals( Equality.UNDEFINED, b.ternaryEquals( a ), b + " should be incomparable to " + a );
     }
 }

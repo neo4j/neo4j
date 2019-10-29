@@ -173,6 +173,10 @@ public abstract class Value extends AnyValue
         {
             return ((SequenceValue) this).ternaryEquality( (SequenceValue) other );
         }
+        if ( hasNaNOperand( this, other ) )
+        {
+            return Equality.FALSE;
+        }
         if ( other instanceof Value && ((Value) other).valueGroup() == valueGroup() )
         {
             Value otherValue = (Value) other;

@@ -78,7 +78,7 @@ public abstract class IndexQuery
                                         Number from, boolean fromInclusive,
                                         Number to, boolean toInclusive )
     {
-        return new NumberRangePredicate( propertyKeyId,
+        return NumberRangePredicate.create( propertyKeyId,
                                          from == null ? null : Values.numberValue( from ), fromInclusive,
                                          to == null ? null : Values.numberValue( to ), toInclusive );
     }
@@ -105,7 +105,7 @@ public abstract class IndexQuery
         switch ( valueGroup )
         {
         case NUMBER:
-            return new NumberRangePredicate( propertyKeyId,
+            return NumberRangePredicate.create( propertyKeyId,
                                              (NumberValue)from, fromInclusive,
                                              (NumberValue)to, toInclusive );
 
@@ -263,7 +263,7 @@ public abstract class IndexQuery
 
     public static final class ExistsPredicate extends IndexQuery
     {
-        ExistsPredicate( int propertyKeyId )
+        private ExistsPredicate( int propertyKeyId )
         {
             super( propertyKeyId );
         }
@@ -297,7 +297,7 @@ public abstract class IndexQuery
     {
         private final Value exactValue;
 
-        ExactPredicate( int propertyKeyId, Object value )
+        private ExactPredicate( int propertyKeyId, Object value )
         {
             super( propertyKeyId );
             this.exactValue = value instanceof Value ? (Value)value : Values.of( value );
@@ -419,7 +419,8 @@ public abstract class IndexQuery
     {
         private final CoordinateReferenceSystem crs;
 
-        GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs, PointValue from, boolean fromInclusive, PointValue to, boolean toInclusive )
+        private GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs, PointValue from, boolean fromInclusive, PointValue to,
+                                        boolean toInclusive )
         {
             super( propertyKeyId, ValueGroup.GEOMETRY, from, fromInclusive, to, toInclusive );
             this.crs = crs;
@@ -470,28 +471,9 @@ public abstract class IndexQuery
         }
     }
 
-    public static final class NumberRangePredicate extends RangePredicate<NumberValue>
-    {
-        NumberRangePredicate( int propertyKeyId, NumberValue from, boolean fromInclusive, NumberValue to,
-                boolean toInclusive )
-        {
-            super( propertyKeyId, ValueGroup.NUMBER, from, fromInclusive, to, toInclusive );
-        }
-
-        public Number from()
-        {
-            return from == null ? null : from.asObject();
-        }
-
-        public Number to()
-        {
-            return to == null ? null : to.asObject();
-        }
-    }
-
     public static final class TextRangePredicate extends RangePredicate<TextValue>
     {
-        TextRangePredicate( int propertyKeyId, TextValue from, boolean fromInclusive, TextValue to,
+        private TextRangePredicate( int propertyKeyId, TextValue from, boolean fromInclusive, TextValue to,
                 boolean toInclusive )
         {
             super( propertyKeyId, ValueGroup.TEXT, from, fromInclusive, to, toInclusive );
@@ -510,7 +492,7 @@ public abstract class IndexQuery
 
     public abstract static class StringPredicate extends IndexQuery
     {
-        StringPredicate( int propertyKeyId )
+        private StringPredicate( int propertyKeyId )
         {
             super( propertyKeyId );
         }
@@ -538,7 +520,7 @@ public abstract class IndexQuery
     {
         private final TextValue prefix;
 
-        StringPrefixPredicate( int propertyKeyId, TextValue prefix )
+        private StringPrefixPredicate( int propertyKeyId, TextValue prefix )
         {
             super( propertyKeyId );
             //we know utf8 values are coming from the index so optimize for that
@@ -567,7 +549,7 @@ public abstract class IndexQuery
     {
         private final TextValue contains;
 
-        StringContainsPredicate( int propertyKeyId, TextValue contains )
+        private StringContainsPredicate( int propertyKeyId, TextValue contains )
         {
             super( propertyKeyId );
             //we know utf8 values are coming from the index so optimize for that
@@ -596,7 +578,7 @@ public abstract class IndexQuery
     {
         private final TextValue suffix;
 
-        StringSuffixPredicate( int propertyKeyId, TextValue suffix )
+        private StringSuffixPredicate( int propertyKeyId, TextValue suffix )
         {
             super( propertyKeyId );
             //we know utf8 values are coming from the index so optimize for that
@@ -625,7 +607,7 @@ public abstract class IndexQuery
     {
         private final String query;
 
-        FulltextSearchPredicate( String query )
+        private FulltextSearchPredicate( String query )
         {
             super( TokenRead.NO_TOKEN );
             this.query = query;
