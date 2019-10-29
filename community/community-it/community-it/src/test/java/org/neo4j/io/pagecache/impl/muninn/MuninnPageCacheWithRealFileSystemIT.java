@@ -30,6 +30,13 @@ class MuninnPageCacheWithRealFileSystemIT extends MuninnPageCacheTest
     @Inject
     TestDirectory directory;
 
+    MuninnPageCacheWithRealFileSystemIT()
+    {
+        SHORT_TIMEOUT_MILLIS = 30_000;
+        SEMI_LONG_TIMEOUT_MILLIS = 360_000;
+        LONG_TIMEOUT_MILLIS = 1_200_000;
+    }
+
     @Override
     protected Fixture<MuninnPageCache> createFixture()
     {

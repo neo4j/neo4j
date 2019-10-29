@@ -53,10 +53,10 @@ import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 @ResourceLock( SHARED_RESOURCE )
 public abstract class PageCacheTestSupport<T extends PageCache>
 {
-    protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
-    protected static final long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
-    protected static final long LONG_TIMEOUT_MILLIS = 360_000;
     protected static ExecutorService executor;
+    protected long SHORT_TIMEOUT_MILLIS = 10_000;
+    protected long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
+    protected long LONG_TIMEOUT_MILLIS = 360_000;
 
     @BeforeAll
     public static void startExecutor()
