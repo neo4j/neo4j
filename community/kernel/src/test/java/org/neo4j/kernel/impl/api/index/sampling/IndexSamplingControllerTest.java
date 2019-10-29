@@ -36,7 +36,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.util.FeatureToggles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,8 +52,12 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
+import static org.neo4j.util.FeatureToggles.clear;
+import static org.neo4j.util.FeatureToggles.set;
 
 class IndexSamplingControllerTest
 {
@@ -77,6 +80,8 @@ class IndexSamplingControllerTest
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
     private AssertableLogProvider logProvider;
 
+    @BeforeEach
+    void setupLogProvider()
     {
         when( samplingConfig.backgroundSampling() ).thenReturn( true );
         when( samplingConfig.jobLimit() ).thenReturn( 1 );
@@ -87,11 +92,6 @@ class IndexSamplingControllerTest
         when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );
 
         indexMap.putIndexProxy( indexProxy );
-    }
-
-    @BeforeEach
-    void setupLogProvider()
-    {
         logProvider = new AssertableLogProvider();
     }
 
@@ -388,7 +388,7 @@ class IndexSamplingControllerTest
     @Test
     void shouldLogRecoveryIndexSamples()
     {
-        FeatureToggles.set( IndexSamplingController.class, IndexSamplingController.LOG_RECOVER_INDEX_SAMPLES_NAME, true );
+        set( IndexSamplingController.class, IndexSamplingController.LOG_RECOVER_INDEX_SAMPLES_NAME, true );
         try
         {
             final RecoveryCondition predicate = descriptor -> descriptor.equals( indexProxy.getDescriptor() );
@@ -408,71 +408,61 @@ class IndexSamplingControllerTest
         }
         finally
         {
-            FeatureToggles.clear( IndexSamplingController.class, IndexSamplingController.LOG_RECOVER_INDEX_SAMPLES_NAME );
+            clear( IndexSamplingController.class, IndexSamplingController.LOG_RECOVER_INDEX_SAMPLES_NAME );
         }
     }
 
     @Test
-    void shouldTriggerAsyncSamplesIfToggled()
+    void triggerAsyncSamplesByDefault()
     {
-        FeatureToggles.set( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME, true );
-        try
-        {
-            final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
-            when( indexProxy.getState() ).thenReturn( ONLINE );
-            when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
-            when( tracker.scheduleSamplingJob( any( IndexSamplingJob.class ) ) ).thenReturn( mock( JobHandle.class ) );
+        final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+        when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
+        when( tracker.scheduleSamplingJob( any( IndexSamplingJob.class ) ) ).thenReturn( mock( JobHandle.class ) );
 
-            controller.recoverIndexSamples();
+        controller.recoverIndexSamples();
 
-            verify( tracker ).scheduleSamplingJob( job );
-        }
-        finally
-        {
-            FeatureToggles.clear( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME );
-        }
+        verify( tracker ).scheduleSamplingJob( job );
     }
 
     @Test
     void shouldNotTriggerAsyncSamplesIfNotToggled()
     {
-        final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
-        when( indexProxy.getState() ).thenReturn( ONLINE );
-
-        controller.recoverIndexSamples();
-
-        verify( tracker ).scheduleSamplingJob( job );
-        verifyNoMoreInteractions( tracker );
-    }
-
-    @Test
-    void shouldWaitForAsyncIndexSamples() throws ExecutionException, InterruptedException
-    {
-        FeatureToggles.set( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME, true );
+        set( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, false );
         try
         {
             final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
             when( indexProxy.getState() ).thenReturn( ONLINE );
-            when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
-            final JobHandle jobHandle = mock( JobHandle.class );
-            when( tracker.scheduleSamplingJob( any( IndexSamplingJob.class ) ) ).thenReturn( jobHandle );
 
             controller.recoverIndexSamples();
 
-            verify( tracker ).scheduleSamplingJob( job );
-            verify( jobHandle ).waitTermination();
+            verifyNoMoreInteractions( tracker );
         }
         finally
         {
-            FeatureToggles.clear( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME );
+            clear( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME );
         }
+    }
+
+    @Test
+    void waitForAsyncIndexSamples() throws ExecutionException, InterruptedException
+    {
+        final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+        when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
+        final JobHandle jobHandle = mock( JobHandle.class );
+        when( tracker.scheduleSamplingJob( any( IndexSamplingJob.class ) ) ).thenReturn( jobHandle );
+
+        controller.recoverIndexSamples();
+
+        verify( tracker ).scheduleSamplingJob( job );
+        verify( jobHandle ).waitTermination();
     }
 
     @Test
     void shouldNotWaitForAsyncIndexSamplesIfConfigured()
     {
-        FeatureToggles.set( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME, true );
-        FeatureToggles.set( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, false );
+        set( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, false );
         try
         {
             final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
@@ -488,8 +478,7 @@ class IndexSamplingControllerTest
         }
         finally
         {
-            FeatureToggles.clear( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME );
-            FeatureToggles.clear( IndexSamplingController.class, IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME );
+            clear( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME );
         }
     }
 
