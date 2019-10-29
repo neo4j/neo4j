@@ -37,6 +37,10 @@ public enum IndexType
 
     public static IndexType fromPublicApi( org.neo4j.graphdb.schema.IndexType type )
     {
+        if ( type == null )
+        {
+            return null;
+        }
         switch ( type )
         {
         case BTREE: return BTREE;

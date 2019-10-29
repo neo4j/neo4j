@@ -71,10 +71,18 @@ public interface ConstraintCreator
      * with {@link Schema#getConstraintByName(String)}, or the associated index with {@link Schema#getIndexByName(String)} for index backed constraints.
      *
      * @param name the name to give the constraint.
-     * @return an {@link ConstraintCreator} instance to be used for further interaction.
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
     ConstraintCreator withName( String name );
 
+    /**
+     * Assign an index type to the constraint. If the constraint is not backed by an index, then the presence of an index type will cause {@link #create()} to
+     * throw an exception.
+     *
+     * @param indexType the type of index wanted for backing the constraint.
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
+     * @see IndexType
+     */
     ConstraintCreator withIndexType( IndexType indexType );
 
     /**

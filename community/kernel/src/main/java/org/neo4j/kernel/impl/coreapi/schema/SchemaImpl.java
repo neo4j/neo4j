@@ -756,10 +756,7 @@ public class SchemaImpl implements Schema
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
             }
-            if ( indexType == IndexType.FULLTEXT )
-            {
-                throw new IllegalArgumentException( "Property uniqueness constraints cannot be created with index type " + indexType + "." );
-            }
+            assertConstraintableIndexType( "Property uniqueness", indexType );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -769,10 +766,7 @@ public class SchemaImpl implements Schema
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
                     IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( name );
-                    if ( indexType != null )
-                    {
-                        prototype = prototype.withIndexType( fromPublicApi( indexType ) );
-                    }
+                    prototype = prototype.withIndexType( fromPublicApi( indexType ) );
                     ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
                     return new UniquenessConstraintDefinition( this, constraint, indexDefinition );
                 }
@@ -801,6 +795,14 @@ public class SchemaImpl implements Schema
             }
         }
 
+        private void assertConstraintableIndexType( String constraintType, IndexType indexType )
+        {
+            if ( indexType != null && indexType != IndexType.BTREE )
+            {
+                throw new IllegalArgumentException( constraintType + " constraints cannot be created with index type " + indexType + "." );
+            }
+        }
+
         @Override
         public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
         {
@@ -810,10 +812,7 @@ public class SchemaImpl implements Schema
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
             }
-            if ( indexType == IndexType.FULLTEXT )
-            {
-                throw new IllegalArgumentException( "Node key constraints cannot be created with index type " + indexType + "." );
-            }
+            assertConstraintableIndexType( "Node key", indexType );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -823,6 +822,7 @@ public class SchemaImpl implements Schema
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
                     IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( name );
+                    prototype = prototype.withIndexType( fromPublicApi( indexType ) );
                     ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( prototype );
                     return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
                 }

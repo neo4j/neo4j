@@ -98,6 +98,7 @@ public interface SchemaWrite
 
     /**
      * Create a unique property constraint based on the given uniqueness index prototype.
+     * The given index prototype will be used for creating the uniqueness index backing the constraint.
      *
      * @param prototype a prototype that describes the constraint index, and includes the schema of the constraint.
      * @return The {@link ConstraintDescriptor} of the created constraint.
@@ -107,6 +108,7 @@ public interface SchemaWrite
 
     /**
      * Create node key constraint based on the given uniqueness index prototype.
+     * The given index prototype will be used for creating the uniqueness index backing the constraint.
      *
      * @param prototype the index prototype for which to create a node key constraint.
      * @return the created constraint.

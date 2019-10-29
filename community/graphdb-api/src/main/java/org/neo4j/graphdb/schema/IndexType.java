@@ -33,22 +33,26 @@ public enum IndexType
      * For B+Tree based indexes. All types of values are indexed and stored in sort-order. This means they are good at all types of exact matching,
      * and range queries. They can also support index-backed order-by.
      * <p>
-     * BTREE indexes can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "SPATIAL_".
-     * <p>
-     * BTREE indexes do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.
-     * <p>
-     * BTREE indexes cannot be created on {@link Schema#indexFor(RelationshipType) relationship types}.
+     * BTREE indexes have the following abilities and limitations:
+     * <ul>
+     *     <li>They can be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
+     *     <li>They can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "SPATIAL_".</li>
+     *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
+     *     <li>They cannot be created on {@link Schema#indexFor(RelationshipType) relationship types}.</li>
+     * </ul>
      */
     BTREE,
     /**
      * For full-text indexes. These indexes only index string values, and cannot answer all types of queries.
      * On the other hand, they are good at matching sub-strings of the indexed values, and they can do fuzzy matching, and scoring.
      * <p>
-     * FULLTEXT indexes can have their behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "FULLTEXT_".
-     * <p>
-     * FULLTEXT indexes can be {@linkplain Schema#indexFor(Label...) created} as {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.
-     * <p>
-     * FULLTEXT indexes can be created on both labels, and {@link Schema#indexFor(RelationshipType) relationship types}.
+     * FULLTEXT indexes have the following abilities and limitations:
+     * <ul>
+     *     <li>They cannot be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
+     *     <li>They can have their behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "FULLTEXT_".</li>
+     *     <li>They can be {@linkplain Schema#indexFor(Label...) created} as {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
+     *     <li>They can be created on both labels, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
+     * </ul>
      */
     FULLTEXT
 }
