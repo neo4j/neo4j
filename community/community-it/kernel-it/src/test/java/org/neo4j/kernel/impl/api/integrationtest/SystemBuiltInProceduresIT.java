@@ -441,7 +441,8 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
             {
                 // When & Then
                 RuntimeException exception = assertThrows( RuntimeException.class, () -> tx.execute( q ) );
-                assertTrue( exception.getMessage().startsWith( "Not a recognised system command or procedure:" ),
+                assertTrue( exception.getMessage()
+                                .startsWith( "Not a recognised system command or procedure. This Cypher command can only be executed in a user database:" ),
                         "Wrong error message for '" + q + "' => " + exception.getMessage() );
             }
         }
