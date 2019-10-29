@@ -294,11 +294,12 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "Groovy", "1.2" );
+        IndexPrototype prototype = this.prototype.withIndexProvider( providerDescriptor );
+        IndexDescriptor index = prototype.materialise( this.index.getId() );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "Groovy", "1.2" );
-        IndexPrototype prototype = this.prototype.withIndexProvider( providerDescriptor );
         when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         // when

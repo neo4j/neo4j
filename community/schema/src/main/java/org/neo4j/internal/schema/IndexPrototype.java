@@ -170,6 +170,10 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
      */
     public IndexPrototype withIndexType( IndexType indexType )
     {
+        if ( indexType == null )
+        {
+            return this;
+        }
         return new IndexPrototype( schema, isUnique, indexProvider, name, indexType, indexConfig );
     }
 

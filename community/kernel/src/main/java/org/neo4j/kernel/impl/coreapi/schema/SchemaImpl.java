@@ -208,7 +208,7 @@ public class SchemaImpl implements Schema
 
         IndexDescriptor reference = ((IndexDefinitionImpl) index).getIndexReference();
         Iterable<IndexDescriptor> iterable = () -> Iterators.iterator( reference );
-        if ( awaitIndexesOnline( iterable, String::valueOf, duration, unit ) )
+        if ( awaitIndexesOnline( iterable, descriptor -> index.toString(), duration, unit, true ) )
         {
             throw new IllegalStateException( "Expected index to come online within a reasonable time." );
         }
@@ -222,7 +222,7 @@ public class SchemaImpl implements Schema
 
         SchemaRead schemaRead = transaction.schemaRead();
         Iterable<IndexDescriptor> iterable = () -> Iterators.iterator( schemaRead.indexGetForName( indexName ) );
-        if ( awaitIndexesOnline( iterable, index -> "`" + indexName + "`", duration, unit ) )
+        if ( awaitIndexesOnline( iterable, index -> "`" + indexName + "`", duration, unit, false ) )
         {
             throw new IllegalStateException( "Expected index to come online within a reasonable time." );
         }
@@ -234,7 +234,7 @@ public class SchemaImpl implements Schema
         actions.assertInOpenTransaction();
 
         Iterable<IndexDescriptor> iterable = () -> Iterators.map( def -> ((IndexDefinitionImpl) def).getIndexReference(), getIndexes().iterator() );
-        if ( awaitIndexesOnline( iterable, String::valueOf, duration, unit ) )
+        if ( awaitIndexesOnline( iterable, index -> descriptorToDefinition( transaction.tokenRead(), index ).toString(), duration, unit, false ) )
         {
             List<IndexDefinition> online = new ArrayList<>();
             List<IndexDefinition> notOnline = new ArrayList<>();
@@ -259,7 +259,8 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private boolean awaitIndexesOnline( Iterable<IndexDescriptor> indexes, Function<IndexDescriptor,String> describe, long duration, TimeUnit unit )
+    private boolean awaitIndexesOnline(
+            Iterable<IndexDescriptor> indexes, Function<IndexDescriptor,String> describe, long duration, TimeUnit unit, boolean bubbleNotFound )
     {
         Stopwatch startTime = Stopwatch.start();
 
@@ -295,6 +296,10 @@ public class SchemaImpl implements Schema
                     }
                     catch ( IndexNotFoundKernelException e )
                     {
+                        if ( bubbleNotFound )
+                        {
+                            throw newIndexNotFoundException( descriptorToDefinition( transaction.tokenRead(), index ), e );
+                        }
                         // Weird that the index vanished, but we'll just wait and see if it comes back until we time out.
                         allOnline = false;
                         break;

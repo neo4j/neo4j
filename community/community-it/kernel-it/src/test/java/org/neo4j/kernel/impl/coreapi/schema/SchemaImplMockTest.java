@@ -38,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class SchemaImplMockTest
 {
@@ -56,14 +58,13 @@ class SchemaImplMockTest
         IllegalStateException e = assertThrows( IllegalStateException.class, () -> schema.awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES ) );
 
         // then
-        assertThat( e.getMessage(), Matchers.containsString( indexDefinition.toString() ) );
         assertThat( e.getMessage(), Matchers.containsString( Exceptions.stringify( cause ) ) );
     }
 
     private static IndexDefinitionImpl mockIndexDefinition()
     {
         IndexDefinitionImpl indexDefinition = mock( IndexDefinitionImpl.class );
-        when( indexDefinition.getIndexReference() ).thenReturn( IndexDescriptor.NO_INDEX );
+        when( indexDefinition.getIndexReference() ).thenReturn( forSchema( forLabel( 1, 1 ) ).withName( "index" ).materialise( 13 ) );
         return indexDefinition;
     }
 
