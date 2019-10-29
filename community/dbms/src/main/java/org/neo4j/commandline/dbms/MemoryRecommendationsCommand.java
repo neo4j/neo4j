@@ -32,6 +32,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
@@ -44,10 +45,12 @@ import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.TransactionStateMemoryAllocation.OFF_HEAP;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.io.ByteUnit.ONE_GIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_KIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_MEBI_BYTE;
@@ -106,11 +109,19 @@ public class MemoryRecommendationsCommand implements AdminCommand
         return brackets.recommend( Bracket::heapMemory );
     }
 
-    static long recommendPageCacheMemory( long totalMemoryBytes )
+    static long recommendPageCacheMemory( long totalMemoryBytes, boolean useOffHeapTxMemory )
     {
         long osMemory = recommendOsMemory( totalMemoryBytes );
         long heapMemory = recommendHeapMemory( totalMemoryBytes );
-        long recommendation = totalMemoryBytes - osMemory - heapMemory - recommendTxStateMemory( heapMemory );
+        long offHeapTxMemory = 0;
+        if ( useOffHeapTxMemory )
+        {
+            // TODO: Is this really right? This is replicating the previous behavior, but this means
+            //       we are looking at heap memory when calculating the value here, while we are looking
+            //       at total memory when calculating the actual txStateMemory we put in config
+            offHeapTxMemory = recommendTxStateMemory( heapMemory );
+        }
+        long recommendation = totalMemoryBytes - osMemory - heapMemory - offHeapTxMemory;
         recommendation = Math.max( mebiBytes( 8 ), recommendation );
         recommendation = Math.min( tebiBytes( 16 ), recommendation );
         return recommendation;
@@ -206,12 +217,18 @@ public class MemoryRecommendationsCommand implements AdminCommand
         Arguments arguments = buildArgs().parse( args );
 
         String mem = arguments.get( ARG_MEMORY );
+        boolean specificDb = arguments.has( ARG_DATABASE );
         long memory = buildSetting( ARG_MEMORY, BYTES ).build().apply( arguments::get );
+
+        long offHeapTxMemory = 0;
+        if ( offHeapTxStateEnabled() )
+        {
+            offHeapTxMemory = recommendTxStateMemory( memory );
+        }
+
         String os = bytesToString( recommendOsMemory( memory ) );
         String heap = bytesToString( recommendHeapMemory( memory ) );
-        String txState = bytesToString( recommendTxStateMemory( memory ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( memory ) );
-        boolean specificDb = arguments.has( ARG_DATABASE );
+        String pagecache = bytesToString( recommendPageCacheMemory( memory, offHeapTxMemory > 0 ) );
 
         print( "# Memory settings recommendation from neo4j-admin memrec:" );
         print( "#" );
@@ -244,7 +261,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( initialHeapSize.name() + "=" + heap );
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
-        print( tx_state_max_off_heap_memory.name() + "=" + txState );
+        print( tx_state_max_off_heap_memory.name() + "=" + bytesToString( offHeapTxMemory ) );
 
         if ( !specificDb )
         {
@@ -252,7 +269,8 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
         String databaseName = arguments.get( ARG_DATABASE );
         File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
-        File databaseDirectory = getConfig( configFile, databaseName ).get( database_path );
+        Config config = getConfig( configFile, databaseName );
+        File databaseDirectory = config.get( database_path );
         DatabaseLayout layout = DatabaseLayout.of( databaseDirectory );
         long pageCacheSize = dbSpecificPageCacheSize( layout );
         long luceneSize = dbSpecificLuceneSize( databaseDirectory );
@@ -263,6 +281,17 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( "# They can be used as an input into more detailed memory analysis." );
         print( "# Lucene indexes: " + bytesToString( luceneSize ) );
         print( "# Data volume and native indexes: " + bytesToString( pageCacheSize ) );
+    }
+
+    private boolean offHeapTxStateEnabled()
+    {
+        File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        Config conf = Config.defaults();
+        if ( outsideWorld.fileSystem().fileExists( configFile ) )
+        {
+            conf = Config.fromFile( configFile ).withHome( homeDir ).build();
+        }
+        return conf.get( tx_state_memory_allocation ) == OFF_HEAP;
     }
 
     private long dbSpecificPageCacheSize( DatabaseLayout databaseLayout )

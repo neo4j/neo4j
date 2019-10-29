@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
@@ -32,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
 
@@ -51,6 +53,7 @@ import org.neo4j.values.storable.RandomValues;
 
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -70,6 +73,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.MapUtil.load;
 import static org.neo4j.helpers.collection.MapUtil.store;
@@ -112,15 +116,15 @@ public class MemoryRecommendationsCommandTest
     @Test
     public void mustRecommendPageCacheMemory()
     {
-        assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 8 ), mebiBytes( 50 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ) ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
+        assertThat( recommendPageCacheMemory( mebiBytes( 100 ), true ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ), true ), between( mebiBytes( 8 ), mebiBytes( 50 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 3 ), true ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 6 ), true ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 192 ), true ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ), true ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
 
         // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
-        assertThat( recommendPageCacheMemory( exbiBytes( 1 ) ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
+        assertThat( recommendPageCacheMemory( exbiBytes( 1 ), true ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
     }
 
     @Test
@@ -168,7 +172,7 @@ public class MemoryRecommendationsCommandTest
         };
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), true ) );
 
         command.execute( new String[]{"--memory=8g"} );
 
@@ -176,6 +180,64 @@ public class MemoryRecommendationsCommandTest
         assertThat( stringMap.get( initialHeapSize.name() ), is( heap ) );
         assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
         assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
+    }
+
+    @Test
+    public void excludesOffHeapTxStateIfDisabledInConfig() throws Exception
+    {
+        File configDir = this.directory.directory( "no-offheap-config" );
+        Files.write( configDir.toPath().resolve( "neo4j.conf" ),
+                "dbms.tx_state.memory_allocation=ON_HEAP".getBytes( Charsets.UTF_8 ),
+                StandardOpenOption.CREATE_NEW );
+
+        StringBuilder output = new StringBuilder();
+        OutsideWorld outsideWorld = new RealOutsideWorld()
+        {
+            @Override
+            public void stdOutLine( String text )
+            {
+                output.append( text ).append( System.lineSeparator() );
+            }
+        };
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( configDir.getParentFile().toPath(), configDir.toPath(), outsideWorld );
+
+        command.execute( new String[]{"--memory=8g"} );
+
+        Map<String,String> stringMap = load( new StringReader( output.toString() ) );
+        assertThat( stringMap.get( tx_state_max_off_heap_memory.name() ), is( "0k" ) );
+        assertThat( stringMap.get( initialHeapSize.name() ), is( "3600m" ) );
+        assertThat( stringMap.get( maxHeapSize.name() ), is( "3600m" ) );
+        assertThat( stringMap.get( pagecache_memory.name() ), is( "2g" ) );
+    }
+
+    @Test
+    public void includesOffHeapTxStateIfEnabledInConfig() throws Exception
+    {
+        File configDir = this.directory.directory( "no-offheap-config" );
+        Files.write( configDir.toPath().resolve( "neo4j.conf" ),
+                "dbms.tx_state.memory_allocation=OFF_HEAP".getBytes( Charsets.UTF_8 ),
+                StandardOpenOption.CREATE_NEW );
+
+        StringBuilder output = new StringBuilder();
+        OutsideWorld outsideWorld = new RealOutsideWorld()
+        {
+            @Override
+            public void stdOutLine( String text )
+            {
+                output.append( text ).append( System.lineSeparator() );
+            }
+        };
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( configDir.getParentFile().toPath(), configDir.toPath(), outsideWorld );
+
+        command.execute( new String[]{"--memory=8g"} );
+
+        Map<String,String> stringMap = load( new StringReader( output.toString() ) );
+        assertThat( stringMap.get( tx_state_max_off_heap_memory.name() ), is( "2g" ) );
+        assertThat( stringMap.get( initialHeapSize.name() ), is( "3600m" ) );
+        assertThat( stringMap.get( maxHeapSize.name() ), is( "3600m" ) );
+        // Not sure this is right, simply encoding the de-facto behavior to avoid regression,
+        // see TODO recommendPageCacheMemory to resolve before merging
+        assertThat( stringMap.get( pagecache_memory.name() ), is( "1200m" ) );
     }
 
     @Test
@@ -213,7 +275,7 @@ public class MemoryRecommendationsCommandTest
         OutsideWorld outsideWorld = new OutputCaptureOutsideWorld( output );
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), true ) );
 
         // when
         command.execute( array( "--database", databaseName, "--memory", "8g" ) );
