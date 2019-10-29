@@ -31,11 +31,9 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,7 +47,6 @@ class GraphDatabaseFacadeTest
     private GraphDatabaseQueryService queryService;
     private Kernel kernel;
     private KernelTransaction kernelTransaction;
-    private Statement statement;
 
     @BeforeEach
     void setUp()
@@ -66,7 +63,6 @@ class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
         kernelTransaction = mock( KernelTransaction.class );
-        statement = mock( Statement.class, RETURNS_DEEP_STUBS );
 
         graphDatabaseFacade = new GraphDatabaseFacade( database, config, DatabaseInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
     }
