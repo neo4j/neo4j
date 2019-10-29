@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -60,7 +59,6 @@ public class RestrictedSchemaWrite implements SchemaWrite
     @Override
     public IndexProviderDescriptor indexProviderByName( String providerName )
     {
-        assertSchemaWrites( PrivilegeAction.ACCESS );
         return inner.indexProviderByName( providerName );
     }
 
