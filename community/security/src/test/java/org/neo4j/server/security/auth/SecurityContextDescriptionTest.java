@@ -19,44 +19,41 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.server.security.systemgraph.BasicInMemoryUserManager;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
+import org.neo4j.time.Clocks;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
-import static org.neo4j.server.security.auth.SecurityTestUtils.password;
+import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
 class SecurityContextDescriptionTest
 {
-    private BasicInMemoryUserManager manager;
     private SecurityContext context;
 
     @BeforeEach
     void setup() throws Throwable
     {
-        manager = new BasicInMemoryUserManager( Config.defaults() );
-        manager.init();
-        manager.start();
-        manager.newUser( "johan", password( "bar" ), false );
-        context = manager.login( authToken( "johan", "bar" ) ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-    }
-
-    @AfterEach
-    void teardown()
-    {
-        manager.stop();
-        manager.shutdown();
+        BasicSystemGraphRealm realm = spy( new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, null, new SecureHasher(),
+                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), Config.defaults() ), true ) );
+        User user =  new User.Builder( "johan", credentialFor( "bar" ) ).build();
+        doReturn( user ).when( realm ).getUser( "johan" );
+        context = realm.login( authToken( "johan", "bar" ) ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,19 +26,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.server.security.systemgraph.BasicInMemoryUserManager;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
@@ -47,39 +51,31 @@ import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWO
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BasicSystemGraphRealmTest
 {
     private AuthenticationStrategy authStrategy;
-    private BasicInMemoryUserManager manager;
+    private BasicSystemGraphRealm realm;
 
     @BeforeEach
     void setUp() throws Exception
     {
         authStrategy = mock( AuthenticationStrategy.class );
-
-        manager = new BasicInMemoryUserManager( authStrategy );
-        manager.init();
-        manager.start();
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        manager.stop();
-        manager.shutdown();
+        realm = spy( new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, null, new SecureHasher(), authStrategy, true ) );
     }
 
     @Test
     void shouldFindAndAuthenticateUserSuccessfully() throws Throwable
     {
         // Given
-        manager.newUser( "jake", password( "abc123" ), false );
+        User user = new User.Builder( "jake", credentialFor( "abc123" ) ).build();
+        doReturn( user ).when( realm ).getUser( "jake" );
 
         // When
-        setMockAuthenticationStrategyResult( "jake", "abc123", SUCCESS );
+        setMockAuthenticationStrategyResult( user, "abc123", SUCCESS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", SUCCESS );
@@ -89,10 +85,11 @@ public class BasicSystemGraphRealmTest
     void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable
     {
         // Given
-        manager.newUser( "jake", password( "abc123" ), false );
+        User user = new User.Builder( "jake", credentialFor( "abc123" ) ).build();
+        doReturn( user ).when( realm ).getUser( "jake" );
 
         // When
-        setMockAuthenticationStrategyResult( "jake", "abc123", TOO_MANY_ATTEMPTS );
+        setMockAuthenticationStrategyResult( user, "abc123", TOO_MANY_ATTEMPTS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", TOO_MANY_ATTEMPTS );
@@ -102,10 +99,11 @@ public class BasicSystemGraphRealmTest
     void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable
     {
         // Given
-        manager.newUser( "jake", password( "abc123" ), true );
+        User user = new User.Builder( "jake", credentialFor( "abc123" ) ).withRequiredPasswordChange( true ).build();
+        doReturn( user ).when( realm ).getUser( "jake" );
 
         // When
-        setMockAuthenticationStrategyResult( "jake", "abc123", SUCCESS );
+        setMockAuthenticationStrategyResult( user, "abc123", SUCCESS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", PASSWORD_CHANGE_REQUIRED );
@@ -115,7 +113,7 @@ public class BasicSystemGraphRealmTest
     void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
-        manager.newUser( "jake", password( "abc123" ), true );
+        doThrow( new InvalidArgumentsException( "User 'unknown' does not exist." ) ).when( realm ).getUser( "unknown" );
 
         // Then
         assertLoginGivesResult( "unknown", "abc123", FAILURE );
@@ -127,12 +125,14 @@ public class BasicSystemGraphRealmTest
         // Given
         when( authStrategy.authenticate( any(), any() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
-        manager.newUser( "jake", password( "abc123" ), true );
+        User user = new User.Builder( "jake", credentialFor( "abc123" ) ).withRequiredPasswordChange( true ).build();
+        doReturn( user ).when( realm ).getUser( "jake" );
+
         byte[] password = password( "abc123" );
         Map<String,Object> authToken = AuthToken.newBasicAuthToken( "jake", password );
 
         // When
-        manager.login( authToken );
+        realm.login( authToken );
 
         // Then
         assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
@@ -150,7 +150,7 @@ public class BasicSystemGraphRealmTest
         // When
         try
         {
-            manager.login( authToken );
+            realm.login( authToken );
             fail( "exception expected" );
         }
         catch ( InvalidAuthTokenException e )
@@ -162,44 +162,42 @@ public class BasicSystemGraphRealmTest
     }
 
     @Test
-     void shouldFailWhenAuthTokenIsInvalid()
+    void shouldFailWhenAuthTokenIsInvalid()
     {
         assertException(
-                () -> manager.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
                 InvalidAuthTokenException.class,
                 "Unsupported authentication token, scheme 'supercool' is not supported." );
 
         assertException(
-                () -> manager.login( map( AuthToken.SCHEME_KEY, "none" ) ),
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "none" ) ),
                 InvalidAuthTokenException.class,
                 "Unsupported authentication token, scheme 'none' is only allowed when auth is disabled" );
 
         assertException(
-                () -> manager.login( map( "key", "value" ) ),
+                () -> realm.login( map( "key", "value" ) ),
                 InvalidAuthTokenException.class,
                 "Unsupported authentication token, missing key `scheme`" );
 
         assertException(
-                () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
                 InvalidAuthTokenException.class,
                 "Unsupported authentication token, missing key `credentials`" );
 
         assertException(
-                () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ) ),
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ) ),
                 InvalidAuthTokenException.class,
                 "Unsupported authentication token, missing key `principal`" );
     }
 
-    private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult )
-            throws InvalidAuthTokenException
+    private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult ) throws InvalidAuthTokenException
     {
-        LoginContext securityContext = manager.login( authToken( username, password ) );
+        LoginContext securityContext = realm.login( authToken( username, password ) );
         assertThat( securityContext.subject().getAuthenticationResult(), equalTo( expectedResult ) );
     }
 
-    private void setMockAuthenticationStrategyResult( String username, String password, AuthenticationResult result ) throws InvalidArgumentsException
+    private void setMockAuthenticationStrategyResult( User user, String password, AuthenticationResult result )
     {
-        final User user = manager.getUser( username );
         when( authStrategy.authenticate( user, password( password ) ) ).thenReturn( result );
     }
 

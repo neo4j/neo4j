@@ -29,8 +29,13 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.systemgraph.BasicInMemoryUserManager;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
+import org.neo4j.time.Clocks;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -38,7 +43,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 class BasicAuthenticationTest
@@ -50,8 +58,7 @@ class BasicAuthenticationTest
     void shouldNotDoAnythingOnSuccess() throws Exception
     {
         // When
-        AuthenticationResult result =
-                authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ) ) );
+        AuthenticationResult result = authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ) ) );
 
         // Then
         assertThat( result.getLoginContext().subject().username(), equalTo( "mike" ) );
@@ -70,8 +77,7 @@ class BasicAuthenticationTest
     void shouldIndicateThatCredentialsExpired() throws Exception
     {
         // When
-        AuthenticationResult result =
-                authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "secret" ) ) );
+        AuthenticationResult result = authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "secret" ) ) );
 
         // Then
         assertTrue( result.credentialsExpired() );
@@ -108,8 +114,7 @@ class BasicAuthenticationTest
         // When
         byte[] password = password( "secret2" );
 
-        authentication.authenticate(
-                map( "scheme", "basic", "principal", "mike", "credentials", password ) );
+        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password ) );
 
         // Then
         assertThat( password, isCleared() );
@@ -149,10 +154,11 @@ class BasicAuthenticationTest
     private static Authentication createAuthentication( int maxFailedAttempts ) throws Exception
     {
         Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, maxFailedAttempts );
-        BasicInMemoryUserManager manager = new BasicInMemoryUserManager( config );
-        Authentication authentication = new BasicAuthentication( manager );
-        manager.newUser( "bob", password( "secret" ), true );
-        manager.newUser( "mike", password( "secret2" ), false );
+        BasicSystemGraphRealm realm = spy( new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, null, new SecureHasher(),
+                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config ), true ) );
+        Authentication authentication = new BasicAuthentication( realm );
+        doReturn( new User.Builder( "bob", credentialFor( "secret" ) ).withRequiredPasswordChange( true ).build() ).when( realm ).getUser( "bob" );
+        doReturn( new User.Builder( "mike", credentialFor( "secret2" ) ).build() ).when( realm ).getUser( "mike" );
 
         return authentication;
     }
