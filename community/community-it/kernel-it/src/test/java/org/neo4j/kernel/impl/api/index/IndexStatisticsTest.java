@@ -600,7 +600,9 @@ public class IndexStatisticsTest
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( PERSON_LABEL );
             int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( NAME_PROPERTY );
             LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyId );
-            return ktx.schemaWrite().indexCreate( schema, "my index" );
+            var index = ktx.schemaWrite().indexCreate( schema, "my index" );
+            tx.commit();
+            return index;
         }
     }
 
