@@ -40,6 +40,7 @@ import org.neo4j.util.FeatureToggles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -60,7 +61,7 @@ class IndexSamplingControllerTest
     private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
     private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
     private final IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( Predicates.alwaysTrue() );
-    private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class );
+    private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class, RETURNS_MOCKS );
     private final JobScheduler scheduler = mock( JobScheduler.class );
     private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
     private final IndexMap indexMap = new IndexMap();
@@ -84,6 +85,7 @@ class IndexSamplingControllerTest
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
         when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
         when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );
+
         indexMap.putIndexProxy( indexProxy );
     }
 
@@ -312,7 +314,7 @@ class IndexSamplingControllerTest
 
         // then
         verify( jobFactory ).create( indexId, indexProxy );
-        verify( job ).run();
+        verify( tracker ).scheduleSamplingJob( job );
         verifyNoMoreInteractions( jobFactory, job, tracker );
     }
 
@@ -389,7 +391,7 @@ class IndexSamplingControllerTest
         FeatureToggles.set( IndexSamplingController.class, IndexSamplingController.LOG_RECOVER_INDEX_SAMPLES_NAME, true );
         try
         {
-            final IndexSamplingController.RecoveryCondition predicate = descriptor -> descriptor.equals( indexProxy.getDescriptor() );
+            final RecoveryCondition predicate = descriptor -> descriptor.equals( indexProxy.getDescriptor() );
             final IndexSamplingController controller = newSamplingController( predicate, logProvider );
 
             when( indexProxy.getState() ).thenReturn( ONLINE );
@@ -439,6 +441,7 @@ class IndexSamplingControllerTest
 
         controller.recoverIndexSamples();
 
+        verify( tracker ).scheduleSamplingJob( job );
         verifyNoMoreInteractions( tracker );
     }
 
@@ -490,12 +493,12 @@ class IndexSamplingControllerTest
         }
     }
 
-    private IndexSamplingController.RecoveryCondition always( boolean ans )
+    private RecoveryCondition always( boolean ans )
     {
         return new Always( ans );
     }
 
-    private IndexSamplingController newSamplingController( IndexSamplingController.RecoveryCondition recoveryPredicate, LogProvider logProvider )
+    private IndexSamplingController newSamplingController( RecoveryCondition recoveryPredicate, LogProvider logProvider )
     {
         return new IndexSamplingController( samplingConfig, jobFactory, jobQueue, tracker, snapshotProvider, scheduler, recoveryPredicate, logProvider );
     }
@@ -505,7 +508,7 @@ class IndexSamplingControllerTest
         return () -> controller.sampleIndexes( mode );
     }
 
-    private static class Always implements IndexSamplingController.RecoveryCondition
+    private static class Always implements RecoveryCondition
     {
         private final boolean answer;
 

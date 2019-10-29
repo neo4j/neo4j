@@ -39,10 +39,10 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
+import static org.neo4j.util.FeatureToggles.flag;
 
 public class IndexSamplingController
 {
@@ -82,10 +82,10 @@ public class IndexSamplingController
         this.scheduler = scheduler;
         this.indexRecoveryCondition = indexRecoveryCondition;
         this.log = logProvider.getLog( getClass() );
-        this.logRecoverIndexSamples = FeatureToggles.flag( IndexSamplingController.class, LOG_RECOVER_INDEX_SAMPLES_NAME, false );
-        this.asyncRecoverIndexSamples = FeatureToggles.flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, false );
+        this.logRecoverIndexSamples = flag( IndexSamplingController.class, LOG_RECOVER_INDEX_SAMPLES_NAME, false );
+        this.asyncRecoverIndexSamples = flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, true );
         this.asyncRecoverIndexSamplesWait =
-                FeatureToggles.flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, asyncRecoverIndexSamples );
+                flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, asyncRecoverIndexSamples );
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
@@ -163,11 +163,6 @@ public class IndexSamplingController
                         "Failed to asynchronously sample index during recovery, index: " + asyncSamplingJob.indexSamplingJob.indexId(), e );
             }
         }
-    }
-
-    public interface RecoveryCondition
-    {
-        boolean test( IndexDescriptor descriptor );
     }
 
     private void scheduleSampling( IndexSamplingMode mode, IndexMap indexMap )

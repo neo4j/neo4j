@@ -58,8 +58,7 @@ public class IndexSamplingControllerFactory
         Predicate<Long> samplingUpdatePredicate = createSamplingPredicate();
         IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( samplingUpdatePredicate );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
-        IndexSamplingController.RecoveryCondition
-                indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
+        RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
         return new IndexSamplingController(
                 config, jobFactory, jobQueue, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition,
                 logProvider );
@@ -83,10 +82,10 @@ public class IndexSamplingControllerFactory
         };
     }
 
-    private IndexSamplingController.RecoveryCondition createIndexRecoveryCondition( final LogProvider logProvider,
+    private RecoveryCondition createIndexRecoveryCondition( final LogProvider logProvider,
                                                                      final TokenNameLookup tokenNameLookup )
     {
-        return new IndexSamplingController.RecoveryCondition()
+        return new RecoveryCondition()
         {
             private final Log log = logProvider.getLog( IndexSamplingController.class );
             private final DoubleLongRegister register = newDoubleLongRegister();
