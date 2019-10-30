@@ -34,15 +34,13 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleArray;
-import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MAX;
-import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MIN;
-import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.key;
+import static org.neo4j.internal.schema.IndexConfig.spatialMaxSettingForCrs;
+import static org.neo4j.internal.schema.IndexConfig.spatialMinSettingForCrs;
 
 class GenericNativeIndexProviderTest
 {
@@ -64,8 +62,8 @@ class GenericNativeIndexProviderTest
         assertEquals( 0, sinfulIndexConfig.entries().count( p -> true ), "expected sinful index config to have no entries" );
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            assertNotNull( completedIndexConfig.get( key( crs.getName(), MIN ) ) );
-            assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX ) ) );
+            assertNotNull( completedIndexConfig.get( spatialMinSettingForCrs( crs ) ) );
+            assertNotNull( completedIndexConfig.get( spatialMaxSettingForCrs( crs ) ) );
         }
     }
 
@@ -76,11 +74,10 @@ class GenericNativeIndexProviderTest
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
         Map<String,Value> existingSettings = new HashMap<>();
         CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.Cartesian;
-        IntValue maxLevels = Values.intValue( 0 );
         DoubleArray min = Values.doubleArray( new double[]{0, 0} );
         DoubleArray max = Values.doubleArray( new double[]{1, 1} );
-        existingSettings.put( key( existingCrs.getName(), MIN ), min );
-        existingSettings.put( key( existingCrs.getName(), MAX ), max );
+        existingSettings.put( spatialMinSettingForCrs( existingCrs ).getSettingName(), min );
+        existingSettings.put( spatialMaxSettingForCrs( existingCrs ).getSettingName(), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
@@ -96,14 +93,14 @@ class GenericNativeIndexProviderTest
             if ( crs.equals( existingCrs ) )
             {
                 // Assert value
-                assertEquals( min, completedIndexConfig.get( key( crs.getName(), MIN ) ) );
-                assertEquals( max, completedIndexConfig.get( key( crs.getName(), MAX ) ) );
+                assertEquals( min, completedIndexConfig.get( spatialMinSettingForCrs( crs ) ) );
+                assertEquals( max, completedIndexConfig.get( spatialMaxSettingForCrs( crs ) ) );
             }
             else
             {
                 // Simply assert not null
-                assertNotNull( completedIndexConfig.get( key( crs.getName(), MIN ) ) );
-                assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX ) ) );
+                assertNotNull( completedIndexConfig.get( spatialMinSettingForCrs( crs ) ) );
+                assertNotNull( completedIndexConfig.get( spatialMaxSettingForCrs( crs ) ) );
             }
         }
     }

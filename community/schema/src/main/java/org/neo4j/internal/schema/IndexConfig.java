@@ -29,11 +29,16 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.unmodifiableMap;
+import static org.neo4j.graphdb.schema.IndexSetting.SPATIAL_CARTESIAN_3D_MAX;
+import static org.neo4j.graphdb.schema.IndexSetting.SPATIAL_CARTESIAN_3D_MIN;
+import static org.neo4j.graphdb.schema.IndexSetting.SPATIAL_CARTESIAN_MAX;
+import static org.neo4j.graphdb.schema.IndexSetting.SPATIAL_CARTESIAN_MIN;
 
 /**
  * The index configuration is an immutable map from Strings to Values.
@@ -83,11 +88,45 @@ public final class IndexConfig
             {
                 throw new IllegalArgumentException( "Invalid value type for '" + setting.name() + "' setting. " +
                         "Expected a value of type " + type.getName() + ", " +
-                        "but got value '" + value + "' of type " + ( value == null ? "null" : value.getClass().getName() ) + "." );
+                        "but got value '" + value + "' of type " + (value == null ? "null" : value.getClass().getName()) + "." );
             }
             collectingMap.put( setting.getSettingName(), Values.of( value ) );
         }
         return with( collectingMap );
+    }
+
+    public static IndexSetting spatialMinSettingForCrs( CoordinateReferenceSystem crs )
+    {
+        switch ( crs.getName() )
+        {
+        case "cartesian":
+            return SPATIAL_CARTESIAN_MIN;
+        case "cartesian-3d":
+            return SPATIAL_CARTESIAN_3D_MIN;
+        case "wgs-84":
+            return IndexSetting.SPATIAL_WGS84_MIN;
+        case "wgs-84-3d":
+            return IndexSetting.SPATIAL_WGS84_3D_MIN;
+        default:
+            throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
+        }
+    }
+
+    public static IndexSetting spatialMaxSettingForCrs( CoordinateReferenceSystem crs )
+    {
+        switch ( crs.getName() )
+        {
+        case "cartesian":
+            return SPATIAL_CARTESIAN_MAX;
+        case "cartesian-3d":
+            return SPATIAL_CARTESIAN_3D_MAX;
+        case "wgs-84":
+            return IndexSetting.SPATIAL_WGS84_MAX;
+        case "wgs-84-3d":
+            return IndexSetting.SPATIAL_WGS84_3D_MAX;
+        default:
+            throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
+        }
     }
 
     private static void validate( Value value )
@@ -121,6 +160,11 @@ public final class IndexConfig
     public <T extends Value> T get( String key )
     {
         return (T) map.get( key );
+    }
+
+    public <T extends Value> T get( IndexSetting indexSetting )
+    {
+        return get( indexSetting.getSettingName() );
     }
 
     public <T extends Value> T getOrDefault( String key, T defaultValue )

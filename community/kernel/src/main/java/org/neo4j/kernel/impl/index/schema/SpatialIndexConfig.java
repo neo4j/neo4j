@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.tuple.Pair;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.gis.spatial.index.Envelope;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -32,18 +31,18 @@ import org.neo4j.values.storable.DoubleArray;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+
 /**
  * Utility class with static method for extracting relevant spatial index configurations from {@link CoordinateReferenceSystem} and
- * {@link SpaceFillingCurveSettings}. Configurations will be put into a map, prefixed by {@link #SPATIAL_CONFIG_PREFIX} and
- * {@link CoordinateReferenceSystem#getName()}.
+ * {@link SpaceFillingCurveSettings}. Configurations will be put into a map, with keys from {@link IndexSetting}.
  * By using this class when extracting configurations we make sure that the same name and format is used for the same configuration.
  */
 public final class SpatialIndexConfig
 {
-    static final String MIN = "min";
-    static final String MAX = "max";
-    private static final String SPATIAL_CONFIG_PREFIX = "spatial";
-
     private SpatialIndexConfig()
     {
     }
@@ -65,8 +64,10 @@ public final class SpatialIndexConfig
     public static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, double[] min, double[] max )
     {
         String crsName = crs.getName();
-        map.put( key( crsName, MIN ), Values.doubleArray( min ) );
-        map.put( key( crsName, MAX ), Values.doubleArray( max ) );
+        String minKey = IndexConfig.spatialMinSettingForCrs( crs ).getSettingName();
+        String maxKey = IndexConfig.spatialMaxSettingForCrs( crs ).getSettingName();
+        map.put( minKey, Values.doubleArray( min ) );
+        map.put( maxKey, Values.doubleArray( max ) );
     }
 
     /**
@@ -90,62 +91,30 @@ public final class SpatialIndexConfig
 
     static Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> extractSpatialConfig( IndexConfig indexConfig )
     {
-        HashMap<String,Map<String,Value>> configByCrsNames = groupConfigByCrsNames( indexConfig );
-        return buildSettingsFromConfig( configByCrsNames );
+        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> result = new HashMap<>();
+
+        result.put( Cartesian, settingFromIndexConfig( indexConfig, Cartesian ) );
+        result.put( Cartesian_3D, settingFromIndexConfig( indexConfig, Cartesian_3D ) );
+        result.put( WGS84, settingFromIndexConfig( indexConfig, WGS84 ) );
+        result.put( WGS84_3D, settingFromIndexConfig( indexConfig, WGS84_3D ) );
+
+        return result;
     }
 
-    private static HashMap<String,Map<String,Value>> groupConfigByCrsNames( IndexConfig indexConfig )
+    private static SpaceFillingCurveSettings settingFromIndexConfig( IndexConfig indexConfig, CoordinateReferenceSystem crs )
     {
-        HashMap<String,Map<String,Value>> configByCrsNames = new HashMap<>();
-        for ( Pair<String,Value> entry : indexConfig.entries() )
-        {
-            String key = entry.getOne();
-            if ( key.startsWith( SPATIAL_CONFIG_PREFIX ) )
-            {
-                String[] split = key.split( "\\." );
-                String prefix = split[1];
-                String valueKey = split[2];
-                configByCrsNames.compute( prefix, ( string, map ) -> {
-                    if ( map == null )
-                    {
-                        map = new HashMap<>();
-                    }
-                    map.put( valueKey, entry.getTwo() );
-                    return map;
-                } );
-            }
-        }
-        return configByCrsNames;
+        final double[] min = asDoubleArray( indexConfig.get( IndexConfig.spatialMinSettingForCrs( crs ) ) );
+        final double[] max = asDoubleArray( indexConfig.get( IndexConfig.spatialMaxSettingForCrs( crs ) ) );
+        final Envelope envelope = new Envelope( min, max );
+        return new SpaceFillingCurveSettings( crs.getDimension(), envelope );
     }
 
-    private static Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> buildSettingsFromConfig( HashMap<String,Map<String,Value>> configByCrsNames )
+    private static double[] asDoubleArray( Value value )
     {
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
-        for ( String key : configByCrsNames.keySet() )
-        {
-            Map<String,Value> configByCrsName = configByCrsNames.get( key );
-            double[] min = getDoubleArrayValue( configByCrsName, MIN ).asObjectCopy();
-            double[] max = getDoubleArrayValue( configByCrsName, MAX ).asObjectCopy();
-
-            final CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( key );
-            Envelope extents = new Envelope( min, max );
-            settings.put( crs, new SpaceFillingCurveSettings( crs.getDimension(), extents ) );
-        }
-        return settings;
-    }
-
-    static String key( String crsName, String key )
-    {
-        return SPATIAL_CONFIG_PREFIX + "." + crsName + "." + key;
-    }
-
-    private static DoubleArray getDoubleArrayValue( Map<String,Value> configByCrsName, String key )
-    {
-        Value value = configByCrsName.get( key );
         if ( value instanceof DoubleArray )
         {
-            return (DoubleArray) value;
+            return ((DoubleArray) value).asObjectCopy();
         }
-        throw new IllegalStateException( "Expected key " + key + " to be mapped to a DoubleArray but was " + value );
+        throw new IllegalStateException( String.format( "Expected value to be of type %s but was %s.", DoubleArray.class, value ) );
     }
 }
