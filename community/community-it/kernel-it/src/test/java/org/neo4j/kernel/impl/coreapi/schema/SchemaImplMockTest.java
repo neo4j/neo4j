@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -76,6 +77,7 @@ class SchemaImplMockTest
         when( kt.tokenRead() ).thenReturn( mock( TokenRead.class ) );
         when( kt.schemaRead() ).thenReturn( schemaRead );
         when( kt.isTerminated() ).thenReturn( false );
+        when( kt.acquireStatement() ).thenReturn( mock( Statement.class ) );
         return kt;
     }
 }

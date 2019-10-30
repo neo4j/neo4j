@@ -61,6 +61,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -407,10 +408,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         Map<String,Integer> labelNameIdMap = new HashMap<>();
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-        TokenRead tokenRead = ktx.tokenRead();
-        for ( String name : names )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            labelNameIdMap.put( name, tokenRead.nodeLabel( name ) );
+            TokenRead tokenRead = ktx.tokenRead();
+            for ( String name : names )
+            {
+                labelNameIdMap.put( name, tokenRead.nodeLabel( name ) );
+            }
         }
         return labelNameIdMap;
     }
@@ -418,7 +422,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private int getPropertyIdByName( Transaction tx, String name )
     {
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-        return ktx.tokenRead().propertyKey( name );
+        try ( Statement ignore = ktx.acquireStatement() )
+        {
+            return ktx.tokenRead().propertyKey( name );
+        }
     }
 
     private void prepareDb()

@@ -78,11 +78,12 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -138,6 +139,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -150,7 +152,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -2080,13 +2081,15 @@ public class FullCheckIntegrationTest
                 {
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
                     KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-
-                    // the Core API for composite index creation is not quite merged yet
-                    TokenWrite tokenWrite = ktx.tokenWrite();
-                    key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
-                    int key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
-                    label3 = ktx.tokenRead().nodeLabel( "label3" );
-                    ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ), null );
+                    try ( Statement ignore = ktx.acquireStatement() )
+                    {
+                        // the Core API for composite index creation is not quite merged yet
+                        TokenWrite tokenWrite = ktx.tokenWrite();
+                        key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
+                        int key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
+                        label3 = ktx.tokenRead().nodeLabel( "label3" );
+                        ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ), null );
+                    }
 
                     tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
                     tx.commit();
@@ -2115,18 +2118,21 @@ public class FullCheckIntegrationTest
                     set( tx.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
 
                     KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-                    TokenRead tokenRead = ktx.tokenRead();
-                    TokenWrite tokenWrite = ktx.tokenWrite();
-                    label1 = tokenRead.nodeLabel( "label1" );
-                    label2 = tokenRead.nodeLabel( "label2" );
-                    label3 = tokenRead.nodeLabel( "label3" );
-                    tokenRead.nodeLabel( "label4" );
-                    draconian = tokenWrite.labelGetOrCreateForName( "draconian" );
-                    key1 = tokenRead.propertyKey( PROP1 );
-                    mandatory = tokenWrite.propertyKeyGetOrCreateForName( "mandatory" );
-                    C = tokenRead.relationshipType( "C" );
-                    T = tokenRead.relationshipType( "T" );
-                    M = tokenWrite.relationshipTypeGetOrCreateForName( "M" );
+                    try ( Statement ignore = ktx.acquireStatement() )
+                    {
+                        TokenRead tokenRead = ktx.tokenRead();
+                        TokenWrite tokenWrite = ktx.tokenWrite();
+                        label1 = tokenRead.nodeLabel( "label1" );
+                        label2 = tokenRead.nodeLabel( "label2" );
+                        label3 = tokenRead.nodeLabel( "label3" );
+                        tokenRead.nodeLabel( "label4" );
+                        draconian = tokenWrite.labelGetOrCreateForName( "draconian" );
+                        key1 = tokenRead.propertyKey( PROP1 );
+                        mandatory = tokenWrite.propertyKeyGetOrCreateForName( "mandatory" );
+                        C = tokenRead.relationshipType( "C" );
+                        T = tokenRead.relationshipType( "T" );
+                        M = tokenWrite.relationshipTypeGetOrCreateForName( "M" );
+                    }
                     tx.commit();
                 }
                 catch ( KernelException e )

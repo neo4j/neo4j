@@ -54,6 +54,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -533,7 +534,10 @@ public class IndexStatisticsTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            ktx.schemaWrite().indexDrop( index );
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                ktx.schemaWrite().indexDrop( index );
+            }
             tx.commit();
         }
     }
@@ -596,11 +600,17 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
+            IndexDescriptor index;
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            int labelId = ktx.tokenWrite().labelGetOrCreateForName( PERSON_LABEL );
-            int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( NAME_PROPERTY );
-            LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyId );
-            return ktx.schemaWrite().indexCreate( schema, "my index" );
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                int labelId = ktx.tokenWrite().labelGetOrCreateForName( PERSON_LABEL );
+                int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( NAME_PROPERTY );
+                LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyId );
+                index = ktx.schemaWrite().indexCreate( schema, "my index" );
+            }
+            tx.commit();
+            return index;
         }
     }
 

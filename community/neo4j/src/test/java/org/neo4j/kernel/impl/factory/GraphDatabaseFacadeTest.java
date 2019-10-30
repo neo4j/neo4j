@@ -67,6 +67,7 @@ class GraphDatabaseFacadeTest
 
         kernelTransaction = mock( KernelTransaction.class );
         statement = mock( Statement.class, RETURNS_DEEP_STUBS );
+        when( kernelTransaction.acquireStatement() ).thenReturn( statement );
 
         graphDatabaseFacade = new GraphDatabaseFacade( database, config, DatabaseInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
     }

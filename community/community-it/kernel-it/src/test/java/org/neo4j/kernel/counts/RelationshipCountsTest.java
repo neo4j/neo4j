@@ -33,6 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Barrier;
@@ -382,46 +383,49 @@ class RelationshipCountsTest
     private long countsForRelationship( Transaction tx, Label start, RelationshipType type, Label end )
     {
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-        TokenRead tokenRead = ktx.tokenRead();
-        int startId;
-        int typeId;
-        int endId;
-        // start
-        if ( start == null )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            startId = TokenRead.ANY_LABEL;
-        }
-        else
-        {
-            if ( TokenRead.NO_TOKEN == (startId = tokenRead.nodeLabel( start.name() )) )
+            TokenRead tokenRead = ktx.tokenRead();
+            int startId;
+            int typeId;
+            int endId;
+            // start
+            if ( start == null )
             {
-                return 0;
+                startId = TokenRead.ANY_LABEL;
             }
-        }
-        // type
-        if ( type == null )
-        {
-            typeId = TokenRead.ANY_RELATIONSHIP_TYPE;
-        }
-        else
-        {
-            if ( TokenRead.NO_TOKEN == (typeId = tokenRead.relationshipType( type.name() )) )
+            else
             {
-                return 0;
+                if ( TokenRead.NO_TOKEN == (startId = tokenRead.nodeLabel( start.name() )) )
+                {
+                    return 0;
+                }
             }
-        }
-        // end
-        if ( end == null )
-        {
-            endId = TokenRead.ANY_LABEL;
-        }
-        else
-        {
-            if ( TokenRead.NO_TOKEN == (endId = tokenRead.nodeLabel( end.name() )) )
+            // type
+            if ( type == null )
             {
-                return 0;
+                typeId = TokenRead.ANY_RELATIONSHIP_TYPE;
             }
+            else
+            {
+                if ( TokenRead.NO_TOKEN == (typeId = tokenRead.relationshipType( type.name() )) )
+                {
+                    return 0;
+                }
+            }
+            // end
+            if ( end == null )
+            {
+                endId = TokenRead.ANY_LABEL;
+            }
+            else
+            {
+                if ( TokenRead.NO_TOKEN == (endId = tokenRead.nodeLabel( end.name() )) )
+                {
+                    return 0;
+                }
+            }
+            return ktx.dataRead().countsForRelationship( startId, typeId, endId );
         }
-        return ktx.dataRead().countsForRelationship( startId, typeId, endId );
     }
 }

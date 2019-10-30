@@ -90,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
@@ -112,6 +113,7 @@ class BuiltInProceduresTest
     private final TokenRead tokens = mock( TokenRead.class );
     private final SchemaRead schemaRead = mock( SchemaRead.class );
     private final SchemaReadCore schemaReadCore = mock( SchemaReadCore.class );
+    private final Statement statement = mock( Statement.class );
     private final InternalTransaction transaction = mock( InternalTransaction.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final ProcedureCallContext callContext = mock( ProcedureCallContext.class );
@@ -142,6 +144,7 @@ class BuiltInProceduresTest
         procs.registerProcedure( BuiltInDbmsProcedures.class );
 
         when( transaction.kernelTransaction() ).thenReturn( tx );
+        when( tx.acquireStatement() ).thenReturn( statement );
         when( tx.tokenRead() ).thenReturn( tokens );
         when( tx.dataRead() ).thenReturn( read );
         when( tx.schemaRead() ).thenReturn( schemaRead );
@@ -373,6 +376,7 @@ class BuiltInProceduresTest
         // When
         assertThrows( ProcedureException.class, () -> call( "db.labels" ) );
 
+        verify( statement ).close();
     }
 
     @Test
@@ -385,6 +389,7 @@ class BuiltInProceduresTest
         // When
         assertThrows( ProcedureException.class, () -> call( "db.propertyKeys" ) );
 
+        verify( statement ).close();
     }
 
     @Test
@@ -397,6 +402,7 @@ class BuiltInProceduresTest
         // When
         assertThrows( ProcedureException.class, () -> call( "db.relationshipTypes" ) );
 
+        verify( statement ).close();
     }
 
     private static Matcher<Object[]> record( Object... fields )
