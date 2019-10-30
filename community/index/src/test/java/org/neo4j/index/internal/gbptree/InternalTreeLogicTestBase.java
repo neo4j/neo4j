@@ -1655,7 +1655,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         long currentPageId = readCursor.getCurrentPageId();
         root.goTo( readCursor );
         GBPTreeConsistencyChecker<KEY> consistencyChecker =
-                new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration, false );
+                new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration, true );
         ThrowingConsistencyCheckVisitor<KEY> visitor = new ThrowingConsistencyCheckVisitor<>();
         consistencyChecker.check( null, readCursor, root, visitor );
         goTo( readCursor, currentPageId );
