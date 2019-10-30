@@ -23,11 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -65,9 +65,9 @@ class TestRecoveryRelationshipTypes
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = db.beginTx();
+              ResourceIterator<RelationshipType> typeResourceIterator = transaction.getAllRelationshipTypes().iterator() )
         {
-            Iterator<RelationshipType> typeResourceIterator = transaction.getAllRelationshipTypes().iterator();
             assertEquals( MyRelTypes.TEST.name(), typeResourceIterator.next().name() );
         }
         finally
