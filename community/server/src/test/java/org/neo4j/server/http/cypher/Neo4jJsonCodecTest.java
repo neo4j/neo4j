@@ -41,7 +41,7 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.test.mockito.mock.SpatialMocks;
@@ -72,7 +72,7 @@ class Neo4jJsonCodecTest
     {
         var context = mock( TransitionalTxManagementKernelTransaction.class );
         var internalTransaction = mock( InternalTransaction.class );
-        var kernelTransaction = mock( KernelTransactionImplementation.class );
+        var kernelTransaction = mock( KernelTransaction.class );
 
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );

@@ -57,8 +57,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
@@ -116,7 +116,7 @@ class ExecutionResultSerializerTest
     {
         var context = mock( TransitionalTxManagementKernelTransaction.class );
         internalTransaction = mock( InternalTransaction.class );
-        var kernelTransaction = mock( KernelTransactionImplementation.class );
+        var kernelTransaction = mock( KernelTransaction.class );
 
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );
