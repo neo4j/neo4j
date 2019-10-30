@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Value;
@@ -79,7 +80,10 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         {
             RelationshipEntity proxy = (RelationshipEntity) relationship;
             KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
-            return ktx.dataRead().relationshipDeletedInTransaction( proxy.id );
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                return ktx.dataRead().relationshipDeletedInTransaction( proxy.id );
+            }
         }
         return false;
     }
@@ -99,15 +103,18 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         if ( startNode == NO_ID )
         {
             KernelTransaction transaction = internalTransaction.kernelTransaction();
-            RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-            transaction.dataRead().singleRelationship( id, relationships );
-            // At this point we don't care if it is there or not just load what we got.
-            boolean wasPresent = relationships.next();
-            this.type = relationships.type();
-            this.startNode = relationships.sourceNodeReference();
-            this.endNode = relationships.targetNodeReference();
-            // But others might care, e.g. the Bolt server needs to know for serialisation purposes.
-            return wasPresent;
+            try ( Statement ignore = transaction.acquireStatement() )
+            {
+                RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+                transaction.dataRead().singleRelationship( id, relationships );
+                // At this point we don't care if it is there or not just load what we got.
+                boolean wasPresent = relationships.next();
+                this.type = relationships.type();
+                this.startNode = relationships.sourceNodeReference();
+                this.endNode = relationships.targetNodeReference();
+                // But others might care, e.g. the Bolt server needs to know for serialisation purposes.
+                return wasPresent;
+            }
         }
         return true;
     }
@@ -434,7 +441,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             throw new TransactionFailureException( "Unknown error trying to create property key token", e );
         }
 
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             transaction.dataWrite().relationshipSetProperty( id, propertyKeyId, Values.of( value, false ) );
         }
@@ -466,7 +473,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
         }

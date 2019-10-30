@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.helpers.Nodes;
 import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -85,7 +86,10 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         {
             NodeEntity proxy = (NodeEntity) node;
             KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
-            return ktx.dataRead().nodeDeletedInTransaction( proxy.nodeId );
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                return ktx.dataRead().nodeDeletedInTransaction( proxy.nodeId );
+            }
         }
         return false;
     }
@@ -230,7 +234,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             throw new TransactionFailureException( "Unknown error trying to create property key token", e );
         }
 
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
         }
@@ -267,7 +271,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
         }
@@ -520,7 +524,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         int relationshipTypeId;
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type.name() );
         }
@@ -557,7 +561,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         int labelId;
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             labelId = transaction.tokenWrite().labelGetOrCreateForName( label.name() );
         }
@@ -597,7 +601,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public void removeLabel( Label label )
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             int labelId = transaction.tokenRead().nodeLabel( label.name() );
             if ( labelId != TokenRead.NO_TOKEN )
@@ -620,13 +624,16 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         NodeCursor nodes = transaction.ambientNodeCursor();
-        int labelId = transaction.tokenRead().nodeLabel( label.name() );
-        if ( labelId == NO_SUCH_LABEL )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            return false;
+            int labelId = transaction.tokenRead().nodeLabel( label.name() );
+            if ( labelId == NO_SUCH_LABEL )
+            {
+                return false;
+            }
+            transaction.dataRead().singleNode( nodeId, nodes );
+            return nodes.next() && nodes.hasLabel( labelId );
         }
-        transaction.dataRead().singleNode( nodeId, nodes );
-        return nodes.next() && nodes.hasLabel( labelId );
     }
 
     @Override
@@ -634,7 +641,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         NodeCursor nodes = transaction.ambientNodeCursor();
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             singleNode( transaction, nodes );
             LabelSet labelSet = nodes.labels();
@@ -656,10 +663,14 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public int getDegree()
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode( transaction, nodes );
 
-        return Nodes.countAll( nodes, transaction.cursors() );
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            NodeCursor nodes = transaction.ambientNodeCursor();
+            singleNode( transaction, nodes );
+
+            return Nodes.countAll( nodes, transaction.cursors() );
+        }
     }
 
     @Override
@@ -672,28 +683,35 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             return 0;
         }
 
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode( transaction, nodes );
-        return Nodes.countAll( nodes, transaction.cursors(), typeId );
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            NodeCursor nodes = transaction.ambientNodeCursor();
+            singleNode( transaction, nodes );
+
+            return Nodes.countAll( nodes, transaction.cursors(), typeId );
+        }
     }
 
     @Override
     public int getDegree( Direction direction )
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode( transaction, nodes );
-        switch ( direction )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-        case OUTGOING:
-            return Nodes.countOutgoing( nodes, transaction.cursors() );
-        case INCOMING:
-            return Nodes.countIncoming( nodes, transaction.cursors() );
-        case BOTH:
-            return Nodes.countAll( nodes, transaction.cursors() );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
+            NodeCursor nodes = transaction.ambientNodeCursor();
+            singleNode( transaction, nodes );
+
+            switch ( direction )
+            {
+            case OUTGOING:
+                return Nodes.countOutgoing( nodes, transaction.cursors() );
+            case INCOMING:
+                return Nodes.countIncoming( nodes, transaction.cursors() );
+            case BOTH:
+                return Nodes.countAll( nodes, transaction.cursors() );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
         }
     }
 
@@ -707,18 +725,21 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             return 0;
         }
 
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode( transaction, nodes );
-        switch ( direction )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-        case OUTGOING:
-            return Nodes.countOutgoing( nodes, transaction.cursors(), typeId );
-        case INCOMING:
-            return Nodes.countIncoming( nodes, transaction.cursors(), typeId );
-        case BOTH:
-            return Nodes.countAll( nodes, transaction.cursors(), typeId );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
+            NodeCursor nodes = transaction.ambientNodeCursor();
+            singleNode( transaction, nodes );
+            switch ( direction )
+            {
+            case OUTGOING:
+                return Nodes.countOutgoing( nodes, transaction.cursors(), typeId );
+            case INCOMING:
+                return Nodes.countIncoming( nodes, transaction.cursors(), typeId );
+            case BOTH:
+                return Nodes.countAll( nodes, transaction.cursors(), typeId );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
         }
     }
 
@@ -726,7 +747,8 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor() )
+        try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor();
+              Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.ambientNodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
