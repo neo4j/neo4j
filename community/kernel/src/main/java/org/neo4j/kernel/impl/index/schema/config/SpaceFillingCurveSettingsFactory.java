@@ -44,7 +44,7 @@ public final class SpaceFillingCurveSettingsFactory
     static SpaceFillingCurveSettings fromConfig( EnvelopeSettings envelopeSettings )
     {
         // Currently we support only one type of index, but in future we could support different types for different CRS
-        return new SpaceFillingCurveSettings.SettingsFromConfig( envelopeSettings.getCrs().getDimension(), envelopeSettings.asEnvelope() );
+        return new SpaceFillingCurveSettings( envelopeSettings.getCrs().getDimension(), envelopeSettings.asEnvelope() );
     }
 
     /**

@@ -19,19 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.index.internal.gbptree.Header;
-import org.neo4j.io.pagecache.PageCursor;
-
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 
 /**
  * <p>
@@ -55,15 +48,6 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILE
  * the edges, and also cause additional post-index filtering costs.</dd>
  * </dl>
  * </p>
- * <p>If the settings are for an existing index, they are read from the GBPTree header, and in that case
- * an additional field is maintained:
- * <dl>
- *     <dt>failureMessage</dt>
- *         <dd>The settings are read from the GBPTree header structure, but when this is a FAILED index, there are no settings,
- *         but instead an error message describing the failure. If that happens, code that triggered the read should check this
- *         field and react accordingly. If the the value is null, there was no failure.</dd>
- * </dl>
- * </p>
  */
 public class SpaceFillingCurveSettings
 {
@@ -75,26 +59,15 @@ public class SpaceFillingCurveSettings
      * 2D and 3D mapping.
      */
     private static final int NBR_OF_BITS = 60;
-    private SpatialIndexType indexType = SpatialIndexType.SingleSpaceFillingCurve;
-    int dimensions;
-    int maxLevels;
-    Envelope extents;
+    private final int dimensions;
+    private final int maxLevels;
+    private final Envelope extents;
 
     public SpaceFillingCurveSettings( int dimensions, Envelope extents )
     {
         this.dimensions = dimensions;
         this.extents = extents;
         this.maxLevels = NBR_OF_BITS / dimensions;
-    }
-
-    public Consumer<PageCursor> headerWriter( byte initialIndexState )
-    {
-        return cursor ->
-        {
-            cursor.putByte( initialIndexState );
-            cursor.putInt( indexType.id );
-            indexType.writeHeader( this, cursor );
-        };
     }
 
     /**
@@ -164,79 +137,5 @@ public class SpaceFillingCurveSettings
     {
         return String.format( "Space filling curves settings: dimensions=%d, maxLevels=%d, min=%s, max=%s", dimensions, maxLevels,
                 Arrays.toString( extents.getMin() ), Arrays.toString( extents.getMax() ) );
-    }
-
-    static class SettingsFromConfig extends SpaceFillingCurveSettings
-    {
-        SettingsFromConfig( int dimensions, Envelope extents )
-        {
-            super( dimensions, extents );
-        }
-    }
-
-    static class SettingsFromIndexHeader extends SpaceFillingCurveSettings
-    {
-        private String failureMessage;
-
-        SettingsFromIndexHeader()
-        {
-            super( 0, null );
-        }
-
-        void markAsFailed( String failureMessage )
-        {
-            this.failureMessage = failureMessage;
-        }
-
-        private void markAsSucceeded()
-        {
-            this.failureMessage = null;
-        }
-
-        /**
-         * The settings are read from the GBPTree header structure, but when this is a FAILED index, there are no settings, but instead an error message
-         * describing the failure. If that happens, code that triggered the read should check this field and react accordingly. If the the value is null, there
-         * was no failure.
-         */
-        String getFailureMessage()
-        {
-            return failureMessage;
-        }
-
-        /**
-         * The settings are read from the GBPTree header structure, but when this is a FAILED index, there are no settings, but instead an error message
-         * describing the failure. If that happens, code that triggered the read should check this. If the value is true, calling getFailureMessage() will
-         * provide an error message describing the failure.
-         */
-        boolean isFailed()
-        {
-            return failureMessage != null;
-        }
-
-        Header.Reader headerReader( Function<ByteBuffer,String> onError )
-        {
-            return headerBytes ->
-            {
-                byte state = headerBytes.get();
-                if ( state == BYTE_FAILED )
-                {
-                    this.failureMessage = "Unexpectedly trying to read the header of a failed index: " + onError.apply( headerBytes );
-                }
-                else
-                {
-                    int typeId = headerBytes.getInt();
-                    SpatialIndexType indexType = SpatialIndexType.get( typeId );
-                    if ( indexType == null )
-                    {
-                        markAsFailed( "Unknown spatial index type in index header: " + typeId );
-                    }
-                    else
-                    {
-                        markAsSucceeded();
-                        indexType.readHeader( this, headerBytes );
-                    }
-                }
-            };
-        }
     }
 }
