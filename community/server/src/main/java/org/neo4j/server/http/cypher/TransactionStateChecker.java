@@ -19,26 +19,40 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
-public class TransactionStateChecker
+public class TransactionStateChecker implements AutoCloseable
 {
+    private final Statement statement;
     private final IsNodeDeletedInCurrentTx nodeCheck;
     private final IsRelationshipDeletedInCurrentTx relCheck;
 
-    public TransactionStateChecker( IsNodeDeletedInCurrentTx nodeCheck, IsRelationshipDeletedInCurrentTx relCheck )
+    public TransactionStateChecker( Statement statement, IsNodeDeletedInCurrentTx nodeCheck,
+            IsRelationshipDeletedInCurrentTx relCheck )
     {
+        this.statement = statement;
         this.nodeCheck = nodeCheck;
         this.relCheck = relCheck;
     }
 
     public static TransactionStateChecker create( TransitionalTxManagementKernelTransaction transaction )
     {
-        var tx = (KernelTransactionImplementation) transaction.getInternalTransaction().kernelTransaction();
-        var state = tx.txState();
+        var kernelTransaction = transaction.getInternalTransaction().kernelTransaction();
+        var kernelStatement = (KernelStatement) kernelTransaction.acquireStatement();
+
         return new TransactionStateChecker(
-                nodeId -> tx.hasTxStateWithChanges() && state.nodeIsDeletedInThisTx( nodeId ),
-                relId -> tx.hasTxStateWithChanges() && state.relationshipIsDeletedInThisTx( relId ) );
+                kernelStatement,
+                nodeId -> kernelStatement.hasTxStateWithChanges() &&
+                          kernelStatement.txState().nodeIsDeletedInThisTx( nodeId ),
+                relId -> kernelStatement.hasTxStateWithChanges() &&
+                         kernelStatement.txState().relationshipIsDeletedInThisTx( relId ) );
+    }
+
+    @Override
+    public void close()
+    {
+        statement.close();
     }
 
     public boolean isNodeDeletedInCurrentTx( long id )

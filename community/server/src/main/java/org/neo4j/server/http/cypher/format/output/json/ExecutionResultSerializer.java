@@ -121,8 +121,7 @@ class ExecutionResultSerializer
         {
             out.writeStartObject();
 
-            TransactionStateChecker txStateChecker = TransactionStateChecker.create( transactionHandle.getContext() );
-            try
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( transactionHandle.getContext() ) )
             {
                 writer.write( out, recordEvent, txStateChecker );
             }

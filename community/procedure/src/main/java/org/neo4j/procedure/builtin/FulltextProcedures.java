@@ -129,8 +129,11 @@ public class FulltextProcedures
         {
             return;
         }
-        IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.awaitIndexByName( index, timeout, TimeUnit.SECONDS );
+
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.awaitIndexByName( index, timeout, TimeUnit.SECONDS );
+        }
     }
 
     private IndexProcedures indexProcedures()

@@ -184,6 +184,7 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
+
         TokenRead tokenRead = kernelTransaction.tokenRead();
         TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
@@ -338,8 +339,11 @@ public class BuiltInProcedures
         {
             return;
         }
-        IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.awaitIndexByName( indexName, timeout, TimeUnit.SECONDS );
+
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.awaitIndexByName( indexName, timeout, TimeUnit.SECONDS );
+        }
     }
 
     @SystemProcedure
@@ -365,8 +369,10 @@ public class BuiltInProcedures
             return;
         }
 
-        IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.resampleIndex( indexName );
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleIndex( indexName );
+        }
     }
 
     @SystemProcedure
@@ -379,8 +385,10 @@ public class BuiltInProcedures
             return;
         }
 
-        IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.resampleOutdatedIndexes();
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleOutdatedIndexes();
+        }
     }
 
     @Admin
@@ -398,9 +406,11 @@ public class BuiltInProcedures
         }
 
         //Resample indexes
-        IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.resampleOutdatedIndexes();
-        indexProcedures.awaitIndexResampling( timeOutSeconds );
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleOutdatedIndexes();
+            indexProcedures.awaitIndexResampling( timeOutSeconds );
+        }
 
         //now that index-stats are up-to-date, clear caches so that we are ready to re-plan
         graphDatabaseAPI.getDependencyResolver()
@@ -480,8 +490,10 @@ public class BuiltInProcedures
             @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
-        IndexProcedures indexProcedures = indexProcedures();
-        return indexProcedures.createIndex( indexName, labels, properties, providerName );
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            return indexProcedures.createIndex( indexName, labels, properties, providerName );
+        }
     }
 
     @Description( "Create a named unique property constraint with index backed by specified index provider " +
@@ -495,8 +507,10 @@ public class BuiltInProcedures
             @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
-        IndexProcedures indexProcedures = indexProcedures();
-        return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, providerName );
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, providerName );
+        }
     }
 
     private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
