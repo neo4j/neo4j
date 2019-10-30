@@ -37,19 +37,22 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
-public class IndexProcedures
+public class IndexProcedures implements AutoCloseable
 {
     private final KernelTransaction ktx;
+    private final Statement statement;
     private final IndexingService indexingService;
 
     public IndexProcedures( KernelTransaction tx, IndexingService indexingService )
     {
         this.ktx = tx;
+        statement = tx.acquireStatement();
         this.indexingService = indexingService;
     }
 
@@ -274,6 +277,12 @@ public class IndexProcedures
     private void triggerSampling( IndexDescriptor index )
     {
         indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+    }
+
+    @Override
+    public void close()
+    {
+        statement.close();
     }
 
     @FunctionalInterface

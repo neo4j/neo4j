@@ -48,6 +48,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -156,22 +157,25 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        TokenRead tokenRead = kernelTransaction.tokenRead();
-        TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
-        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
-
-        ArrayList<IndexResult> result = new ArrayList<>();
-        for ( IndexDescriptor index : indexes )
+        try ( Statement ignore = kernelTransaction.acquireStatement() )
         {
-            IndexResult indexResult;
-            indexResult = asIndexResult( tokenLookup, schemaRead, index );
-            result.add( indexResult );
+            TokenRead tokenRead = kernelTransaction.tokenRead();
+            TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
+            IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
+
+            SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
+            List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
+
+            ArrayList<IndexResult> result = new ArrayList<>();
+            for ( IndexDescriptor index : indexes )
+            {
+                IndexResult indexResult;
+                indexResult = asIndexResult( tokenLookup, schemaRead, index );
+                result.add( indexResult );
+            }
+            result.sort( Comparator.comparing( r -> r.name ) );
+            return result.stream();
         }
-        result.sort( Comparator.comparing( r -> r.name ) );
-        return result.stream();
     }
 
     @SystemProcedure
@@ -184,29 +188,31 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-
-        TokenRead tokenRead = kernelTransaction.tokenRead();
-        TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
-        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
-        IndexDescriptor index = null;
-        for ( IndexDescriptor candidate : indexes )
+        try ( Statement ignore = kernelTransaction.acquireStatement() )
         {
-            if ( candidate.getName().equals( indexName ) )
+            TokenRead tokenRead = kernelTransaction.tokenRead();
+            TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
+            IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
+
+            SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
+            List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
+            IndexDescriptor index = null;
+            for ( IndexDescriptor candidate : indexes )
             {
-                index = candidate;
-                break;
+                if ( candidate.getName().equals( indexName ) )
+                {
+                    index = candidate;
+                    break;
+                }
             }
-        }
-        if ( index == null )
-        {
-            throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with name \"" + indexName + "\"" );
-        }
+            if ( index == null )
+            {
+                throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with name \"" + indexName + "\"" );
+            }
 
-        final IndexDetailResult indexDetailResult = asIndexDetails( tokenLookup, schemaRead, index );
-        return Stream.of( indexDetailResult );
+            final IndexDetailResult indexDetailResult = asIndexDetails( tokenLookup, schemaRead, index );
+            return Stream.of( indexDetailResult );
+        }
     }
 
     @SystemProcedure
@@ -219,22 +225,25 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        Map<String,SchemaStatementResult> schemaStatements = new HashMap<>();
+        try ( Statement ignore = kernelTransaction.acquireStatement() )
+        {
+            SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
+            Map<String,SchemaStatementResult> schemaStatements = new HashMap<>();
 
-        // Indexes
-        // If index is backing an existing constraint, it will be overwritten later.
-        stream( schemaRead.indexesGetAll() )
-                .map( index -> new SchemaStatementResult( index.getName(), "INDEX", createStatement( index ), dropStatement( index ) ) )
-                .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
+            // Indexes
+            // If index is backing an existing constraint, it will be overwritten later.
+            stream( schemaRead.indexesGetAll() )
+                    .map( index -> new SchemaStatementResult( index.getName(), "INDEX", createStatement( index ), dropStatement( index ) ) )
+                    .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
 
-        // Constraints
-        stream( schemaRead.constraintsGetAll() )
-                .map( constraint -> new SchemaStatementResult( constraint.getName(), "CONSTRAINT", createStatement( constraint ),
-                        dropStatement( constraint ) ) )
-                .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
+            // Constraints
+            stream( schemaRead.constraintsGetAll() )
+                    .map( constraint -> new SchemaStatementResult( constraint.getName(), "CONSTRAINT", createStatement( constraint ),
+                            dropStatement( constraint ) ) )
+                    .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
 
-        return schemaStatements.values().stream();
+            return schemaStatements.values().stream();
+        }
     }
 
     private String createStatement( ConstraintDescriptor constraint )
