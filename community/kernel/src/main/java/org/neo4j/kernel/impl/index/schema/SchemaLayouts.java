@@ -141,7 +141,7 @@ public class SchemaLayouts implements LayoutBootstrapper
     private static LayoutBootstrapper spatialLayoutFactory( CoordinateReferenceSystem crs )
     {
         return ( indexFile, pageCache, meta, targetLayout ) -> {
-            if ( targetLayout != null && targetLayout.equals( crs.getName() ) )
+            if ( crs.getName().equals( targetLayout ) )
             {
                 final MutableBoolean failure = new MutableBoolean( false );
                 final Function<ByteBuffer,String> onError = byteBuffer ->
