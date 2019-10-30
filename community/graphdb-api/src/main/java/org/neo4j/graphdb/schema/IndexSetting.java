@@ -61,13 +61,69 @@ public enum IndexSetting
      * This setting is given as a boolean.
      */
     FULLTEXT_EVENTUALLY_CONSISTENT( "fulltext.eventually_consistent", Boolean.class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minX, minY]}.
+     */
     SPATIAL_CARTESIAN_MIN( "spatial.cartesian.min", double[].class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxX, maxY]}.
+     */
     SPATIAL_CARTESIAN_MAX( "spatial.cartesian.max", double[].class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minX, minY, minZ]}.
+     */
     SPATIAL_CARTESIAN_3D_MIN( "spatial.cartesian-3d.min", double[].class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxX, maxY, maxZ]}.
+     */
     SPATIAL_CARTESIAN_3D_MAX( "spatial.cartesian-3d.max", double[].class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minLongitude, minLatitude]}.
+     */
     SPATIAL_WGS84_MIN( "spatial.wgs-84.min", double[].class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxLongitude, maxLatitude]}.
+     */
     SPATIAL_WGS84_MAX( "spatial.wgs-84.max", double[].class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minLongitude, minLatitude, minZ]}.
+     */
     SPATIAL_WGS84_3D_MIN( "spatial.wgs-84-3d.min", double[].class ),
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxLongitude, maxLatitude, maxZ]}.
+     */
     SPATIAL_WGS84_3D_MAX( "spatial.wgs-84-3d.max", double[].class ),
     ;
 
