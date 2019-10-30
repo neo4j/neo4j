@@ -33,7 +33,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
                                                                  costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
                                                                  costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
-                                                                 costOfExpand: Long, // the reported dbHits for expanding a one-relationship node
+                                                                 costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
+                                                                 costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
                                                                  costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
                                                                  cartesianProductChunkSize: Long // The size of a LHS chunk for cartesian product
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
@@ -73,7 +74,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should be (sizeHint + 1 + costOfLabelLookup) // label scan
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint + 1 + costOfLabelLookup) // label scan
   }
 
   test("should profile dbHits of node index seek") {
@@ -87,7 +88,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val seekProfile = profileIndexSeek(s"x:Language(difficulty >= ${sizeHint / 2})")
     // then
-    seekProfile.operatorProfile(1).dbHits() should be (sizeHint / 10 / 2 + 1) // node index seek
+    seekProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 10 / 2 + 1) // node index seek
   }
 
   test("should profile dbHits of node index scan") {
@@ -101,7 +102,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val scanProfile = profileIndexSeek("x:Language(difficulty)")
     // then
-    scanProfile.operatorProfile(1).dbHits() should be (sizeHint / 10 + 1) // node index scan
+    scanProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 10 + 1) // node index scan
   }
 
   test("should profile dbHits of node index contains") {
@@ -115,7 +116,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val seekProfile = profileIndexSeek(s"x:Language(difficulty CONTAINS '1')")
     // then
-    seekProfile.operatorProfile(1).dbHits() should be (sizeHint / 2 + 1) // node index contains
+    seekProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 2 + 1) // node index contains
   }
 
   private def profileIndexSeek(indexSeekString: String): QueryProfile = {
@@ -255,7 +256,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(2).dbHits() should be >= (1+10L) // all node scan
+    queryProfile.operatorProfile(2).dbHits() shouldBe >= (1+10L) // all node scan
   }
 
   test("should profile dbHits with limit + expand") {
@@ -275,9 +276,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * costOfExpand) // expand
+    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * (costOfExpandGetRelCursor + costOfExpandOneRel)) // expand
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() should be >= (SIZE / 2L) // node by label scan
+    queryProfile.operatorProfile(3).dbHits() shouldBe >= (SIZE / 2L) // node by label scan
   }
 
   test("should profile dbHits with limit + optional expand all") {
@@ -297,9 +298,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * LegacyDbHitsTestBase.costOfExpand) // optional expand all (uses legacy pipe)
+    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel)) // optional expand all (uses legacy pipe)
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() should be >= (SIZE / 2L) // node by label scan
+    queryProfile.operatorProfile(3).dbHits() shouldBe >= (SIZE / 2L) // node by label scan
   }
 
   test("should profile dbHits with var-expand") {
@@ -319,7 +320,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val matchesPerVarExpand = 3
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be (SIZE * costOfExpand * matchesPerVarExpand) or be (SIZE * (costOfExpand + 1) * matchesPerVarExpand)) // expand
+    queryProfile.operatorProfile(1).dbHits() should (be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel) * matchesPerVarExpand) or be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel + 1) * matchesPerVarExpand)) // expand
     queryProfile.operatorProfile(2).dbHits() should (be (SIZE) or be (SIZE + 1)) // all node scan
   }
 
@@ -338,8 +339,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * costOfExpand) // expand
-    queryProfile.operatorProfile(2).dbHits() should be (sizeHint + 1 + costOfLabelLookup) // label scan
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (costOfExpandGetRelCursor + costOfExpandOneRel)) // expand
+    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint + 1 + costOfLabelLookup) // label scan
   }
 
   test("should profile dbhits with expand into") {
@@ -358,9 +359,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    // expand into (uses legacy pipe). If the no node is in the input twice the rel cache does not help and then you get
-    // 2 (check start end end for `isDense`) + costOfExpand per row.
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (2L + LegacyDbHitsTestBase.costOfExpand))
+    // expand into (uses legacy pipe). If no node is in the input twice the rel cache does not help and then you get
+    // 2 (check start and end for `isDense`) + costOfExpand per row.
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (2L + (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel)))
     // No assertion on the expand because db hits can vary, given that the nodes have 2 relationships.
   }
 
@@ -383,8 +384,53 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * costOfExpand + extraNodes) // optional expand all
-    queryProfile.operatorProfile(2).dbHits() should be (sizeHint + extraNodes + 1 + costOfLabelLookup) // label scan
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel) + extraNodes) // optional expand all
+    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint + extraNodes + 1 + costOfLabelLookup) // label scan
+  }
+
+  test("should profile dbhits with optional expand into") {
+    // given
+    val n = Math.sqrt(sizeHint).toInt
+    val extraNodes = 20
+    given {
+      val xs = nodePropertyGraph(n, {
+        case i: Int => Map("prop" -> i)
+      }, "X")
+      val ys = nodePropertyGraph(n, {
+        case i: Int => Map("prop" -> i)
+      }, "Y")
+
+      connect(xs ++ ys, xs.indices.map(i => (i, i + xs.length, "R")))
+
+      nodePropertyGraph(extraNodes, {
+        case i: Int => Map("prop" -> (i + xs.length))
+      }, "X")
+      nodePropertyGraph(extraNodes, {
+        case i: Int => Map("prop" -> (i + ys.length))
+      }, "Y")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .optionalExpandInto("(x)-->(y)")
+      .apply()
+      .|.filter("x.prop = y.prop") // Make sure we get pairs of x/y nodes with each node only appearing once
+      .|.nodeByLabelScan("y", "Y", "x")
+      .nodeByLabelScan("x", "X")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    // optional expand into (uses legacy pipe). If no node is in the input twice the rel cache does not help and then you get
+    // 2 (check start and end for `isDense`) + get rel cursor for each row and costOfExpand for each relationship on top.
+    queryProfile.operatorProfile(1).dbHits() shouldBe ((n + extraNodes) * (2 + LegacyDbHitsTestBase.costOfExpandGetRelCursor) + n * LegacyDbHitsTestBase.costOfExpandOneRel) // optional expand into
+    queryProfile.operatorProfile(2).dbHits() shouldBe (0) // apply
+    queryProfile.operatorProfile(3).dbHits() shouldBe ((n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)) // filter (reads 2 properties))
+    queryProfile.operatorProfile(4).dbHits() shouldBe  ((n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup) // label scan OK
+    queryProfile.operatorProfile(5).dbHits() shouldBe (n + extraNodes + 1 + costOfLabelLookup) // label scan OK
   }
 
   test("should profile dbHits with node hash join") {
@@ -485,7 +531,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
     queryProfile.operatorProfile(1).dbHits() should
       (be (sizeHint * (2 * (costOfGetPropertyChain + costOfProperty) + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) or // prop is the first prop
-      be (sizeHint * ((costOfGetPropertyChain + costOfProperty) + 2 * (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty)))) // prop is the second prop
+        be (sizeHint * ((costOfGetPropertyChain + costOfProperty) + 2 * (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty)))) // prop is the second prop
   }
 
   test("should profile dbHits of aggregation") {
@@ -523,9 +569,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should be (sizeHint *
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint *
       ((costOfGetPropertyChain + costOfProperty) // first prop in chain
-      + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
+        + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
   }
 
   test("should profile dbHits of cartesian product") {

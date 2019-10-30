@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ProfileDbHitsTestBase
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 object LegacyDbHitsTestBase {
-  final val costOfExpand: Long = 2 // one to get the rel cursor and one for the one relationship in it
+  final val costOfExpandGetRelCursor: Long = 1 // to get the rel cursor
+  final val costOfExpandOneRel: Long = 1 // to get one relationship in a rel cursor
 }
 
 abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
@@ -37,6 +38,7 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfGetPropertyChain = 0,
                                 costOfPropertyJumpedOverInChain = 0,
                                 costOfProperty = 1,
-                                costOfExpand = LegacyDbHitsTestBase.costOfExpand,
+                                costOfExpandGetRelCursor = LegacyDbHitsTestBase.costOfExpandOneRel,
+                                costOfExpandOneRel = LegacyDbHitsTestBase.costOfExpandOneRel,
                                 costOfRelationshipTypeLookup = 1,
                                 cartesianProductChunkSize = 1)

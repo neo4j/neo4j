@@ -212,7 +212,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .optionalExpandInto("(x)-[r]->(y)", Some("true"))
+      .optionalExpandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
       .allNodeScan("x")
       .build()
