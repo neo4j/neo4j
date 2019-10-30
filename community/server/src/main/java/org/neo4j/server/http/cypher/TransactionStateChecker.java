@@ -35,10 +35,9 @@ public class TransactionStateChecker
     public static TransactionStateChecker create( TransitionalTxManagementKernelTransaction transaction )
     {
         var tx = (KernelTransactionImplementation) transaction.getInternalTransaction().kernelTransaction();
-        var state = tx.txState();
         return new TransactionStateChecker(
-                nodeId -> tx.hasTxStateWithChanges() && state.nodeIsDeletedInThisTx( nodeId ),
-                relId -> tx.hasTxStateWithChanges() && state.relationshipIsDeletedInThisTx( relId ) );
+                nodeId -> tx.hasTxStateWithChanges() && tx.txState().nodeIsDeletedInThisTx( nodeId ),
+                relId -> tx.hasTxStateWithChanges() && tx.txState().relationshipIsDeletedInThisTx( relId ) );
     }
 
     public boolean isNodeDeletedInCurrentTx( long id )
