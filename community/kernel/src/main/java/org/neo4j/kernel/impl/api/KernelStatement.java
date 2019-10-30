@@ -39,6 +39,8 @@ import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.lock.LockTracer;
@@ -67,7 +69,7 @@ import static org.neo4j.util.FeatureToggles.toggle;
  * instance again, when it's initialized.</li>
  * </ol>
  */
-public class KernelStatement extends CloseableResourceManager implements Statement, AssertOpen
+public class KernelStatement extends CloseableResourceManager implements TxStateHolder, Statement, AssertOpen
 {
     private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", false );
     private static final boolean RECORD_STATEMENTS_TRACES = flag( KernelStatement.class, "recordStatementsTraces", false );
@@ -99,6 +101,18 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     public QueryRegistry queryRegistration()
     {
         return queryRegistry;
+    }
+
+    @Override
+    public TransactionState txState()
+    {
+        return transaction.txState();
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return transaction.hasTxStateWithChanges();
     }
 
     @Override

@@ -91,7 +91,10 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         };
         Consumer<KernelTransaction> writeTxInitializer = tx ->
         {
-            ((KernelTransactionImplementation) tx).txState().nodeDoCreate( 42 );
+            try ( KernelStatement statement = (KernelStatement) tx.acquireStatement() )
+            {
+                statement.txState().nodeDoCreate( 42 );
+            }
         };
         return Stream.of(
             arguments( "readOperationsInNewTransaction", false, readTxInitializer ),
