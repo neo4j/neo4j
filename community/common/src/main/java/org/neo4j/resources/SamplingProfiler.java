@@ -161,7 +161,8 @@ class SamplingProfiler implements Profiler
     private static final class Sample extends AtomicLong implements Comparable<Sample>
     {
         private final StackTraceElement stackTraceElement;
-        private Map<StackTraceElement, Sample> children;
+        private final Map<StackTraceElement, Sample> children;
+        private long snapshot;
         private PriorityQueue<Sample> orderedChildren;
 
         private Sample( StackTraceElement stackTraceElement )
@@ -170,21 +171,26 @@ class SamplingProfiler implements Profiler
             children = new ConcurrentHashMap<>();
         }
 
+        private void snapshot()
+        {
+            this.snapshot = get();
+        }
+
         @Override
         public int compareTo( Sample o )
         {
             // Higher count orders first.
-            return Long.compare( o.get(), this.get() );
+            return Long.compare( o.snapshot, this.snapshot );
         }
 
         void intoOrdered()
         {
             orderedChildren = new PriorityQueue<>();
-            orderedChildren.addAll( children.values() );
-            children.clear();
-            for ( Sample child : orderedChildren )
+            for ( Sample sample : children.values() )
             {
-                child.intoOrdered();
+                sample.snapshot();
+                orderedChildren.add( sample );
+                sample.intoOrdered();
             }
         }
     }
