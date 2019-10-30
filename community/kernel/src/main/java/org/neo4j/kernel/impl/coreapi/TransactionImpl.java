@@ -74,6 +74,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
@@ -144,7 +145,7 @@ public class TransactionImpl implements InternalTransaction
     public Node createNode()
     {
         var ktx = kernelTransaction();
-        try
+        try ( Statement ignore = ktx.acquireStatement() )
         {
             return newNodeEntity( ktx.dataWrite().nodeCreate() );
         }
@@ -158,7 +159,7 @@ public class TransactionImpl implements InternalTransaction
     public Node createNode( Label... labels )
     {
         var ktx = kernelTransaction();
-        try
+        try ( Statement ignore = ktx.acquireStatement() )
         {
             TokenWrite tokenWrite = ktx.tokenWrite();
             int[] labelIds = new int[labels.length];
@@ -197,12 +198,15 @@ public class TransactionImpl implements InternalTransaction
         }
 
         KernelTransaction ktx = kernelTransaction();
-        if ( !ktx.dataRead().nodeExists( id ) )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            throw new NotFoundException( format( "Node %d not found", id ),
-                    new EntityNotFoundException( EntityType.NODE, id ) );
+            if ( !ktx.dataRead().nodeExists( id ) )
+            {
+                throw new NotFoundException( format( "Node %d not found", id ),
+                        new EntityNotFoundException( EntityType.NODE, id ) );
+            }
+            return newNodeEntity( id );
         }
-        return newNodeEntity( id );
     }
 
     @Override
@@ -247,13 +251,15 @@ public class TransactionImpl implements InternalTransaction
         }
 
         KernelTransaction ktx = kernelTransaction();
-
-        if ( !ktx.dataRead().relationshipExists( id ) )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            throw new NotFoundException( format( "Relationship %d not found", id ),
-                    new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
+            if ( !ktx.dataRead().relationshipExists( id ) )
+            {
+                throw new NotFoundException( format( "Relationship %d not found", id ),
+                        new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
+            }
+            return newRelationshipEntity( id );
         }
-        return newRelationshipEntity( id );
     }
 
     @Override
@@ -410,6 +416,7 @@ public class TransactionImpl implements InternalTransaction
         KernelTransaction ktx = kernelTransaction();
         return () ->
         {
+            Statement statement = ktx.acquireStatement();
             NodeCursor cursor = ktx.cursors().allocateNodeCursor();
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<>()
@@ -432,6 +439,7 @@ public class TransactionImpl implements InternalTransaction
                 public void close()
                 {
                     cursor.close();
+                    statement.close();
                 }
             };
         };
@@ -443,6 +451,7 @@ public class TransactionImpl implements InternalTransaction
         KernelTransaction ktx = kernelTransaction();
         return () ->
         {
+            Statement statement = ktx.acquireStatement();
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
             ktx.dataRead().allRelationshipsScan( cursor );
             return new PrefetchingResourceIterator<>()
@@ -466,6 +475,7 @@ public class TransactionImpl implements InternalTransaction
                 public void close()
                 {
                     cursor.close();
+                    statement.close();
                 }
             };
         };
@@ -626,10 +636,12 @@ public class TransactionImpl implements InternalTransaction
 
     private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
     {
+        Statement statement = transaction.acquireStatement();
         Read read = transaction.dataRead();
 
         if ( query.propertyKeyId() == TokenRead.NO_TOKEN || labelId == TokenRead.NO_TOKEN )
         {
+            statement.close();
             return emptyResourceIterator();
         }
         Iterator<IndexDescriptor> iterator = transaction.schemaRead().index( SchemaDescriptor.forLabel( labelId, query.propertyKeyId() ) );
@@ -648,7 +660,7 @@ public class TransactionImpl implements InternalTransaction
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
 
-                return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeEntity );
             }
             catch ( KernelException e )
             {
@@ -656,7 +668,7 @@ public class TransactionImpl implements InternalTransaction
             }
         }
 
-        return getNodesByLabelAndPropertyWithoutIndex( labelId, query );
+        return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, query );
     }
 
     @Override
@@ -679,7 +691,8 @@ public class TransactionImpl implements InternalTransaction
         return !closed;
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int labelId, IndexQuery... queries )
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(
+            Statement statement, int labelId, IndexQuery... queries )
     {
         KernelTransaction transaction = kernelTransaction();
 
@@ -693,6 +706,7 @@ public class TransactionImpl implements InternalTransaction
                 nodeLabelCursor,
                 nodeCursor,
                 propertyCursor,
+                statement,
                 this::newNodeEntity,
                 queries );
     }
@@ -700,10 +714,12 @@ public class TransactionImpl implements InternalTransaction
     private ResourceIterator<Node> nodesByLabelAndProperties(
             KernelTransaction transaction, int labelId, IndexQuery.ExactPredicate... queries )
     {
+        Statement statement = transaction.acquireStatement();
         Read read = transaction.dataRead();
 
         if ( isInvalidQuery( labelId, queries ) )
         {
+            statement.close();
             return emptyResourceIterator();
         }
 
@@ -717,14 +733,14 @@ public class TransactionImpl implements InternalTransaction
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
-                return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeEntity );
             }
             catch ( KernelException e )
             {
                 // weird at this point but ignore and fallback to a label scan
             }
         }
-        return getNodesByLabelAndPropertyWithoutIndex( labelId, queries );
+        return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
     }
 
     private static IndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, IndexQuery[] queries )
@@ -748,16 +764,18 @@ public class TransactionImpl implements InternalTransaction
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
     {
         KernelTransaction ktx = kernelTransaction();
+        Statement statement = ktx.acquireStatement();
 
         int labelId = ktx.tokenRead().nodeLabel( myLabel.name() );
         if ( labelId == TokenRead.NO_TOKEN )
         {
+            statement.close();
             return Iterators.emptyResourceIterator();
         }
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
+        return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeEntity );
     }
 
     private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )

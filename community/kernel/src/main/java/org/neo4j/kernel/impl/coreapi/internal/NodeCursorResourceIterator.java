@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.coreapi.internal;
 
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
-
-import static org.neo4j.io.IOUtils.closeAllSilently;
+import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.Statement;
 
 public class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends PrefetchingNodeResourceIterator
 {
     private final CURSOR cursor;
 
-    public NodeCursorResourceIterator( CURSOR cursor, NodeFactory nodeFactory )
+    public NodeCursorResourceIterator( CURSOR cursor, Statement statement, NodeFactory nodeFactory )
     {
-        super( nodeFactory );
+        super( statement, nodeFactory );
         this.cursor = cursor;
     }
 
@@ -48,8 +48,8 @@ public class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends 
     }
 
     @Override
-    void closeResources()
+    void closeResources( Statement statement )
     {
-        closeAllSilently( cursor );
+        IOUtils.closeAllSilently( statement, cursor );
     }
 }

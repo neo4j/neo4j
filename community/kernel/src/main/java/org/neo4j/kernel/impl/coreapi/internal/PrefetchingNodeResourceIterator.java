@@ -23,9 +23,11 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.Statement;
 
 abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
 {
+    private final Statement statement;
     private final NodeFactory nodeFactory;
     private long next;
     private boolean closed;
@@ -33,8 +35,9 @@ abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
     private static final long NOT_INITIALIZED = -2L;
     protected static final long NO_ID = -1L;
 
-    PrefetchingNodeResourceIterator( NodeFactory nodeFactory )
+    PrefetchingNodeResourceIterator( Statement statement, NodeFactory nodeFactory )
     {
+        this.statement = statement;
         this.nodeFactory = nodeFactory;
         this.next = NOT_INITIALIZED;
     }
@@ -68,12 +71,12 @@ abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
         if ( !closed )
         {
             next = NO_ID;
-            closeResources();
+            closeResources( statement );
             closed = true;
         }
     }
 
     abstract long fetchNext();
 
-    abstract void closeResources();
+    abstract void closeResources( Statement statement );
 }
