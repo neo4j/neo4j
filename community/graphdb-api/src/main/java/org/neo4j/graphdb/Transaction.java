@@ -375,11 +375,10 @@ public interface Transaction extends AutoCloseable
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.
      *
      * Additionally, terminating a transaction causes all subsequent operations carried out within that
-     * transaction to throw a {@link TransactionTerminatedException} in the owning thread.
+     * transaction to throw a {@link TransactionTerminatedException}.
      *
-     * Note that, unlike the other transaction operations, this method can be called from threads other than
-     * the owning thread of the transaction. When this method is called from a different thread,
-     * it signals the owning thread to terminate the transaction and returns immediately.
+     * Note that, unlike the other transaction operations, this method can be called from different thread.
+     * When this method is called, it signals to terminate the transaction and returns immediately.
      *
      * Calling this method on an already closed transaction has no effect.
      */

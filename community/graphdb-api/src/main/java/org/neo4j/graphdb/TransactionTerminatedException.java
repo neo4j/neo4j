@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Signals that the transaction within which the failed operations ran
  * has been terminated with {@link Transaction#terminate()}.
  */
+@PublicApi
 public class TransactionTerminatedException extends TransactionFailureException implements Status.HasStatus
 {
     private final Status status;
