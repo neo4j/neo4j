@@ -73,14 +73,4 @@ public class SpatialIndexSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Double> space_filling_curve_bottom_threshold =
             newBuilder( "unsupported.dbms.index.spatial.curve.bottom_threshold", DOUBLE, 0.0 ).build();
-
-    @Description( "The maximum number of bits to use for levels in the quad tree representing the spatial index. When creating the spatial index, we " +
-            "simulate a quad tree using a 2D (or 3D) to 1D mapping function. This requires that the extents of the index and the depth " +
-            "of the tree be defined in advance, so ensure the 2D to 1D mapping is deterministic and repeatable. This setting will define " +
-            "the maximum depth of any future spatial index created, calculated as max_bits / dimensions. For example 60 bits will define 30 levels in 2D " +
-            "and 20 levels in 3D. Existing indexes will not be changed, and need to be recreated if you wish to use the new value. " +
-            "For 2D indexes, a value of 30 is the largest supported. For 3D indexes 20 is the largest." )
-    @Internal
-    public static final Setting<Integer> space_filling_curve_max_bits =
-            newBuilder( "unsupported.dbms.index.spatial.curve.max_bits", INT, 60 ).build();
 }

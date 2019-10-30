@@ -36,26 +36,26 @@ class SpaceFillingCurveSettingsFactoryTest
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForWGS84()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84, 2, 60, new Envelope( -180, 180, -90, 90 ) );
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84, 2, new Envelope( -180, 180, -90, 90 ) );
     }
 
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForWGS84_3D()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84_3D, 3, 60,
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84_3D, 3,
                 new Envelope( new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} ) );
     }
 
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForCartesian()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian, 2, 60, new Envelope( -1000000, 1000000, -1000000, 1000000 ) );
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian, 2, new Envelope( -1000000, 1000000, -1000000, 1000000 ) );
     }
 
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForCartesian_3D()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian_3D, 3, 60,
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian_3D, 3,
                 new Envelope( new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} ) );
     }
 
@@ -63,18 +63,15 @@ class SpaceFillingCurveSettingsFactoryTest
     void shouldGetModifiedSpaceFillingCurveSettingsForWGS84()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-        for ( int maxBits = 30; maxBits <= 60; maxBits += 10 )
+        for ( int minx = -180; minx < 0; minx += 45 )
         {
-            for ( int minx = -180; minx < 0; minx += 45 )
+            for ( int miny = -180; miny < 0; miny += 45 )
             {
-                for ( int miny = -180; miny < 0; miny += 45 )
+                for ( int width = 10; width < 90; width += 40 )
                 {
-                    for ( int width = 10; width < 90; width += 40 )
+                    for ( int height = 10; height < 90; height += 40 )
                     {
-                        for ( int height = 10; height < 90; height += 40 )
-                        {
-                            shouldGetCustomSettingsFor( crs, maxBits, new double[]{minx, miny}, new double[]{minx + width, miny + height} );
-                        }
+                        shouldGetCustomSettingsFor( crs, new double[]{minx, miny}, new double[]{minx + width, miny + height} );
                     }
                 }
             }
@@ -85,15 +82,12 @@ class SpaceFillingCurveSettingsFactoryTest
     void shouldGetModifiedSpaceFillingCurveSettingsForWGS84_3D()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84_3D;
-        shouldGetCustomSettingsFor( crs, 60, new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} );
-        shouldGetCustomSettingsFor( crs, 60, new double[]{0, -90, -1000000}, new double[]{180, 0, 1000000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{0, -90, -1000000}, new double[]{180, 0, 1000000} );
-        shouldGetCustomSettingsFor( crs, 60, new double[]{-90, -45, -1000}, new double[]{90, 45, 1000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{-90, -90, -1000}, new double[]{90, 45, 1000} );
+        shouldGetCustomSettingsFor( crs, new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} );
+        shouldGetCustomSettingsFor( crs, new double[]{0, -90, -1000000}, new double[]{180, 0, 1000000} );
+        shouldGetCustomSettingsFor( crs, new double[]{-90, -45, -1000}, new double[]{90, 45, 1000} );
+        shouldGetCustomSettingsFor( crs, new double[]{-90, -90, -1000}, new double[]{90, 45, 1000} );
         // invalid geographic limits should not affect settings or even the index, but will affect distance and bbox calculations
-        shouldGetCustomSettingsFor( crs, 60, new double[]{-1000, -1000, -1000}, new double[]{1000, 1000, 1000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{-1000, -1000, -1000}, new double[]{1000, 1000, 1000} );
+        shouldGetCustomSettingsFor( crs, new double[]{-1000, -1000, -1000}, new double[]{1000, 1000, 1000} );
     }
 
     @Test
@@ -110,7 +104,7 @@ class SpaceFillingCurveSettingsFactoryTest
                     {
                         for ( int height = 100000; height < 1000000; height += 200000 )
                         {
-                            shouldGetCustomSettingsFor( crs, maxBits, new double[]{minx, miny}, new double[]{minx + width, miny + height} );
+                            shouldGetCustomSettingsFor( crs, new double[]{minx, miny}, new double[]{minx + width, miny + height} );
                         }
                     }
                 }
@@ -122,34 +116,27 @@ class SpaceFillingCurveSettingsFactoryTest
     void shouldGetModifiedSpaceFillingCurveSettingsForCartesian_3D()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian_3D;
-        shouldGetCustomSettingsFor( crs, 60, new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} );
-        shouldGetCustomSettingsFor( crs, 60, new double[]{0, -1000000, -1000000}, new double[]{1000000, 0, 1000000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{0, -1000000, -1000000}, new double[]{1000000, 0, 1000000} );
-        shouldGetCustomSettingsFor( crs, 60, new double[]{-1000, -1000, -1000}, new double[]{1000, 1000, 1000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{-1000, -1000, -1000}, new double[]{1000, 1000, 1000} );
-        shouldGetCustomSettingsFor( crs, 60, new double[]{-1000000000, -1000000000, -1000000000}, new double[]{1000000000, 1000000000, 1000000000} );
-        shouldGetCustomSettingsFor( crs, 30, new double[]{-1000000000, -1000000000, -1000000000}, new double[]{1000000000, 1000000000, 1000000000} );
+        shouldGetCustomSettingsFor( crs, new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} );
+        shouldGetCustomSettingsFor( crs, new double[]{0, -1000000, -1000000}, new double[]{1000000, 0, 1000000} );
+        shouldGetCustomSettingsFor( crs, new double[]{-1000, -1000, -1000}, new double[]{1000, 1000, 1000} );
+        shouldGetCustomSettingsFor( crs, new double[]{-1000000000, -1000000000, -1000000000}, new double[]{1000000000, 1000000000, 1000000000} );
     }
 
-    private void shouldGetCustomSettingsFor( CoordinateReferenceSystem crs, int maxBits, double[] min, double[] max )
+    private void shouldGetCustomSettingsFor( CoordinateReferenceSystem crs, double[] min, double[] max )
     {
         CrsConfig crsConf = CrsConfig.group( crs );
         Config config = Config.newBuilder()
-                .set( SpatialIndexSettings.space_filling_curve_max_bits , maxBits )
                 .set( crsConf.min, Arrays.stream( min ).boxed().collect( Collectors.toList() ) )
                 .set( crsConf.max, Arrays.stream( max ).boxed().collect( Collectors.toList() ) )
                 .build();
-        shouldGetSettingsFor( config, crs, min.length, maxBits, new Envelope( min, max ) );
+        shouldGetSettingsFor( config, crs, min.length, new Envelope( min, max ) );
     }
 
-    private void shouldGetSettingsFor( Config config, CoordinateReferenceSystem crs, int dimensions, int maxBits, Envelope envelope )
+    private void shouldGetSettingsFor( Config config, CoordinateReferenceSystem crs, int dimensions, Envelope envelope )
     {
         ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         SpaceFillingCurveSettings settings = configuredSettings.forCRS( crs );
         assertThat( "Expected " + dimensions + "D for " + crs.getName(), settings.getDimensions(), equalTo( dimensions ) );
-        int maxLevels = maxBits / dimensions;
-        assertThat( "Expected maxLevels=" + maxLevels + " for " + crs.getName(), settings.getMaxLevels(), equalTo( maxLevels ) );
         assertThat( "Should have normal geographic 2D extents", settings.indexExtents(), equalTo( envelope ) );
     }
 }

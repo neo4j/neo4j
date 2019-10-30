@@ -75,7 +75,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_B
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
-import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_max_bits;
 import static org.neo4j.test.Unzip.unzip;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
@@ -117,7 +116,6 @@ class IndexConfigMigrationIT
         }
     }
 
-    private static final int space_filling_curve_max_bits_value = 30;
     private static final Map<String,Value> staticExpectedIndexConfig = new HashMap<>();
 
     static
@@ -409,7 +407,6 @@ class IndexConfigMigrationIT
 
     private static void setSpatialConfig( DatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( space_filling_curve_max_bits, space_filling_curve_max_bits_value );
         for ( MinMaxSetting minMaxSetting : MinMaxSetting.values() )
         {
             builder.setConfig( minMaxSetting.setting, minMaxSetting.settingValue );

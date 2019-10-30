@@ -29,7 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -53,7 +52,6 @@ class SpatialIndexConfigTest
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             Config config = Config.defaults();
-            config.set( SpatialIndexSettings.space_filling_curve_max_bits, random.nextBoolean() ? 60 : 30 ); // Introduce some randomness
             SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
             SpatialIndexConfig.addSpatialConfig( map, crs, spaceFillingCurveSettings );
 
@@ -72,7 +70,6 @@ class SpatialIndexConfigTest
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             Config config = Config.defaults();
-            config.set( SpatialIndexSettings.space_filling_curve_max_bits, random.nextBoolean() ? 60 : 30 ); // Introduce some randomness
             SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
             expectedMap.put( crs, spaceFillingCurveSettings );
             indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
