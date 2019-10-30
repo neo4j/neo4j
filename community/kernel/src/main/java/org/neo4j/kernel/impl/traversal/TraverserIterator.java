@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.TraversalContext;
 
-interface TraverserIterator extends Iterator<Path>, TraversalContext
+interface TraverserIterator extends ResourceIterator<Path>, TraversalContext
 {
 }

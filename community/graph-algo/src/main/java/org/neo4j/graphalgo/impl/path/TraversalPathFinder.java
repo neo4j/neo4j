@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.LimitingIterable;
+import org.neo4j.internal.helpers.collection.LimitingResourceIterable;
 
 public abstract class TraversalPathFinder implements PathFinder<Path>
 {
@@ -47,7 +47,7 @@ public abstract class TraversalPathFinder implements PathFinder<Path>
     {
         lastTraverser = instantiateTraverser( start, end );
         Integer maxResultCount = maxResultCount();
-        return maxResultCount != null ? new LimitingIterable<>( lastTraverser, maxResultCount ) : lastTraverser;
+        return maxResultCount != null ? new LimitingResourceIterable<>( lastTraverser, maxResultCount ) : lastTraverser;
     }
 
     protected abstract Traverser instantiateTraverser( Node start, Node end );

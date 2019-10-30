@@ -23,8 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -72,7 +70,7 @@ class TestPath extends TraversalTestBase
         {
             Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 4 ) )
                     .traverse( transaction.getNodeById( node( "A" ).getId() ) );
-            Iterator<Path> resourceIterator = traverse.iterator();
+            try ( ResourceIterator<Path> resourceIterator = traverse.iterator() )
             {
                 Path path = resourceIterator.next();
                 assertPathIsCorrect( transaction, path );
@@ -165,7 +163,10 @@ class TestPath extends TraversalTestBase
 
     private static Path getFirstPath( Traverser traverse )
     {
-        return Iterators.first( traverse.iterator() );
+        try ( ResourceIterator<Path> iterator = traverse.iterator() )
+        {
+            return Iterators.first( iterator );
+        }
     }
 
     private void assertPathIsCorrect( Transaction transaction, Path path )

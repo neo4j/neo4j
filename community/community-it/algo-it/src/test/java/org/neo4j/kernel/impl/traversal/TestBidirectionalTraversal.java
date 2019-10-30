@@ -28,6 +28,7 @@ import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -40,6 +41,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,11 +51,10 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
 import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
 import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH;
-import static org.neo4j.internal.helpers.collection.Iterators.count;
 
 class TestBidirectionalTraversal extends TraversalTestBase
 {
-    private final RelationshipType to = withName( "TO" );
+    private RelationshipType to = withName( "TO" );
 
     @Test
     void bothSidesMustHaveSameUniqueness()
@@ -67,7 +68,13 @@ class TestBidirectionalTraversal extends TraversalTestBase
                     transaction.traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) ).traverse( getNodeWithName( transaction, "A" ),
                     getNodeWithName( transaction, "B" ) );
 
-            assertThrows( IllegalArgumentException.class, () -> count( traverse.iterator() ) );
+            assertThrows( IllegalArgumentException.class, () ->
+            {
+                try ( ResourceIterator<Path> iterator = traverse.iterator() )
+                {
+                    Iterators.count( iterator );
+                }
+            } );
         }
     }
 
