@@ -46,7 +46,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
 {
     final PathExpander expander;
     final InitialBranchState initialState;
-    final UniquenessFactory uniqueness;
+     final UniquenessFactory uniqueness;
     final Object uniquenessParameter;
     final PathEvaluator evaluator;
     final BranchOrderingPolicy branchOrdering;
