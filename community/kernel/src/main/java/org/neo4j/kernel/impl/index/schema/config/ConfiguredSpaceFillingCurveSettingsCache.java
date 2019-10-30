@@ -33,7 +33,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 public class ConfiguredSpaceFillingCurveSettingsCache
 {
-    private static final int MAX_BITS = 60; // Divisible by both 2 and 3 which means usable by both 2D and 3D mappings
     private final HashMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
 
     public ConfiguredSpaceFillingCurveSettingsCache( Config config )
@@ -42,7 +41,7 @@ public class ConfiguredSpaceFillingCurveSettingsCache
         for ( Map.Entry<CoordinateReferenceSystem,EnvelopeSettings> entry : env.entrySet() )
         {
             CoordinateReferenceSystem crs = entry.getKey();
-            settings.put( crs, SpaceFillingCurveSettingsFactory.fromConfig( MAX_BITS, entry.getValue() ) );
+            settings.put( crs, SpaceFillingCurveSettingsFactory.fromConfig( entry.getValue() ) );
         }
     }
 
@@ -62,7 +61,7 @@ public class ConfiguredSpaceFillingCurveSettingsCache
         }
         else
         {
-            return SpaceFillingCurveSettingsFactory.fromConfig( MAX_BITS, new EnvelopeSettings( crs ) );
+            return SpaceFillingCurveSettingsFactory.fromConfig( new EnvelopeSettings( crs ) );
         }
     }
 }

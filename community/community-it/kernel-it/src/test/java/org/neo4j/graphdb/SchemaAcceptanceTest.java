@@ -42,9 +42,9 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -922,7 +922,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withName( "my_index" ).create();
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
+            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MIN ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -930,7 +930,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
+            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MIN ) );
             tx.commit();
         }
     }
@@ -988,20 +988,20 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey )
                     .withIndexConfiguration( Map.of(
-                            IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, 5,
-                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0} ) )
+                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0},
+                            IndexSetting.SPATIAL_WGS84_MIN, new double[] {-90.0, -90.0} ) )
                     .create();
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
             assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
             assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
     }
@@ -1051,9 +1051,6 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexType( IndexType.FULLTEXT )
                     .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, 1 ) )
-                    .create() );
-            assertThrows( IllegalArgumentException.class, () -> creator
-                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, "1" ) )
                     .create() );
             assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, "1" ) )
@@ -1304,21 +1301,21 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             ConstraintDefinition constraint = tx.schema().constraintFor( label ).withName( "my constraint" ).assertPropertyIsUnique( propertyKey )
                     .withIndexConfiguration( Map.of(
-                            IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, 5,
-                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0} ) )
+                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[]{200.0, 200.0},
+                            IndexSetting.SPATIAL_WGS84_MIN, new double[]{-90.0, -90.0} ) )
                     .create();
             IndexDefinition index = tx.schema().getIndexByName( constraint.getName() );
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
             assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my constraint" );
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
             assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
     }

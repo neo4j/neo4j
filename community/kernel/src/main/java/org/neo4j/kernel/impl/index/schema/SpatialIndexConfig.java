@@ -29,7 +29,6 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleArray;
-import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -41,7 +40,6 @@ import org.neo4j.values.storable.Values;
  */
 public final class SpatialIndexConfig
 {
-    static final String MAX_LEVELS = "maxLevels";
     static final String MIN = "min";
     static final String MAX = "max";
     private static final String SPATIAL_CONFIG_PREFIX = "spatial";
@@ -59,16 +57,14 @@ public final class SpatialIndexConfig
      */
     static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
     {
-        int maxLevels = settings.getMaxLevels();
         double[] min = settings.indexExtents().getMin();
         double[] max = settings.indexExtents().getMax();
-        addSpatialConfig( map, crs, maxLevels, min, max );
+        addSpatialConfig( map, crs, min, max );
     }
 
-    public static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, int maxLevels, double[] min, double[] max )
+    public static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, double[] min, double[] max )
     {
         String crsName = crs.getName();
-        map.put( key( crsName, MAX_LEVELS ), Values.intValue( maxLevels ) );
         map.put( key( crsName, MIN ), Values.doubleArray( min ) );
         map.put( key( crsName, MAX ), Values.doubleArray( max ) );
     }
@@ -76,7 +72,7 @@ public final class SpatialIndexConfig
     /**
      * Throws an {@link IllegalArgumentException} if the spatial settings in the given {@link IndexConfig} are invalid.
      */
-    public static void validateSpatialConfig( IndexConfig indexConfig )
+    static void validateSpatialConfig( IndexConfig indexConfig )
     {
        extractSpatialConfig( indexConfig );
     }
@@ -128,13 +124,12 @@ public final class SpatialIndexConfig
         for ( String key : configByCrsNames.keySet() )
         {
             Map<String,Value> configByCrsName = configByCrsNames.get( key );
-            int maxLevels = getIntValue( configByCrsName, MAX_LEVELS ).value();
             double[] min = getDoubleArrayValue( configByCrsName, MIN ).asObjectCopy();
             double[] max = getDoubleArrayValue( configByCrsName, MAX ).asObjectCopy();
 
             final CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( key );
             Envelope extents = new Envelope( min, max );
-            settings.put( crs, new SpaceFillingCurveSettings( crs.getDimension(), extents, maxLevels ) );
+            settings.put( crs, new SpaceFillingCurveSettings( crs.getDimension(), extents ) );
         }
         return settings;
     }
@@ -152,15 +147,5 @@ public final class SpatialIndexConfig
             return (DoubleArray) value;
         }
         throw new IllegalStateException( "Expected key " + key + " to be mapped to a DoubleArray but was " + value );
-    }
-
-    private static IntValue getIntValue( Map<String,Value> configByCrsName, String key )
-    {
-        Value value = configByCrsName.get( key );
-        if ( value instanceof IntValue )
-        {
-            return (IntValue) value;
-        }
-        throw new IllegalStateException( "Expected key " + key + " to be mapped to an IntValue but was " + value );
     }
 }

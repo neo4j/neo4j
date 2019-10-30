@@ -61,16 +61,12 @@ public enum IndexSetting
      * This setting is given as a boolean.
      */
     FULLTEXT_EVENTUALLY_CONSISTENT( "fulltext.eventually_consistent", Boolean.class ),
-    SPATIAL_CARTESIAN_MAX_LEVELS( "spatial.cartesian.maxLevels", Integer.class ),
     SPATIAL_CARTESIAN_MIN( "spatial.cartesian.min", double[].class ),
     SPATIAL_CARTESIAN_MAX( "spatial.cartesian.max", double[].class ),
-    SPATIAL_CARTESIAN_3D_MAX_LEVELS( "spatial.cartesian-3d.maxLevels", Integer.class ),
     SPATIAL_CARTESIAN_3D_MIN( "spatial.cartesian-3d.min", double[].class ),
     SPATIAL_CARTESIAN_3D_MAX( "spatial.cartesian-3d.max", double[].class ),
-    SPATIAL_WGS84_MAX_LEVELS( "spatial.wgs-84.maxLevels", Integer.class ),
     SPATIAL_WGS84_MIN( "spatial.wgs-84.min", double[].class ),
     SPATIAL_WGS84_MAX( "spatial.wgs-84.max", double[].class ),
-    SPATIAL_WGS84_3D_MAX_LEVELS( "spatial.wgs-84-3d.maxLevels", Integer.class ),
     SPATIAL_WGS84_3D_MIN( "spatial.wgs-84-3d.min", double[].class ),
     SPATIAL_WGS84_3D_MAX( "spatial.wgs-84-3d.max", double[].class ),
     ;

@@ -55,7 +55,6 @@ class SpatialIndexConfigTest
             SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
             SpatialIndexConfig.addSpatialConfig( map, crs, spaceFillingCurveSettings );
 
-            assertNotNull( map.remove( SpatialIndexConfig.key( crs.getName(), SpatialIndexConfig.MAX_LEVELS ) ) );
             assertNotNull( map.remove( SpatialIndexConfig.key( crs.getName(), SpatialIndexConfig.MIN ) ) );
             assertNotNull( map.remove( SpatialIndexConfig.key( crs.getName(), SpatialIndexConfig.MAX ) ) );
             assertTrue( map.isEmpty() );

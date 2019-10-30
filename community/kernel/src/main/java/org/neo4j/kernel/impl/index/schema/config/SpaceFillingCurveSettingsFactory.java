@@ -41,10 +41,10 @@ public final class SpaceFillingCurveSettingsFactory
      * Currently we only support a SingleSpaceFillingCurveSettings which is the best option for cartesian, but
      * not necessarily the best for geographic coordinate systems.
      */
-    static SpaceFillingCurveSettings fromConfig( int maxBits, EnvelopeSettings envelopeSettings )
+    static SpaceFillingCurveSettings fromConfig( EnvelopeSettings envelopeSettings )
     {
         // Currently we support only one type of index, but in future we could support different types for different CRS
-        return new SpaceFillingCurveSettings.SettingsFromConfig( envelopeSettings.getCrs().getDimension(), maxBits, envelopeSettings.asEnvelope() );
+        return new SpaceFillingCurveSettings.SettingsFromConfig( envelopeSettings.getCrs().getDimension(), envelopeSettings.asEnvelope() );
     }
 
     /**

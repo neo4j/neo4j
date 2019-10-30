@@ -120,19 +120,23 @@ class IndexConfigMigrationIT
 
     static
     {
-        staticExpectedIndexConfig.put( "spatial.wgs-84.maxLevels", Values.intValue( 15 ) );
+        /* Note on why maxLevels settings are commented out:
+        Indexes in 3.5 where created with maxLevels configured. This setting was removed in
+        4.0 and actual number was fixated. Therefore we don't migrate this index setting. */
+
+//        staticExpectedIndexConfig.put( "spatial.wgs-84.maxLevels", Values.intValue( 15 ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84.min", Values.doubleArray( new double[]{-1.0, -2.0} ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84.max", Values.doubleArray( new double[]{3.0, 4.0} ) );
 
-        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.maxLevels", Values.intValue( 10 ) );
+//        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.maxLevels", Values.intValue( 10 ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84-3d.min", Values.doubleArray( new double[]{-5.0, -6.0, -7.0} ) );
         staticExpectedIndexConfig.put( "spatial.wgs-84-3d.max", Values.doubleArray( new double[]{8.0, 9.0, 10.0} ) );
 
-        staticExpectedIndexConfig.put( "spatial.cartesian.maxLevels", Values.intValue( 15 ) );
+//        staticExpectedIndexConfig.put( "spatial.cartesian.maxLevels", Values.intValue( 15 ) );
         staticExpectedIndexConfig.put( "spatial.cartesian.min", Values.doubleArray( new double[]{-11.0, -12.0} ) );
         staticExpectedIndexConfig.put( "spatial.cartesian.max", Values.doubleArray( new double[]{13.0, 14.0} ) );
 
-        staticExpectedIndexConfig.put( "spatial.cartesian-3d.maxLevels", Values.intValue( 10 ) );
+//        staticExpectedIndexConfig.put( "spatial.cartesian-3d.maxLevels", Values.intValue( 10 ) );
         staticExpectedIndexConfig.put( "spatial.cartesian-3d.min", Values.doubleArray( new double[]{-15.0, -16.0, -17.0} ) );
         staticExpectedIndexConfig.put( "spatial.cartesian-3d.max", Values.doubleArray( new double[]{18.0, 19.0, 20.0} ) );
     }
@@ -152,7 +156,7 @@ class IndexConfigMigrationIT
     {
         BOTH( "fulltextBoth", true, "fulltextToken1", asConfigMap( "simple", true ) ),
         ANALYZER_ONLY( "fulltextAnalyzer", false, "fulltextToken2", asConfigMap( "russian" ) ),
-        EVENTUALLY_CONSISTENY_ONLY( "fulltextEC", true, "fulltextToken3", asConfigMap( true ) );
+        EVENTUALLY_CONSISTENT_ONLY( "fulltextEC", true, "fulltextToken3", asConfigMap( true ) );
 
         private final String indexName;
         private final String indexProcedure;

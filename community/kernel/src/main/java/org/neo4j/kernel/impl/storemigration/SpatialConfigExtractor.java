@@ -83,7 +83,8 @@ final class SpatialConfigExtractor
                 {
                     try
                     {
-                        int maxLevels = headerBytes.getInt();
+                        //noinspection unused
+                        int maxLevels = headerBytes.getInt(); // Will not be migrated but read to progress cursor
                         int dimensions = headerBytes.getInt();
                         double[] min = new double[dimensions];
                         double[] max = new double[dimensions];
@@ -93,7 +94,7 @@ final class SpatialConfigExtractor
                             max[i] = headerBytes.getDouble();
                         }
                         CoordinateReferenceSystem crs = spatialFile.getCrs();
-                        SpatialIndexConfig.addSpatialConfig( map, crs, maxLevels, min, max );
+                        SpatialIndexConfig.addSpatialConfig( map, crs, min, max );
                     }
                     catch ( BufferUnderflowException e )
                     {

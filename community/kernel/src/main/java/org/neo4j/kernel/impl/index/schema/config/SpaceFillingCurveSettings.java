@@ -67,16 +67,24 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILE
  */
 public class SpaceFillingCurveSettings
 {
+    /**
+     * Number of bits to use for the space filling curve value in 1D.
+     * This number affects the physical structure of indexed spatial values
+     * and thus changing it is a format change for btree indexes.
+     * 60 because it needs to be divisible by both 2 and 3 to be usable by both
+     * 2D and 3D mapping.
+     */
+    private static final int NBR_OF_BITS = 60;
     private SpatialIndexType indexType = SpatialIndexType.SingleSpaceFillingCurve;
     int dimensions;
     int maxLevels;
     Envelope extents;
 
-    public SpaceFillingCurveSettings( int dimensions, Envelope extents, int maxLevels )
+    public SpaceFillingCurveSettings( int dimensions, Envelope extents )
     {
         this.dimensions = dimensions;
         this.extents = extents;
-        this.maxLevels = maxLevels;
+        this.maxLevels = NBR_OF_BITS / dimensions;
     }
 
     public Consumer<PageCursor> headerWriter( byte initialIndexState )
@@ -95,14 +103,6 @@ public class SpaceFillingCurveSettings
     public int getDimensions()
     {
         return dimensions;
-    }
-
-    /**
-     * @return The number of levels in the 2D (or 3D) to 1D mapping tree.
-     */
-    public int getMaxLevels()
-    {
-        return maxLevels;
     }
 
     /**
@@ -168,16 +168,9 @@ public class SpaceFillingCurveSettings
 
     static class SettingsFromConfig extends SpaceFillingCurveSettings
     {
-        SettingsFromConfig( int dimensions, int maxBits, Envelope extents )
+        SettingsFromConfig( int dimensions, Envelope extents )
         {
-            super( dimensions, extents, calcMaxLevels( dimensions, maxBits ) );
-        }
-
-        private static int calcMaxLevels( int dimensions, int maxBits )
-        {
-            int maxConfigured = maxBits / dimensions;
-            int maxSupported = (dimensions == 2) ? HilbertSpaceFillingCurve2D.MAX_LEVEL : HilbertSpaceFillingCurve3D.MAX_LEVEL;
-            return Math.min( maxConfigured, maxSupported );
+            super( dimensions, extents );
         }
     }
 
@@ -187,7 +180,7 @@ public class SpaceFillingCurveSettings
 
         SettingsFromIndexHeader()
         {
-            super( 0, null, 0 );
+            super( 0, null );
         }
 
         void markAsFailed( String failureMessage )

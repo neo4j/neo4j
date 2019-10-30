@@ -41,7 +41,6 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MAX;
-import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MAX_LEVELS;
 import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MIN;
 import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.key;
 
@@ -65,7 +64,6 @@ class GenericNativeIndexProviderTest
         assertEquals( 0, sinfulIndexConfig.entries().count( p -> true ), "expected sinful index config to have no entries" );
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
             assertNotNull( completedIndexConfig.get( key( crs.getName(), MIN ) ) );
             assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX ) ) );
         }
@@ -81,7 +79,6 @@ class GenericNativeIndexProviderTest
         IntValue maxLevels = Values.intValue( 0 );
         DoubleArray min = Values.doubleArray( new double[]{0, 0} );
         DoubleArray max = Values.doubleArray( new double[]{1, 1} );
-        existingSettings.put( key( existingCrs.getName(), MAX_LEVELS ), maxLevels );
         existingSettings.put( key( existingCrs.getName(), MIN ), min );
         existingSettings.put( key( existingCrs.getName(), MAX ), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
@@ -99,14 +96,12 @@ class GenericNativeIndexProviderTest
             if ( crs.equals( existingCrs ) )
             {
                 // Assert value
-                assertEquals( maxLevels, completedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
                 assertEquals( min, completedIndexConfig.get( key( crs.getName(), MIN ) ) );
                 assertEquals( max, completedIndexConfig.get( key( crs.getName(), MAX ) ) );
             }
             else
             {
                 // Simply assert not null
-                assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
                 assertNotNull( completedIndexConfig.get( key( crs.getName(), MIN ) ) );
                 assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX ) ) );
             }

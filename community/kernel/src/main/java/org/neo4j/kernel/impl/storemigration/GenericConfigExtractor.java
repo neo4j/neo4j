@@ -115,7 +115,8 @@ final class GenericConfigExtractor
         {
             int tableId = headerBytes.get() & 0xFF;
             int code = headerBytes.getInt();
-            int maxLevels = headerBytes.getShort() & 0xFFFF;
+            //noinspection unused
+            int maxLevels = headerBytes.getShort() & 0xFFFF; // Will not be migrated but read to progress cursor
             int dimensions = headerBytes.getShort() & 0xFFFF;
             double[] min = new double[dimensions];
             double[] max = new double[dimensions];
@@ -125,7 +126,7 @@ final class GenericConfigExtractor
                 max[i] = Double.longBitsToDouble( headerBytes.getLong() );
             }
             CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-            SpatialIndexConfig.addSpatialConfig( indexConfig, crs, maxLevels, min, max );
+            SpatialIndexConfig.addSpatialConfig( indexConfig, crs, min, max );
         }
     }
 }
