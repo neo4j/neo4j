@@ -45,6 +45,9 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 
 public class IndexProcedures
 {
@@ -124,6 +127,7 @@ public class IndexProcedures
     {
         IndexConfig indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap( configMap );
         assertSingleLabel( labels );
+        assertValidIndexProvider( indexProviderDescriptor );
         int labelId = getOrCreateLabelId( labels.get( 0 ) );
         int[] propertyKeyIds = getOrCreatePropertyIds( properties );
         try
@@ -136,6 +140,22 @@ public class IndexProcedures
         catch ( KernelException e )
         {
             throw new ProcedureException( e.status(), e, e.getMessage() );
+        }
+    }
+
+    private static void assertValidIndexProvider( IndexProviderDescriptor indexProviderDescriptor ) throws ProcedureException
+    {
+        if ( indexProviderDescriptor == FulltextIndexProviderFactory.DESCRIPTOR )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                    "Could not create index with specified index provider '%s'. To create fulltext index, please use '%s' or '%s'.",
+                    indexProviderDescriptor.name(), "db.index.fulltext.createNodeIndex", "db.index.fulltext.createRelationshipIndex" );
+        }
+        if ( indexProviderDescriptor != GenericNativeIndexProvider.DESCRIPTOR &&
+             indexProviderDescriptor != NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                    "Could not create index with specified index provider '%s'.", indexProviderDescriptor.name() );
         }
     }
 
