@@ -143,6 +143,10 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public IndexPrototype withIndexConfig( IndexConfig indexConfig )
     {
+        if ( indexConfig == null )
+        {
+            return this;
+        }
         return new IndexPrototype( schema, isUnique, indexProvider, name, indexType, indexConfig );
     }
 

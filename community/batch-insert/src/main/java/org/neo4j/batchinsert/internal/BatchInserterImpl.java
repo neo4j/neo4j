@@ -625,7 +625,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public ConstraintCreator createDeferredConstraint( Label label )
     {
-        return new BaseNodeConstraintCreator( new BatchSchemaActions(), null, label, null );
+        return new BaseNodeConstraintCreator( new BatchSchemaActions(), null, label, null, null );
     }
 
     private IndexBackedConstraintDescriptor createUniqueIndexAndOwningConstraint( LabelSchemaDescriptor schema, IndexBackedConstraintDescriptor constraint )
@@ -1258,9 +1258,14 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
+        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType,
+                IndexConfig indexConfig )
         {
             if ( indexType != null )
+            {
+                throw unsupportedException();
+            }
+            if ( indexConfig != null )
             {
                 throw unsupportedException();
             }
@@ -1274,9 +1279,13 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
+        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig )
         {
             if ( indexType != null )
+            {
+                throw unsupportedException();
+            }
+            if ( indexConfig != null )
             {
                 throw unsupportedException();
             }

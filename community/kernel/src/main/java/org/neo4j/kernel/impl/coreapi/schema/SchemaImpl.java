@@ -437,14 +437,14 @@ public class SchemaImpl implements Schema
     public ConstraintCreator constraintFor( Label label )
     {
         actions.assertInOpenTransaction();
-        return new BaseNodeConstraintCreator( actions, null, label, null );
+        return new BaseNodeConstraintCreator( actions, null, label, null, null );
     }
 
     @Override
     public ConstraintCreator constraintFor( RelationshipType type )
     {
         actions.assertInOpenTransaction();
-        return new BaseRelationshipConstraintCreator( actions, null, type, null );
+        return new BaseRelationshipConstraintCreator( actions, null, type, null, null );
     }
 
     @Override
@@ -753,7 +753,8 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
+        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType,
+                IndexConfig indexConfig )
         {
             if ( indexDefinition.isMultiTokenIndex() )
             {
@@ -772,6 +773,7 @@ public class SchemaImpl implements Schema
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
                     IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( name );
                     prototype = prototype.withIndexType( fromPublicApi( indexType ) );
+                    prototype = prototype.withIndexConfig( indexConfig );
                     ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
                     return new UniquenessConstraintDefinition( this, constraint, indexDefinition );
                 }
@@ -809,7 +811,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType )
+        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig )
         {
             if ( indexDefinition.isMultiTokenIndex() )
             {
@@ -828,6 +830,7 @@ public class SchemaImpl implements Schema
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
                     IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( name );
                     prototype = prototype.withIndexType( fromPublicApi( indexType ) );
+                    prototype = prototype.withIndexConfig( indexConfig );
                     ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( prototype );
                     return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
                 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.schema;
 
+import java.util.Map;
+
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.ConstraintViolationException;
 
@@ -84,6 +86,17 @@ public interface ConstraintCreator
      * @see IndexType
      */
     ConstraintCreator withIndexType( IndexType indexType );
+
+    /**
+     * Set index-specific index configurations. If the constraint is not backed by an index, then the presence of an index configuration will cause
+     * {@link #create()} to throw an exception.
+     * <p>
+     * This call will override the settings from any previous call to this method.
+     *
+     * @param indexConfiguration The index settings in the index configuration that differ from their defaults.
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
+     */
+    ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration );
 
     /**
      * Creates a constraint with the details specified by the other methods in this interface.

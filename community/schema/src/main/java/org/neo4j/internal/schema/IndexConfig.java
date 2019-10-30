@@ -24,11 +24,14 @@ import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Maps;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.unmodifiableMap;
 
@@ -66,6 +69,25 @@ public final class IndexConfig
             validate( value );
         }
         return new IndexConfig( Maps.immutable.withAll( map ) );
+    }
+
+    public static IndexConfig from( Map<IndexSetting,Object> map )
+    {
+        Map<String,Value> collectingMap = new HashMap<>();
+        for ( Map.Entry<IndexSetting,Object> entry : map.entrySet() )
+        {
+            IndexSetting setting = entry.getKey();
+            Class<?> type = setting.getType();
+            Object value = entry.getValue();
+            if ( value == null || !type.isAssignableFrom( value.getClass() ) )
+            {
+                throw new IllegalArgumentException( "Invalid value type for '" + setting.name() + "' setting. " +
+                        "Expected a value of type " + type.getName() + ", " +
+                        "but got value '" + value + "' of type " + ( value == null ? "null" : value.getClass().getName() ) + "." );
+            }
+            collectingMap.put( setting.getSettingName(), Values.of( value ) );
+        }
+        return with( collectingMap );
     }
 
     private static void validate( Value value )

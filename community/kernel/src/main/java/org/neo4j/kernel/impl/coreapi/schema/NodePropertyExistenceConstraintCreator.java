@@ -20,19 +20,23 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.schema.IndexConfig;
 
 public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCreator
 {
     private final List<String> propertyKeys;
 
-    NodePropertyExistenceConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys, IndexType indexType )
+    NodePropertyExistenceConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys, IndexType indexType,
+            IndexConfig indexConfig )
     {
-        super( actions, name, label, indexType );
+        super( actions, name, label, indexType, indexConfig );
         this.propertyKeys = propertyKeys;
     }
 
@@ -42,7 +46,7 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
         List<String> keys = List.of( propertyKey );
         if ( propertyKeys.equals( keys ) )
         {
-            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType );
+            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType, indexConfig );
         }
         throw new UnsupportedOperationException(
                 "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. " + keys + "." );
@@ -63,13 +67,19 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType );
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType, indexConfig );
     }
 
     @Override
     public ConstraintCreator withIndexType( IndexType indexType )
     {
-        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType );
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType, indexConfig );
+    }
+
+    @Override
+    public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
+    {
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType, IndexConfig.from( indexConfiguration ) );
     }
 
     @Override
@@ -79,6 +89,10 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
         {
             throw new IllegalArgumentException( "Node property existence constraints cannot be created with an index type. " +
                     "Was given index type " + indexType + "." );
+        }
+        if ( indexConfig != null )
+        {
+            throw new IllegalArgumentException( "Node property existence constraints cannot be created with an index configuration." );
         }
         return actions.createPropertyExistenceConstraint( name, label, propertyKeys.toArray( new String[0] ) );
     }

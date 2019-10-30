@@ -19,18 +19,23 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.schema.IndexConfig;
 
 public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstraintCreator
 {
     private final String propertyKey;
 
-    RelationshipPropertyExistenceCreator( InternalSchemaActions actions, String name, RelationshipType type, String propertyKey, IndexType indexType )
+    RelationshipPropertyExistenceCreator( InternalSchemaActions actions, String name, RelationshipType type, String propertyKey, IndexType indexType,
+            IndexConfig indexConfig )
     {
-        super( actions, name, type, indexType );
+        super( actions, name, type, indexType, indexConfig );
         this.propertyKey = propertyKey;
     }
 
@@ -48,18 +53,28 @@ public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstr
             throw new IllegalArgumentException( "Relationship property existence constraints cannot be created with an index type. " +
                     "Was given index type " + indexType + "." );
         }
+        if ( indexConfig != null )
+        {
+            throw new IllegalArgumentException( "Relationship property existence constraints cannot be created with an index configuration." );
+        }
         return actions.createPropertyExistenceConstraint( name, type, propertyKey );
     }
 
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType );
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType, indexConfig );
     }
 
     @Override
     public ConstraintCreator withIndexType( IndexType indexType )
     {
-        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType );
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType, indexConfig );
+    }
+
+    @Override
+    public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
+    {
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType, IndexConfig.from( indexConfiguration ) );
     }
 }

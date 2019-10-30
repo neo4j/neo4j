@@ -993,6 +993,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                     .create();
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -1295,9 +1296,54 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             tx.commit();
         }
     }
-    // todo must be able to specify index configuration for uniqueness constraint
-    // todo creating node property existence constraints must throw when given index configuration
-    // todo creating relationship property existence constraints must throw when given index configuration
+
+    @Test
+    void mustBeAbleToSpecifyIndexConfigurationForUniquenessConstraint()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition constraint = tx.schema().constraintFor( label ).withName( "my constraint" ).assertPropertyIsUnique( propertyKey )
+                    .withIndexConfiguration( Map.of(
+                            IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, 5,
+                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0} ) )
+                    .create();
+            IndexDefinition index = tx.schema().getIndexByName( constraint.getName() );
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( "my constraint" );
+            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            assertEquals( 5, config.get( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS ) );
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void creatingNodePropertyExistenceConstraintMustThrowWhenGivenIndexConfiguration()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintCreator creator = tx.schema().constraintFor( label ).withIndexConfiguration( Map.of() ).assertPropertyExists( propertyKey );
+            assertThrows( IllegalArgumentException.class, creator::create );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void creatingRelationshipPropertyExistenceConstraintMustThrowWhenGivenIndexConfiguration()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintCreator creator = tx.schema().constraintFor( relType ).withIndexConfiguration( Map.of() ).assertPropertyExists( propertyKey );
+            assertThrows( IllegalArgumentException.class, creator::create );
+            tx.commit();
+        }
+    }
 
     private static String alreadyExistsIndexMessage( String indexName )
     {

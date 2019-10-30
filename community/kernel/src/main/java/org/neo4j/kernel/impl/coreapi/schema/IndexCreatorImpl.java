@@ -21,19 +21,16 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 public class IndexCreatorImpl implements IndexCreator
 {
@@ -94,22 +91,7 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
     {
         assertInUnterminatedTransaction();
-        Map<String,Value> collectingMap = new HashMap<>();
-        for ( Map.Entry<IndexSetting,Object> entry : indexConfiguration.entrySet() )
-        {
-            IndexSetting setting = entry.getKey();
-            Class<?> type = setting.getType();
-            Object value = entry.getValue();
-            if ( value == null || !type.isAssignableFrom( value.getClass() ) )
-            {
-                throw new IllegalArgumentException( "Invalid value type for '" + setting.name() + "' setting. " +
-                        "Expected a value of type " + type.getName() + ", " +
-                        "but got value '" + value + "' of type " + ( value == null ? "null" : value.getClass().getName() ) + "." );
-            }
-            collectingMap.put( setting.getSettingName(), Values.of( value ) );
-        }
-        IndexConfig indexConfig = IndexConfig.with( collectingMap );
-        return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, indexConfig );
+        return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, IndexConfig.from( indexConfiguration ) );
     }
 
     @Override
