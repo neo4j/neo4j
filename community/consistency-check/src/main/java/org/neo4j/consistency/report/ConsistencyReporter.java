@@ -169,7 +169,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         return handler.report();
     }
 
-    public FormattingDocumentedHandler formattingHandler( RecordType type )
+    public static FormattingDocumentedHandler formattingHandler( InconsistencyReport report, RecordType type )
     {
         return new FormattingDocumentedHandler( report, type );
     }

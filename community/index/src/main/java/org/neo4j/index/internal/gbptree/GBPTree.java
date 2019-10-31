@@ -1237,19 +1237,29 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     public boolean consistencyCheck() throws IOException
     {
+        return consistencyCheck( true );
+    }
+
+    public boolean consistencyCheck( boolean reportCrashPointers ) throws IOException
+    {
         ThrowingConsistencyCheckVisitor<KEY> reporter = new ThrowingConsistencyCheckVisitor<>();
-        return consistencyCheck( reporter );
+        return consistencyCheck( reporter, reportCrashPointers );
+    }
+
+    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
+    {
+        return consistencyCheck( visitor, true );
     }
 
     // Utility method
-    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
+    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportCrashPointers ) throws IOException
     {
         CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             long unstableGeneration = unstableGeneration( generation );
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
-                    stableGeneration( generation ), unstableGeneration );
+                    stableGeneration( generation ), unstableGeneration, reportCrashPointers );
 
             consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor );
         }

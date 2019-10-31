@@ -71,6 +71,27 @@ public class SchemaLayouts implements LayoutBootstrapper
                 ( indexFile, pageCache, meta, targetLayout ) -> new LabelScanLayout() ) );
     }
 
+    public static String[] layoutDescriptions()
+    {
+        return new String[]{
+                "Generic layout with given number of slots - 'generic1', 'generic2', etc",
+                "Spatial cartesian - 'cartesian'",
+                "Spatial cartesian 3d - 'cartesian-3d'",
+                "Spatial wgs-84 (geographic) - 'wgs-84'",
+                "Spatial wgs-84-3d (geographic) - 'wgs-84-3d'",
+                "Local time - No user input needed",
+                "Zoned date time - No user input needed",
+                "Duration - No user input needed",
+                "Zoned time - No user input needed",
+                "Date - No user input needed",
+                "Local date time - No user input needed",
+                "String - No user input needed",
+                "Number unique - No user input needed",
+                "Number non-unique - No user input needed",
+                "Label scan - No user input needed"
+        };
+    }
+
     @Override
     public Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta, String targetLayout ) throws IOException
     {
@@ -103,7 +124,7 @@ public class SchemaLayouts implements LayoutBootstrapper
     {
         return ( indexFile, pageCache, meta, targetLayout ) ->
         {
-            if ( targetLayout.contains( "generic" ) )
+            if ( targetLayout != null && targetLayout.contains( "generic" ) )
             {
                 final String numberOfSlotsString = targetLayout.replace( "generic", "" );
                 final int numberOfSlots = Integer.parseInt( numberOfSlotsString );
@@ -120,7 +141,7 @@ public class SchemaLayouts implements LayoutBootstrapper
     private static LayoutBootstrapper spatialLayoutFactory( CoordinateReferenceSystem crs )
     {
         return ( indexFile, pageCache, meta, targetLayout ) -> {
-            if ( targetLayout.equals( crs.getName() ) )
+            if ( crs.getName().equals( targetLayout ) )
             {
                 final MutableBoolean failure = new MutableBoolean( false );
                 final Function<ByteBuffer,String> onError = byteBuffer ->
