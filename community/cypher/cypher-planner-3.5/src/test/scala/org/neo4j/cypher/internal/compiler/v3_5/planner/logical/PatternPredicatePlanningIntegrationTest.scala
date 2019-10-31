@@ -57,6 +57,42 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should get the right scope for pattern comprehensions in ORDER BY") {
+    // The important thing for this test is "RETURN u.id" instead of "RETURN u".
+    // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression.
+    planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")._2 should equal(
+      Projection(
+        Sort(
+          Projection(
+            RollUpApply(
+              NodeByLabelScan("u", LabelName("User")(pos), Set.empty),
+              Projection(
+                Selection(
+                  Seq(hasLabels("u2", "User")),
+                  Expand(
+                    Argument(Set("u")),
+                    "u",
+                    OUTGOING,
+                    Seq(RelTypeName("FOLLOWS")(pos)),
+                    "u2",
+                    "r"
+                  )
+                ),
+                Map("  FRESHID41" -> prop("u2", "id"))
+              ),
+              "  FRESHID42",
+              "  FRESHID41",
+              Set("u")
+            ),
+            Map("  FRESHID36" -> function("size", varFor("  FRESHID42")))
+          ),
+          Seq(Ascending("  FRESHID36"))
+        ),
+        Map("u.id" -> prop("u", "id"))
+      )
+    )
+  }
+
   test("should build plans with getDegree for a single pattern predicate") {
     planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a")._2 should equal(
       Selection(Ands(Set(GreaterThan(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_))_,

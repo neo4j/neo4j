@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.v3_5.ast
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult.{error, success}
 import org.neo4j.cypher.internal.v3_5.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck, SemanticState, _}
 import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
 import org.neo4j.cypher.internal.v3_5.expressions.functions.{Distance, Exists}
+import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
 import org.neo4j.cypher.internal.v3_5.util.Foldable._
 import org.neo4j.cypher.internal.v3_5.util._
 import org.neo4j.cypher.internal.v3_5.util.helpers.StringHelper.RichString
@@ -604,7 +604,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
 sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
   override def semanticCheck: SemanticCheck = SemanticState.recordCurrentScope(this)
 
-  def semanticCheckContinuation(previousScope: Scope): SemanticCheck
+  def semanticCheckContinuation: SemanticCheck
 }
 
 object ProjectionClause {
@@ -655,46 +655,39 @@ sealed trait ProjectionClause extends HorizonClause {
     super.semanticCheck chain
       returnItems.semanticCheck
 
-  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
-    val declareAllTheThings = (s: SemanticState) => {
+  override def semanticCheckContinuation: SemanticCheck = {
+    state =>
 
-      // ORDER BY and WHERE after a WITH have a special scope such that they can see both variables from before the WITH and from after
-      // Since the current scoping system does not allow that in a nice way, we run the semantic check for these two twice
-      // In the first run we construct a scope with all necessary variables defined to find errors in these subclauses
-      val specialReturnItems = createSpecialReturnItems(previousScope, s)
-      val specialCheckForOrderByAndWhere =
-        specialReturnItems.declareVariables(previousScope) chain
+      def runChecks: SemanticCheck = innerState => (
+        returnItems.declareVariables(state.currentScope.scope) chain
           orderBy.semanticCheck chain
           checkSkip chain
           checkLimit chain
-          where.semanticCheck
+          where.semanticCheck) (innerState)
 
-      val orderByAndWhereResult = specialCheckForOrderByAndWhere(s)
+      // When there is an ORDER BY or a WHERE, but no DISTINCT or aggregation, these 2 clauses have a special scope
+      // TODO ...
+      val specialScopeForSubClausesNeeded = (orderBy.isDefined || where.isDefined) && !(returnItems.containsAggregate || distinct)
 
-      val orderByAndWhereErrorMapper = warnOnAccessToRetrictedVariableInOrderByOrWhere(previousScope.symbolNames) _
-      val orderByAndWhereErrors = orderByAndWhereResult.errors.map(orderByAndWhereErrorMapper)
+      if (specialScopeForSubClausesNeeded) {
+        // Special scope for ORDER BY, SKIP, LIMIT and WHERE
+        val stateForSubClauses = state.newChildScope
 
-      // In the second run we want to make sure to declare the return items, and register the use of variables in the ORDER BY and WHERE.
-      // This will be executed with the scope which as valid after the WITH. Therefore this second check can lead to false errors, which we ignore.
-      val actualResult = (returnItems.declareVariables(previousScope) chain ignoreErrors(orderBy.semanticCheck chain where.semanticCheck)) (s)
+        val SemanticCheckResult(nextState, errors1) = runChecks(stateForSubClauses)
 
-      // We fix symbol positions by merging with the return items from the extended scope
-      val fixedOrderByResult = specialReturnItems match {
-        case ReturnItems(star, items) if star =>
-          val orderByAndWhereScope = orderByAndWhereResult.state.currentScope.scope
-          val definedHere = items.map(_.name).toSet
-          actualResult.copy(actualResult.state.mergeSymbolPositionsFromScope(orderByAndWhereScope, definedHere))
-        case _ =>
-          actualResult
+        // For the RETURN and onwards
+        val returnState = nextState.popScope.newSiblingScope
+        val SemanticCheckResult(finalState, errors2) = returnItems.declareVariables(state.currentScope.scope)(returnState)
+
+        SemanticCheckResult(finalState, errors1 ++ errors2)
+      } else {
+        val returnState = state.newSiblingScope
+        val SemanticCheckResult(finalState, errors) = runChecks(returnState)
+
+        val previousScopeVars = state.currentScope.symbolNames
+        val niceErrors = errors.map(warnOnAccessToRetrictedVariableInOrderByOrWhere(previousScopeVars))
+        SemanticCheckResult(finalState, niceErrors)
       }
-      // Finally we need to combine:
-      // The orderByAndWhereResult has the correct type table since it was allowed to see stuff from the previous scope.
-      // The fixedOrderByResult has the correct scope.
-      // We keep errors from both results.
-      fixedOrderByResult.copy(state = fixedOrderByResult.state.copy(typeTable = orderByAndWhereResult.state.typeTable),
-                              errors = fixedOrderByResult.errors ++ orderByAndWhereErrors)
-    }
-    declareAllTheThings
   }
 
   /**
@@ -714,33 +707,12 @@ sealed trait ProjectionClause extends HorizonClause {
     }.getOrElse(error)
   }
 
-  private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItemsDef = {
-    // ORDER BY lives in this special scope that has access to things in scope before the RETURN/WITH clause,
-    // but also to the variables introduced by RETURN/WITH. This is most easily done by turning
-    // RETURN a, b, c => RETURN *, a, b, c
-
-    // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
-    // projecting clause
-    val includePreviousScope = !(returnItems.containsAggregate || distinct)
-    val specialReturnItems = returnItems.withExisting(includePreviousScope)
-    specialReturnItems
-  }
-
   // use an empty state when checking skip & limit, as these have entirely isolated context
   private def checkSkip: SemanticState => Seq[SemanticErrorDef] =
     s => skip.semanticCheck(SemanticState.clean).errors
 
   private def checkLimit: SemanticState => Seq[SemanticErrorDef] =
     s => limit.semanticCheck(SemanticState.clean).errors
-
-  private def ignoreErrors(inner: SemanticCheck): SemanticCheck =
-    s => {
-      // Make sure not to declare variables just to suppress errors since they are ignored anyways
-      val innerState = s.copy(declareVariablesToSuppressDuplicateErrors = false)
-      val innerResultState = inner.apply(innerState).state
-      // Switch back to previous declaration behavior
-      success(innerResultState.copy(declareVariablesToSuppressDuplicateErrors = s.declareVariablesToSuppressDuplicateErrors))
-    }
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate

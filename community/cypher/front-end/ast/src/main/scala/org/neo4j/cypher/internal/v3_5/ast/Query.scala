@@ -132,8 +132,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkHorizon(clause: HorizonClause, state: SemanticState, prevErrors: Seq[SemanticErrorDef]) = {
     val closingResult = clause.semanticCheck(state)
-    val nextState = closingResult.state.newSiblingScope
-    val continuationResult = clause.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
+    val continuationResult = clause.semanticCheckContinuation(closingResult.state)
     semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
   }
 }

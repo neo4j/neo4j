@@ -62,17 +62,15 @@ class ScopeTreeTest extends CypherFunSuite {
     val ast = parse("match (a) with a as a order by a.name limit 1 match (a)-->(b) return a as a")
     val scopeTree = ast.scope
 
-    // TODO This looks suspicious; since we only use aliased items for variableNamespacing, it should be ok though
-
-    // Would rewrite to match a6 with a13 order by a13.name limit 1 match a13-->b49 return a13 as a63, which is wrong
-
     scopeTree should equal(scope()(
-      scope(nodeSymbol("a", 7, 15))(),
+      scope(nodeSymbol("a", 7, 15))(
+        scope(nodeSymbol("a", 7, 15, 20, 31))()
+      ),
       scope(
-        nodeSymbol("a", 7, 15, 20, 31, 53, 69),
+        nodeSymbol("a", 7, 15, 20, 53, 69),
         nodeSymbol("b", 59)
       )(),
-      scope(nodeSymbol("a", 7, 15, 20, 31, 53, 69, 74))()
+      scope(nodeSymbol("a", 7, 15, 20, 53, 69, 74))()
     ))
   }
 
@@ -101,10 +99,12 @@ class ScopeTreeTest extends CypherFunSuite {
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
-      scope(nodeSymbol("a", 7, 15))(),
-      scope(nodeSymbol("a", 7, 15, 20, 28, 39))(),
-      scope(nodeSymbol("a", 7, 15, 20, 28, 39, 44, 53))(),
-      scope(nodeSymbol("a", 7, 15, 20, 28, 39, 44, 53, 58))()
+      scope(nodeSymbol("a", 7, 15))(
+        scope(nodeSymbol("a", 7, 15, 20, 28))()
+      ),
+      scope(nodeSymbol("a", 7, 15, 20, 39))(),
+      scope(nodeSymbol("a", 7, 15, 20, 39, 44, 53))(),
+      scope(nodeSymbol("a", 7, 15, 20, 39, 44, 53, 58))()
     ))
   }
 
@@ -115,7 +115,7 @@ class ScopeTreeTest extends CypherFunSuite {
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
-      scope(nodeSymbol("a", 7, 15, 20))(),
+      scope(nodeSymbol("a", 7, 15))(),
       scope(
         nodeSymbol("a", 7, 15, 20),
         nodeSymbol("b", 38, 46))(),
@@ -195,9 +195,11 @@ class ScopeTreeTest extends CypherFunSuite {
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
-      scope(nodeSymbol("liker", 7, 19, 28, 38, 83))(),
-      scope(pathCollectionSymbol("isNew", 54, 65), nodeSymbol("liker", 83, 19, 38, 7, 28))(),
-      scope(allSymbol("freshId", 97, 116), pathCollectionSymbol("isNew", 54, 65, 74, 133))(),
+      scope(nodeSymbol("liker", 7, 19, 38))(),
+      scope(pathCollectionSymbol("isNew", 54, 65), nodeSymbol("liker", 83, 19, 38, 7, 28))(
+        scope(allSymbol("freshId", 97, 116), pathCollectionSymbol("isNew", 54, 65, 74))()
+      ),
+      scope(allSymbol("freshId", 97), pathCollectionSymbol("isNew", 54, 65, 74, 133))(),
       scope(pathCollectionSymbol("isNew", 54, 74, 65, 142, 133))()
     ))
   }
@@ -223,7 +225,9 @@ class ScopeTreeTest extends CypherFunSuite {
     val actual = ast.scope
     val expected = scope()(
       scope()(),
-      scope(intSymbol("p", 10, 36), intSymbol("rng", 25, 47))(),
+      scope(intSymbol("p", 10, 36), intSymbol("rng", 25))(
+        scope(intSymbol("p", 10, 36, 37), intSymbol("rng", 25, 47))()
+      ),
       scope(intSymbol("p", 10, 36, 37))()
     )
 
