@@ -21,8 +21,11 @@ package org.neo4j.util;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.util.Preconditions.requireNoNullElements;
+import static org.neo4j.util.Preconditions.requireNonEmpty;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 class PreconditionsTest
@@ -85,5 +88,23 @@ class PreconditionsTest
         assertThrows( IllegalArgumentException.class, () -> Preconditions.requirePowerOfTwo( 3 ), "three" );
         assertThrows( IllegalArgumentException.class,
                 () -> Preconditions.requirePowerOfTwo( 0b10000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000L ), "sign bit" );
+    }
+
+    @Test
+    void requireNonEmptyArray()
+    {
+        assertThrows( IllegalArgumentException.class, () -> requireNonEmpty( null ) );
+        assertThrows( IllegalArgumentException.class, () -> requireNonEmpty( new String[]{} ) );
+        assertDoesNotThrow( () -> requireNonEmpty( new Object[]{1} ) );
+    }
+
+    @Test
+    void requireNoNullElementsInArray()
+    {
+        assertThrows( IllegalArgumentException.class, () -> requireNoNullElements( new Object[]{null} ) );
+        assertThrows( IllegalArgumentException.class, () -> requireNoNullElements( new Object[]{null, null} ) );
+        assertThrows( IllegalArgumentException.class, () -> requireNoNullElements( new Object[]{1, null} ) );
+        assertThrows( IllegalArgumentException.class, () -> requireNoNullElements( new Object[]{null, 1} ) );
+        assertDoesNotThrow( () -> requireNoNullElements( new Object[]{1, 1} ) );
     }
 }

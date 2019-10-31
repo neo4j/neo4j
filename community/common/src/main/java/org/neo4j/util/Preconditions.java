@@ -19,6 +19,8 @@
  */
 package org.neo4j.util;
 
+import java.util.Arrays;
+
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 
@@ -126,6 +128,35 @@ public final class Preconditions
             throw new IllegalArgumentException( "Expected int value equal to 0, got " + value );
         }
         return value;
+    }
+
+    /**
+     * Ensures that {@code array} is not empty
+     * @param array array to check
+     * @param <T> type of elements in the array
+     */
+    public static <T> void requireNonEmpty( T[] array )
+    {
+        if ( array == null || array.length == 0 )
+        {
+            throw new IllegalArgumentException( "Expected non empty array, got " + Arrays.toString( array ) );
+        }
+    }
+
+    /**
+     * Ensures that {@code array} does not contain null elements
+     * @param array array to check
+     * @param <T> type of elements in the array
+     */
+    public static <T> void requireNoNullElements( T[] array )
+    {
+        for ( T element : array )
+        {
+            if ( element == null )
+            {
+                throw new IllegalArgumentException( "Expected array without null elements, got " + Arrays.toString( array ) );
+            }
+        }
     }
 
     /**
