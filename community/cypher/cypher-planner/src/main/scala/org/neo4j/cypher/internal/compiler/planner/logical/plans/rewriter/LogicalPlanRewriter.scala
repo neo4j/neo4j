@@ -49,7 +49,8 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
     removeIdenticalPlans(otherAttributes.withAlso(cardinalities, solveds)),
     pruningVarExpander,
     useTop,
-    simplifySelections
+    simplifySelections,
+    limitNestedPlanExpressions(context.logicalPlanIdGen)
   ).rewriter)
 }
 
