@@ -188,39 +188,6 @@ class SemanticStateTest extends CypherFunSuite {
     s2.symbolTypes("foo") should equal(CTRelationship.invariant)
   }
 
-  test("should be able to merge scopes") {
-    val s1 =
-      SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-
-
-    val s2 =
-      SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
-
-    s2.mergeSymbolPositionsFromScope(s1.scopeTree) should equal(
-      SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode, Set(DummyPosition(0))).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
-    )
-  }
-
-  test("should be able to merge scopes and honor excludes") {
-    val s1 =
-      SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-
-    val s2 =
-      SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
-
-    s2.mergeSymbolPositionsFromScope(s1.scopeTree, Set("foo")) should equal(s2)
-  }
-
   test("should be able to import scopes") {
     val s1 =
       SemanticState.clean
