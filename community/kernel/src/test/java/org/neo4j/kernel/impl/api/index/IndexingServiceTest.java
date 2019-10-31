@@ -895,19 +895,7 @@ class IndexingServiceTest
     void shouldNotLoseIndexDescriptorDueToOtherVerySimilarIndexDuringRecovery() throws Exception
     {
         // GIVEN
-        AtomicReference<BinaryLatch> populationStartLatch = new AtomicReference<>( new BinaryLatch() );
-        scheduler.setThreadFactory( Group.INDEX_POPULATION, ( group, parent ) -> new GroupedDaemonThreadFactory( group, parent )
-        {
-            @Override
-            public Thread newThread( Runnable job )
-            {
-                return super.newThread( () ->
-                {
-                    populationStartLatch.get().await();
-                    job.run();
-                } );
-            }
-        } );
+        AtomicReference<BinaryLatch> populationStartLatch = latchedIndexPopulation();
         long nodeId = 0;
         EntityUpdates update = addNodeUpdate( nodeId, "value" );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
@@ -1084,16 +1072,24 @@ class IndexingServiceTest
     void constraintIndexesWithoutConstraintsMustGetPopulatingProxies() throws Exception
     {
         // given
-        long indexId = 1;
-        IndexDescriptor index = uniqueIndex.materialise( indexId ); // Note the lack of an "owned constraint id".
-        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), index );
-        when( indexProvider.getInitialState( index ) ).thenReturn( POPULATING );
+        AtomicReference<BinaryLatch> populationStartLatch = latchedIndexPopulation();
+        try
+        {
+            long indexId = 1;
+            IndexDescriptor index = uniqueIndex.materialise( indexId ); // Note the lack of an "owned constraint id".
+            IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), index );
+            when( indexProvider.getInitialState( index ) ).thenReturn( POPULATING );
 
-        // when
-        life.start();
+            // when
+            life.start();
 
-        // then
-        assertEquals( POPULATING, indexing.getIndexProxy( index ).getState() );
+            // then
+            assertEquals( POPULATING, indexing.getIndexProxy( index ).getState() );
+        }
+        finally
+        {
+            populationStartLatch.get().release();
+        }
     }
 
     @Test
@@ -1394,6 +1390,24 @@ class IndexingServiceTest
         // then it should be able to start without awaiting the completion of the population of the index
         verify( indexProxy, never() ).awaitStoreScanCompleted( anyLong(), any() );
         verify( monitor, never() ).awaitingPopulationOfRecoveredIndex( any() );
+    }
+
+    private AtomicReference<BinaryLatch> latchedIndexPopulation()
+    {
+        AtomicReference<BinaryLatch> populationStartLatch = new AtomicReference<>( new BinaryLatch() );
+        scheduler.setThreadFactory( Group.INDEX_POPULATION, ( group, parent ) -> new GroupedDaemonThreadFactory( group, parent )
+        {
+            @Override
+            public Thread newThread( Runnable job )
+            {
+                return super.newThread( () ->
+                {
+                    populationStartLatch.get().await();
+                    job.run();
+                } );
+            }
+        } );
+        return populationStartLatch;
     }
 
     private static IndexProxy createIndexProxyMock( long indexId )
