@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.util.ArrayList;
@@ -32,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,58 +40,25 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ResourceLock( SHARED_RESOURCE )
+@DbmsExtension
 abstract class TraversalTestBase
 {
-    private static DatabaseManagementService managementService;
-    private static GraphDatabaseAPI graphDb;
-
-    @BeforeAll
-    static void beforeAll()
-    {
-        startDb();
-    }
-
-    @AfterAll
-    static void afterAll()
-    {
-        stopDb();
-    }
-
-    private static void startDb()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        graphDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    private static void stopDb()
-    {
-        managementService.shutdown();
-    }
+    @Inject
+    private GraphDatabaseAPI graphDb;
 
     public GraphDatabaseService getGraphDb()
-    {
-        return graphDb;
-    }
-
-    public DatabaseManagementService getManagementService()
-    {
-        return managementService;
-    }
-
-    protected GraphDatabaseAPI getGraphDbAPI()
     {
         return graphDb;
     }
@@ -299,11 +263,6 @@ abstract class TraversalTestBase
     {
         expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );
-    }
-
-    public static <E> void assertContains( Iterator<E> actual, E... expected )
-    {
-        assertContains( Iterators.loop( actual ), expected );
     }
 
     public static <E> void assertContains( Iterable<E> actual, E... expected )

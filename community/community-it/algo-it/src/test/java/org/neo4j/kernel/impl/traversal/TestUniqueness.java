@@ -94,7 +94,7 @@ class TestUniqueness extends TraversalTestBase
             assertFalse( path.hasNext() );
             NodePathRepresentation pathRepresentation = new NodePathRepresentation( NAME_PROPERTY_REPRESENTATION );
 
-            assertEquals( "a,c", pathRepresentation.represent( thePath ) );
+            assertEquals( "a,b,c", pathRepresentation.represent( thePath ) );
         }
     }
 
