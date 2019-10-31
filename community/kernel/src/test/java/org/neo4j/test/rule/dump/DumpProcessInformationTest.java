@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.rule.dump;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +40,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -100,7 +100,7 @@ class DumpProcessInformationTest
 
         // THEN
         // the produced thread dump should contain that expected method at least
-        Assertions.assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
+        assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
     }
 
     private static boolean fileContains( File file, String... expectedStrings ) throws IOException

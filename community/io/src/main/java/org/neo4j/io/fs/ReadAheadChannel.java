@@ -41,6 +41,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
     protected T channel;
     private final ByteBuffer aheadBuffer;
     private final int readAheadSize;
+    private final boolean cleanBufferOnClose;
 
     public ReadAheadChannel( T channel )
     {
@@ -49,14 +50,20 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
 
     public ReadAheadChannel( T channel, int readAheadSize )
     {
-        this( channel, allocateDirect( readAheadSize ) );
+        this( channel, allocateDirect( readAheadSize ), true );
     }
 
     public ReadAheadChannel( T channel, ByteBuffer byteBuffer )
     {
+        this( channel, byteBuffer, false );
+    }
+
+    public ReadAheadChannel( T channel, ByteBuffer byteBuffer, boolean cleanBufferOnClose )
+    {
         this.aheadBuffer = byteBuffer;
         this.aheadBuffer.position( aheadBuffer.capacity() );
         this.channel = channel;
+        this.cleanBufferOnClose = cleanBufferOnClose;
         this.readAheadSize = byteBuffer.capacity();
     }
 
@@ -133,7 +140,10 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
     public void close() throws IOException
     {
         channel.close();
-        releaseBuffer( aheadBuffer );
+        if ( cleanBufferOnClose )
+        {
+            releaseBuffer( aheadBuffer );
+        }
     }
 
     private void ensureDataExists( int requestedNumberOfBytes ) throws IOException
