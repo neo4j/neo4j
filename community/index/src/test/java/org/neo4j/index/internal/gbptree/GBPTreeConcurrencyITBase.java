@@ -56,10 +56,12 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 /**
@@ -97,10 +99,10 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
 
     private GBPTree<KEY,VALUE> createIndex() throws IOException
     {
-        int pageSize = 512;
+        int pageSize = toIntExact( blockSize( testDirectory.homeDir() ) );
         layout = getLayout( random, pageSize );
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
+        return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
     protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );

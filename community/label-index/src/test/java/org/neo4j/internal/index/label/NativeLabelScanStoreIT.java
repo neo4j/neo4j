@@ -41,8 +41,10 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
@@ -67,12 +69,12 @@ class NativeLabelScanStoreIT
     private static final int LABEL_COUNT = 12;
 
     @BeforeEach
-    void before()
+    void before() throws IOException
     {
         store = life.add( new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY,
                 false, new Monitors(), RecoveryCleanupWorkCollector.immediate(),
                 // a bit of random pageSize
-                Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ) ) );
+                Math.min( pageCache.pageSize(), toIntExact( blockSize( databaseLayout.databaseDirectory() ) ) << random.nextInt( 5 ) ) ) );
     }
 
     @Test

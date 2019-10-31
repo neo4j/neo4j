@@ -43,6 +43,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.max;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 @TestDirectoryExtension
@@ -78,8 +80,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
     private GBPTree<KEY,VALUE> createIndex()
             throws IOException
     {
-        // some random padding
-        int pageSize = 512;
+        int pageSize = toIntExact( blockSize( testDirectory.homeDir() ) );
         layout = getLayout( random, pageSize );
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
@@ -177,7 +178,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
         // given
         try ( GBPTree<KEY,VALUE> index = createIndex() )
         {
-            int numberOfNodes = 200_000;
+            int numberOfNodes = 2_000;
             try ( Writer<KEY,VALUE> writer = createWriter( index ) )
             {
                 for ( int i = 0; i < numberOfNodes; i++ )

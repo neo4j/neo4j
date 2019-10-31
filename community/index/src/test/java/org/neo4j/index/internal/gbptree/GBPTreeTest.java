@@ -88,6 +88,7 @@ import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Long.MAX_VALUE;
+import static java.lang.Math.toIntExact;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -104,6 +105,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
+import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.rule.PageCacheConfig.config;
@@ -112,7 +114,6 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 @ExtendWith( RandomExtension.class )
 class GBPTreeTest
 {
-    private static final int DEFAULT_PAGE_SIZE = 256;
     private static final Layout<MutableLong,MutableLong> layout = longLayout().build();
 
     @RegisterExtension
@@ -124,12 +125,14 @@ class GBPTreeTest
 
     private File indexFile;
     private ExecutorService executor;
+    private int defaultPageSize;
 
     @BeforeEach
-    void setUp()
+    void setUp() throws IOException
     {
         executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
         indexFile = testDirectory.file( "index" );
+        defaultPageSize = toIntExact( blockSize( testDirectory.homeDir() ) );
     }
 
     @AfterEach
@@ -158,7 +161,7 @@ class GBPTreeTest
     void shouldFailToOpenOnDifferentMetaData() throws Exception
     {
         // GIVEN
-        index( 1024 ).build().close();
+        index( 4 * defaultPageSize ).build().close();
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withCustomerNameAsMetaData( "Something else" ).build();
@@ -198,7 +201,7 @@ class GBPTreeTest
     void shouldFailToOpenOnDifferentMajorVersion() throws Exception
     {
         // GIVEN
-        index( 1024 ).build().close();
+        index( 4 * defaultPageSize ).build().close();
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withMajorVersion( 123 ).build();
@@ -234,7 +237,7 @@ class GBPTreeTest
     void shouldFailOnOpenWithDifferentPageSize() throws Exception
     {
         // GIVEN
-        int pageSize = 1024;
+        int pageSize = 2 * defaultPageSize;
         index( pageSize ).build().close();
 
         // WHEN
@@ -253,7 +256,7 @@ class GBPTreeTest
     void shouldFailOnStartingWithPageSizeLargerThanThatOfPageCache() throws Exception
     {
         // WHEN
-        int pageCachePageSize = 512;
+        int pageCachePageSize = defaultPageSize * 4;
         try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCachePageSize )
                 .withIndexPageSize( 2 * pageCachePageSize )
                 .build() )
@@ -271,7 +274,7 @@ class GBPTreeTest
     void shouldMapIndexFileWithProvidedPageSizeIfLessThanOrEqualToCachePageSize() throws Exception
     {
         // WHEN
-        int pageCachePageSize = 1024;
+        int pageCachePageSize = defaultPageSize * 4;
         index( pageCachePageSize ).withIndexPageSize( pageCachePageSize / 2 ).build().close();
     }
 
@@ -279,7 +282,7 @@ class GBPTreeTest
     void shouldFailWhenTryingToRemapWithPageSizeLargerThanCachePageSize() throws Exception
     {
         // WHEN
-        int pageCachePageSize = 1024;
+        int pageCachePageSize = defaultPageSize * 4;
         index( pageCachePageSize ).build().close();
 
         try ( GBPTree<MutableLong, MutableLong> ignored = index( pageCachePageSize / 2 )
@@ -299,7 +302,7 @@ class GBPTreeTest
     void shouldRemapFileIfMappedWithPageSizeLargerThanCreationSize() throws Exception
     {
         // WHEN
-        int pageSize = 1024;
+        int pageSize = defaultPageSize * 4;
         List<Long> expectedData = new ArrayList<>();
         for ( long i = 0; i < 100; i++ )
         {
@@ -347,7 +350,7 @@ class GBPTreeTest
     void shouldFailWhenTryingToOpenWithDifferentFormatIdentifier() throws Exception
     {
         // GIVEN
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         GBPTreeBuilder<MutableLong,MutableLong> builder = index( pageCache );
         builder.build().close();
 
@@ -560,7 +563,7 @@ class GBPTreeTest
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( headerBytes );
 
         // WHEN
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).with( headerWriter ).build().close();
 
         // THEN
@@ -574,7 +577,7 @@ class GBPTreeTest
         byte[] expectedBytes = new byte[12];
         ThreadLocalRandom.current().nextBytes( expectedBytes );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( expectedBytes );
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).with( headerWriter ).build().close();
 
         // WHEN
@@ -598,7 +601,7 @@ class GBPTreeTest
         byte[] initialHeader = new byte[random.nextInt( 100 )];
         random.nextBytes( initialHeader );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( initialHeader );
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).with( headerWriter ).build().close();
 
         Pair<TreeState,TreeState> treeStatesBeforeOverwrite = readTreeStates( pageCache );
@@ -635,7 +638,7 @@ class GBPTreeTest
     {
         byte[] expectedHeader = new byte[12];
         ThreadLocalRandom.current().nextBytes( expectedHeader );
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
 
         // GIVEN
         try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
@@ -651,7 +654,7 @@ class GBPTreeTest
     {
         assertTimeoutPreemptively( ofSeconds( 10 ), () ->
         {
-            PageCache pageCache = createPageCache( 256 );
+            PageCache pageCache = createPageCache( defaultPageSize * 4 );
             makeDirty( pageCache );
 
             Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
@@ -698,7 +701,7 @@ class GBPTreeTest
         File doesNotExist = new File( "Does not exist" );
         try
         {
-            GBPTree.readHeader( createPageCache( DEFAULT_PAGE_SIZE ), doesNotExist, NO_HEADER_READER );
+            GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER );
             fail( "Should have failed" );
         }
         catch ( NoSuchFileException e )
@@ -722,7 +725,7 @@ class GBPTreeTest
     private void openMustThrowMetadataMismatchExceptionIfFileIsEmpty( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing empty file
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         pageCache.map( indexFile, pageCache.pageSize(), StandardOpenOption.CREATE ).close();
 
         // when
@@ -753,9 +756,9 @@ class GBPTreeTest
     private void openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing index with only the first page in it
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).build().close();
-        fileSystem.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+        fileSystem.truncate( indexFile, defaultPageSize /*truncate right after the first page*/ );
 
         // when
         try
@@ -785,12 +788,12 @@ class GBPTreeTest
     private void openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing index with all-zero state pages
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).build().close();
-        fileSystem.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+        fileSystem.truncate( indexFile, defaultPageSize /*truncate right after the first page*/ );
         try ( OutputStream out = fileSystem.openAsOutputStream( indexFile, true ) )
         {
-            byte[] allZeroPage = new byte[DEFAULT_PAGE_SIZE];
+            byte[] allZeroPage = new byte[defaultPageSize];
             out.write( allZeroPage ); // page A
             out.write( allZeroPage ); // page B
         }
@@ -814,7 +817,7 @@ class GBPTreeTest
         byte[] headerBytes = new byte[12];
         ThreadLocalRandom.current().nextBytes( headerBytes );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( headerBytes );
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
 
         // WHEN
         try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).with( headerWriter ).build() )
@@ -1497,7 +1500,7 @@ class GBPTreeTest
     void shouldThrowIfTreeStatePointToRootWithValidSuccessor() throws Exception
     {
         // GIVEN
-        try ( PageCache specificPageCache = createPageCache( DEFAULT_PAGE_SIZE ) )
+        try ( PageCache specificPageCache = createPageCache( defaultPageSize ) )
         {
             index( specificPageCache ).build().close();
 
@@ -1719,7 +1722,7 @@ class GBPTreeTest
     {
         // given
         final ThreadLocalRandom random = ThreadLocalRandom.current();
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
         {
             for ( int i = 0; i < 10; i++ )
@@ -1753,7 +1756,7 @@ class GBPTreeTest
     void mustFailGracefullyIfFileNotExistInReadOnlyMode() throws IOException
     {
         // given
-        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        PageCache pageCache = createPageCache( defaultPageSize );
         TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).withReadOnly( true ).build() );
         assertThat( e.getMessage(), containsString( "Can not create new tree file in read only mode" ) );
         assertThat( e.getMessage(), containsString( indexFile.getAbsolutePath() ) );
@@ -1803,7 +1806,7 @@ class GBPTreeTest
 
     private void corruptTheChild( PageCache pageCache, long corruptChild ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( indexFile, DEFAULT_PAGE_SIZE );
+        try ( PagedFile pagedFile = pageCache.map( indexFile, defaultPageSize );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next( corruptChild ) );
@@ -1852,7 +1855,7 @@ class GBPTreeTest
     {
         // A page cache tracer that we can use to see when tree has seen enough updates and to figure out on which page the child sits.Trace( trace );
         PageCursorTracerSupplier pageCursorTracerSupplier = () -> pageCursorTracer;
-        return createPageCache( DEFAULT_PAGE_SIZE, pageCursorTracerSupplier );
+        return createPageCache( defaultPageSize, pageCursorTracerSupplier );
     }
 
     private static class ControlledRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
@@ -1895,7 +1898,7 @@ class GBPTreeTest
 
     private PageCache pageCacheThatThrowExceptionWhenToldTo( final IOException e, final AtomicBoolean throwOnNextIO )
     {
-        return new DelegatingPageCache( createPageCache( DEFAULT_PAGE_SIZE ) )
+        return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
             public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
@@ -1932,7 +1935,7 @@ class GBPTreeTest
 
     private PageCache pageCacheThatBlockWhenToldTo( final Barrier barrier, final AtomicBoolean blockOnNextIO )
     {
-        return new DelegatingPageCache( createPageCache( DEFAULT_PAGE_SIZE ) )
+        return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
             public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
@@ -1960,7 +1963,7 @@ class GBPTreeTest
 
     private void makeDirty() throws IOException
     {
-        makeDirty( createPageCache( DEFAULT_PAGE_SIZE ) );
+        makeDirty( createPageCache( defaultPageSize ) );
     }
 
     private void makeDirty( PageCache pageCache ) throws IOException
@@ -2017,7 +2020,7 @@ class GBPTreeTest
     // The most common tree builds in this test
     private GBPTreeBuilder<MutableLong,MutableLong> index()
     {
-        return index( DEFAULT_PAGE_SIZE );
+        return index( defaultPageSize );
     }
 
     private GBPTreeBuilder<MutableLong,MutableLong> index( int pageSize )
@@ -2032,7 +2035,7 @@ class GBPTreeTest
 
     private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )
     {
-        return new DelegatingPageCache( createPageCache( 1024 ) )
+        return new DelegatingPageCache( createPageCache( defaultPageSize * 4 ) )
         {
             @Override
             public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException

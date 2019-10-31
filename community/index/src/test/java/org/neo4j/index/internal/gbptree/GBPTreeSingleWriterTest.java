@@ -34,15 +34,17 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.fs.FileUtils.blockSize;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 @TestDirectoryExtension
@@ -55,13 +57,14 @@ class GBPTreeSingleWriterTest
     private ThreadPoolJobScheduler jobScheduler;
 
     @BeforeEach
-    void createPageCache()
+    void createPageCache() throws IOException
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( new DefaultFileSystemAbstraction() );
         MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB", new LocalMemoryTracker() );
         jobScheduler = new ThreadPoolJobScheduler();
-        pageCache = new MuninnPageCache( factory, mman, 256, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, EMPTY, jobScheduler );
+        pageCache =
+                new MuninnPageCache( factory, mman, toIntExact( blockSize( directory.homeDir() ) ), PageCacheTracer.NULL, NULL, EMPTY, jobScheduler );
         layout = SimpleLongLayout.longLayout()
                 .withFixedSize( true )
                 .build();
@@ -86,7 +89,7 @@ class GBPTreeSingleWriterTest
             MutableLong dontCare = layout.value( 0 );
 
             long keySeed = 10_000;
-            while ( treeHeightTracker.treeHeight < 5 )
+            while ( treeHeightTracker.treeHeight < 2 )
             {
                 MutableLong key = layout.key( keySeed-- );
                 writer.put( key, dontCare );
@@ -114,7 +117,7 @@ class GBPTreeSingleWriterTest
             MutableLong dontCare = layout.value( 0 );
 
             long keySeed = 0;
-            while ( treeHeightTracker.treeHeight < 5 )
+            while ( treeHeightTracker.treeHeight < 2 )
             {
                 MutableLong key = layout.key( keySeed++ );
                 writer.put( key, dontCare );

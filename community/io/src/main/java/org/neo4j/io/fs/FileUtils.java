@@ -153,6 +153,11 @@ public class FileUtils
         deletePathRecursively( path, alwaysTrue() );
     }
 
+    public static long blockSize( File file ) throws IOException
+    {
+        return Files.getFileStore( file.toPath() ).getBlockSize();
+    }
+
     public static void deletePathRecursively( Path path, Predicate<Path> removeFilePredicate ) throws IOException
     {
 
