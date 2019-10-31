@@ -190,7 +190,7 @@ class BatchInsertIndexTest
         try ( BatchInserter inserter = newBatchInserter() )
         {
             assertThrows( UnsupportedOperationException.class, () -> inserter.createDeferredSchemaIndex( LABEL_ONE ).on( "key" )
-                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS, 3 ) ).create() );
+                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, new double[]{0.0, 0.0} ) ).create() );
         }
     }
 
