@@ -17,5 +17,5 @@
 package org.neo4j.cypher.internal.v3_5.expressions.functions
 
 case object Head extends Function {
-  def name = "head"
+  val name = "head"
 }

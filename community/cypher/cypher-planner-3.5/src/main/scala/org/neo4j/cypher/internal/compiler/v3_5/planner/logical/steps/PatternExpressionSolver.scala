@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_5.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
+import org.neo4j.cypher.internal.v3_5.expressions.functions.{Coalesce, Exists, Head}
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.v3_5.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
@@ -225,7 +225,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
       case ((planAcc, expressionAcc), patternExpression) =>
         val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None, context)
 
-        val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
+        val rewriter = rewriteButStopIfRollUpApplyForbidden(patternExpression, introducedVariable)
         val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
 
         if (rewrittenExpression == expressionAcc)
@@ -236,7 +236,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
   }
 
   case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan, nullableIdentifiers: Set[String]) {
-    def variableToCollect = columnName
+    def variableToCollect: String = columnName
   }
 
   private def planSubQuery(source: LogicalPlan, expr: T, context: LogicalPlanningContext) = {
@@ -253,19 +253,28 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
   }
 
   /*
-  It's important to not go use RollUpApply if the expression we are working with is inside a loop, or inside a
-  conditional expression. If that is not honored, RollUpApply can either produce the wrong results by not having the
-  correct scope (when inside a loop), or it can be executed even when not strictly needed (in a conditional)
+   * It's important to not go use RollUpApply if the expression we are working with is:
+   *
+   * a) inside a loop. If that is not honored, it will produce the wrong results by not having the correct scope.
+   * b) inside a conditional expression. Otherwise it can be executed even when not strictly needed.
+   * c) inside an expression that accessed only part of the list. Otherwise we do too much work. To avoid that we inject a Limit into the
+   *    NestedPlanExpression.
+   *
    */
-  private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression) = {
+  private def rewriteButStopIfRollUpApplyForbidden(oldExp: Expression, newExp: Expression): Rewriter = {
     val inner = Rewriter.lift {
       case exp if exp == oldExp =>
         newExp
     }
     topDown(inner, stopper = {
       case _: PatternComprehension => false
-      case _: ScopeExpression | _: CaseExpression => true
-      case f: FunctionInvocation => f.function == Exists
+      // Loops
+      case _: ScopeExpression => true
+      // Conditionals & List accesses
+      case _: CaseExpression => true
+      case _: ContainerIndex => true
+      case _: ListSlice => true
+      case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
       case _ => false
     })
   }
