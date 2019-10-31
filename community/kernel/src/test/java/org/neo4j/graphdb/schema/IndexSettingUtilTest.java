@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleArray;
-import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Value;
 
@@ -59,52 +58,6 @@ class IndexSettingUtilTest
         // String
         Object object = "analyser";
         assertString( setting, object, "analyser" );
-    }
-
-    @Test
-    void shouldParseInteger()
-    {
-        final IndexSetting setting = IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS;
-        final Class<?> type = setting.getType();
-        assertEquals( Integer.class, type );
-
-        Integer expectedResult = 10;
-        {
-            Byte object = 10;
-            assertInteger( setting, object, expectedResult );
-        }
-        {
-            Short object = 10;
-            assertInteger( setting, object, expectedResult );
-        }
-        {
-            Integer object = 10;
-            assertInteger( setting, object, expectedResult );
-        }
-        {
-            Long object = 10L;
-            assertInteger( setting, object, expectedResult );
-        }
-        {
-            Float object = 10f;
-            assertInteger( setting, object, expectedResult );
-        }
-        {
-            Double object = 10d;
-            assertInteger( setting, object, expectedResult );
-        }
-    }
-
-    @Test
-    void shouldNotParseStringAsInteger()
-    {
-        final IndexSetting setting = IndexSetting.SPATIAL_CARTESIAN_MAX_LEVELS;
-        final Class<?> type = setting.getType();
-        assertEquals( Integer.class, type );
-        {
-            String object = "10";
-            assertThrows( IllegalArgumentException.class, () -> IndexSettingUtil.asIndexSettingValue( setting, object ) );
-        }
     }
 
     @Test
@@ -235,13 +188,6 @@ class IndexSettingUtilTest
         Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
         assertTrue( result instanceof StringValue );
         assertEquals( expectedResult, ((StringValue) result).stringValue() );
-    }
-
-    private void assertInteger( IndexSetting setting, Object object, Integer expectedResult )
-    {
-        Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
-        assertTrue( result instanceof IntValue );
-        assertEquals( expectedResult, ((IntValue) result).value() );
     }
 
     private void assertDoubleArray( IndexSetting setting, Object object, double[] expectedResult )

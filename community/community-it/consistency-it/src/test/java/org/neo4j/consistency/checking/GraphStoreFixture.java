@@ -51,6 +51,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -62,6 +63,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -385,10 +387,10 @@ public abstract class GraphStoreFixture implements AutoCloseable
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next ) throws KernelException;
 
         public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
-                                                         long lastCommittedTx, NeoStores neoStores ) throws KernelException
+                long lastCommittedTx, NeoStores neoStores, IndexingService indexingService ) throws KernelException
         {
             TransactionWriter writer = new TransactionWriter( neoStores );
-            transactionData( new TransactionDataBuilder( writer, neoStores, idGenerator ), idGenerator );
+            transactionData( new TransactionDataBuilder( writer, neoStores, idGenerator, indexingService ), idGenerator );
             idGenerator.updateCorrespondingIdGenerators( neoStores );
             return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
                    currentTimeMillis() );
@@ -469,15 +471,17 @@ public abstract class GraphStoreFixture implements AutoCloseable
     {
         private final TransactionWriter writer;
         private final NodeStore nodes;
+        private final IndexingService indexingService;
         private final TokenHolders tokenHolders;
         private final AtomicInteger propKeyDynIds = new AtomicInteger( 1 );
         private final AtomicInteger labelDynIds = new AtomicInteger( 1 );
         private final AtomicInteger relTypeDynIds = new AtomicInteger( 1 );
 
-        TransactionDataBuilder( TransactionWriter writer, NeoStores neoStores, IdGenerator next )
+        TransactionDataBuilder( TransactionWriter writer, NeoStores neoStores, IdGenerator next, IndexingService indexingService )
         {
             this.writer = writer;
             this.nodes = neoStores.getNodeStore();
+            this.indexingService = indexingService;
 
             TokenHolder propTokens = new DelegatingTokenHolder( ( name, internal ) ->
             {
@@ -634,6 +638,11 @@ public abstract class GraphStoreFixture implements AutoCloseable
         {
             writer.incrementRelationshipCount( startLabelId, typeId, endLabelId, delta );
         }
+
+        public IndexDescriptor completeConfiguration( IndexDescriptor indexDescriptor )
+        {
+            return indexingService.completeConfiguration( indexDescriptor );
+        }
     }
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
@@ -674,6 +683,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         private final TransactionIdStore transactionIdStore;
         private final NeoStores neoStores;
         private final DatabaseManagementService managementService;
+        private final IndexingService indexingService;
 
         Applier()
         {
@@ -687,14 +697,15 @@ public abstract class GraphStoreFixture implements AutoCloseable
             transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
 
-            neoStores = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+            neoStores = dependencyResolver.resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores();
+            indexingService = dependencyResolver.resolveDependency( IndexingService.class );
         }
 
         public void apply( Transaction transaction ) throws KernelException
         {
             TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), neoStores );
+                    transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
             commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
         }

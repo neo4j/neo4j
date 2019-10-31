@@ -919,6 +919,7 @@ public class FullCheckIntegrationTest
                 after.initialize( true, next.property() ); // Point to a record that isn't in use.
 
                 IndexDescriptor rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
+                rule = tx.completeConfiguration( rule );
                 tx.createSchema( before, after, rule );
             }
         } );
@@ -951,7 +952,9 @@ public class FullCheckIntegrationTest
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
                 IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                rule1 = tx.completeConfiguration( rule1 );
                 IndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                rule2 = tx.completeConfiguration( rule2 );
 
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
@@ -992,6 +995,7 @@ public class FullCheckIntegrationTest
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
                 IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
+                rule1 = tx.completeConfiguration( rule1 );
                 ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
                 serializeRule( rule1, after1, tx, next );
@@ -2354,6 +2358,7 @@ public class FullCheckIntegrationTest
             {
                 int id = (int) next.schema();
                 IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withName( "index_" + id ).materialise( id );
+                index = tx.completeConfiguration( index );
 
                 SchemaRecord before = new SchemaRecord( id );
                 SchemaRecord after = cloneRecord( before );

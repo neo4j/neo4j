@@ -758,7 +758,9 @@ class IndexPopulationJobTest
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
-        return indexProvider.getPopulator( prototype.withName( "index_21" ).materialise( 21 ), samplingConfig, heapBufferFactory( 1024 ) );
+        IndexDescriptor indexDescriptor = prototype.withName( "index_21" ).materialise( 21 );
+        indexDescriptor = indexProvider.completeConfiguration( indexDescriptor );
+        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ) );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )

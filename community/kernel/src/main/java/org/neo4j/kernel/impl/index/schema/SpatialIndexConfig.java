@@ -89,6 +89,13 @@ public final class SpatialIndexConfig
         return indexConfig;
     }
 
+    /**
+     * Translate {@link IndexConfig index config}, into {@link SpaceFillingCurveSettings settings} for each {@link CoordinateReferenceSystem crs}.
+     *
+     * @param indexConfig {@link IndexConfig} the index config to translate into space filling curve settings.
+     * @return {@link Map} map containing space filling curve settings for every supported crs, derived from provided index config .
+     * @throws NullPointerException if index config is missing configuration for any crs.
+     */
     static Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> extractSpatialConfig( IndexConfig indexConfig )
     {
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> result = new HashMap<>();

@@ -395,12 +395,19 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private IndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
-        IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerName() );
-        IndexProviderDescriptor providerDescriptor = lookup.getProviderDescriptor();
-        return labelNameIdMap.values().stream()
-                .map( index -> IndexPrototype.forSchema( SchemaDescriptor.forLabel( index, propertyId ), providerDescriptor )
-                        .withName( "index_" + index ).materialise( index ) )
-                .toArray( IndexDescriptor[]::new );
+        final IndexProviderMap indexProviderMap = getIndexProviderMap();
+        IndexProvider indexProvider = indexProviderMap.lookup( schemaIndex.providerName() );
+        IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
+        List<IndexDescriptor> list = new ArrayList<>();
+        for ( Integer labelId : labelNameIdMap.values() )
+        {
+            final LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
+            IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor )
+                    .withName( "index_" + labelId ).materialise( labelId );
+            index = indexProvider.completeConfiguration( index );
+            list.add( index );
+        }
+        return list.toArray( new IndexDescriptor[0] );
     }
 
     private Map<String, Integer> getLabelIdsByName( Transaction tx, String... names )
