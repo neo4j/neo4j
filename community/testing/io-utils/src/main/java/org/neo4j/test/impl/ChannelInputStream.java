@@ -26,10 +26,12 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 
+import static org.neo4j.io.ByteUnit.KibiByte;
+
 public class ChannelInputStream extends InputStream
 {
     private final StoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffers.allocate( 8096 );
+    private final ByteBuffer buffer = ByteBuffers.allocate( 8, KibiByte );
     private int position;
 
     public ChannelInputStream( StoreChannel channel )
