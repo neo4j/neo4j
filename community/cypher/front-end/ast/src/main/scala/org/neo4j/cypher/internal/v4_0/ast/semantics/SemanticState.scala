@@ -280,9 +280,6 @@ case class SemanticState(currentScope: ScopeLocation,
   // Use withFeature(SemanticFeature.Cypher9Comparability) instead
   def withCypher9ComparabilitySemantics(cypher9ComparabilitySemantics: Boolean): SemanticState = copy(cypher9ComparabilitySemantics = cypher9ComparabilitySemantics)
 
-  def mergeSymbolPositionsFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
-    copy(currentScope = currentScope.mergeSymbolPositionsFromScope(scope, exclude))
-
   /**
     * @param overriding if `true` then a previous occurrence of that variable is overridden.
     *                   if `false` then a previous occurrence of that variable leads to an error
