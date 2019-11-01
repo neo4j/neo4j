@@ -140,7 +140,6 @@ public class FulltextProcedures
 
     @Description( "Create a node fulltext index for the given labels and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
-                  "Note: index specific settings are currently experimental, and might not replicated correctly in a cluster, or during backup. " +
                   "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
                   "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
@@ -159,7 +158,6 @@ public class FulltextProcedures
 
     @Description( "Create a relationship fulltext index for the given relationship types and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
-                  "Note: index specific settings are currently experimental, and might not replicated correctly in a cluster, or during backup. " +
                   "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
                   "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
