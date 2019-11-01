@@ -19,18 +19,24 @@
  */
 package org.neo4j.procedure.builtin;
 
+import org.eclipse.collections.api.tuple.Pair;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -41,9 +47,11 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -61,6 +69,10 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.DoubleArray;
+import org.neo4j.values.storable.IntValue;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -212,7 +224,7 @@ public class BuiltInProcedures
     @SystemProcedure
     @Description( "List all statements for creating and dropping existing indexes and constraints." )
     @Procedure( name = "db.schemaStatements", mode = READ )
-    public Stream<SchemaStatementResult> schemaStatements()
+    public Stream<SchemaStatementResult> schemaStatements() throws ProcedureException
     {
         if ( callContext.isSystemDatabase() )
         {
@@ -220,13 +232,20 @@ public class BuiltInProcedures
         }
 
         SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
+        final TokenRead tokenRead = kernelTransaction.tokenRead();
         Map<String,SchemaStatementResult> schemaStatements = new HashMap<>();
 
         // Indexes
         // If index is backing an existing constraint, it will be overwritten later.
-        stream( schemaRead.indexesGetAll() )
-                .map( index -> new SchemaStatementResult( index.getName(), "INDEX", createStatement( index ), dropStatement( index ) ) )
-                .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
+        final Iterator<IndexDescriptor> allIndexes = schemaRead.indexesGetAll();
+        while ( allIndexes.hasNext() )
+        {
+            final IndexDescriptor index = allIndexes.next();
+            final String name = index.getName();
+            final String createStatement = createStatement( tokenRead, index );
+            final String dropStatement = dropStatement( index );
+            schemaStatements.put( name, new SchemaStatementResult( name, "INDEX", createStatement, dropStatement ) );
+        }
 
         // Constraints
         stream( schemaRead.constraintsGetAll() )
@@ -247,9 +266,138 @@ public class BuiltInProcedures
         return "DROP CONSTRAINT `" + constraint.getName() + "`";
     }
 
-    private String createStatement( IndexDescriptor indexDescriptor )
+    private String createStatement( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws ProcedureException
     {
-        return "Create index placeholder";
+        try
+        {
+            final String name = indexDescriptor.getName();
+            final String labelsOrRelTypes = labelsOrRelTypesAsStringArray( tokenRead, indexDescriptor );
+            final String properties = propertiesAsStringArray( tokenRead, indexDescriptor );
+            switch ( indexDescriptor.getIndexType() )
+            {
+            case BTREE:
+                String btreeConfig = btreeConfigAsString( indexDescriptor );
+                final String providerName = indexDescriptor.getIndexProvider().name();
+                return String.format( "CALL db.createIndex('%s', %s, %s, '%s', %s)",
+                        name, labelsOrRelTypes, properties, providerName, btreeConfig );
+            case FULLTEXT:
+                String fulltextConfig = fulltextConfigAsString( indexDescriptor );
+                switch ( indexDescriptor.schema().entityType() )
+                {
+                case NODE:
+                    return String.format( "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)",
+                            name, labelsOrRelTypes, properties, fulltextConfig );
+                case RELATIONSHIP:
+                    return String.format( "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)",
+                            name, labelsOrRelTypes, properties, fulltextConfig );
+                default:
+                    throw new IllegalArgumentException( "Did not recognize entity type " + indexDescriptor.schema().entityType() );
+                }
+            default:
+                throw new IllegalArgumentException( "Did not recognize index type " + indexDescriptor.getIndexType() );
+            }
+        }
+        catch ( KernelException e )
+        {
+            throw new ProcedureException( Status.General.UnknownError, e, "Failed to re-create create statement." );
+        }
+    }
+
+    private String btreeConfigAsString( IndexDescriptor indexDescriptor )
+    {
+        final IndexConfig indexConfig = indexDescriptor.getIndexConfig();
+        StringJoiner configString = new StringJoiner( ",", "{", "}" );
+        for ( Pair<String,Value> entry : indexConfig.entries() )
+        {
+            String singleConfig = "`" + entry.getOne() + "`: " + btreeConfigValueAsString( entry.getTwo() );
+            configString.add( singleConfig );
+        }
+        return configString.toString();
+    }
+
+    private String btreeConfigValueAsString( Value configValue )
+    {
+        String valueString = "";
+        if ( configValue instanceof DoubleArray )
+        {
+            final DoubleArray doubleArray = (DoubleArray) configValue;
+            return Arrays.toString( doubleArray.asObjectCopy() );
+        }
+        if ( configValue instanceof IntValue )
+        {
+            final IntValue intValue = (IntValue) configValue;
+            return "" + intValue.value();
+        }
+        if ( configValue instanceof BooleanValue )
+        {
+            final BooleanValue booleanValue = (BooleanValue) configValue;
+            return "" + booleanValue.booleanValue();
+        }
+        if ( configValue instanceof StringValue )
+        {
+            final StringValue stringValue = (StringValue) configValue;
+            return "'" + stringValue.stringValue() + "'";
+        }
+        throw new IllegalArgumentException( "Could not convert config value '" + configValue + "' to config string." );
+    }
+
+    private String fulltextConfigAsString( IndexDescriptor indexDescriptor )
+    {
+        final IndexConfig indexConfig = indexDescriptor.getIndexConfig();
+        StringJoiner configString = new StringJoiner( ",", "{", "}" );
+        for ( Pair<String,Value> entry : indexConfig.entries() )
+        {
+            String key = entry.getOne();
+            key = key.replace( "fulltext.", "" );
+            String singleConfig = "`" + key + "`: " + fulltextConfigValueAsString( entry.getTwo() );
+            configString.add( singleConfig );
+        }
+        return configString.toString();
+    }
+
+    private String fulltextConfigValueAsString( Value configValue )
+    {
+        String valueString = "";
+        if ( configValue instanceof BooleanValue )
+        {
+            final BooleanValue booleanValue = (BooleanValue) configValue;
+            return "'" + booleanValue.booleanValue() + "'";
+        }
+        if ( configValue instanceof StringValue )
+        {
+            final StringValue stringValue = (StringValue) configValue;
+            return "'" + stringValue.stringValue() + "'";
+        }
+        throw new IllegalArgumentException( "Could not convert config value '" + configValue + "' to config string." );
+    }
+
+    private String propertiesAsStringArray( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws PropertyKeyIdNotFoundKernelException
+    {
+        final SchemaDescriptor schema = indexDescriptor.schema();
+        StringJoiner properties = new StringJoiner( ", ", "[", "]" );
+        for ( int propertyId : schema.getPropertyIds() )
+        {
+            properties.add( "'" + tokenRead.propertyKeyName( propertyId ) + "'" );
+        }
+        return properties.toString();
+    }
+
+    private String labelsOrRelTypesAsStringArray( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws KernelException
+    {
+        final SchemaDescriptor schema = indexDescriptor.schema();
+        StringJoiner labelsOrRelTypes = new StringJoiner( ", ", "[", "]" );
+        for ( int entityTokenId : schema.getEntityTokenIds() )
+        {
+            if ( schema.entityType().equals( EntityType.NODE ) )
+            {
+                labelsOrRelTypes.add( "'" + tokenRead.nodeLabelName( entityTokenId ) + "'" );
+            }
+            else
+            {
+                labelsOrRelTypes.add( "'" + tokenRead.relationshipTypeName( entityTokenId ) + "'" );
+            }
+        }
+        return labelsOrRelTypes.toString();
     }
 
     private String dropStatement( IndexDescriptor indexDescriptor )
