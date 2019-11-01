@@ -51,17 +51,15 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.max;
-import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 /**
@@ -79,7 +77,7 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
  * about what they should do next.
  */
 
-@TestDirectoryExtension
+@EphemeralTestDirectoryExtension
 @ExtendWith( RandomExtension.class )
 public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
 {
@@ -99,7 +97,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
 
     private GBPTree<KEY,VALUE> createIndex() throws IOException
     {
-        int pageSize = toIntExact( blockSize( testDirectory.homeDir() ) );
+        int pageSize = 512;
         layout = getLayout( random, pageSize );
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
         return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
