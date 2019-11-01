@@ -130,7 +130,7 @@ public interface ExecutionPlanDescription
         long getPageCacheMisses();
 
         /**
-         * @return the ratio of page cache hits to total number of lookups or {@link Double#NaN} if no data is available
+         * @return the ratio of page cache hits to total number of lookups or 0 if no data is available
 
          * @throws IllegalStateException if no time was recorded.
          */
