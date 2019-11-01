@@ -279,19 +279,6 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     }
 
     @Test
-    void fulltextAwaitIndex()
-    {
-        // Don't need any setup because creating those indexes is also faked on system so we cannot test against it
-
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            // When & Then
-            // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.index.fulltext.awaitIndex('A',10)" ).hasNext());
-        }
-    }
-
-    @Test
     void queryNodes()
     {
         // Don't need any setup because creating those indexes is also faked on system so we cannot test against it

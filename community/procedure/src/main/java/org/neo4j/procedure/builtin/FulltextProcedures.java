@@ -45,7 +45,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -54,7 +53,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -117,25 +115,6 @@ public class FulltextProcedures
         }
 
         accessor.awaitRefresh();
-    }
-
-    @SystemProcedure
-    @Description( "Similar to db.awaitIndex(index, timeout), except instead of an index pattern, the index is specified by name. " +
-            "The name can be quoted by backticks, if necessary." )
-    @Procedure( name = "db.index.fulltext.awaitIndex", mode = READ )
-    public void awaitIndex( @Name( "index" ) String index, @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout ) throws ProcedureException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
-            return;
-        }
-        IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.awaitIndexByName( index, timeout, TimeUnit.SECONDS );
-    }
-
-    private IndexProcedures indexProcedures()
-    {
-        return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
     }
 
     @Description( "Create a node full-text index for the given labels and properties. " +

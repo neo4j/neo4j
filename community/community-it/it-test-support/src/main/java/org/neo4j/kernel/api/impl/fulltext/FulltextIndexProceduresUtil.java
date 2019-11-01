@@ -37,7 +37,7 @@ public final class FulltextIndexProceduresUtil
     public static final String DB_INDEXES = "CALL db.indexes()";
     public static final String DROP = "CALL db.index.fulltext.drop(\"%s\")";
     public static final String LIST_AVAILABLE_ANALYZERS = "CALL db.index.fulltext.listAvailableAnalyzers()";
-    public static final String DB_AWAIT_INDEX = "CALL db.index.fulltext.awaitIndex(\"%s\")";
+    public static final String DB_AWAIT_INDEX = "CALL db.awaitIndex(\"%s\")";
     public static final String QUERY_NODES = "CALL db.index.fulltext.queryNodes(\"%s\", \"%s\")";
     public static final String QUERY_RELS = "CALL db.index.fulltext.queryRelationships(\"%s\", \"%s\")";
     public static final String AWAIT_REFRESH = "CALL db.index.fulltext.awaitEventuallyConsistentIndexRefresh()";
