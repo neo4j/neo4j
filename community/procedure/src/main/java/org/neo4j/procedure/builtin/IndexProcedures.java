@@ -108,8 +108,12 @@ public class IndexProcedures
     {
         return createIndex( constraintName, labels, properties, indexProviderDescriptor, configMap,
                 "uniqueness constraint online",
-                ( schemaWrite, name, schema, provider, indexConfig ) -> schemaWrite.uniquePropertyConstraintCreate(
-                        IndexPrototype.uniqueForSchema( schema, provider ).withName( name ) ) ); // todo add index config
+                ( schemaWrite, name, schema, provider, indexConfig ) -> {
+                    final IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, provider )
+                            .withName( name )
+                            .withIndexConfig( indexConfig );
+                    schemaWrite.uniquePropertyConstraintCreate( prototype );
+                } );
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, List<String> labels, List<String> properties,
@@ -117,8 +121,12 @@ public class IndexProcedures
     {
         return createIndex( constraintName, labels, properties, indexProviderDescriptor, configMap,
                 "node key constraint online",
-                ( schemaWrite, name, schema, provider, indexConfig ) -> schemaWrite.nodeKeyConstraintCreate(
-                        IndexPrototype.uniqueForSchema( schema, provider ).withName( name ) ) ); // todo add index config
+                ( schemaWrite, name, schema, provider, indexConfig ) -> {
+                    final IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, provider )
+                            .withName( name )
+                            .withIndexConfig( indexConfig );
+                    schemaWrite.nodeKeyConstraintCreate( prototype );
+                } );
     }
 
     private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, List<String> labels, List<String> properties,
