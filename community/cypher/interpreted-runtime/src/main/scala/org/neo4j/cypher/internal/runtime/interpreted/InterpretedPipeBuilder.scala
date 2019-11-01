@@ -109,9 +109,10 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
 
       case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, directed, length) =>
         ProjectEndpointsPipe(source, rel,
+        ProjectEndpointsPipe(source, rel,
           start, startInScope,
           end, endInScope,
-          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)()
+          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)(id = id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
@@ -131,7 +132,7 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>
-        LockNodesPipe(source, nodesToLock)()
+        LockNodesPipe(source, nodesToLock)(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicates) =>
         val predicate: Predicate = predicates.map(buildPredicate(id, _)).reduceOption(_ andWith _).getOrElse(True())
