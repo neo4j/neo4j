@@ -46,6 +46,14 @@ public interface NativeAccess
     int tryEvictFromCache( int fd );
 
     /**
+     * Try to advice that file referenced by provided file descriptor will be accessed in a sequential fashion.
+     * Useful for files that we will read from start to the end sequentially. For example: WAL files.
+     * @param fd file descriptor
+     * @return returns zero on success, or an error number on failure
+     */
+    int tryAdviseSequentialAccess( int fd );
+
+    /**
      * Try to preallocate disk space for file referenced by provided file descriptor.
      * @param fd file descriptor
      * @param bytes number of bytes to preallocate

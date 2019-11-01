@@ -34,6 +34,12 @@ public class AbsentNativeAccess implements NativeAccess
     }
 
     @Override
+    public int tryAdviseSequentialAccess( int fd )
+    {
+        return SUCCESS;
+    }
+
+    @Override
     public int tryPreallocateSpace( int fd, long bytes )
     {
         return SUCCESS;

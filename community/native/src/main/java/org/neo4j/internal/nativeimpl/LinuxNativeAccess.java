@@ -26,6 +26,12 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 public class LinuxNativeAccess implements NativeAccess
 {
+
+    /**
+     * Constant defined in fadvise.h and suggest that the specified data will be accessed sequentially (with lower offsets read before higher ones).
+     * For more info check man page for posix_fadvise.
+     */
+    private static final int POSIX_FADV_SEQUENTIAL = 2;
     /**
      * Constant defined in fadvise.h and suggest that the specified data will not be accessed in the near future.
      * For more info check man page for posix_fadvise.
@@ -94,6 +100,16 @@ public class LinuxNativeAccess implements NativeAccess
             return NativeAccess.ERROR;
         }
         return posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+    }
+
+    @Override
+    public int tryAdviseSequentialAccess( int fd )
+    {
+        if ( fd <= 0 )
+        {
+            return NativeAccess.ERROR;
+        }
+        return posix_fadvise( fd, 0, 0, POSIX_FADV_SEQUENTIAL );
     }
 
     @Override

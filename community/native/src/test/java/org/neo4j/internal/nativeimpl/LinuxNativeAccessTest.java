@@ -20,6 +20,7 @@
 package org.neo4j.internal.nativeimpl;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -43,16 +44,6 @@ class LinuxNativeAccessTest
 {
     private final LinuxNativeAccess nativeAccess = new LinuxNativeAccess();
 
-    @TempDir
-    File tempFile;
-
-    @Test
-    @EnabledOnOs( OS.LINUX )
-    void availableOnLinux()
-    {
-        assertTrue( nativeAccess.isAvailable() );
-    }
-
     @Test
     @DisabledOnOs( OS.LINUX )
     void disabledOnNonLinux()
@@ -60,61 +51,93 @@ class LinuxNativeAccessTest
         assertFalse( nativeAccess.isAvailable() );
     }
 
-    @Test
+    @Nested
     @EnabledOnOs( OS.LINUX )
-    void failToPreallocateOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+    class AccessLinuxMethodsTest
     {
-        assertEquals( ERROR, nativeAccess.tryPreallocateSpace( 0, 1024 ) );
-        assertEquals( ERROR, nativeAccess.tryPreallocateSpace( -1, 1024 ) );
+        @TempDir
+        File tempFile;
 
-        File file = new File( tempFile, "file" );
-        int descriptor = getClosedDescriptor( file );
-        assertNotEquals( 0, nativeAccess.tryPreallocateSpace( descriptor, 1024 ) );
-    }
-
-    @Test
-    @EnabledOnOs( OS.LINUX )
-    void preallocateCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
-    {
-        FileStore fileStore = Files.getFileStore( tempFile.toPath() );
-        long blockSize = fileStore.getBlockSize();
-        File file = new File( tempFile, "preallocated1" );
-        File file2 = new File( tempFile, "preallocated2" );
-        File file3 = new File( tempFile, "preallocated3" );
-        long size1 = blockSize - 1;
-        long size2 = blockSize;
-        long size3 = 2 * blockSize;
-
-        preallocate( file, size1 );
-        preallocate( file2, size2 );
-        preallocate( file3, size3 );
-
-        assertEquals( size1, file.length() );
-        assertEquals( size2, file2.length() );
-        assertEquals( size3, file3.length() );
-    }
-
-    @Test
-    @EnabledOnOs( OS.LINUX )
-    void failToSkipCacheOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
-    {
-        assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ) );
-        assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ) );
-
-        File file = new File( tempFile, "file" );
-        int descriptor = getClosedDescriptor( file );
-        assertNotEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
-    }
-
-    @Test
-    @EnabledOnOs( OS.LINUX )
-    void skipCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
-    {
-        File file = new File( tempFile, "file" );
-        try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+        @Test
+        void availableOnLinux()
         {
-            int descriptor = getDescriptor( randomFile );
-            assertEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
+            assertTrue( nativeAccess.isAvailable() );
+        }
+
+        @Test
+        void failToPreallocateOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+        {
+            assertEquals( ERROR, nativeAccess.tryPreallocateSpace( 0, 1024 ) );
+            assertEquals( ERROR, nativeAccess.tryPreallocateSpace( -1, 1024 ) );
+
+            File file = new File( tempFile, "file" );
+            int descriptor = getClosedDescriptor( file );
+            assertNotEquals( 0, nativeAccess.tryPreallocateSpace( descriptor, 1024 ) );
+        }
+
+        @Test
+        void preallocateCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
+        {
+            FileStore fileStore = Files.getFileStore( tempFile.toPath() );
+            long blockSize = fileStore.getBlockSize();
+            File file = new File( tempFile, "preallocated1" );
+            File file2 = new File( tempFile, "preallocated2" );
+            File file3 = new File( tempFile, "preallocated3" );
+            long size1 = blockSize - 1;
+            long size2 = blockSize;
+            long size3 = 2 * blockSize;
+
+            preallocate( file, size1 );
+            preallocate( file2, size2 );
+            preallocate( file3, size3 );
+
+            assertEquals( size1, file.length() );
+            assertEquals( size2, file2.length() );
+            assertEquals( size3, file3.length() );
+        }
+
+        @Test
+        void failToAdviseSequentialOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+        {
+            assertEquals( ERROR, nativeAccess.tryAdviseSequentialAccess( 0 ) );
+            assertEquals( ERROR, nativeAccess.tryAdviseSequentialAccess( -1 ) );
+
+            File file = new File( tempFile, "sequentialFile" );
+            int descriptor = getClosedDescriptor( file );
+            assertNotEquals( 0, nativeAccess.tryAdviseSequentialAccess( descriptor ) );
+        }
+
+        @Test
+        void adviseSequentialAccessOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
+        {
+            File file = new File( tempFile, "correctSequentialFile" );
+            try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+            {
+                int descriptor = getDescriptor( randomFile );
+                assertEquals( 0, nativeAccess.tryAdviseSequentialAccess( descriptor ) );
+            }
+        }
+
+        @Test
+        void failToSkipCacheOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+        {
+            assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ) );
+            assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ) );
+
+            File file = new File( tempFile, "file" );
+            int descriptor = getClosedDescriptor( file );
+            assertNotEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
+        }
+
+        @Test
+        void skipCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
+        {
+            File file = new File( tempFile, "file" );
+            try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+            {
+                int descriptor = getDescriptor( randomFile );
+                assertEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
+            }
         }
     }
 
