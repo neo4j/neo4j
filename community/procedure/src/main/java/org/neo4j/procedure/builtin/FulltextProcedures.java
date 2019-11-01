@@ -98,7 +98,7 @@ public class FulltextProcedures
     public ProcedureCallContext callContext;
 
     @SystemProcedure
-    @Description( "List the available analyzers that the fulltext indexes can be configured with." )
+    @Description( "List the available analyzers that the full-text indexes can be configured with." )
     @Procedure( name = "db.index.fulltext.listAvailableAnalyzers", mode = READ )
     public Stream<AvailableAnalyzer> listAvailableAnalyzers()
     {
@@ -107,7 +107,7 @@ public class FulltextProcedures
     }
 
     @SystemProcedure
-    @Description( "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes." )
+    @Description( "Wait for the updates from recently committed transactions to be applied to any eventually-consistent full-text indexes." )
     @Procedure( name = "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", mode = READ )
     public void awaitRefresh()
     {
@@ -138,7 +138,7 @@ public class FulltextProcedures
         return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
     }
 
-    @Description( "Create a node fulltext index for the given labels and properties. " +
+    @Description( "Create a node full-text index for the given labels and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
@@ -156,7 +156,7 @@ public class FulltextProcedures
         createIndex( indexCreator, name, properties, config );
     }
 
-    @Description( "Create a relationship fulltext index for the given relationship types and properties. " +
+    @Description( "Create a relationship full-text index for the given relationship types and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
@@ -219,7 +219,7 @@ public class FulltextProcedures
     }
 
     @SystemProcedure
-    @Description( "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score." )
+    @Description( "Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
     public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
@@ -265,7 +265,7 @@ public class FulltextProcedures
     }
 
     @SystemProcedure
-    @Description( "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by score." )
+    @Description( "Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
     public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
