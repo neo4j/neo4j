@@ -59,10 +59,10 @@ import static java.util.stream.Collectors.toList;
  *  | | | | \ particular database files
  *  | | | \ store_lock
  *  | | \ transaction logs directory
- *  | | | \ database tx-logs directory (neo4j, represented by separate database layout)
- *  | | | | \ particular database tx-logs files
- *  | | | \ database tx-logs directory (other represented by separate database layout)
- *  | | | | \ particular database tx-logs files
+ *  | | | \ database transactions directory (neo4j, represented by separate database layout)
+ *  | | | | \ particular database transactions files
+ *  | | | \ database transactions directory (other represented by separate database layout)
+ *  | | | | \ particular database transactions files
  * </pre>
  * The current implementation does not keep references to all requested and provided files and requested layouts but can be easily enhanced to do so.
  * <br/>

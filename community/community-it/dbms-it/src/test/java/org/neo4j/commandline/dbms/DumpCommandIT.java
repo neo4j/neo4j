@@ -125,7 +125,7 @@ class DumpCommandIT
     {
         execute( "foo" );
         verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo" ) ),
-                eq( homeDir.resolve( "data/tx-logs/foo" ) ), eq( archive ), eq( ZSTD ), any() );
+                eq( homeDir.resolve( "data/transactions/foo" ) ), eq( archive ), eq( ZSTD ), any() );
     }
 
     @Test

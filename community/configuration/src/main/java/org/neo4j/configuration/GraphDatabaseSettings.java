@@ -86,7 +86,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     public static final String DEFAULT_DATA_DIR_NAME = "data";
     public static final String DEFAULT_DATABASES_ROOT_DIR_NAME = "databases";
-    public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "tx-logs";
+    public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "transactions";
 
     @Description( "Root relative to which directory settings are resolved." )
     @DocumentedDefaultValue( "Defaults to current working directory" )
