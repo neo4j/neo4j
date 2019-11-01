@@ -636,6 +636,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> index_sampling_update_percentage =
             newBuilder( "dbms.index_sampling.update_percentage", INT, 5 ).addConstraint( min( 0 ) ).build();
 
+    @Description( "Set the maximum number of threads that can concurrently be used to sample indexes. Zero means unrestricted." )
+    @Internal
+    public static final Setting<Integer> index_sampling_parallelism =
+            newBuilder( "unsupported.dbms.index_sampling.parallelism", INT, 4 ).addConstraint( min( 0 ) ).build();
+
     // Lucene settings
     @Deprecated( since = "4.0.0", forRemoval = true )
     @Description( "The maximum number of open Lucene index searchers." )

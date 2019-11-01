@@ -155,7 +155,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.MultiPopulatorFactory.forConfig;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -695,7 +695,7 @@ class IndexingServiceTest
     {
         // given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
-        IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
+        IndexSamplingMode mode = backgroundRebuildAll();
 
         // when
         indexingService.triggerIndexSampling( mode );
@@ -711,7 +711,7 @@ class IndexingServiceTest
     {
         // given
         long indexId = 0;
-        IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
+        IndexSamplingMode mode = backgroundRebuildAll();
         IndexPrototype prototype = forSchema( forLabel( 0, 1 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).withName( "index" );
         IndexDescriptor index = prototype.materialise( indexId );
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), index );

@@ -22,10 +22,10 @@ package org.neo4j.procedure.builtin;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
 
 class ResampleOutdatedIndexesProcedureTest
 {
@@ -37,6 +37,6 @@ class ResampleOutdatedIndexesProcedureTest
     {
         procedure.resampleOutdatedIndexes();
 
-        verify( indexingService ).triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
+        verify( indexingService ).triggerIndexSampling( backgroundRebuildUpdated() );
     }
 }

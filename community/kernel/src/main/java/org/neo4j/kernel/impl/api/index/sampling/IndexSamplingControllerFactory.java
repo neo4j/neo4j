@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import java.util.function.Predicate;
+import java.util.function.LongPredicate;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -55,30 +55,23 @@ public class IndexSamplingControllerFactory
     public IndexSamplingController create( IndexMapSnapshotProvider snapshotProvider )
     {
         OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( indexStatisticsStore, tokenNameLookup, logProvider );
-        Predicate<Long> samplingUpdatePredicate = createSamplingPredicate();
-        IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( samplingUpdatePredicate );
+        LongPredicate samplingUpdatePredicate = createSamplingPredicate();
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
         RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
         return new IndexSamplingController(
-                config, jobFactory, jobQueue, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition,
+                config, jobFactory, samplingUpdatePredicate, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition,
                 logProvider );
     }
 
-    private Predicate<Long> createSamplingPredicate()
+    private LongPredicate createSamplingPredicate()
     {
-        return new Predicate<>()
-        {
-            private final DoubleLongRegister output = newDoubleLongRegister();
-
-            @Override
-            public boolean test( Long indexId )
-            {
-                indexStatisticsStore.indexUpdatesAndSize( indexId, output );
-                long updates = output.readFirst();
-                long size = output.readSecond();
-                long threshold = Math.round( config.updateRatio() * size );
-                return updates > threshold;
-            }
+        return indexId -> {
+            DoubleLongRegister output = newDoubleLongRegister();
+            indexStatisticsStore.indexUpdatesAndSize( indexId, output );
+            long updates = output.readFirst();
+            long size = output.readSecond();
+            long threshold = Math.round( config.updateRatio() * size );
+            return updates > threshold;
         };
     }
 

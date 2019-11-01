@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.scheduler;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.helpers.Exceptions;
@@ -170,6 +171,12 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
                 throw Exceptions.chain( new CancellationException(), runtimeException );
             }
         }
+    }
+
+    @Override
+    public void waitTermination( long timeout, TimeUnit unit )
+    {
+        throw new UnsupportedOperationException( "Not supported for repeating tasks." );
     }
 
     @Override

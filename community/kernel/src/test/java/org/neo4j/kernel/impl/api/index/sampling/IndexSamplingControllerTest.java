@@ -23,9 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.LongPredicate;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
@@ -35,14 +36,16 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.DoubleLatch;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -54,8 +57,8 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.foregroundRebuildUpdated;
 import static org.neo4j.util.FeatureToggles.clear;
 import static org.neo4j.util.FeatureToggles.set;
 
@@ -63,7 +66,7 @@ class IndexSamplingControllerTest
 {
     private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
     private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
-    private final IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( Predicates.alwaysTrue() );
+    private final LongPredicate samplingUpdatePredicate = id -> true;
     private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class, RETURNS_MOCKS );
     private final JobScheduler scheduler = mock( JobScheduler.class );
     private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
@@ -84,7 +87,6 @@ class IndexSamplingControllerTest
     void setupLogProvider()
     {
         when( samplingConfig.backgroundSampling() ).thenReturn( true );
-        when( samplingConfig.jobLimit() ).thenReturn( 1 );
         when( indexProxy.getDescriptor() ).thenReturn( descriptor );
         when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
@@ -100,16 +102,14 @@ class IndexSamplingControllerTest
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ), logProvider);
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
-        controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
+        controller.sampleIndexes( backgroundRebuildUpdated() );
 
         // then
         verify( jobFactory ).create( indexId, indexProxy );
         verify( tracker ).scheduleSamplingJob( job );
-        verify( tracker, times( 2 ) ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
@@ -118,93 +118,13 @@ class IndexSamplingControllerTest
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ), logProvider);
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( POPULATING );
 
         // when
-        controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
+        controller.sampleIndexes( backgroundRebuildUpdated() );
 
         // then
-        verify( tracker, times( 2 ) ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
-    }
-
-    @Test
-    void shouldNotStartAJobIfTheTrackerCannotHandleIt()
-    {
-        // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( false );
-        when( indexProxy.getState() ).thenReturn( ONLINE );
-
-        // when
-        controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
-
-        // then
-        verify( tracker ).canExecuteMoreSamplingJobs();
-        verifyNoMoreInteractions( jobFactory, tracker );
-    }
-
-    @Test
-    void shouldNotEmptyQueueConcurrently()
-    {
-        // given
-        final AtomicInteger totalCount = new AtomicInteger( 0 );
-        final AtomicInteger concurrentCount = new AtomicInteger( 0 );
-        final DoubleLatch jobLatch = new DoubleLatch();
-        final DoubleLatch testLatch = new DoubleLatch();
-        final ThreadLocal<Boolean> hasRun = ThreadLocal.withInitial( () -> false );
-
-        IndexSamplingJobFactory jobFactory = ( indexId, proxy ) ->
-        {
-            // make sure we execute this once per thread
-            if ( hasRun.get() )
-            {
-                return null;
-            }
-            hasRun.set( true );
-
-            if ( !concurrentCount.compareAndSet( 0, 1 ) )
-            {
-                throw new IllegalStateException( "count !== 0 on create" );
-            }
-            totalCount.incrementAndGet();
-
-            jobLatch.waitForAllToStart();
-            testLatch.startAndWaitForAllToStart();
-            jobLatch.waitForAllToFinish();
-
-            concurrentCount.decrementAndGet();
-
-            testLatch.finish();
-            return null;
-        };
-
-        final IndexSamplingController controller = new IndexSamplingController(
-                samplingConfig, jobFactory, jobQueue, tracker, snapshotProvider, scheduler, always( false ), logProvider );
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
-        when( indexProxy.getState() ).thenReturn( ONLINE );
-
-        // when running once
-        new Thread( runController( controller, BACKGROUND_REBUILD_UPDATED ) ).start();
-
-        jobLatch.startAndWaitForAllToStart();
-        testLatch.waitForAllToStart();
-
-        // then blocking on first job
-        assertEquals( 1, concurrentCount.get() );
-        assertEquals( 1, totalCount.get() );
-
-        // when running a second time
-        controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
-
-        // then no concurrent job execution
-        jobLatch.finish();
-        testLatch.waitForAllToFinish();
-
-        // and finally exactly one job has run to completion
-        assertEquals( 0, concurrentCount.get() );
-        assertEquals( 1, totalCount.get() );
     }
 
     @Test
@@ -212,13 +132,12 @@ class IndexSamplingControllerTest
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ), logProvider);
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
         indexMap.putIndexProxy( anotherIndexProxy );
 
         // when
-        controller.sampleIndexes( TRIGGER_REBUILD_UPDATED );
+        controller.sampleIndexes( backgroundRebuildUpdated() );
 
         // then
         verify( jobFactory ).create( indexId, indexProxy );
@@ -226,7 +145,6 @@ class IndexSamplingControllerTest
         verify( jobFactory ).create( anotherIndexId, anotherIndexProxy );
         verify( tracker ).scheduleSamplingJob( anotherJob );
 
-        verify( tracker, times( 2 ) ).waitUntilCanExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
@@ -235,71 +153,79 @@ class IndexSamplingControllerTest
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ), logProvider);
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( POPULATING );
         indexMap.putIndexProxy( anotherIndexProxy );
 
         // when
-        controller.sampleIndexes( TRIGGER_REBUILD_UPDATED );
+        controller.sampleIndexes( backgroundRebuildUpdated() );
 
         // then
         verify( jobFactory ).create( indexId, indexProxy );
         verify( tracker ).scheduleSamplingJob( job );
 
-        verify( tracker, times( 2 ) ).waitUntilCanExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
     @Test
-    void shouldNotStartOtherSamplingWhenSamplingAllTheIndexes()
+    void shouldForegroundSampleAllTheIndexes() throws InterruptedException, ExecutionException, TimeoutException
     {
         // given
-        final AtomicInteger totalCount = new AtomicInteger( 0 );
-        final AtomicInteger concurrentCount = new AtomicInteger( 0 );
-        final DoubleLatch jobLatch = new DoubleLatch();
-        final DoubleLatch testLatch = new DoubleLatch();
-
-        IndexSamplingJobFactory jobFactory = ( indexId, proxy ) ->
-        {
-            if ( ! concurrentCount.compareAndSet( 0, 1 ) )
-            {
-                throw new IllegalStateException( "count !== 0 on create" );
-            }
-            totalCount.incrementAndGet();
-            jobLatch.waitForAllToStart();
-            testLatch.startAndWaitForAllToStart();
-            jobLatch.waitForAllToFinish();
-            concurrentCount.decrementAndGet();
-            testLatch.finish();
-            return null;
-        };
-
-        final IndexSamplingController controller = new IndexSamplingController(
-                samplingConfig, jobFactory, jobQueue, tracker, snapshotProvider, scheduler, always( true ),
-                logProvider );
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
         when( indexProxy.getState() ).thenReturn( ONLINE );
+        when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
+        indexMap.putIndexProxy( anotherIndexProxy );
+        JobHandle jobHandle = mock( JobHandle.class);
+        JobHandle anotherJobHandle = mock( JobHandle.class );
+        when( tracker.scheduleSamplingJob( job ) ).thenReturn( jobHandle );
+        when( tracker.scheduleSamplingJob( anotherJob ) ).thenReturn( anotherJobHandle );
 
-        // when running once
-        new Thread( runController( controller, TRIGGER_REBUILD_UPDATED ) ).start();
+        // when
+        IndexSamplingMode mode = foregroundRebuildUpdated( 60 );
+        controller.sampleIndexes( mode );
 
-        jobLatch.startAndWaitForAllToStart();
-        testLatch.waitForAllToStart();
+        // then
+        verify( jobFactory ).create( indexId, indexProxy );
+        verify( tracker ).scheduleSamplingJob( job );
+        verify( jobFactory ).create( anotherIndexId, anotherIndexProxy );
+        verify( tracker ).scheduleSamplingJob( anotherJob );
+        verify( jobHandle ).waitTermination( anyLong(), any( TimeUnit.class ) );
+        verify( anotherJobHandle ).waitTermination( anyLong(), any( TimeUnit.class ) );
+        verifyNoMoreInteractions( jobFactory, tracker, jobHandle, anotherJobHandle );
+    }
 
-        // then blocking on first job
-        assertEquals( 1, concurrentCount.get() );
+    @Test
+    void shouldThrowIfJobTimesOut()
+    {
+        // given
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+        when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
+        indexMap.putIndexProxy( anotherIndexProxy );
+        JobHandle jobHandle = new JobHandle()
+        {
+            @Override
+            public void cancel()
+            {
+            }
 
-        // when running a second time
-        controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
+            @Override
+            public void waitTermination()
+            {
+                fail( "We should never use this wait for foreground sampling." );
+            }
 
-        // then no concurrent job execution
-        jobLatch.finish();
-        testLatch.waitForAllToFinish();
+            @Override
+            public void waitTermination( long timeout, TimeUnit unit ) throws TimeoutException
+            {
+                throw new TimeoutException( "I'm sorry, so slow." );
+            }
+        };
+        when( tracker.scheduleSamplingJob( job ) ).thenReturn( jobHandle );
 
-        // and finally exactly one job has run to completion
-        assertEquals( 0, concurrentCount.get() );
-        assertEquals( 1, totalCount.get() );
+        IndexSamplingMode mode = foregroundRebuildUpdated( 1 );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> controller.sampleIndexes( mode ) );
+        assertThat( e.getMessage(), containsString( "Could not finish index sampling within the given time limit, 1 milliseconds." ) );
     }
 
     @Test
@@ -351,13 +277,12 @@ class IndexSamplingControllerTest
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ), logProvider);
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
         indexMap.putIndexProxy( anotherIndexProxy );
 
         // when
-        controller.sampleIndex( indexId, TRIGGER_REBUILD_UPDATED );
+        controller.sampleIndex( indexId, backgroundRebuildUpdated() );
 
         // then
         verify( jobFactory ).create( indexId, indexProxy );
@@ -365,23 +290,6 @@ class IndexSamplingControllerTest
         verify( jobFactory, never() ).create( anotherIndexId, anotherIndexProxy );
         verify( tracker, never() ).scheduleSamplingJob( anotherJob );
 
-        verify( tracker ).waitUntilCanExecuteMoreSamplingJobs();
-        verifyNoMoreInteractions( jobFactory, tracker );
-    }
-
-    @Test
-    void shouldNotStartForSingleIndexAJobIfTheTrackerCannotHandleIt()
-    {
-        // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( false );
-        when( indexProxy.getState() ).thenReturn( ONLINE );
-
-        // when
-        controller.sampleIndex( indexId, BACKGROUND_REBUILD_UPDATED );
-
-        // then
-        verify( tracker ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
@@ -489,12 +397,8 @@ class IndexSamplingControllerTest
 
     private IndexSamplingController newSamplingController( RecoveryCondition recoveryPredicate, LogProvider logProvider )
     {
-        return new IndexSamplingController( samplingConfig, jobFactory, jobQueue, tracker, snapshotProvider, scheduler, recoveryPredicate, logProvider );
-    }
-
-    private Runnable runController( final IndexSamplingController controller, final IndexSamplingMode mode )
-    {
-        return () -> controller.sampleIndexes( mode );
+        return new IndexSamplingController( samplingConfig, jobFactory, samplingUpdatePredicate, tracker, snapshotProvider, scheduler, recoveryPredicate,
+                logProvider );
     }
 
     private static class Always implements RecoveryCondition

@@ -21,12 +21,16 @@ package org.neo4j.scheduler;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public interface JobHandle
 {
     void cancel();
 
     void waitTermination() throws InterruptedException, ExecutionException, CancellationException;
+
+    void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException;
 
     default void registerCancelListener( CancelListener listener )
     {
@@ -44,6 +48,11 @@ public interface JobHandle
 
         @Override
         public void waitTermination() throws CancellationException
+        {   // no-op
+        }
+
+        @Override
+        public void waitTermination( long timeout, TimeUnit unit )
         {   // no-op
         }
     }

@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.JobHandle;
@@ -57,6 +59,12 @@ final class PooledJobHandle implements JobHandle
     public void waitTermination() throws InterruptedException, ExecutionException
     {
         future.get();
+    }
+
+    @Override
+    public void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        future.get( timeout, unit );
     }
 
     @Override

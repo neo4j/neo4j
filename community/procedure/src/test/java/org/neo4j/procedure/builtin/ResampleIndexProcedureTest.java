@@ -29,7 +29,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -40,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
 
 class ResampleIndexProcedureTest
 {
@@ -98,6 +98,6 @@ class ResampleIndexProcedureTest
 
         procedure.resampleIndex( "index_42" );
 
-        verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        verify( indexingService ).triggerIndexSampling( index, backgroundRebuildAll() );
     }
 }

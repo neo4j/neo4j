@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.helpers.Indexes;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -48,6 +47,10 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
+
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.foregroundRebuildUpdated;
 
 public class IndexProcedures
 {
@@ -75,19 +78,14 @@ public class IndexProcedures
 
     void resampleOutdatedIndexes()
     {
-        indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
+        indexingService.triggerIndexSampling( backgroundRebuildUpdated() );
     }
 
-    void awaitIndexResampling( long timeout ) throws ProcedureException
+    void resampleOutdatedIndexes( long timeOutSeconds ) throws TimeoutException
     {
-        try
-        {
-            Indexes.awaitResampling( ktx.schemaRead(), timeout);
-        }
-        catch ( TimeoutException e )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureTimedOut, e, "Index resampling timed out" );
-        }
+        long millis = TimeUnit.SECONDS.toMillis( timeOutSeconds );
+        IndexSamplingMode mode = foregroundRebuildUpdated( millis );
+        indexingService.triggerIndexSampling( mode );
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexName, List<String> labels, List<String> properties,
@@ -274,7 +272,7 @@ public class IndexProcedures
 
     private void triggerSampling( IndexDescriptor index )
     {
-        indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        indexingService.triggerIndexSampling( index, backgroundRebuildAll() );
     }
 
     @FunctionalInterface

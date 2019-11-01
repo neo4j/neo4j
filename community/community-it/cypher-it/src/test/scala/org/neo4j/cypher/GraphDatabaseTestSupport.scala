@@ -29,7 +29,6 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.TokenRead
-import org.neo4j.internal.kernel.api.helpers.Indexes
 import org.neo4j.internal.kernel.api.procs._
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -151,21 +150,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def resampleIndexes(): Unit = {
-    graph.withTx( tx => {
-      tx.execute("CALL db.resampleOutdatedIndexes")
-      assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
-    })
-  }
-
-  def assertWithKernelTx(f: KernelTransaction => Unit): Unit = {
-    val kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel])
-    var ktx: KernelTransaction = null
-    try {
-      ktx = kernel.beginTransaction( Type.explicit, LoginContext.AUTH_DISABLED )
-      f(ktx)
-    } finally {
-      ktx.commit()
-    }
+    graph.withTx(_.execute("CALL db.prepareForReplanning"))
   }
 
   def tokenReader[T](tx: Transaction, f: TokenRead => T): T = {

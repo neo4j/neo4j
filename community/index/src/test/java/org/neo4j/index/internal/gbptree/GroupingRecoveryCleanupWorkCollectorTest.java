@@ -30,6 +30,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -179,6 +181,12 @@ class GroupingRecoveryCleanupWorkCollectorTest
                 public void waitTermination() throws InterruptedException, ExecutionException, CancellationException
                 {
                     future.get();
+                }
+
+                @Override
+                public void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
+                {
+                    future.get( timeout, unit );
                 }
             };
         }

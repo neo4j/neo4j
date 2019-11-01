@@ -109,5 +109,11 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
         {
             // on demand
         }
+
+        @Override
+        public void waitTermination( long timeout, TimeUnit unit )
+        {
+            // on demand
+        }
     }
 }

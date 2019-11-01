@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,38 +30,22 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
-public class IndexSamplingJobTracker
+class IndexSamplingJobTracker
 {
     private final JobScheduler jobScheduler;
-    private final int jobLimit;
     private final Set<Long> executingJobs;
     private final Lock lock = new ReentrantLock( true );
-    private final Condition canSchedule = lock.newCondition();
     private final Condition allJobsFinished = lock.newCondition();
 
     private boolean stopped;
 
-    public IndexSamplingJobTracker( IndexSamplingConfig config, JobScheduler jobScheduler )
+    IndexSamplingJobTracker( IndexSamplingConfig config, JobScheduler jobScheduler )
     {
         this.jobScheduler = jobScheduler;
-        this.jobLimit = config.jobLimit();
         this.executingJobs = new HashSet<>();
     }
 
-    public boolean canExecuteMoreSamplingJobs()
-    {
-        lock.lock();
-        try
-        {
-            return !stopped && executingJobs.size() < jobLimit;
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    public JobHandle scheduleSamplingJob( final IndexSamplingJob samplingJob )
+    JobHandle scheduleSamplingJob( final IndexSamplingJob samplingJob )
     {
         lock.lock();
         try
@@ -103,7 +86,6 @@ public class IndexSamplingJobTracker
         try
         {
             executingJobs.remove( samplingJob.indexId() );
-            canSchedule.signalAll();
             allJobsFinished.signalAll();
         }
         finally
@@ -112,49 +94,7 @@ public class IndexSamplingJobTracker
         }
     }
 
-    public void waitUntilCanExecuteMoreSamplingJobs()
-    {
-        lock.lock();
-        try
-        {
-            while ( !canExecuteMoreSamplingJobs() )
-            {
-                if ( stopped )
-                {
-                    return;
-                }
-
-                canSchedule.awaitUninterruptibly();
-            }
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    public void awaitAllJobs( long time, TimeUnit unit ) throws InterruptedException
-    {
-        lock.lock();
-        try
-        {
-            if ( stopped )
-            {
-                return;
-            }
-
-            while ( !executingJobs.isEmpty() )
-            {
-                allJobsFinished.await( time, unit );
-            }
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    public void stopAndAwaitAllJobs()
+    void stopAndAwaitAllJobs()
     {
         lock.lock();
         try

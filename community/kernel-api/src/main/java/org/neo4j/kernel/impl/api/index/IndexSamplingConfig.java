@@ -52,11 +52,6 @@ public class IndexSamplingConfig
         return updateRatio;
     }
 
-    public int jobLimit()
-    {
-        return 1;
-    }
-
     public boolean backgroundSampling()
     {
         return backgroundSampling;

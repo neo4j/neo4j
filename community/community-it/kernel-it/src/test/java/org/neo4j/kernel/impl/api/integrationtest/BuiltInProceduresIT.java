@@ -64,7 +64,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -475,7 +477,9 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         }
 
         // Then
-        assertThat( monitor.samplingMode(), equalTo( IndexSamplingMode.TRIGGER_REBUILD_UPDATED ) );
+        IndexSamplingMode mode = monitor.samplingMode();
+        assertNotEquals( IndexSamplingMode.NO_WAIT, mode.millisToWaitForCompletion() );
+        assertThat( mode.millisToWaitForCompletion(), greaterThan( 0L ) );
     }
 
     private ReplanMonitor replanMonitor()

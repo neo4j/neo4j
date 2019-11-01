@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -180,6 +181,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         public void waitTermination() throws InterruptedException, ExecutionException, CancellationException
         {
             future.get();
+        }
+
+        @Override
+        public void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
+        {
+            future.get( timeout, unit );
         }
     }
 }

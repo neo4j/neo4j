@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -379,8 +380,14 @@ public class BuiltInProcedures
 
         //Resample indexes
         IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.resampleOutdatedIndexes();
-        indexProcedures.awaitIndexResampling( timeOutSeconds );
+        try
+        {
+            indexProcedures.resampleOutdatedIndexes( timeOutSeconds );
+        }
+        catch ( TimeoutException e )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureTimedOut, e, "Index resampling timed out" );
+        }
 
         //now that index-stats are up-to-date, clear caches so that we are ready to re-plan
         graphDatabaseAPI.getDependencyResolver()

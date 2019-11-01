@@ -359,9 +359,11 @@ public class GlobalModule
         return strings.stream().collect( toMap( identity(), s -> Level.DEBUG ) );
     }
 
-    protected JobScheduler createJobScheduler()
+    private JobScheduler createJobScheduler()
     {
-        return JobSchedulerFactory.createInitialisedScheduler( globalClock );
+        JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler( globalClock );
+        jobScheduler.setParallelism( Group.INDEX_SAMPLING, globalConfig.get( GraphDatabaseSettings.index_sampling_parallelism ) );
+        return jobScheduler;
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,

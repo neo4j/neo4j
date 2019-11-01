@@ -244,6 +244,12 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
 
         @Override
+        public void waitTermination( long timeout, TimeUnit unit )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public boolean equals( Object o )
         {
             if ( this == o )
