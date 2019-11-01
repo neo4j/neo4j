@@ -133,7 +133,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   }
 
   def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = {
-    copy(hints = hints ++ addedHints)
+    copy(hints = combineHints(addedHints))
   }
 
   def withoutHints(hintsToIgnore: GenSeq[Hint]): QueryGraph = copy(
@@ -231,10 +231,24 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
       argumentIds = argumentIds ++ other.argumentIds,
-      hints = hints ++ other.hints,
+      hints = combineHints(other.hints),
       shortestPathPatterns = shortestPathPatterns ++ other.shortestPathPatterns,
       mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns
     )
+
+  // TODO: Consider replacing this solution with changing hints to type Set[Hint]
+  // This method make sure to not have duplicates when adding more hints to solved QueryGraphs
+  private def combineHints(addedHints: GenTraversableOnce[Hint]): Seq[Hint] = {
+    if (addedHints.nonEmpty) {
+      val toAdd = addedHints.foldLeft(Seq.empty[Hint]) {
+        case (acc, h) if !hints.contains(h) => acc :+ h
+        case (acc, _) => acc
+      }
+      hints ++ toAdd
+    } else {
+      hints
+    }
+  }
 
   def hasOptionalPatterns: Boolean = optionalMatches.nonEmpty
 
