@@ -123,25 +123,25 @@ public interface ProcedureITBase
                                 "{`spatial.cartesian.maxLevels`: 5}) - YIELD name, labels, properties, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
-                        "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.",
+                        "Wait for the updates from recently committed transactions to be applied to any eventually-consistent full-text indexes.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.index.fulltext.createNodeIndex",
                         "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, " + "config = {} :: MAP?) :: VOID",
-                        startsWith( "Create a node fulltext index for the given labels and properties." ), stringArray( "architect", "admin" ), "SCHEMA",
+                        startsWith( "Create a node full-text index for the given labels and properties." ), stringArray( "architect", "admin" ), "SCHEMA",
                         false ),
                 proc( "db.index.fulltext.createRelationshipIndex",
                         "(indexName :: STRING?, relationshipTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
-                        startsWith( "Create a relationship fulltext index for the given relationship types and properties." ),
+                        startsWith( "Create a relationship full-text index for the given relationship types and properties." ),
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.index.fulltext.drop", "(indexName :: STRING?) :: VOID", "Drop the specified index.", stringArray( "architect", "admin" ), "SCHEMA",
                         false ), proc( "db.index.fulltext.listAvailableAnalyzers", "() :: (analyzer :: STRING?, description :: STRING?)",
-                        "List the available analyzers that the fulltext indexes can be configured with.",
+                        "List the available analyzers that the full-text indexes can be configured with.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.index.fulltext.queryNodes", "(indexName :: STRING?, queryString :: STRING?) :: (node :: NODE?, score :: FLOAT?)",
-                        "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score.",
+                        "Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ), proc( "db.index.fulltext.queryRelationships",
                         "(indexName :: STRING?, queryString :: STRING?) :: (relationship :: RELATIONSHIP?, " + "score :: FLOAT?)",
-                        "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by " + "score.",
+                        "Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by " + "score.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.prepareForReplanning", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Triggers an index resample and waits for it to complete, and after that clears query caches." +
@@ -257,7 +257,7 @@ public interface ProcedureITBase
                 booleanValue( worksOnSystem )};
     }
 
-    @SuppressWarnings( {"unchecked", "SameParameterValue"} )
+    @SuppressWarnings( {"SameParameterValue"} )
     private Object[] proc( String procName, String procSignature, Matcher<String> description, TextArray roles, String mode, boolean worksOnSystem )
     {
         Matcher<AnyValue> desc = new TypeSafeMatcher<>()
