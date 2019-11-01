@@ -125,12 +125,6 @@ public interface StorageEngine extends Lifecycle
     void forceClose();
 
     /**
-     * Startup process have reached the conclusion that recovery is required. Make the necessary
-     * preparations to be ready for recovering transactions.
-     */
-    void prepareForRecoveryRequired();
-
-    /**
      * @return a {@link Collection} of {@link StoreFileMetadata} containing metadata about all store files managed by
      * this {@link StorageEngine}.
      */

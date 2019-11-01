@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -99,8 +100,9 @@ class TransactionLogChannelAllocatorIT
     private TransactionLogChannelAllocator createLogFileAllocator()
     {
         LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-        TransactionLogFilesContext logFileContext = createLogFileContext();
-        return new TransactionLogChannelAllocator( logFileContext, fileHelper, logHeaderCache );
+        var logFileContext = createLogFileContext();
+        var nativeChannelAccessor = new LogFileChannelNativeAccessor( fileSystem, logFileContext );
+        return new TransactionLogChannelAllocator( logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor );
     }
 
     private TransactionLogFilesContext createLogFileContext()
@@ -109,6 +111,6 @@ class TransactionLogChannelAllocatorIT
                 new VersionAwareLogEntryReader(), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem,
-                NullLogProvider.getInstance(), DatabaseTracer.NULL, () -> StoreId.UNKNOWN );
+                NullLogProvider.getInstance(), DatabaseTracer.NULL, () -> StoreId.UNKNOWN, NativeAccessProvider.getNativeAccess() );
     }
 }

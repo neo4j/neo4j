@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.LongSupplier;
 
-import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogFileCreateEvent;
-import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -46,21 +44,20 @@ class TransactionLogChannelAllocator
 {
     private final TransactionLogFilesContext logFilesContext;
     private final FileSystemAbstraction fileSystem;
-    private final NativeAccess nativeAccess;
-    private final Log log;
     private final TransactionLogFilesHelper fileHelper;
     private final LogHeaderCache logHeaderCache;
+    private final LogFileChannelNativeAccessor nativeChannelAccessor;
     private final DatabaseTracer databaseTracer;
 
-    TransactionLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper, LogHeaderCache logHeaderCache )
+    TransactionLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper, LogHeaderCache logHeaderCache,
+            LogFileChannelNativeAccessor nativeChannelAccessor )
     {
         this.logFilesContext = logFilesContext;
         this.fileSystem = logFilesContext.getFileSystem();
-        this.nativeAccess = logFilesContext.getNativeAccess();
-        this.log = logFilesContext.getLogProvider().getLog( getClass() );
         this.databaseTracer = logFilesContext.getDatabaseTracer();
         this.fileHelper = fileHelper;
         this.logHeaderCache = logHeaderCache;
+        this.nativeChannelAccessor = nativeChannelAccessor;
     }
 
     PhysicalLogVersionedStoreChannel createLogChannel( long version, LongSupplier lastCommittedTransactionId ) throws IOException
@@ -83,7 +80,7 @@ class TransactionLogChannelAllocator
             }
         }
         byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.getLogFormatVersion();
-        return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile );
+        return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile, nativeChannelAccessor );
     }
 
     PhysicalLogVersionedStoreChannel openLogChannel( long version ) throws IOException
@@ -107,7 +104,10 @@ class TransactionLogChannelAllocator
                         format( "Unexpected log file header. Expected header version: %d, actual header: %s", version,
                                 header != null ? header.toString() : "null header." ) );
             }
-            return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.getLogFormatVersion(), fileToOpen );
+            var versionedStoreChannel = new PhysicalLogVersionedStoreChannel( rawChannel, version, header.getLogFormatVersion(),
+                    fileToOpen, nativeChannelAccessor );
+            nativeChannelAccessor.adviseSequentialAccess( rawChannel, version );
+            return versionedStoreChannel;
         }
         catch ( FileNotFoundException cause )
         {
@@ -134,23 +134,17 @@ class TransactionLogChannelAllocator
     private AllocatedFile allocateFile( long version ) throws IOException
     {
         File file = fileHelper.getLogFileForVersion( version );
-        boolean tryToPreallocate = !fileSystem.fileExists( file );
+        boolean fileExist = fileSystem.fileExists( file );
         StoreChannel storeChannel = fileSystem.write( file );
-        if ( tryToPreallocate && logFilesContext.getTryPreallocateTransactionLogs().get() )
+        if ( fileExist )
         {
-            tryPreallocateLogFile( storeChannel, version );
+            nativeChannelAccessor.adviseSequentialAccess( storeChannel, version );
+        }
+        else if ( logFilesContext.getTryPreallocateTransactionLogs().get() )
+        {
+            nativeChannelAccessor.preallocateSpace( storeChannel, version );
         }
         return new AllocatedFile( file, storeChannel );
-    }
-
-    private void tryPreallocateLogFile( StoreChannel storeChannel, long version )
-    {
-        int fileDescriptor = fileSystem.getFileDescriptor( storeChannel );
-        int result = nativeAccess.tryPreallocateSpace( fileDescriptor, logFilesContext.getRotationThreshold().get() );
-        if ( result != 0 )
-        {
-            log.warn( "Error on attempt to preallocate log file version: " + version + ". Error code: " + result );
-        }
     }
 
     private static class AllocatedFile

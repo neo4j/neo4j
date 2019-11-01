@@ -78,7 +78,6 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         LogPosition recoveryStartPosition = recoveryStartInformation.getRecoveryPosition();
 
         monitor.recoveryRequired( recoveryStartPosition );
-        recoveryService.startRecovery();
 
         LogPosition recoveryToPosition = recoveryStartPosition;
         LogPosition lastTransactionPosition = recoveryStartPosition;

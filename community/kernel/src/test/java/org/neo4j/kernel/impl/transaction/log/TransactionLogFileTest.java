@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -98,6 +99,40 @@ class TransactionLogFileTest
 
         LogPosition logPosition = versionLocator.getLogPosition();
         assertEquals( 1, logPosition.getLogVersion() );
+    }
+
+    @Test
+    void preAllocateOnStartAndEvictOnShutdownNewLogFile() throws IOException
+    {
+        final CapturingNativeAccess capturingNativeAccess = new CapturingNativeAccess();
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withNativeAccess( capturingNativeAccess )
+                .build();
+
+        startStop( capturingNativeAccess, life );
+
+        assertEquals( 1, capturingNativeAccess.getPreallocateCounter() );
+        assertEquals( 1, capturingNativeAccess.getEvictionCounter() );
+        assertEquals( 0, capturingNativeAccess.getAdviseCounter() );
+    }
+
+    @Test
+    void adviseOnStartAndEvictOnShutdownExistingLogFile() throws IOException
+    {
+        var capturingNativeAccess = new CapturingNativeAccess();
+
+        startStop( capturingNativeAccess, life );
+        capturingNativeAccess.reset();
+
+        startStop( capturingNativeAccess, new LifeSupport() );
+
+        assertEquals( 0, capturingNativeAccess.getPreallocateCounter() );
+        assertEquals( 1, capturingNativeAccess.getEvictionCounter() );
+        assertEquals( 1, capturingNativeAccess.getAdviseCounter() );
     }
 
     @Test
@@ -330,5 +365,79 @@ class TransactionLogFileTest
             result[i] = (byte) (i % 5);
         }
         return result;
+    }
+
+    private void startStop( CapturingNativeAccess capturingNativeAccess, LifeSupport lifeSupport ) throws IOException
+    {
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                            .withTransactionIdStore( transactionIdStore )
+                            .withLogVersionRepository( logVersionRepository )
+                            .withLogEntryReader( logEntryReader() )
+                            .withStoreId( StoreId.UNKNOWN )
+                            .withNativeAccess( capturingNativeAccess ).build();
+
+        lifeSupport.add( logFiles );
+        lifeSupport.start();
+
+        lifeSupport.shutdown();
+    }
+
+    private static class CapturingNativeAccess implements NativeAccess
+    {
+        private int evictionCounter;
+        private int adviseCounter;
+        private int preallocateCounter;
+
+        @Override
+        public boolean isAvailable()
+        {
+            return true;
+        }
+
+        @Override
+        public int tryEvictFromCache( int fd )
+        {
+            return evictionCounter++;
+        }
+
+        @Override
+        public int tryAdviseSequentialAccess( int fd )
+        {
+            return adviseCounter++;
+        }
+
+        @Override
+        public int tryPreallocateSpace( int fd, long bytes )
+        {
+            return preallocateCounter++;
+        }
+
+        @Override
+        public String describe()
+        {
+            return "Test only";
+        }
+
+        public int getEvictionCounter()
+        {
+            return evictionCounter;
+        }
+
+        public int getAdviseCounter()
+        {
+            return adviseCounter;
+        }
+
+        public int getPreallocateCounter()
+        {
+            return preallocateCounter;
+        }
+
+        public void reset()
+        {
+            adviseCounter = 0;
+            evictionCounter = 0;
+            preallocateCounter = 0;
+        }
     }
 }

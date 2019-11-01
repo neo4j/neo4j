@@ -66,17 +66,6 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
-    public void startRecovery()
-    {
-        // Calling this method means that recovery is required, tell storage engine about it
-        // This method will be called before recovery actually starts and so will ensure that
-        // each store is aware that recovery will be performed. At this point all the stores have
-        // already started btw.
-        // Go and read more at {@link CommonAbstractStore#deleteIdGenerator()}
-        storageEngine.prepareForRecoveryRequired();
-    }
-
-    @Override
     public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception
     {
         return new RecoveryVisitor( storageEngine, mode );

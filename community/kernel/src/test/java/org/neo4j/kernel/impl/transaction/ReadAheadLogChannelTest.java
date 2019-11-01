@@ -33,12 +33,14 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
@@ -49,6 +51,7 @@ class ReadAheadLogChannelTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory directory;
+    private final LogFileChannelNativeAccessor nativeChannelAccessor = mock( LogFileChannelNativeAccessor.class );
 
     @Test
     void shouldReadFromSingleChannel() throws Exception
@@ -76,7 +79,7 @@ class ReadAheadLogChannelTest
 
         StoreChannel storeChannel = fileSystem.read( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file );
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file, nativeChannelAccessor );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS ) )
         {
             // THEN
@@ -116,7 +119,7 @@ class ReadAheadLogChannelTest
 
         StoreChannel storeChannel = fileSystem.read( file( 0 ) );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file( 0 ) );
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file( 0 ), nativeChannelAccessor );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
         {
             private boolean returned;
@@ -129,7 +132,7 @@ class ReadAheadLogChannelTest
                     returned = true;
                     channel.close();
                     return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ) ),
-                            -1 /* ignored */, (byte) -1, file( 1 ) );
+                            -1 /* ignored */, (byte) -1, file( 1 ), nativeChannelAccessor );
                 }
                 return channel;
             }

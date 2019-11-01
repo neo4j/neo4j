@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -90,13 +91,14 @@ public class LogTestUtils
         File[] files = logFiles.logFiles();
         for ( File file : files )
         {
-            filterTransactionLogFile( fileSystem, file, filter );
+            filterTransactionLogFile( fileSystem, file, filter, logFiles.getChannelNativeAccessor() );
         }
 
         return files;
     }
 
-    private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
+    private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter,
+            LogFileChannelNativeAccessor channelNativeAccessor )
             throws IOException
     {
         filter.file( file );
@@ -105,7 +107,7 @@ public class LogTestUtils
             LogHeader logHeader = readLogHeader( ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE ), in, true, file );
             assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";
             PhysicalLogVersionedStoreChannel inChannel =
-                    new PhysicalLogVersionedStoreChannel( in, logHeader.getLogVersion(), logHeader.getLogFormatVersion(), file );
+                    new PhysicalLogVersionedStoreChannel( in, logHeader.getLogVersion(), logHeader.getLogFormatVersion(), file, channelNativeAccessor );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );
             LogEntryReader entryReader = new VersionAwareLogEntryReader();
 

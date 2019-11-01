@@ -66,5 +66,7 @@ public interface LogFiles extends Lifecycle
 
     TransactionLogFileInformation getLogFileInformation();
 
+    LogFileChannelNativeAccessor getChannelNativeAccessor();
+
     PhysicalLogVersionedStoreChannel createLogChannelForVersion( long versionUsed, LongSupplier lastCommittedTransactionId ) throws IOException;
 }

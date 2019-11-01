@@ -402,11 +402,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void prepareForRecoveryRequired()
-    {
-    }
-
-    @Override
     public Collection<StoreFileMetadata> listStorageFiles()
     {
         List<StoreFileMetadata> files = new ArrayList<>();

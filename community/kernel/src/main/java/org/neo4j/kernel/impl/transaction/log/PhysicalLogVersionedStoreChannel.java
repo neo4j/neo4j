@@ -26,6 +26,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 
 public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChannel
 {
@@ -34,15 +35,17 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     private final byte formatVersion;
     private long position;
     private final File file;
+    private final ChannelNativeAccessor nativeChannelAccessor;
 
-    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, File file )
-            throws IOException
+    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, File file,
+            ChannelNativeAccessor nativeChannelAccessor ) throws IOException
     {
         this.delegateChannel = delegateChannel;
         this.version = version;
         this.formatVersion = formatVersion;
         this.position = delegateChannel.position();
         this.file = file;
+        this.nativeChannelAccessor = nativeChannelAccessor;
     }
 
     public File getFile()
@@ -148,6 +151,7 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     @Override
     public void close() throws IOException
     {
+        nativeChannelAccessor.evictFromSystemCache( delegateChannel, version );
         delegateChannel.close();
     }
 

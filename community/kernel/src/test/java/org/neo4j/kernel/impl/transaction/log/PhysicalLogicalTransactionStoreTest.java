@@ -188,7 +188,7 @@ class PhysicalLogicalTransactionStoreTest
 
         life = new LifeSupport();
         life.add( logFiles );
-        final AtomicBoolean recoveryRequired = new AtomicBoolean();
+        final AtomicBoolean recoveryPerformed = new AtomicBoolean();
         FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, positionCache,
@@ -199,12 +199,6 @@ class PhysicalLogicalTransactionStoreTest
         CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystem );
         life.add( new TransactionLogsRecovery( new RecoveryService()
         {
-            @Override
-            public void startRecovery()
-            {
-                recoveryRequired.set( true );
-            }
-
             @Override
             public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode )
             {
@@ -233,6 +227,7 @@ class PhysicalLogicalTransactionStoreTest
             public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
                     LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs )
             {
+                recoveryPerformed.set( true );
             }
         }, logPruner, new LifecycleAdapter(), mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false ) );
 
@@ -248,7 +243,7 @@ class PhysicalLogicalTransactionStoreTest
 
         // THEN
         assertEquals( 1, visitor.getVisitedTransactions() );
-        assertTrue( recoveryRequired.get() );
+        assertTrue( recoveryPerformed.get() );
     }
 
     @Test

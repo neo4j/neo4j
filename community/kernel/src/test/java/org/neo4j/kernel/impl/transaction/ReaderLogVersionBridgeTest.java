@@ -113,8 +113,8 @@ class ReaderLogVersionBridgeTest
         final LogVersionedStoreChannel result = bridge.next( channel );
 
         // then
-        PhysicalLogVersionedStoreChannel expected =
-                new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1, CURRENT_LOG_FORMAT_VERSION, new File( "log.file" ) );
+        PhysicalLogVersionedStoreChannel expected = new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1,
+                CURRENT_LOG_FORMAT_VERSION, new File( "log.file" ), logFiles.getChannelNativeAccessor() );
         assertEquals( expected, result );
         verify( channel ).close();
     }

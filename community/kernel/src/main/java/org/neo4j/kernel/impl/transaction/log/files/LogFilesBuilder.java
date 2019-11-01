@@ -28,6 +28,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -79,6 +81,7 @@ public class LogFilesBuilder
     private boolean fileBasedOperationsOnly;
     private DatabaseTracer databaseTracer = DatabaseTracer.NULL;
     private StoreId storeId;
+    private NativeAccess nativeAccess;
 
     private LogFilesBuilder()
     {
@@ -196,6 +199,12 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withNativeAccess( NativeAccess nativeAccess )
+    {
+        this.nativeAccess = nativeAccess;
+        return this;
+    }
+
     public LogFilesBuilder withStoreId( StoreId storeId )
     {
         this.storeId = storeId;
@@ -239,10 +248,20 @@ public class LogFilesBuilder
         // Register listener for rotation threshold
         AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
         AtomicBoolean tryPreallocateTransactionLogs = getTryToPreallocateTransactionLogs();
+        var nativeAccess = getNativeAccess();
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier, fileSystem,
-                logProvider, databaseTracer, storeIdSupplier );
+                logProvider, databaseTracer, storeIdSupplier, nativeAccess );
+    }
+
+    private NativeAccess getNativeAccess()
+    {
+        if ( nativeAccess != null )
+        {
+            return nativeAccess;
+        }
+        return NativeAccessProvider.getNativeAccess();
     }
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates()

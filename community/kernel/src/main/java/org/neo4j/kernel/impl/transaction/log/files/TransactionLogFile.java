@@ -25,11 +25,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
@@ -41,11 +41,11 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
+import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 
 /**
@@ -57,9 +57,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final LogFiles logFiles;
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
-    private final FileSystemAbstraction fileSystem;
-    private final Log log;
-    private final NativeAccess nativeAccess;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private LogVersionRepository logVersionRepository;
 
@@ -69,11 +66,8 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context )
     {
         this.rotateAtSize = context.getRotationThreshold();
-        this.fileSystem = context.getFileSystem();
         this.context = context;
         this.logFiles = logFiles;
-        this.log = context.getLogProvider().getLog( TransactionLogFile.class );
-        this.nativeAccess = context.getNativeAccess();
         this.readerLogVersionBridge = new ReaderLogVersionBridge( logFiles );
     }
 
@@ -92,7 +86,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         //try to set position
         seekChannelPosition( currentLogVersion );
 
-        this.byteBuffer = ByteBuffers.allocateDirect( calculateLogBufferSize() );
+        this.byteBuffer = allocateDirect( calculateLogBufferSize() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, byteBuffer );
     }
 
@@ -225,7 +219,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          */
         writer.prepareForFlush().flush();
         currentLog.truncate( currentLog.position() );
-        tryEvictFromSystemCache( currentLog );
 
         /*
          * The log version is now in the store, flushed and persistent. If we crash
@@ -239,16 +232,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, context::committingTransactionId );
         currentLog.close();
         return newLog;
-    }
-
-    private void tryEvictFromSystemCache( LogVersionedStoreChannel currentLog )
-    {
-        int fileDescriptor = fileSystem.getFileDescriptor( currentLog );
-        int result = nativeAccess.tryEvictFromCache( fileDescriptor );
-        if ( result != 0 )
-        {
-            log.warn( "Unable to evict from cache transaction log version: " + currentLog.getVersion() + ". Error code: " + result );
-        }
     }
 
     @Override

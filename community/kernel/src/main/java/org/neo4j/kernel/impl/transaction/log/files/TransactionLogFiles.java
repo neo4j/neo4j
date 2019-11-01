@@ -53,6 +53,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     private final TransactionLogFile logFile;
     private final File logsDirectory;
     private final TransactionLogChannelAllocator channelAllocator;
+    private final LogFileChannelNativeAccessor nativeChannelAccessor;
 
     TransactionLogFiles( File logsDirectory, String name, TransactionLogFilesContext context )
     {
@@ -62,8 +63,9 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         this.fileSystem = context.getFileSystem();
         this.logHeaderCache = new LogHeaderCache( 1000 );
         this.logFileInformation = new TransactionLogFileInformation( this, logHeaderCache, context );
+        this.nativeChannelAccessor = new LogFileChannelNativeAccessor( fileSystem, context );
         this.logFile = new TransactionLogFile( this, context );
-        this.channelAllocator = new TransactionLogChannelAllocator( logFilesContext, fileHelper, logHeaderCache );
+        this.channelAllocator = new TransactionLogChannelAllocator( logFilesContext, fileHelper, logHeaderCache, nativeChannelAccessor );
     }
 
     @Override
@@ -259,5 +261,11 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     public TransactionLogFileInformation getLogFileInformation()
     {
         return logFileInformation;
+    }
+
+    @Override
+    public LogFileChannelNativeAccessor getChannelNativeAccessor()
+    {
+        return nativeChannelAccessor;
     }
 }

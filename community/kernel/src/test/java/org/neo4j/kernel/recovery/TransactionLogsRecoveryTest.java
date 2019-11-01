@@ -20,9 +20,9 @@
 package org.neo4j.kernel.recovery;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,9 +72,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -161,8 +158,22 @@ class TransactionLogsRecoveryTest
         } );
 
         LifeSupport life = new LifeSupport();
-        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
-        final AtomicBoolean recoveryRequired = new AtomicBoolean();
+        var recoveryRequired = new AtomicBoolean();
+        var recoveredTransactions = new MutableInt();
+        RecoveryMonitor monitor = new RecoveryMonitor()
+        {
+            @Override
+            public void recoveryRequired( LogPosition recoveryPosition )
+            {
+                recoveryRequired.set( true );
+            }
+
+            @Override
+            public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
+            {
+                recoveredTransactions.setValue( numberOfRecoveredTransactions );
+            }
+        };
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
@@ -173,16 +184,11 @@ class TransactionLogsRecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
+            monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
             {
                 private int nr;
-
-                @Override
-                public void startRecovery()
-                {
-                    recoveryRequired.set( true );
-                }
 
                 @Override
                 public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode )
@@ -227,10 +233,8 @@ class TransactionLogsRecoveryTest
 
             life.start();
 
-            InOrder order = inOrder( monitor );
-            order.verify( monitor ).recoveryRequired( any( LogPosition.class ) );
-            order.verify( monitor ).recoveryCompleted( eq( 2 ), anyLong() );
             assertTrue( recoveryRequired.get() );
+            assertEquals( 2, recoveredTransactions.getValue() );
         }
         finally
         {
@@ -273,15 +277,17 @@ class TransactionLogsRecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
-            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
+            monitors.addMonitorListener( new RecoveryMonitor()
             {
                 @Override
-                public void startRecovery()
+                public void recoveryRequired( LogPosition recoveryPosition )
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
+            } );
+            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
 
@@ -432,8 +438,15 @@ class TransactionLogsRecoveryTest
     private boolean recover( File storeDir, LogFiles logFiles )
     {
         LifeSupport life = new LifeSupport();
-        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
+        RecoveryMonitor monitor = new RecoveryMonitor()
+        {
+            @Override
+            public void recoveryRequired( LogPosition recoveryPosition )
+            {
+                recoveryRequired.set( true );
+            }
+        };
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
@@ -443,15 +456,10 @@ class TransactionLogsRecoveryTest
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
+            monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
-            {
-                @Override
-                public void startRecovery()
-                {
-                    recoveryRequired.set( true );
-                }
-            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
+                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
         }
@@ -471,7 +479,7 @@ class TransactionLogsRecoveryTest
     {
 
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
-                CURRENT_LOG_FORMAT_VERSION, file );
+                CURRENT_LOG_FORMAT_VERSION, file, logFiles.getChannelNativeAccessor() );
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel = new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel,
                         ByteBuffers.allocate( 1, KibiByte ) ) )
         {
