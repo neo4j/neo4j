@@ -26,6 +26,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -155,9 +156,10 @@ class ProcedureOutputSignatureCompiler
 
     static List<Field> instanceFields( Class<?> userClass )
     {
-        return Arrays.stream( userClass.getDeclaredFields() )
-                .filter( f -> !isStatic( f.getModifiers() ) &&
-                                  !f.isSynthetic( ) )
-                .collect( toList() );
+        return Stream
+            .<Class<?>>iterate( userClass, Objects::nonNull, Class::getSuperclass )
+            .flatMap( c -> Arrays.stream( c.getDeclaredFields() ) )
+            .filter( f -> !isStatic( f.getModifiers() ) && !f.isSynthetic() )
+            .collect( toList() );
     }
 }

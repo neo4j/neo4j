@@ -84,6 +84,17 @@ public class ProcedureOutputSignatureCompilerTest
         public String alsoDeprecated;
     }
 
+    public static class RecordWithInheritedFields extends SingleStringFieldRecord
+    {
+        public String anotherName;
+
+        public RecordWithInheritedFields( String name, String anotherName )
+        {
+            super( name );
+            this.anotherName = anotherName;
+        }
+    }
+
     @Test
     void shouldNoteDeprecatedFields() throws Exception
     {
@@ -94,6 +105,17 @@ public class ProcedureOutputSignatureCompilerTest
                 outputField( "deprecated", NTString, true ),
                 outputField( "alsoDeprecated", NTString, true ),
                 outputField( "replacement", NTString, false ) ) );
+    }
+
+    @Test
+    void shouldInheritFields() throws Exception
+    {
+        // when
+
+        // then
+        assertThat( signatures( RecordWithInheritedFields.class ), containsInAnyOrder(
+                outputField( "name", NTString, false ),
+                outputField( "anotherName", NTString, false ) ) );
     }
 
     @Test
