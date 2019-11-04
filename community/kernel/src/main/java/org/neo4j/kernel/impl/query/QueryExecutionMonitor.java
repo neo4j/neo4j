@@ -28,4 +28,22 @@ public interface QueryExecutionMonitor
     void endFailure( ExecutingQuery query , Throwable failure );
 
     void endSuccess( ExecutingQuery query  );
+
+    QueryExecutionMonitor NO_OP = new QueryExecutionMonitor()
+    {
+        @Override
+        public void start( ExecutingQuery query )
+        {
+        }
+
+        @Override
+        public void endFailure( ExecutingQuery query, Throwable failure )
+        {
+        }
+
+        @Override
+        public void endSuccess( ExecutingQuery query )
+        {
+        }
+    };
 }

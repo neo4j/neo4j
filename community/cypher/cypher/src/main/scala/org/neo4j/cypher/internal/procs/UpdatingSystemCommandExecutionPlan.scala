@@ -70,7 +70,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
 
       val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       try {
-        execution.consumeAll()
+        execution.consumeAll()// <- pulls on everything until close() is called with calls down to monitor . success
       } catch {
         case _: Throwable =>
         // do nothing, exceptions are handled by SystemCommandQuerySubscriber
