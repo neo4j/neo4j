@@ -20,15 +20,12 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
-import org.neo4j.cypher.internal.javacompat.SystemDatabaseInnerAccessor.SystemDatabaseInnerEngine;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -61,19 +58,11 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), isSystemDatabase );
         CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();
         CompilerFactory compilerFactory = makeCompilerFactory( queryService, spi, plannerConfig, runtimeConfig );
-        deps.satisfyDependencies( compilerFactory );
         if ( isSystemDatabase )
         {
             CypherPlannerConfiguration innerPlannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), false );
             CommunityCompilerFactory innerCompilerFactory =
                     new CommunityCompilerFactory( queryService,spi.monitors(), spi.logProvider(), innerPlannerConfig, runtimeConfig );
-            ExecutionEngine inner = new ExecutionEngine( queryService, spi.logProvider(), innerCompilerFactory );
-            SystemDatabaseInnerEngine innerEngine = ( query, parameters, context, subscriber ) -> inner
-                    .executeQuery( query, parameters, context, false, subscriber );
-            SystemDatabaseInnerAccessor innerAccessor =
-                    new SystemDatabaseInnerAccessor( (GraphDatabaseFacade) graphAPI, innerEngine );
-            DependencyResolver resolver = graphAPI.getDependencyResolver();
-            ((Dependencies) resolver).satisfyDependency( innerAccessor );
             return new SystemExecutionEngine( queryService, spi.logProvider(), compilerFactory, innerCompilerFactory );
         }
         else if ( spi.config().get( GraphDatabaseSettings.snapshot_query ) )
