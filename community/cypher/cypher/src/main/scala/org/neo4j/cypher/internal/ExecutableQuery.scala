@@ -41,6 +41,7 @@ trait ExecutableQuery extends CacheabilityInfo {
     * @param prePopulateResults     if false, nodes and relationships might be returned as references in the results
     * @param input                  stream of existing records as input
     * @param subscriber             The subscriber where results should be streamed to.
+    * @param monitor                if false, the query will not be monitored
     * @return the QueryExecution that controls the demand to the subscriber
     */
   def execute(transactionalContext: TransactionalContext,
@@ -49,7 +50,8 @@ trait ExecutableQuery extends CacheabilityInfo {
               params: MapValue,
               prePopulateResults: Boolean,
               input: InputDataStream,
-              subscriber: QuerySubscriber): QueryExecution
+              subscriber: QuerySubscriber,
+              monitor: Boolean): QueryExecution
 
   /**
     * The reusability state of this executable query.

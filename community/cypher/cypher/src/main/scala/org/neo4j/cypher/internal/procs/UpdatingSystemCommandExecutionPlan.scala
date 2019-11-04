@@ -21,16 +21,13 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, ProfileMode, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, ProfileMode}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.graphdb.QueryStatistics
-import org.neo4j.graphdb.security.AuthorizationViolationException
-import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -68,7 +65,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       }
       systemSubscriber.assertNotFailed()
 
-      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber, monitor = false).asInstanceOf[InternalExecutionResult]
       try {
         execution.consumeAll()// <- pulls on everything until close() is called with calls down to monitor . success
       } catch {
