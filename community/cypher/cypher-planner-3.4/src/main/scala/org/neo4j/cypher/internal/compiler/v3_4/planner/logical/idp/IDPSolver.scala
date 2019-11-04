@@ -106,6 +106,11 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       iterations += 1
       monitor.startIteration(iterations)
       val largestBlockSize = generateBestCandidates(toDo.size)
+      if (largestBlockSize <= 0) throw new IllegalStateException(
+        """The planner did unfortunately not succeed in finding a plan.
+          |Try increasing the config values `unsupported.cypher.idp_solver_table_threshold`
+          |and `unsupported.cypher.idp_solver_duration_threshold` to allow
+          |a bigger table and longer time for the planning.""".stripMargin)
       val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestBlockSize)
       monitor.endIteration(iterations, largestBlockSize, table.size)
       compactBlock(bestGoal, bestInBlock)
