@@ -101,7 +101,7 @@ case class ResolvedCall(signature: ProcedureSignature,
     val numArgsWithDefaults = signature.inputSignature.flatMap(_.default).size
     val minNumArgs = totalNumArgs - numArgsWithDefaults
     val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
-    val givenNumArgs = callArguments.length// + usedDefaultArgs.length
+    val givenNumArgs = callArguments.length
 
     if (declaredArguments) {
       val tooFewArgs = givenNumArgs < minNumArgs
