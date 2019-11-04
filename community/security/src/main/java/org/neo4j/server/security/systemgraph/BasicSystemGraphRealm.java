@@ -246,7 +246,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
     public User getUser( String username ) throws InvalidArgumentsException, FormatException
     {
-        User user;
         try ( Transaction tx = getSystemDb().beginTx() )
         {
             Node userNode = tx.findNode( Label.label( "User" ), "name", username );
@@ -255,30 +254,16 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             {
                 throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
             }
-            else
-            {
-                Credential credential = SystemGraphCredential.deserialize((String) userNode.getProperty( "credentials" ) , secureHasher );
-                boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
-                boolean suspended = (boolean) userNode.getProperty( "suspended" );
 
-                if ( suspended )
-                {
-                    user = new User.Builder( username, credential )
-                            .withRequiredPasswordChange( requirePasswordChange )
-                            .withFlag( IS_SUSPENDED )
-                            .build();
-                }
-                else
-                {
-                    user = new User.Builder( username, credential )
-                            .withRequiredPasswordChange( requirePasswordChange )
-                            .withoutFlag( IS_SUSPENDED )
-                            .build();
-                }
-            }
+            Credential credential = SystemGraphCredential.deserialize( (String) userNode.getProperty( "credentials" ), secureHasher );
+            boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
+            boolean suspended = (boolean) userNode.getProperty( "suspended" );
             tx.commit();
+
+            User.Builder builder = new User.Builder( username, credential ).withRequiredPasswordChange( requirePasswordChange );
+            builder = suspended ? builder.withFlag( IS_SUSPENDED ) : builder.withoutFlag( IS_SUSPENDED );
+            return builder.build();
         }
-        return user;
     }
 
     // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file
@@ -307,25 +292,20 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
             byte[] password = AuthToken.safeCastCredentials( AuthToken.CREDENTIALS, authToken );
 
-            User user;
             try
             {
-                user = getUser( username );
-            }
-            catch ( InvalidArgumentsException | FormatException e )
-            {
-                user = null;
-            }
-            AuthenticationResult result = AuthenticationResult.FAILURE;
-            if ( user != null )
-            {
-                result = authenticationStrategy.authenticate( user, password );
+                User user = getUser( username );
+                AuthenticationResult result = authenticationStrategy.authenticate( user, password );
                 if ( result == AuthenticationResult.SUCCESS && user.passwordChangeRequired() )
                 {
                     result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
                 }
+                return new BasicLoginContext( user, result );
             }
-            return new BasicLoginContext( user, result );
+            catch ( InvalidArgumentsException | FormatException e )
+            {
+                return new BasicLoginContext( null, AuthenticationResult.FAILURE );
+            }
         }
         finally
         {
