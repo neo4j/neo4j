@@ -19,45 +19,44 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class PartialNodeIndexUpdateIT
+@DbmsExtension
+class PartialNodeIndexUpdateIT
 {
-    @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule();
+    @Inject
+    private GraphDatabaseService database;
 
     @Test
-    public void partialIndexedNodePropertiesUpdate()
+    void partialIndexedNodePropertiesUpdate()
     {
-        GraphDatabaseService database = db.getGraphDatabaseAPI();
         final Label userLabel = Label.label( "User" );
         try ( Transaction transaction = database.beginTx() )
         {
-            database.execute( "CALL db.index.fulltext.createNodeIndex('test', ['Card', '" + userLabel.name() + "'], " +
+            transaction.execute( "CALL db.index.fulltext.createNodeIndex('test', ['Card', '" + userLabel.name() + "'], " +
                             "['title', 'plainText', 'username', 'screenName'] )" );
-            transaction.success();
+            transaction.commit();
         }
 
         final String value = "asdf";
         try ( Transaction transaction = database.beginTx() )
         {
-            database.execute( "UNWIND [{_id:48, properties:{screenName:\"" + value + "\"}}] as row " +
+            transaction.execute( "UNWIND [{_id:48, properties:{screenName:\"" + value + "\"}}] as row " +
                     "CREATE (n:L1{_id: row._id}) SET n += row.properties SET n:" + userLabel.name() );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = database.beginTx() )
         {
-            assertNotNull( database.findNode( userLabel, "screenName", value ) );
+            assertNotNull( transaction.findNode( userLabel, "screenName", value ) );
         }
     }
 }
