@@ -38,7 +38,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleArray;
@@ -94,7 +93,6 @@ final class SchemaStatementProcedure
             {
                 final String labelsOrRelTypes = labelsOrRelTypesAsStringArray( tokenRead, constraint.schema() );
                 final String properties = propertiesAsStringArray( tokenRead, constraint.schema() );
-                IndexBackedConstraintDescriptor indexBackedConstraint = constraint.asIndexBackedConstraint();
                 IndexDescriptor backingIndex = schemaRead.indexGetForName( name );
                 String providerName = backingIndex.getIndexProvider().name();
                 String config = btreeConfigAsString( backingIndex );
@@ -193,7 +191,6 @@ final class SchemaStatementProcedure
 
     private static String btreeConfigValueAsString( Value configValue )
     {
-        String valueString = "";
         if ( configValue instanceof DoubleArray )
         {
             final DoubleArray doubleArray = (DoubleArray) configValue;
@@ -233,7 +230,6 @@ final class SchemaStatementProcedure
 
     private static String fulltextConfigValueAsString( Value configValue )
     {
-        String valueString = "";
         if ( configValue instanceof BooleanValue )
         {
             final BooleanValue booleanValue = (BooleanValue) configValue;
