@@ -195,10 +195,11 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldHaveSameLayoutAsEmbedded() throws IOException
+    public void shouldHaveSameLayoutAsEmbedded() throws Exception
     {
         File serverDir = testDirectory.directory( "server-dir" );
-        ServerBootstrapper.start( bootstrapper, "--home-dir", serverDir.getAbsolutePath() );
+        ServerBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( "--home-dir", serverDir.getAbsolutePath() ) );
+        assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
         Neo4jLayout serverLayout = bootstrapper.getServer().getDatabaseService().getDatabase().databaseLayout().getNeo4jLayout();
         bootstrapper.stop();
 
