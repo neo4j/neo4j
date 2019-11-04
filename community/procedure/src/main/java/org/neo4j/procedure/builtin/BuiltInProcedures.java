@@ -55,6 +55,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -75,6 +76,7 @@ import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Value;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
@@ -248,17 +250,69 @@ public class BuiltInProcedures
         }
 
         // Constraints
-        stream( schemaRead.constraintsGetAll() )
-                .map( constraint -> new SchemaStatementResult( constraint.getName(), "CONSTRAINT", createStatement( constraint ),
-                        dropStatement( constraint ) ) )
-                .forEach( ssr -> schemaStatements.put( ssr.name, ssr ) );
+        Iterator<ConstraintDescriptor> allConstraints = schemaRead.constraintsGetAll();
+        while ( allConstraints.hasNext() )
+        {
+            ConstraintDescriptor constraint = allConstraints.next();
+            String name = constraint.getName();
+            String createStatement = createStatement( tokenRead, constraint );
+            String dropStatement = dropStatement( constraint );
+            schemaStatements.put( name, new SchemaStatementResult( name, "CONSTRAINT", createStatement, dropStatement ) );
+        }
 
         return schemaStatements.values().stream();
     }
 
-    private String createStatement( ConstraintDescriptor constraint )
+    private String createStatement( TokenRead tokenRead, ConstraintDescriptor constraint ) throws ProcedureException
     {
-        return "Create constraint placeholder";
+        try
+        {
+            String name = constraint.getName();
+            if ( constraint.isIndexBackedConstraint() )
+            {
+                final String labelsOrRelTypes = labelsOrRelTypesAsStringArray( tokenRead, constraint.schema() );
+                final String properties = propertiesAsStringArray( tokenRead, constraint.schema() );
+                IndexBackedConstraintDescriptor indexBackedConstraint = constraint.asIndexBackedConstraint();
+                IndexDescriptor backingIndex = kernelTransaction.schemaRead().indexGetForName( name );
+                String providerName = backingIndex.getIndexProvider().name();
+                String config = btreeConfigAsString( backingIndex );
+                if ( constraint.isUniquenessConstraint() )
+                {
+                    return format( "CALL db.createUniquePropertyConstraint( '%s', %s, %s, '%s', %s )",
+                            name, labelsOrRelTypes, properties, providerName, config );
+                }
+                if ( constraint.isNodeKeyConstraint() )
+                {
+                    return format( "CALL db.createNodeKey( '%s', %s, %s, '%s', %s )",
+                            name, labelsOrRelTypes, properties, providerName, config );
+                }
+            }
+            if ( constraint.isNodePropertyExistenceConstraint() )
+            {
+                // "create CONSTRAINT ON (a:A) ASSERT exists(a.p)"
+                int labelId = constraint.schema().getLabelId();
+                String label = tokenRead.nodeLabelName( labelId );
+                int propertyId = constraint.schema().getPropertyId();
+                String property = tokenRead.propertyKeyName( propertyId );
+                return format( "CREATE CONSTRAINT `%s` ON (a:`%s`) ASSERT exists(a.`%s`)",
+                        name, label, property );
+            }
+            if ( constraint.isRelationshipPropertyExistenceConstraint() )
+            {
+                // "create CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)"
+                int relationshipTypeId = constraint.schema().getRelTypeId();
+                String relationshipType = tokenRead.relationshipTypeName( relationshipTypeId );
+                int propertyId = constraint.schema().getPropertyId();
+                String property = tokenRead.propertyKeyName( propertyId );
+                return format( "CREATE CONSTRAINT `%s` ON ()-[a:`%s`]-() ASSERT exists(a.`%s`)",
+                        name, relationshipType, property );
+            }
+            throw new IllegalArgumentException( "Did not recognize constraint type " + constraint );
+        }
+        catch ( KernelException e )
+        {
+            throw new ProcedureException( Status.General.UnknownError, e, "Failed to re-create create statement." );
+        }
     }
 
     private String dropStatement( ConstraintDescriptor constraint )
@@ -271,24 +325,24 @@ public class BuiltInProcedures
         try
         {
             final String name = indexDescriptor.getName();
-            final String labelsOrRelTypes = labelsOrRelTypesAsStringArray( tokenRead, indexDescriptor );
-            final String properties = propertiesAsStringArray( tokenRead, indexDescriptor );
+            final String labelsOrRelTypes = labelsOrRelTypesAsStringArray( tokenRead, indexDescriptor.schema() );
+            final String properties = propertiesAsStringArray( tokenRead, indexDescriptor.schema() );
             switch ( indexDescriptor.getIndexType() )
             {
             case BTREE:
                 String btreeConfig = btreeConfigAsString( indexDescriptor );
                 final String providerName = indexDescriptor.getIndexProvider().name();
-                return String.format( "CALL db.createIndex('%s', %s, %s, '%s', %s)",
+                return format( "CALL db.createIndex('%s', %s, %s, '%s', %s)",
                         name, labelsOrRelTypes, properties, providerName, btreeConfig );
             case FULLTEXT:
                 String fulltextConfig = fulltextConfigAsString( indexDescriptor );
                 switch ( indexDescriptor.schema().entityType() )
                 {
                 case NODE:
-                    return String.format( "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)",
+                    return format( "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)",
                             name, labelsOrRelTypes, properties, fulltextConfig );
                 case RELATIONSHIP:
-                    return String.format( "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)",
+                    return format( "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)",
                             name, labelsOrRelTypes, properties, fulltextConfig );
                 default:
                     throw new IllegalArgumentException( "Did not recognize entity type " + indexDescriptor.schema().entityType() );
@@ -371,9 +425,8 @@ public class BuiltInProcedures
         throw new IllegalArgumentException( "Could not convert config value '" + configValue + "' to config string." );
     }
 
-    private String propertiesAsStringArray( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws PropertyKeyIdNotFoundKernelException
+    private String propertiesAsStringArray( TokenRead tokenRead, SchemaDescriptor schema ) throws PropertyKeyIdNotFoundKernelException
     {
-        final SchemaDescriptor schema = indexDescriptor.schema();
         StringJoiner properties = new StringJoiner( ", ", "[", "]" );
         for ( int propertyId : schema.getPropertyIds() )
         {
@@ -382,9 +435,8 @@ public class BuiltInProcedures
         return properties.toString();
     }
 
-    private String labelsOrRelTypesAsStringArray( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws KernelException
+    private String labelsOrRelTypesAsStringArray( TokenRead tokenRead, SchemaDescriptor schema ) throws KernelException
     {
-        final SchemaDescriptor schema = indexDescriptor.schema();
         StringJoiner labelsOrRelTypes = new StringJoiner( ", ", "[", "]" );
         for ( int entityTokenId : schema.getEntityTokenIds() )
         {
