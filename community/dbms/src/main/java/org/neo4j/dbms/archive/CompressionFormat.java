@@ -21,11 +21,13 @@ package org.neo4j.dbms.archive;
 
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
+import com.github.luben.zstd.util.Native;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -95,7 +97,7 @@ public enum CompressionFormat
 
     public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier ) throws IOException
     {
-        return compress( streamSupplier, ZSTD );
+        return compress( streamSupplier, selectCompressionFormat() );
     }
 
     public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
@@ -114,25 +116,59 @@ public enum CompressionFormat
 
     public static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier ) throws IOException
     {
+
+        if ( selectCompressionFormat().equals( ZSTD ) )
+        {
+            //ZSTD is available, try it.
+            try
+            {
+                return decompress( streamSupplier, ZSTD );
+            }
+            catch (  IOException ioe )
+            {
+                //It failed, fallthrough to try GZIP
+            }
+        }
+        return decompress( streamSupplier, GZIP );
+    }
+
+    public static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
+    {
         InputStream source = streamSupplier.get();
         try
         {
-            return ZSTD.decompress( source );
+            return format.decompress( source );
         }
         catch ( IOException ioe )
         {
             IOUtils.closeAllSilently( source );
-            source = streamSupplier.get();
-            try
+            throw ioe;
+        }
+    }
+
+    public static CompressionFormat selectCompressionFormat()
+    {
+        return selectCompressionFormat( null );
+    }
+
+    public static CompressionFormat selectCompressionFormat( PrintStream output )
+    {
+        try
+        {
+            Native.load(); // Try to load ZSTD
+            if ( Native.isLoaded() )
             {
-                return GZIP.decompress( source );
-            }
-            catch ( IOException e )
-            {
-                IOUtils.closeAllSilently( source );
-                ioe.addSuppressed( e );
-                throw ioe;
+                return ZSTD;
             }
         }
+        catch ( Throwable t )
+        {
+            if ( output != null )
+            {
+                output.println( "Failed to load " + ZSTD.name() + ": " + t.getMessage() );
+                output.println( "Fallback to " + GZIP.name() );
+            }
+        }
+        return GZIP; // fallback
     }
 }

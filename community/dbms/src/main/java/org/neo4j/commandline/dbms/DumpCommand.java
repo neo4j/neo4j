@@ -46,6 +46,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.dbms.archive.CompressionFormat.selectCompressionFormat;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
@@ -134,9 +135,10 @@ public class DumpCommand extends AbstractCommand
         Path databasePath = databaseLayout.databaseDirectory().toPath();
         try
         {
+            CompressionFormat format = selectCompressionFormat( ctx.err() );
             File lockFile = databaseLayout.databaseLockFile();
             dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory().toPath(), archive,
-                    CompressionFormat.ZSTD, path -> Objects.equals( path.getFileName().toString(), lockFile.getName() ) );
+                    format, path -> Objects.equals( path.getFileName().toString(), lockFile.getName() ) );
         }
         catch ( FileAlreadyExistsException e )
         {
