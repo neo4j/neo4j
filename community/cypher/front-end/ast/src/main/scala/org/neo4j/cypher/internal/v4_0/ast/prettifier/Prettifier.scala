@@ -190,6 +190,18 @@ case class Prettifier(expr: ExpressionStringifier) {
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
+    case x @ GrantPrivilege(WritePrivilege(), _, dbScope, qualifier, roleNames) =>
+      val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
+
+    case x @ DenyPrivilege(WritePrivilege(), _, dbScope, qualifier, roleNames) =>
+      val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
+
+    case x @ RevokePrivilege(WritePrivilege(), _, dbScope, qualifier, roleNames, _) =>
+      val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
+
     case x @ GrantPrivilege(_, resource, dbScope, qualifier, roleNames) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} {$resourceName} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"

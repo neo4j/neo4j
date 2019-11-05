@@ -34,15 +34,15 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
             ).foreach {
               case (dbName: String, graphScope: ast.GraphScope) =>
 
-                test(s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * $preposition role") {
+                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition role") {
                   yields(func(ast.WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("role")))
                 }
 
-                test(s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") {
+                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") {
                   yields(func(ast.WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("role")))
                 }
 
-                test(s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") {
+                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") {
                   yields(func(ast.WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("r:ole")))
                 }
 
@@ -51,32 +51,29 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
                 // Missing `ON`
                 assertFails( s"$command WRITE {*} $graphKeyword $dbName $elementKeyword * (*) $preposition role")
                 // Missing role
-                assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * (*)")
-                // Missing property definition
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition role")
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*) $preposition role")
+                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*)")
                 // Invalid role name
-                assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
+                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
                 // Does not support write on specific label/property yet
-                assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword A $preposition role")
-                assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword A (*) $preposition role")
-                assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * (foo) $preposition role")
-                assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
+                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A $preposition role")
+                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (*) $preposition role")
+                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (foo) $preposition role")
+                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
                 assertFails( s"$command WRITE {prop} ON $graphKeyword $dbName $elementKeyword * $preposition role")
               }
             }
 
-            test(s"$command WRITE {*} ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {
+            test(s"$command WRITE ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {
               yields(func(ast.WritePrivilege()(pos), ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
             }
 
 
             test(s"parseErrors $command $graphKeyword $elementKeyword $preposition") {
               // Invalid graph name
-              assertFails(s"$command WRITE {*} ON $graphKeyword f:oo $elementKeyword * $preposition role")
+              assertFails(s"$command WRITE ON $graphKeyword f:oo $elementKeyword * $preposition role")
               // Multiple graphs not allowed
-              assertFails(s"$command WRITE {*} ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
-              assertFails(s"$command WRITE {*} ON $graphKeyword $elementKeyword * (*) $preposition role")
+              assertFails(s"$command WRITE ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
+              assertFails(s"$command WRITE ON $graphKeyword $elementKeyword * (*) $preposition role")
             }
         }
 
@@ -87,7 +84,7 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
         ).foreach {
           case (dbName: String, graphScope: ast.GraphScope) =>
 
-            test(s"$command WRITE {*} ON $graphKeyword $dbName $preposition role") {
+            test(s"$command WRITE ON $graphKeyword $dbName $preposition role") {
               yields(func(ast.WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("role")))
             }
         }

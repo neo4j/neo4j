@@ -301,8 +301,8 @@ object GrantPrivilege {
     GrantPrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
   def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
     GrantPrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
-  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
-    GrantPrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def write(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
+    GrantPrivilege(WritePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
 }
 
 object DenyPrivilege {
@@ -314,8 +314,8 @@ object DenyPrivilege {
     DenyPrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
   def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => DenyPrivilege =
     DenyPrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
-  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => DenyPrivilege =
-    DenyPrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def write(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => DenyPrivilege =
+    DenyPrivilege(WritePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
 }
 
 object RevokePrivilege {
@@ -328,8 +328,8 @@ object RevokePrivilege {
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
   def grantedAsMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
-  def grantedWrite(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+  def grantedWrite(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(WritePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
 
   // Revoke of deny
   def databaseDeniedAction(action: DatabaseAction, scope: GraphScope, roleNames: Seq[String]): InputPosition => RevokePrivilege =
@@ -340,8 +340,8 @@ object RevokePrivilege {
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
   def deniedAsMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
-  def deniedWrite(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
+  def deniedWrite(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(WritePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
 
   // Revoke
   def databaseAction(action: DatabaseAction, scope: GraphScope, roleNames: Seq[String]): InputPosition => RevokePrivilege =
@@ -352,8 +352,8 @@ object RevokePrivilege {
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames,RevokeBothType()(InputPosition.NONE))
   def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
-  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
+  def write(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(WritePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
