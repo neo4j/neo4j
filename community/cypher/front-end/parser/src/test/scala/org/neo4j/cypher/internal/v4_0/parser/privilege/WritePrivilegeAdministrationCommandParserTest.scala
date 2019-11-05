@@ -46,21 +46,26 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
                   yields(func(ast.WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("r:ole")))
                 }
 
+                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword A $preposition role") {
+                  yields(func(ast.WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
+                }
 
-              test(s"failToParseStatements $graphKeyword $dbName $elementKeyword $preposition") {
-                // Missing `ON`
-                assertFails( s"$command WRITE {*} $graphKeyword $dbName $elementKeyword * (*) $preposition role")
-                // Missing role
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*)")
-                // Invalid role name
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
-                // Does not support write on specific label/property yet
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A $preposition role")
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (*) $preposition role")
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (foo) $preposition role")
-                assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
-                assertFails( s"$command WRITE {prop} ON $graphKeyword $dbName $elementKeyword * $preposition role")
-              }
+                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") {
+                  yields(func(ast.WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
+                }
+
+                test(s"failToParseStatements $graphKeyword $dbName $elementKeyword $preposition") {
+                  // Missing `ON`
+                  assertFails( s"$command WRITE {*} $graphKeyword $dbName $elementKeyword * (*) $preposition role")
+                  // Missing role
+                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*)")
+                  // Invalid role name
+                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
+                  // Does not support write on specific label/property yet
+                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (foo) $preposition role")
+                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
+                  assertFails( s"$command WRITE {prop} ON $graphKeyword $dbName $elementKeyword * $preposition role")
+                }
             }
 
             test(s"$command WRITE ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {

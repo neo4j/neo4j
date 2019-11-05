@@ -356,28 +356,35 @@ object RevokePrivilege {
     RevokePrivilege(WritePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
 }
 
-final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                               (val position: InputPosition) extends MultiDatabaseAdministrationCommand {
-
-  override def name = s"GRANT ${privilege.name}"
+sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: PrivilegeQualifier, position: InputPosition)
+  extends MultiDatabaseAdministrationCommand {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      writeQualifierCheck chain
       SemanticState.recordCurrentScope(this)
+
+  private def writeQualifierCheck: SemanticCheck =
+    if (privilege.isInstanceOf[WritePrivilege] && !qualifier.isInstanceOf[AllQualifier])
+      SemanticError("The use of ELEMENT, NODE or RELATIONSHIP with the WRITE privilege is not supported in this version.", position)
+    else
+      SemanticCheckResult.success
+}
+
+final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
+                               (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+
+  override def name = s"GRANT ${privilege.name}"
 }
 
 final case class DenyPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                                (val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+                                (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name = s"DENY ${privilege.name}"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
 }
 
 final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String],
-                                 revokeType: RevokeType)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+                                 revokeType: RevokeType)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name: String = {
     if (revokeType.name.nonEmpty) {
@@ -394,9 +401,7 @@ final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResou
       } else {
         SemanticError(s"$name is not a valid command, use REVOKE READ and REVOKE TRAVERSE instead.", position)
       }
-    case _ =>
-      super.semanticCheck chain
-        SemanticState.recordCurrentScope(this)
+    case _ => super.semanticCheck
   }
 }
 

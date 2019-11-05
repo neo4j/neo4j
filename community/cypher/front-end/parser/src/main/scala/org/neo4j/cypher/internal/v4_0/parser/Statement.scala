@@ -343,31 +343,31 @@ trait Statement extends Parser
 
   //`GRANT WRITE ON GRAPH foo * (*) TO role`
   def GrantWrite: Rule1[GrantPrivilege] = rule("CATALOG GRANT WRITE") {
-    group(keyword("GRANT WRITE") ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("GRANT WRITE") ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.GrantPrivilege.write(scope, qualifier, grantees))
   }
 
   //`DENY WRITE ON GRAPH foo * (*) TO role`
   def DenyWrite: Rule1[DenyPrivilege] = rule("CATALOG DENY WRITE") {
-    group(keyword("DENY WRITE") ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("DENY WRITE") ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.DenyPrivilege.write(scope, qualifier, grantees))
   }
 
   //`REVOKE GRANT WRITE ON GRAPH foo * (*) FROM role`
   def RevokeGrantWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT WRITE") {
-    group(keyword("REVOKE GRANT WRITE") ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE GRANT WRITE") ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.RevokePrivilege.grantedWrite(scope, qualifier, grantees))
   }
 
   //`REVOKE DENY WRITE ON GRAPH foo * (*) FROM role`
   def RevokeDenyWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY WRITE") {
-    group(keyword("REVOKE DENY WRITE") ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE DENY WRITE") ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.RevokePrivilege.deniedWrite(scope, qualifier, grantees))
   }
 
   //`REVOKE WRITE ON GRAPH foo * (*) FROM role`
   def RevokeWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE WRITE") {
-    group(keyword("REVOKE WRITE") ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE WRITE") ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.RevokePrivilege.write(scope, qualifier, grantees))
   }
 
@@ -386,11 +386,6 @@ trait Statement extends Parser
     group(NodeKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
     group(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.LabelAllQualifier()} |
     group(ElementKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.ElementsQualifier(_)} |
-    optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
-  )
-
-  // TODO can be removed once we have more fine-grained writes
-  private def AllScopeQualifier: Rule1[PrivilegeQualifier] = rule("all element types and associated labels/relTypes (props) qualifier combinations")(
     optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
 
