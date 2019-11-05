@@ -125,15 +125,13 @@ case class ResolvedCall(signature: ProcedureSignature,
           }"
         }
         val sigDesc =
-          s"""
-             |
-             |Procedure ${signature.name} has signature: $signature
+          s"""Procedure ${signature.name} has signature: $signature
              |meaning that it expects $argTypes""".stripMargin
         val description = signature.description.fold("")(d => s"Description: $d")
 
         if (tooFewArgs) {
           error(_: SemanticState, SemanticError(
-            s"""Procedure call does not provide the required number of arguments: got $givenNumArgs expected at least $minNumArgs (total: $totalNumArgs, $numArgsWithDefaults of which has default values).
+            s"""Procedure call does not provide the required number of arguments: got $givenNumArgs expected at least $minNumArgs (total: $totalNumArgs, $numArgsWithDefaults of which have default values).
                |
                |$sigDesc
                |$description""".stripMargin, position)
