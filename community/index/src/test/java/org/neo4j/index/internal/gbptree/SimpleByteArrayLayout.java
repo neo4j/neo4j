@@ -25,6 +25,22 @@ import java.util.Arrays;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * Layout that can create keys and values with varying size.
+ * Even if the sizes are varying they are still deterministic
+ * based on seed given to {@link #key(long)} or {@link #value(long)}.
+ * In this way we can create a randomized workload of keys and values
+ * that is still deterministic. This is very useful when creating tests
+ * that test both dynamic and fixed layout.
+ * <p>
+ * Keys and values can be compared in two different ways:
+ * <ul>
+ *     <li>useFirstLongAsSeed - The first 8 bytes in key or value are read as a long value and comparison is based on this.
+ *                              This is the default and most likely what you want.</li>
+ *     <li>!useFirstLongAsSeed - Keys and values are compared byte by byte in lexicographic order.
+ *                               Only useful if you need to control entry size exactly from outside.</li>
+ * </ul>
+ */
 public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
 {
     private static final int DEFAULT_LARGE_ENTRY_SIZE = Long.BYTES;
@@ -33,16 +49,41 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     private final int largeEntriesSize;
     private final long largeEntryModulo;
 
+    /**
+     * This should be default constructor unless you want to exactly control entry size from outside
+     * or you want entries to vary vastly in size.
+     */
     SimpleByteArrayLayout()
     {
         this( true, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO );
     }
 
+    /**
+     * Use this constructor if you want to control entry sizes exactly from outside.
+     * Using useFirstLongAsSeed=false will let this keys and value be compared byte
+     * by byte. There is no point calling this constructor with useFirstLongAsSeed=true.
+     *
+     * @param useFirstLongAsSeed False if keys and values should be compared byte by byte.
+     */
     SimpleByteArrayLayout( boolean useFirstLongAsSeed )
     {
         this( useFirstLongAsSeed, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO );
     }
 
+    /**
+     * Use this constructor if you want to use entries that vary vastly in size.
+     * <p>
+     * When generating {@link #key(long) keys} or {@link #value(long) values} from seed
+     * largeEntriesSize and largeEntryModulo can be used to force a certain size for those
+     * keys or values. If (seed % largeEntryModulo == 0) then the key or value will have
+     * size equal to largeEntriesSize instead of the dynamically changing size it would
+     * otherwise have. This is mostly used to create a set of keys and values with large
+     * difference in size.
+     *
+     * @param largeEntriesSize Total size of large keys or values.
+     * @param largeEntryModulo Control to what degree large values should be used,
+     * (seed % largeEntryModulo == 0) will generate a large value. 0=never use large values.
+     */
     SimpleByteArrayLayout( int largeEntriesSize, long largeEntryModulo )
     {
         this( true, largeEntriesSize, largeEntryModulo );
