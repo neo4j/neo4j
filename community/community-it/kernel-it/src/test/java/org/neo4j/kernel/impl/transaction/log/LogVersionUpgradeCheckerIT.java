@@ -154,7 +154,7 @@ class LogVersionUpgradeCheckerIT
 
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            FlushablePositionAwareChannel channel = logFiles.getLogFile().getWriter();
+            FlushablePositionAwareChecksumChannel channel = logFiles.getLogFile().getWriter();
 
             LogPosition logPosition = tailInformation.lastCheckPoint.getLogPosition();
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import java.util.Objects;
 import java.util.TimeZone;
 
 import org.neo4j.internal.helpers.Format;
@@ -30,19 +31,19 @@ public class LogEntryCommit extends AbstractLogEntry
 {
     private final long txId;
     private final long timeWritten;
-    protected final String name;
+    private final int checksum;
 
-    public LogEntryCommit( long txId, long timeWritten )
+    public LogEntryCommit( long txId, long timeWritten, int checksum )
     {
-        this( LATEST_VERSION, txId, timeWritten );
+        this( LATEST_VERSION, txId, timeWritten, checksum );
     }
 
-    public LogEntryCommit( LogEntryVersion version, long txId, long timeWritten )
+    public LogEntryCommit( LogEntryVersion version, long txId, long timeWritten, int checksum )
     {
         super( version, TX_COMMIT );
         this.txId = txId;
         this.timeWritten = timeWritten;
-        this.name = "Commit";
+        this.checksum = checksum;
     }
 
     public long getTxId()
@@ -55,6 +56,11 @@ public class LogEntryCommit extends AbstractLogEntry
         return timeWritten;
     }
 
+    public int getChecksum()
+    {
+        return checksum;
+    }
+
     @Override
     public String toString()
     {
@@ -64,7 +70,7 @@ public class LogEntryCommit extends AbstractLogEntry
     @Override
     public String toString( TimeZone timeZone )
     {
-        return name + "[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + "]";
+        return "Commit[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + ", checksum=" + checksum + "]";
     }
 
     @Override
@@ -78,17 +84,13 @@ public class LogEntryCommit extends AbstractLogEntry
         {
             return false;
         }
-
-        LogEntryCommit commit = (LogEntryCommit) o;
-        return timeWritten == commit.timeWritten && txId == commit.txId && name.equals( commit.name );
+        LogEntryCommit that = (LogEntryCommit) o;
+        return txId == that.txId && timeWritten == that.timeWritten && checksum == that.checksum;
     }
 
     @Override
     public int hashCode()
     {
-        int result = (int) (txId ^ (txId >>> 32));
-        result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
-        result = 31 * result + name.hashCode();
-        return result;
+        return Objects.hash( txId, timeWritten, checksum );
     }
 }

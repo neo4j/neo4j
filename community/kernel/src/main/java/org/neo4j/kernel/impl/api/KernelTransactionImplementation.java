@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -116,6 +115,7 @@ import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
@@ -144,7 +144,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Pool<KernelTransactionImplementation> pool;
 
     // For committing
-    private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
@@ -201,7 +200,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public KernelTransactionImplementation( Config config,
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
-            TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
+            TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool, SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
             LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
@@ -212,7 +211,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.storageReader = storageEngine.newReader();
@@ -714,12 +712,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // Finish up the whole transaction representation
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
-                    TransactionHeaderInformation headerInformation = headerInformationFactory.create();
                     long timeCommitted = clocks.systemClock().millis();
-                    transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
-                            headerInformation.getMasterId(),
-                            headerInformation.getAuthorId(),
-                            startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, epoch.tokenId() );
+                    transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, epoch.tokenId() );
 
                     // Commit the transaction
                     success = true;

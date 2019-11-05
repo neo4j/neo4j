@@ -37,7 +37,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -63,7 +63,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 class VersionAwareLogEntryReaderIT
 {
     // this offset includes log header and transaction that create node on test setup
-    private static final long END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 135L;
+    private static final long END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 131L;
     @Inject
     private FileSystemAbstraction fs;
     @Inject
@@ -139,7 +139,7 @@ class VersionAwareLogEntryReaderIT
             long initialPosition = getLastReadablePosition( logFiles );
             long checkpointsEndDataOffset = DEFAULT_READ_AHEAD_SIZE + initialPosition;
 
-            FlushablePositionAwareChannel writer = logFile.getWriter();
+            FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
             TransactionLogWriter logWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
             do
             {

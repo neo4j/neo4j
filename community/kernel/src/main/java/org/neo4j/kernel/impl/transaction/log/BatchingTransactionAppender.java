@@ -43,9 +43,9 @@ import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
 
 /**
  * Concurrently appends transactions to the transaction log, while coordinating with the log rotation and forcing the
@@ -62,8 +62,9 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private final Health databaseHealth;
     private final Lock forceLock = new ReentrantLock();
 
-    private FlushablePositionAwareChannel writer;
+    private FlushablePositionAwareChecksumChannel writer;
     private TransactionLogWriter transactionLogWriter;
+    private int previousChecksum;
 
     public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore, Health databaseHealth )
@@ -73,6 +74,19 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         this.transactionIdStore = transactionIdStore;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
+        this.previousChecksum = transactionIdStore.getLastCommittedTransaction().checksum();
+    }
+
+    @VisibleForTesting
+    public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
+            TransactionIdStore transactionIdStore, Health databaseHealth, int previousChecksum )
+    {
+        this.logFile = logFiles.getLogFile();
+        this.logRotation = logRotation;
+        this.transactionIdStore = transactionIdStore;
+        this.databaseHealth = databaseHealth;
+        this.transactionMetadataCache = transactionMetadataCache;
+        this.previousChecksum = previousChecksum;
     }
 
     @Override
@@ -106,7 +120,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                     // really recover from and would point to a bug somewhere.
                     matchAgainstExpectedTransactionIdIfAny( transactionId, tx );
 
-                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent );
+                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent, previousChecksum );
+                    previousChecksum = commitment.getTransactionChecksum();
                     tx.commitment( commitment, transactionId );
                     tx.logPosition( commitment.logPosition() );
                     tx = tx.next();
@@ -185,7 +200,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
      * this transaction contains any explicit index changes.
      */
-    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent )
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent, int previousChecksum )
             throws IOException
     {
         // The outcome of this try block is either of:
@@ -197,18 +212,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         try
         {
             LogPosition logPositionBeforeCommit = writer.getCurrentPosition( positionMarker ).newPosition();
-            transactionLogWriter.append( transaction, transactionId );
+            int checksum = transactionLogWriter.append( transaction, transactionId, previousChecksum );
             LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
             logAppendEvent.appendToLogFile( logPositionBeforeCommit, logPositionAfterCommit );
 
-            long transactionChecksum =
-                    checksum( transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
-            transactionMetadataCache
-                    .cacheTransactionMetadata( transactionId, logPositionBeforeCommit, transaction.getMasterId(),
-                            transaction.getAuthorId(), transactionChecksum, transaction.getTimeCommitted() );
+            transactionMetadataCache.cacheTransactionMetadata( transactionId, logPositionBeforeCommit, checksum, transaction.getTimeCommitted() );
 
-            return new TransactionCommitment( transactionId, transactionChecksum,
-                    transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
+            return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {

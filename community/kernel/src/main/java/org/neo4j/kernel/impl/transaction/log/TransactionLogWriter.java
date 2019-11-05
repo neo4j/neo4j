@@ -33,17 +33,19 @@ public class TransactionLogWriter
         this.writer = writer;
     }
 
-    public void append( TransactionRepresentation transaction, long transactionId ) throws IOException
+    /**
+     * Append a transaction to the transaction log file
+     * @return checksum of the transaction
+     */
+    public int append( TransactionRepresentation transaction, long transactionId, int previousChecksum ) throws IOException
     {
-        writer.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(),
-                transaction.getTimeStarted(), transaction.getLatestCommittedTxWhenStarted(),
-                transaction.additionalHeader() );
+        writer.writeStartEntry( transaction.getTimeStarted(), transaction.getLatestCommittedTxWhenStarted(), previousChecksum, transaction.additionalHeader() );
 
         // Write all the commands to the log channel
         writer.serialize( transaction );
 
         // Write commit record
-        writer.writeCommitEntry( transactionId, transaction.getTimeCommitted() );
+        return writer.writeCommitEntry( transactionId, transaction.getTimeCommitted() );
     }
 
     public void checkPoint( LogPosition logPosition ) throws IOException

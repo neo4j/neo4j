@@ -25,10 +25,10 @@ package org.neo4j.storageengine.api;
 public class TransactionId
 {
     private final long transactionId;
-    private final long checksum;
+    private final int checksum;
     private final long commitTimestamp;
 
-    public TransactionId( long transactionId, long checksum, long commitTimestamp )
+    public TransactionId( long transactionId, int checksum, long commitTimestamp )
     {
         this.transactionId = transactionId;
         this.checksum = checksum;
@@ -55,7 +55,7 @@ public class TransactionId
     /**
      * Checksum of a transaction, generated from transaction meta data or its contents.
      */
-    public long checksum()
+    public int checksum()
     {
         return checksum;
     }
@@ -82,7 +82,7 @@ public class TransactionId
     public int hashCode()
     {
         int result = (int) (transactionId ^ (transactionId >>> 32));
-        result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+        result = 31 * result + checksum;
         result = 31 * result + (int) (commitTimestamp ^ (commitTimestamp >>> 32));
         return result;
     }

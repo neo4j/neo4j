@@ -98,7 +98,6 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
@@ -195,7 +194,6 @@ public class Database extends LifecycleAdapter
     private final LockService lockService;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
-    private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
     private final GlobalProcedures globalProcedures;
@@ -261,7 +259,6 @@ public class Database extends LifecycleAdapter
         this.fs = context.getFs();
         this.transactionStats = context.getTransactionStats();
         this.databaseHealthFactory = context.getDatabaseHealthFactory();
-        this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
         this.parentMonitors = context.getMonitors();
         this.globalProcedures = context.getGlobalProcedures();
@@ -641,7 +638,7 @@ public class Database extends LifecycleAdapter
                 new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId );
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( databaseConfig, statementLocksFactory, constraintIndexCreator,
-                        transactionHeaderInformationFactory, transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
+                        transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
                         databaseAvailabilityGuard,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,

@@ -40,15 +40,15 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     private final AtomicReference<TransactionId> committedTransactionId =
             new AtomicReference<>( new TransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP ) );
     private final long previouslyCommittedTxId;
-    private final long initialTransactionChecksum;
+    private final int initialTransactionChecksum;
     private final long previouslyCommittedTxCommitTimestamp;
 
     public SimpleTransactionIdStore()
     {
-        this( BASE_TX_ID, 0, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+        this( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
     }
 
-    public SimpleTransactionIdStore( long previouslyCommittedTxId, long checksum,
+    public SimpleTransactionIdStore( long previouslyCommittedTxId, int checksum,
             long previouslyCommittedTxCommitTimestamp, long previouslyCommittedTxLogVersion,
             long previouslyCommittedTxLogByteOffset )
     {
@@ -73,7 +73,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public synchronized void transactionCommitted( long transactionId, long checksum, long commitTimestamp )
+    public synchronized void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
     {
         TransactionId current = committedTransactionId.get();
         if ( current == null || transactionId > current.transactionId() )
@@ -97,8 +97,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     @Override
     public TransactionId getUpgradeTransaction()
     {
-        return new TransactionId( previouslyCommittedTxId, initialTransactionChecksum,
-                previouslyCommittedTxCommitTimestamp );
+        return new TransactionId( previouslyCommittedTxId, initialTransactionChecksum, previouslyCommittedTxCommitTimestamp );
     }
 
     @Override
@@ -114,7 +113,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp,
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp,
             long byteOffset, long logVersion )
     {
         committingTransactionId.set( transactionId );

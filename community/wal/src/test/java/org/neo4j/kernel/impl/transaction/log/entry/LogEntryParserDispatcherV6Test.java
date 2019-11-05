@@ -38,19 +38,18 @@ class LogEntryParserDispatcherV6Test
     private final LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
     private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
-    private final LogPosition position = new LogPosition( 0, 29 );
+    private final LogPosition position = new LogPosition( 0, 25 );
 
     @Test
     void shouldParserStartEntry() throws IOException
     {
         // given
-        final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, position );
+        final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, new byte[]{4}, position );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.putInt( start.getMasterId() );
-        channel.putInt( start.getLocalId() );
         channel.putLong( start.getTimeWritten() );
         channel.putLong( start.getLastCommittedTxWhenTransactionStarted() );
+        channel.putInt( start.getPreviousChecksum() );
         channel.putInt( start.getAdditionalHeader().length );
         channel.put( start.getAdditionalHeader(), start.getAdditionalHeader().length );
 
@@ -68,11 +67,12 @@ class LogEntryParserDispatcherV6Test
     void shouldParserOnePhaseCommitEntry() throws IOException
     {
         // given
-        final LogEntryCommit commit = new LogEntryCommit( version, 42, 21 );
+        final LogEntryCommit commit = new LogEntryCommit( version, 42, 21, -668317999 );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );
+        channel.putChecksum();
 
         channel.getCurrentPosition( marker );
 
@@ -107,11 +107,12 @@ class LogEntryParserDispatcherV6Test
     void shouldParseCheckPointEntry() throws IOException
     {
         // given
-        final CheckPoint checkPoint = new CheckPoint( new LogPosition( 43, 44 ) );
+        final CheckPoint checkPoint = new CheckPoint( version, new LogPosition( 43, 44 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
         channel.putLong( checkPoint.getLogPosition().getByteOffset() );
+        channel.putChecksum();
 
         channel.getCurrentPosition( marker );
 

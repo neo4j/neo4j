@@ -24,10 +24,10 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 /**
@@ -38,13 +38,13 @@ public interface LogFile
     @FunctionalInterface
     interface LogFileVisitor
     {
-        boolean visit( ReadableClosablePositionAwareChannel channel ) throws IOException;
+        boolean visit( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException;
     }
 
     /**
      * @return {@link FlushableChannel} capable of appending data to this log.
      */
-    FlushablePositionAwareChannel getWriter();
+    FlushablePositionAwareChecksumChannel getWriter();
 
     /**
      * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries

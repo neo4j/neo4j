@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -87,6 +87,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 @Neo4jLayoutExtension
@@ -137,23 +138,24 @@ class TransactionLogsRecoveryTest
             LogPositionMarker marker = new LogPositionMarker();
 
             // last committed tx
+            int previousChecksum = BASE_TX_CHECKSUM;
             consumer.accept( marker );
             LogPosition lastCommittedTxPosition = marker.newPosition();
-            writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
-            lastCommittedTxStartEntry = new LogEntryStart( 0, 1, 2L, 3L, new byte[0], lastCommittedTxPosition );
-            writer.writeCommitEntry( 4L, 5L );
-            lastCommittedTxCommitEntry = new LogEntryCommit( 4L, 5L );
+            writer.writeStartEntry( 2L, 3L, previousChecksum, new byte[0] );
+            lastCommittedTxStartEntry = new LogEntryStart( 2L, 3L, previousChecksum, new byte[0], lastCommittedTxPosition );
+            previousChecksum = writer.writeCommitEntry( 4L, 5L );
+            lastCommittedTxCommitEntry = new LogEntryCommit( 4L, 5L, previousChecksum );
 
             // check point pointing to the previously committed transaction
             writer.writeCheckPointEntry( lastCommittedTxPosition );
 
             // tx committed after checkpoint
             consumer.accept( marker );
-            writer.writeStartEntry( 0, 1, 6L, 4L, new byte[0] );
-            expectedStartEntry = new LogEntryStart( 0, 1, 6L, 4L, new byte[0], marker.newPosition() );
+            writer.writeStartEntry( 6L, 4L, previousChecksum, new byte[0] );
+            expectedStartEntry = new LogEntryStart( 6L, 4L, previousChecksum, new byte[0], marker.newPosition() );
 
-            writer.writeCommitEntry( 5L, 7L );
-            expectedCommitEntry = new LogEntryCommit( 5L, 7L );
+            previousChecksum = writer.writeCommitEntry( 5L, 7L );
+            expectedCommitEntry = new LogEntryCommit( 5L, 7L, previousChecksum );
 
             return true;
         } );
@@ -249,7 +251,7 @@ class TransactionLogsRecoveryTest
 
             // last committed tx
             consumer.accept( marker );
-            writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
+            writer.writeStartEntry( 2L, 3L, BASE_TX_CHECKSUM, new byte[0] );
             writer.writeCommitEntry( 4L, 5L );
 
             // check point
@@ -305,7 +307,7 @@ class TransactionLogsRecoveryTest
 
             // incomplete tx
             consumer.accept( marker ); // <-- marker has the last good position
-            writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
+            writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
 
             return true;
         } );
@@ -326,7 +328,7 @@ class TransactionLogsRecoveryTest
         writeSomeData( file, pair ->
         {
             LogEntryWriter writer = pair.first();
-            writer.writeStartEntry( 1, 1, 1L, 1L, ArrayUtils.EMPTY_BYTE_ARRAY );
+            writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
             writer.writeCommitEntry( 1L, 2L );
             writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
             writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
@@ -354,12 +356,13 @@ class TransactionLogsRecoveryTest
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
-            writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
-            writer.writeCommitEntry( 4L, 5L );
+            int previousChecksum = BASE_TX_CHECKSUM;
+            writer.writeStartEntry( 2L, 3L, previousChecksum, new byte[0] );
+            previousChecksum = writer.writeCommitEntry( 4L, 5L );
 
             // incomplete tx
             consumer.accept( marker ); // <-- marker has the last good position
-            writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
+            writer.writeStartEntry( 5L, 4L, previousChecksum, new byte[0] );
 
             return true;
         } );
@@ -380,8 +383,6 @@ class TransactionLogsRecoveryTest
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = new byte[0];
-        final int masterId = 0;
-        final int authorId = 1;
         final long transactionId = 4;
         final long commitTimestamp = 5;
         writeSomeData( file, pair ->
@@ -390,7 +391,7 @@ class TransactionLogsRecoveryTest
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
-            writer.writeStartEntry( masterId, authorId, 2L, 3L, additionalHeaderData );
+            writer.writeStartEntry( 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData );
             writer.writeCommitEntry( transactionId, commitTimestamp );
             consumer.accept( marker );
 
@@ -404,8 +405,6 @@ class TransactionLogsRecoveryTest
         assertTrue( recoveryRequired );
         long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         assertEquals( transactionId, lastClosedTransaction[0] );
-        assertEquals( LogEntryStart.checksum( additionalHeaderData, masterId, authorId ),
-                transactionIdStore.getLastCommittedTransaction().checksum() );
         assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
         assertEquals( logVersion, lastClosedTransaction[1] );
         assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
@@ -473,10 +472,11 @@ class TransactionLogsRecoveryTest
 
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
                 CURRENT_LOG_FORMAT_VERSION, file );
-              PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel,
+              PositionAwarePhysicalFlushableChecksumChannel writableLogChannel = new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel,
                         ByteBuffers.allocate( 1, KibiByte ) ) )
         {
             writeLogHeader( writableLogChannel, new LogHeader( logVersion, 2L, StoreId.UNKNOWN ) );
+            writableLogChannel.beginChecksum();
             Consumer<LogPositionMarker> consumer = marker ->
             {
                 try

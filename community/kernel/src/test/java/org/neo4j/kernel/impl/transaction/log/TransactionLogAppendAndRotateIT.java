@@ -126,7 +126,7 @@ class TransactionLogAppendAndRotateIT
                     {
                         e.printStackTrace( System.out );
                         end.set( true );
-                        fail( e.getMessage() );
+                        fail( e.getMessage(), e );
                     }
                 }
             } );
@@ -191,7 +191,7 @@ class TransactionLogAppendAndRotateIT
             commands.add( new TestCommand( 60 ) );
         }
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
-        tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
+        tx.setHeader( new byte[0], 0, 0, 0, 0 );
         return tx;
     }
 

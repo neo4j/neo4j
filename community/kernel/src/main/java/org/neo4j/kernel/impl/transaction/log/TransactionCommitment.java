@@ -24,14 +24,14 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 class TransactionCommitment implements Commitment
 {
     private final long transactionId;
-    private final long transactionChecksum;
+    private final int transactionChecksum;
     private final long transactionCommitTimestamp;
     private final LogPosition logPosition;
     private final TransactionIdStore transactionIdStore;
     private boolean markedAsCommitted;
 
-    TransactionCommitment( long transactionId, long transactionChecksum,
-            long transactionCommitTimestamp, LogPosition logPosition, TransactionIdStore transactionIdStore )
+    TransactionCommitment( long transactionId, int transactionChecksum, long transactionCommitTimestamp, LogPosition logPosition,
+            TransactionIdStore transactionIdStore )
     {
         this.transactionId = transactionId;
         this.transactionChecksum = transactionChecksum;
@@ -62,5 +62,10 @@ class TransactionCommitment implements Commitment
     public boolean markedAsCommitted()
     {
         return markedAsCommitted;
+    }
+
+    public int getTransactionChecksum()
+    {
+        return transactionChecksum;
     }
 }

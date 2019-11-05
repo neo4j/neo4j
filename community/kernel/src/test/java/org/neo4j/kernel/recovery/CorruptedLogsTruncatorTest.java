@@ -35,7 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -216,7 +216,7 @@ class CorruptedLogsTruncatorTest
     private void generateTransactionLogFiles( LogFiles logFiles ) throws IOException
     {
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChannel writer = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
         for ( byte i = 0; i < 107; i++ )
         {
             writer.put( i );

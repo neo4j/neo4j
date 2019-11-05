@@ -29,7 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.PhysicalFlushableChannel;
+import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -143,7 +143,7 @@ class RecoverIndexDropIT
             LogPosition position = logEntryReader.lastPosition();
             StoreChannel writeStoreChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ) );
             writeStoreChannel.position( position.getByteOffset() );
-            try ( PhysicalFlushableChannel writeChannel = new PhysicalFlushableChannel( writeStoreChannel ) )
+            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( writeStoreChannel ) )
             {
                 new LogEntryWriter( writeChannel ).serialize( dropTransaction );
             }

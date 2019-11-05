@@ -21,25 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 public class TransactionHeaderInformation
 {
-    private final int masterId;
-    private final int authorId;
     private final byte[] additionalHeader;
 
-    public TransactionHeaderInformation( int masterId, int authorId, byte[] additionalHeader )
+    public TransactionHeaderInformation( byte[] additionalHeader )
     {
-        this.masterId = masterId;
-        this.authorId = authorId;
         this.additionalHeader = additionalHeader;
-    }
-
-    public int getMasterId()
-    {
-        return masterId;
-    }
-
-    public int getAuthorId()
-    {
-        return authorId;
     }
 
     public byte[] getAdditionalHeader()

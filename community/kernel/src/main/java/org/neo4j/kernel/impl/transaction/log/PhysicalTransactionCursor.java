@@ -34,13 +34,13 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class PhysicalTransactionCursor implements TransactionCursor
 {
-    private final ReadableClosablePositionAwareChannel channel;
+    private final ReadableClosablePositionAwareChecksumChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
     private CommittedTransactionRepresentation current;
 
-    public PhysicalTransactionCursor( ReadableClosablePositionAwareChannel channel, LogEntryReader entryReader ) throws IOException
+    public PhysicalTransactionCursor( ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader ) throws IOException
     {
         this.channel = channel;
         channel.getCurrentPosition( lastGoodPositionMarker );
@@ -99,8 +99,7 @@ public class PhysicalTransactionCursor implements TransactionCursor
             }
 
             PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
-            transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
-                    startEntry.getLocalId(), startEntry.getTimeWritten(),
+            transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getTimeWritten(),
                     startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1 );
             current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
             channel.getCurrentPosition( lastGoodPositionMarker );

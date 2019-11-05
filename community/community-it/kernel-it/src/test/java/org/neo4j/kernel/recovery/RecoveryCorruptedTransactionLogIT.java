@@ -44,7 +44,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.io.fs.FlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -100,6 +100,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -113,7 +114,10 @@ class RecoveryCorruptedTransactionLogIT
     private RandomRule random;
 
     private static final int HEADER_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE;
-    private static final byte CHECKPOINT_COMMAND_SIZE = 2 /*header*/ + 2 * Long.BYTES /*command content*/;
+    private static final byte CHECKPOINT_COMMAND_SIZE =
+                    2 + // header
+                    2 * Long.BYTES + // command content
+                    Integer.BYTES; // checksum
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final RecoveryMonitor recoveryMonitor = new RecoveryMonitor();
     private File databaseDirectory;
@@ -205,7 +209,7 @@ class RecoveryCorruptedTransactionLogIT
 
         logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 0." );
         logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 0. " +
-                "Last valid transaction start offset is: " + (5670 + HEADER_OFFSET) + "." );
+                "Last valid transaction start offset is: " + (5570 + HEADER_OFFSET) + "." );
         assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
     }
 
@@ -225,7 +229,7 @@ class RecoveryCorruptedTransactionLogIT
 
         logFiles = buildDefaultLogFiles( StoreId.UNKNOWN );
         assertEquals( 0, logFiles.getHighestLogVersion() );
-        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        ObjectLongMap<Class<?>> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         assertEquals( 1, logEntriesDistribution.size() );
         assertEquals( 2, logEntriesDistribution.get( CheckPoint.class ) );
     }
@@ -245,13 +249,13 @@ class RecoveryCorruptedTransactionLogIT
         logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 0." );
         logProvider.internalToStringMessageMatcher().assertContains(
                 "Transaction log files with version 0 has some data available after last readable " +
-                        "log entry. Last readable position " + (1072 + HEADER_OFFSET) );
+                        "log entry. Last readable position " + (1040 + HEADER_OFFSET) );
     }
 
     @Test
     void startWithTransactionLogsWithDataAfterLastEntryAndCorruptedLogsRecoveryEnabled() throws IOException
     {
-        long initialTransactionOffset = HEADER_OFFSET + 1054;
+        long initialTransactionOffset = HEADER_OFFSET + 1018;
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         logFiles = buildDefaultLogFiles( database.storeId() );
@@ -267,9 +271,9 @@ class RecoveryCorruptedTransactionLogIT
             logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 0." );
             logProvider.internalToStringMessageMatcher().assertContains(
                     "Transaction log files with version 0 has some data available after last readable log entry. " +
-                            "Last readable position " + (1072 + HEADER_OFFSET) );
+                            "Last readable position " + (1040 + HEADER_OFFSET) );
             logProvider.rawMessageMatcher().assertContains( "Recovery required from position " +
-                    "LogPosition{logVersion=0, byteOffset=" + (1054 + HEADER_OFFSET) + "}" );
+                    "LogPosition{logVersion=0, byteOffset=" + (1018 + HEADER_OFFSET) + "}" );
             GraphDatabaseAPI restartedDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             assertEquals( initialTransactionOffset + CHECKPOINT_COMMAND_SIZE, getLastClosedTransactionOffset( restartedDb ) );
         }
@@ -345,10 +349,10 @@ class RecoveryCorruptedTransactionLogIT
 
         logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 0." );
         logProvider.internalToStringMessageMatcher().assertContains(
-                "Transaction log files with version 0 has 50 unreadable bytes. Was able to read upto " + (1072 + HEADER_OFFSET) +
-                        " but " + (1122 + HEADER_OFFSET) + " is available." );
+                "Transaction log files with version 0 has 50 unreadable bytes. Was able to read upto " + (1040 + HEADER_OFFSET) +
+                        " but " + (1090 + HEADER_OFFSET) + " is available." );
         logProvider.rawMessageMatcher().assertContains(
-                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + (1054 + HEADER_OFFSET)  + "}" );
+                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + (1018 + HEADER_OFFSET)  + "}" );
     }
 
     @Test
@@ -460,10 +464,10 @@ class RecoveryCorruptedTransactionLogIT
                 "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET  + "}" );
         logProvider.rawMessageMatcher().assertContains( "Fail to recover all transactions." );
         logProvider.rawMessageMatcher().assertContains(
-                "Any later transaction after LogPosition{logVersion=0, byteOffset=" + (6247 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
+                "Any later transaction after LogPosition{logVersion=0, byteOffset=" + (6139 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
 
         assertEquals( 0, logFiles.getHighestLogVersion() );
-        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        ObjectLongMap<Class<?>> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
@@ -503,10 +507,10 @@ class RecoveryCorruptedTransactionLogIT
                 "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + "}" );
         logProvider.rawMessageMatcher().assertContains( "Fail to recover all transactions." );
         logProvider.rawMessageMatcher().assertContains(
-                "Any later transaction after LogPosition{logVersion=3, byteOffset=" + (4616 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
+                "Any later transaction after LogPosition{logVersion=3, byteOffset=" + (4552 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
 
         assertEquals( 3, logFiles.getHighestLogVersion() );
-        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        ObjectLongMap<Class<?>> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
@@ -541,13 +545,13 @@ class RecoveryCorruptedTransactionLogIT
 
         logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 3." );
         logProvider.rawMessageMatcher().assertContains(
-                "Recovery required from position LogPosition{logVersion=3, byteOffset=" + (577 + HEADER_OFFSET) + "}" );
+                "Recovery required from position LogPosition{logVersion=3, byteOffset=" + (569 + HEADER_OFFSET) + "}" );
         logProvider.rawMessageMatcher().assertContains( "Fail to recover all transactions." );
         logProvider.rawMessageMatcher().assertContains(
-                "Any later transaction after LogPosition{logVersion=3, byteOffset=" + (4634 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
+                "Any later transaction after LogPosition{logVersion=3, byteOffset=" + (4574 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
 
         assertEquals( 3, logFiles.getHighestLogVersion() );
-        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        ObjectLongMap<Class<?>> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         assertEquals( 6, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
@@ -574,13 +578,13 @@ class RecoveryCorruptedTransactionLogIT
         logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 5." );
         logProvider.rawMessageMatcher().assertContains( "Fail to read first transaction of log version 5." );
         logProvider.rawMessageMatcher().assertContains(
-                "Recovery required from position LogPosition{logVersion=5, byteOffset=" + (577 + HEADER_OFFSET) + "}" );
+                "Recovery required from position LogPosition{logVersion=5, byteOffset=" + (569 + HEADER_OFFSET) + "}" );
         logProvider.rawMessageMatcher().assertContains( "Fail to recover all transactions. " +
-                "Any later transactions after position LogPosition{logVersion=5, byteOffset=" + (577 + HEADER_OFFSET) + "} " +
+                "Any later transactions after position LogPosition{logVersion=5, byteOffset=" + (569 + HEADER_OFFSET) + "} " +
                 "are unreadable and will be truncated." );
 
         assertEquals( 5, logFiles.getHighestLogVersion() );
-        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        ObjectLongMap<Class<?>> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
@@ -641,7 +645,7 @@ class RecoveryCorruptedTransactionLogIT
         generateTransactionsAndRotate( database, 4, true );
         managementService1.shutdown();
 
-        byte[] trimSizes = new byte[]{4, 22};
+        byte[] trimSizes = new byte[]{16, 48};
         int trimSize = 0;
         while ( logFiles.getHighestLogVersion() > 0 )
         {
@@ -782,7 +786,7 @@ class RecoveryCorruptedTransactionLogIT
             LogFile transactionLogFile = logFiles.getLogFile();
             lifespan.add( logFiles );
 
-            FlushablePositionAwareChannel logFileWriter = transactionLogFile.getWriter();
+            FlushablePositionAwareChecksumChannel logFileWriter = transactionLogFile.getWriter();
             for ( int i = 0; i < 10; i++ )
             {
                 logFileWriter.put( byteSource.get() );
@@ -812,14 +816,14 @@ class RecoveryCorruptedTransactionLogIT
         {
             LogFile transactionLogFile = internalLogFiles.getLogFile();
 
-            FlushablePositionAwareChannel channel = transactionLogFile.getWriter();
+            FlushablePositionAwareChecksumChannel channel = transactionLogFile.getWriter();
             TransactionLogWriter writer = new TransactionLogWriter( new CorruptedLogEntryWriter( channel ) );
 
             Collection<StorageCommand> commands = new ArrayList<>();
             commands.add( new Command.PropertyCommand( new PropertyRecord( 1 ), new PropertyRecord( 2 ) ) );
             commands.add( new Command.NodeCommand( new NodeRecord( 2 ), new NodeRecord( 3 ) ) );
             PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-            writer.append( transaction, 1000 );
+            writer.append( transaction, 1000, BASE_TX_CHECKSUM );
         }
     }
 
@@ -829,14 +833,14 @@ class RecoveryCorruptedTransactionLogIT
         return metaDataStore.getLastClosedTransaction()[2];
     }
 
-    private static ObjectLongMap<Class> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
+    private static ObjectLongMap<Class<?>> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
     {
         LogFile transactionLogFile = logFiles.getLogFile();
 
         LogPosition fileStartPosition = logFiles.extractHeader( 0 ).getStartPosition();
         VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
 
-        MutableObjectLongMap<Class> multiset = new ObjectLongHashMap<>();
+        MutableObjectLongMap<Class<?>> multiset = new ObjectLongHashMap<>();
         try ( ReadableLogChannel fileReader = transactionLogFile.getReader( fileStartPosition ) )
         {
             LogEntry logEntry = entryReader.readLogEntry( fileReader );
@@ -915,14 +919,13 @@ class RecoveryCorruptedTransactionLogIT
     private static class CorruptedLogEntryWriter extends LogEntryWriter
     {
 
-        CorruptedLogEntryWriter( FlushableChannel channel )
+        CorruptedLogEntryWriter( FlushableChecksumChannel channel )
         {
             super( channel );
         }
 
         @Override
-        public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
-                byte[] additionalHeaderData ) throws IOException
+        public void writeStartEntry( long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData ) throws IOException
         {
             writeLogEntryHeader( TX_START, channel );
         }

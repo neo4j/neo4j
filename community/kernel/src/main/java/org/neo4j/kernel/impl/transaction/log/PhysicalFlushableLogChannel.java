@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.PhysicalFlushableChannel;
+import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 
-class PhysicalFlushableLogChannel extends PhysicalFlushableChannel
+class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
 {
     PhysicalFlushableLogChannel( StoreChannel channel )
     {

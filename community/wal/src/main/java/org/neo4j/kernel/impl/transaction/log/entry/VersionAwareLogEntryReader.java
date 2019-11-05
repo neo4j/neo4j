@@ -25,13 +25,15 @@ import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.ServiceLoadingCommandReaderFactory;
 import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.internal.helpers.Exceptions.throwIfInstanceOf;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 /**
  * Version aware implementation of LogEntryReader
@@ -42,26 +44,40 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
  */
 public class VersionAwareLogEntryReader implements LogEntryReader
 {
+    private static final boolean VERIFY_CHECKSUM_CHAIN = FeatureToggles.flag( LogEntryReader.class, "verifyChecksumChain", false );
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker;
+    private final boolean verifyChecksumChain;
+    private LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
+    private int lastTxChecksum = BASE_TX_CHECKSUM;
 
     public VersionAwareLogEntryReader()
     {
         this( new ServiceLoadingCommandReaderFactory() );
     }
 
+    public VersionAwareLogEntryReader( boolean verifyChecksumChain )
+    {
+        this( new ServiceLoadingCommandReaderFactory(), verifyChecksumChain );
+    }
+
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
+    {
+        this( commandReaderFactory, true );
+    }
+
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain )
     {
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
+        this.verifyChecksumChain = verifyChecksumChain;
     }
 
     @Override
-    public LogEntry readLogEntry( ReadableClosablePositionAwareChannel channel ) throws IOException
+    public LogEntry readLogEntry( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException
     {
         try
         {
-            LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
             while ( true )
             {
                 channel.getCurrentPosition( positionMarker );
@@ -82,16 +98,22 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     }
                     return null;
                 }
+                if ( version.version() != versionCode )
+                {
+                    version = byVersion( versionCode );
+                    // Since checksum is calculated over the whole entry we need to rewind and begin
+                    // a new checksum segment if we change version parser.
+                    resetChannelPosition( channel );
+                    channel.beginChecksum();
+                    channel.get();
+                }
+
                 byte typeCode = channel.get();
 
                 LogEntryParser entryReader;
                 LogEntry entry;
                 try
                 {
-                    if ( version.version() != versionCode )
-                    {
-                        version = byVersion( versionCode );
-                    }
                     entryReader = version.entryParser( typeCode );
                     entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
                 }
@@ -107,6 +129,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     throw new IOException( e );
                 }
 
+                verifyChecksumChain( entry );
                 return entry;
             }
         }
@@ -116,7 +139,29 @@ public class VersionAwareLogEntryReader implements LogEntryReader
         }
     }
 
-    private void resetChannelPosition( ReadableClosablePositionAwareChannel channel ) throws IOException
+    private void verifyChecksumChain( LogEntry e )
+    {
+        if ( VERIFY_CHECKSUM_CHAIN && verifyChecksumChain )
+        {
+            if ( e instanceof LogEntryStart )
+            {
+                int previousChecksum = ((LogEntryStart) e).getPreviousChecksum();
+                if ( lastTxChecksum != BASE_TX_CHECKSUM )
+                {
+                    if ( previousChecksum != lastTxChecksum )
+                    {
+                        throw new IllegalStateException( "The checksum chain is broken. " + positionMarker );
+                    }
+                }
+            }
+            else if ( e instanceof LogEntryCommit )
+            {
+                lastTxChecksum = ((LogEntryCommit) e).getChecksum();
+            }
+        }
+    }
+
+    private void resetChannelPosition( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException
     {
         //take current position
         channel.getCurrentPosition( positionMarker );

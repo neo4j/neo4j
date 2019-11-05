@@ -44,6 +44,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 class PhysicalTransactionCursorTest
 {
@@ -52,8 +53,8 @@ class PhysicalTransactionCursorTest
 
     private static final LogEntry NULL_ENTRY = null;
     private static final CheckPoint A_CHECK_POINT_ENTRY = new CheckPoint( LogPosition.UNSPECIFIED );
-    private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0, 0, 0L, 0L, null, LogPosition.UNSPECIFIED );
-    private static final LogEntryCommit A_COMMIT_ENTRY = new LogEntryCommit( 42, 0 );
+    private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0L, 0L, 0, null, LogPosition.UNSPECIFIED );
+    private static final LogEntryCommit A_COMMIT_ENTRY = new LogEntryCommit( 42, 0, BASE_TX_CHECKSUM );
     private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new TestCommand() );
     private PhysicalTransactionCursor cursor;
 

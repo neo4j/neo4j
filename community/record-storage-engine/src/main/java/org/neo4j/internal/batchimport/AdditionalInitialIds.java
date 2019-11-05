@@ -41,7 +41,7 @@ public interface AdditionalInitialIds
 {
     long lastCommittedTransactionId();
 
-    long lastCommittedTransactionChecksum();
+    int lastCommittedTransactionChecksum();
 
     long lastCommittedTransactionLogVersion();
 
@@ -59,7 +59,7 @@ public interface AdditionalInitialIds
         }
 
         @Override
-        public long lastCommittedTransactionChecksum()
+        public int lastCommittedTransactionChecksum()
         {
             return TransactionIdStore.BASE_TX_CHECKSUM;
         }

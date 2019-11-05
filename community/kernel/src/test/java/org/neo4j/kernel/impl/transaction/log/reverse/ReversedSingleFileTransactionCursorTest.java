@@ -28,14 +28,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.io.fs.FlushableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
@@ -65,6 +65,7 @@ import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhau
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, LifeExtension.class} )
@@ -239,11 +240,12 @@ class ReversedSingleFileTransactionCursorTest
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException
     {
-        FlushablePositionAwareChannel channel = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel channel = logFile.getWriter();
         TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
+        int previousChecksum = BASE_TX_CHECKSUM;
         for ( int i = 0; i < transactionCount; i++ )
         {
-            writer.append( tx( random.intBetween( minTransactionSize, maxTransactionSize ) ), ++txId );
+            previousChecksum = writer.append( tx( random.intBetween( minTransactionSize, maxTransactionSize ) ), ++txId, previousChecksum );
         }
         channel.prepareForFlush().flush();
         // Don't close the channel, LogFile owns it
@@ -251,9 +253,9 @@ class ReversedSingleFileTransactionCursorTest
 
     private void appendCorruptedTransaction() throws IOException
     {
-        FlushablePositionAwareChannel channel = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel channel = logFile.getWriter();
         TransactionLogWriter writer = new TransactionLogWriter( new CorruptedLogEntryWriter( channel ) );
-        writer.append( tx( random.intBetween( 100, 1000 ) ), ++txId );
+        writer.append( tx( random.intBetween( 100, 1000 ) ), ++txId, BASE_TX_CHECKSUM );
     }
 
     private TransactionRepresentation tx( int size )
@@ -265,20 +267,19 @@ class ReversedSingleFileTransactionCursorTest
             commands.add( new TestCommand() );
         }
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
-        tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
+        tx.setHeader( new byte[0], 0, 0, 0, 0 );
         return tx;
     }
 
     private static class CorruptedLogEntryWriter extends LogEntryWriter
     {
-        CorruptedLogEntryWriter( FlushableChannel channel )
+        CorruptedLogEntryWriter( FlushableChecksumChannel channel )
         {
             super( channel );
         }
 
         @Override
-        public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
-                byte[] additionalHeaderData ) throws IOException
+        public void writeStartEntry( long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData ) throws IOException
         {
             writeLogEntryHeader( TX_START, channel );
             for ( int i = 0; i < 100; i++ )

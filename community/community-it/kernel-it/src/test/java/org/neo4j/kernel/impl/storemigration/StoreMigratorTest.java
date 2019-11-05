@@ -108,7 +108,7 @@ class StoreMigratorTest
         // given
         // ... variables
         long txId = 42;
-        long checksum = 123456789123456789L;
+        int checksum = 123456789;
         long timestamp = 919191919191919191L;
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
@@ -198,7 +198,7 @@ class StoreMigratorTest
     void writeAndReadLastTxInformation() throws IOException
     {
         RecordStorageMigrator migrator = newStoreMigrator();
-        TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextLong(), random.nextLong() );
+        TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextInt(), random.nextLong() );
 
         migrator.writeLastTxInformation( databaseLayout, writtenTxId );
 

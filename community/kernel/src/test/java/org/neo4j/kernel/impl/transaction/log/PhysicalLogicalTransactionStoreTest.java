@@ -97,8 +97,6 @@ class PhysicalLogicalTransactionStoreTest
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
         final byte[] additionalHeader = new byte[]{1, 2, 5};
-        final int masterId = 2;
-        int authorId = 1;
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
@@ -113,8 +111,8 @@ class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            addATransactionAndRewind( life, logFiles, positionCache, transactionIdStore,
-                    additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
+            addATransactionAndRewind( life, logFiles, positionCache, transactionIdStore, additionalHeader, timeStarted, latestCommittedTxWhenStarted,
+                    timeCommitted );
         }
         finally
         {
@@ -126,8 +124,7 @@ class PhysicalLogicalTransactionStoreTest
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
-        verifyTransaction( positionCache, additionalHeader, masterId, authorId, timeStarted,
-                latestCommittedTxWhenStarted, timeCommitted, store );
+        verifyTransaction( positionCache, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store );
     }
 
     @Test
@@ -166,8 +163,6 @@ class PhysicalLogicalTransactionStoreTest
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
         final byte[] additionalHeader = new byte[]{1, 2, 5};
-        final int masterId = 2;
-        int authorId = 1;
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
@@ -183,8 +178,8 @@ class PhysicalLogicalTransactionStoreTest
         life.add( logFiles );
         try
         {
-            addATransactionAndRewind( life, logFiles, positionCache, transactionIdStore,
-                    additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
+            addATransactionAndRewind( life, logFiles, positionCache, transactionIdStore, additionalHeader, timeStarted, latestCommittedTxWhenStarted,
+                    timeCommitted );
         }
         finally
         {
@@ -194,8 +189,7 @@ class PhysicalLogicalTransactionStoreTest
         life = new LifeSupport();
         life.add( logFiles );
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
-        FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, masterId,
-                authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
+        FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, positionCache,
                 logEntryReader(), monitors, true );
@@ -264,8 +258,6 @@ class PhysicalLogicalTransactionStoreTest
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
         final byte[] additionalHeader = new byte[]{1, 2, 5};
-        final int masterId = 2;
-        int  authorId = 1;
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
@@ -280,8 +272,8 @@ class PhysicalLogicalTransactionStoreTest
         life.add( logFiles );
         try
         {
-            addATransactionAndRewind( life, logFiles, positionCache, transactionIdStore,
-                    additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
+            addATransactionAndRewind( life, logFiles, positionCache, transactionIdStore, additionalHeader, timeStarted, latestCommittedTxWhenStarted,
+                    timeCommitted );
         }
         finally
         {
@@ -296,8 +288,7 @@ class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            verifyTransaction( positionCache, additionalHeader, masterId, authorId, timeStarted,
-                    latestCommittedTxWhenStarted, timeCommitted, store );
+            verifyTransaction( positionCache, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store );
         }
         finally
         {
@@ -316,7 +307,7 @@ class PhysicalLogicalTransactionStoreTest
         when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( new FileNotFoundException() );
         // Which is nevertheless in the metadata cache
         TransactionMetadataCache cache = new TransactionMetadataCache();
-        cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 1, 1, 100, System.currentTimeMillis() );
+        cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 100, System.currentTimeMillis() );
 
         LifeSupport life = new LifeSupport();
 
@@ -340,15 +331,14 @@ class PhysicalLogicalTransactionStoreTest
     private void addATransactionAndRewind( LifeSupport life, LogFiles logFiles,
                                            TransactionMetadataCache positionCache,
                                            TransactionIdStore transactionIdStore,
-                                           byte[] additionalHeader, int masterId, int authorId, long timeStarted,
+                                           byte[] additionalHeader, long timeStarted,
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
                 transactionIdStore, DATABASE_HEALTH ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleTestCommand() );
-        transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                timeCommitted, -1 );
+        transaction.setHeader( additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1 );
         appender.append( new TransactionToApply( transaction ), LogAppendEvent.NULL );
     }
 
@@ -357,7 +347,7 @@ class PhysicalLogicalTransactionStoreTest
         return Collections.singletonList( new TestCommand() );
     }
 
-    private void verifyTransaction( TransactionMetadataCache positionCache, byte[] additionalHeader, int masterId, int authorId, long timeStarted,
+    private void verifyTransaction( TransactionMetadataCache positionCache, byte[] additionalHeader, long timeStarted,
             long latestCommittedTxWhenStarted, long timeCommitted, LogicalTransactionStore store ) throws IOException
     {
         try ( TransactionCursor cursor = store.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
@@ -367,8 +357,6 @@ class PhysicalLogicalTransactionStoreTest
             CommittedTransactionRepresentation tx = cursor.get();
             TransactionRepresentation transaction = tx.getTransactionRepresentation();
             assertArrayEquals( additionalHeader, transaction.additionalHeader() );
-            assertEquals( masterId, transaction.getMasterId() );
-            assertEquals( authorId, transaction.getAuthorId() );
             assertEquals( timeStarted, transaction.getTimeStarted() );
             assertEquals( timeCommitted, transaction.getTimeCommitted() );
             assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
@@ -380,19 +368,14 @@ class PhysicalLogicalTransactionStoreTest
     private static class FakeRecoveryVisitor implements RecoveryApplier
     {
         private final byte[] additionalHeader;
-        private final int masterId;
-        private final int authorId;
         private final long timeStarted;
         private final long timeCommitted;
         private final long latestCommittedTxWhenStarted;
         private int visitedTransactions;
 
-        FakeRecoveryVisitor( byte[] additionalHeader, int masterId, int authorId, long timeStarted, long timeCommitted,
-                long latestCommittedTxWhenStarted )
+        FakeRecoveryVisitor( byte[] additionalHeader, long timeStarted, long timeCommitted, long latestCommittedTxWhenStarted )
         {
             this.additionalHeader = additionalHeader;
-            this.masterId = masterId;
-            this.authorId = authorId;
             this.timeStarted = timeStarted;
             this.timeCommitted = timeCommitted;
             this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
@@ -403,8 +386,6 @@ class PhysicalLogicalTransactionStoreTest
         {
             TransactionRepresentation transaction = tx.getTransactionRepresentation();
             assertArrayEquals( additionalHeader, transaction.additionalHeader() );
-            assertEquals( masterId, transaction.getMasterId() );
-            assertEquals( authorId, transaction.getAuthorId() );
             assertEquals( timeStarted, transaction.getTimeStarted() );
             assertEquals( timeCommitted, transaction.getTimeCommitted() );
             assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );

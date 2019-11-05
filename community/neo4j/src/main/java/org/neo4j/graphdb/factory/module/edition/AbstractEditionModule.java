@@ -38,7 +38,6 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -47,7 +46,6 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
@@ -58,6 +56,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInFunctions;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
+import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
 import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
@@ -74,7 +73,6 @@ public abstract class AbstractEditionModule
 {
     private final GlobalTransactionStats transactionStatistic = new GlobalTransactionStats();
     protected NetworkConnectionTracker connectionTracker;
-    protected TransactionHeaderInformationFactory headerInformationFactory;
     protected ConstraintSemantics constraintSemantics;
     protected IOLimiter ioLimiter;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
@@ -169,11 +167,6 @@ public abstract class AbstractEditionModule
     public TransactionCounters globalTransactionCounter()
     {
         return transactionStatistic;
-    }
-
-    public TransactionHeaderInformationFactory getHeaderInformationFactory()
-    {
-        return headerInformationFactory;
     }
 
     public ConstraintSemantics getConstraintSemantics()

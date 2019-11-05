@@ -74,8 +74,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     @Override
-    public TransactionCursor getTransactions( final long transactionIdToStartFrom )
-            throws IOException
+    public TransactionCursor getTransactions( final long transactionIdToStartFrom ) throws IOException
     {
         // look up in position cache
         try
@@ -94,8 +93,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             logFiles.accept( headerVisitor );
 
             // ask LogFile
-            TransactionPositionLocator transactionPositionLocator =
-                    new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
+            TransactionPositionLocator transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
             logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
             LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
             return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
@@ -116,16 +114,16 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         private final LogEntryReader logEntryReader;
         private LogEntryStart startEntryForFoundTransaction;
         private long commitTimestamp;
+        private int commitChecksum;
 
-        TransactionPositionLocator( long startTransactionId,
-                LogEntryReader logEntryReader )
+        TransactionPositionLocator( long startTransactionId, LogEntryReader logEntryReader )
         {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
         }
 
         @Override
-        public boolean visit( ReadableClosablePositionAwareChannel channel ) throws IOException
+        public boolean visit( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException
         {
             LogEntry logEntry;
             LogEntryStart startEntry = null;
@@ -142,6 +140,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                     {
                         startEntryForFoundTransaction = startEntry;
                         commitTimestamp = commit.getTimeWritten();
+                        commitChecksum = commit.getChecksum();
                         return false;
                     }
                 default: // just skip commands
@@ -160,9 +159,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             transactionMetadataCache.cacheTransactionMetadata(
                     startTransactionId,
                     startEntryForFoundTransaction.getStartPosition(),
-                    startEntryForFoundTransaction.getMasterId(),
-                    startEntryForFoundTransaction.getLocalId(),
-                    LogEntryStart.checksum( startEntryForFoundTransaction ),
+                    commitChecksum,
                     commitTimestamp
             );
             return startEntryForFoundTransaction.getStartPosition();

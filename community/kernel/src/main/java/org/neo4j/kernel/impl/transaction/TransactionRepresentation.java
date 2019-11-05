@@ -35,17 +35,6 @@ public interface TransactionRepresentation extends CommandStream
     byte[] additionalHeader();
 
     /**
-     * @return database instance id of current master in a potential database cluster at the time of committing
-     * this transaction {@code -1} means no cluster.
-     */
-    int getMasterId();
-
-    /**
-     * @return database instance id of the author of this transaction.
-     */
-    int getAuthorId();
-
-    /**
      * @return time when transaction was started, i.e. when the user started it, not when it was committed.
      * Reported in milliseconds.
      */

@@ -91,7 +91,7 @@ class TransactionLogFileTest
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion();
         fileSystem.write( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
-        transactionIdStore.transactionCommitted( 5L, 5L, 5L );
+        transactionIdStore.transactionCommitted( 5L, 5, 5L );
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
         logFiles.accept( versionLocator );
@@ -139,7 +139,7 @@ class TransactionLogFileTest
         life.add( logFiles );
 
         // WHEN
-        FlushablePositionAwareChannel writer = logFiles.getLogFile().getWriter();
+        FlushablePositionAwareChecksumChannel writer = logFiles.getLogFile().getWriter();
         LogPositionMarker positionMarker = new LogPositionMarker();
         writer.getCurrentPosition( positionMarker );
         int intValue = 45;
@@ -171,7 +171,7 @@ class TransactionLogFileTest
 
         // WHEN
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChannel writer = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
         LogPositionMarker positionMarker = new LogPositionMarker();
         writer.getCurrentPosition( positionMarker );
         LogPosition position1 = positionMarker.newPosition();
@@ -217,7 +217,7 @@ class TransactionLogFileTest
         life.add( logFiles );
 
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChannel writer = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
         LogPositionMarker mark = new LogPositionMarker();
         writer.getCurrentPosition( mark );
         for ( int i = 0; i < 5; i++ )
@@ -301,7 +301,7 @@ class TransactionLogFileTest
         life.add( logFiles );
 
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChannel writer = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
 
         life.shutdown();
 

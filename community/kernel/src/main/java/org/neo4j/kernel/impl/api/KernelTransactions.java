@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
@@ -88,7 +87,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
 {
     private final StatementLocksFactory statementLocksFactory;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final TransactionCommitProcess transactionCommitProcess;
     private final DatabaseTransactionEventListeners eventListeners;
     private final TransactionMonitor transactionMonitor;
@@ -147,7 +145,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private volatile boolean stopped = true;
 
     public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
-            TransactionHeaderInformationFactory txHeaderFactory, TransactionCommitProcess transactionCommitProcess,
+            TransactionCommitProcess transactionCommitProcess,
             DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
             StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
@@ -159,7 +157,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.transactionHeaderInformationFactory = txHeaderFactory;
         this.transactionCommitProcess = transactionCommitProcess;
         this.eventListeners = eventListeners;
         this.transactionMonitor = transactionMonitor;
@@ -406,7 +403,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         {
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( config, eventListeners,
-                            constraintIndexCreator, globalProcedures, transactionHeaderInformationFactory,
+                            constraintIndexCreator, globalProcedures,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             transactionTracer, lockTracer, pageCursorTracerSupplier, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,

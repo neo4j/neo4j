@@ -150,6 +150,7 @@ public class NodeRecord extends PrimitiveRecord
 
         return "Node[" + getId() +
                ",used=" + inUse() +
+               ",created=" + isCreated() +
                "," + denseInfo +
                ",prop=" + getNextProp() +
                ",labels=" + parseLabelsField( this ) +

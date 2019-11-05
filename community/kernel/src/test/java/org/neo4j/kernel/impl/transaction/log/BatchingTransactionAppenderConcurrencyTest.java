@@ -419,7 +419,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     protected TransactionToApply tx()
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( new TestCommand() ) );
-        tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
+        tx.setHeader( new byte[0], 0, 0, 0, 0 );
         return new TransactionToApply( tx );
     }
 

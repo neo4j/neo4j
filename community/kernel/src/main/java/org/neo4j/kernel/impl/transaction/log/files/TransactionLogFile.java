@@ -29,12 +29,12 @@ import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBuffers;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
@@ -60,7 +60,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final FileSystemAbstraction fileSystem;
     private final Log log;
     private final NativeAccess nativeAccess;
-    private PositionAwarePhysicalFlushableChannel writer;
+    private PositionAwarePhysicalFlushableChecksumChannel writer;
     private LogVersionRepository logVersionRepository;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
@@ -93,7 +93,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         seekChannelPosition( currentLogVersion );
 
         this.byteBuffer = ByteBuffers.allocateDirect( calculateLogBufferSize() );
-        writer = new PositionAwarePhysicalFlushableChannel( channel, byteBuffer );
+        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, byteBuffer );
     }
 
     private void seekChannelPosition( long currentLogVersion ) throws IOException
@@ -252,7 +252,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public FlushablePositionAwareChannel getWriter()
+    public FlushablePositionAwareChecksumChannel getWriter()
     {
         return writer;
     }

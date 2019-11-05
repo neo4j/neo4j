@@ -57,10 +57,11 @@ public enum LogEntryVersion
     // using a fixed-width reference format, or not. This change is technically backwards compatible, so we bump the
     // log version to prevent mixed-version clusters from forming.
     V3_0_10( (byte) -10, LogEntryParsersV2_3.class ),
-    // Version 4.0 introduces a new schema store format, where the schema store payload is stored in the property store.
-    // This adds a new schema record command.
-    // We bump the log version to prevent older releases from thinking they can read log files with these new commands.
-    V4_0( (byte) 1, LogEntryParsersV2_3.class );
+    // Version 4.0
+    // * New schema store format, where the schema store payload is stored in the property store.
+    // * Removed master and author id from transactions
+    // * Added checksum to transactions
+    V4_0( (byte) 1, LogEntryParsersV4_0.class );
 
     public static final LogEntryVersion LATEST_VERSION;
     private static final byte LOWEST_VERSION;

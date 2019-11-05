@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -115,11 +114,9 @@ public class DefaultRecoveryService implements RecoveryService
         if ( lastRecoveredTransaction != null )
         {
             LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
-            transactionIdStore.setLastCommittedAndClosedTransactionId( commitEntry.getTxId(),
-                                            LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
-                                            commitEntry.getTimeWritten(),
-                                            lastRecoveredTransactionPosition.getByteOffset(),
-                                            lastRecoveredTransactionPosition.getLogVersion() );
+            transactionIdStore
+                    .setLastCommittedAndClosedTransactionId( commitEntry.getTxId(), lastRecoveredTransaction.getChecksum(), commitEntry.getTimeWritten(),
+                            lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion() );
         }
         else
         {

@@ -22,10 +22,13 @@ package org.neo4j.io.fs;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.zip.Checksum;
 
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
+import static org.neo4j.io.fs.PhysicalFlushableChecksumChannel.DISABLE_WAL_CHECKSUM;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 
@@ -34,7 +37,7 @@ import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
  * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
  * @param <T> The type of StoreChannel wrapped
  */
-public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel, PositionableChannel
+public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksumChannel, PositionableChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = toIntExact( kibiBytes( 4 ) );
 
@@ -42,6 +45,8 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
     private final ByteBuffer aheadBuffer;
     private final int readAheadSize;
     private final boolean cleanBufferOnClose;
+    private final Checksum checksum;
+    private final ByteBuffer checksumView;
 
     public ReadAheadChannel( T channel )
     {
@@ -65,6 +70,8 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
         this.channel = channel;
         this.cleanBufferOnClose = cleanBufferOnClose;
         this.readAheadSize = byteBuffer.capacity();
+        this.checksumView = byteBuffer.duplicate();
+        this.checksum = CHECKSUM_FACTORY.get();
     }
 
     /**
@@ -137,6 +144,45 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
     }
 
     @Override
+    public int endChecksumAndValidate() throws IOException
+    {
+        ensureDataExists( 4 );
+
+        if ( DISABLE_WAL_CHECKSUM )
+        {
+            aheadBuffer.getInt();
+            return 0xDEAD5EED;
+        }
+
+        // Consume remaining bytes
+        checksumView.limit( aheadBuffer.position() );
+        checksum.update( checksumView );
+
+        // Validate checksum
+        int calculatedChecksum = (int) checksum.getValue();
+        int checksum = aheadBuffer.getInt();
+        if ( calculatedChecksum != checksum )
+        {
+            throw new ChecksumMismatchException( checksum, calculatedChecksum );
+        }
+        beginChecksum();
+
+        return calculatedChecksum;
+    }
+
+    @Override
+    public void beginChecksum()
+    {
+        if ( DISABLE_WAL_CHECKSUM )
+        {
+            return;
+        }
+        checksum.reset();
+        checksumView.limit( checksumView.capacity() );
+        checksumView.position( aheadBuffer.position() );
+    }
+
+    @Override
     public void close() throws IOException
     {
         channel.close();
@@ -157,6 +203,15 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
         if ( remaining >= requestedNumberOfBytes )
         {
             return;
+        }
+
+        // Update checksum with consumed bytes
+        if ( !DISABLE_WAL_CHECKSUM )
+        {
+            checksumView.limit( aheadBuffer.position() );
+            checksum.update( checksumView );
+            checksumView.limit( checksumView.capacity() );
+            checksumView.position( 0 );
         }
 
         // We ran out, try to read some more
@@ -217,5 +272,8 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
         {
             aheadBuffer.position( toIntExact( positionRelativeToAheadBuffer ) );
         }
+
+        // After repositioning we need to reset checksum calculations
+        beginChecksum();
     }
 }

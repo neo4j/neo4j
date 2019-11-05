@@ -56,8 +56,7 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.R
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader>
-        implements TransactionMetaDataStore
+public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements TransactionMetaDataStore
 {
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
@@ -119,17 +118,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile long storeVersionField = FIELD_NOT_INITIALIZED;
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
-    private volatile long upgradeTxChecksumField = FIELD_NOT_INITIALIZED;
+    private volatile int upgradeTxChecksumField = (int) FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
 
-    private volatile TransactionId upgradeTransaction = new TransactionId( FIELD_NOT_INITIALIZED,
-            FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+    private volatile TransactionId upgradeTransaction = new TransactionId( FIELD_NOT_INITIALIZED, (int) FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 
     // This is not a field in the store, but something keeping track of which is the currently highest
     // committed transaction id, together with its checksum.
     private final HighestTransactionId highestCommittedTransaction =
-            new HighestTransactionId( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+            new HighestTransactionId( FIELD_NOT_INITIALIZED, (int) FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
@@ -174,8 +172,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setUpgradeTime( storeId.getCreationTime() );
         setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
         setCurrentLogVersion( 0 );
-        setLastCommittedAndClosedTransactionId(
-                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
+        setLastCommittedAndClosedTransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
         setStoreVersion( storeVersionAsLong );
         setLatestConstraintIntroducingTx( 0 );
 
@@ -186,8 +183,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // Only for initialization and recovery, so we don't need to lock the records
 
     @Override
-    public void setLastCommittedAndClosedTransactionId(
-            long transactionId, long checksum, long commitTimestamp, long byteOffset, long logVersion )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion )
     {
         assertNotClosed();
         setRecord( Position.LAST_TRANSACTION_ID, transactionId );
@@ -362,7 +358,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    public void setUpgradeTransaction( long id, long checksum, long timestamp )
+    public void setUpgradeTransaction( long id, int checksum, long timestamp )
     {
         long pageId = pageIdForRecord( Position.UPGRADE_TRANSACTION_ID.id );
         assert pageId == pageIdForRecord( Position.UPGRADE_TRANSACTION_CHECKSUM.id );
@@ -524,21 +520,20 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
             latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
             upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
-            upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
+            upgradeTxChecksumField = (int) getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
             upgradeTimeField = getRecordValue( cursor, Position.UPGRADE_TIME );
             long lastClosedTransactionLogVersion = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
             long lastClosedTransactionLogByteOffset = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
             lastClosedTx.set( lastCommittedTxId,
                     new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset} );
             highestCommittedTransaction.set( lastCommittedTxId,
-                    getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
+                    (int) getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
                     getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, UNKNOWN_TX_COMMIT_TIMESTAMP
                     ) );
             upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
                     BASE_TX_COMMIT_TIMESTAMP );
 
-            upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField,
-                    upgradeCommitTimestampField );
+            upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
         }
         while ( cursor.shouldRetry() );
         if ( cursor.checkAndClearBoundsFlag() )
@@ -694,7 +689,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum, long commitTimestamp )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
     {
         assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );

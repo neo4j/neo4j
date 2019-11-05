@@ -386,14 +386,13 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next ) throws KernelException;
 
-        public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
-                long lastCommittedTx, NeoStores neoStores, IndexingService indexingService ) throws KernelException
+        public TransactionRepresentation representation( IdGenerator idGenerator, long lastCommittedTx, NeoStores neoStores, IndexingService indexingService )
+                throws KernelException
         {
             TransactionWriter writer = new TransactionWriter( neoStores );
             transactionData( new TransactionDataBuilder( writer, neoStores, idGenerator, indexingService ), idGenerator );
             idGenerator.updateCorrespondingIdGenerators( neoStores );
-            return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
-                   currentTimeMillis() );
+            return writer.representation( new byte[0], startTimestamp, lastCommittedTx, currentTimeMillis() );
         }
     }
 
@@ -666,16 +665,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
         }
     }
 
-    private int myId()
-    {
-        return 1;
-    }
-
-    private int masterId()
-    {
-        return -1;
-    }
-
     public class Applier implements AutoCloseable
     {
         private final GraphDatabaseAPI database;
@@ -704,10 +693,9 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
         public void apply( Transaction transaction ) throws KernelException
         {
-            TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
-            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
-                    TransactionApplicationMode.EXTERNAL );
+            TransactionRepresentation representation =
+                    transaction.representation( idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
+            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
         }
 
         @Override

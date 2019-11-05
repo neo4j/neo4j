@@ -17,8 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.fs;
 
-public interface ReadableLogChannel extends ReadableClosablePositionAwareChecksumChannel, VersionableLog
+public class ChecksumMismatchException extends RuntimeException
 {
+    public ChecksumMismatchException( int storedChecksum, int checksum )
+    {
+        super( "The checksum " + checksum + " did not match the stored checksum of " + storedChecksum );
+    }
 }

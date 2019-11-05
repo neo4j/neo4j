@@ -31,7 +31,7 @@ public class HighestTransactionId
 {
     private final AtomicReference<TransactionId> highest = new AtomicReference<>();
 
-    public HighestTransactionId( long initialTransactionId, long initialChecksum, long commitTimestamp )
+    public HighestTransactionId( long initialTransactionId, int initialChecksum, long commitTimestamp )
     {
         set( initialTransactionId, initialChecksum, commitTimestamp );
     }
@@ -46,7 +46,7 @@ public class HighestTransactionId
      * @return {@code true} if the given transaction id was higher than the current highest,
      * {@code false}.
      */
-    public boolean offer( long transactionId, long checksum, long commitTimestamp )
+    public boolean offer( long transactionId, int checksum, long commitTimestamp )
     {
         TransactionId high = highest.get();
         if ( transactionId < high.transactionId() )
@@ -74,7 +74,7 @@ public class HighestTransactionId
      * @param checksum checksum of the transaction.
      * @param commitTimestamp commit time for transaction with {@code transactionId}.
      */
-    public final void set( long transactionId, long checksum, long commitTimestamp )
+    public final void set( long transactionId, int checksum, long commitTimestamp )
     {
         highest.set( new TransactionId( transactionId, checksum, commitTimestamp ) );
     }

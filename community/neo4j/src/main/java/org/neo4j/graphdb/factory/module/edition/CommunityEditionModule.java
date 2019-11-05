@@ -60,7 +60,6 @@ import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -114,8 +113,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         tokenHoldersProvider = createTokenHolderProvider( globalModule );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
-
-        headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
         constraintSemantics = createSchemaRuleVerifier();
 

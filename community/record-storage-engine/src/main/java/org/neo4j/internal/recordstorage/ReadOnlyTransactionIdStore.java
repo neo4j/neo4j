@@ -35,21 +35,21 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
     private final long transactionId;
-    private final long transactionChecksum;
+    private final int transactionChecksum;
     private final long logVersion;
     private final long byteOffset;
 
     public ReadOnlyTransactionIdStore( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout ) throws IOException
     {
         long id = 0;
-        long checksum = 0;
+        int checksum = 0;
         long logVersion = 0;
         long byteOffset = 0;
         if ( NeoStores.isStorePresent( fs, pageCache, databaseLayout ) )
         {
             File neoStore = databaseLayout.metadataStore();
             id = getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            checksum = getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
+            checksum = (int) getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
             logVersion = getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
             byteOffset = getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         }
@@ -73,7 +73,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum, long commitTimestamp )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -109,8 +109,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp,
-            long logByteOffset, long logVersion )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

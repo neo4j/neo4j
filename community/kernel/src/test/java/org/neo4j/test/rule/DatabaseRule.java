@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -160,7 +159,7 @@ public class DatabaseRule extends ExternalResource
         database = new Database( new TestDatabaseCreationContext( databaseId, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
                 mock( GlobalTransactionEventListeners.class ), fs, transactionStats, databaseHealth,
-                TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
+                new CommunityCommitProcessFactory(),
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new StoreCopyCheckPointMutex(),
@@ -216,7 +215,6 @@ public class DatabaseRule extends ExternalResource
         private final FileSystemAbstraction fs;
         private final DatabaseTransactionStats databaseTransactionStats;
         private final DatabaseHealth databaseHealth;
-        private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
         private final CommitProcessFactory commitProcessFactory;
         private final PageCache pageCache;
         private final ConstraintSemantics constraintSemantics;
@@ -241,7 +239,6 @@ public class DatabaseRule extends ExternalResource
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                 TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, GlobalTransactionEventListeners globalTransactionEventListeners,
                 FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats, DatabaseHealth databaseHealth,
-                TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                 CommitProcessFactory commitProcessFactory, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
                 GlobalProcedures globalProcedures, IOLimiter ioLimiter, SystemNanoClock clock,
                 StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
@@ -266,7 +263,6 @@ public class DatabaseRule extends ExternalResource
             this.fs = fs;
             this.databaseTransactionStats = databaseTransactionStats;
             this.databaseHealth = databaseHealth;
-            this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
             this.commitProcessFactory = commitProcessFactory;
             this.pageCache = pageCache;
             this.constraintSemantics = constraintSemantics;
@@ -387,12 +383,6 @@ public class DatabaseRule extends ExternalResource
         public Factory<DatabaseHealth> getDatabaseHealthFactory()
         {
             return () -> databaseHealth;
-        }
-
-        @Override
-        public TransactionHeaderInformationFactory getTransactionHeaderInformationFactory()
-        {
-            return transactionHeaderInformationFactory;
         }
 
         @Override

@@ -17,8 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.fs;
 
-public interface ReadableLogChannel extends ReadableClosablePositionAwareChecksumChannel, VersionableLog
+import java.io.IOException;
+import java.util.function.Supplier;
+import java.util.zip.CRC32C;
+import java.util.zip.Checksum;
+
+public interface ChecksumWriter
 {
+    /**
+     * Even though the {@link Checksum#getValue()} returns a long, this is currently casted down to an integer.
+     */
+    Supplier<Checksum> CHECKSUM_FACTORY = CRC32C::new;
+
+    /**
+     * Begin a new checksum segment.
+     */
+    void beginChecksum();
+
+    /**
+     * Calculate the checksum of the produced stream, since the last call to {@link #beginChecksum()}, and insert it at the end of the channel.
+     *
+     * @return the calculated checksum.
+     * @throws IOException I/O error from channel.
+     */
+    int putChecksum() throws IOException;
 }

@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -95,8 +94,6 @@ public interface DatabaseCreationContext
     DatabaseTransactionStats getTransactionStats();
 
     Factory<DatabaseHealth> getDatabaseHealthFactory();
-
-    TransactionHeaderInformationFactory getTransactionHeaderInformationFactory();
 
     CommitProcessFactory getCommitProcessFactory();
 

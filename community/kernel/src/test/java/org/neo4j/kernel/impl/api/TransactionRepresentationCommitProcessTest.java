@@ -117,7 +117,7 @@ class TransactionRepresentationCommitProcessTest
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 appender, storageEngine );
         PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation( Collections.emptyList() );
-        noCommandTx.setHeader( new byte[0], -1, -1, -1, -1, -1, -1 );
+        noCommandTx.setHeader( new byte[0], -1, -1, -1, -1 );
 
         // WHEN
 

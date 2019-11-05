@@ -29,7 +29,7 @@ package org.neo4j.storageengine.api;
  * <ol>
  * <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
  * At this point that id isn't visible from any getter.</li>
- * <li>{@link #transactionCommitted(long, long, long)} is called with this id after the fact that the transaction
+ * <li>{@link #transactionCommitted(long, int, long)} is called with this id after the fact that the transaction
  * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
  * <li>{@link #transactionClosed(long, long, long)} is called with this id again, this time after all changes the
@@ -44,7 +44,7 @@ public interface TransactionIdStore
      * Note that a read only transaction will get txId = 0.
      */
     long BASE_TX_ID = 1;
-    long BASE_TX_CHECKSUM = 0;
+    int BASE_TX_CHECKSUM = 0xDEAD5EED;
 
     /**
      * Timestamp value used initially for an empty database.
@@ -54,7 +54,7 @@ public interface TransactionIdStore
     /**
      * CONSTANT FOR UNKNOWN TX CHECKSUM
      */
-    long UNKNOWN_TX_CHECKSUM = 1;
+    int UNKNOWN_TX_CHECKSUM = 1;
 
     /**
      * Timestamp value used when record in the metadata store is not present and there are no transactions in logs.
@@ -64,7 +64,7 @@ public interface TransactionIdStore
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
-     * until handed to {@link #transactionCommitted(long, long, long)}.
+     * until handed to {@link #transactionCommitted(long, int, long)}.
      */
     long nextCommittingTransactionId();
 
@@ -81,10 +81,10 @@ public interface TransactionIdStore
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
      */
-    void transactionCommitted( long transactionId, long checksum, long commitTimestamp );
+    void transactionCommitted( long transactionId, int checksum, long commitTimestamp );
 
     /**
-     * @return highest seen {@link #transactionCommitted(long, long, long) committed transaction id}.
+     * @return highest seen {@link #transactionCommitted(long, int, long) committed transaction id}.
      */
     long getLastCommittedTransactionId();
 
@@ -125,14 +125,13 @@ public interface TransactionIdStore
     /**
      * Used by recovery, where last committed/closed transaction ids are set.
      * Perhaps this shouldn't be exposed like this?
-     *  @param transactionId transaction id that will be the last closed/committed id.
+     * @param transactionId transaction id that will be the last closed/committed id.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
      */
-    void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp, long byteOffset,
-            long logVersion );
+    void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion );
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method

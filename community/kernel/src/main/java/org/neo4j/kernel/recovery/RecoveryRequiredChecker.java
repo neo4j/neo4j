@@ -58,7 +58,7 @@ class RecoveryRequiredChecker
     {
         LogEntryReader reader = new VersionAwareLogEntryReader();
         LogFiles logFiles = buildLogFiles( databaseLayout, reader );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors() );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors(), true );
         return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
     }
 

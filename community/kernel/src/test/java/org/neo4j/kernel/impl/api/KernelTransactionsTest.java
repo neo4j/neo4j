@@ -70,7 +70,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -126,7 +125,6 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
-import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.test.assertion.Assert.assertException;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
@@ -196,28 +194,6 @@ class KernelTransactionsTest
         assertThat( postDispose, not( equalTo( second ) ) );
 
         assertNotNull( leftOpen.getReasonIfTerminated() );
-    }
-
-    @Test
-    void shouldIncludeRandomBytesInAdditionalHeader() throws Throwable
-    {
-        // Given
-        TransactionRepresentation[] transactionRepresentation = new TransactionRepresentation[1];
-
-        KernelTransactions registry = newKernelTransactions( newRememberingCommitProcess( transactionRepresentation ) );
-
-        // When
-        try ( KernelTransaction transaction = getKernelTransaction( registry ) )
-        {
-            // Just pick anything that can flag that changes have been made to this transaction
-            ((KernelTransactionImplementation) transaction).txState().nodeDoCreate( 0 );
-            transaction.commit();
-        }
-
-        // Then
-        byte[] additionalHeader = transactionRepresentation[0].additionalHeader();
-        assertNotNull( additionalHeader );
-        assertTrue( additionalHeader.length > 0 );
     }
 
     @Test
@@ -718,7 +694,7 @@ class KernelTransactionsTest
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config )
     {
         return new KernelTransactions( config, statementLocksFactory, null,
-                DEFAULT, commitProcess, mock( DatabaseTransactionEventListeners.class ),
+                commitProcess, mock( DatabaseTransactionEventListeners.class ),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
@@ -733,7 +709,7 @@ class KernelTransactionsTest
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
         Dependencies dependencies = createDependencies();
-        return new TestKernelTransactions( statementLocksFactory, null, DEFAULT, commitProcess,
+        return new TestKernelTransactions( statementLocksFactory, null, commitProcess,
                 mock( DatabaseTransactionEventListeners.class ), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine,
                 mock( GlobalProcedures.class ), transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(),
                 dependencies );
@@ -787,14 +763,13 @@ class KernelTransactionsTest
     {
         TestKernelTransactions( StatementLocksFactory statementLocksFactory,
                 ConstraintIndexCreator constraintIndexCreator,
-                TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess,
                 DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
                 Tracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
                 VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies databaseDependencies )
         {
-            super( Config.defaults(), statementLocksFactory, constraintIndexCreator, txHeaderFactory,
+            super( Config.defaults(), statementLocksFactory, constraintIndexCreator,
                     transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
                     storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,

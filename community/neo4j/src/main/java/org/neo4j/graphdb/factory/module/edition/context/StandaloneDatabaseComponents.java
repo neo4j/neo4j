@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.token.TokenHolders;
 
@@ -43,7 +42,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final IOLimiter ioLimiter;
     private final ConstraintSemantics constraintSemantics;
     private final CommitProcessFactory commitProcessFactory;
-    private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final DatabaseTransactionStats transactionMonitor;
@@ -54,7 +52,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
 
     public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
     {
-        this.headerInformationFactory = editionModule.getHeaderInformationFactory();
         this.commitProcessFactory = editionModule.getCommitProcessFactory();
         this.constraintSemantics = editionModule.getConstraintSemantics();
         this.ioLimiter = editionModule.getIoLimiter();
@@ -102,12 +99,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public CommitProcessFactory getCommitProcessFactory()
     {
         return commitProcessFactory;
-    }
-
-    @Override
-    public TransactionHeaderInformationFactory getHeaderInformationFactory()
-    {
-        return headerInformationFactory;
     }
 
     @Override

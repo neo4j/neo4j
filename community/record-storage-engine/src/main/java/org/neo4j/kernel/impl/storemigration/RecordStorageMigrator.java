@@ -284,7 +284,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     TransactionId readLastTxInformation( DatabaseLayout migrationStructure ) throws IOException
     {
         long[] counters = readTxLogCounters( fileSystem, lastTxInformationFile( migrationStructure ), 3 );
-        return new TransactionId( counters[0], counters[1], counters[2] );
+        return new TransactionId( counters[0], (int) counters[1], counters[2] );
     }
 
     LogPosition readLastTxLogPosition( DatabaseLayout migrationStructure ) throws IOException
@@ -335,7 +335,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     TransactionId extractTransactionIdInformation( File neoStore, long lastTransactionId )
             throws IOException
     {
-        long checksum = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
+        int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
         long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore,
                 Position.LAST_TRANSACTION_COMMIT_TIMESTAMP );
         if ( checksum != FIELD_NOT_PRESENT && commitTimestamp != FIELD_NOT_PRESENT )
@@ -401,7 +401,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure,
-            long lastTxId, long lastTxChecksum,
+            long lastTxId, int lastTxChecksum,
             long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter,
             RecordFormats oldFormat, RecordFormats newFormat )
             throws IOException
@@ -548,7 +548,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance() );
     }
 
-    private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum, final long lastTxLogVersion,
+    private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final int lastTxChecksum, final long lastTxLogVersion,
             final long lastTxLogByteOffset )
     {
         return new AdditionalInitialIds()
@@ -560,7 +560,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             }
 
             @Override
-            public long lastCommittedTransactionChecksum()
+            public int lastCommittedTransactionChecksum()
             {
                 return lastTxChecksum;
             }

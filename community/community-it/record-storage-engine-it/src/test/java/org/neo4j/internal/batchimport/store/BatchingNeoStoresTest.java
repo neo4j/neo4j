@@ -362,7 +362,7 @@ class BatchingNeoStoresTest
         try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
             storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, BASE_TX_ID, v -> v );
-            CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, 0, 0 ) );
+            CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0 ) );
             storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }
     }

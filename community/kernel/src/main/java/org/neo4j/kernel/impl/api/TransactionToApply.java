@@ -176,8 +176,6 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
                " {started " + date( tr.getTimeStarted() ) +
                ", committed " + date( tr.getTimeCommitted() ) +
                ", with " + countCommands() + " commands in this transaction" +
-               ", authored by " + tr.getAuthorId() +
-               ", with master id " + tr.getMasterId() +
                ", lock session " + tr.getEpochTokenId() +
                ", latest committed transaction id when started was " + tr.getLatestCommittedTxWhenStarted() +
                ", additional header bytes: " + HexPrinter.hex( tr.additionalHeader(), Integer.MAX_VALUE, "" ) + "}";

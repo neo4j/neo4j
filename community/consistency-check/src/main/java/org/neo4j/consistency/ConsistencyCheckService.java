@@ -138,7 +138,7 @@ public class ConsistencyCheckService
             ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, verbose,
-                defaultReportDir( config, databaseLayout.databaseDirectory() ), consistencyFlags );
+                defaultReportDir( config ), consistencyFlags );
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
@@ -183,7 +183,7 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, verbose,
-                defaultReportDir( config, databaseLayout.databaseDirectory() ), consistencyFlags );
+                defaultReportDir( config ), consistencyFlags );
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
@@ -310,7 +310,7 @@ public class ConsistencyCheckService
         return new File( reportDir, defaultLogFileName( timestamp ) );
     }
 
-    private static File defaultReportDir( Config tuningConfiguration, File storeDir )
+    private static File defaultReportDir( Config tuningConfiguration )
     {
         return tuningConfiguration.get( GraphDatabaseSettings.logs_directory ).toFile();
     }

@@ -38,7 +38,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -65,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -275,7 +276,7 @@ class LogTailScannerTest
     void latestLogFileContainingACheckPointAndAStartBefore( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( endLogVersion, logFile( start(), checkPoint() ) );
+        setupLogFiles( endLogVersion, logFile( start(), commit( 1 ), checkPoint() ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -292,7 +293,7 @@ class LogTailScannerTest
 
         LogTailScanner tailScanner =
             new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, reader, monitors );
-        LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
+        LogEntryStart startEntry = new LogEntryStart( 3L, 4L, 0, new byte[]{5, 6},
             new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
         LogTailInformation logTailInformation = tailScanner.checkpointTailInformation( endLogVersion, startEntry,
@@ -352,25 +353,10 @@ class LogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void latestLogFileContainingACheckPointAndAStartWithoutCommitAfter( int startLogVersion, int endLogVersion )
-    {
-        // given
-        StartEntry start = start();
-        setupLogFiles( endLogVersion, logFile( start, checkPoint( start ) ) );
-
-        // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
-
-        // then
-        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
     void latestLogFileContainingMultipleCheckPointsOneStartInBetween( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( endLogVersion, logFile( checkPoint(), start(), checkPoint() ) );
+        setupLogFiles( endLogVersion, logFile( checkPoint(), start(), commit( 1 ), checkPoint() ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -416,7 +402,7 @@ class LogTailScannerTest
     {
         // given
         StartEntry start = start();
-        setupLogFiles( endLogVersion, logFile( start, checkPoint() ), logFile() );
+        setupLogFiles( endLogVersion, logFile( start, commit( 1 ), checkPoint() ), logFile() );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -478,7 +464,7 @@ class LogTailScannerTest
     {
         // given
         long txId = 432;
-        setupLogFiles( endLogVersion, logFile( start(), checkPoint(), start(), commit( txId ) ), logFile() );
+        setupLogFiles( endLogVersion, logFile( start(), commit( 1 ), checkPoint(), start(), commit( txId ) ), logFile() );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -511,9 +497,10 @@ class LogTailScannerTest
                 logFileLife.start();
                 logFileLife.add( logFiles );
                 LogFile logFile = logFiles.getLogFile();
+                int previousChecksum = BASE_TX_CHECKSUM;
                 try
                 {
-                    FlushablePositionAwareChannel writeChannel = logFile.getWriter();
+                    FlushablePositionAwareChecksumChannel writeChannel = logFile.getWriter();
                     LogPositionMarker positionMarker = new LogPositionMarker();
                     LogEntryWriter writer = new LogEntryWriter( writeChannel );
                     for ( Entry entry : entries )
@@ -522,12 +509,12 @@ class LogTailScannerTest
                         positions.put( entry, currentPosition );
                         if ( entry instanceof StartEntry )
                         {
-                            writer.writeStartEntry( 0, 0, 0, 0, new byte[0] );
+                            writer.writeStartEntry( 0, 0, previousChecksum, new byte[0] );
                         }
                         else if ( entry instanceof CommitEntry )
                         {
                             CommitEntry commitEntry = (CommitEntry) entry;
-                            writer.writeCommitEntry( commitEntry.txId, 0 );
+                            previousChecksum = writer.writeCommitEntry( commitEntry.txId, 0 );
                             lastTxId.set( commitEntry.txId );
                         }
                         else if ( entry instanceof CheckPointEntry )

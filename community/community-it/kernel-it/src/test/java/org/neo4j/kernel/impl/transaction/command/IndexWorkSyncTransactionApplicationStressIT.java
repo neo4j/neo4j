@@ -126,7 +126,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
     private static TransactionToApply tx( Collection<StorageCommand> commands )
     {
-        PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1, -1, -1 );
+        PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1 );
         TransactionToApply tx = new TransactionToApply( txRepresentation );
         tx.commitment( NO_COMMITMENT, 0 );
         return tx;

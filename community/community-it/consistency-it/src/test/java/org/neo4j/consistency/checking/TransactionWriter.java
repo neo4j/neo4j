@@ -58,12 +58,11 @@ public class TransactionWriter
         this.neoStores = neoStores;
     }
 
-    public TransactionRepresentation representation( byte[] additionalHeader, int masterId, int authorId,
-            long startTime, long lastCommittedTx, long committedTime )
+    public TransactionRepresentation representation( byte[] additionalHeader, long startTime, long lastCommittedTx, long committedTime )
     {
         prepareForCommit();
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( allCommands() );
-        representation.setHeader( additionalHeader, masterId, authorId, startTime, lastCommittedTx, committedTime, -1 );
+        representation.setHeader( additionalHeader, startTime, lastCommittedTx, committedTime, -1 );
         return representation;
     }
 

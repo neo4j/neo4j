@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 class RecoveryProgressIndicatorTest
 {
@@ -61,7 +62,7 @@ class RecoveryProgressIndicatorTest
         when( transactionCursor.next() ).thenAnswer( new NextTransactionAnswer( transactionsToRecover ) );
         when( reverseTransactionCursor.get() ).thenReturn( transactionRepresentation );
         when( transactionCursor.get() ).thenReturn( transactionRepresentation );
-        when( transactionRepresentation.getCommitEntry() ).thenReturn( new LogEntryCommit( lastCommittedTransactionId, 1L ) );
+        when( transactionRepresentation.getCommitEntry() ).thenReturn( new LogEntryCommit( lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM ) );
 
         when( recoveryService.getRecoveryStartInformation() ).thenReturn( startInformation );
         when( recoveryService.getTransactionsInReverseOrder( recoveryStartPosition ) ).thenReturn( reverseTransactionCursor );

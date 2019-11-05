@@ -107,7 +107,7 @@ class TransactionLogFileRotateAndReadRaceIT
                 .build();
         life.add( logFiles );
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChannel writer = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
         LogPositionMarker startPosition = new LogPositionMarker();
         writer.getCurrentPosition( startPosition );
 

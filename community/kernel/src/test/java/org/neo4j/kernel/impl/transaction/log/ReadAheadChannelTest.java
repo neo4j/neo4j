@@ -26,7 +26,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.zip.Checksum;
 
+import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.ReadPastEndException;
@@ -37,6 +39,7 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 
@@ -149,6 +152,99 @@ class ReadAheadChannelTest
         assertEquals( fileSize, bufferedReader.position() );
         assertThrows( ReadPastEndException.class, bufferedReader::getLong );
         assertEquals( fileSize, bufferedReader.position() );
+    }
+
+    @ParameterizedTest
+    @EnumSource( Constructors.class )
+    void validateChecksumOverStream( Constructor constructor ) throws Exception
+    {
+        // given
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        int checksumValue;
+        File file = new File( "foo.1" );
+        try ( StoreChannel storeChannel = fileSystem.write( file ) )
+        {
+            ByteBuffer buffer = ByteBuffers.allocate( 6 );
+            buffer.put( (byte) 1 );
+            checksum.update( 1 );
+            buffer.put( (byte) 2 );
+            checksum.update( 2 );
+            checksumValue = (int) checksum.getValue();
+            buffer.putInt( checksumValue );
+            buffer.flip();
+            storeChannel.writeAll( buffer );
+            storeChannel.force( false );
+        }
+
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), DEFAULT_READ_AHEAD_SIZE );
+
+        assertEquals( 1, bufferedReader.get() );
+        assertEquals( 2, bufferedReader.get() );
+        assertEquals( checksumValue, bufferedReader.endChecksumAndValidate() );
+        assertEquals( 6, bufferedReader.position() );
+    }
+
+    @ParameterizedTest
+    @EnumSource( Constructors.class )
+    void throwOnInvalidChecksum( Constructor constructor ) throws Exception
+    {
+        // given
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        File file = new File( "foo.1" );
+        try ( StoreChannel storeChannel = fileSystem.write( file ) )
+        {
+            ByteBuffer buffer = ByteBuffers.allocate( 6 );
+            buffer.put( (byte) 1 );
+            checksum.update( 1 );
+            buffer.put( (byte) 2 );
+            checksum.update( 2 );
+            int notChecksumValue = (int) checksum.getValue() + 1;
+            buffer.putInt( notChecksumValue );
+            buffer.flip();
+            storeChannel.writeAll( buffer );
+            storeChannel.force( false );
+        }
+
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), DEFAULT_READ_AHEAD_SIZE );
+
+        assertEquals( 1, bufferedReader.get() );
+        assertEquals( 2, bufferedReader.get() );
+        assertThrows( ChecksumMismatchException.class, bufferedReader::endChecksumAndValidate );
+    }
+
+    @ParameterizedTest
+    @EnumSource( Constructors.class )
+    void checksumIsCalculatedCorrectlyOverBuffersLargerThanReadAheadSize( Constructor constructor ) throws Exception
+    {
+        // given
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        int checksumValue;
+        File file = new File( "foo.1" );
+        int testSize = 100;
+        try ( StoreChannel storeChannel = fileSystem.write( file ) )
+        {
+            ByteBuffer buffer = ByteBuffers.allocate( testSize + 4 );
+            for ( int i = 0; i < testSize; i++ )
+            {
+                buffer.put( (byte) i );
+                checksum.update( i );
+            }
+            checksumValue = (int) checksum.getValue();
+            buffer.putInt( checksumValue );
+            buffer.flip();
+            storeChannel.writeAll( buffer );
+            storeChannel.force( false );
+        }
+
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), testSize / 2 );
+
+        byte[] in = new byte[testSize];
+        bufferedReader.get( in, testSize );
+        for ( int i = 0; i < testSize; i++ )
+        {
+            assertEquals( i, in[i] );
+        }
+        assertEquals( checksumValue, bufferedReader.endChecksumAndValidate() );
     }
 
     private void createFile( EphemeralFileSystemAbstraction fsa, File name, int bufferSize ) throws IOException

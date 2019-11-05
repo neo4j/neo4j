@@ -88,7 +88,7 @@ public class LogTailScanner
         long version = highestLogVersion;
         long versionToSearchForCommits = highestLogVersion;
         LogEntryStart latestStartEntry = null;
-        long oldestStartEntryTransaction = -1;
+        long oldestStartEntryTransaction = NO_TRANSACTION_ID;
         long oldestVersionFound = -1;
         LogEntryVersion latestLogEntryVersion = null;
         boolean startRecordAfterCheckpoint = false;

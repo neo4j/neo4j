@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import java.util.Objects;
+
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 public class CheckPoint extends AbstractLogEntry
@@ -52,23 +54,19 @@ public class CheckPoint extends AbstractLogEntry
         {
             return false;
         }
-
         CheckPoint that = (CheckPoint) o;
-
-        return !(logPosition != null ? !logPosition.equals( that.logPosition ) : that.logPosition != null);
+        return Objects.equals( logPosition, that.logPosition );
     }
 
     @Override
     public int hashCode()
     {
-        return logPosition != null ? logPosition.hashCode() : 0;
+        return Objects.hash( logPosition );
     }
 
     @Override
     public String toString()
     {
-        return "CheckPoint[" +
-               "position=" + logPosition +
-               ']';
+        return "CheckPoint{logPosition=" + logPosition + '}';
     }
 }

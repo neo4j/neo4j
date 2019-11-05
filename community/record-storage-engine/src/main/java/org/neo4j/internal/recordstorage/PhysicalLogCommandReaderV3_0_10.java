@@ -416,6 +416,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
     {
         byte flags = channel.get();
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean isCreated = bitFlag( flags, Record.CREATED_IN_TX );
         boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
@@ -443,6 +444,10 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
         readDynamicRecords( channel, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
         record.setLabelField( labelField, dynamicLabelRecords );
         record.setInUse( inUse );
+        if ( isCreated )
+        {
+            record.setCreated();
+        }
         return record;
     }
 

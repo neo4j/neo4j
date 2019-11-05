@@ -107,7 +107,7 @@ class BatchingTransactionAppenderRotationIT
     {
         List<StorageCommand> commands = createCommands();
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation( commands );
-        transactionRepresentation.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
+        transactionRepresentation.setHeader( new byte[0], 0, 0, 0, 0 );
         return new TransactionToApply( transactionRepresentation );
     }
 

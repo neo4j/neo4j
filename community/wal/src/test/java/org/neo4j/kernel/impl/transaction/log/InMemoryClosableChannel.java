@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.Closeable;
 import java.io.Flushable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.zip.Checksum;
 
+import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 
@@ -32,7 +35,7 @@ import static java.lang.Math.toIntExact;
 /**
  * Implementation of {@link ReadableClosablePositionAwareChannel} operating over a {@code byte[]} in memory.
  */
-public class InMemoryClosableChannel implements ReadableClosablePositionAwareChannel, FlushablePositionAwareChannel
+public class InMemoryClosableChannel implements ReadableClosablePositionAwareChecksumChannel, FlushablePositionAwareChecksumChannel
 {
     private final byte[] bytes;
     private final Reader reader;
@@ -188,10 +191,29 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     }
 
     @Override
+    public int endChecksumAndValidate() throws IOException
+    {
+        return reader.endChecksumAndValidate();
+    }
+
+    @Override
     public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker )
     {
         // Hmm, this would be for the writer.
         return writer.getCurrentPosition( positionMarker );
+    }
+
+    @Override
+    public int putChecksum()
+    {
+        return writer.putChecksum();
+    }
+
+    @Override
+    public void beginChecksum()
+    {
+        reader.beginChecksum();
+        writer.beginChecksum();
     }
 
     public int positionWriter( int position )
@@ -242,7 +264,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     {
     };
 
-    class ByteBufferBase implements PositionAwareChannel, Closeable
+    static class ByteBufferBase implements PositionAwareChannel, Closeable
     {
         protected final ByteBuffer buffer;
 
@@ -289,8 +311,10 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         }
     }
 
-    public class Reader extends ByteBufferBase implements ReadableClosablePositionAwareChannel, PositionableChannel
+    public class Reader extends ByteBufferBase implements ReadableClosablePositionAwareChecksumChannel, PositionableChannel
     {
+        private final Checksum checksum = CHECKSUM_FACTORY.get();
+
         Reader( ByteBuffer buffer )
         {
             super( buffer );
@@ -299,42 +323,48 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         @Override
         public byte get() throws ReadPastEndException
         {
-            ensureAvailableToRead( 1 );
+            ensureAvailableToRead( Byte.BYTES );
+            updateCrc( Byte.BYTES );
             return buffer.get();
         }
 
         @Override
         public short getShort() throws ReadPastEndException
         {
-            ensureAvailableToRead( 2 );
+            ensureAvailableToRead( Short.BYTES );
+            updateCrc( Short.BYTES );
             return buffer.getShort();
         }
 
         @Override
         public int getInt() throws ReadPastEndException
         {
-            ensureAvailableToRead( 4 );
+            ensureAvailableToRead( Integer.BYTES );
+            updateCrc( Integer.BYTES );
             return buffer.getInt();
         }
 
         @Override
         public long getLong() throws ReadPastEndException
         {
-            ensureAvailableToRead( 8 );
+            ensureAvailableToRead( Long.BYTES );
+            updateCrc( Long.BYTES );
             return buffer.getLong();
         }
 
         @Override
         public float getFloat() throws ReadPastEndException
         {
-            ensureAvailableToRead( 4 );
+            ensureAvailableToRead( Float.BYTES );
+            updateCrc( Float.BYTES );
             return buffer.getFloat();
         }
 
         @Override
         public double getDouble() throws ReadPastEndException
         {
-            ensureAvailableToRead( 8 );
+            ensureAvailableToRead( Double.BYTES );
+            updateCrc( Double.BYTES );
             return buffer.getDouble();
         }
 
@@ -343,6 +373,35 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         {
             ensureAvailableToRead( length );
             buffer.get( bytes, 0, length );
+            checksum.update( bytes, 0, length );
+        }
+
+        @Override
+        public int endChecksumAndValidate() throws ReadPastEndException
+        {
+            ensureAvailableToRead( Integer.BYTES );
+            int checksum = (int) this.checksum.getValue();
+            int storedChecksum = buffer.getInt();
+            if ( checksum != storedChecksum )
+            {
+                throw new ChecksumMismatchException( storedChecksum, checksum );
+            }
+            beginChecksum();
+
+            return checksum;
+        }
+
+        @Override
+        public void beginChecksum()
+        {
+            checksum.reset();
+        }
+
+        @Override
+        public void setCurrentPosition( long byteOffset )
+        {
+            buffer.position( toIntExact( byteOffset ) );
+            beginChecksum();
         }
 
         private void ensureAvailableToRead( int i ) throws ReadPastEndException
@@ -353,15 +412,16 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
             }
         }
 
-        @Override
-        public void setCurrentPosition( long byteOffset )
+        private void updateCrc( int size )
         {
-            buffer.position( toIntExact( byteOffset ) );
+            checksum.update( buffer.array(), buffer.position(), size );
         }
     }
 
-    public class Writer extends ByteBufferBase implements FlushablePositionAwareChannel
+    public class Writer extends ByteBufferBase implements FlushablePositionAwareChecksumChannel
     {
+        private final Checksum checksum = CHECKSUM_FACTORY.get();
+
         Writer( ByteBuffer buffer )
         {
             super( buffer );
@@ -371,6 +431,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Writer put( byte b )
         {
             buffer.put( b );
+            updateCrc( Byte.BYTES );
             return this;
         }
 
@@ -378,6 +439,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Writer putShort( short s )
         {
             buffer.putShort( s );
+            updateCrc( Short.BYTES );
             return this;
         }
 
@@ -385,6 +447,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Writer putInt( int i )
         {
             buffer.putInt( i );
+            updateCrc( Integer.BYTES );
             return this;
         }
 
@@ -392,6 +455,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Writer putLong( long l )
         {
             buffer.putLong( l );
+            updateCrc( Long.BYTES );
             return this;
         }
 
@@ -399,6 +463,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Writer putFloat( float f )
         {
             buffer.putFloat( f );
+            updateCrc( Float.BYTES );
             return this;
         }
 
@@ -406,6 +471,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Writer putDouble( double d )
         {
             buffer.putDouble( d );
+            updateCrc( Double.BYTES );
             return this;
         }
 
@@ -413,6 +479,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Writer put( byte[] bytes, int length )
         {
             buffer.put( bytes, 0, length );
+            checksum.update( bytes, 0, length );
             return this;
         }
 
@@ -420,6 +487,25 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         public Flushable prepareForFlush()
         {
             return NO_OP_FLUSHABLE;
+        }
+
+        @Override
+        public int putChecksum()
+        {
+            int checksum = (int) this.checksum.getValue();
+            buffer.putInt( checksum );
+            return checksum;
+        }
+
+        @Override
+        public void beginChecksum()
+        {
+            checksum.reset();
+        }
+
+        private void updateCrc( int size )
+        {
+            checksum.update( buffer.array(), buffer.position() - size, size );
         }
     }
 }

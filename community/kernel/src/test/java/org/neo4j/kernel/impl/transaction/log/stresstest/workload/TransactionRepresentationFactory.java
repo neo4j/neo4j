@@ -25,13 +25,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.kernel.impl.api.TestCommand;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 
 class TransactionRepresentationFactory
 {
@@ -39,11 +37,8 @@ class TransactionRepresentationFactory
 
     TransactionToApply nextTransaction( long txId )
     {
-        PhysicalTransactionRepresentation representation =
-                new PhysicalTransactionRepresentation( createRandomCommands() );
-        TransactionHeaderInformation headerInfo = DEFAULT.create();
-        representation.setHeader( headerInfo.getAdditionalHeader(), headerInfo.getMasterId(),
-                headerInfo.getAuthorId(), headerInfo.getAuthorId(), txId, currentTimeMillis(), 42 );
+        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( createRandomCommands() );
+        representation.setHeader( new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42 );
         return new TransactionToApply( representation );
     }
 

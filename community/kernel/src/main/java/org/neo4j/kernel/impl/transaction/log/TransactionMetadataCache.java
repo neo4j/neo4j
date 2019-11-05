@@ -48,44 +48,28 @@ public class TransactionMetadataCache
         return txStartPositionCache.get( txId );
     }
 
-    public void cacheTransactionMetadata( long txId, LogPosition position, int masterId,
-                                                         int authorId, long checksum, long timeWritten )
+    public void cacheTransactionMetadata( long txId, LogPosition position, int checksum, long timeWritten )
     {
         if ( position.getByteOffset() == -1 )
         {
             throw new RuntimeException( "StartEntry.position is " + position );
         }
 
-        TransactionMetadata result = new TransactionMetadata( masterId, authorId, position, checksum, timeWritten );
+        TransactionMetadata result = new TransactionMetadata( position, checksum, timeWritten );
         txStartPositionCache.put( txId, result );
     }
 
     public static class TransactionMetadata
     {
-        private final int masterId;
-        private final int authorId;
         private final LogPosition startPosition;
-        private final long checksum;
+        private final int checksum;
         private final long timeWritten;
 
-        public TransactionMetadata( int masterId, int authorId, LogPosition startPosition, long checksum,
-                long timeWritten )
+        public TransactionMetadata( LogPosition startPosition, int checksum, long timeWritten )
         {
-            this.masterId = masterId;
-            this.authorId = authorId;
             this.startPosition = startPosition;
             this.checksum = checksum;
             this.timeWritten = timeWritten;
-        }
-
-        public int getMasterId()
-        {
-            return masterId;
-        }
-
-        public int getAuthorId()
-        {
-            return authorId;
         }
 
         public LogPosition getStartPosition()
@@ -93,7 +77,7 @@ public class TransactionMetadataCache
             return startPosition;
         }
 
-        public long getChecksum()
+        public int getChecksum()
         {
             return checksum;
         }
@@ -107,8 +91,6 @@ public class TransactionMetadataCache
         public String toString()
         {
             return "TransactionMetadata{" +
-                   "masterId=" + masterId +
-                   ", authorId=" + authorId +
                    ", startPosition=" + startPosition +
                    ", checksum=" + checksum +
                    ", timeWritten=" + timeWritten +
@@ -127,9 +109,7 @@ public class TransactionMetadataCache
                 return false;
             }
             TransactionMetadata that = (TransactionMetadata) o;
-            return masterId == that.masterId &&
-                   authorId == that.authorId &&
-                   checksum == that.checksum &&
+            return checksum == that.checksum &&
                    timeWritten == that.timeWritten &&
                    Objects.equals( startPosition, that.startPosition );
         }
@@ -137,10 +117,8 @@ public class TransactionMetadataCache
         @Override
         public int hashCode()
         {
-            int result = masterId;
-            result = 31 * result + authorId;
-            result = 31 * result + startPosition.hashCode();
-            result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+            int result = startPosition.hashCode();
+            result = 31 * result + checksum;
             result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
             return result;
         }

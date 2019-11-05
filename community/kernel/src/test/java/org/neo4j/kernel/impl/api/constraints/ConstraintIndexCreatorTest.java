@@ -53,13 +53,11 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -399,9 +397,6 @@ class ConstraintIndexCreatorTest
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         try
         {
-            TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
-            TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
-            when( headerInformationFactory.create() ).thenReturn( headerInformation );
             StorageEngine storageEngine = mock( StorageEngine.class );
             StorageReader storageReader = mock( StorageReader.class );
             when( storageEngine.newReader() ).thenReturn( storageReader );

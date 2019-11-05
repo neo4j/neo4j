@@ -74,7 +74,7 @@ class HighestTransactionIdTest
             final long id = i + 1;
             race.addContestant( () ->
             {
-                if ( highest.offer( id, id, id ) )
+                if ( highest.offer( id, (int) id, id ) )
                 {
                     accepted.incrementAndGet();
                 }

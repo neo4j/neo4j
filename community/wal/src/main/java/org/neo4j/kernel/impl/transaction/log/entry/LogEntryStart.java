@@ -30,41 +30,27 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST
 
 public class LogEntryStart extends AbstractLogEntry
 {
-    private final int masterId;
-    private final int authorId;
     private final long timeWritten;
     private final long lastCommittedTxWhenTransactionStarted;
+    private final int previousChecksum;
     private final byte[] additionalHeader;
     private LogPosition startPosition;
 
-    public LogEntryStart( int masterId, int authorId, long timeWritten,
-                          long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
-                          LogPosition startPosition )
+    public LogEntryStart( long timeWritten, long lastCommittedTxWhenTransactionStarted, int previousChecksum, byte[] additionalHeader,
+            LogPosition startPosition )
     {
-        this( LATEST_VERSION, masterId, authorId, timeWritten,
-                lastCommittedTxWhenTransactionStarted, additionalHeader, startPosition );
+        this( LATEST_VERSION, timeWritten, lastCommittedTxWhenTransactionStarted, previousChecksum, additionalHeader, startPosition );
     }
 
-    public LogEntryStart( LogEntryVersion version, int masterId, int authorId, long timeWritten,
-                          long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader, LogPosition startPosition )
+    public LogEntryStart( LogEntryVersion version, long timeWritten, long lastCommittedTxWhenTransactionStarted,
+            int previousChecksum, byte[] additionalHeader, LogPosition startPosition )
     {
         super( version, TX_START );
-        this.masterId = masterId;
-        this.authorId = authorId;
+        this.previousChecksum = previousChecksum;
         this.startPosition = startPosition;
         this.timeWritten = timeWritten;
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.additionalHeader = additionalHeader;
-    }
-
-    public int getMasterId()
-    {
-        return masterId;
-    }
-
-    public int getLocalId()
-    {
-        return authorId;
     }
 
     public LogPosition getStartPosition()
@@ -87,27 +73,6 @@ public class LogEntryStart extends AbstractLogEntry
         return additionalHeader;
     }
 
-    /**
-     * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
-     */
-    public static long checksum( byte[] additionalHeader, int masterId, int authorId )
-    {
-        // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
-        long lowBits = Arrays.hashCode( additionalHeader );
-        long highBits = masterId * 37 + authorId;
-        return (highBits << 32) | (lowBits & 0xFFFFFFFFL);
-    }
-
-    public static long checksum( LogEntryStart entry )
-    {
-        return checksum( entry.additionalHeader, entry.masterId, entry.authorId );
-    }
-
-    public long checksum()
-    {
-        return checksum( this );
-    }
-
     @Override
     public String toString()
     {
@@ -118,14 +83,12 @@ public class LogEntryStart extends AbstractLogEntry
     public String toString( TimeZone timeZone )
     {
         return "Start[" +
-                "master=" + masterId + "," +
-                "me=" + authorId + "," +
                 "time=" + timestamp( timeWritten, timeZone ) + "," +
                 "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
+                "previousChecksum=" + previousChecksum + "," +
                 "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + "," +
                 (additionalHeader == null ? "" : Arrays.toString( additionalHeader ) ) + "," +
-                "position=" + startPosition + "," +
-                "checksum=" + checksum( this ) +
+                "position=" + startPosition +
                 "]";
     }
 
@@ -143,21 +106,25 @@ public class LogEntryStart extends AbstractLogEntry
 
         LogEntryStart start = (LogEntryStart) o;
 
-        return authorId == start.authorId &&
-               lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted &&
-               masterId == start.masterId && timeWritten == start.timeWritten &&
+        return lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted &&
+               timeWritten == start.timeWritten &&
+               previousChecksum == start.previousChecksum &&
                Arrays.equals( additionalHeader, start.additionalHeader ) && startPosition.equals( start.startPosition );
     }
 
     @Override
     public int hashCode()
     {
-        int result = masterId;
-        result = 31 * result + authorId;
-        result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
+        int result = (int) (timeWritten ^ (timeWritten >>> 32));
         result = 31 * result + (int) (lastCommittedTxWhenTransactionStarted ^ (lastCommittedTxWhenTransactionStarted >>> 32));
+        result = 31 * result + previousChecksum;
         result = 31 * result + (additionalHeader != null ? Arrays.hashCode( additionalHeader ) : 0);
         result = 31 * result + startPosition.hashCode();
         return result;
+    }
+
+    public int getPreviousChecksum()
+    {
+        return previousChecksum;
     }
 }

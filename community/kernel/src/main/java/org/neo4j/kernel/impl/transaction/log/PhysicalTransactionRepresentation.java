@@ -32,8 +32,6 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
 {
     private final Collection<StorageCommand> commands;
     private byte[] additionalHeader;
-    private int masterId;
-    private int authorId;
     private long timeStarted;
     private long latestCommittedTxWhenStarted;
     private long timeCommitted;
@@ -50,11 +48,11 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         this.commands = commands;
     }
 
-    public PhysicalTransactionRepresentation( Collection<StorageCommand> commands,
-            byte[] additionalHeader, int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted, int lockSession )
+    public PhysicalTransactionRepresentation( Collection<StorageCommand> commands, byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted,
+            long timeCommitted, int lockSession )
     {
         this( commands );
-        setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSession );
+        setHeader( additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSession );
     }
 
     public void setAdditionalHeader( byte[] additionalHeader )
@@ -62,12 +60,9 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         this.additionalHeader = additionalHeader;
     }
 
-    public void setHeader( byte[] additionalHeader, int masterId, int authorId, long timeStarted,
-                           long latestCommittedTxWhenStarted, long timeCommitted, int lockSession )
+    public void setHeader( byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted, int lockSession )
     {
         this.additionalHeader = additionalHeader;
-        this.masterId = masterId;
-        this.authorId = authorId;
         this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
         this.timeCommitted = timeCommitted;
@@ -91,18 +86,6 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     public byte[] additionalHeader()
     {
         return additionalHeader;
-    }
-
-    @Override
-    public int getMasterId()
-    {
-        return masterId;
-    }
-
-    @Override
-    public int getAuthorId()
-    {
-        return authorId;
     }
 
     @Override
@@ -142,9 +125,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         }
 
         PhysicalTransactionRepresentation that = (PhysicalTransactionRepresentation) o;
-        return authorId == that.authorId
-               && latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
-               && masterId == that.masterId
+        return latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
                && timeStarted == that.timeStarted
                && Arrays.equals( additionalHeader, that.additionalHeader )
                && commands.equals( that.commands );
@@ -155,8 +136,6 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     {
         int result = commands.hashCode();
         result = 31 * result + (additionalHeader != null ? Arrays.hashCode( additionalHeader ) : 0);
-        result = 31 * result + masterId;
-        result = 31 * result + authorId;
         result = 31 * result + (int) (timeStarted ^ (timeStarted >>> 32));
         result = 31 * result + (int) (latestCommittedTxWhenStarted ^ (latestCommittedTxWhenStarted >>> 32));
         return result;
@@ -165,16 +144,13 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder( getClass().getSimpleName() ).append( '[' );
-        builder.append( "masterId:" ).append( masterId ).append( ',' );
-        builder.append( "authorId:" ).append( authorId ).append( ',' );
-        builder.append( "timeStarted:" ).append( timeStarted ).append( ',' );
-        builder.append( "latestCommittedTxWhenStarted:" ).append( latestCommittedTxWhenStarted ).append( ',' );
-        builder.append( "timeCommitted:" ).append( timeCommitted ).append( ',' );
-        builder.append( "lockSession:" ).append( lockSessionIdentifier ).append( ',' );
-        builder.append( "additionalHeader:" ).append( Arrays.toString( additionalHeader ) );
-        builder.append( "commands.length:" ).append( commands.size() );
-        return builder.toString();
+        return getClass().getSimpleName() + '[' +
+                "timeStarted:" + timeStarted + ',' +
+                "latestCommittedTxWhenStarted:" + latestCommittedTxWhenStarted + ',' +
+                "timeCommitted:" + timeCommitted + ',' +
+                "lockSession:" + lockSessionIdentifier + ',' +
+                "additionalHeader:" + Arrays.toString( additionalHeader ) +
+                "commands.length:" + commands.size();
     }
 
     @Override

@@ -191,8 +191,8 @@ class PhysicalFlushableChannelTest
         StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file );
-        PositionAwarePhysicalFlushableChannel channel =
-                new PositionAwarePhysicalFlushableChannel( versionedStoreChannel, allocateDirect( 1024 ) );
+        PositionAwarePhysicalFlushableChecksumChannel channel =
+                new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, allocateDirect( 1024 ) );
         LogPositionMarker positionMarker = new LogPositionMarker();
         LogPosition initialPosition = channel.getCurrentPosition( positionMarker ).newPosition();
 

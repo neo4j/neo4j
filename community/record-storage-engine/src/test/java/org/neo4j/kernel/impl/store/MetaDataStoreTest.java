@@ -335,7 +335,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.setUpgradeTransaction( count, count, count );
+                store.setUpgradeTransaction( count, (int) count, count );
             } );
 
             // file readers
@@ -420,7 +420,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted( count, count, count );
+                store.transactionCommitted( count, (int) count, count );
             } );
 
             race.addContestants( 3, throwing( () ->
@@ -476,7 +476,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted( count, count, count );
+                store.transactionCommitted( count, (int) count, count );
             } );
 
             race.addContestants( 3, throwing( () ->
@@ -720,7 +720,7 @@ class MetaDataStoreTest
         long storeVersion = versionStringToLong( LATEST_STORE_VERSION );
         int upgradeTime = 4;
         int upgradeTxId = 5;
-        long upgradeTxChecksum = 6;
+        int upgradeTxChecksum = 6;
         long upgradeTxCommitTimestamp = 7;
 
         StoreId storeId = new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeTxId );

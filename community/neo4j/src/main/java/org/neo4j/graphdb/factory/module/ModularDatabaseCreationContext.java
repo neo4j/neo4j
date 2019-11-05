@@ -46,14 +46,12 @@ import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.EpochSupplier;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -69,6 +67,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
@@ -88,7 +87,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
     private final Factory<DatabaseHealth> databaseHealthFactory;
-    private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final ConstraintSemantics constraintSemantics;
@@ -141,7 +139,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseHealthFactory = () -> globalModule.getGlobalHealthService()
                 .createDatabaseHealth( new DatabasePanicEventGenerator( eventListeners, databaseId.name() ),
                         databaseLogService.getInternalLog( DatabaseHealth.class ) );
-        this.transactionHeaderInformationFactory = editionComponents.getHeaderInformationFactory();
         this.commitProcessFactory = editionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();
         this.constraintSemantics = editionComponents.getConstraintSemantics();
@@ -255,12 +252,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public Factory<DatabaseHealth> getDatabaseHealthFactory()
     {
         return databaseHealthFactory;
-    }
-
-    @Override
-    public TransactionHeaderInformationFactory getTransactionHeaderInformationFactory()
-    {
-        return transactionHeaderInformationFactory;
     }
 
     @Override

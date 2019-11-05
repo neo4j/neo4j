@@ -40,7 +40,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -266,7 +266,7 @@ class CheckPointerIntegrationTest
             for (; version >= INITIAL_LOG_VERSION && logFiles.versionExists( version ); version-- )
             {
                 LogVersionedStoreChannel channel = logFiles.openForVersion( version );
-                ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
+                ReadableClosablePositionAwareChecksumChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
 
                 try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
                 {

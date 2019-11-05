@@ -36,19 +36,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 class TransactionPositionLocatorTest
 {
     private final LogEntryReader logEntryReader = mock( LogEntryReader.class );
-    private final ReadableClosablePositionAwareChannel channel = mock( ReadableClosablePositionAwareChannel.class );
+    private final ReadableClosablePositionAwareChecksumChannel channel = mock( ReadableClosablePositionAwareChecksumChannel.class );
     private final TransactionMetadataCache metadataCache = mock( TransactionMetadataCache.class );
 
     private final long txId = 42;
     private final LogPosition startPosition = new LogPosition( 1, 128 );
 
-    private final LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, null, startPosition );
+    private final LogEntryStart start = new LogEntryStart( 0, 0, 0, null, startPosition );
     private final LogEntryCommand command = new LogEntryCommand( new TestCommand() );
-    private final LogEntryCommit commit = new LogEntryCommit( txId, System.currentTimeMillis() );
+    private final LogEntryCommit commit = new LogEntryCommit( txId, System.currentTimeMillis(), BASE_TX_CHECKSUM );
 
     @Test
     void shouldFindTransactionLogPosition() throws IOException
@@ -69,9 +70,7 @@ class TransactionPositionLocatorTest
         verify( metadataCache ).cacheTransactionMetadata(
                 txId,
                 startPosition,
-                start.getMasterId(),
-                start.getLocalId(),
-                LogEntryStart.checksum( start ),
+                commit.getChecksum(),
                 commit.getTimeWritten()
         );
     }

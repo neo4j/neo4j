@@ -27,7 +27,6 @@ import picocli.CommandLine;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -51,9 +50,14 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -81,6 +85,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @Neo4jLayoutExtension
 class DumpCommandIT
@@ -212,12 +217,14 @@ class DumpCommandIT
     @Test
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException
     {
-        testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
-        File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
-
-        try ( FileWriter fileWriter = new FileWriter( logFile ) )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, testDirectory.getFileSystem() )
+                .withLogVersionRepository( new SimpleLogVersionRepository() )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .build();
+        try ( Lifespan ignored = new Lifespan( logFiles ) )
         {
-            fileWriter.write( "brb" );
+            LogEntryWriter writer = new LogEntryWriter( logFiles.getLogFile().getWriter() );
+            writer.writeStartEntry( 0x123456789ABCDEFL, logFiles.getLogFileInformation().getLastEntryId() + 1, BASE_TX_CHECKSUM, new byte[]{0} );
         }
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertThat( commandFailed.getMessage(), startsWith( "Active logical log detected, this might be a source of inconsistencies." ) );

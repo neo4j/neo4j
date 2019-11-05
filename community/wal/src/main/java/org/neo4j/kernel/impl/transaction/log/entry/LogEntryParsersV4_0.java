@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public enum LogEntryParsersV2_3 implements LogEntryParser
+public enum LogEntryParsersV4_0 implements LogEntryParser
 {
     TX_START
             {
@@ -36,14 +36,13 @@ public enum LogEntryParsersV2_3 implements LogEntryParser
                                        CommandReaderFactory commandReader ) throws IOException
                 {
                     LogPosition position = marker.newPosition();
-                    channel.getInt(); // masterId
-                    channel.getInt(); // authorId
                     long timeWritten = channel.getLong();
                     long latestCommittedTxWhenStarted = channel.getLong();
+                    int previousChecksum = channel.getInt();
                     int additionalHeaderLength = channel.getInt();
                     byte[] additionalHeader = new byte[additionalHeaderLength];
                     channel.get( additionalHeader, additionalHeaderLength );
-                    return new LogEntryStart( version, timeWritten, latestCommittedTxWhenStarted, 0, additionalHeader, position );
+                    return new LogEntryStart( version, timeWritten, latestCommittedTxWhenStarted, previousChecksum, additionalHeader, position );
                 }
 
                 @Override
@@ -78,7 +77,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser
                 {
                     long txId = channel.getLong();
                     long timeWritten = channel.getLong();
-                    return new LogEntryCommit( version, txId, timeWritten, 0 );
+                    int checksum = channel.endChecksumAndValidate();
+                    return new LogEntryCommit( version, txId, timeWritten, checksum );
                 }
 
                 @Override
@@ -96,6 +96,7 @@ public enum LogEntryParsersV2_3 implements LogEntryParser
                 {
                     long logVersion = channel.getLong();
                     long byteOffset = channel.getLong();
+                    channel.endChecksumAndValidate();
                     return new CheckPoint( version, new LogPosition( logVersion, byteOffset ) );
                 }
 
