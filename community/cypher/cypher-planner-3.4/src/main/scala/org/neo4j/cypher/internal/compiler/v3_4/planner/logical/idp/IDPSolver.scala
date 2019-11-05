@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.LazyIterable
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{ProjectingSelector, Selector}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Solveds
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 import scala.collection.immutable.BitSet
 
@@ -107,9 +108,9 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       monitor.startIteration(iterations)
       val largestBlockSize = generateBestCandidates(toDo.size)
       if (largestBlockSize <= 0) throw new IllegalStateException(
-        """The planner did unfortunately not succeed in finding a plan.
-          |Try increasing the config values `unsupported.cypher.idp_solver_table_threshold`
-          |and `unsupported.cypher.idp_solver_duration_threshold` to allow
+        s"""Unfortunately, the planner did not succeed in finding a plan.
+          |Try increasing the config values `${GraphDatabaseSettings.cypher_idp_solver_table_threshold.name()}`
+          |and `${GraphDatabaseSettings.cypher_idp_solver_duration_threshold.name()}` to allow
           |a bigger table and longer time for the planning.""".stripMargin)
       val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestBlockSize)
       monitor.endIteration(iterations, largestBlockSize, table.size)
