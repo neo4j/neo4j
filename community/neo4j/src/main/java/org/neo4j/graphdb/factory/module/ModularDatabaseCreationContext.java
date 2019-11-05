@@ -43,6 +43,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
+import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.LeaseService;
@@ -110,6 +111,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final FileLockerService fileLockerService;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final LeaseService leaseService;
+    private final DatabaseStartupController startupController;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
@@ -156,6 +158,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
         this.leaseService = leaseService;
+        this.startupController = editionComponents.getStartupController();
     }
 
     @Override
@@ -384,6 +387,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public LeaseService getLeaseService()
     {
         return leaseService;
+    }
+
+    @Override
+    public DatabaseStartupController getStartupController()
+    {
+        return startupController;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )

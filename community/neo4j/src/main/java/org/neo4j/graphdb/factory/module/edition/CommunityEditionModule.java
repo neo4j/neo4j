@@ -48,7 +48,10 @@ import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
@@ -89,6 +92,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
     protected final SslPolicyLoader sslPolicyLoader;
+    private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
@@ -119,6 +123,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         ioLimiter = IOLimiter.UNLIMITED;
 
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
+        globalAvailabilityGuard = globalModule.getGlobalAvailabilityGuard();
     }
 
     protected Function<DatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
@@ -183,6 +188,12 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public QueryEngineProvider getQueryEngineProvider()
     {
         return new CommunityCypherEngineProvider();
+    }
+
+    @Override
+    public DatabaseStartupController getDatabaseStartupController()
+    {
+        return new GlobalAvailabilityGuardController( globalAvailabilityGuard );
     }
 
     @Override

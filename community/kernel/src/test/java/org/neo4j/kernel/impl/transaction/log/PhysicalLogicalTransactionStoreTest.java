@@ -70,6 +70,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
+import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 
 @Neo4jLayoutExtension
 class PhysicalLogicalTransactionStoreTest
@@ -229,7 +230,7 @@ class PhysicalLogicalTransactionStoreTest
             {
                 recoveryPerformed.set( true );
             }
-        }, logPruner, new LifecycleAdapter(), mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false ) );
+        }, logPruner, new LifecycleAdapter(), mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false, EMPTY_CHECKER ) );
 
         // WHEN
         try

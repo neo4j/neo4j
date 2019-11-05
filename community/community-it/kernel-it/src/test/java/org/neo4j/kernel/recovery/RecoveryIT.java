@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,6 +38,9 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -46,6 +50,9 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -57,9 +64,11 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -511,6 +520,41 @@ class RecoveryIT
         }
     }
 
+    @Test
+    void cancelRecoveryInTheMiddle() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        managementService.shutdown();
+
+        removeLastCheckpointRecordFromLastLogFile();
+        assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+        Monitors monitors = new Monitors();
+        var recoveryMonitor = new RecoveryMonitor()
+        {
+            @Override
+            public void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
+            {
+                GlobalGuardConsumer.globalGuard.stop();
+            }
+        };
+        monitors.addMonitorListener( recoveryMonitor );
+        var service = new TestDatabaseManagementServiceBuilder( layout.getNeo4jLayout() )
+                .addExtension( new GlobalGuardConsumerTestExtensionFactory() )
+                .setMonitors( monitors ).build();
+        try
+        {
+            var e = assertThrows( Exception.class, () -> service.database( DEFAULT_DATABASE_NAME ).beginTx() );
+            assertThat( getRootCause( e ), instanceOf( DatabaseStartAbortedException.class ) );
+        }
+        finally
+        {
+            service.shutdown();
+        }
+    }
+
     private void createSingleNode( GraphDatabaseService service )
     {
         try ( Transaction transaction = service.beginTx() )
@@ -675,4 +719,39 @@ class RecoveryIT
             managementService.shutdown();
         }
     }
+
+    private static class GlobalGuardConsumerTestExtensionFactory extends ExtensionFactory<GlobalGuardConsumerTestExtensionFactory.Dependencies>
+    {
+        interface Dependencies
+        {
+            CompositeDatabaseAvailabilityGuard globalGuard();
+        }
+
+        GlobalGuardConsumerTestExtensionFactory()
+        {
+            super( "globalGuardConuser" );
+        }
+
+        @Override
+        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
+        {
+            return new GlobalGuardConsumer( dependencies );
+        }
+    }
+
+    private static class GlobalGuardConsumer extends LifecycleAdapter
+    {
+        private static CompositeDatabaseAvailabilityGuard globalGuard;
+
+        GlobalGuardConsumer( GlobalGuardConsumerTestExtensionFactory.Dependencies dependencies )
+        {
+            globalGuard = dependencies.globalGuard();
+        }
+
+        public CompositeDatabaseAvailabilityGuard getGlobalGuard()
+        {
+            return globalGuard;
+        }
+    }
+
 }

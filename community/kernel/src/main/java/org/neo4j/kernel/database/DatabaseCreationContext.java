@@ -138,4 +138,6 @@ public interface DatabaseCreationContext
     AccessCapabilityFactory getAccessCapabilityFactory();
 
     LeaseService getLeaseService();
+
+    DatabaseStartupController getStartupController();
 }

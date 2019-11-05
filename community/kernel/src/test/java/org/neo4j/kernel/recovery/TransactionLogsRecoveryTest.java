@@ -30,11 +30,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -68,22 +70,33 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.KibiByte;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
+import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -229,7 +242,7 @@ class TransactionLogsRecoveryTest
                         }
                     };
                 }
-            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
+            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER ) );
 
             life.start();
 
@@ -287,7 +300,7 @@ class TransactionLogsRecoveryTest
             } );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER ) );
 
             life.start();
 
@@ -427,7 +440,8 @@ class TransactionLogsRecoveryTest
         CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
         RecoveryMonitor monitor = mock( RecoveryMonitor.class );
 
-        TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery( recoveryService, logPruner, schemaLife, monitor, ProgressReporter.SILENT, true );
+        TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery( recoveryService, logPruner, schemaLife, monitor, ProgressReporter.SILENT,
+                true, EMPTY_CHECKER );
 
         logsRecovery.init();
 
@@ -435,9 +449,55 @@ class TransactionLogsRecoveryTest
         verify( schemaLife ).init();
     }
 
+    @Test
+    void shouldFailRecoveryWhenCanceled() throws Exception
+    {
+        File file = logFiles.getLogFileForVersion( logVersion );
+        final LogPositionMarker marker = new LogPositionMarker();
+
+        final byte[] additionalHeaderData = new byte[0];
+        final long transactionId = 4;
+        final long commitTimestamp = 5;
+        writeSomeData( file, pair ->
+        {
+            LogEntryWriter writer = pair.first();
+            Consumer<LogPositionMarker> consumer = pair.other();
+
+            // last committed tx
+            writer.writeStartEntry( 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData );
+            writer.writeCommitEntry( transactionId, commitTimestamp );
+            consumer.accept( marker );
+
+            return true;
+        } );
+
+        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
+        var startupController = mock( DatabaseStartupController.class );
+        var databaseId = from( "db", randomUUID() );
+        when( startupController.shouldAbort( databaseId ) ).thenReturn( false, true );
+        var recoveryStartupChecker = new RecoveryStartupChecker( startupController, databaseId );
+        var logsTruncator = mock( CorruptedLogsTruncator.class );
+
+        var exception = assertThrows( Exception.class, () -> recover( storeDir, logFiles, monitor, recoveryStartupChecker, logsTruncator ) );
+        var rootCause = getRootCause( exception );
+        assertThat( rootCause, instanceOf( DatabaseStartAbortedException.class ) );
+
+        verify( logsTruncator, never() ).truncate( any() );
+        verify( monitor, never() ).recoveryCompleted( anyInt(), anyLong() );
+    }
+
     private boolean recover( File storeDir, LogFiles logFiles )
     {
+        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
+        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
+        return recover( storeDir, logFiles, monitor, EMPTY_CHECKER, logPruner );
+    }
+
+    private boolean recover( File storeDir, LogFiles logFiles, RecoveryMonitor recoveryMonitor, RecoveryStartupChecker startupChecker,
+            CorruptedLogsTruncator logsTruncator )
+    {
         LifeSupport life = new LifeSupport();
+
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
         RecoveryMonitor monitor = new RecoveryMonitor()
         {
@@ -459,7 +519,7 @@ class TransactionLogsRecoveryTest
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker ) );
 
             life.start();
         }

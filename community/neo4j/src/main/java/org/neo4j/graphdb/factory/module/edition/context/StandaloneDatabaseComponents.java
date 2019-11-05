@@ -27,6 +27,7 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
@@ -49,6 +50,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final StatementLocksFactory statementLocksFactory;
     private final QueryEngineProvider queryEngineProvider;
     private final AccessCapabilityFactory accessCapabilityFactory;
+    private final DatabaseStartupController startupController;
 
     public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
     {
@@ -62,6 +64,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
         this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();
         this.queryEngineProvider = editionModule.getQueryEngineProvider();
+        this.startupController = editionModule.getDatabaseStartupController();
         this.accessCapabilityFactory = AccessCapabilityFactory.configDependent();
     }
 
@@ -129,5 +132,11 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public AccessCapabilityFactory getAccessCapabilityFactory()
     {
         return accessCapabilityFactory;
+    }
+
+    @Override
+    public DatabaseStartupController getStartupController()
+    {
+        return startupController;
     }
 }

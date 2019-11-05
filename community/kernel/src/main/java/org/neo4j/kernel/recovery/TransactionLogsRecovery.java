@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.nio.channels.ClosedByInterruptException;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -50,10 +51,11 @@ public class TransactionLogsRecovery extends LifecycleAdapter
     private final Lifecycle schemaLife;
     private final ProgressReporter progressReporter;
     private final boolean failOnCorruptedLogFiles;
+    private final RecoveryStartupChecker recoveryStartupChecker;
     private int numberOfRecoveredTransactions;
 
     public TransactionLogsRecovery( RecoveryService recoveryService, CorruptedLogsTruncator logsTruncator, Lifecycle schemaLife,
-            RecoveryMonitor monitor, ProgressReporter progressReporter, boolean failOnCorruptedLogFiles )
+            RecoveryMonitor monitor, ProgressReporter progressReporter, boolean failOnCorruptedLogFiles, RecoveryStartupChecker recoveryStartupChecker )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
@@ -61,6 +63,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         this.schemaLife = schemaLife;
         this.progressReporter = progressReporter;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
+        this.recoveryStartupChecker = recoveryStartupChecker;
     }
 
     @Override
@@ -93,6 +96,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 {
                     while ( transactionsToRecover.next() )
                     {
+                        recoveryStartupChecker.checkIfCanceled();
                         CommittedTransactionRepresentation transaction = transactionsToRecover.get();
                         if ( lastReversedTransaction == null )
                         {
@@ -117,6 +121,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 {
                     while ( transactionsToRecover.next() )
                     {
+                        recoveryStartupChecker.checkIfCanceled();
                         lastTransaction = transactionsToRecover.get();
                         long txId = lastTransaction.getCommitEntry().getTxId();
                         recoveryVisitor.visit( lastTransaction );
@@ -129,7 +134,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                     recoveryToPosition = transactionsToRecover.position();
                 }
             }
-            catch ( Error | ClosedByInterruptException e )
+            catch ( Error | ClosedByInterruptException | DatabaseStartAbortedException e )
             {
                 // We do not want to truncate logs based on these exceptions. Since users can influence them with config changes
                 // the users are able to workaround this if truncations is really needed.

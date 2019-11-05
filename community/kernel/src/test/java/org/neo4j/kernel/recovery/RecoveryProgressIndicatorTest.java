@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 class RecoveryProgressIndicatorTest
@@ -70,7 +71,7 @@ class RecoveryProgressIndicatorTest
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
         TransactionLogsRecovery recovery = new TransactionLogsRecovery(
-                recoveryService, logsTruncator, new LifecycleAdapter(), recoveryMonitor, progressReporter, true );
+                recoveryService, logsTruncator, new LifecycleAdapter(), recoveryMonitor, progressReporter, true, EMPTY_CHECKER );
         recovery.init();
 
         progressReporter.verify();

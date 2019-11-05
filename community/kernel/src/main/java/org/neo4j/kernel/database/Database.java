@@ -139,6 +139,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
+import org.neo4j.kernel.recovery.RecoveryStartupChecker;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ReentrantLockService;
@@ -238,6 +239,7 @@ public class Database extends LifecycleAdapter
     private final GraphDatabaseFacade databaseFacade;
     private final FileLockerService fileLockerService;
     private final KernelTransactionFactory kernelTransactionFactory;
+    private final DatabaseStartupController startupController;
 
     public Database( DatabaseCreationContext context )
     {
@@ -290,6 +292,7 @@ public class Database extends LifecycleAdapter
         this.lockTracer = globalTracers.getLockTracer();
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
+        this.startupController = context.getStartupController();
     }
 
     @Override
@@ -315,6 +318,7 @@ public class Database extends LifecycleAdapter
                     new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
             databaseDependencies.satisfyDependency( this );
+            databaseDependencies.satisfyDependency( startupController );
             databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );
             databaseDependencies.satisfyDependency( databaseLogService );
@@ -374,8 +378,7 @@ public class Database extends LifecycleAdapter
             }
 
             performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
-                    extensionFactories,
-                    Optional.of( tailScanner ) );
+                    extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, databaseId ) );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
@@ -724,14 +727,14 @@ public class Database extends LifecycleAdapter
     public void prepareToDrop()
     {
         prepareStop( alwaysTrue() );
+        checkpointerLifecycle.setCheckpointOnShutdown( false );
     }
 
     public synchronized void drop()
     {
         if ( started )
         {
-            prepareStop( alwaysTrue() );
-            checkpointerLifecycle.setCheckpointOnShutdown( false );
+            prepareToDrop();
             stop();
         }
         deleteDatabaseFiles( List.of( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() ) );

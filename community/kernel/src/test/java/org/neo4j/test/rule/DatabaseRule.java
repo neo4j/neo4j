@@ -48,6 +48,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
+import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -98,12 +99,13 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
+import static org.neo4j.kernel.database.DatabaseStartupController.ALWAYS_FALSE_CONTROLLER;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class DatabaseRule extends ExternalResource
 {
     private Database database;
-    private TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     public Database getDatabase( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
     {
@@ -167,7 +169,7 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
-                storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES ) );
+                storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, ALWAYS_FALSE_CONTROLLER ) );
         return database;
     }
 
@@ -203,6 +205,7 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseLayout databaseLayout;
         private final Config config;
         private final LeaseService leaseService;
+        private final DatabaseStartupController startupController;
         private final DatabaseConfig databaseConfig;
         private final IdGeneratorFactory idGeneratorFactory;
         private final DatabaseLogService logService;
@@ -245,12 +248,13 @@ public class DatabaseRule extends ExternalResource
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
-                FileLockerService fileLockerService, LeaseService leaseService )
+                FileLockerService fileLockerService, LeaseService leaseService, DatabaseStartupController startupController )
         {
             this.databaseId = databaseId;
             this.databaseLayout = databaseLayout;
             this.config = config;
             this.leaseService = leaseService;
+            this.startupController = startupController;
             this.databaseConfig = new DatabaseConfig( config, databaseId );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), logService );
@@ -520,6 +524,12 @@ public class DatabaseRule extends ExternalResource
         public LeaseService getLeaseService()
         {
             return leaseService;
+        }
+
+        @Override
+        public DatabaseStartupController getStartupController()
+        {
+            return startupController;
         }
     }
 

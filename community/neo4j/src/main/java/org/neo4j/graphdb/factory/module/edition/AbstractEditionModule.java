@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -211,4 +212,6 @@ public abstract class AbstractEditionModule
     {
         return dependencyResolver.resolveDependency( AuthManager.class );
     }
+
+    public abstract DatabaseStartupController getDatabaseStartupController();
 }
