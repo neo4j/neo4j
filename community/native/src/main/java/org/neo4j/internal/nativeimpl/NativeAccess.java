@@ -54,6 +54,14 @@ public interface NativeAccess
     int tryAdviseSequentialAccess( int fd );
 
     /**
+     * Try to advice that file referenced by provided file descriptor will be accessed again in the near future and we will need those pages again.
+     * Useful for files that we will read from start to the end sequentially. For example: WAL files.
+     * @param fd file descriptor
+     * @return returns zero on success, or an error number on failure
+     */
+    int tryAdviseToKeepInCache( int fd );
+
+    /**
      * Try to preallocate disk space for file referenced by provided file descriptor.
      * @param fd file descriptor
      * @param bytes number of bytes to preallocate

@@ -27,9 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;

@@ -118,6 +118,7 @@ class TransactionLogFileTest
         assertEquals( 1, capturingNativeAccess.getPreallocateCounter() );
         assertEquals( 1, capturingNativeAccess.getEvictionCounter() );
         assertEquals( 0, capturingNativeAccess.getAdviseCounter() );
+        assertEquals( 0, capturingNativeAccess.getKeepCounter() );
     }
 
     @Test
@@ -133,6 +134,7 @@ class TransactionLogFileTest
         assertEquals( 0, capturingNativeAccess.getPreallocateCounter() );
         assertEquals( 1, capturingNativeAccess.getEvictionCounter() );
         assertEquals( 1, capturingNativeAccess.getAdviseCounter() );
+        assertEquals( 1, capturingNativeAccess.getKeepCounter() );
     }
 
     @Test
@@ -387,6 +389,7 @@ class TransactionLogFileTest
         private int evictionCounter;
         private int adviseCounter;
         private int preallocateCounter;
+        private int keepCounter;
 
         @Override
         public boolean isAvailable()
@@ -404,6 +407,12 @@ class TransactionLogFileTest
         public int tryAdviseSequentialAccess( int fd )
         {
             return adviseCounter++;
+        }
+
+        @Override
+        public int tryAdviseToKeepInCache( int fd )
+        {
+            return keepCounter++;
         }
 
         @Override
@@ -428,6 +437,11 @@ class TransactionLogFileTest
             return adviseCounter;
         }
 
+        public int getKeepCounter()
+        {
+            return keepCounter;
+        }
+
         public int getPreallocateCounter()
         {
             return preallocateCounter;
@@ -438,6 +452,7 @@ class TransactionLogFileTest
             adviseCounter = 0;
             evictionCounter = 0;
             preallocateCounter = 0;
+            keepCounter = 0;
         }
     }
 }

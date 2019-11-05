@@ -82,7 +82,7 @@ class LogFileChannelNativeAccessorTest
     @Test
     void adviseSequentialAccess()
     {
-        channelNativeAccessor.adviseSequentialAccess( testStoreChannel, 0 );
+        channelNativeAccessor.adviseSequentialAccessAndKeepInCache( testStoreChannel, 0 );
 
         verify( nativeAccess ).tryAdviseSequentialAccess( anyInt() );
     }
@@ -91,7 +91,7 @@ class LogFileChannelNativeAccessorTest
     void doNotAdviseSequentialAccessOfClosedChannel() throws IOException
     {
         testStoreChannel.close();
-        channelNativeAccessor.adviseSequentialAccess( testStoreChannel, 0 );
+        channelNativeAccessor.adviseSequentialAccessAndKeepInCache( testStoreChannel, 0 );
 
         verify( nativeAccess, never() ).tryAdviseSequentialAccess( anyInt() );
     }

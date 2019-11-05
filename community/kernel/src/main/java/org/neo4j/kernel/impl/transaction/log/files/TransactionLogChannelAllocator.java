@@ -106,7 +106,7 @@ class TransactionLogChannelAllocator
             }
             var versionedStoreChannel = new PhysicalLogVersionedStoreChannel( rawChannel, version, header.getLogFormatVersion(),
                     fileToOpen, nativeChannelAccessor );
-            nativeChannelAccessor.adviseSequentialAccess( rawChannel, version );
+            nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( rawChannel, version );
             return versionedStoreChannel;
         }
         catch ( FileNotFoundException cause )
@@ -138,7 +138,7 @@ class TransactionLogChannelAllocator
         StoreChannel storeChannel = fileSystem.write( file );
         if ( fileExist )
         {
-            nativeChannelAccessor.adviseSequentialAccess( storeChannel, version );
+            nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( storeChannel, version );
         }
         else if ( logFilesContext.getTryPreallocateTransactionLogs().get() )
         {

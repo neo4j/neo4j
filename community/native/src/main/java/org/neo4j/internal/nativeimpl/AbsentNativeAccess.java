@@ -40,6 +40,12 @@ public class AbsentNativeAccess implements NativeAccess
     }
 
     @Override
+    public int tryAdviseToKeepInCache( int fd )
+    {
+        return SUCCESS;
+    }
+
+    @Override
     public int tryPreallocateSpace( int fd, long bytes )
     {
         return SUCCESS;

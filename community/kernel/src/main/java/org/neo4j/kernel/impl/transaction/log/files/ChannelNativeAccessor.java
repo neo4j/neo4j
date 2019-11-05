@@ -25,7 +25,7 @@ public interface ChannelNativeAccessor
 {
     ChannelNativeAccessor EMPTY_ACCESSOR = new EmptyChannelNativeAccessor();
 
-    void adviseSequentialAccess( StoreChannel storeChannel, long version );
+    void adviseSequentialAccessAndKeepInCache( StoreChannel storeChannel, long version );
 
     void evictFromSystemCache( StoreChannel storeChannel, long version );
 
@@ -34,7 +34,7 @@ public interface ChannelNativeAccessor
     class EmptyChannelNativeAccessor implements ChannelNativeAccessor
     {
         @Override
-        public void adviseSequentialAccess( StoreChannel storeChannel, long version )
+        public void adviseSequentialAccessAndKeepInCache( StoreChannel storeChannel, long version )
         {
 
         }

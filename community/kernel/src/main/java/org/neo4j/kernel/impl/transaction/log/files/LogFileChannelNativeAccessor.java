@@ -42,14 +42,20 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
     }
 
     @Override
-    public void adviseSequentialAccess( StoreChannel channel, long version )
+    public void adviseSequentialAccessAndKeepInCache( StoreChannel channel, long version )
     {
         if ( channel.isOpen() )
         {
-            int result = nativeAccess.tryAdviseSequentialAccess( fileSystem.getFileDescriptor( channel ) );
+            final int fileDescriptor = fileSystem.getFileDescriptor( channel );
+            int result = nativeAccess.tryAdviseSequentialAccess( fileDescriptor );
             if ( result != 0 )
             {
                 log.warn( "Unable to advise sequential access for transaction log version: " + version + ". Error code: " + result );
+            }
+            int keepResult = nativeAccess.tryAdviseToKeepInCache( fileDescriptor );
+            if ( keepResult != 0 )
+            {
+                log.warn( "Unable to advise preserve data in cache for transaction log version: " + version + ". Error code: " + keepResult );
             }
         }
     }
