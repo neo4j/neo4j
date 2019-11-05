@@ -26,18 +26,22 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.StringJoiner;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleArray;
@@ -64,10 +68,14 @@ final class SchemaStatementProcedure
         while ( allIndexes.hasNext() )
         {
             final IndexDescriptor index = allIndexes.next();
-            final String name = index.getName();
-            final String createStatement = createStatement( tokenRead, index );
-            final String dropStatement = dropStatement( index );
-            schemaStatements.put( name, new BuiltInProcedures.SchemaStatementResult( name, "INDEX", createStatement, dropStatement ) );
+            if ( includeIndex( schemaRead, index ) )
+            {
+                final String name = index.getName();
+                String type = SchemaRuleType.INDEX.name();
+                final String createStatement = createStatement( tokenRead, index );
+                final String dropStatement = dropStatement( index );
+                schemaStatements.put( name, new BuiltInProcedures.SchemaStatementResult( name, type, createStatement, dropStatement ) );
+            }
         }
 
         // Constraints
@@ -75,13 +83,64 @@ final class SchemaStatementProcedure
         while ( allConstraints.hasNext() )
         {
             ConstraintDescriptor constraint = allConstraints.next();
-            String name = constraint.getName();
-            String createStatement = createStatement( schemaRead, tokenRead, constraint );
-            String dropStatement = dropStatement( constraint );
-            schemaStatements.put( name, new BuiltInProcedures.SchemaStatementResult( name, "CONSTRAINT", createStatement, dropStatement ) );
+            if ( includeConstraint( schemaRead, constraint ) )
+            {
+                String name = constraint.getName();
+                String type = SchemaRuleType.CONSTRAINT.name();
+                String createStatement = createStatement( schemaRead, tokenRead, constraint );
+                String dropStatement = dropStatement( constraint );
+                schemaStatements.put( name, new BuiltInProcedures.SchemaStatementResult( name, type, createStatement, dropStatement ) );
+            }
         }
 
         return schemaStatements.values();
+    }
+
+    private static boolean includeConstraint( SchemaReadCore schemaRead, ConstraintDescriptor constraint )
+    {
+        // If constraint is index backed constraint following rules apply
+        // - Constraint must own index
+        // - Owned index must exist
+        // - Owned index must share name with constraint
+        // - Owned index must be online
+        // - Owned index must have this constraint as owning constraint
+        if ( constraint.isIndexBackedConstraint() )
+        {
+            IndexBackedConstraintDescriptor indexBackedConstraint = constraint.asIndexBackedConstraint();
+            if ( indexBackedConstraint.hasOwnedIndexId() )
+            {
+                IndexDescriptor backingIndex = schemaRead.indexGetForName( constraint.getName() );
+                if ( backingIndex.getId() == indexBackedConstraint.ownedIndexId() )
+                {
+                    try
+                    {
+                        InternalIndexState internalIndexState = schemaRead.indexGetState( backingIndex );
+                        OptionalLong owningConstraintId = backingIndex.getOwningConstraintId();
+                        return internalIndexState == InternalIndexState.ONLINE && owningConstraintId.orElse( -1 ) == constraint.getId();
+                    }
+                    catch ( IndexNotFoundKernelException e )
+                    {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean includeIndex( SchemaReadCore schemaRead, IndexDescriptor index )
+    {
+        try
+        {
+            InternalIndexState indexState = schemaRead.indexGetState( index );
+            return indexState == InternalIndexState.ONLINE &&
+                    (!index.isUnique() || index.getOwningConstraintId().isPresent());
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            return false;
+        }
     }
 
     private static String createStatement( SchemaReadCore schemaRead, TokenRead tokenRead, ConstraintDescriptor constraint ) throws ProcedureException
@@ -273,5 +332,11 @@ final class SchemaStatementProcedure
     private static String dropStatement( IndexDescriptor indexDescriptor )
     {
         return "DROP INDEX `" + indexDescriptor.getName() + "`";
+    }
+
+    enum SchemaRuleType
+    {
+        INDEX,
+        CONSTRAINT
     }
 }
