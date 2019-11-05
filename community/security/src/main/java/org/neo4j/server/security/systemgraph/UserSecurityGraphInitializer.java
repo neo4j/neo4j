@@ -152,12 +152,12 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     private boolean migrateFromAuthFile( Transaction tx ) throws Exception
     {
         UserRepository userRepository = startUserRepository( migrationUserRepositorySupplier );
-        boolean migratedUsers = doImportUsers( tx, userRepository );
+        boolean migratedUsers = doMigrateUsers( tx, userRepository );
         stopUserRepository( userRepository );
         return migratedUsers;
     }
 
-    protected boolean doImportUsers( Transaction tx, UserRepository userRepository ) throws Exception
+    protected boolean doMigrateUsers( Transaction tx, UserRepository userRepository ) throws Exception
     {
         ListSnapshot<User> users = userRepository.getPersistedSnapshot();
 
@@ -170,7 +170,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 
             // Log what happened to the security log
             String userString = users.values().size() == 1 ? "user" : "users";
-            log.info( "Completed import of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
+            log.info( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
             return true;
         }
         return false;
