@@ -179,7 +179,9 @@ object Neo4jExceptionToExecutionFailed {
     else if (msg.matches(semanticError("RETURN \\* is not allowed when there are no identifiers in scope")))
       NO_VARIABLES_IN_SCOPE
     else if (msg.matches(semanticError("Procedure call does not provide the required number of arguments.+")))
-      "InvalidNumberOfArguments"
+      INVALID_NUMBER_OF_ARGUMENTS
+    else if (msg.matches(semanticError("Procedure call provides too many arguments.+")))
+      INVALID_NUMBER_OF_ARGUMENTS
     else if (msg.matches("Expected a parameter named .+"))
       "MissingParameter"
     else if (msg.startsWith("Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
