@@ -241,10 +241,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     override def execute(transactionalContext: TransactionalContext,
                          shouldCloseTransaction: Boolean,
                          queryOptions: QueryOptions,
-                         params: MapValue, prePopulateResults: Boolean,
+                         params: MapValue,
+                         prePopulateResults: Boolean,
                          input: InputDataStream,
                          subscriber: QuerySubscriber,
-                         monitor: Boolean): QueryExecution = {
+                         enableQueryExecutionMonitor: Boolean): QueryExecution = {
 
       val taskCloser = new TaskCloser
       val queryContext = getQueryContext(transactionalContext, queryOptions.debugOptions)
@@ -258,7 +259,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       })
       taskCloser.addTask(_ => queryContext.resources.close())
       try {
-        innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber, monitor)
+        innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber, enableQueryExecutionMonitor)
       } catch {
         case e: Throwable =>
           QuerySubscriber.safelyOnError(subscriber, e)
@@ -276,7 +277,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                              prePopulateResults: Boolean,
                              input: InputDataStream,
                              subscriber: QuerySubscriber,
-                             enableMonitor: Boolean): InternalExecutionResult = {
+                             enableQueryExecutionMonitor: Boolean): InternalExecutionResult = {
 
       val innerExecutionMode = queryOptions.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
@@ -284,7 +285,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case CypherExecutionMode.normal => NormalMode
       }
 
-      val monitor = if (enableMonitor) kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]) else QueryExecutionMonitor.NO_OP
+      val monitor = if (enableQueryExecutionMonitor) kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]) else QueryExecutionMonitor.NO_OP
       monitor.start( transactionalContext.executingQuery() )
 
       val inner = if (innerExecutionMode == ExplainMode) {

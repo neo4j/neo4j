@@ -65,9 +65,9 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       }
       systemSubscriber.assertNotFailed()
 
-      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber, monitor = false).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber, enableQueryExecutionMonitor = false).asInstanceOf[InternalExecutionResult]
       try {
-        execution.consumeAll()// <- pulls on everything until close() is called with calls down to monitor . success
+        execution.consumeAll()
       } catch {
         case _: Throwable =>
         // do nothing, exceptions are handled by SystemCommandQuerySubscriber

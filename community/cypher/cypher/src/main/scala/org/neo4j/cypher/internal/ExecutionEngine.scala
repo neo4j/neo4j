@@ -135,7 +135,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               profile: Boolean,
               prePopulate: Boolean,
               subscriber: QuerySubscriber): QueryExecution = {
-    executeSubQuery(query, params, context, shouldCloseTransaction = true, profile, prePopulate, subscriber, monitor = true)
+    executeSubQuery(query, params, context, shouldCloseTransaction = true, profile, prePopulate, subscriber, enableQueryExecutionMonitor = true)
   }
 
   /**
@@ -156,7 +156,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               subscriber: QuerySubscriber): QueryExecution = {
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
-      doExecute(query, params, context, shouldCloseTransaction = true, prePopulate, input, queryTracer, subscriber, monitor = true)
+      doExecute(query, params, context, shouldCloseTransaction = true, prePopulate, input, queryTracer, subscriber, enableQueryExecutionMonitor = true)
     }
   }
 
@@ -172,6 +172,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     * @param profile if `true` run with profiling enabled
     * @param prePopulate if `true` pre populate all results
     * @param subscriber the subscriber where results will be streamed
+    * @param enableQueryExecutionMonitor if `true` enable query monitoring
     * @return a `QueryExecution` that controls the demand to the subscriber
     */
   def executeSubQuery(query: String,
@@ -181,11 +182,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       profile: Boolean,
                       prePopulate: Boolean,
                       subscriber: QuerySubscriber,
-                      monitor: Boolean): QueryExecution = {
+                      enableQueryExecutionMonitor: Boolean): QueryExecution = {
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
       val preParsedQuery = preParser.preParseQuery(query, profile)
-      doExecute(preParsedQuery, params, context, shouldCloseTransaction, prePopulate, NoInput, queryTracer, subscriber, monitor)
+      doExecute(preParsedQuery, params, context, shouldCloseTransaction, prePopulate, NoInput, queryTracer, subscriber, enableQueryExecutionMonitor)
     }
   }
 
@@ -204,7 +205,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         input: InputDataStream,
                         tracer: QueryCompilationEvent,
                         subscriber: QuerySubscriber,
-                        monitor: Boolean): QueryExecution = {
+                        enableQueryExecutionMonitor: Boolean): QueryExecution = {
 
     val executableQuery = getOrCompile(context, query, tracer, params)
     if (query.options.executionMode.name != "explain") {
@@ -212,7 +213,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
     val combinedParams = params.updatedWith(executableQuery.extractedParams)
     context.executingQuery().compilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, supplier(executableQuery.planDescription()))
-    executableQuery.execute(context, shouldCloseTransaction, query.options, combinedParams, prePopulate, input, subscriber, monitor)
+    executableQuery.execute(context, shouldCloseTransaction, query.options, combinedParams, prePopulate, input, subscriber, enableQueryExecutionMonitor)
   }
 
   /*
