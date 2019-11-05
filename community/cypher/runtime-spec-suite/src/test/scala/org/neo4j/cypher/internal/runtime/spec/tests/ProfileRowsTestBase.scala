@@ -208,7 +208,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with var-expand and expand into") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -231,7 +233,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with label scan and expand") {
     // given
     val nodesPerLabel = 100
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -254,10 +258,11 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with index scan and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", 42))
-
+    given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", 42))
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
@@ -278,10 +283,11 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with index seek and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", 42))
-
+    given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", 42))
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
@@ -302,9 +308,11 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with string search and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", "hello"))
+    given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", "hello"))
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -326,15 +334,17 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with single node-by id seek and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", "hello"))
-
+    val node = given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", "hello"))
+      aNodes.head
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeByIdSeek("x", aNodes.head.getId)
+      .nodeByIdSeek("x", node.getId)
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -350,9 +360,12 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with input and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", 42))
+    val aNodes = given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", 42))
+      aNodes
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -374,9 +387,12 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with projection and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", 42))
+    val aNodes = given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", 42))
+      aNodes
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -400,8 +416,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with double expand") {
     // given
     val nodesPerLabel = 20
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
-
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .optional() // The optionals are to fuse the two expands together without anything else
@@ -427,8 +444,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with argument and expand") {
     // given
     val nodesPerLabel = 20
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
-
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
@@ -454,8 +472,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with argument and two expands") {
     // given
     val nodesPerLabel = 5
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
-
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
@@ -483,8 +502,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with argument and var-expand") {
     // given
     val nodesPerLabel = 20
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
-
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
@@ -513,10 +533,12 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows with many node-by id seek and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", "hello"))
-
+    val aNodes = given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", "hello"))
+      aNodes
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
@@ -537,10 +559,12 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should not count invalid rows with many node-by id seek and expand") {
     // given
     val nodesPerLabel = 100
-    index("A", "prop")
-    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    aNodes.foreach(_.setProperty("prop", "hello"))
-
+    val aNodes = given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.foreach(_.setProperty("prop", "hello"))
+      aNodes
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
@@ -562,8 +586,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 20
     val unwindCardinality = 7
-    bipartiteGraph(nodesPerLabel, "A", "B", "R")
-
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
