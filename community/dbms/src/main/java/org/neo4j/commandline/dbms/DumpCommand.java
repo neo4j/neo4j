@@ -60,7 +60,7 @@ import static picocli.CommandLine.Option;
 )
 public class DumpCommand extends AbstractCommand
 {
-    @Option( names = "--database", description = "Name of database.", defaultValue = DEFAULT_DATABASE_NAME )
+    @Option( names = "--database", description = "Name of the database to dump.", defaultValue = DEFAULT_DATABASE_NAME )
     private String database;
     @Option( names = "--to", paramLabel = "<path>", required = true, description = "Destination (file or folder) of database dump." )
     private Path to;

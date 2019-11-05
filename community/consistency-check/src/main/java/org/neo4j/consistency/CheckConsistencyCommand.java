@@ -73,7 +73,7 @@ public class CheckConsistencyCommand extends AbstractCommand
 
     private static class TargetOption
     {
-        @Option( names = "--database", description = "Name of the database." )
+        @Option( names = "--database", description = "Name of the database to check." )
         private String database;
 
         @Option( names = "--backup", paramLabel = "<path>", description = "Path to backup to check consistency of. Cannot be used together with --database." )

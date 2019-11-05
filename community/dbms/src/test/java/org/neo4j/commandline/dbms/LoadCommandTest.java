@@ -132,7 +132,7 @@ class LoadCommandTest
                         "      --verbose       Enable verbose output.%n" +
                         "      --from=<path>   Path to archive created with the dump command.%n" +
                         "      --database=<database>%n" +
-                        "                      Name of database.%n" +
+                        "                      Name of the database to load.%n" +
                         "                        Default: neo4j%n" +
                         "      --force         If an existing database should be replaced."
         ) ) );

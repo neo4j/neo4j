@@ -115,7 +115,7 @@ class CheckConsistencyCommandIT
                 "OPTIONS%n" +
                 "%n" +
                 "      --verbose             Enable verbose output.%n" +
-                "      --database=<database> Name of the database.%n" +
+                "      --database=<database> Name of the database to check.%n" +
                 "      --backup=<path>       Path to backup to check consistency of. Cannot be%n" +
                 "                              used together with --database.%n" +
                 "      --additional-config=<path>%n" +

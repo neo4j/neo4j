@@ -59,7 +59,7 @@ public class LoadCommand extends AbstractCommand
 {
     @Option( names = "--from", required = true, paramLabel = "<path>", description = "Path to archive created with the dump command." )
     private Path from;
-    @Option( names = "--database", description = "Name of database.", defaultValue = GraphDatabaseSettings.DEFAULT_DATABASE_NAME )
+    @Option( names = "--database", description = "Name of the database to load.", defaultValue = GraphDatabaseSettings.DEFAULT_DATABASE_NAME )
     private String database;
     @Option( names = "--force", arity = "0", description = "If an existing database should be replaced." )
     private boolean force;

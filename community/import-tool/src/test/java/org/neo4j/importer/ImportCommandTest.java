@@ -93,7 +93,7 @@ class ImportCommandTest
                         "OPTIONS" + lineSeparator() +
                         "" + lineSeparator() +
                         "      --verbose              Enable verbose output." + lineSeparator() +
-                        "      --database=<database>  Name of the remote database to backup." + lineSeparator() +
+                        "      --database=<database>  Name of the database to import." + lineSeparator() +
                         "                               Default: neo4j" + lineSeparator() +
                         "      --additional-config=<path>" + lineSeparator() +
                         "                             Configuration file to supply additional" + lineSeparator() +

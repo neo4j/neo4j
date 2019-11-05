@@ -63,7 +63,7 @@ class DumpCommandTest
                 "%n" +
                 "      --verbose     Enable verbose output.%n" +
                 "      --database=<database>%n" +
-                "                    Name of database.%n" +
+                "                    Name of the database to dump.%n" +
                 "                      Default: neo4j%n" +
                 "      --to=<path>   Destination (file or folder) of database dump."
         ) ) );

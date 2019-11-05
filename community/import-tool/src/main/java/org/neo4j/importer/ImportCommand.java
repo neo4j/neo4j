@@ -81,7 +81,7 @@ public class ImportCommand extends AbstractCommand
     private static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
     private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
 
-    @Option( names = "--database", description = "Name of the remote database to backup." )
+    @Option( names = "--database", description = "Name of the database to import." )
     private String database = DEFAULT_DATABASE_NAME;
 
     @Option( names = "--additional-config", paramLabel = "<path>", description = "Configuration file to supply additional configuration in." )
