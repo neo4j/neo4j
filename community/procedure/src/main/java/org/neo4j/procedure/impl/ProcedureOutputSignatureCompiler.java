@@ -26,7 +26,6 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -157,9 +157,18 @@ class ProcedureOutputSignatureCompiler
     static List<Field> instanceFields( Class<?> userClass )
     {
         return Stream
-            .<Class<?>>iterate( userClass, Objects::nonNull, Class::getSuperclass )
-            .flatMap( c -> Arrays.stream( c.getDeclaredFields() ) )
-            .filter( f -> !isStatic( f.getModifiers() ) && !f.isSynthetic() )
-            .collect( toList() );
+                .<Class<?>>iterate(
+                        userClass,
+                        not( ProcedureOutputSignatureCompiler::isJavaLangClass ),
+                        Class::getSuperclass
+                )
+                .flatMap( c -> Arrays.stream( c.getDeclaredFields() ) )
+                .filter( f -> !isStatic( f.getModifiers() ) && !f.isSynthetic() )
+                .collect( toList() );
+    }
+
+    private static boolean isJavaLangClass( Class<?> cls )
+    {
+        return cls.getPackage().getName().equals( "java.lang" );
     }
 }
