@@ -111,7 +111,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
         s"""Unfortunately, the planner did not succeed in finding a plan.
           |Try increasing the config values `${GraphDatabaseSettings.cypher_idp_solver_table_threshold.name()}`
           |and `${GraphDatabaseSettings.cypher_idp_solver_duration_threshold.name()}` to allow
-          |a bigger table and longer time for the planning.""".stripMargin)
+          |for a larger sub-plan table and longer planning time.""".stripMargin)
       val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestBlockSize)
       monitor.endIteration(iterations, largestBlockSize, table.size)
       compactBlock(bestGoal, bestInBlock)
