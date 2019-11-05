@@ -19,12 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -34,17 +32,17 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.Integer.max;
-import static java.lang.Integer.min;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
 class SizeEstimationTest
 {
+    private static final double EXPECTED_MARGIN_OF_ERROR = 0.1;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -57,62 +55,47 @@ class SizeEstimationTest
     @Test
     void shouldEstimateSizeOnFixedSizeKeys() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> tree = new GBPTreeBuilder<>( pageCache, testDirectory.file( "tree" ),
-                SimpleLongLayout.longLayout().build() ).build() )
-        {
-            // given
-            int count = random.nextInt( 100_000, 1_000_000 );
-            try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
-            {
-                MutableLong key = new MutableLong();
-                MutableLong value = new MutableLong();
-                for ( int i = 0; i < count; i++ )
-                {
-                    key.setValue( i );
-                    writer.put( key, value );
-                }
-            }
-
-            // when/then
-            assertEstimateWithinMargin( tree, count, 0.1 );
-        }
+        SimpleLongLayout layout = SimpleLongLayout.longLayout().build();
+        assertEstimateSizeCorrectly( layout );
     }
 
     @Test
     void shouldEstimateSizeOnDynamicSizeKeys() throws IOException
     {
-        int maxKeySize = 64;
-        try ( GBPTree<RawBytes,RawBytes> tree =
-                new GBPTreeBuilder<>( pageCache, testDirectory.file( "tree" ), new SimpleByteArrayLayout( maxKeySize, 0 ) ).build() )
+        int largeEntriesSize = keyValueSizeCapFromPageSize( pageCache.pageSize() ) / 2;
+        int largeEntryModulo = random.nextInt( 0, 10 ); // 0 = no large keys
+        SimpleByteArrayLayout layout = new SimpleByteArrayLayout( largeEntriesSize, largeEntryModulo );
+        assertEstimateSizeCorrectly( layout );
+    }
+
+    private <KEY,VALUE> void assertEstimateSizeCorrectly( TestLayout<KEY,VALUE> layout ) throws IOException
+    {
+        try ( GBPTree<KEY,VALUE> tree =
+                new GBPTreeBuilder<>( pageCache, testDirectory.file( "tree" ), layout ).build() )
         {
             // given
             int count = random.nextInt( 100_000, 1_000_000 );
-            try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+            try ( Writer<KEY,VALUE> writer = tree.writer() )
             {
-                RawBytes key = new RawBytes();
-                RawBytes value = new RawBytes();
-                value.bytes = new byte[2];
                 for ( int i = 0; i < count; i++ )
                 {
-                    int keySize = random.nextInt( Long.BYTES, maxKeySize );
-                    key.bytes = new byte[keySize];
-                    ByteBuffer buffer = ByteBuffer.wrap( key.bytes );
-                    buffer.putLong( i );
-                    writer.put( key, value );
+                    writer.put( layout.key( i ), layout.value( i ) );
                 }
             }
 
             // when/then
-            assertEstimateWithinMargin( tree, count, 0.1 );
+            assertEstimateWithinMargin( tree, count );
         }
     }
 
-    private void assertEstimateWithinMargin( GBPTree<?,?> tree, int actualCount, double margin ) throws IOException
+    private void assertEstimateWithinMargin( GBPTree<?,?> tree, int actualCount ) throws IOException
     {
         // when
         int estimate = toIntExact( tree.estimateNumberOfEntriesInTree() );
 
         // then
-        assertThat( abs( 1D - (double) max( actualCount, estimate ) / min( actualCount, estimate ) ), lessThan( margin ) );
+        int diff = abs( actualCount - estimate );
+        double diffRatio = (double) diff / actualCount;
+        assertThat( diffRatio, lessThan( EXPECTED_MARGIN_OF_ERROR ) );
     }
 }
