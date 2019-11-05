@@ -21,10 +21,12 @@ package org.neo4j.dbms.archive;
 
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
+import com.github.luben.zstd.util.Native;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -75,4 +77,30 @@ public enum CompressionFormat
 
     public abstract OutputStream compress( OutputStream stream ) throws IOException;
     public abstract InputStream decompress( InputStream stream ) throws IOException;
+
+    public static CompressionFormat selectCompressionFormat()
+    {
+        return selectCompressionFormat( null );
+    }
+
+    public static CompressionFormat selectCompressionFormat( PrintStream output )
+    {
+        try
+        {
+            Native.load(); // Try to load ZSTD
+            if ( Native.isLoaded() )
+            {
+                return ZSTD;
+            }
+        }
+        catch ( Throwable t )
+        {
+            if ( output != null )
+            {
+                output.println( "Failed to load " + ZSTD.name() + ": " + t.getMessage() );
+                output.println( "Fallback to " + GZIP.name() );
+            }
+        }
+        return GZIP; // fallback
+    }
 }
