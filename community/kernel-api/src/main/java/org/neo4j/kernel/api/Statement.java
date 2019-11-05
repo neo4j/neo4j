@@ -27,9 +27,6 @@ import org.neo4j.graphdb.Resource;
  * The main purpose of the statement is to keep resources open for the duration of the statement, and
  * then close all resources at statement close.
  *
- * Note that Statement used to be the access-point for all kernel reads and writes before 3.4. For
- * accessing the graph now, see {@link org.neo4j.internal.kernel.api.Transaction}. The only remainder
- * the QueryRegistry, which will eventually also move from here.
  */
 public interface Statement extends Resource, ResourceTracker
 {

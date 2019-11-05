@@ -44,11 +44,9 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -312,8 +310,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     InternalTransaction internalTransaction();
 
     /**
-     * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
-     * {@link Kernel#beginTransaction(Type, LoginContext)}.
+     * @return start time of this transaction
      */
     long startTime();
 
@@ -340,7 +337,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
 
     /**
      * Return transaction id that assigned during transaction commit process.
-     * @see org.neo4j.kernel.impl.api.TransactionCommitProcess
      * @return transaction id.
      * @throws IllegalStateException if transaction id is not assigned yet
      */
@@ -348,7 +344,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
 
     /**
      * Return transaction commit time (in millis) that assigned during transaction commit process.
-     * @see org.neo4j.kernel.impl.api.TransactionCommitProcess
      * @return transaction commit time
      * @throws IllegalStateException if commit time is not assigned yet
      */
