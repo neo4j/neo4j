@@ -56,6 +56,7 @@ import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -203,7 +204,6 @@ public class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
 
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
@@ -285,6 +285,22 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "authorization token is invalid" ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleNotAcceptableResponseFromInitiateUploadTarget() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        String token = "abc";
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( token )
+                .willReturn( aResponse().withStatus( HTTP_NOT_ACCEPTABLE ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, containsString( "increase the size of your database" ),
                 () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
