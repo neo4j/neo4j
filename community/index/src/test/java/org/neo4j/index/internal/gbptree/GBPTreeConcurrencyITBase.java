@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -45,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -666,54 +668,65 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             KEY to = key( end() );
             if ( partitionedSeek )
             {
-                Iterator<Seeker<KEY,VALUE>> partitions = tree.partitionedSeek( from, to, 10 ).iterator();
-                return new Seeker<>()
-                {
-                    Seeker<KEY,VALUE> current = partitions.next();
-
-                    @Override
-                    public boolean next() throws IOException
-                    {
-                        while ( true )
-                        {
-                            if ( current.next() )
-                            {
-                                return true;
-                            }
-                            if ( partitions.hasNext() )
-                            {
-                                current.close();
-                                current = partitions.next();
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        return false;
-                    }
-
-                    @Override
-                    public KEY key()
-                    {
-                        return current.key();
-                    }
-
-                    @Override
-                    public VALUE value()
-                    {
-                        return current.value();
-                    }
-
-                    @Override
-                    public void close() throws IOException
-                    {
-                        current.close();
-                    }
-                };
+                Collection<Seeker<KEY,VALUE>> partitions = tree.partitionedSeek( from, to, 10 );
+                return new PartitionBridgingSeeker<KEY,VALUE>( partitions );
             }
 
             return tree.seek( from, to );
+        }
+    }
+
+    private static class PartitionBridgingSeeker<KEY, VALUE> implements Seeker<KEY,VALUE>
+    {
+        private final Collection<Seeker<KEY,VALUE>> partitionsToClose;
+        private final Iterator<Seeker<KEY,VALUE>> partitions;
+        private Seeker<KEY,VALUE> current;
+
+        PartitionBridgingSeeker( Collection<Seeker<KEY,VALUE>> partitions )
+        {
+            this.partitionsToClose = partitions;
+            this.partitions = partitions.iterator();
+            current = this.partitions.next();
+        }
+
+        @Override
+        public boolean next() throws IOException
+        {
+            while ( true )
+            {
+                if ( current.next() )
+                {
+                    return true;
+                }
+                if ( partitions.hasNext() )
+                {
+                    current.close();
+                    current = partitions.next();
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public KEY key()
+        {
+            return current.key();
+        }
+
+        @Override
+        public VALUE value()
+        {
+            return current.value();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            IOUtils.closeAll( partitionsToClose );
         }
     }
 

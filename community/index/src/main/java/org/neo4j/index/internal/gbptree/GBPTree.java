@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.index.internal.gbptree.TreeNode.Type;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -1040,10 +1041,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             if ( !success )
             {
-                for ( Seeker<KEY,VALUE> seeker : seekers )
-                {
-                    seeker.close();
-                }
+                IOUtils.closeAll( seekers );
             }
         }
 

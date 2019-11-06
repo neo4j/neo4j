@@ -71,7 +71,7 @@ class PartitionedSeekTest
             assertEquals( 0, depthOf( tree ) );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers = tree.partitionedSeek( new MutableLong( 0 ), new MutableLong( to ), 4 );
+            Collection<Seeker<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4 );
 
             // then
             assertEquals( 1, seekers.size() );
@@ -111,24 +111,17 @@ class PartitionedSeekTest
 
             // when
             Collection<Seeker<MutableLong,MutableLong>> seekers =
-                    tree.partitionedSeek( new MutableLong( from ), new MutableLong( to ), numberOfDesiredPartitions );
+                    tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions );
 
             // then
             IntList counts = assertEntries( from, to, seekers );
             // verify that partitions have some sort of fair distribution
             // First and last partition may have varying number of entries, but the middle ones should be (at least in this test case)
             // max a factor two from each other, entry-count wise
-            int reference = 0;
-            for ( int i = 1; i < counts.size() - 1; i++)
+            int reference = counts.get( 1 );
+            for ( int i = 2; i < counts.size() - 1; i++ )
             {
-                if ( i == 1 )
-                {
-                    reference = counts.get( i );
-                }
-                else
-                {
-                    assertTrue( abs( reference - counts.get( i ) ) <= reference );
-                }
+                assertTrue( abs( reference - counts.get( i ) ) <= reference );
             }
         }
     }
@@ -150,8 +143,8 @@ class PartitionedSeekTest
             // - initial state is a tree with keys like 0, 15 (stride), 30, 45, 60... a.s.o.
             // - each round creates all keys+1 and while doing so calling partitioned seek
             // there will be racing between changing the root, even splitting the root, and calling partitionedSeek
-            MutableLong min = new MutableLong( 0 );
-            MutableLong max = new MutableLong( Long.MAX_VALUE );
+            MutableLong min = layout.key( 0 );
+            MutableLong max = layout.key( Long.MAX_VALUE );
             for ( int i = 0; i < stride - 1; i++ )
             {
                 int offset = i + 1;
@@ -185,7 +178,7 @@ class PartitionedSeekTest
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
-            assertThrows( IllegalArgumentException.class, () -> tree.partitionedSeek( new MutableLong( 10 ), new MutableLong( 0 ), 5 ) );
+            assertThrows( IllegalArgumentException.class, () -> tree.partitionedSeek( layout.key( 10 ), layout.key( 0 ), 5 ) );
         }
     }
 
@@ -203,7 +196,7 @@ class PartitionedSeekTest
 
             // when
             Collection<Seeker<MutableLong,MutableLong>> seekers =
-                    tree.partitionedSeek( new MutableLong( 0 ), new MutableLong( to ), numberOfDesiredPartitions );
+                    tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions );
 
             // then
             assertEquals( expectedNumberOfPartitions, seekers.size() );
@@ -250,11 +243,10 @@ class PartitionedSeekTest
         int id = startId;
         try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
         {
-            MutableLong key = new MutableLong();
-            MutableLong value = new MutableLong();
+            MutableLong value = layout.value( 0 );
             for ( int i = 0; i < count; i++, id += stride )
             {
-                key.setValue( id );
+                MutableLong key = layout.key( id );
                 writer.put( key, value );
             }
         }
