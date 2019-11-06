@@ -53,6 +53,18 @@ import static java.lang.String.format;
 
 final class SchemaStatementProcedure
 {
+
+    private static final String CREATE_UNIQUE_PROPERTY_CONSTRAINT = "CALL db.createUniquePropertyConstraint( '%s', %s, %s, '%s', %s )";
+    private static final String CREATE_NODE_KEY_CONSTRAINT = "CALL db.createNodeKey( '%s', %s, %s, '%s', %s )";
+    private static final String CREATE_NODE_EXISTENCE_CONSTRAINT = "CREATE CONSTRAINT `%s` ON (a:`%s`) ASSERT exists(a.`%s`)";
+    private static final String CREATE_RELATIONSHIP_EXISTENCE_CONSTRAINT = "CREATE CONSTRAINT `%s` ON ()-[a:`%s`]-() ASSERT exists(a.`%s`)";
+    private static final String CREATE_BTREE_INDEX = "CALL db.createIndex('%s', %s, %s, '%s', %s)";
+    private static final String CREATE_NODE_FULLTEXT_INDEX = "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)";
+    private static final String CREATE_RELATIONSHIP_FULLTEXT_INDEX = "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)";
+    private static final String DROP_CONSTRAINT = "DROP CONSTRAINT `%s`";
+    private static final String DROP_INDEX = "DROP INDEX `%s`";
+    private static final String SINGLE_CONFIG = "`%s`: %s";
+
     private SchemaStatementProcedure()
     {
     }
@@ -63,7 +75,7 @@ final class SchemaStatementProcedure
         Map<String,BuiltInProcedures.SchemaStatementResult> schemaStatements = new HashMap<>();
 
         // Indexes
-        // If index is backing an existing constraint, it will be overwritten later.
+        // If index is unique the assumption is that it is backing a constraint and will not be included.
         final Iterator<IndexDescriptor> allIndexes = schemaRead.indexesGetAll();
         while ( allIndexes.hasNext() )
         {
@@ -134,8 +146,7 @@ final class SchemaStatementProcedure
         try
         {
             InternalIndexState indexState = schemaRead.indexGetState( index );
-            return indexState == InternalIndexState.ONLINE &&
-                    (!index.isUnique() || index.getOwningConstraintId().isPresent());
+            return indexState == InternalIndexState.ONLINE && !index.isUnique();
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -157,12 +168,12 @@ final class SchemaStatementProcedure
                 String config = btreeConfigAsString( backingIndex );
                 if ( constraint.isUniquenessConstraint() )
                 {
-                    return format( "CALL db.createUniquePropertyConstraint( '%s', %s, %s, '%s', %s )",
+                    return format( CREATE_UNIQUE_PROPERTY_CONSTRAINT,
                             name, labelsOrRelTypes, properties, providerName, config );
                 }
                 if ( constraint.isNodeKeyConstraint() )
                 {
-                    return format( "CALL db.createNodeKey( '%s', %s, %s, '%s', %s )",
+                    return format( CREATE_NODE_KEY_CONSTRAINT,
                             name, labelsOrRelTypes, properties, providerName, config );
                 }
             }
@@ -173,7 +184,7 @@ final class SchemaStatementProcedure
                 String label = tokenRead.nodeLabelName( labelId );
                 int propertyId = constraint.schema().getPropertyId();
                 String property = tokenRead.propertyKeyName( propertyId );
-                return format( "CREATE CONSTRAINT `%s` ON (a:`%s`) ASSERT exists(a.`%s`)",
+                return format( CREATE_NODE_EXISTENCE_CONSTRAINT,
                         name, label, property );
             }
             if ( constraint.isRelationshipPropertyExistenceConstraint() )
@@ -183,7 +194,7 @@ final class SchemaStatementProcedure
                 String relationshipType = tokenRead.relationshipTypeName( relationshipTypeId );
                 int propertyId = constraint.schema().getPropertyId();
                 String property = tokenRead.propertyKeyName( propertyId );
-                return format( "CREATE CONSTRAINT `%s` ON ()-[a:`%s`]-() ASSERT exists(a.`%s`)",
+                return format( CREATE_RELATIONSHIP_EXISTENCE_CONSTRAINT,
                         name, relationshipType, property );
             }
             throw new IllegalArgumentException( "Did not recognize constraint type " + constraint );
@@ -196,7 +207,7 @@ final class SchemaStatementProcedure
 
     private static String dropStatement( ConstraintDescriptor constraint )
     {
-        return "DROP CONSTRAINT `" + constraint.getName() + "`";
+        return format( DROP_CONSTRAINT, constraint.getName() );
     }
 
     private static String createStatement( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws ProcedureException
@@ -211,17 +222,17 @@ final class SchemaStatementProcedure
             case BTREE:
                 String btreeConfig = btreeConfigAsString( indexDescriptor );
                 final String providerName = indexDescriptor.getIndexProvider().name();
-                return format( "CALL db.createIndex('%s', %s, %s, '%s', %s)",
+                return format( CREATE_BTREE_INDEX,
                         name, labelsOrRelTypes, properties, providerName, btreeConfig );
             case FULLTEXT:
                 String fulltextConfig = fulltextConfigAsString( indexDescriptor );
                 switch ( indexDescriptor.schema().entityType() )
                 {
                 case NODE:
-                    return format( "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)",
+                    return format( CREATE_NODE_FULLTEXT_INDEX,
                             name, labelsOrRelTypes, properties, fulltextConfig );
                 case RELATIONSHIP:
-                    return format( "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)",
+                    return format( CREATE_RELATIONSHIP_FULLTEXT_INDEX,
                             name, labelsOrRelTypes, properties, fulltextConfig );
                 default:
                     throw new IllegalArgumentException( "Did not recognize entity type " + indexDescriptor.schema().entityType() );
@@ -239,10 +250,10 @@ final class SchemaStatementProcedure
     private static String btreeConfigAsString( IndexDescriptor indexDescriptor )
     {
         final IndexConfig indexConfig = indexDescriptor.getIndexConfig();
-        StringJoiner configString = new StringJoiner( ",", "{", "}" );
+        StringJoiner configString = configStringJoiner();
         for ( Pair<String,Value> entry : indexConfig.entries() )
         {
-            String singleConfig = "`" + entry.getOne() + "`: " + btreeConfigValueAsString( entry.getTwo() );
+            String singleConfig = format( SINGLE_CONFIG, entry.getOne(), btreeConfigValueAsString( entry.getTwo() ) );
             configString.add( singleConfig );
         }
         return configString.toString();
@@ -276,12 +287,12 @@ final class SchemaStatementProcedure
     private static String fulltextConfigAsString( IndexDescriptor indexDescriptor )
     {
         final IndexConfig indexConfig = indexDescriptor.getIndexConfig();
-        StringJoiner configString = new StringJoiner( ",", "{", "}" );
+        StringJoiner configString = configStringJoiner();
         for ( Pair<String,Value> entry : indexConfig.entries() )
         {
             String key = entry.getOne();
             key = key.replace( "fulltext.", "" );
-            String singleConfig = "`" + key + "`: " + fulltextConfigValueAsString( entry.getTwo() );
+            String singleConfig = format( SINGLE_CONFIG, key, fulltextConfigValueAsString( entry.getTwo() ) );
             configString.add( singleConfig );
         }
         return configString.toString();
@@ -304,7 +315,7 @@ final class SchemaStatementProcedure
 
     private static String propertiesAsStringArray( TokenRead tokenRead, SchemaDescriptor schema ) throws PropertyKeyIdNotFoundKernelException
     {
-        StringJoiner properties = new StringJoiner( ", ", "[", "]" );
+        StringJoiner properties = arrayStringJoiner();
         for ( int propertyId : schema.getPropertyIds() )
         {
             properties.add( "'" + tokenRead.propertyKeyName( propertyId ) + "'" );
@@ -314,10 +325,10 @@ final class SchemaStatementProcedure
 
     private static String labelsOrRelTypesAsStringArray( TokenRead tokenRead, SchemaDescriptor schema ) throws KernelException
     {
-        StringJoiner labelsOrRelTypes = new StringJoiner( ", ", "[", "]" );
+        StringJoiner labelsOrRelTypes = arrayStringJoiner();
         for ( int entityTokenId : schema.getEntityTokenIds() )
         {
-            if ( schema.entityType().equals( EntityType.NODE ) )
+            if ( EntityType.NODE.equals( schema.entityType() ) )
             {
                 labelsOrRelTypes.add( "'" + tokenRead.nodeLabelName( entityTokenId ) + "'" );
             }
@@ -331,7 +342,17 @@ final class SchemaStatementProcedure
 
     private static String dropStatement( IndexDescriptor indexDescriptor )
     {
-        return "DROP INDEX `" + indexDescriptor.getName() + "`";
+        return format( DROP_INDEX, indexDescriptor.getName() );
+    }
+
+    private static StringJoiner configStringJoiner()
+    {
+        return new StringJoiner( ",", "{", "}" );
+    }
+
+    private static StringJoiner arrayStringJoiner()
+    {
+        return new StringJoiner( ", ", "[", "]" );
     }
 
     enum SchemaRuleType
