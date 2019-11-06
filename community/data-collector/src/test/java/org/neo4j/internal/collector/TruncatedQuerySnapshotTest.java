@@ -81,7 +81,7 @@ class TruncatedQuerySnapshotTest
         assertEquals( RELATIONSHIP.id(), ((RelationshipReference)truncatedRelationship).id() );
     }
 
-    private static MapValue map( String key, AnyValue value)
+    private static MapValue map( String key, AnyValue value )
     {
         String[] keys = {key};
         AnyValue[] values = {value};
