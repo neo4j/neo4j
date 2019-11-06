@@ -99,7 +99,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
-import static org.neo4j.kernel.database.DatabaseStartupController.ALWAYS_FALSE_CONTROLLER;
+import static org.neo4j.kernel.database.DatabaseStartupController.NEVER_ABORT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class DatabaseRule extends ExternalResource
@@ -169,7 +169,7 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
-                storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, ALWAYS_FALSE_CONTROLLER ) );
+                storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, NEVER_ABORT ) );
         return database;
     }
 

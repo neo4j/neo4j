@@ -24,7 +24,7 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseStartupController;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.kernel.database.DatabaseStartupController.ALWAYS_FALSE_CONTROLLER;
+import static org.neo4j.kernel.database.DatabaseStartupController.NEVER_ABORT;
 
 public class RecoveryStartupChecker
 {
@@ -51,7 +51,7 @@ public class RecoveryStartupChecker
     {
         private NeverCanceledChecker()
         {
-            super( ALWAYS_FALSE_CONTROLLER, null );
+            super( NEVER_ABORT, null );
         }
 
         @Override

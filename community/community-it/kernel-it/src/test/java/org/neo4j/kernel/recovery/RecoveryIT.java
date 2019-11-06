@@ -729,7 +729,7 @@ class RecoveryIT
 
         GlobalGuardConsumerTestExtensionFactory()
         {
-            super( "globalGuardConuser" );
+            super( "globalGuardConsumer" );
         }
 
         @Override
