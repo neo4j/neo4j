@@ -136,6 +136,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final MarshlandPool<KernelTransactionImplementation> localTxPool;
     private final ConstraintSemantics constraintSemantics;
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
+    private final TokenHoldersIdLookup tokenHoldersIdLookup;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -168,6 +169,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.heapAllocationRef = heapAllocationRef;
         this.accessCapability = accessCapability;
         this.tokenHolders = tokenHolders;
+        this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders );
         this.databaseId = databaseId;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
@@ -194,26 +196,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         SecurityContext securityContext;
         try
         {
-            securityContext = loginContext.authorize( new LoginContext.IdLookup()
-            {
-                @Override
-                public int getOrCreatePropertyKeyId( String name ) throws KernelException
-                {
-                    return tokenHolders.propertyKeyTokens().getOrCreateId( name );
-                }
-
-                @Override
-                public int getOrCreateLabelId( String name ) throws KernelException
-                {
-                    return tokenHolders.labelTokens().getOrCreateId( name );
-                }
-
-                @Override
-                public int getOrCreateRelTypeId( String name ) throws KernelException
-                {
-                    return tokenHolders.relationshipTypeTokens().getOrCreateId( name );
-                }
-            }, databaseId.name() );
+            securityContext = loginContext.authorize( tokenHoldersIdLookup, databaseId.name() );
         }
         catch ( KernelException ke )
         {
@@ -474,7 +457,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                     throw new MaximumTransactionLimitExceededException();
                 }
             }
-            while ( !activeTransactionCounter.compareAndSet( activeTransactions, activeTransactions + 1 ) );
+            while ( !activeTransactionCounter.weakCompareAndSetAcquire( activeTransactions, activeTransactions + 1 ) );
         }
     }
 }

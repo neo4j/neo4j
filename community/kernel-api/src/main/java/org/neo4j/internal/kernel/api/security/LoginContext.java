@@ -80,7 +80,7 @@ public interface LoginContext
             }
 
             @Override
-            public int getOrCreateRelTypeId( String name ) throws KernelException
+            public int getOrCreateRelTypeId( String name )
             {
                 return -1;
             }
