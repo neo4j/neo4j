@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -975,7 +976,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Caller can seek through the partitions in parallel. Caller is responsible for closing the returned {@link Seeker seekers}.
      *
      * To keep implementation (much) simpler the partitioning is done on the root only, which means that the partitioning will be less granular
-     * the bigger keys are in the root and if there there can only be returned max numberOfRootKeys+1 partitions from this method.
+     * the bigger keys there are in the root. There can only be returned max numberOfRootKeys+1 partitions from this method.
      *
      * @param fromInclusive lower bound of the range to seek (inclusive).
      * @param toExclusive higher bound of the range to seek (exclusive).
@@ -987,62 +988,52 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public Collection<Seeker<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive, int numberOfPartitions ) throws IOException
     {
+        Preconditions.checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
+
         // Read the root w/ all its keys
-        List<KEY> splits;
+        List<KEY> rootKeys;
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             boolean goodRead;
             do
             {
                 goodRead = false;
-                splits = new ArrayList<>();
+                rootKeys = new ArrayList<>();
                 root.goTo( cursor );
                 byte nodeType = TreeNode.nodeType( cursor );
-                byte treeNodeTypeByte = TreeNode.treeNodeType( cursor );
+                boolean isLeaf = TreeNode.isLeaf( cursor );
+                boolean isInternal = TreeNode.isInternal( cursor );
                 int keyCount = TreeNode.keyCount( cursor );
-                if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE ||
-                     (treeNodeTypeByte != TreeNode.LEAF_FLAG && treeNodeTypeByte != TreeNode.INTERNAL_FLAG) ||
-                     !bTreeNode.reasonableKeyCount( keyCount ) )
+                if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || (!isLeaf && !isInternal) || !bTreeNode.reasonableKeyCount( keyCount ) )
                 {
                     // We've read something in the midst of changing, most likely... just retry the whole read
                     continue;
                 }
-                if ( treeNodeTypeByte == TreeNode.LEAF_FLAG )
+                if ( isLeaf )
                 {
-                    // The root is a leaf, not much to split on... so just exit the read w/o splits, i.e. this will result in only one seeker for all keys
+                    // The root is a leaf, not much to split on... so just exit the read w/o rootKeys, i.e. this will result in only one seeker for all keys
                     break;
                 }
 
-                // Read the internal keys from the root into splits list
+                // Read the internal keys from the root into rootKeys list
                 for ( int pos = 0; pos < keyCount; pos++ )
                 {
-                    KEY key = bTreeNode.keyAt( cursor, layout.newKey(), pos, Type.INTERNAL );
-                    if ( layout.compare( key, fromInclusive ) >= 0 && layout.compare( key, toExclusive ) < 0 )
-                    {
-                        splits.add( key );
-                    }
+                    rootKeys.add( bTreeNode.keyAt( cursor, layout.newKey(), pos, Type.INTERNAL ) );
                 }
                 goodRead = true;
             }
             while ( cursor.shouldRetry() || !goodRead );
         }
 
-        // Now that we have the splits, instantiate seekers for those ranges
+        KeyPartitioning<KEY> partitioning = new KeyPartitioning<>( layout );
         List<Seeker<KEY,VALUE>> seekers = new ArrayList<>();
         boolean success = false;
-        float stride = splits.size() < numberOfPartitions ? 1 : (1f + splits.size()) / numberOfPartitions;
-        float pos = stride;
         try
         {
-            KEY prev = fromInclusive;
-            for ( int i = 0; i < numberOfPartitions - 1 && i < splits.size(); i++, pos += stride )
+            for ( Pair<KEY,KEY> partition : partitioning.partition( rootKeys, fromInclusive, toExclusive, numberOfPartitions ) )
             {
-                KEY split = splits.get( Math.round( pos ) - 1 );
-                seekers.add( seek( prev, split ) );
-                prev = layout.newKey();
-                layout.copyKey( split, prev );
+                seekers.add( seek( partition.getLeft(), partition.getRight() ) );
             }
-            seekers.add( seek( prev, toExclusive ) );
             success = true;
         }
         finally
@@ -1055,6 +1046,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 }
             }
         }
+
         return seekers;
     }
 

@@ -229,7 +229,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         return BASE_HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
     }
 
-    private int internalMaxKeyCount()
+    int internalMaxKeyCount()
     {
         return internalMaxKeyCount;
     }

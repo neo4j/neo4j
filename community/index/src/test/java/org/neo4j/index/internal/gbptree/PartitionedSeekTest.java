@@ -19,22 +19,32 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Math.abs;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
@@ -54,34 +64,129 @@ class PartitionedSeekTest
     @Test
     void shouldPartitionTreeWithLeafRoot() throws IOException
     {
-        shouldPartitionTree( 5, 4, 1 );
+        try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
+        {
+            // given
+            int to = insertEntries( tree, 0, 5, 1 );
+            assertEquals( 0, depthOf( tree ) );
+
+            // when
+            Collection<Seeker<MutableLong,MutableLong>> seekers = tree.partitionedSeek( new MutableLong( 0 ), new MutableLong( to ), 4 );
+
+            // then
+            assertEquals( 1, seekers.size() );
+            assertEntries( 0, 5, seekers );
+        }
     }
 
     @Test
     void shouldPartitionTreeWithFewerNumberOfRootKeys() throws IOException
     {
-        shouldPartitionTree( 1_000, 4, 3 );
+        shouldPartitionTree( 3, 4, 3 );
     }
 
     @Test
     void shouldPartitionTreeWithPreciseNumberOfRootKeys() throws IOException
     {
-        shouldPartitionTree( 1_200, 4, 4 );
+        shouldPartitionTree( 5, 5, 5 );
     }
 
     @Test
     void shouldPartitionTreeWithMoreNumberOfRootKeys() throws IOException
     {
-        shouldPartitionTree( 5_000, 4, 4 );
+        shouldPartitionTree( 12, 6, 6 );
     }
 
     @Test
-    void shouldPartitionTreeWithRandomKeys() throws IOException
+    void shouldPartitionTreeWithRandomKeysAndFindAll() throws IOException
     {
-        int numberOfKeys = random.nextInt( 0, 100_000 );
-        long from = random.nextLong( 0, numberOfKeys - 1 );
-        long to = random.nextLong( from, numberOfKeys );
-        shouldPartitionTree( from, to, numberOfKeys, random.nextInt( 1, 20 ), -1 );
+        try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
+        {
+            // given
+            int numberOfRootChildren = random.nextInt( 10, 20 );
+            int high = insertEntriesUntil( tree, numberOfRootChildren );
+            long from = random.nextLong( 0, high - 1 );
+            long to = random.nextLong( from, high );
+            int numberOfDesiredPartitions = random.nextInt( 1, numberOfRootChildren );
+
+            // when
+            Collection<Seeker<MutableLong,MutableLong>> seekers =
+                    tree.partitionedSeek( new MutableLong( from ), new MutableLong( to ), numberOfDesiredPartitions );
+
+            // then
+            IntList counts = assertEntries( from, to, seekers );
+            // verify that partitions have some sort of fair distribution
+            // First and last partition may have varying number of entries, but the middle ones should be (at least in this test case)
+            // max a factor two from each other, entry-count wise
+            int reference = 0;
+            for ( int i = 1; i < counts.size() - 1; i++)
+            {
+                if ( i == 1 )
+                {
+                    reference = counts.get( i );
+                }
+                else
+                {
+                    assertTrue( abs( reference - counts.get( i ) ) <= reference );
+                }
+            }
+        }
+    }
+
+    @Test
+    void shouldPartitionSeekersDuringTreeModifications() throws IOException
+    {
+        TreeNodeFixedSize<MutableLong,MutableLong> treeNode = new TreeNodeFixedSize<>( pageCache.pageSize(), layout );
+        int internalMaxKeyCount = treeNode.internalMaxKeyCount();
+        try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
+        {
+            // given a tree with root with 10 children in it
+            int stride = 15;
+            int high = insertEntriesUntil( tree, internalMaxKeyCount / 2, stride /*holes between each key*/ );
+            int count = high / stride;
+
+            // when calling partitionedSeek while concurrently modifying
+            // modifications go something like this:
+            // - initial state is a tree with keys like 0, 15 (stride), 30, 45, 60... a.s.o.
+            // - each round creates all keys+1 and while doing so calling partitioned seek
+            // there will be racing between changing the root, even splitting the root, and calling partitionedSeek
+            MutableLong min = new MutableLong( 0 );
+            MutableLong max = new MutableLong( Long.MAX_VALUE );
+            for ( int i = 0; i < stride - 1; i++ )
+            {
+                int offset = i + 1;
+                AtomicReference<Collection<Seeker<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
+                Race race = new Race();
+                race.addContestant( throwing( () -> insertEntries( tree, offset, count, stride ) ) );
+                race.addContestant( throwing( () -> partitions.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ) ) ) ) );
+                race.goUnchecked();
+
+                // then
+                long nextExpected = 0;
+                for ( Seeker<MutableLong,MutableLong> seeker : partitions.get() )
+                {
+                    while ( seeker.next() )
+                    {
+                        assertEquals( nextExpected, seeker.key().longValue() );
+                        nextExpected++;
+                        if ( nextExpected % stride > offset )
+                        {
+                            nextExpected += stride - nextExpected % stride;
+                        }
+                    }
+                }
+                assertEquals( high, nextExpected );
+            }
+        }
+    }
+
+    @Test
+    void shouldThrowOnAttemptBackwardPartitionedSeek() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tree.partitionedSeek( new MutableLong( 10 ), new MutableLong( 0 ), 5 ) );
+        }
     }
 
     private GBPTree<MutableLong,MutableLong> instantiateTree()
@@ -89,55 +194,110 @@ class PartitionedSeekTest
         return new GBPTreeBuilder<>( pageCache, testDirectory.file( "tree" ), layout ).build();
     }
 
-    private void shouldPartitionTree( int numberOfKeys, int numberOfPartitions, int expectedNumberOfSeekers ) throws IOException
-    {
-        shouldPartitionTree( 0, numberOfKeys, numberOfKeys, numberOfPartitions, expectedNumberOfSeekers );
-    }
-
-    private void shouldPartitionTree( long from, long to, int numberOfKeys, int numberOfPartitions, int expectedNumberOfSeekers ) throws IOException
+    private void shouldPartitionTree( int numberOfDesiredRootChildren, int numberOfDesiredPartitions, int expectedNumberOfPartitions ) throws IOException
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
             // given
-            insertEntries( tree, numberOfKeys );
+            int to = insertEntriesUntil( tree, numberOfDesiredRootChildren );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers = tree.partitionedSeek( new MutableLong( from ), new MutableLong( to ), numberOfPartitions );
+            Collection<Seeker<MutableLong,MutableLong>> seekers =
+                    tree.partitionedSeek( new MutableLong( 0 ), new MutableLong( to ), numberOfDesiredPartitions );
 
             // then
-            if ( expectedNumberOfSeekers != -1 )
-            {
-                assertEquals( expectedNumberOfSeekers, seekers.size() );
-            }
-            assertEntries( from, to, seekers );
+            assertEquals( expectedNumberOfPartitions, seekers.size() );
+            assertEntries( 0, to, seekers );
         }
     }
 
-    private void assertEntries( long from, long to, Collection<Seeker<MutableLong,MutableLong>> seekers ) throws IOException
+    private IntList assertEntries( long from, long to, Collection<Seeker<MutableLong,MutableLong>> seekers ) throws IOException
     {
         long nextExpected = from;
+        MutableIntList entryCountPerSeeker = IntLists.mutable.empty();
         for ( Seeker<MutableLong,MutableLong> seeker : seekers )
         {
-            while ( seeker.next() )
+            int count = 0;
+            while ( nextExpected < to && seeker.next() )
             {
                 assertEquals( nextExpected, seeker.key().longValue() );
                 nextExpected++;
+                count++;
             }
+            entryCountPerSeeker.add( count );
         }
         assertEquals( to, nextExpected );
+        return entryCountPerSeeker;
     }
 
-    private void insertEntries( GBPTree<MutableLong,MutableLong> tree, int count ) throws IOException
+    private int insertEntriesUntil( GBPTree<MutableLong,MutableLong> tree, int numberOfDesiredRootKeys ) throws IOException
     {
+        return insertEntriesUntil( tree, numberOfDesiredRootKeys, 1 );
+    }
+
+    private int insertEntriesUntil( GBPTree<MutableLong,MutableLong> tree, int numberOfDesiredRootKeys, int stride ) throws IOException
+    {
+        int id = 0;
+        while ( numberOfRootChildren( tree ) < numberOfDesiredRootKeys )
+        {
+            id = insertEntries( tree, id, 100, stride );
+        }
+        return id;
+    }
+
+    private int insertEntries( GBPTree<MutableLong,MutableLong> tree, int startId, int count, int stride ) throws IOException
+    {
+        int id = startId;
         try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
         {
             MutableLong key = new MutableLong();
             MutableLong value = new MutableLong();
-            for ( int i = 0; i < count; i++ )
+            for ( int i = 0; i < count; i++, id += stride )
             {
-                key.setValue( i );
+                key.setValue( id );
                 writer.put( key, value );
             }
         }
+        return id;
+    }
+
+    private int numberOfRootChildren( GBPTree<MutableLong,MutableLong> tree ) throws IOException
+    {
+        MutableInt rootChildCount = new MutableInt();
+        tree.visit( new GBPTreeVisitor.Adaptor<>()
+        {
+            private int level;
+
+            @Override
+            public void beginLevel( int level )
+            {
+                this.level = level;
+            }
+
+            @Override
+            public void beginNode( long pageId, boolean isLeaf, long generation, int keyCount )
+            {
+                // The first call is for the root
+                if ( level == 0 && !isLeaf )
+                {
+                    rootChildCount.setValue( keyCount + 1 );
+                }
+            }
+        } );
+        return rootChildCount.getValue();
+    }
+
+    private int depthOf( GBPTree<MutableLong,MutableLong> tree ) throws IOException
+    {
+        MutableInt highestLevel = new MutableInt();
+        tree.visit( new GBPTreeVisitor.Adaptor<>()
+        {
+            @Override
+            public void beginLevel( int level )
+            {
+                highestLevel.setValue( Integer.max( highestLevel.getValue(), level ) );
+            }
+        } );
+        return highestLevel.getValue();
     }
 }
