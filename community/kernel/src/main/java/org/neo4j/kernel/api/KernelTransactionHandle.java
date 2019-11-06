@@ -54,8 +54,7 @@ public interface KernelTransactionHandle
     long startTime();
 
     /**
-     * The start time of the underlying transaction. I.e. basically {@link System#nanoTime()} ()} when user
-     * called {@link org.neo4j.internal.kernel.api.Session#beginTransaction(KernelTransaction.Type)}.
+     * The start time of the underlying transaction.
      *
      * This can be used to measure elapsed time in a safe way that is not affected by system time changes.
      *

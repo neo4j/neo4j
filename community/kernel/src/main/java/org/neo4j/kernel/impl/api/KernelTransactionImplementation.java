@@ -170,8 +170,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean success;
     private volatile Status terminationReason;
     private long startTimeMillis;
-    private long startTimeNanos;
-    private long timeoutMillis;
+    private volatile long startTimeNanos;
+    private volatile long timeoutMillis;
     private long lastTransactionIdWhenStarted;
     private volatile long lastTransactionTimestampWhenStarted;
     private final Statistics statistics;
