@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +67,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
@@ -140,6 +143,7 @@ public class FulltextProceduresTest
     private DatabaseManagementServiceBuilder builder;
     private static final String PROP = "prop";
     private static final String EVENTUALLY_CONSISTENT = ", {eventually_consistent: 'true'}";
+    private static final String EVENTUALLY_CONSISTENT_PREFIXED = ", {`fulltext.eventually_consistent`: 'true'}";
     private DatabaseManagementService managementService;
 
     @Before
@@ -2119,6 +2123,36 @@ public class FulltextProceduresTest
         }
         assertQueryFindsIds( db, true, "nodes", "value" );
         assertQueryFindsIds( db, false, "rels", "value" );
+    }
+
+    @Test
+    public void prefixedFulltextIndexSettingMustBeRecognized()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) )
+                    .close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) )
+                    .close();
+            tx.commit();
+        }
+        awaitIndexesOnline();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Iterator<IndexDefinition> iterator = tx.schema().getIndexes().iterator();
+            while ( iterator.hasNext() )
+            {
+                IndexDefinition index = iterator.next();
+                Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
+                Object eventuallyConsistentObj = indexConfiguration.get( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT );
+                assertNotNull( eventuallyConsistentObj );
+                assertThat( eventuallyConsistentObj, instanceOf( Boolean.class ) );
+                assertEquals( true, eventuallyConsistentObj );
+            }
+            tx.commit();
+        }
     }
 
     @Test

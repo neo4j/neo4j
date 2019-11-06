@@ -26,6 +26,7 @@ import org.neo4j.graphdb.schema.IndexSetting;
  */
 public final class FulltextIndexSettingsKeys
 {
+    public static final String FULLTEXT_PREFIX = "fulltext.";
     public static final String ANALYZER = IndexSetting.FULLTEXT_ANALYZER.getSettingName();
     public static final String EVENTUALLY_CONSISTENT = IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName();
 

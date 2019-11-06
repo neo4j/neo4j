@@ -21,6 +21,7 @@ package org.neo4j.procedure.builtin;
 
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
@@ -63,6 +64,7 @@ import org.neo4j.util.FeatureToggles;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.FULLTEXT_PREFIX;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 import static org.neo4j.procedure.Mode.READ;
@@ -163,6 +165,7 @@ public class FulltextProcedures
             indexCreator = indexCreator.on( property );
         }
 
+        config = removeFulltextPrefixes( config );
         if ( !config.isEmpty() )
         {
             Map<IndexSetting,Object> parsedConfig = new EnumMap<>( IndexSetting.class );
@@ -312,6 +315,18 @@ public class FulltextProcedures
         }
         // If the index was created in this transaction, then we skip this check entirely.
         // We will get an exception later, when we try to get an IndexReader, so this is fine.
+    }
+
+    private static Map<String,String> removeFulltextPrefixes( Map<String,String> config )
+    {
+        Map<String,String> cleanMap = new HashMap<>();
+        for ( Map.Entry<String,String> entry : config.entrySet() )
+        {
+            String key = entry.getKey().replace( FULLTEXT_PREFIX, "" );
+            String value = entry.getValue();
+            cleanMap.put( key, value );
+        }
+        return cleanMap;
     }
 
     private abstract static class SpliteratorAdaptor<T> implements Spliterator<T>

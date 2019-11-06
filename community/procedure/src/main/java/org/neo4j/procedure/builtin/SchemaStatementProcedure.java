@@ -291,7 +291,6 @@ final class SchemaStatementProcedure
         for ( Pair<String,Value> entry : indexConfig.entries() )
         {
             String key = entry.getOne();
-            key = key.replace( "fulltext.", "" );
             String singleConfig = format( SINGLE_CONFIG, key, fulltextConfigValueAsString( entry.getTwo() ) );
             configString.add( singleConfig );
         }
