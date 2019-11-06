@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseStartupController;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
@@ -61,7 +59,6 @@ import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
 import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
-import org.neo4j.service.Services;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
@@ -122,38 +119,6 @@ public abstract class AbstractEditionModule
     public abstract SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 
     public abstract void createSecurityModule( GlobalModule globalModule );
-
-    protected static SecurityModule setupSecurityModule( GlobalModule globalModule, Log log, GlobalProcedures globalProcedures, String key )
-    {
-        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( globalModule, globalProcedures );
-        SecurityModule securityModule = Services.load( SecurityModule.class, key )
-                .orElseThrow( () ->
-                {
-                    String errorMessage = "Failed to load security module with key '" + key + "'.";
-                    log.error( errorMessage );
-                    return new IllegalArgumentException( errorMessage );
-                } );
-        try
-        {
-            securityModule.setup( securityModuleDependencies );
-            return securityModule;
-        }
-        catch ( Exception e )
-        {
-            String errorMessage = "Failed to load security module.";
-            String innerErrorMessage = e.getMessage();
-
-            if ( innerErrorMessage != null )
-            {
-                log.error( errorMessage + " Caused by: " + innerErrorMessage, e );
-            }
-            else
-            {
-                log.error( errorMessage, e );
-            }
-            throw new RuntimeException( errorMessage, e );
-        }
-    }
 
     protected NetworkConnectionTracker createConnectionTracker()
     {

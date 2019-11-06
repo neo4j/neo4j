@@ -19,28 +19,15 @@
  */
 package org.neo4j.kernel.api.security;
 
-import java.io.IOException;
-
-import org.neo4j.annotations.service.Service;
-import org.neo4j.common.DependencySatisfier;
-import org.neo4j.configuration.Config;
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.service.NamedService;
 
-@Service
-public abstract class SecurityModule implements Lifecycle, SecurityProvider, NamedService
+public abstract class SecurityModule implements Lifecycle, SecurityProvider
 {
     protected final LifeSupport life = new LifeSupport();
 
-    public abstract void setup( Dependencies dependencies ) throws KernelException, IOException;
+    public abstract void setup();
 
     @Override
     public void init()
@@ -64,22 +51,5 @@ public abstract class SecurityModule implements Lifecycle, SecurityProvider, Nam
     public void shutdown()
     {
         life.shutdown();
-    }
-
-    public interface Dependencies
-    {
-        LogService logService();
-
-        Config config();
-
-        GlobalProcedures procedures();
-
-        JobScheduler scheduler();
-
-        FileSystemAbstraction fileSystem();
-
-        DependencySatisfier dependencySatisfier();
-
-        GlobalTransactionEventListeners transactionEventListeners();
     }
 }

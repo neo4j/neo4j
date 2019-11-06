@@ -71,6 +71,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -90,8 +91,6 @@ import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
  */
 public class CommunityEditionModule extends StandaloneEditionModule
 {
-    public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
-
     protected final SslPolicyLoader sslPolicyLoader;
     protected final GlobalModule globalModule;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
@@ -229,8 +228,14 @@ public class CommunityEditionModule extends StandaloneEditionModule
         LifeSupport globalLife = globalModule.getGlobalLife();
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
         {
-            SecurityModule securityModule = setupSecurityModule( globalModule, globalModule.getLogService().getUserLog( getClass() ), globalProcedures,
-                    COMMUNITY_SECURITY_MODULE_ID );
+            SecurityModule securityModule = new CommunitySecurityModule(
+                    globalModule.getLogService(),
+                    globalModule.getGlobalConfig(),
+                    globalProcedures,
+                    globalModule.getFileSystem(),
+                    globalModule.getGlobalDependencies()
+            );
+            securityModule.setup();
             globalLife.add( securityModule );
             this.securityProvider = securityModule;
         }

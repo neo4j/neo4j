@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.File;
 import java.util.function.Supplier;
 
-import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
@@ -34,40 +34,58 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.time.Clocks;
 
-@ServiceProvider
 public class CommunitySecurityModule extends SecurityModule
 {
+    private final LogProvider logProvider;
+    private final Config config;
+    private final GlobalProcedures globalProcedures;
+    private final FileSystemAbstraction fileSystem;
+    private final DependencySatisfier dependencySatisfier;
     private BasicSystemGraphRealm authManager;
     private SystemGraphInitializer systemGraphInitializer;
     private DatabaseManager<?> databaseManager;
 
-    @Override
-    public String getName()
+    public CommunitySecurityModule(
+            LogService logService,
+            Config config,
+            GlobalProcedures procedures,
+            FileSystemAbstraction fileSystem,
+            DependencySatisfier dependencySatisfier )
     {
-        return "community-security-module";
+        this.logProvider = logService.getUserLogProvider();
+        this.config = config;
+        this.globalProcedures = procedures;
+        this.fileSystem = fileSystem;
+        this.dependencySatisfier = dependencySatisfier;
     }
 
     @Override
-    public void setup( Dependencies dependencies ) throws KernelException
+    public void setup()
     {
-        org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencies.dependencySatisfier();
+        org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencySatisfier;
         this.databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
         this.systemGraphInitializer = platformDependencies.resolveDependency( SystemGraphInitializer.class );
 
-        Config config = dependencies.config();
-        GlobalProcedures globalProcedures = dependencies.procedures();
-        LogProvider logProvider = dependencies.logService().getUserLogProvider();
-        FileSystemAbstraction fileSystem = dependencies.fileSystem();
-
         authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem );
 
-        life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
-        globalProcedures.registerProcedure( AuthProcedures.class );
+        life.add( dependencySatisfier.satisfyDependency( authManager ) );
+        try
+        {
+            globalProcedures.registerProcedure( AuthProcedures.class );
+        }
+        catch ( KernelException e )
+        {
+            Log log = logProvider.getLog( getClass() );
+            log.error( e.getMessage() );
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
