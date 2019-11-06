@@ -46,17 +46,13 @@ public class CappedLogger
 
     public CappedLogger( @Nonnull Log delegate )
     {
-        if ( delegate == null )
-        {
-            throw new IllegalArgumentException( "The delegate StringLogger cannot be null" );
-        }
         filter = new Filter();
         this.delegate = delegate;
     }
 
     public void debug( @Nonnull String msg )
     {
-        if ( filter.accept( msg, null ) )
+        if ( filter.accept() )
         {
             delegate.debug( msg );
         }
@@ -64,23 +60,23 @@ public class CappedLogger
 
     public void debug( @Nonnull String msg, @Nonnull Throwable cause )
     {
-        if ( filter.accept( msg, cause ) )
+        if ( filter.accept() )
         {
             delegate.debug( msg, cause );
         }
     }
 
-    public void info( @Nonnull String msg )
+    public void info( @Nonnull String msg, @Nullable Object... arguments )
     {
-        if ( filter.accept( msg, null ) )
+        if ( filter.accept() )
         {
-            delegate.info( msg );
+            delegate.info( msg, arguments );
         }
     }
 
     public void info( @Nonnull String msg, @Nonnull Throwable cause )
     {
-        if ( filter.accept( msg, cause ) )
+        if ( filter.accept() )
         {
             delegate.info( msg, cause );
         }
@@ -88,7 +84,7 @@ public class CappedLogger
 
     public void warn( @Nonnull String msg )
     {
-        if ( filter.accept( msg, null ) )
+        if ( filter.accept() )
         {
             delegate.warn( msg );
         }
@@ -96,15 +92,23 @@ public class CappedLogger
 
     public void warn( @Nonnull String msg, @Nonnull Throwable cause )
     {
-        if ( filter.accept( msg, cause ) )
+        if ( filter.accept() )
         {
             delegate.warn( msg, cause );
         }
     }
 
+    public void warn( @Nonnull String msg, @Nullable Object... arguments )
+    {
+        if ( filter.accept() )
+        {
+            delegate.warn( msg, arguments );
+        }
+    }
+
     public void error( @Nonnull String msg )
     {
-        if ( filter.accept( msg, null ) )
+        if ( filter.accept() )
         {
             delegate.error( msg );
         }
@@ -112,7 +116,7 @@ public class CappedLogger
 
     public void error( @Nonnull String msg, @Nonnull Throwable cause )
     {
-        if ( filter.accept( msg, cause ) )
+        if ( filter.accept() )
         {
             delegate.error( msg, cause );
         }
@@ -166,14 +170,6 @@ public class CappedLogger
         {
             throw new IllegalArgumentException( "The time limit must be positive" );
         }
-        if ( unit == null )
-        {
-            throw new IllegalArgumentException( "The time unit cannot be null" );
-        }
-        if ( clock == null )
-        {
-            throw new IllegalArgumentException( "The clock used for time limiting cannot be null" );
-        }
         filter = filter.setTimeLimit( time, unit, clock );
         return this;
     }
@@ -185,18 +181,6 @@ public class CappedLogger
     public CappedLogger unsetTimeLimit()
     {
         filter = filter.unsetTimeLimit();
-        return this;
-    }
-
-    /**
-     * Enable or disable filtering of duplicate messages. This filtering only looks at the previous message, so a
-     * sequence of identical messages will only have that message logged once, but a sequence of two alternating
-     * messages will get logged in full.
-     * @param enabled {@code true} if duplicates should be filtered, {@code false} if they should not.
-     */
-    public CappedLogger setDuplicateFilterEnabled( boolean enabled )
-    {
-        filter = filter.setDuplicateFilterEnabled( enabled );
         return this;
     }
 
@@ -213,28 +197,18 @@ public class CappedLogger
         private int countLimit;
         private long timeLimitMillis;
         private final Clock clock;
-        private boolean filterDuplicates;
 
         // Atomically updated
         private volatile int currentCount;
         private volatile long lastCheck;
 
-        // Read and updated together; guarded by synchronized(this) in checkDuplicate()
-        private String lastMessage;
-        private Throwable lastException;
-
         private Filter()
         {
-            this( false, 0, 0, 0, 0, null, false );
+            this( false, 0, 0, 0, 0, null );
         }
 
         private Filter(
-                boolean hasCountLimit,
-                int countLimit,
-                int currentCount,
-                long timeLimitMillis,
-                long lastCheck,
-                Clock clock, boolean filterDuplicates )
+                boolean hasCountLimit, int countLimit, int currentCount, long timeLimitMillis, long lastCheck, Clock clock )
         {
             this.hasCountLimit = hasCountLimit;
             this.countLimit = countLimit;
@@ -242,19 +216,16 @@ public class CappedLogger
             this.timeLimitMillis = timeLimitMillis;
             this.lastCheck = lastCheck;
             this.clock = clock;
-            this.filterDuplicates = filterDuplicates;
         }
 
         public Filter setCountLimit( int limit )
         {
-            return new Filter( true, limit, currentCount, timeLimitMillis, lastCheck, clock, filterDuplicates );
+            return new Filter( true, limit, currentCount, timeLimitMillis, lastCheck, clock );
         }
 
-        public boolean accept( @Nonnull String msg, @Nullable Throwable cause )
+        public boolean accept()
         {
-            return (!hasCountLimit || (getAndIncrementCurrentCount() < countLimit))
-                    && (clock == null || !checkExpiredAndSetLastCheckTime())
-                    && (!filterDuplicates || checkDuplicate( msg, cause ));
+            return (!hasCountLimit || (getAndIncrementCurrentCount() < countLimit)) && (clock == null || !checkExpiredAndSetLastCheckTime());
         }
 
         public int getAndIncrementCurrentCount()
@@ -281,65 +252,24 @@ public class CappedLogger
             return false;
         }
 
-        private synchronized boolean checkDuplicate( @Nonnull String msg, @Nullable Throwable cause )
-        {
-            String last = lastMessage;
-            Throwable exc = lastException;
-            if ( stringEqual( last, msg ) && sameClass( cause, exc ) && sameMsg( cause, exc ) )
-            {
-                // Duplicate! Filter it out.
-                return false;
-            }
-            else
-            {
-                // Distinct! Update and let it through.
-                lastMessage = msg;
-                lastException = cause;
-                return true;
-            }
-        }
-
-        private boolean sameMsg( @Nullable Throwable cause, @Nullable Throwable exc )
-        {
-            return ( cause == null && exc == null ) ||
-                    ( cause != null && exc != null && stringEqual( exc.getMessage(), cause.getMessage() ) );
-        }
-
-        private boolean stringEqual( String a, String b )
-        {
-            return a == null ? b == null : a.equals( b );
-        }
-
-        private boolean sameClass( @Nullable Throwable cause, @Nullable Throwable exc )
-        {
-            return ( cause == null && exc == null ) ||
-                    ( cause != null && exc != null && exc.getClass().equals( cause.getClass() ) );
-        }
-
         public Filter reset()
         {
-            return new Filter( hasCountLimit, countLimit, 0, timeLimitMillis, 0, clock, filterDuplicates );
+            return new Filter( hasCountLimit, countLimit, 0, timeLimitMillis, 0, clock );
         }
 
         public Filter unsetCountLimit()
         {
-            return new Filter( false, 0, currentCount, timeLimitMillis, lastCheck, clock, filterDuplicates );
+            return new Filter( false, 0, currentCount, timeLimitMillis, lastCheck, clock );
         }
 
         public Filter setTimeLimit( long time, @Nonnull TimeUnit unit, @Nonnull Clock clock )
         {
-            return new Filter(
-                    hasCountLimit, countLimit, currentCount, unit.toMillis( time ), lastCheck, clock, filterDuplicates );
+            return new Filter( hasCountLimit, countLimit, currentCount, unit.toMillis( time ), lastCheck, clock );
         }
 
         public Filter unsetTimeLimit()
         {
-            return new Filter( hasCountLimit, countLimit, currentCount, 0, lastCheck, null, filterDuplicates );
-        }
-
-        public Filter setDuplicateFilterEnabled( boolean enabled )
-        {
-            return new Filter( hasCountLimit, countLimit, currentCount, timeLimitMillis, lastCheck, clock, enabled );
+            return new Filter( hasCountLimit, countLimit, currentCount, 0, lastCheck, null );
         }
     }
 }

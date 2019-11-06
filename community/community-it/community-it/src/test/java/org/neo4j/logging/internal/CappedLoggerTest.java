@@ -116,34 +116,6 @@ public class CappedLoggerTest
         );
     }
 
-    private static class ExceptionWithoutStackTrace extends Exception
-    {
-        ExceptionWithoutStackTrace( String message )
-        {
-            super( message );
-        }
-
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
-        }
-    }
-
-    private static class ExceptionWithoutStackTrace2 extends Exception
-    {
-        ExceptionWithoutStackTrace2( String message )
-        {
-            super( message );
-        }
-
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
-        }
-    }
-
     private final String logName;
     private final LogMethod logMethod;
 
@@ -202,12 +174,6 @@ public class CappedLoggerTest
         logger = new CappedLogger( logProvider.getLog( CappedLogger.class ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void mustThrowIfDelegateIsNull()
-    {
-        new CappedLogger( null );
-    }
-
     @Test
     public void mustLogWithoutLimitConfiguration()
     {
@@ -250,24 +216,11 @@ public class CappedLoggerTest
         logger.setTimeLimit( -1, MILLISECONDS, Clocks.systemClock() );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnNullTimeUnit()
-    {
-        logger.setTimeLimit( 10, null, Clocks.systemClock() );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnNullClock()
-    {
-        logger.setTimeLimit( 10, TimeUnit.MILLISECONDS, null );
-    }
-
     @Test
     public void mustAllowConfigurationChaining()
     {
         logger.setCountLimit( 1 )
                 .setTimeLimit( 10, MILLISECONDS, Clocks.systemClock() )
-                .setDuplicateFilterEnabled( true )
                 .unsetCountLimit()
                 .unsetTimeLimit()
                 .setCountLimit( 1 );
@@ -378,99 +331,6 @@ public class CappedLoggerTest
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### CCC ###" ) ) );
         logProvider.rawMessageMatcher().assertContains( containsString( "### DDD ###" ) );
-    }
-
-    @Test
-    public void mustFilterDuplicateMessageAndNullException()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###" );
-        logMethod.log( logger, "### AAA ###" ); // duplicate
-        logMethod.log( logger, "### BBB ###" );
-        String[] lines = new String[]{"### AAA ###", "### BBB ###"};
-        assertLoggedLines( lines, lines.length );
-    }
-
-    @Test
-    public void mustFilterDuplicateMessageAndException()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_aaa" ) );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_aaa" ) ); // duplicate
-        logMethod.log( logger, "### BBB ###", new ExceptionWithoutStackTrace( "exc_bbb" ) );
-
-        String[] messages = new String[]{"### AAA ###", "### BBB ###"};
-        assertLoggedLines( messages, messages.length );
-    }
-
-    @Test
-    public void mustLogSameMessageAndDifferentExceptionWithDuplicateLimit()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_aaa" ) );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_bbb" ) ); // Different message
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace2( "exc_bbb" ) ); // Different type
-
-        String[] messages = new String[]{"### AAA ###", "### AAA ###", "### AAA ###"};
-        assertLoggedLines( messages, messages.length );
-    }
-
-    @Test
-    public void mustLogSameMessageAndNonNullExceptionWithDuplicateLimit()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###" );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) ); // Different message
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace2( null ) ); // Different type
-
-        String[] messages = new String[]{"### AAA ###", "### AAA ###", "### AAA ###"};
-        assertLoggedLines( messages, messages.length );
-    }
-
-    @Test
-    public void mustFilterSameMessageAndExceptionWithNullMessage()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) );
-        logMethod.log( logger, "### BBB ###" );
-
-        String[] messages = new String[]{"### AAA ###", "### BBB ###"};
-        assertLoggedLines( messages, messages.length );
-    }
-
-    @Test
-    public void mustLogDifferentMessageAndSameExceptionWithDuplicateLimit()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "xyz" ) );
-        logMethod.log( logger, "### BBB ###", new ExceptionWithoutStackTrace( "xyz" ) );
-
-        String[] messages = new String[]{"### AAA ###", "### BBB ###"};
-        assertLoggedLines( messages, messages.length );
-    }
-
-    @Test
-    public void mustLogDifferentMessageAndDifferentExceptionWithDuplicateLimit()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "foo" ) );
-        logMethod.log( logger, "### BBB ###", new ExceptionWithoutStackTrace( "bar" ) );
-
-        String[] messages = new String[]{"### AAA ###", "### BBB ###"};
-        assertLoggedLines( messages, messages.length );
-    }
-
-    @Test
-    public void mustLogSameMessageAndExceptionAfterResetWithDuplicateFilter()
-    {
-        logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "xyz" ) );
-        logger.reset();
-        logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "xyz" ) );
-
-        String[] messages = new String[]{"### AAA ###", "### AAA ###"};
-        assertLoggedLines( messages, messages.length );
     }
 
     private AssertableLogProvider.LogMatcher currentLog( AssertableLogProvider.LogMatcherBuilder logMatcherBuilder,
