@@ -660,6 +660,43 @@ public class FulltextIndexConsistencyCheckIT
         assertFalse( result.isSuccessful() );
     }
 
+    @Test
+    public void mustDiscoverRelationshipPropertyIndexMismatch() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "p1", "p2" ) ) ).close();
+            tx.success();
+        }
+        long relId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = db.createNode();
+            Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
+            rel.setProperty( "p1", "value" );
+            rel.setProperty( "p2", "value" );
+            relId = rel.getId();
+            tx.success();
+        }
+        //When
+        NeoStores stores = getNeoStores( db );
+        RelationshipRecord record = stores.getRelationshipStore().getRecord( relId, stores.getRelationshipStore().newRecord(), RecordLoad.NORMAL );
+        long propId = record.getNextProp();
+
+        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
+        propRecord.removePropertyBlock( 1 ); // remove property p2
+        stores.getPropertyStore().updateRecord( propRecord );
+
+        db.shutdown();
+
+        //Then
+        ConsistencyCheckService.Result result = checkConsistency();
+        assertFalse( result.isSuccessful() );
+    }
+
     @Ignore( "Turns out that this is not something that the consistency checker actually looks for, currently. " +
             "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency." )
     @Test
