@@ -46,6 +46,7 @@ import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
+import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -274,6 +275,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "The given authorization token is invalid or has expired" );
+            case HTTP_NOT_ACCEPTABLE:
+                throw insufficientSpaceErrorResponse( verbose, connection, fileSize );
             case HTTP_ACCEPTED:
                 // the import request was accepted, and the server has not seen this dump file, meaning the import request is a new operation.
                 return safeUrl( extractSignedURIFromResponse( verbose, connection ) );
@@ -628,7 +631,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         debugErrorResponse( true, connection );
         return new CommandFailed( "We encountered a problem while communicating to the Neo4j cloud system. \n" +
                 "You can re-try using the existing dump by running this command: \n" +
-                String.format( "neo4j-admin push-to-cloud --%s=%s --$s=%s", ARG_DUMP, dump.toFile().getAbsolutePath(), ARG_BOLT_URI, boltUri ) );
+                String.format( "neo4j-admin push-to-cloud --%s=%s --%s=%s", ARG_DUMP, dump.toFile().getAbsolutePath(), ARG_BOLT_URI, boltUri ) );
     }
 
     private CommandFailed updatePluginErrorResponse( HttpURLConnection connection ) throws IOException
@@ -637,6 +640,16 @@ public class HttpCopier implements PushToCloudCommand.Copier
         return new CommandFailed( "We encountered a problem while communicating to the Neo4j cloud system. " +
                 "Please check that you are using the latest version of the push-to-cloud plugin and upgrade if necessary. " +
                 "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal." );
+    }
+
+    private CommandFailed insufficientSpaceErrorResponse( boolean verbose, HttpURLConnection connection, long fileSize )
+            throws IOException
+    {
+        debugErrorResponse( verbose, connection );
+        return new CommandFailed(
+                format( "There is insufficient space in your Neo4j Aura instance to upload your data. "
+                        + "Please go to the Neo4j Aura Console to increase the size of your database "
+                        + "with at least %.1f GB of storage.", fileSize / (double) (1024 * 1024 * 1024) ) );
     }
 
     private CommandFailed unexpectedResponse( boolean verbose, HttpURLConnection connection, String requestDescription ) throws IOException
