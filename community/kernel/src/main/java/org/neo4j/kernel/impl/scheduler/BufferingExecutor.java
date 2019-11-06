@@ -97,7 +97,6 @@ public class BufferingExecutor implements DeferredExecutor
             if ( realExecutor != null )
             {
                 realExecutor.execute( command );
-                return;
             }
             else
             {
