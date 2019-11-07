@@ -73,20 +73,23 @@ public abstract class Indicator
     static class Textual extends Indicator
     {
         static final int DOTS_PER_LINE = 20;
+        static final char DEFAULT_DELTA_CHARACTER = '∆';
 
         private final String process;
         private final PrintWriter out;
         private final boolean deltaTimes;
         private final SystemNanoClock clock;
+        private final char deltaCharacter;
         private long lastReportTime;
 
-        Textual( String process, PrintWriter out, boolean deltaTimes, SystemNanoClock clock )
+        Textual( String process, PrintWriter out, boolean deltaTimes, SystemNanoClock clock, char deltaCharacter )
         {
             super( 200 );
             this.process = process;
             this.out = out;
             this.deltaTimes = deltaTimes;
             this.clock = clock;
+            this.deltaCharacter = deltaCharacter;
         }
 
         @Override
@@ -123,7 +126,7 @@ public abstract class Indicator
                 out.printf( " %3d%%", progress / 2 );
                 if ( deltaTimes )
                 {
-                    out.printf( " ∆%s", duration( TimeUnit.NANOSECONDS.toMillis( time ) ) );
+                    out.printf( " %c%s", deltaCharacter, duration( TimeUnit.NANOSECONDS.toMillis( time ) ) );
                 }
                 out.printf( "%n" );
                 lastReportTime = currentTime;

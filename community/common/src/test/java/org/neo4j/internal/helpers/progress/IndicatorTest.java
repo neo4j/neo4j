@@ -40,7 +40,7 @@ class IndicatorTest
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintWriter out = new PrintWriter( bout );
         FakeClock clock = new FakeClock();
-        Indicator.Textual indicator = new Indicator.Textual( "Test", out, true, clock );
+        Indicator.Textual indicator = new Indicator.Textual( "Test", out, true, clock, 'D' );
 
         // when
         int line = 0;
@@ -61,14 +61,14 @@ class IndicatorTest
         // then
         out.flush();
         String output = bout.toString();
-        assertThat( output, containsString( "10% ∆1s" ) );
-        assertThat( output, containsString( "20% ∆100ms" ) );
-        assertThat( output, containsString( "40% ∆0ms" ) );
-        assertThat( output, containsString( "50% ∆0ms" ) );
-        assertThat( output, containsString( "60% ∆0ms" ) );
-        assertThat( output, containsString( "70% ∆0ms" ) );
-        assertThat( output, containsString( "80% ∆0ms" ) );
-        assertThat( output, containsString( "90% ∆0ms" ) );
-        assertThat( output, containsString( "100% ∆3s" ) );
+        assertThat( output, containsString( "10% D1s" ) );
+        assertThat( output, containsString( "20% D100ms" ) );
+        assertThat( output, containsString( "40% D0ms" ) );
+        assertThat( output, containsString( "50% D0ms" ) );
+        assertThat( output, containsString( "60% D0ms" ) );
+        assertThat( output, containsString( "70% D0ms" ) );
+        assertThat( output, containsString( "80% D0ms" ) );
+        assertThat( output, containsString( "90% D0ms" ) );
+        assertThat( output, containsString( "100% D3s" ) );
     }
 }

@@ -70,7 +70,7 @@ public abstract class ProgressMonitorFactory
             @Override
             protected Indicator newIndicator( String process )
             {
-                return new Indicator.Textual( process, writer(), deltaTimes, Clocks.nanoClock() );
+                return new Indicator.Textual( process, writer(), deltaTimes, Clocks.nanoClock(), Indicator.Textual.DEFAULT_DELTA_CHARACTER );
             }
 
             private PrintWriter writer()
