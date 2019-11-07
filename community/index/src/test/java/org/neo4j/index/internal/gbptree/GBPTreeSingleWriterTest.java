@@ -42,6 +42,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
@@ -71,10 +72,9 @@ class GBPTreeSingleWriterTest
     }
 
     @AfterEach
-    void tearDownPageCache()
+    void tearDownPageCache() throws Exception
     {
-        pageCache.close();
-        jobScheduler.close();
+        closeAll( pageCache, jobScheduler );
     }
 
     @Test

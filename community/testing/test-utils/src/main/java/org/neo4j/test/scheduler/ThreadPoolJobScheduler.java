@@ -37,6 +37,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Simple test scheduler implementation that is based on a cached thread pool.
@@ -137,6 +138,27 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     public void shutdown()
     {
         executor.shutdown();
+        if ( isNotShutdown( executor ) )
+        {
+            executor.shutdownNow();
+            if ( isNotShutdown( executor ) )
+            {
+                throw new IllegalStateException( "Executor did not shutdown in time: " + executor );
+            }
+        }
+    }
+
+    private static boolean isNotShutdown( ExecutorService executor )
+    {
+        try
+        {
+            return !executor.awaitTermination( 20, SECONDS );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            return true;
+        }
     }
 
     private static class FutureJobHandle<V> implements JobHandle
