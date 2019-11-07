@@ -132,9 +132,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private void deleteDumpFile( boolean verbose, Path source ) throws IOException, InterruptedException, CommandFailed
+    private void deleteDumpFile( boolean verbose, Path source )
     {
-        source.toFile().deleteOnExit();
+        source.toFile().delete();
     }
 
     private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken ) throws IOException, InterruptedException, CommandFailed
