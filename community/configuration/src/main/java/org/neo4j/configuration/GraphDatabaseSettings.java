@@ -1125,6 +1125,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Boolean> force_small_id_cache = newBuilder( "unsupported.dbms.force_small_id_cache", BOOL, Boolean.FALSE ).build();
 
+    @Internal
+    public static final Setting<Boolean> consistency_check_on_apply =
+            newBuilder( "unsupported.dbms.storage.consistency_check_on_apply", BOOL, Boolean.FALSE ).build();
+
     /**
      * Default settings for server. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default server settings that you can pass to the builders.

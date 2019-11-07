@@ -107,6 +107,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final SchemaRuleAccess schemaRuleAccess;
     private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
+    private final boolean consistencyCheckApply;
     private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
@@ -160,6 +161,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
             countsStore = openCountsStore( pageCache, databaseLayout, config, logProvider, recoveryCleanupWorkCollector );
+
+            consistencyCheckApply = config.get( GraphDatabaseSettings.consistency_check_on_apply );
         }
         catch ( Throwable failure )
         {
@@ -313,6 +316,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
+        if ( consistencyCheckApply )
+        {
+            appliers.add( new ConsistencyCheckingBatchApplier( neoStores ) );
+        }
         appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs ) );
         if ( mode.needsHighIdTracking() )
         {
