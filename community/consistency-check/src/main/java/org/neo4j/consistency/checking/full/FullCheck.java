@@ -33,7 +33,6 @@ import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.newchecker.RecordStorageConsistencyChecker;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.consistency.report.ConsistencyReporter.Monitor;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
@@ -100,16 +99,10 @@ public class FullCheck
     public ConsistencySummaryStatistics execute( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier,
             Log log ) throws ConsistencyCheckIncompleteException
     {
-        return execute( pageCache, stores, countsSupplier, log, NO_MONITOR );
-    }
-
-    ConsistencySummaryStatistics execute( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log,
-            Monitor reportMonitor ) throws ConsistencyCheckIncompleteException
-    {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log ), summary );
         CountsStore countsStore = getCountsStore( countsSupplier, log, summary );
-        execute( pageCache, stores, report, reportMonitor, countsStore );
+        execute( pageCache, stores, report, countsStore );
 
         if ( !summary.isConsistent() )
         {
@@ -146,8 +139,8 @@ public class FullCheck
         return countsStore;
     }
 
-    void execute( PageCache pageCache, final DirectStoreAccess directStoreAccess,
-            final InconsistencyReport report, Monitor reportMonitor, CountsStore countsStore ) throws ConsistencyCheckIncompleteException
+    void execute( PageCache pageCache, final DirectStoreAccess directStoreAccess, final InconsistencyReport report, CountsStore countsStore )
+            throws ConsistencyCheckIncompleteException
     {
         try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(), samplingConfig ) )
         {
@@ -160,11 +153,11 @@ public class FullCheck
                 OwnerCheck ownerCheck = new OwnerCheck( flags.isCheckPropertyOwners() );
                 CountsBuilderDecorator countsBuilder = new CountsBuilderDecorator( directStoreAccess.nativeStores() );
                 CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder );
-                final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, reportMonitor );
+                final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, NO_MONITOR );
                 final StoreAccess nativeStores = directStoreAccess.nativeStores();
                 StoreProcessor processEverything = new StoreProcessor( decorator, reporter, Stage.SEQUENTIAL_FORWARD, cacheAccess );
                 ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full Consistency Check" );
-                MultiPassStore.Factory multiPass = new MultiPassStore.Factory( decorator, recordAccess, cacheAccess, report, reportMonitor );
+                MultiPassStore.Factory multiPass = new MultiPassStore.Factory( decorator, recordAccess, cacheAccess, report, NO_MONITOR );
                 ConsistencyCheckTasks taskCreator =
                         new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(),
                                 indexes, multiPass, reporter, threads );
@@ -182,8 +175,9 @@ public class FullCheck
             }
             else
             {
-                try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache, directStoreAccess.nativeStores().getRawNeoStores(),
-                        countsStore, directStoreAccess.labelScanStore(), indexes, report, progressFactory, config, threads, verbose, flags ) )
+                try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
+                        directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(), indexes, report, progressFactory,
+                        config, threads, verbose, flags ) )
                 {
                     checker.check();
                 }
@@ -202,7 +196,7 @@ public class FullCheck
         return idGenerators;
     }
 
-    static RecordAccess recordAccess( StoreAccess store, CacheAccess cacheAccess )
+    private static RecordAccess recordAccess( StoreAccess store, CacheAccess cacheAccess )
     {
         return new CacheSmallStoresRecordAccess(
                 new DirectRecordAccess( store, cacheAccess ),

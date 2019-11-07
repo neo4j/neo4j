@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -110,7 +109,7 @@ public class ExecutionOrderIntegrationTest
 
         // when
         singlePass.execute( fixture.getInstantiatedPageCache(), fixture.directStoreAccess(),
-                new InconsistencyReport( logger, singlePassSummary ), NO_MONITOR, fixture.counts().get() );
+                new InconsistencyReport( logger, singlePassSummary ), fixture.counts().get() );
 
         // then
         verifyZeroInteractions( logger );
