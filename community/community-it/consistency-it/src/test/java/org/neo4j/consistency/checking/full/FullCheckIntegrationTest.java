@@ -35,7 +35,6 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -62,6 +61,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -2127,7 +2127,7 @@ public class FullCheckIntegrationTest
 
     protected Map<Setting<?>,Object> getSettings()
     {
-        return new HashMap<>();
+        return MapUtil.genericMap( GraphDatabaseSettings.experimental_consistency_checker, false );
     }
 
     private GraphStoreFixture createFixture()
