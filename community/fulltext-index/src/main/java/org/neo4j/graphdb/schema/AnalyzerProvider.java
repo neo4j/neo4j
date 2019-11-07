@@ -20,6 +20,11 @@
 package org.neo4j.graphdb.schema;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.Service;
@@ -89,5 +94,17 @@ public abstract class AnalyzerProvider implements NamedService
     public String description()
     {
         return "";
+    }
+
+    public List<String> stopwords()
+    {
+        Analyzer analyzer = createAnalyzer();
+        if ( analyzer instanceof StopwordAnalyzerBase )
+        {
+            StopwordAnalyzerBase stopwordAnalyzer = (StopwordAnalyzerBase) analyzer;
+            CharArraySet stopwords = stopwordAnalyzer.getStopwordSet();
+            return stopwords.stream().map( obj -> new String( (char[]) obj ) ).collect( Collectors.toList() );
+        }
+        return List.of();
     }
 }

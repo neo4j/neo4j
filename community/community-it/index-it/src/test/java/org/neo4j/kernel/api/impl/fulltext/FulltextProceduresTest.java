@@ -122,7 +122,6 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asC
 
 public class FulltextProceduresTest
 {
-
     private static final String SCORE = "score";
     private static final String NODE = "node";
     private static final String RELATIONSHIP = "relationship";
@@ -881,6 +880,43 @@ public class FulltextProceduresTest
                     if ( !row.containsKey( "description" ) || !(description instanceof String) || ((String) description).trim().isEmpty() )
                     {
                         fail( "Found no description for analyzer: " + row );
+                    }
+                }
+            }
+            tx.commit();
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void analyzersMustKnowTheirStopWords()
+    {
+        db = createDatabase();
+
+        // Verify that analyzers have stop-words.
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Result result = tx.execute( LIST_AVAILABLE_ANALYZERS ) )
+            {
+                while ( result.hasNext() )
+                {
+                    Map<String,Object> row = result.next();
+                    System.out.println( "row = " + row );
+                    Object stopwords = row.get( "stopwords" );
+                    if ( !row.containsKey( "stopwords" ) || !(stopwords instanceof List) )
+                    {
+                        fail( "Found no stop-words list for analyzer: " + row );
+                    }
+
+                    List<String> words = (List<String>) stopwords;
+                    String analyzerName = (String) row.get( "analyzer" );
+                    if ( analyzerName.equals( "english" ) || analyzerName.equals( "standard" ) )
+                    {
+                        assertThat( words, hasItem( "and" ) );
+                    }
+                    else if ( analyzerName.equals( "standard-no-stop-words" ) )
+                    {
+                        assertTrue( words.isEmpty() );
                     }
                 }
             }

@@ -24,6 +24,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -38,6 +39,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
@@ -103,8 +105,7 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.listAvailableAnalyzers", mode = READ )
     public Stream<AvailableAnalyzer> listAvailableAnalyzers()
     {
-        return accessor.listAvailableAnalyzers()
-                .map( p -> new AvailableAnalyzer( p.getName(), p.description() ) );
+        return accessor.listAvailableAnalyzers().map( AvailableAnalyzer::new );
     }
 
     @SystemProcedure
@@ -444,11 +445,13 @@ public class FulltextProcedures
     {
         public final String analyzer;
         public final String description;
+        public final List<String> stopwords;
 
-        AvailableAnalyzer( String name, String description )
+        AvailableAnalyzer( AnalyzerProvider provider )
         {
-            this.analyzer = name;
-            this.description = description;
+            this.analyzer = provider.getName();
+            this.description = provider.description();
+            this.stopwords = provider.stopwords();
         }
     }
 }
