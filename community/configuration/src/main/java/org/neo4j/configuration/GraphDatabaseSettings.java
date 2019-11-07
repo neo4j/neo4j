@@ -250,7 +250,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Number of uses before an expression is considered for compilation" )
     @Internal
-    public static final Setting<Integer> cypher_expression_recompilation_limit = newBuilder( "unsupported.cypher.expression_recompilation_limit", INT, 1 )
+    public static final Setting<Integer> cypher_expression_recompilation_limit = newBuilder( "unsupported.cypher.expression_recompilation_limit", INT, 10 )
             .addConstraint( min( 0 ) )
             .build();
 
