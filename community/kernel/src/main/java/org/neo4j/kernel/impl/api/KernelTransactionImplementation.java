@@ -158,6 +158,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TxState txState;
+    private final SchemaReleaseVisitor schemaReleaseVisitor;
     private volatile TransactionWriteState writeState;
     private final KernelStatement currentStatement;
     private SecurityContext securityContext;
@@ -214,6 +215,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storageReader = storageEngine.newReader();
         this.commandCreationContext = storageEngine.newCommandCreationContext();
+        this.schemaReleaseVisitor = new SchemaReleaseVisitor( commandCreationContext );
         this.storageEngine = storageEngine;
         this.pool = pool;
         this.clocks = new ClockContext( clock );
@@ -768,14 +770,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // So what we currently do is to release the readily available lists of created nodes/relationships.
                     commandCreationContext.releaseNodes( txState.addedAndRemovedNodes().getAdded().longIterator() );
                     commandCreationContext.releaseRelationships( txState.addedAndRemovedRelationships().getAdded().longIterator() );
-                    txState.accept( new TxStateVisitor.Adapter()
-                    {
-                        @Override
-                        public void visitAddedIndex( IndexDescriptor index )
-                        {
-                            commandCreationContext.releaseSchema( index.getId() );
-                        }
-                    } );
+                    txState.accept( schemaReleaseVisitor );
                 }
                 catch ( ConstraintValidationException | CreateConstraintFailureException e )
                 {
@@ -1321,6 +1316,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
         {
             return SCHEMA;
+        }
+    }
+
+    private static class SchemaReleaseVisitor extends TxStateVisitor.Adapter
+    {
+        private final CommandCreationContext creationContext;
+
+        private SchemaReleaseVisitor( CommandCreationContext creationContext )
+        {
+            this.creationContext = creationContext;
+        }
+
+        @Override
+        public void visitAddedIndex( IndexDescriptor index )
+        {
+            creationContext.releaseSchema( index.getId() );
         }
     }
 }
