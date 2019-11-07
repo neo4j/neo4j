@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.helpers.LazyIterable
 import org.neo4j.cypher.internal.compiler.planner.logical.{ProjectingSelector, Selector}
 import org.neo4j.time.Stopwatch
@@ -124,6 +125,11 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
       iterations += 1
       monitor.startIteration(iterations)
       val largestFinished = generateBestCandidates(toDo.size)
+      if (largestFinished <= 0) throw new IllegalStateException(
+        s"""Unfortunately, the planner was unable to find a plan within the constraints provided.
+           |Try increasing the config values `${GraphDatabaseSettings.cypher_idp_solver_table_threshold.name()}`
+           |and `${GraphDatabaseSettings.cypher_idp_solver_duration_threshold.name()}` to allow
+           |for a larger sub-plan table and longer planning time.""".stripMargin)
       val bestGoal = findBestCandidateInBlock(largestFinished)
       monitor.endIteration(iterations, largestFinished, table.size)
       compactBlock(bestGoal)
