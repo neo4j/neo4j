@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class CollectorStateMachineTest
 {
