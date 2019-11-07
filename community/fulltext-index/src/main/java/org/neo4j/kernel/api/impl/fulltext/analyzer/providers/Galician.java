@@ -28,11 +28,6 @@ import org.neo4j.graphdb.schema.AnalyzerProvider;
 @ServiceProvider
 public class Galician extends AnalyzerProvider
 {
-    static
-    {
-        cleanStopWordSet( GalicianAnalyzer.getDefaultStopSet() );
-    }
-
     public Galician()
     {
         super( "galician" );
@@ -41,7 +36,7 @@ public class Galician extends AnalyzerProvider
     @Override
     public Analyzer createAnalyzer()
     {
-        return new GalicianAnalyzer();
+        return new GalicianAnalyzer( cleanStopWordSet( GalicianAnalyzer.getDefaultStopSet() ) );
     }
 
     @Override

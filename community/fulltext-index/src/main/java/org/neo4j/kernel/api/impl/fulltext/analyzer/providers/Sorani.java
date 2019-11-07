@@ -28,11 +28,6 @@ import org.neo4j.graphdb.schema.AnalyzerProvider;
 @ServiceProvider
 public class Sorani extends AnalyzerProvider
 {
-    static
-    {
-        cleanStopWordSet( SoraniAnalyzer.getDefaultStopSet() );
-    }
-
     public Sorani()
     {
         super( "sorani" );
@@ -41,7 +36,7 @@ public class Sorani extends AnalyzerProvider
     @Override
     public Analyzer createAnalyzer()
     {
-        return new SoraniAnalyzer();
+        return new SoraniAnalyzer( cleanStopWordSet( SoraniAnalyzer.getDefaultStopSet() ) );
     }
 
     @Override

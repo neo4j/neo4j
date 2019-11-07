@@ -110,31 +110,21 @@ public abstract class AnalyzerProvider implements NamedService
     }
 
     /**
-     * Remove items that don't look like stop-words, from the given stop-word set.
+     * Produce a new stop-word set similar to the given set, but where unclean elements have been removed.
      * Stop-word list files often contain comments, blank lines, excess white-space, etc.
      * When these files are parsed, these unclean data artifacts can end up in our stop-word sets when they should not.
-     * This method takes a <em>mutable</em> stop-word set, and removes these unclean elements.
-     * <p>
-     * <strong>NOTE:</strong> When using this method on the <em>default stop-word set</em> of an analyzer,
-     * extra case must be taken because it involves mutating shared state.
-     * The safest way to do this, is to make this call in the {@code static} initializer of a single class
-     * (the {@code AnalyzerProvider} implementation is a good candidate for that)
-     * and have all code-paths go through this class for constructing their analyzers.
-     * This will ensure that an analyzers default stop-word set is modified only once, only by a single thread,
-     * and is always finished before any analyzer instances are constructed.
+     * The passed-in stop-word set is not changed.
      *
      * @param stopSet The stop-word set to clean up.
+     * @return the cleaned-up stop-word set.
      */
-    public static void cleanStopWordSet( CharArraySet stopSet )
+    public static CharArraySet cleanStopWordSet( CharArraySet stopSet )
     {
-        Set<String> toKeep = stopSet.stream()
+        CharArraySet result = new CharArraySet( stopSet.size(), false );
+        stopSet.stream()
                 .map( cs -> new String( (char[]) cs ).trim() )
-                .filter( s -> !( s.isBlank() || s.contains( "#" ) || s.contains( " " ) ) )
-                .collect( Collectors.toSet() );
-        if ( toKeep.size() != stopSet.size() )
-        {
-            stopSet.clear();
-            stopSet.addAll( toKeep );
-        }
+                .filter( s -> !(s.isBlank() || s.contains( "#" ) || s.contains( " " )) )
+                .forEach( result::add );
+        return result;
     }
 }

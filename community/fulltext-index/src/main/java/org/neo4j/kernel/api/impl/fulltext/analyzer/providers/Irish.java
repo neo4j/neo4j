@@ -28,11 +28,6 @@ import org.neo4j.graphdb.schema.AnalyzerProvider;
 @ServiceProvider
 public class Irish extends AnalyzerProvider
 {
-    static
-    {
-        cleanStopWordSet( IrishAnalyzer.getDefaultStopSet() );
-    }
-
     public Irish()
     {
         super( "irish" );
@@ -41,7 +36,7 @@ public class Irish extends AnalyzerProvider
     @Override
     public Analyzer createAnalyzer()
     {
-        return new IrishAnalyzer();
+        return new IrishAnalyzer( cleanStopWordSet( IrishAnalyzer.getDefaultStopSet() ) );
     }
 
     @Override
