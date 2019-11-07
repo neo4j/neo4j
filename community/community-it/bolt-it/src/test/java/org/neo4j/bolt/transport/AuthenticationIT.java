@@ -166,12 +166,15 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
+        // Then
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+
         // change password
         connection.send( util.defaultRunAutoCommitTx( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", singletonMap( "password", "secret" ),
                 SYSTEM_DATABASE_NAME ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // When login again with the new password
