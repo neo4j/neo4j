@@ -119,7 +119,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                         input.nextValue();
                         String currentName = input.getCurrentName();
-                        switch ( currentName )
+                        switch ( currentName.trim() )
                         {
                         case "statement":
                             statement = input.readValueAs( String.class );
