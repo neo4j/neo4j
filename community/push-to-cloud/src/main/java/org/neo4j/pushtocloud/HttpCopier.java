@@ -123,11 +123,18 @@ public class HttpCopier implements PushToCloudCommand.Copier
             triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), boltUri, source, crc32Sum, bearerTokenHeader );
 
             doStatusPolling( verbose, consoleURL, bearerToken );
+
+            deleteDumpFile( verbose, source );
         }
         catch ( InterruptedException | IOException e )
         {
             throw new CommandFailed( e.getMessage(), e );
         }
+    }
+
+    private void deleteDumpFile( boolean verbose, Path source ) throws IOException, InterruptedException, CommandFailed
+    {
+        source.toFile().deleteOnExit();
     }
 
     private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken ) throws IOException, InterruptedException, CommandFailed
