@@ -22,6 +22,8 @@ package org.neo4j.io.pagecache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +49,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsIn.oneOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -925,6 +928,36 @@ public abstract class PageSwapperTest
     }
 
     @Test
+    @DisabledOnOs( OS.LINUX )
+    void directIOAllowedOnlyOnLinux() throws IOException
+    {
+        PageSwapperFactory factory = createSwapperFactory();
+        File file = file( "file" );
+        var e = assertThrows( IllegalArgumentException.class, () -> createSwapperAndFile( factory, file, true ) );
+        assertThat( e.getMessage(), containsString( "Linux" ) );
+    }
+
+    @Test
+    void doNotAllowDirectIOForNonPagesNotAlignedWithBlockSize() throws IOException
+    {
+        PageSwapperFactory factory = createSwapperFactory();
+        File file = file( "file" );
+        checkUnsupportedPageSize( factory, file, 17 );
+        checkUnsupportedPageSize( factory, file, 115 );
+        checkUnsupportedPageSize( factory, file, 218 );
+        checkUnsupportedPageSize( factory, file, 419 );
+        checkUnsupportedPageSize( factory, file, 524 );
+        checkUnsupportedPageSize( factory, file, 1023 );
+        checkUnsupportedPageSize( factory, file, 4097 );
+    }
+
+    private void checkUnsupportedPageSize( PageSwapperFactory factory, File file, int pageSize )
+    {
+        var e = assertThrows( IllegalArgumentException.class, () -> createSwapperAndFile( factory, file, pageSize, true ) );
+        assertThat( e.getMessage(), containsString( "block" ) );
+    }
+
+    @Test
     void writeMustThrowForNegativeFilePageIds() throws Exception
     {
         File file = file( "file" );
@@ -1132,9 +1165,10 @@ public abstract class PageSwapperTest
             int filePageSize,
             PageEvictionCallback callback,
             boolean createIfNotExist,
-            boolean noChannelStriping ) throws IOException
+            boolean noChannelStriping,
+            boolean useDirectIO ) throws IOException
     {
-        PageSwapper swapper = factory.createPageSwapper( file, filePageSize, callback, createIfNotExist, noChannelStriping );
+        PageSwapper swapper = factory.createPageSwapper( file, filePageSize, callback, createIfNotExist, noChannelStriping, useDirectIO );
         openedSwappers.add( swapper );
         return swapper;
     }
@@ -1215,10 +1249,26 @@ public abstract class PageSwapperTest
         return createSwapperAndFile( factory, file, cachePageSize() );
     }
 
+    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, boolean useDirectIO ) throws IOException
+    {
+        return createSwapper( factory, file, cachePageSize(), NO_CALLBACK, true, false, useDirectIO );
+    }
+
+    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, int filePageSize, boolean useDirectIO ) throws IOException
+    {
+        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, false, useDirectIO );
+    }
+
     private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, int filePageSize )
             throws IOException
     {
-        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, false );
+        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, false, false );
+    }
+
+    public PageSwapper createSwapper( PageSwapperFactory factory, File file, int filePageSize, PageEvictionCallback callback, boolean createIfNotExist,
+            boolean noChannelStriping ) throws IOException
+    {
+        return createSwapper( factory, file, filePageSize, callback, createIfNotExist, noChannelStriping, false );
     }
 
     private File file( String filename ) throws IOException

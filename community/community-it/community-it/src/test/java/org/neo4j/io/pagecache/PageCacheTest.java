@@ -4510,9 +4510,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             @Override
             public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist,
-                    boolean noChannelStriping ) throws IOException
+                    boolean noChannelStriping, boolean useDirectIO ) throws IOException
             {
-                PageSwapper swapper = super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, noChannelStriping );
+                PageSwapper swapper = super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, noChannelStriping, useDirectIO );
                 return new DelegatingPageSwapper( swapper )
                 {
                     @Override

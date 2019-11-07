@@ -152,6 +152,13 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public long getBlockSize( File file ) throws IOException
+    {
+        adversary.injectFailure( SecurityException.class );
+        return delegate.getBlockSize( file );
+    }
+
+    @Override
     public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         adversary.injectFailure( SecurityException.class, FileNotFoundException.class, IOException.class );

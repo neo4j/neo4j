@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import com.sun.nio.file.ExtendedOpenOption;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
@@ -31,6 +32,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.util.HashSet;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -43,6 +45,8 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
@@ -180,8 +184,8 @@ public class SingleFilePageSwapper implements PageSwapper
     @SuppressWarnings( "unused" ) // Accessed through unsafe
     private volatile long fileSize;
 
-    SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean noChannelStriping )
-            throws IOException
+    SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean noChannelStriping,
+            boolean useDirectIO ) throws IOException
     {
         this.fs = fs;
         this.file = file;
@@ -195,10 +199,16 @@ public class SingleFilePageSwapper implements PageSwapper
             this.channelStripeCount = GLOBAL_CHANNEL_STRIPE_COUNT;
             this.channelStripeMask = GLOBAL_CHANNEL_STRIPE_MASK;
         }
+        if ( useDirectIO )
+        {
+            validateDirectIOPossibility( file, filePageSize );
+        }
         this.channels = new StoreChannel[channelStripeCount];
         for ( int i = 0; i < channelStripeCount; i++ )
         {
-            channels[i] = fs.write( file );
+            var openOptions = new HashSet<>( WRITE_OPTIONS );
+            openOptions.add( ExtendedOpenOption.DIRECT );
+            channels[i] = useDirectIO ? fs.open( file, openOptions ) : fs.write( file );
         }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
@@ -214,6 +224,21 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         hasPositionLock = channels[0].getClass() == StoreFileChannel.class
                 && StoreFileChannelUnwrapper.unwrap( channels[0] ).getClass() == CLS_FILE_CHANNEL_IMPL;
+    }
+
+    private void validateDirectIOPossibility( File file, int filePageSize ) throws IOException
+    {
+        if ( !IS_OS_LINUX )
+        {
+            throw new IllegalArgumentException( "DirectIO support is available only on Linux." );
+        }
+        final long blockSize = fs.getBlockSize( file );
+        long value = filePageSize / blockSize;
+        if ( value * blockSize != filePageSize )
+        {
+            throw new IllegalArgumentException( "Direct IO can be used only when page cache page size is a multiplier of a block size. "
+                    + "Page cache size: " + filePageSize + ", block size: " + blockSize );
+        }
     }
 
     private void increaseFileSizeTo( long newFileSize )

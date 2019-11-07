@@ -262,4 +262,10 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     {
         return fs.toString();
     }
+
+    @Override
+    public long getBlockSize( File file ) throws IOException
+    {
+        return fs.getBlockSize( file );
+    }
 }

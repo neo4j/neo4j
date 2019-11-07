@@ -128,6 +128,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public long getBlockSize( File file ) throws IOException
+    {
+        return chooseFileSystem( file ).getBlockSize( file );
+    }
+
+    @Override
     public boolean deleteFile( File fileName )
     {
         return chooseFileSystem( fileName ).deleteFile( fileName );

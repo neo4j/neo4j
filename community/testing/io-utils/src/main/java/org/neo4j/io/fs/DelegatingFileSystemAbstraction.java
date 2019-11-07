@@ -176,6 +176,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public long getBlockSize( File file ) throws IOException
+    {
+        return delegate.getBlockSize( file );
+    }
+
+    @Override
     public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
         return delegate.openAsWriter( fileName, charset, append );

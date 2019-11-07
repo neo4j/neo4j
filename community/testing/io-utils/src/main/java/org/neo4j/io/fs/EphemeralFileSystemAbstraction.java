@@ -246,6 +246,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public long getBlockSize( File file ) throws IOException
+    {
+        return 512;
+    }
+
+    @Override
     public boolean fileExists( File file )
     {
         file = canonicalFile( file );

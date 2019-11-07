@@ -89,6 +89,8 @@ public interface FileSystemAbstraction extends Closeable
 
     long getFileSize( File fileName );
 
+    long getBlockSize( File file ) throws IOException;
+
     boolean deleteFile( File fileName );
 
     void deleteRecursively( File directory ) throws IOException;

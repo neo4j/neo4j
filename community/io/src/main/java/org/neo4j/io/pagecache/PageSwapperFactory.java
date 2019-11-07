@@ -69,6 +69,8 @@ public interface PageSwapperFactory extends NamedService
      * exception.
      * @param noChannelStriping When true, overrides channel striping behaviour,
      * setting it to a single channel per mapped file.
+     * @param useDirectIO When true, direct io open open will gonna be used for underlying channel.
+     * Option supported only on Linux with certain limitations.
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
      * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
@@ -79,7 +81,8 @@ public interface PageSwapperFactory extends NamedService
             int filePageSize,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
-            boolean noChannelStriping ) throws IOException;
+            boolean noChannelStriping,
+            boolean useDirectIO ) throws IOException;
 
     /**
      * Close and release any resources associated with this PageSwapperFactory, that it may have opened or acquired

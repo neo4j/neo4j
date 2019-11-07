@@ -55,7 +55,7 @@ import static java.util.Objects.requireNonNull;
 public class DefaultFileSystemAbstraction implements FileSystemAbstraction
 {
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to write directory path [%s] for Neo4j store.";
-    private static final Set<OpenOption> WRITE_OPTIONS = Set.of( READ, WRITE, CREATE );
+    public static final Set<OpenOption> WRITE_OPTIONS = Set.of( READ, WRITE, CREATE );
     private static final Set<OpenOption> READ_OPTIONS = Set.of( READ );
 
     @Override
@@ -142,6 +142,12 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public long getFileSize( File file )
     {
         return file.length();
+    }
+
+    @Override
+    public long getBlockSize( File file ) throws IOException
+    {
+        return FileUtils.blockSize( file );
     }
 
     @Override

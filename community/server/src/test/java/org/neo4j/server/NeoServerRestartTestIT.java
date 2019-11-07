@@ -110,11 +110,11 @@ public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
 
         @Override
         public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction,
-                boolean createIfNotExist, boolean noChannelStriping ) throws IOException
+                boolean createIfNotExist, boolean noChannelStriping, boolean useDirectIO ) throws IOException
         {
             // This will be called early in the startup sequence. Notifies that we can call stop on the server.
             SEMAPHORE.release();
-            return super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, noChannelStriping );
+            return super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, noChannelStriping, useDirectIO );
         }
     }
 }
