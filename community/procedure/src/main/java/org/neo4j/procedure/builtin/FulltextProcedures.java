@@ -61,6 +61,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.util.FeatureToggles;
 
+import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
@@ -165,7 +166,7 @@ public class FulltextProcedures
             indexCreator = indexCreator.on( property );
         }
 
-        config = removeFulltextPrefixes( config );
+        config = sanitizeFulltextConfig( config );
         if ( !config.isEmpty() )
         {
             Map<IndexSetting,Object> parsedConfig = new EnumMap<>( IndexSetting.class );
@@ -317,14 +318,22 @@ public class FulltextProcedures
         // We will get an exception later, when we try to get an IndexReader, so this is fine.
     }
 
-    private static Map<String,String> removeFulltextPrefixes( Map<String,String> config )
+    private static Map<String,String> sanitizeFulltextConfig( Map<String,String> config )
     {
         Map<String,String> cleanMap = new HashMap<>();
         for ( Map.Entry<String,String> entry : config.entrySet() )
         {
-            String key = entry.getKey().replace( FULLTEXT_PREFIX, "" );
+            String key = entry.getKey();
+            if ( key.startsWith( FULLTEXT_PREFIX ) )
+            {
+                key = key.substring( FULLTEXT_PREFIX.length(), key.length() );
+            }
             String value = entry.getValue();
-            cleanMap.put( key, value );
+            String duplicate = cleanMap.put( key, value );
+            if ( duplicate != null )
+            {
+                throw new IllegalArgumentException( format( "Config setting was specified more than once, '%s'.", key ) );
+            }
         }
         return cleanMap;
     }

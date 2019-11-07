@@ -2156,6 +2156,72 @@ public class FulltextProceduresTest
     }
 
     @Test
+    public void prefixedFulltextIndexSettingMustBeRecognizedTogetherWithNonPrefixed()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            String mixedPrefixConfig = ", {`fulltext.analyzer`: 'english', eventually_consistent: 'true'}";
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + mixedPrefixConfig ) )
+                    .close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + mixedPrefixConfig ) )
+                    .close();
+            tx.commit();
+        }
+        awaitIndexesOnline();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Iterator<IndexDefinition> iterator = tx.schema().getIndexes().iterator();
+            while ( iterator.hasNext() )
+            {
+                IndexDefinition index = iterator.next();
+                Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
+                Object eventuallyConsistentObj = indexConfiguration.get( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT );
+                assertNotNull( eventuallyConsistentObj );
+                assertThat( eventuallyConsistentObj, instanceOf( Boolean.class ) );
+                assertEquals( true, eventuallyConsistentObj );
+                Object analyzerObj = indexConfiguration.get( IndexSetting.FULLTEXT_ANALYZER );
+                assertNotNull( analyzerObj );
+                assertThat( analyzerObj, instanceOf( String.class ) );
+                assertEquals( "english", analyzerObj );
+            }
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void mustThrowOnDuplicateFulltextIndexSetting()
+    {
+        db = createDatabase();
+        String duplicateConfig = ", {`fulltext.analyzer`: 'english', analyzer: 'swedish'}";
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + duplicateConfig ) ).close();
+            fail( "Expected to fail" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertThat( e.getMessage(), containsString( "Config setting was specified more than once, 'analyzer'." ) );
+            Throwable rootCause = getRootCause( e );
+            assertThat( rootCause, instanceOf( IllegalArgumentException.class ) );
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + duplicateConfig ) ).close();
+            fail( "Expected to fail" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertThat( e.getMessage(), containsString( "Config setting was specified more than once, 'analyzer'." ) );
+            Throwable rootCause = getRootCause( e );
+            assertThat( rootCause, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    @Test
     public void transactionStateMustNotPreventIndexUpdatesFromBeingApplied() throws Exception
     {
         db = createDatabase();
