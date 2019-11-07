@@ -118,10 +118,13 @@ class PartitionedSeekTest
             // verify that partitions have some sort of fair distribution
             // First and last partition may have varying number of entries, but the middle ones should be (at least in this test case)
             // max a factor two from each other, entry-count wise
-            int reference = counts.get( 1 );
-            for ( int i = 2; i < counts.size() - 1; i++ )
+            if ( counts.size() > 1 )
             {
-                assertTrue( abs( reference - counts.get( i ) ) <= reference );
+                int reference = counts.get( 1 );
+                for ( int i = 2; i < counts.size() - 1; i++ )
+                {
+                    assertTrue( abs( reference - counts.get( i ) ) <= reference );
+                }
             }
         }
     }
