@@ -43,7 +43,7 @@ public interface NativeAccess
      * @param fd file descriptor
      * @return returns zero on success, or an error number on failure
      */
-    int tryEvictFromCache( int fd );
+    NativeCallResult tryEvictFromCache( int fd );
 
     /**
      * Try to advice that file referenced by provided file descriptor will be accessed in a sequential fashion.
@@ -51,7 +51,7 @@ public interface NativeAccess
      * @param fd file descriptor
      * @return returns zero on success, or an error number on failure
      */
-    int tryAdviseSequentialAccess( int fd );
+    NativeCallResult tryAdviseSequentialAccess( int fd );
 
     /**
      * Try to advice that file referenced by provided file descriptor will be accessed again in the near future and we will need those pages again.
@@ -59,7 +59,7 @@ public interface NativeAccess
      * @param fd file descriptor
      * @return returns zero on success, or an error number on failure
      */
-    int tryAdviseToKeepInCache( int fd );
+    NativeCallResult tryAdviseToKeepInCache( int fd );
 
     /**
      * Try to preallocate disk space for file referenced by provided file descriptor.
@@ -67,7 +67,7 @@ public interface NativeAccess
      * @param bytes number of bytes to preallocate
      * @return returns zero on success, or an error number on failure
      */
-    int tryPreallocateSpace( int fd, long bytes );
+    NativeCallResult tryPreallocateSpace( int fd, long bytes );
 
     /**
      * Details about native access provider

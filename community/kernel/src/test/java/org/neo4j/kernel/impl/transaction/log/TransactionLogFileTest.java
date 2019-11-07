@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -398,27 +399,31 @@ class TransactionLogFileTest
         }
 
         @Override
-        public int tryEvictFromCache( int fd )
+        public NativeCallResult tryEvictFromCache( int fd )
         {
-            return evictionCounter++;
+            evictionCounter++;
+            return NativeCallResult.SUCCESS;
         }
 
         @Override
-        public int tryAdviseSequentialAccess( int fd )
+        public NativeCallResult tryAdviseSequentialAccess( int fd )
         {
-            return adviseCounter++;
+            adviseCounter++;
+            return NativeCallResult.SUCCESS;
         }
 
         @Override
-        public int tryAdviseToKeepInCache( int fd )
+        public NativeCallResult tryAdviseToKeepInCache( int fd )
         {
-            return keepCounter++;
+            keepCounter++;
+            return NativeCallResult.SUCCESS;
         }
 
         @Override
-        public int tryPreallocateSpace( int fd, long bytes )
+        public NativeCallResult tryPreallocateSpace( int fd, long bytes )
         {
-            return preallocateCounter++;
+            preallocateCounter++;
+            return NativeCallResult.SUCCESS;
         }
 
         @Override

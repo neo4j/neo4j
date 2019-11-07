@@ -34,6 +34,9 @@ import java.io.RandomAccessFile;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -65,10 +68,25 @@ class LinuxNativeAccessTest
         }
 
         @Test
+        void accessErrorMessageOnError() throws IOException, IllegalAccessException
+        {
+            File file = new File( tempFile, "file" );
+            int descriptor = getClosedDescriptor( file );
+            var nativeCallResult = nativeAccess.tryPreallocateSpace( descriptor, 1024 );
+            assertNotEquals( 0, nativeCallResult.getErrorCode() );
+            assertThat( nativeCallResult.getErrorMessage(), not( emptyString() ) );
+        }
+
+        @Test
         void failToPreallocateOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
         {
-            assertEquals( ERROR, nativeAccess.tryPreallocateSpace( 0, 1024 ) );
-            assertEquals( ERROR, nativeAccess.tryPreallocateSpace( -1, 1024 ) );
+            var preallocateResult = nativeAccess.tryPreallocateSpace( 0, 1024 );
+            assertEquals( ERROR, preallocateResult.getErrorCode() );
+            assertTrue( preallocateResult.isError() );
+
+            var negativeDescriptor = nativeAccess.tryPreallocateSpace( -1, 1024 );
+            assertEquals( ERROR, negativeDescriptor.getErrorCode() );
+            assertTrue( negativeDescriptor.isError() );
 
             File file = new File( tempFile, "file" );
             int descriptor = getClosedDescriptor( file );
@@ -99,8 +117,13 @@ class LinuxNativeAccessTest
         @Test
         void failToAdviseSequentialOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
         {
-            assertEquals( ERROR, nativeAccess.tryAdviseSequentialAccess( 0 ) );
-            assertEquals( ERROR, nativeAccess.tryAdviseSequentialAccess( -1 ) );
+            var nativeCallResult = nativeAccess.tryAdviseSequentialAccess( 0 );
+            assertEquals( ERROR, nativeCallResult.getErrorCode() );
+            assertTrue( nativeCallResult.isError() );
+
+            var negativeDescriptorResult = nativeAccess.tryAdviseSequentialAccess( -1 );
+            assertEquals( ERROR, negativeDescriptorResult.getErrorCode() );
+            assertTrue( negativeDescriptorResult.isError() );
 
             File file = new File( tempFile, "sequentialFile" );
             int descriptor = getClosedDescriptor( file );
@@ -114,15 +137,17 @@ class LinuxNativeAccessTest
             try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
             {
                 int descriptor = getDescriptor( randomFile );
-                assertEquals( 0, nativeAccess.tryAdviseSequentialAccess( descriptor ) );
+                var nativeCallResult = nativeAccess.tryAdviseSequentialAccess( descriptor );
+                assertEquals( 0, nativeCallResult.getErrorCode() );
+                assertFalse( nativeCallResult.isError() );
             }
         }
 
         @Test
         void failToSkipCacheOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
         {
-            assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ) );
-            assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ) );
+            assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ).getErrorCode() );
+            assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ).getErrorCode() );
 
             File file = new File( tempFile, "file" );
             int descriptor = getClosedDescriptor( file );
@@ -136,7 +161,7 @@ class LinuxNativeAccessTest
             try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
             {
                 int descriptor = getDescriptor( randomFile );
-                assertEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
+                assertFalse( nativeAccess.tryEvictFromCache( descriptor ).isError() );
             }
         }
     }
@@ -146,7 +171,7 @@ class LinuxNativeAccessTest
         try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
         {
             int descriptor = getDescriptor( randomFile );
-            assertEquals( 0, nativeAccess.tryPreallocateSpace( descriptor, bytes ) );
+            assertFalse( nativeAccess.tryPreallocateSpace( descriptor, bytes ).isError() );
         }
     }
 

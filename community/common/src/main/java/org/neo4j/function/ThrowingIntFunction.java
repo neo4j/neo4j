@@ -24,6 +24,7 @@ package org.neo4j.function;
  * @param <R> the type of the result of the function
  * @param <E> the type of exception that may be thrown from the function
  */
+@FunctionalInterface
 public interface ThrowingIntFunction<R, E extends Exception>
 {
     /**

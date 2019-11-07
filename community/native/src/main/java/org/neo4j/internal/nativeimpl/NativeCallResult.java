@@ -19,41 +19,43 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-public class AbsentNativeAccess implements NativeAccess
+public class NativeCallResult
 {
-    @Override
-    public boolean isAvailable()
+    public static final NativeCallResult SUCCESS = new NativeCallResult();
+
+    private static final String SUCCESS_MESSAGE = "Successful call.";
+    private final int errorCode;
+    private final String errorMessage;
+
+    private NativeCallResult()
     {
-        return false;
+        this( NativeAccess.SUCCESS, SUCCESS_MESSAGE );
+    }
+
+    public NativeCallResult( int errorCode, String errorMessage )
+    {
+        this.errorCode = errorCode;
+        this.errorMessage = errorMessage;
+    }
+
+    public boolean isError()
+    {
+        return errorCode != NativeAccess.SUCCESS;
+    }
+
+    public int getErrorCode()
+    {
+        return errorCode;
+    }
+
+    public String getErrorMessage()
+    {
+        return errorMessage;
     }
 
     @Override
-    public NativeCallResult tryEvictFromCache( int fd )
+    public String toString()
     {
-        return NativeCallResult.SUCCESS;
-    }
-
-    @Override
-    public NativeCallResult tryAdviseSequentialAccess( int fd )
-    {
-        return NativeCallResult.SUCCESS;
-    }
-
-    @Override
-    public NativeCallResult tryAdviseToKeepInCache( int fd )
-    {
-        return NativeCallResult.SUCCESS;
-    }
-
-    @Override
-    public NativeCallResult tryPreallocateSpace( int fd, long bytes )
-    {
-        return NativeCallResult.SUCCESS;
-    }
-
-    @Override
-    public String describe()
-    {
-        return "Native access is not available for current platform.";
+        return "ErrorCode=" + errorCode + ", errorMessage='" + errorMessage + '\'';
     }
 }

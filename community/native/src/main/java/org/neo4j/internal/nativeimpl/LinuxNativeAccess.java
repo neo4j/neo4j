@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.nativeimpl;
 
+import com.sun.jna.LastErrorException;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import com.sun.jna.Pointer;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
@@ -79,7 +81,7 @@ public class LinuxNativeAccess implements NativeAccess
      * @param flag advise options
      * @return 0 on success. On error, an error number is returned
      */
-    private static native int posix_fadvise( int fd, long offset, long len, int flag );
+    private static native int posix_fadvise( int fd, long offset, long len, int flag ) throws LastErrorException;
 
     /**
      *  Ensures that disk space is allocated for the file referred to by the file descriptor fd for the bytes in the range starting at offset
@@ -91,7 +93,15 @@ public class LinuxNativeAccess implements NativeAccess
      * @param len len in bytes
      * @return returns zero on success, or an error number on failure
      */
-    private static native int posix_fallocate( int fd, long offset, long len );
+    private static native int posix_fallocate( int fd, long offset, long len ) throws LastErrorException;
+
+    /**
+     * Return pointer to a string describing error number, possibly using the LC_MESSAGES part of the current locale to select the appropriate language.
+     * @param errnum error number to describe
+     * @param buffPtr pointer to error message buffer
+     * @param buffLength length of error message buffer
+     */
+    public static native long strerror_r( int errnum, long buffPtr, int buffLength );
 
     @Override
     public boolean isAvailable()
@@ -100,47 +110,47 @@ public class LinuxNativeAccess implements NativeAccess
     }
 
     @Override
-    public int tryEvictFromCache( int fd )
+    public NativeCallResult tryEvictFromCache( int fd )
     {
         if ( fd <= 0 )
         {
-            return NativeAccess.ERROR;
+            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
         }
-        return posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+        return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED ) );
     }
 
     @Override
-    public int tryAdviseSequentialAccess( int fd )
+    public NativeCallResult tryAdviseSequentialAccess( int fd )
     {
         if ( fd <= 0 )
         {
-            return NativeAccess.ERROR;
+            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
         }
-        return posix_fadvise( fd, 0, 0, POSIX_FADV_SEQUENTIAL );
+        return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_SEQUENTIAL ) );
     }
 
     @Override
-    public int tryAdviseToKeepInCache( int fd )
+    public NativeCallResult tryAdviseToKeepInCache( int fd )
     {
         if ( fd <= 0 )
         {
-            return NativeAccess.ERROR;
+            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
         }
-        return posix_fadvise( fd, 0, 0, POSIX_FADV_WILLNEED );
+        return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_WILLNEED ) );
     }
 
     @Override
-    public int tryPreallocateSpace( int fd, long bytes )
+    public NativeCallResult tryPreallocateSpace( int fd, long bytes )
     {
         if ( fd <= 0 )
         {
-            return NativeAccess.ERROR;
+            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
         }
         if ( bytes <= 0 )
         {
-            return NativeAccess.ERROR;
+            return new NativeCallResult( NativeAccess.ERROR, "Number of bytes to preallocate should be positive. Requested: " + bytes );
         }
-        return posix_fallocate( fd, 0, bytes );
+        return wrapResult( () -> posix_fallocate( fd, 0, bytes ) );
     }
 
     @Override
@@ -157,5 +167,57 @@ public class LinuxNativeAccess implements NativeAccess
             descriptionBuilder.append( " Details: " ).append( exception );
         }
         return descriptionBuilder.toString();
+    }
+
+    private static NativeCallResult wrapResult( NativeCall call )
+    {
+        try
+        {
+            int result = call.call();
+            if ( result == NativeAccess.SUCCESS )
+            {
+                return NativeCallResult.SUCCESS;
+            }
+            else
+            {
+                return new NativeCallResult( result, tryExtractError( result ) );
+            }
+        }
+        catch ( LastErrorException e )
+        {
+            return new NativeCallResult( e.getErrorCode(), e.getMessage() );
+        }
+    }
+
+    private static String tryExtractError( int errorCode )
+    {
+        // The GNU C Library uses a buffer of 1024 characters for strerror().
+        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling strerror_r() and strerror_l().
+        final int bufferLength = 1024;
+        final long bufferPointer = Native.malloc( bufferLength );
+        try
+        {
+            long result = strerror_r( errorCode, bufferPointer, bufferLength );
+            // not error, not EINVAL and not ERANGE
+            if ( result != NativeAccess.ERROR && result != 22 && result != 34 )
+            {
+                return new Pointer( result ).getString( 0 );
+            }
+        }
+        catch ( Throwable t )
+        {
+            // ignore and use generic error message instead.
+        }
+        finally
+        {
+            Native.free( bufferPointer );
+        }
+        return "Error occurred calling native function. Please check error code.";
+    }
+
+    @FunctionalInterface
+    private interface NativeCall
+    {
+        int call() throws LastErrorException;
     }
 }

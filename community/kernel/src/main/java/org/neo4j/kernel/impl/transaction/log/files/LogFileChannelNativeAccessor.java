@@ -47,15 +47,15 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
         if ( channel.isOpen() )
         {
             final int fileDescriptor = fileSystem.getFileDescriptor( channel );
-            int result = nativeAccess.tryAdviseSequentialAccess( fileDescriptor );
-            if ( result != 0 )
+            var sequentialResult = nativeAccess.tryAdviseSequentialAccess( fileDescriptor );
+            if ( sequentialResult.isError() )
             {
-                log.warn( "Unable to advise sequential access for transaction log version: " + version + ". Error code: " + result );
+                log.warn( "Unable to advise sequential access for transaction log version: " + version + ". Error: " + sequentialResult );
             }
-            int keepResult = nativeAccess.tryAdviseToKeepInCache( fileDescriptor );
-            if ( keepResult != 0 )
+            var cacheResult = nativeAccess.tryAdviseToKeepInCache( fileDescriptor );
+            if ( cacheResult.isError() )
             {
-                log.warn( "Unable to advise preserve data in cache for transaction log version: " + version + ". Error code: " + keepResult );
+                log.warn( "Unable to advise preserve data in cache for transaction log version: " + version + ". Error: " + cacheResult );
             }
         }
     }
@@ -65,10 +65,10 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
     {
         if ( channel.isOpen() )
         {
-            int result = nativeAccess.tryEvictFromCache( fileSystem.getFileDescriptor( channel ) );
-            if ( result != 0 )
+            var result = nativeAccess.tryEvictFromCache( fileSystem.getFileDescriptor( channel ) );
+            if ( result.isError() )
             {
-                log.warn( "Unable to evict transaction log from cache with version: " + version + ". Error code: " + result );
+                log.warn( "Unable to evict transaction log from cache with version: " + version + ". Error: " + result );
             }
         }
     }
@@ -77,10 +77,10 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
     public void preallocateSpace( StoreChannel storeChannel, long version )
     {
         int fileDescriptor = fileSystem.getFileDescriptor( storeChannel );
-        int result = nativeAccess.tryPreallocateSpace( fileDescriptor, rotationThreshold.get() );
-        if ( result != 0 )
+        var result = nativeAccess.tryPreallocateSpace( fileDescriptor, rotationThreshold.get() );
+        if ( result.isError() )
         {
-            log.warn( "Error on attempt to preallocate log file version: " + version + ". Error code: " + result );
+            log.warn( "Error on attempt to preallocate log file version: " + version + ". Error: " + result );
         }
     }
 }
