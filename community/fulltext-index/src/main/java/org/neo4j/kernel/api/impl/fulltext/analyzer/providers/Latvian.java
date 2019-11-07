@@ -28,6 +28,11 @@ import org.neo4j.graphdb.schema.AnalyzerProvider;
 @ServiceProvider
 public class Latvian extends AnalyzerProvider
 {
+    static
+    {
+        cleanStopWordSet( LatvianAnalyzer.getDefaultStopSet() );
+    }
+
     public Latvian()
     {
         super( "latvian" );

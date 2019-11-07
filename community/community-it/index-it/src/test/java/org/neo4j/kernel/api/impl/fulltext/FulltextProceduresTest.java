@@ -865,6 +865,10 @@ public class FulltextProceduresTest
             assertThat( analyzers, hasItem( "english" ) );
             assertThat( analyzers, hasItem( "swedish" ) );
             assertThat( analyzers, hasItem( "standard" ) );
+            assertThat( analyzers, hasItem( "galician" ) );
+            assertThat( analyzers, hasItem( "irish" ) );
+            assertThat( analyzers, hasItem( "latvian" ) );
+            assertThat( analyzers, hasItem( "sorani" ) );
             tx.commit();
         }
 
@@ -901,7 +905,6 @@ public class FulltextProceduresTest
                 while ( result.hasNext() )
                 {
                     Map<String,Object> row = result.next();
-                    System.out.println( "row = " + row );
                     Object stopwords = row.get( "stopwords" );
                     if ( !row.containsKey( "stopwords" ) || !(stopwords instanceof List) )
                     {
@@ -917,6 +920,29 @@ public class FulltextProceduresTest
                     else if ( analyzerName.equals( "standard-no-stop-words" ) )
                     {
                         assertTrue( words.isEmpty() );
+                    }
+                }
+            }
+            tx.commit();
+        }
+
+        // Verify that the stop-words data-sets are clean; that they contain no comments, white-space or empty strings.
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Result result = tx.execute( LIST_AVAILABLE_ANALYZERS ) )
+            {
+                while ( result.hasNext() )
+                {
+                    Map<String,Object> row = result.next();
+                    List<String> stopwords = (List<String>) row.get( "stopwords" );
+                    for ( String stopword : stopwords )
+                    {
+                        if ( stopword.isBlank() || stopword.contains( "#" ) || stopword.contains( " " ) )
+                        {
+                            fail( "The list of stop-words for the " + row.get( "analyzer" ) + " analyzer contains dirty data. " +
+                                    "Specifically, '" + stopword + "' does not look like a valid stop-word. The full list:" +
+                                    System.lineSeparator() + stopwords );
+                        }
                     }
                 }
             }
