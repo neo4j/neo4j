@@ -36,8 +36,8 @@ trait PlannerQueryPart {
   def readOnly: Boolean
   def returns: Set[String]
 
-  def allHints: Seq[Hint]
-  def withoutHints(hintsToIgnore: Seq[Hint]): PlannerQueryPart
+  def allHints: Set[Hint]
+  def withoutHints(hintsToIgnore: Set[Hint]): PlannerQueryPart
   def numHints: Int
 
   /**
@@ -66,9 +66,9 @@ case class UnionQuery(part: PlannerQueryPart,
     }.get
   }
 
-  override def allHints: Seq[Hint] = part.allHints ++ query.allHints
+  override def allHints: Set[Hint] = part.allHints ++ query.allHints
 
-  override def withoutHints(hintsToIgnore: Seq[Hint]): PlannerQueryPart = copy(
+  override def withoutHints(hintsToIgnore: Set[Hint]): PlannerQueryPart = copy(
     part = part.withoutHints(hintsToIgnore),
     query = query.withoutHints(hintsToIgnore)
   )

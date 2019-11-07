@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{GenSeq, GenTraversableOnce, mutable}
+import scala.collection.{GenSet, GenTraversableOnce, mutable}
 import scala.runtime.ScalaRunTime
 
 /*
@@ -40,7 +40,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
                       argumentIds: Set[String] = Set.empty,
                       selections: Selections = Selections(),
                       optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
-                      hints: Seq[Hint] = Seq.empty,
+                      hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
                       mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty)
   extends UpdateGraph {
@@ -136,10 +136,10 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   }
 
   def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = {
-    copy(hints = combineHints(addedHints))
+    copy(hints = hints ++ addedHints)
   }
 
-  def withoutHints(hintsToIgnore: GenSeq[Hint]): QueryGraph = copy(
+  def withoutHints(hintsToIgnore: GenSet[Hint]): QueryGraph = copy(
     hints = hints.diff(hintsToIgnore),
     optionalMatches = optionalMatches.map(_.withoutHints(hintsToIgnore)))
 
@@ -224,7 +224,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     idsWithoutOptionalMatchesOrUpdates ++ otherSymbols
   }
 
-  def allHints: Seq[Hint] =
+  def allHints: Set[Hint] =
     hints ++ optionalMatches.flatMap(_.allHints)
 
   def ++(other: QueryGraph): QueryGraph =
@@ -234,24 +234,10 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
       argumentIds = argumentIds ++ other.argumentIds,
-      hints = combineHints(other.hints),
+      hints = hints ++ other.hints,
       shortestPathPatterns = shortestPathPatterns ++ other.shortestPathPatterns,
       mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns
     )
-
-  // TODO: Consider replacing this solution with changing hints to type Set[Hint]
-  // This method make sure to not have duplicates when adding more hints to solved QueryGraphs
-  private def combineHints(addedHints: GenTraversableOnce[Hint]): Seq[Hint] = {
-    if (addedHints.nonEmpty) {
-      val toAdd = addedHints.foldLeft(Seq.empty[Hint]) {
-        case (acc, h) if !hints.contains(h) => acc :+ h
-        case (acc, _) => acc
-      }
-      hints ++ toAdd
-    } else {
-      hints
-    }
-  }
 
   def hasOptionalPatterns: Boolean = optionalMatches.nonEmpty
 
@@ -304,7 +290,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   def withoutPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patternRelationships -- patterns)
 
-  def joinHints: Seq[UsingJoinHint] =
+  def joinHints: Set[UsingJoinHint] =
     hints.collect { case hint: UsingJoinHint => hint }
 
 
@@ -458,6 +444,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
         selections == other.selections &&
         optionals &&
       // ignore order, but differentiate between different counts of the same element
+      // TODO: not needed now when `hints` are a set?
         hints.groupBy(identity) == other.hints.groupBy(identity) &&
         shortestPathPatterns == other.shortestPathPatterns &&
         mutatingPatterns == other.mutatingPatterns

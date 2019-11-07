@@ -52,7 +52,7 @@ object verifyBestPlan {
           val solvedInAddition = actualHints.diff(expectedHints)
           val inventedHintsAndThenSolvedThem = solvedInAddition.exists(!expectedHints.contains(_))
           if (missing.nonEmpty || inventedHintsAndThenSolvedThem) {
-            def out(h: Seq[Hint]) = h.mkString("`", ", ", "`")
+            def out(h: Set[Hint]) = h.mkString("`", ", ", "`")
 
             val details = if (missing.isEmpty)
               s"""Expected:
@@ -79,7 +79,7 @@ object verifyBestPlan {
     }
   }
 
-  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Seq[UsingIndexHint]): Unit = {
+  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Set[UsingIndexHint]): Unit = {
     if (hints.nonEmpty) {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
@@ -93,7 +93,7 @@ object verifyBestPlan {
     }
   }
 
-  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Seq[UsingJoinHint]): Unit = {
+  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Set[UsingJoinHint]): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
@@ -106,7 +106,7 @@ object verifyBestPlan {
     }
   }
 
-  private def findUnfulfillableIndexHints(query: PlannerQueryPart, planContext: PlanContext): Seq[UsingIndexHint] = {
+  private def findUnfulfillableIndexHints(query: PlannerQueryPart, planContext: PlanContext): Set[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(_, LabelName(label), properties, _)
@@ -118,7 +118,7 @@ object verifyBestPlan {
     }
   }
 
-  private def findUnfulfillableJoinHints(query: PlannerQueryPart, planContext: PlanContext): Seq[UsingJoinHint] = {
+  private def findUnfulfillableJoinHints(query: PlannerQueryPart, planContext: PlanContext): Set[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
     }

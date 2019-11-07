@@ -31,6 +31,6 @@ case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
     unsolvedPreds(context.planningAttributes.solveds)(queryGraph.selections, plan).collect {
       case s@HasLabels(id: Variable, Seq(labelName)) =>
         val labelScan = context.logicalPlanProducer.planNodeByLabelScan(id.name, labelName, Seq(s), None, Set.empty, context)
-        context.logicalPlanProducer.planNodeHashJoin(Set(id.name), plan, labelScan, Seq.empty, context)
+        context.logicalPlanProducer.planNodeHashJoin(Set(id.name), plan, labelScan, Set.empty, context)
     }
 }

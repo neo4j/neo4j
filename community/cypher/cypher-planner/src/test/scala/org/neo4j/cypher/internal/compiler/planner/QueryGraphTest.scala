@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 class QueryGraphTest extends CypherFunSuite {
   val x = "x"
@@ -31,6 +34,10 @@ class QueryGraphTest extends CypherFunSuite {
   val r1 = "r1"
   val r2 = "r2"
   val r3 = "r3"
+
+  private val pos = InputPosition.NONE
+  private val hint1 = UsingIndexHint(Variable("n")(pos), LabelName("Label")(pos), Seq(PropertyKeyName("prop1")(pos)))(pos)
+  private val hint2 = UsingIndexHint(Variable("m")(pos), LabelName("Label")(pos), Seq(PropertyKeyName("prop2")(pos)))(pos)
 
   test("returns no pattern relationships when the query graph doesn't contain any") {
     val rels: Set[PatternRelationship] = Set.empty
@@ -59,4 +66,33 @@ class QueryGraphTest extends CypherFunSuite {
     qg.findRelationshipsEndingOn(c) should equal(Set(pattRel2))
   }
 
+  test("addHints should add new hints") {
+    val qg1 = QueryGraph(hints = Set(hint1))
+    val qg2 = QueryGraph(hints = Set(hint1, hint2))
+
+    qg1.addHints(Set(hint2)) should equal(qg2)
+  }
+
+  test("addHint should not add already existing hint") {
+    val qg1 = QueryGraph(hints = Set(hint1))
+    val qg2 = QueryGraph(hints = Set(hint1, hint2))
+
+    qg1.addHints(Set(hint1, hint2)) should equal(qg2)
+  }
+
+  test("withoutHints should remove hints") {
+    val qg1 = QueryGraph(hints = Set(hint1, hint2))
+    val qg2 = QueryGraph(hints = Set(hint1))
+
+    qg1.withoutHints(Set(hint2)) should equal(qg2)
+  }
+
+  test("should not get duplicate hints when combining query graphs") {
+    val hint3 = UsingIndexHint(Variable("o")(pos), LabelName("Label")(pos), Seq(PropertyKeyName("prop3")(pos)))(pos)
+    val qg1 = QueryGraph(hints = Set(hint1, hint2))
+    val qg2 = QueryGraph(hints = Set(hint1, hint3))
+    val qg3 = QueryGraph(hints = Set(hint1, hint2, hint3))
+
+    qg1 ++ qg2 should equal(qg3)
+  }
 }

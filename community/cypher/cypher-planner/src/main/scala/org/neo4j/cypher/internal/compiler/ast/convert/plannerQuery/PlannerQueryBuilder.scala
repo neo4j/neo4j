@@ -128,7 +128,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
           val rNode = UnNamedNameGenerator.name(r.position.bumped())
 
           PatternRelationship(r.name, (lNode, rNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-      }
+      }.toSeq
 
       val patternNodes = patternRelationships.flatMap(relationship => Set(relationship.nodes._1, relationship.nodes._2))
       plannerQuery

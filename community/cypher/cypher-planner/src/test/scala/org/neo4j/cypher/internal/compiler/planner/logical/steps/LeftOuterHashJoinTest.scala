@@ -72,7 +72,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   test("solve optional match with hint") {
-    val theHint: Seq[Hint] = Seq(UsingJoinHint(Seq(varFor("a")))(pos))
+    val theHint: Set[Hint] = Set(UsingJoinHint(Seq(varFor("a")))(pos))
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
       patternNodes = Set(aNode, bNode),

@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Variable}
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
-import scala.collection.GenSeq
 import scala.util.hashing.MurmurHash3
 
 /**
@@ -74,7 +73,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   def withInput(queryInput: Seq[String]): SinglePlannerQuery =
     copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
 
-  override def withoutHints(hintsToIgnore: Seq[Hint]): SinglePlannerQuery = {
+  override def withoutHints(hintsToIgnore: Set[Hint]): SinglePlannerQuery = {
     copy(queryGraph = queryGraph.withoutHints(hintsToIgnore), tail = tail.map(x => x.withoutHints(hintsToIgnore)))
   }
 
@@ -108,7 +107,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   def isCoveredByHints(other: SinglePlannerQuery): Boolean = allHints.forall(other.allHints.contains)
 
-  override def allHints: Seq[Hint] = tail match {
+  override def allHints: Set[Hint] = tail match {
     case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
     case None => queryGraph.allHints
   }

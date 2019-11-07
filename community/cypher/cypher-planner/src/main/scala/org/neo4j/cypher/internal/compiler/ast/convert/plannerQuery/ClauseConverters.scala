@@ -306,7 +306,7 @@ object ClauseConverters {
             selections = selections,
             patternNodes = patternContent.nodeIds.toSet,
             patternRelationships = patternContent.rels.toSet,
-            hints = clause.hints,
+            hints = clause.hints.toSet,
             shortestPathPatterns = patternContent.shortestPaths.toSet
           ))
         }

@@ -248,7 +248,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val joinColumns = Set("x")
 
       //when
-      val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Nil, context)
+      val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Set.empty, context)
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")))))

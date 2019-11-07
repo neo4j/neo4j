@@ -333,7 +333,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       }
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
-        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Seq(hint) => ()
+        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
       }
     }
   }
@@ -356,7 +356,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       }
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
-        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Seq(hint) => ()
+        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
       }
     }
   }
