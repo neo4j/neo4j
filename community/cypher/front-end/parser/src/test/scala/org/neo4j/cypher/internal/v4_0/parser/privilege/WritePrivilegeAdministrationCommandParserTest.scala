@@ -61,9 +61,11 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
                   assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*)")
                   // Invalid role name
                   assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
-                  // Does not support write on specific label/property yet
+                  // Does not support write on specific label yet
                   assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (foo) $preposition role")
                   assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
+                  // Does not support write on specific property
+                  assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * $preposition role")
                   assertFails( s"$command WRITE {prop} ON $graphKeyword $dbName $elementKeyword * $preposition role")
                 }
             }
