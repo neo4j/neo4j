@@ -31,6 +31,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -98,6 +99,13 @@ public class LuceneFulltextDocumentStructure
                         new TermQuery( new Term( propertyKey, value.asObject().toString() ) ) );
                 builder.add( valueQuery, BooleanClause.Occur.SHOULD );
             }
+            else if ( value.valueGroup() == ValueGroup.NO_VALUE )
+            {
+                Query valueQuery = new ConstantScoreQuery(
+                        new WildcardQuery( new Term( propertyKey, "*" ) ) );
+                builder.add( valueQuery, BooleanClause.Occur.MUST_NOT );
+            }
+
         }
         return builder.build();
     }

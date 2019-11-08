@@ -540,6 +540,93 @@ public class FulltextIndexConsistencyCheckIT
     }
 
     @Test
+    public void mustDiscoverNodePropertyIndexMismatch() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "nodes", array( "L1", "L2" ), array( "p1", "p2" ) ) ).close();
+            tx.success();
+        }
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = db.createNode( Label.label( "L1" ), Label.label( "L2" ) );
+            nodeId = node.getId();
+            node.setProperty( "p1", "value" );
+            node.setProperty( "p2", "value" );
+            tx.success();
+        }
+
+        //when
+        NeoStores stores = getNeoStores( db );
+        NodeRecord record = stores.getNodeStore().getRecord( nodeId, stores.getNodeStore().newRecord(), RecordLoad.NORMAL );
+        long propId = record.getNextProp();
+
+        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
+        propRecord.removePropertyBlock( 1 ); // remove property p2
+        stores.getPropertyStore().updateRecord( propRecord );
+
+        db.shutdown();
+
+        //then
+        ConsistencyCheckService.Result result = checkConsistency();
+        assertFalse( result.isSuccessful() );
+    }
+
+    @Test
+    public void shouldNotReportNodesWithoutAllPropertiesInIndex() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "nodes", array( "L1", "L2" ), array( "p1", "p2" ) ) ).close();
+            tx.success();
+        }
+        //when
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = db.createNode( Label.label( "L1" ), Label.label( "L2" ) );
+            node.setProperty( "p1", "value" );
+            //skip property p2
+            tx.success();
+        }
+
+        db.shutdown();
+        //then
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    public void shouldNotReportNodesWithMorePropertiesThanInIndex() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "nodes", array( "L1", "L2" ), array( "p1" ) ) ).close();
+            tx.success();
+        }
+        //when
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = db.createNode( Label.label( "L1" ), Label.label( "L2" ) );
+            node.setProperty( "p1", "value" );
+            node.setProperty( "p2", "value" ); //p2 does not exist in index
+            tx.success();
+        }
+
+        db.shutdown();
+        //then
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
     public void mustDiscoverRelationshipInStoreMissingFromIndex() throws Exception
     {
         GraphDatabaseService db = createDatabase();
@@ -569,6 +656,43 @@ public class FulltextIndexConsistencyCheckIT
 
         db.shutdown();
 
+        ConsistencyCheckService.Result result = checkConsistency();
+        assertFalse( result.isSuccessful() );
+    }
+
+    @Test
+    public void mustDiscoverRelationshipPropertyIndexMismatch() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "p1", "p2" ) ) ).close();
+            tx.success();
+        }
+        long relId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = db.createNode();
+            Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
+            rel.setProperty( "p1", "value" );
+            rel.setProperty( "p2", "value" );
+            relId = rel.getId();
+            tx.success();
+        }
+        //When
+        NeoStores stores = getNeoStores( db );
+        RelationshipRecord record = stores.getRelationshipStore().getRecord( relId, stores.getRelationshipStore().newRecord(), RecordLoad.NORMAL );
+        long propId = record.getNextProp();
+
+        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
+        propRecord.removePropertyBlock( 1 ); // remove property p2
+        stores.getPropertyStore().updateRecord( propRecord );
+
+        db.shutdown();
+
+        //Then
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse( result.isSuccessful() );
     }
