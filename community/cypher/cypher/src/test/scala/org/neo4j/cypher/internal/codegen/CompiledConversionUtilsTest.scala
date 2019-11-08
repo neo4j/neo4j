@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.codegen
 import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
-import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
+import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable._
 
@@ -78,7 +76,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     import scala.collection.JavaConverters._
     CompiledConversionUtils.toSet(null) should equal(Set.empty.asJava)
     CompiledConversionUtils.toSet(List(1, 1, 2, 3).asJava) should equal(Set(1, 2, 3).asJava)
-    CompiledConversionUtils.toSet(IntStream.of(1, 2, 3, 1)) should equal(Set(1, 2, 3).asJava)
+    CompiledConversionUtils.toSet(IntStream.of(1, 0, 0, 1)) should equal(Set(true, false).asJava)
     CompiledConversionUtils.toSet(LongStream.of(1L, 2L, 3L, 1L)) should equal(Set(1L, 2L, 3L).asJava)
     CompiledConversionUtils.toSet(DoubleStream.of(1.1, 2.2, 3.3, 1.1)) should equal(Set(1.1, 2.2, 3.3).asJava)
     CompiledConversionUtils.toSet(Array(1, 1, 3, 2)) should equal(Set(1, 2, 3).asJava)
