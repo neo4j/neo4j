@@ -93,7 +93,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue("MyLabel"), longValue(1L)} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyLabel" )} ) ) );
     }
 
     @Test
@@ -135,7 +135,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // Then
         try
         {
-            assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyLabel" ), longValue( 1 )} ) ) );
+            assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyLabel" )} ) ) );
         }
         finally
         {
@@ -178,7 +178,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" ), longValue( 1L ) } ) ) );
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" )} ) ) );
     }
 
     @Test

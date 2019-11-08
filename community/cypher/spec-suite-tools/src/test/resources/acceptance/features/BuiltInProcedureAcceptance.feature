@@ -37,8 +37,8 @@ Feature: BuiltInProcedureAcceptance
     CALL db.labels
     """
     Then the result should be, in order:
-      | label | nodeCount |
-      | 'A'   | 1         |
-      | 'B'   | 1         |
-      | 'C'   | 1         |
+      | label |
+      | 'A'   |
+      | 'B'   |
+      | 'C'   |
     And no side effects

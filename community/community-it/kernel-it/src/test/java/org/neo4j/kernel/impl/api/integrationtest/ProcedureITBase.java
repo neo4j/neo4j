@@ -70,7 +70,7 @@ public interface ProcedureITBase
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.propertyKeys", "() :: (propertyKey :: STRING?)", "List all property keys in the database.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "db.labels", "() :: (label :: STRING?, nodeCount :: INTEGER?)", "List all labels in the database and their total count.",
+                proc( "db.labels", "() :: (label :: STRING?)", "List all available labels in the database.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.schema.visualization", "() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Visualize the schema of the data.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
@@ -80,8 +80,7 @@ public interface ProcedureITBase
                         "() :: (relType :: STRING?, " + "propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
                         "Show the derived property schema of the relationships in tabular form.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "db.relationshipTypes", "() :: (relationshipType :: STRING?, relationshipCount :: INTEGER?)",
-                        "List all relationship types in the database and their total count.",
+                proc( "db.relationshipTypes", "() :: (relationshipType :: STRING?)", "List all available relationship types in the database.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "dbms.procedures",
                         "() :: (name :: STRING?, signature :: STRING?, description :: STRING?, mode :: STRING?, roles :: LIST? OF STRING?, " +

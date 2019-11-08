@@ -43,6 +43,8 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -65,7 +67,6 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
-import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
 import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
 import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
@@ -94,7 +95,7 @@ public class BuiltInProcedures
     public ProcedureCallContext callContext;
 
     @SystemProcedure
-    @Description( "List all labels in the database and their total count." )
+    @Description( "List all available labels in the database." )
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
@@ -103,14 +104,20 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "nodeCount" ) );
-        List<LabelResult> labelResults = stream( LABELS.all( kernelTransaction ) ).map( label ->
-                {
-                    int labelId = kernelTransaction.tokenRead().nodeLabel( label.name() );
-                    long count = shouldCount ? kernelTransaction.dataRead().countsForNode( labelId ) : LONG_FIELD_NOT_CALCULATED;
-                    return new LabelResult( label, count );
-                } ).collect( Collectors.toList() );
-        return labelResults.stream();
+        AccessMode mode = kernelTransaction.securityContext().mode();
+        TokenRead tokenRead = kernelTransaction.tokenRead();
+
+        List<LabelResult> labelsInUse;
+        try ( KernelTransaction.Revertable ignore = kernelTransaction.overrideWith( SecurityContext.AUTH_DISABLED ) )
+        {
+            // Get all labels that are in use as seen by a super user
+            labelsInUse = stream( LABELS.inUse( kernelTransaction ) )
+                    // filter out labels that are denied or aren't explicitly allowed
+                    .filter( label -> mode.allowsTraverseNodeLabels( tokenRead.nodeLabel( label.name() ) ) )
+                    .map( LabelResult::new )
+                    .collect( Collectors.toList() );
+        }
+        return labelsInUse.stream();
     }
 
     @SystemProcedure
@@ -128,7 +135,7 @@ public class BuiltInProcedures
     }
 
     @SystemProcedure
-    @Description( "List all relationship types in the database and their total count." )
+    @Description( "List all available relationship types in the database." )
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
@@ -137,14 +144,19 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "relationshipCount" ) );
-        List<RelationshipTypeResult> relationshipTypes = stream( RELATIONSHIP_TYPES.all( kernelTransaction ) ).map( type ->
-                {
-                    int typeId = kernelTransaction.tokenRead().relationshipType( type.name() );
-                    long count = shouldCount ? kernelTransaction.dataRead().countsForRelationship( ANY_LABEL, typeId, ANY_LABEL ) : LONG_FIELD_NOT_CALCULATED;
-                    return new RelationshipTypeResult( type, count );
-                } ).collect( Collectors.toList() );
-        return relationshipTypes.stream();
+        AccessMode mode = kernelTransaction.securityContext().mode();
+        TokenRead tokenRead = kernelTransaction.tokenRead();
+        List<RelationshipTypeResult> relTypesInUse;
+        try ( KernelTransaction.Revertable ignore = kernelTransaction.overrideWith( SecurityContext.AUTH_DISABLED ) )
+        {
+            // Get all relTypes that are in use as seen by a super user
+            relTypesInUse = stream( RELATIONSHIP_TYPES.inUse( kernelTransaction ) )
+                    // filter out relTypes that are denied or aren't explicitly allowed
+                    .filter( type -> mode.allowsTraverseRelType( tokenRead.relationshipType( type.name() ) ) )
+                    .map( RelationshipTypeResult::new )
+                    .collect( Collectors.toList() );
+        }
+        return relTypesInUse.stream();
     }
 
     @SystemProcedure
@@ -501,12 +513,10 @@ public class BuiltInProcedures
     public static class LabelResult
     {
         public final String label;
-        public final long nodeCount;
 
-        private LabelResult( Label label, long nodeCount )
+        private LabelResult( Label label )
         {
             this.label = label.name();
-            this.nodeCount = nodeCount;
         }
     }
 
@@ -523,12 +533,10 @@ public class BuiltInProcedures
     public static class RelationshipTypeResult
     {
         public final String relationshipType;
-        public final long relationshipCount;
 
-        private RelationshipTypeResult( RelationshipType relationshipType, long relationshipCount )
+        private RelationshipTypeResult( RelationshipType relationshipType )
         {
             this.relationshipType = relationshipType.name();
-            this.relationshipCount = relationshipCount;
         }
     }
 

@@ -32,7 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
-import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
@@ -276,23 +275,8 @@ class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.labels" ),
                 containsInAnyOrder(
-                        record( "Banana", 1L ),
-                        record( "Fruit", 1L ) ) );
-    }
-
-    @Test
-    void shouldListLabelsWithoutCounts() throws Throwable
-    {
-        // Given
-        when( callContext.isCalledFromCypher() ).thenReturn( true );
-        when( callContext.outputFields() ).thenReturn( Stream.of( "label" ) );
-        givenLabels( "Banana", "Fruit" );
-
-        // When/Then
-        assertThat( call( "db.labels" ),
-                containsInAnyOrder(
-                        record( "Banana", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ),
-                        record( "Fruit", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ) ) );
+                        record( "Banana" ),
+                        record( "Fruit" ) ) );
     }
 
     @Test
@@ -304,23 +288,8 @@ class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.relationshipTypes" ),
                 containsInAnyOrder(
-                        record( "EATS", 1L ),
-                        record( "SPROUTS", 1L ) ) );
-    }
-
-    @Test
-    void shouldListRelTypesWithoutCounts() throws Throwable
-    {
-        // Given
-        when( callContext.isCalledFromCypher() ).thenReturn( true );
-        when( callContext.outputFields() ).thenReturn( Stream.of( "relationshipTypes" ) );
-        givenRelationshipTypes( "EATS", "SPROUTS" );
-
-        // When/Then
-        assertThat( call( "db.relationshipTypes" ),
-                containsInAnyOrder(
-                        record( "EATS", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ),
-                        record( "SPROUTS", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ) ) );
+                        record( "EATS" ),
+                        record( "SPROUTS" ) ) );
     }
 
     @Test
