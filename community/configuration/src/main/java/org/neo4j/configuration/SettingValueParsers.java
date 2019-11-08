@@ -33,7 +33,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator;
+import org.neo4j.configuration.helpers.GraphNameValidator;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.configuration.helpers.NormalizedGraphName;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -638,6 +640,42 @@ public final class SettingValueParsers
         public Class<String> getType()
         {
             return String.class;
+        }
+    };
+
+    public static final SettingValueParser<NormalizedGraphName> GRAPHNAME = new SettingValueParser<>()
+    {
+        @Override
+        public NormalizedGraphName parse( String name )
+        {
+            if ( name == null )
+            {
+                return null;
+            }
+            else
+            {
+                NormalizedGraphName normalizedGraphName = new NormalizedGraphName( name );
+                validate( normalizedGraphName );
+                return normalizedGraphName;
+            }
+        }
+
+        @Override
+        public void validate( NormalizedGraphName value )
+        {
+            GraphNameValidator.assertValidGraphName( value );
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "A valid graph name. " + GraphNameValidator.DESCRIPTION;
+        }
+
+        @Override
+        public Class<NormalizedGraphName> getType()
+        {
+            return NormalizedGraphName.class;
         }
     };
 
