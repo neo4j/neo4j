@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -559,6 +560,93 @@ class FulltextIndexConsistencyCheckIT
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse( result.isSuccessful() );
+    }
+
+    @Test
+    public void mustDiscoverNodePropertyIndexMismatch() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "L1", "L2" ), asCypherStringsList( "p1", "p2" ) ) ).close();
+            tx.commit();
+        }
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = tx.createNode( Label.label( "L1" ), Label.label( "L2" ) );
+            nodeId = node.getId();
+            node.setProperty( "p1", "value" );
+            node.setProperty( "p2", "value" );
+            tx.commit();
+        }
+
+        //when
+        NeoStores stores = getNeoStores( db );
+        NodeRecord record = stores.getNodeStore().getRecord( nodeId, stores.getNodeStore().newRecord(), RecordLoad.NORMAL );
+        long propId = record.getNextProp();
+
+        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
+        propRecord.removePropertyBlock( 1 ); // remove property p2
+        stores.getPropertyStore().updateRecord( propRecord );
+
+        managementService.shutdown();
+
+        //then
+        ConsistencyCheckService.Result result = checkConsistency();
+        assertFalse( result.isSuccessful() );
+    }
+
+    @Test
+    public void shouldNotReportNodesWithoutAllPropertiesInIndex() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "L1", "L2" ), asCypherStringsList( "p1", "p2" ) ) ).close();
+            tx.commit();
+        }
+        //when
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = tx.createNode( Label.label( "L1" ), Label.label( "L2" ) );
+            node.setProperty( "p1", "value" );
+            //skip property p2
+            tx.commit();
+        }
+
+        managementService.shutdown();
+        //then
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    public void shouldNotReportNodesWithMorePropertiesThanInIndex() throws Exception
+    {
+        //Given
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "L1", "L2" ), asCypherStringsList( "p1" ) ) ).close();
+            tx.commit();
+        }
+        //when
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            Node node = tx.createNode( Label.label( "L1" ), Label.label( "L2" ) );
+            node.setProperty( "p1", "value" );
+            node.setProperty( "p2", "value" ); //p2 does not exist in index
+            tx.commit();
+        }
+
+        managementService.shutdown();
+        //then
+        assertIsConsistent( checkConsistency() );
     }
 
     @Test

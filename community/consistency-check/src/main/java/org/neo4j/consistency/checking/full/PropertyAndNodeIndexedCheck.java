@@ -58,6 +58,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.values.storable.NoValue.NO_VALUE;
 
 /**
  * Checks nodes and how they're indexed in one go. Reports any found inconsistencies.
@@ -219,7 +220,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         for ( int i = 0; i < indexPropertyIds.length; i++ )
         {
             PropertyBlock propertyBlock = propertyMap.get( indexPropertyIds[i] );
-            values[i] = propertyReader.propertyValue( propertyBlock );
+            values[i] = propertyBlock != null ? propertyReader.propertyValue( propertyBlock ) : NO_VALUE;
         }
         return values;
     }

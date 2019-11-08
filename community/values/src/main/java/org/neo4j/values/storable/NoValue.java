@@ -32,7 +32,7 @@ import org.neo4j.values.ValueMapper;
  */
 public final class NoValue extends Value
 {
-    static final NoValue NO_VALUE = new NoValue();
+    public static final NoValue NO_VALUE = new NoValue();
 
     private NoValue()
     {
