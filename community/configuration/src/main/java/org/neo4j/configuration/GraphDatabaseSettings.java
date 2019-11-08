@@ -699,8 +699,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     "lucene+native-3.0: Like native-btree-1.0 but single property strings are stored in Lucene. " +
                     "A native index has faster updates, less heap and CPU usage compared to a Lucene index. " +
                     "A native index has some limitations around key size and slower execution of CONTAINS and ENDS WITH string index queries, " +
-                    "compared to a Lucene index. " +
-                    "A more detailed description about the different index providers can be found in documentation." )
+                    "compared to a Lucene index.\n" +
+                    "Deprecated: Which index provider to use will be a fully internal concern." )
+    @Deprecated
     public static final Setting<String> default_schema_provider =
             newBuilder( "dbms.index.default_schema_provider", STRING, SchemaIndex.NATIVE_BTREE10.toString() ).build();
 
