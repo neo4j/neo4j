@@ -33,6 +33,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 
 public enum CompressionFormat
@@ -116,7 +117,6 @@ public enum CompressionFormat
 
     public static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier ) throws IOException
     {
-
         if ( selectCompressionFormat().equals( ZSTD ) )
         {
             //ZSTD is available, try it.
@@ -124,9 +124,17 @@ public enum CompressionFormat
             {
                 return decompress( streamSupplier, ZSTD );
             }
-            catch (  IOException ioe )
+            catch (  IOException zstdIOe )
             {
-                //It failed, fallthrough to try GZIP
+                //It failed, lets try GZIP
+                try
+                {
+                    return decompress( streamSupplier, GZIP );
+                }
+                catch (  IOException gzipIOe )
+                {
+                    throw Exceptions.chain( zstdIOe, gzipIOe );
+                }
             }
         }
         return decompress( streamSupplier, GZIP );
