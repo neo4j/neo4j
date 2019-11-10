@@ -439,8 +439,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             maxPages = 5000;
             configureStandardPageCache();
-            PageCache pageCache = this.pageCache;
-            this.pageCache = null; // `null` out to prevent `tearDown` from getting stuck if test fails.
             File a = existingFile( "a" );
             File b = existingFile( "b" );
             try ( PagedFile pfA = map( pageCache, a, filePageSize ) )
@@ -485,8 +483,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void flushAndForceMustTolerateAsynchronousFileUnmapping() throws Exception
     {
         configureStandardPageCache();
-        PageCache pageCache = this.pageCache;
-        this.pageCache = null; // `null` out to prevent `tearDown` from getting stuck if test fails.
         File a = existingFile( "a" );
         File b = existingFile( "b" );
         File c = existingFile( "c" );
