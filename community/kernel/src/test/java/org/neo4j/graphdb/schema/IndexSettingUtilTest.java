@@ -39,7 +39,7 @@ class IndexSettingUtilTest
     @Test
     void shouldParseBoolean()
     {
-        final IndexSettingImpl setting = IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT;
+        final IndexSetting setting = IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT;
         final Class<?> type = setting.getType();
         assertEquals( Boolean.class, type );
 
@@ -51,7 +51,7 @@ class IndexSettingUtilTest
     @Test
     void shouldParseString()
     {
-        final IndexSettingImpl setting = IndexSettingImpl.FULLTEXT_ANALYZER;
+        final IndexSetting setting = IndexSettingImpl.FULLTEXT_ANALYZER;
         final Class<?> type = setting.getType();
         assertEquals( String.class, type );
 
@@ -63,7 +63,7 @@ class IndexSettingUtilTest
     @Test
     void shouldParseDoubleArray()
     {
-        final IndexSettingImpl setting = IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
+        final IndexSetting setting = IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
         final Class<?> type = setting.getType();
         assertEquals( double[].class, type );
 
@@ -159,7 +159,7 @@ class IndexSettingUtilTest
     @Test
     void shouldNotParseDoubleArray()
     {
-        final IndexSettingImpl setting = IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
+        final IndexSetting setting = IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
         final Class<?> type = setting.getType();
         assertEquals( double[].class, type );
         {
@@ -176,21 +176,21 @@ class IndexSettingUtilTest
         }
     }
 
-    private void assertBoolean( IndexSettingImpl setting, Object object, boolean expectedResult )
+    private void assertBoolean( IndexSetting setting, Object object, boolean expectedResult )
     {
         Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
         assertTrue( result instanceof BooleanValue );
         assertEquals( expectedResult, ((BooleanValue) result).booleanValue() );
     }
 
-    private void assertString( IndexSettingImpl setting, Object object, String expectedResult )
+    private void assertString( IndexSetting setting, Object object, String expectedResult )
     {
         Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
         assertTrue( result instanceof StringValue );
         assertEquals( expectedResult, ((StringValue) result).stringValue() );
     }
 
-    private void assertDoubleArray( IndexSettingImpl setting, Object object, double[] expectedResult )
+    private void assertDoubleArray( IndexSetting setting, Object object, double[] expectedResult )
     {
         Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
         assertTrue( result instanceof DoubleArray );

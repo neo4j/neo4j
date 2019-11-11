@@ -42,24 +42,24 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class IndexSettingUtil
 {
     @SuppressWarnings( "unchecked" )
-    private static final Map<String,IndexSettingImpl> INDEX_SETTING_REVERSE_LOOKUP = Map.ofEntries(
+    private static final Map<String,IndexSetting> INDEX_SETTING_REVERSE_LOOKUP = Map.ofEntries(
             Stream.of( IndexSettingImpl.values() ).map( s -> entry( s.getSettingName(), s ) ).toArray( Map.Entry[]::new ) );
 
     /**
      * @param string Case sensitive setting name.
      * @return Corresponding {@link IndexSettingImpl} or null if no match.
      */
-    public static IndexSettingImpl fromString( String string )
+    public static IndexSetting fromString( String string )
     {
         return INDEX_SETTING_REVERSE_LOOKUP.get( string );
     }
 
-    public static IndexConfig toIndexConfigFromIndexSettingObjectMap( Map<IndexSettingImpl,Object> indexConfiguration )
+    public static IndexConfig toIndexConfigFromIndexSettingObjectMap( Map<IndexSetting,Object> indexConfiguration )
     {
         Map<String,Value> collectingMap = new HashMap<>();
-        for ( Map.Entry<IndexSettingImpl,Object> entry : indexConfiguration.entrySet() )
+        for ( Map.Entry<IndexSetting,Object> entry : indexConfiguration.entrySet() )
         {
-            IndexSettingImpl setting = entry.getKey();
+            IndexSetting setting = entry.getKey();
             final Value value = asIndexSettingValue( setting, entry.getValue() );
             collectingMap.put( setting.getSettingName(), value );
         }
@@ -68,19 +68,19 @@ public class IndexSettingUtil
 
     public static IndexConfig toIndexConfigFromStringObjectMap( Map<String,Object> configMap )
     {
-        Map<IndexSettingImpl,Object> collectingMap = new HashMap<>();
+        Map<IndexSetting,Object> collectingMap = new HashMap<>();
         for ( Map.Entry<String,Object> entry : configMap.entrySet() )
         {
             final String key = entry.getKey();
-            final IndexSettingImpl indexSetting = asIndexSetting( key );
+            final IndexSetting indexSetting = asIndexSetting( key );
             collectingMap.put( indexSetting, entry.getValue() );
         }
         return toIndexConfigFromIndexSettingObjectMap( collectingMap );
     }
 
-    private static IndexSettingImpl asIndexSetting( String key )
+    private static IndexSetting asIndexSetting( String key )
     {
-        final IndexSettingImpl indexSetting = fromString( key );
+        final IndexSetting indexSetting = fromString( key );
         if ( indexSetting == null )
         {
             throw new IllegalArgumentException( String.format( "Invalid index config key '%s', it was not recognized as an index setting.", key ) );
@@ -89,13 +89,13 @@ public class IndexSettingUtil
     }
 
     @VisibleForTesting
-    static Value asIndexSettingValue( IndexSettingImpl setting, Object value )
+    static Value asIndexSettingValue( IndexSetting setting, Object value )
     {
         Objects.requireNonNull( value, "Index setting value can not be null." );
         return parse( setting, value );
     }
 
-    private static Value parse( IndexSettingImpl indexSetting, Object value )
+    private static Value parse( IndexSetting indexSetting, Object value )
     {
         final Class<?> type = indexSetting.getType();
         if ( type == Boolean.class )

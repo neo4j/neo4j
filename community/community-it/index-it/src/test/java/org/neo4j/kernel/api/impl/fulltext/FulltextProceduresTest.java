@@ -68,6 +68,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
@@ -2207,7 +2208,7 @@ public class FulltextProceduresTest
             while ( iterator.hasNext() )
             {
                 IndexDefinition index = iterator.next();
-                Map<IndexSettingImpl,Object> indexConfiguration = index.getIndexConfiguration();
+                Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
                 assertThat( eventuallyConsistentObj, instanceOf( Boolean.class ) );
@@ -2238,7 +2239,7 @@ public class FulltextProceduresTest
             while ( iterator.hasNext() )
             {
                 IndexDefinition index = iterator.next();
-                Map<IndexSettingImpl,Object> indexConfiguration = index.getIndexConfiguration();
+                Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
                 assertThat( eventuallyConsistentObj, instanceOf( Boolean.class ) );

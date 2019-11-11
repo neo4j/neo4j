@@ -20,17 +20,17 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.eclipse.collections.api.tuple.Pair;
+import org.eclipse.collections.impl.factory.Maps;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexSettingImpl;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.hashing.HashFunction;
@@ -213,13 +213,13 @@ public class IndexDefinitionImpl implements IndexDefinition
     }
 
     @Override
-    public Map<IndexSettingImpl,Object> getIndexConfiguration()
+    public Map<IndexSetting,Object> getIndexConfiguration()
     {
         IndexConfig indexConfig = indexReference.getIndexConfig();
-        Map<IndexSettingImpl,Object> asMap = new EnumMap<>( IndexSettingImpl.class );
+        Map<IndexSetting,Object> asMap = Maps.mutable.of();
         for ( Pair<String,Value> entry : indexConfig.entries() )
         {
-            IndexSettingImpl key = IndexSettingUtil.fromString( entry.getOne() );
+            IndexSetting key = IndexSettingUtil.fromString( entry.getOne() );
             if ( key != null )
             {
                 Object value = entry.getTwo().asObjectCopy();

@@ -36,7 +36,8 @@ public enum IndexType
      * BTREE indexes have the following abilities and limitations:
      * <ul>
      *     <li>They can be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
-     *     <li>They can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSettingImpl index settings} that start with "SPATIAL_".</li>
+     *     <li>They can have their spatial indexing behaviour fine-tuned,
+     *     using the {@linkplain IndexSettingImpl index settings} that start with "SPATIAL_".</li>
      *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
      *     <li>They cannot be created on {@link Schema#indexFor(RelationshipType) relationship types}.</li>
      * </ul>

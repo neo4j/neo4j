@@ -96,7 +96,7 @@ public interface ConstraintCreator
      * @param indexConfiguration The index settings in the index configuration that differ from their defaults.
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
-    ConstraintCreator withIndexConfiguration( Map<IndexSettingImpl,Object> indexConfiguration );
+    ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration );
 
     /**
      * Creates a constraint with the details specified by the other methods in this interface.

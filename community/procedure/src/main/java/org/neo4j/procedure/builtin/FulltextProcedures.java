@@ -19,8 +19,9 @@
  */
 package org.neo4j.procedure.builtin;
 
+import org.eclipse.collections.impl.factory.Maps;
+
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -169,7 +171,7 @@ public class FulltextProcedures
         config = sanitizeFulltextConfig( config );
         if ( !config.isEmpty() )
         {
-            Map<IndexSettingImpl,Object> parsedConfig = new EnumMap<>( IndexSettingImpl.class );
+            Map<IndexSetting,Object> parsedConfig = Maps.mutable.of();
 
             String analyzer = config.remove( PROCEDURE_ANALYZER );
             if ( analyzer != null )

@@ -78,7 +78,7 @@ public interface IndexCreator
      * @param indexConfiguration The index settings in the index configuration that differ from their defaults.
      * @return an {@link IndexCreator} instance to be used for further interaction.
      */
-    IndexCreator withIndexConfiguration( Map<IndexSettingImpl,Object> indexConfiguration );
+    IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration );
 
     /**
      * Creates an index with the details specified by the other methods in this interface.

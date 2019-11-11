@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexSettingImpl;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
@@ -73,7 +73,7 @@ public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstr
     }
 
     @Override
-    public ConstraintCreator withIndexConfiguration( Map<IndexSettingImpl,Object> indexConfiguration )
+    public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
     {
         return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType, IndexConfig.from( indexConfiguration ) );
     }

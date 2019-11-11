@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
@@ -76,17 +77,17 @@ public final class IndexConfig
         return new IndexConfig( Maps.immutable.withAll( map ) );
     }
 
-    public static IndexConfig from( Map<IndexSettingImpl,Object> map )
+    public static IndexConfig from( Map<IndexSetting,Object> map )
     {
         Map<String,Value> collectingMap = new HashMap<>();
-        for ( Map.Entry<IndexSettingImpl,Object> entry : map.entrySet() )
+        for ( Map.Entry<IndexSetting,Object> entry : map.entrySet() )
         {
-            IndexSettingImpl setting = entry.getKey();
+            IndexSetting setting = entry.getKey();
             Class<?> type = setting.getType();
             Object value = entry.getValue();
             if ( value == null || !type.isAssignableFrom( value.getClass() ) )
             {
-                throw new IllegalArgumentException( "Invalid value type for '" + setting.name() + "' setting. " +
+                throw new IllegalArgumentException( "Invalid value type for '" + setting.getSettingName() + "' setting. " +
                         "Expected a value of type " + type.getName() + ", " +
                         "but got value '" + value + "' of type " + (value == null ? "null" : value.getClass().getName()) + "." );
             }
@@ -95,7 +96,7 @@ public final class IndexConfig
         return with( collectingMap );
     }
 
-    public static IndexSettingImpl spatialMinSettingForCrs( CoordinateReferenceSystem crs )
+    public static IndexSetting spatialMinSettingForCrs( CoordinateReferenceSystem crs )
     {
         switch ( crs.getName() )
         {
@@ -112,7 +113,7 @@ public final class IndexConfig
         }
     }
 
-    public static IndexSettingImpl spatialMaxSettingForCrs( CoordinateReferenceSystem crs )
+    public static IndexSetting spatialMaxSettingForCrs( CoordinateReferenceSystem crs )
     {
         switch ( crs.getName() )
         {
@@ -162,7 +163,7 @@ public final class IndexConfig
         return (T) map.get( key );
     }
 
-    public <T extends Value> T get( IndexSettingImpl indexSetting )
+    public <T extends Value> T get( IndexSetting indexSetting )
     {
         return get( indexSetting.getSettingName() );
     }
