@@ -443,9 +443,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
         argumentIds == other.argumentIds &&
         selections == other.selections &&
         optionals &&
-      // ignore order, but differentiate between different counts of the same element
-      // TODO: not needed now when `hints` are a set?
-        hints.groupBy(identity) == other.hints.groupBy(identity) &&
+        hints == other.hints &&
         shortestPathPatterns == other.shortestPathPatterns &&
         mutatingPatterns == other.mutatingPatterns
 
