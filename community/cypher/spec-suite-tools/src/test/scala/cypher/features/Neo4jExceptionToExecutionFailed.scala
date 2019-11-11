@@ -179,15 +179,17 @@ object Neo4jExceptionToExecutionFailed {
     else if (msg.matches(semanticError("RETURN \\* is not allowed when there are no identifiers in scope")))
       NO_VARIABLES_IN_SCOPE
     else if (msg.matches(semanticError("Procedure call does not provide the required number of arguments.+")))
-      "InvalidNumberOfArguments"
+      INVALID_NUMBER_OF_ARGUMENTS
+    else if (msg.matches(semanticError("Procedure call provides too many arguments.+")))
+      INVALID_NUMBER_OF_ARGUMENTS
     else if (msg.matches("Expected a parameter named .+"))
-      "MissingParameter"
+      MISSING_PARAMETER
     else if (msg.startsWith("Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
-      "InvalidAggregation"
+      INVALID_AGGREGATION
     else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly"))
-      "InvalidArgumentPassingMode"
+      INVALID_ARGUMENT_PASSING_MODE
     else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
-      "ProcedureNotFound"
+      PROCEDURE_NOT_FOUND
     else
       msg
   }
