@@ -44,7 +44,7 @@ import org.neo4j.annotations.api.PublicApi;
  * </code></pre>
  */
 @PublicApi
-public enum IndexSetting
+public enum IndexSettingImpl
 {
     /**
      * Configure the analyzer used in a full-text index, indexes of type {@link IndexType#FULLTEXT}.
@@ -130,7 +130,7 @@ public enum IndexSetting
     private final String settingName;
     private final Class<?> valueType;
 
-    IndexSetting( String settingName, Class<?> valueType )
+    IndexSettingImpl( String settingName, Class<?> valueType )
     {
         this.settingName = settingName;
         this.valueType = valueType;

@@ -30,7 +30,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.hashing.HashFunction;
@@ -213,13 +213,13 @@ public class IndexDefinitionImpl implements IndexDefinition
     }
 
     @Override
-    public Map<IndexSetting,Object> getIndexConfiguration()
+    public Map<IndexSettingImpl,Object> getIndexConfiguration()
     {
         IndexConfig indexConfig = indexReference.getIndexConfig();
-        Map<IndexSetting,Object> asMap = new EnumMap<>( IndexSetting.class );
+        Map<IndexSettingImpl,Object> asMap = new EnumMap<>( IndexSettingImpl.class );
         for ( Pair<String,Value> entry : indexConfig.entries() )
         {
-            IndexSetting key = IndexSettingUtil.fromString( entry.getOne() );
+            IndexSettingImpl key = IndexSettingUtil.fromString( entry.getOne() );
             if ( key != null )
             {
                 Object value = entry.getTwo().asObjectCopy();

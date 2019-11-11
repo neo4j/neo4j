@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
@@ -74,7 +74,7 @@ public class NodeKeyConstraintCreator extends BaseNodeConstraintCreator
     }
 
     @Override
-    public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
+    public ConstraintCreator withIndexConfiguration( Map<IndexSettingImpl,Object> indexConfiguration )
     {
         return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType, IndexConfig.from( indexConfiguration ) );
     }

@@ -24,7 +24,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -42,7 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -170,18 +169,18 @@ public class FulltextProcedures
         config = sanitizeFulltextConfig( config );
         if ( !config.isEmpty() )
         {
-            Map<IndexSetting,Object> parsedConfig = new EnumMap<>( IndexSetting.class );
+            Map<IndexSettingImpl,Object> parsedConfig = new EnumMap<>( IndexSettingImpl.class );
 
             String analyzer = config.remove( PROCEDURE_ANALYZER );
             if ( analyzer != null )
             {
-                parsedConfig.put( IndexSetting.FULLTEXT_ANALYZER, analyzer );
+                parsedConfig.put( IndexSettingImpl.FULLTEXT_ANALYZER, analyzer );
             }
 
             String eventuallyConsistent = config.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
             if ( eventuallyConsistent != null )
             {
-                parsedConfig.put( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, Boolean.parseBoolean( eventuallyConsistent ) );
+                parsedConfig.put( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, Boolean.parseBoolean( eventuallyConsistent ) );
             }
 
             indexCreator = indexCreator.withIndexConfiguration( parsedConfig );

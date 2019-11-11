@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -38,7 +38,7 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
 
 /**
  * Utility class with static method for extracting relevant spatial index configurations from {@link CoordinateReferenceSystem} and
- * {@link SpaceFillingCurveSettings}. Configurations will be put into a map, with keys from {@link IndexSetting}.
+ * {@link SpaceFillingCurveSettings}. Configurations will be put into a map, with keys from {@link IndexSettingImpl}.
  * By using this class when extracting configurations we make sure that the same name and format is used for the same configuration.
  */
 public final class SpatialIndexConfig

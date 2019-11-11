@@ -44,7 +44,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -920,17 +920,17 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withName( "my_index" ).create();
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MIN ) );
+            assertTrue( config.containsKey( IndexSettingImpl.SPATIAL_CARTESIAN_MIN ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( IndexSetting.SPATIAL_CARTESIAN_MIN ) );
+            assertTrue( config.containsKey( IndexSettingImpl.SPATIAL_CARTESIAN_MIN ) );
             tx.commit();
         }
     }
@@ -941,17 +941,17 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create();
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( IndexSetting.FULLTEXT_ANALYZER ) );
+            assertTrue( config.containsKey( IndexSettingImpl.FULLTEXT_ANALYZER ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
-            assertTrue( config.containsKey( IndexSetting.FULLTEXT_ANALYZER ) );
+            assertTrue( config.containsKey( IndexSettingImpl.FULLTEXT_ANALYZER ) );
             tx.commit();
         }
     }
@@ -964,19 +964,19 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey )
                     .withIndexType( IndexType.FULLTEXT )
                     .withIndexConfiguration( Map.of(
-                            IndexSetting.FULLTEXT_ANALYZER, "swedish",
-                            IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, true ) )
+                            IndexSettingImpl.FULLTEXT_ANALYZER, "swedish",
+                            IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, true ) )
                     .create();
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertEquals( "swedish", config.get( IndexSetting.FULLTEXT_ANALYZER ) );
-            assertEquals( true, config.get( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT ) );
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
+            assertEquals( "swedish", config.get( IndexSettingImpl.FULLTEXT_ANALYZER ) );
+            assertEquals( true, config.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertEquals( "swedish", config.get( IndexSetting.FULLTEXT_ANALYZER ) );
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
+            assertEquals( "swedish", config.get( IndexSettingImpl.FULLTEXT_ANALYZER ) );
             tx.commit();
         }
     }
@@ -988,26 +988,26 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey )
                     .withIndexConfiguration( Map.of(
-                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0},
-                            IndexSetting.SPATIAL_WGS84_MIN, new double[] {-90.0, -90.0} ) )
+                            IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0},
+                            IndexSettingImpl.SPATIAL_WGS84_MIN, new double[] {-90.0, -90.0} ) )
                     .create();
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
-            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my_index" );
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
-            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
     }
 
     /**
-     * This is the example used in {@link IndexSetting}.
+     * This is the example used in {@link IndexSettingImpl}.
      */
     @Test
     void indexConfigurationExample()
@@ -1017,7 +1017,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             tx.schema().indexFor( Label.label( "Email" ) ).on( "from" ).on( "to" ).on( "cc" ).on( "bcc" )
                     .withName( "email-addresses" )
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, "email" ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.FULLTEXT_ANALYZER, "email" ) )
                     .create();
             tx.commit();
         }
@@ -1025,7 +1025,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             IndexDefinition index = tx.schema().getIndexByName( "email-addresses" );
             assertThat( index.getPropertyKeys(), containsInAnyOrder( "from", "to", "cc", "bcc" ) );
-            assertThat( index.getIndexConfiguration().get( IndexSetting.FULLTEXT_ANALYZER ), is( "email" ) );
+            assertThat( index.getIndexConfiguration().get( IndexSettingImpl.FULLTEXT_ANALYZER ), is( "email" ) );
             tx.commit();
         }
     }
@@ -1038,28 +1038,28 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             IndexCreator creator = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey );
             assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, 1 ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.FULLTEXT_ANALYZER, 1 ) )
                     .create() );
             assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, true ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.FULLTEXT_ANALYZER, true ) )
                     .create() );
             assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, "true" ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, "true" ) )
                     .create() );
             assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT, 1 ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, 1 ) )
                     .create() );
             assertThrows( IllegalArgumentException.class, () -> creator
-                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, "1" ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, "1" ) )
                     .create() );
             assertThrows( IllegalArgumentException.class, () -> creator
-                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, 1 ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, 1 ) )
                     .create() );
             assertThrows( IllegalArgumentException.class, () -> creator
-                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, 1.0 ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, 1.0 ) )
                     .create() );
             tx.commit();
         }
@@ -1074,12 +1074,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             IndexCreator creator = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey );
             e = assertThrows( IllegalArgumentException.class, () -> creator
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, "analyzer that does not exist" ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.FULLTEXT_ANALYZER, "analyzer that does not exist" ) )
                     .create() );
             assertThat( e.getMessage(), containsString( "'analyzer that does not exist'" ) );
 
             e = assertThrows( IllegalArgumentException.class, () -> creator
-                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, new double[] {100.0, 10.0, 1.0} ) )
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {100.0, 10.0, 1.0} ) )
                     .create() );
             assertThat( e.getMessage(), containsString( "Invalid spatial index settings" ) );
 
@@ -1301,21 +1301,21 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             ConstraintDefinition constraint = tx.schema().constraintFor( label ).withName( "my constraint" ).assertPropertyIsUnique( propertyKey )
                     .withIndexConfiguration( Map.of(
-                            IndexSetting.SPATIAL_CARTESIAN_MAX, new double[]{200.0, 200.0},
-                            IndexSetting.SPATIAL_WGS84_MIN, new double[]{-90.0, -90.0} ) )
+                            IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[]{200.0, 200.0},
+                            IndexSettingImpl.SPATIAL_WGS84_MIN, new double[]{-90.0, -90.0} ) )
                     .create();
             IndexDefinition index = tx.schema().getIndexByName( constraint.getName() );
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
-            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( "my constraint" );
-            Map<IndexSetting,Object> config = index.getIndexConfiguration();
-            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSetting.SPATIAL_CARTESIAN_MAX ) );
-            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSetting.SPATIAL_WGS84_MIN ) );
+            Map<IndexSettingImpl,Object> config = index.getIndexConfiguration();
+            assertArrayEquals( new double[] {200.0, 200.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_CARTESIAN_MAX ) );
+            assertArrayEquals( new double[] {-90.0, -90.0}, (double[]) config.get( IndexSettingImpl.SPATIAL_WGS84_MIN ) );
             tx.commit();
         }
     }

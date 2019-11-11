@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingImpl;
 
 /**
  * Responsible for naming of
@@ -27,8 +27,8 @@ import org.neo4j.graphdb.schema.IndexSetting;
 public final class FulltextIndexSettingsKeys
 {
     public static final String FULLTEXT_PREFIX = "fulltext.";
-    public static final String ANALYZER = IndexSetting.FULLTEXT_ANALYZER.getSettingName();
-    public static final String EVENTUALLY_CONSISTENT = IndexSetting.FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName();
+    public static final String ANALYZER = IndexSettingImpl.FULLTEXT_ANALYZER.getSettingName();
+    public static final String EVENTUALLY_CONSISTENT = IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName();
 
     // Config keys used as arguments by user in procedure call. No name space needed because implicit from procedure.
     public static final String PROCEDURE_ANALYZER = "analyzer";

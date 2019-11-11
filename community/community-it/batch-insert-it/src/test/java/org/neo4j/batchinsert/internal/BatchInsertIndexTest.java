@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -190,7 +190,7 @@ class BatchInsertIndexTest
         try ( BatchInserter inserter = newBatchInserter() )
         {
             assertThrows( UnsupportedOperationException.class, () -> inserter.createDeferredSchemaIndex( LABEL_ONE ).on( "key" )
-                    .withIndexConfiguration( Map.of( IndexSetting.SPATIAL_CARTESIAN_MAX, new double[]{0.0, 0.0} ) ).create() );
+                    .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[]{0.0, 0.0} ) ).create() );
         }
     }
 
