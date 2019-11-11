@@ -1018,7 +1018,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             tx.schema().indexFor( Label.label( "Email" ) ).on( "from" ).on( "to" ).on( "cc" ).on( "bcc" )
                     .withName( "email-addresses" )
                     .withIndexType( IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER(), "email" ) )
+                    .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), "email" ) )
                     .create();
             tx.commit();
         }
@@ -1026,7 +1026,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             IndexDefinition index = tx.schema().getIndexByName( "email-addresses" );
             assertThat( index.getPropertyKeys(), containsInAnyOrder( "from", "to", "cc", "bcc" ) );
-            assertThat( index.getIndexConfiguration().get( IndexSetting.FULLTEXT_ANALYZER() ), is( "email" ) );
+            assertThat( index.getIndexConfiguration().get( IndexSetting.fulltext_Analyzer() ), is( "email" ) );
             tx.commit();
         }
     }

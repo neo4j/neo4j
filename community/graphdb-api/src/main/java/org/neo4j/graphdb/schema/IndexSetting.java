@@ -37,7 +37,7 @@ import org.neo4j.annotations.api.PublicApi;
  *         tx.schema().indexFor( Label.label( "Email" ) ).on( "from" ).on( "to" ).on( "cc" ).on( "bcc" )
  *                 .withName( "email-addresses" )
  *                 .withIndexType( IndexType.FULLTEXT )
- *                 .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER(), "email" ) )
+ *                 .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), "email" ) )
  *                 .create();
  *         tx.commit();
  *     }
@@ -57,7 +57,7 @@ public interface IndexSetting
      * <p>
      * This setting is given as a String.
      */
-    static IndexSetting FULLTEXT_ANALYZER()
+    static IndexSetting fulltext_Analyzer()
     {
         return IndexSettingImpl.FULLTEXT_ANALYZER;
     }
@@ -68,7 +68,7 @@ public interface IndexSetting
      * <p>
      * This setting is given as a boolean.
      */
-    static IndexSetting FULLTEXT_EVENTUALLY_CONSISTENT()
+    static IndexSetting fulltext_Eventually_Consistent()
     {
         return IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT;
     }
@@ -80,7 +80,7 @@ public interface IndexSetting
      * <p>
      * Set min value for envelope in dimension order {@code [minX, minY]}.
      */
-    static IndexSetting SPATIAL_CARTESIAN_MIN()
+    static IndexSetting spatial_Cartesian_Min()
     {
         return IndexSettingImpl.SPATIAL_CARTESIAN_MIN;
     }
@@ -92,7 +92,7 @@ public interface IndexSetting
      * <p>
      * Set max value for envelope in dimension order {@code [maxX, maxY]}.
      */
-    static IndexSetting SPATIAL_CARTESIAN_MAX()
+    static IndexSetting spatial_Cartesian_Max()
     {
         return IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
     }
@@ -104,7 +104,7 @@ public interface IndexSetting
      * <p>
      * Set min value for envelope in dimension order {@code [minX, minY, minZ]}.
      */
-    static IndexSetting SPATIAL_CARTESIAN_3D_MIN()
+    static IndexSetting spatial_Cartesian_3D_Min()
     {
         return IndexSettingImpl.SPATIAL_CARTESIAN_3D_MIN;
     }
@@ -116,7 +116,7 @@ public interface IndexSetting
      * <p>
      * Set max value for envelope in dimension order {@code [maxX, maxY, maxZ]}.
      */
-    static IndexSetting SPATIAL_CARTESIAN_3D_MAX()
+    static IndexSetting spatial_Cartesian_3D_Max()
     {
         return IndexSettingImpl.SPATIAL_CARTESIAN_3D_MAX;
     }
@@ -128,7 +128,7 @@ public interface IndexSetting
      * <p>
      * Set min value for envelope in dimension order {@code [minLongitude, minLatitude]}.
      */
-    static IndexSetting SPATIAL_WGS84_MIN()
+    static IndexSetting spatial_Wgs84_Min()
     {
         return IndexSettingImpl.SPATIAL_WGS84_MIN;
     }
@@ -140,7 +140,7 @@ public interface IndexSetting
      * <p>
      * Set max value for envelope in dimension order {@code [maxLongitude, maxLatitude]}.
      */
-    static IndexSetting SPATIAL_WGS84_MAX()
+    static IndexSetting spatial_Wgs84_Max()
     {
         return IndexSettingImpl.SPATIAL_WGS84_MAX;
     }
@@ -152,7 +152,7 @@ public interface IndexSetting
      * <p>
      * Set min value for envelope in dimension order {@code [minLongitude, minLatitude, minZ]}.
      */
-    static IndexSetting SPATIAL_WGS84_3D_MIN()
+    static IndexSetting spatial_Wgs84_3D_Min()
     {
         return IndexSettingImpl.SPATIAL_WGS84_3D_MIN;
     }
@@ -164,7 +164,7 @@ public interface IndexSetting
      * <p>
      * Set max value for envelope in dimension order {@code [maxLongitude, maxLatitude, maxZ]}.
      */
-    static IndexSetting SPATIAL_WGS84_3D_MAX()
+    static IndexSetting spatial_Wgs84_3D_Max()
     {
         return IndexSettingImpl.SPATIAL_WGS84_3D_MAX;
     }
