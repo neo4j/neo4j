@@ -22,65 +22,64 @@ package org.neo4j.graphdb.factory.module;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
-import org.neo4j.scheduler.Group;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.time.Duration.ofMinutes;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.UNKNOWN;
+import static org.neo4j.scheduler.Group.LOG_ROTATION;
 
 @ExtendWith( TestDirectoryExtension.class )
 class PlatformModuleTest
 {
     @Inject
     private TestDirectory testDirectory;
+    private PlatformModule pm;
 
     @Test
-    void shouldRunDeferredExecutors() throws InterruptedException
+    void shouldRunDeferredExecutors()
     {
-        AtomicInteger counter = new AtomicInteger( 0 );
-        Semaphore lock = new Semaphore( 1 );
+        assertTimeoutPreemptively( ofMinutes( 1 ), () ->
+        {
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Semaphore lock = new Semaphore( 1 );
 
-        BufferingExecutor later = new BufferingExecutor();
+            BufferingExecutor later = new BufferingExecutor();
 
-        // add our later executor to the external dependencies
-        GraphDatabaseDependencies externalDependencies = newDependencies()
-                .withDeferredExecutor( later, Group.LOG_ROTATION );
+            // add our later executor to the external dependencies
+            GraphDatabaseDependencies externalDependencies = newDependencies().withDeferredExecutor( later, LOG_ROTATION );
 
-        // Take the lock, we're going to use this to synchronize with tasks that run in the executor
-        lock.acquire(1);
+            // Take the lock, we're going to use this to synchronize with tasks that run in the executor
+            lock.acquire( 1 );
 
-        // add an increment task to the deferred executor
-        later.execute( counter::incrementAndGet );
-        later.execute( lock::release );
+            // add an increment task to the deferred executor
+            later.execute( latch::countDown );
+            later.execute( lock::release );
 
-        // if I try and get the lock it should fail because the deferred executor is still waiting for a real executor implementation.
-        // n.b. this will take the whole timeout time. So don't set this high, even if it means that this test might get lucky and pass
-        assertFalse( lock.tryAcquire(1,1, TimeUnit.SECONDS) );
-        // my counter is still unincremented as well
-        assertThat( counter.get(), equalTo( 0 ) );
+            // if I try and get the lock it should fail because the deferred executor is still waiting for a real executor implementation.
+            // n.b. this will take the whole timeout time. So don't set this high, even if it means that this test might get lucky and pass
+            assertFalse( lock.tryAcquire( 1, 1, SECONDS ) );
+            assertThat( latch.getCount(), equalTo( 1L ) );
 
-        // When I construct a PlatformModule...
-        PlatformModule pm = new PlatformModule( testDirectory.storeDir(), Config.defaults(), DatabaseInfo.UNKNOWN, externalDependencies );
+            pm = new PlatformModule( testDirectory.storeDir(), Config.defaults(), UNKNOWN, externalDependencies );
 
-        // then the tasks that I queued up earlier should be run...
-        // the timeout here is really high to ensure that this test does not become flaky because of a slow running JVM
-        // e.g. due to lots of CPU contention or garbage collection.
-        assertTrue( lock.tryAcquire(1,60, TimeUnit.SECONDS) );
-        assertThat( counter.get(), equalTo( 1 ) );
+            assertTrue( lock.tryAcquire( 1, MINUTES ) );
+            assertTrue( latch.await( 1, MINUTES ) );
+        } );
     }
 }

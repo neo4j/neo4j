@@ -166,7 +166,7 @@ public class PlatformModule
         dependencies.satisfyDependency( monitors );
 
         jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
-        startDeferredExecutors(jobScheduler, externalDependencies.deferredExecutors());
+        startDeferredExecutors( jobScheduler, externalDependencies.deferredExecutors() );
 
         // Cleanup after recovery, used by GBPTree, added to life in NeoStoreDataSource
         recoveryCleanupWorkCollector = new GroupingRecoveryCleanupWorkCollector( jobScheduler );
