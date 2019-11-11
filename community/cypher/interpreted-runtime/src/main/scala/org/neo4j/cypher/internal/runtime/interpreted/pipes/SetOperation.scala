@@ -45,39 +45,12 @@ sealed trait SetOperation {
 
 object SetOperation {
 
-  private[pipes] def toMap(executionContext: ExecutionContext, state: QueryState, expression: Expression) = {
+  private[pipes] def toMap(executionContext: ExecutionContext, state: QueryState, expression: Expression): MapValue = {
     /* Make the map expression look like a map */
     expression(executionContext, state) match {
-      case IsMap(map) => propertyKeyMap(state.query, map(state))
+      case IsMap(map) => map(state)
       case x => throw new CypherTypeException(s"Expected $expression to be a map, but it was :`$x`")
     }
-  }
-
-  private def propertyKeyMap(qtx: QueryContext, map: MapValue): Map[Int, AnyValue] = {
-    val builder = Map.newBuilder[Int, AnyValue]
-    val setKeys = new ArrayBuffer[String]()
-    val setValues = new ArrayBuffer[AnyValue]()
-
-    map.foreach((k: String, v: AnyValue) => {
-      if (v eq Values.NO_VALUE) {
-        val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
-        if (optPropertyKeyId.isDefined) {
-          builder += optPropertyKeyId.get -> v
-        }
-      }
-      else {
-        setKeys += k
-        setValues += v
-      }
-    })
-
-    // Adding property keys is O(|totalPropertyKeyIds|^2) per call, so
-    // batch creation is way faster is graphs with many propertyKeyIds
-    val propertyIds = qtx.getOrCreatePropertyKeyIds(setKeys.toArray)
-    for (i <- propertyIds.indices)
-      builder += (propertyIds(i) -> setValues(i))
-
-    builder.result()
   }
 }
 
@@ -213,25 +186,41 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 
 abstract class AbstractSetPropertyFromMapOperation(expression: Expression) extends SetOperation {
 
-  protected def setPropertiesFromMap[T, CURSOR](propertyCursor: PropertyCursor,
-                                        entityCursor: CURSOR,
-                                        ops: Operations[T, CURSOR],
-                                        itemId: Long,
-                                        map: Map[Int, AnyValue],
-                                        removeOtherProps: Boolean) {
+  protected def setPropertiesFromMap[T, CURSOR]( propertyCursor: PropertyCursor,
+                                                 qtx: QueryContext,
+                                                 entityCursor: CURSOR,
+                                                 ops: Operations[T, CURSOR],
+                                                 itemId: Long,
+                                                 map: MapValue,
+                                                 removeOtherProps: Boolean) {
+    val setKeys = new ArrayBuffer[String]()
+    val setValues = new ArrayBuffer[AnyValue]()
 
     /*Set all map values on the property container*/
-    for ((k, v) <- map) {
-      if (v eq Values.NO_VALUE)
-        ops.removeProperty(itemId, k)
-      else
-        ops.setProperty(itemId, k, runtime.makeValueNeoSafe(v))
-    }
+    map.foreach((k: String, v: AnyValue) => {
+      if (v eq Values.NO_VALUE) {
+        val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
+        if (optPropertyKeyId.isDefined) {
+          ops.removeProperty(itemId, optPropertyKeyId.get)
+        }
+      }
+      else {
+        setKeys += k
+        setValues += v
+      }
+    })
 
-    val properties = ops.propertyKeyIds(itemId, entityCursor, propertyCursor).filterNot(map.contains).toSet
+    // Adding property keys is O(|totalPropertyKeyIds|^2) per call, so
+    // batch creation is way faster is graphs with many propertyKeyIds
+    val propertyIds = qtx.getOrCreatePropertyKeyIds(setKeys.toArray)
+    for (i <- propertyIds.indices) {
+      ops.setProperty(itemId, propertyIds(i), runtime.makeValueNeoSafe(setValues(i)))
+    }
 
     /*Remove all other properties from the property container ( SET n = {prop1: ...})*/
     if (removeOtherProps) {
+      val seen = propertyIds.toSet
+      val properties = ops.propertyKeyIds(itemId, entityCursor, propertyCursor).filterNot(seen.contains).toSet
       for (propertyKeyId <- properties) {
         ops.removeProperty(itemId, propertyKeyId)
       }
@@ -255,7 +244,7 @@ abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
       try {
         val map = SetOperation.toMap(executionContext, state, expression)
 
-        setPropertiesFromMap(state.cursors.propertyCursor, entityCursor(state.cursors), ops, itemId, map, removeOtherProps)
+        setPropertiesFromMap(state.cursors.propertyCursor, state.query, entityCursor(state.cursors), ops, itemId, map, removeOtherProps)
       } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     }
   }
@@ -321,7 +310,7 @@ case class SetPropertyFromMapOperation(entityExpr: Expression,
         try {
           val map = SetOperation.toMap(executionContext, state, expression)
 
-          setPropertiesFromMap(state.cursors.propertyCursor, cursor, ops, entityId, map, removeOtherProps)
+          setPropertiesFromMap(state.cursors.propertyCursor, state.query, cursor, ops, entityId, map, removeOtherProps)
         } finally ops.releaseExclusiveLock(entityId)
       }
 
