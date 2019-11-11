@@ -100,12 +100,15 @@ case class ResolvedCall(signature: ProcedureSignature,
     argumentCheck chain resultCheck
 
   private def argumentCheck: SemanticCheck = {
-    val expectedNumArgs = signature.inputSignature.length
-    val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
-    val actualNumArgs = callArguments.length + usedDefaultArgs.length
+    val totalNumArgs = signature.inputSignature.length
+    val numArgsWithDefaults = signature.inputSignature.flatMap(_.default).size
+    val minNumArgs = totalNumArgs - numArgsWithDefaults
+    val givenNumArgs = callArguments.length
 
     if (declaredArguments) {
-      if (expectedNumArgs == actualNumArgs) {
+      val tooFewArgs = givenNumArgs < minNumArgs
+      val tooManyArgs = givenNumArgs > totalNumArgs
+      if (!tooFewArgs && !tooManyArgs) {
         //this zip is fine since it will only verify provided args in callArguments
         //default values are checked at load time
         signature.inputSignature.zip(callArguments).map {
@@ -114,23 +117,42 @@ case class ResolvedCall(signature: ProcedureSignature,
               SemanticExpressionCheck.expectType(field.typ.covariant, arg)
         }.foldLeft(success)(_ chain _)
       } else {
-        val msg = (if (signature.inputSignature.isEmpty) "arguments"
-        else if (signature.inputSignature.size == 1) s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
-        else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
-          signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
+        val argTypes = minNumArgs match {
+          case 0 => "no arguments"
+          case 1 => s"at least 1 argument of type ${
+            signature.inputSignature.head.typ.toNeoTypeString
+          }"
+          case _ => s"at least $minNumArgs arguments of types ${
+            signature.inputSignature.take(minNumArgs).map(_.typ.toNeoTypeString).mkString(", ")
+          }"
+        }
+        val sigDesc =
+          s"""Procedure ${signature.name} has signature: $signature
+             |meaning that it expects $argTypes""".stripMargin
+        val description = signature.description.fold("")(d => s"Description: $d")
 
-        val defaultArgMsg = if (usedDefaultArgs.nonEmpty) {
-          val isOrAre = if (usedDefaultArgs.length > 1) "are" else "is"
-          s" (where ${usedDefaultArgs.length} $isOrAre optional)."
-        } else "."
-        error(_: SemanticState, SemanticError(
-          s"""Procedure call does not provide the required number of arguments: got ${callArguments.length} expected $expectedNumArgs$defaultArgMsg
-             |
-             |Procedure ${signature.name} has signature: $signature
-             |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
+        if (tooFewArgs) {
+          error(_: SemanticState, SemanticError(
+            s"""Procedure call does not provide the required number of arguments: got $givenNumArgs expected at least $minNumArgs (total: $totalNumArgs, $numArgsWithDefaults of which have default values).
+               |
+               |$sigDesc
+               |$description""".stripMargin, position)
+          )
+        } else {
+          val maxExpectedMsg = totalNumArgs match {
+            case 0 => "none"
+            case _ => s"no more than $totalNumArgs"
+          }
+          error(_: SemanticState, SemanticError(
+            s"""Procedure call provides too many arguments: got $givenNumArgs expected $maxExpectedMsg.
+               |
+               |$sigDesc
+               |$description""".stripMargin, position)
+          )
+        }
       }
     } else {
-      if (expectedNumArgs == 0)
+      if (totalNumArgs == 0)
         error(_: SemanticState, SemanticError("Procedure call is missing parentheses: " + signature.name, position))
       else
         error(_: SemanticState, SemanticError("Procedure call inside a query does not support passing arguments implicitly. " +

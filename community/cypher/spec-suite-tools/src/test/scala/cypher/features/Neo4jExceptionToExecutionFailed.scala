@@ -188,6 +188,8 @@ object Neo4jExceptionToExecutionFailed {
       NO_VARIABLES_IN_SCOPE
     else if (msg.matches(semanticError("Procedure call does not provide the required number of arguments.+")))
       INVALID_NUMBER_OF_ARGUMENTS
+    else if (msg.matches(semanticError("Procedure call provides too many arguments.+")))
+      INVALID_NUMBER_OF_ARGUMENTS
     else if (msg.matches("Expected a parameter named .+"))
       MISSING_PARAMETER
     else if (msg.startsWith("Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
