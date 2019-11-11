@@ -22,7 +22,6 @@ package org.neo4j.internal.id;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 
-import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -32,10 +31,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
-import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -56,7 +55,7 @@ class DelayedBufferTest
         final int size = 1_000;
         final long bufferTime = 3;
         VerifyingConsumer consumer = new VerifyingConsumer( size );
-        final Clock clock = Clocks.systemClock();
+        final FakeClock clock = Clocks.fakeClock();
         Supplier<Long> chunkThreshold = clock::millis;
         Predicate<Long> safeThreshold = time -> clock.millis() - bufferTime >= time;
         final DelayedBuffer<Long> buffer = new DelayedBuffer<>( chunkThreshold, safeThreshold, 10, consumer );
@@ -75,7 +74,7 @@ class DelayedBufferTest
                     {
                         buffer.offer( j );
                         offeredIds[j] = 1;
-                        parkNanos( MILLISECONDS.toNanos( current().nextInt( 2 ) ) );
+                        clock.forward( 2, MILLISECONDS );
                     }
                 }
             } );
@@ -89,6 +88,8 @@ class DelayedBufferTest
             assertEquals( (byte) 1, offeredIds[i], "ID " + i );
         }
         maintenance.halt();
+        clock.forward( 1, SECONDS );
+        buffer.maintenance();
         buffer.close();
 
         // THEN

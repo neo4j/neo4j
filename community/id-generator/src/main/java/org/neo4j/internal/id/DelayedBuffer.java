@@ -152,11 +152,7 @@ public class DelayedBuffer<T>
      */
     public synchronized void close()
     {
-        flush();
-        while ( !chunks.isEmpty() )
-        {
-            chunkConsumer.accept( chunks.poll().values );
-        }
+        clear();
     }
 
     public synchronized void clear()
