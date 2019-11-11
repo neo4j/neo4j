@@ -222,33 +222,30 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     private Credential getInitialPassword() throws Exception
     {
         Credential credential = null;
-        if ( initialUserRepository != null )// TODO should not be able to be null
+        startUserRepository( this.initialUserRepository );
+        if ( initialUserRepository.numberOfUsers() == 1 )
         {
-            startUserRepository( this.initialUserRepository );
-            if ( initialUserRepository.numberOfUsers() == 1 )
+            // In alignment with InternalFlatFileRealm we only allow the INITIAL_USER_NAME here for now
+            // (This is what we get from the `set-initial-password` command
+            User initialUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
+            if ( initialUser != null )
             {
-                // In alignment with InternalFlatFileRealm we only allow the INITIAL_USER_NAME here for now
-                // (This is what we get from the `set-initial-password` command)
-                User initialUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
-                if ( initialUser != null )
-                {
-                    credential = initialUser.credentials();
-                }
-                else
-                {
-                    String errorMessage = "Invalid `auth.ini` file: the user in the file is not named " + INITIAL_USER_NAME;
-                    log.error( errorMessage );
-                    throw new SecurityException( errorMessage );
-                }
+                credential = initialUser.credentials();
             }
-            else if ( initialUserRepository.numberOfUsers() > 1 )
+            else
             {
-                String errorMessage = "Invalid `auth.ini` file: the file contains more than one user";
+                String errorMessage = "Invalid `auth.ini` file: the user in the file is not named " + INITIAL_USER_NAME;
                 log.error( errorMessage );
-                throw new SecurityException( errorMessage );
+                throw new IllegalStateException( errorMessage );
             }
-            stopUserRepository( initialUserRepository );
         }
+        else if ( initialUserRepository.numberOfUsers() > 1 )
+        {
+            String errorMessage = "Invalid `auth.ini` file: the file contains more than one user";
+            log.error( errorMessage );
+            throw new IllegalStateException( errorMessage );
+        }
+        stopUserRepository( initialUserRepository );
         return credential;
     }
 
