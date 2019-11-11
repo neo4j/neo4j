@@ -108,7 +108,7 @@ class CountsState implements AutoCloseable
         dynamicNodeLabelsCache.clear();
     }
 
-    private RelationshipCounter.NodeLabelsLookup nodeLabelsLookup()
+    RelationshipCounter.NodeLabelsLookup nodeLabelsLookup()
     {
         return new RelationshipCounter.NodeLabelsLookup()
         {

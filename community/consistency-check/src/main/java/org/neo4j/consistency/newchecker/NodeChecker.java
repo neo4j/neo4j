@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.LongConsumer;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
@@ -39,8 +40,10 @@ import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
 import org.neo4j.internal.index.label.NodeLabelRange;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
+import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -290,8 +293,7 @@ class NodeChecker implements Checker
             long[] labelsInLabelIndex = labelIndexState.currentRange.labels( nodeId );
             if ( labels != null )
             {
-                validateLabelIds( nodeCursor, labels, sortAndDeduplicate( labelsInLabelIndex ) /* TODO remove when fixed */,
-                        PropertySchemaType.COMPLETE_ALL_TOKENS, labelIndexState.currentRange );
+                validateLabelIds( nodeCursor, labels, sortAndDeduplicate( labelsInLabelIndex ) /* TODO remove when fixed */, labelIndexState.currentRange );
             }
             labelIndexState.lastCheckedNodeId = nodeId;
         }
@@ -330,69 +332,71 @@ class NodeChecker implements Checker
         }
     }
 
-    private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, PropertySchemaType propertySchemaType,
-            NodeLabelRange nodeLabelRange )
+    private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, NodeLabelRange nodeLabelRange )
     {
-        if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
+        compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, labelsInStore, labelsInIndex,
+                indexLabel -> reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) )
+                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( node.getId() ), indexLabel ),
+                storeLabel -> reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) )
+                        .nodeLabelNotInIndex( recordLoader.node( node.getId() ), storeLabel ) );
+    }
+
+    private static void compareTwoSortedLongArrays( PropertySchemaType propertySchemaType, long[] a, long[] b,
+            LongConsumer bHasSomethingThatAIsMissingReport, LongConsumer aHasSomethingThatBIsMissingReport )
+    {
+        // The node must have all of the labels specified by the index.
+        int bCursor = 0;
+        int aCursor = 0;
+        boolean anyFound = false;
+        while ( aCursor < a.length && bCursor < b.length && a[aCursor] != -1 && b[bCursor] != -1 )
         {
-            // The node must have all of the labels specified by the index.
-            int indexCursor = 0;
-            int storeCursor = 0;
+            long bValue = b[bCursor];
+            long aValue = a[aCursor];
 
-            while ( indexCursor < labelsInIndex.length && storeCursor < labelsInStore.length )
-            {
-                long indexLabel = labelsInIndex[indexCursor];
-                long storeLabel = labelsInStore[storeCursor];
-                if ( indexLabel < storeLabel )
-                {   // node store has a label which isn't in label scan store
-                    reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) )
-                            .nodeDoesNotHaveExpectedLabel( recordLoader.node( node.getId() ), indexLabel );
-                    indexCursor++;
+            if ( bValue < aValue )
+            {   // node store has a label which isn't in label scan store
+                if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
+                {
+                    bHasSomethingThatAIsMissingReport.accept( bValue );
                 }
-                else if ( indexLabel > storeLabel )
-                {   // label scan store has a label which isn't in node store
-                    reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) ).nodeLabelNotInIndex( recordLoader.node( node.getId() ), storeLabel );
-                    storeCursor++;
-                }
-                else
-                {   // both match
-                    indexCursor++;
-                    storeCursor++;
-                }
+                bCursor++;
             }
-
-            while ( indexCursor < labelsInIndex.length )
-            {
-                reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) ).nodeDoesNotHaveExpectedLabel(
-                        recordLoader.node( node.getId() ), labelsInIndex[indexCursor++] );
+            else if ( bValue > aValue )
+            {   // label scan store has a label which isn't in node store
+                if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
+                {
+                    aHasSomethingThatBIsMissingReport.accept( aValue );
+                }
+                aCursor++;
             }
-            while ( storeCursor < labelsInStore.length )
-            {
-                reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) ).nodeLabelNotInIndex(
-                        recordLoader.node( node.getId() ), labelsInStore[storeCursor] );
-                storeCursor++;
+            else
+            {   // both match
+                bCursor++;
+                aCursor++;
+                anyFound = true;
             }
         }
-//        else if ( propertySchemaType == PropertySchemaType.PARTIAL_ANY_TOKEN )
-//        {
-//            // The node must have at least one label in the index.
-//            for ( long storeLabel : labelsInStore )
-//            {
-//                if ( Arrays.binarySearch( labelsInIndex, storeLabel ) >= 0 )
-//                {
-//                    // The node has one of the indexed labels, so we're good.
-//                    return;
-//                }
-//            }
-//            // The node had none of the indexed labels, so we report all of them as missing.
-//            for ( long indexLabel : labelsInIndex )
-//            {
-//                report.nodeDoesNotHaveExpectedLabel( node, indexLabel );
-//            }
-//        }
-        else
+
+        if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
         {
-            throw new IllegalStateException( "Unknown property schema type '" + propertySchemaType + "'." );
+            while ( bCursor < b.length && b[bCursor] != -1 )
+            {
+                bHasSomethingThatAIsMissingReport.accept( b[bCursor++] );
+            }
+            while ( aCursor < a.length && a[aCursor] != -1 )
+            {
+                aHasSomethingThatBIsMissingReport.accept( a[aCursor++] );
+            }
+        }
+        else if ( propertySchemaType == PropertySchemaType.PARTIAL_ANY_TOKEN )
+        {
+            if ( !anyFound )
+            {
+                while ( bCursor < b.length )
+                {
+                    bHasSomethingThatAIsMissingReport.accept( b[bCursor++] );
+                }
+            }
         }
     }
 
@@ -400,6 +404,10 @@ class NodeChecker implements Checker
     {
         CacheAccess.Client client = context.cacheAccess.client();
         IndexAccessor accessor = context.indexAccessors.accessorFor( descriptor );
+        RelationshipCounter.NodeLabelsLookup nodeLabelsLookup = observedCounts.nodeLabelsLookup();
+        SchemaDescriptor schema = descriptor.schema();
+        PropertySchemaType propertySchemaType = schema.propertySchemaType();
+        long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
         try ( BoundedIterable<Long> allEntriesReader = accessor.newAllEntriesReader( range.from(), range.to() ) )
         {
             for ( long entityId : allEntriesReader )
@@ -411,6 +419,14 @@ class NodeChecker implements Checker
                     {
                         reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse( recordLoader.node( entityId ) );
                     }
+                    else
+                    {
+                        long[] entityTokenIds = nodeLabelsLookup.nodeLabels( entityId );
+                        compareTwoSortedLongArrays( propertySchemaType, entityTokenIds, indexEntityTokenIds,
+                                indexLabel -> reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
+                                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( entityId ), indexLabel ),
+                                storeLabel -> {/*here we're only interested in what the the index has that the store doesn't have*/} );
+                    }
                 }
                 catch ( ArrayIndexOutOfBoundsException e )
                 {
@@ -419,6 +435,16 @@ class NodeChecker implements Checker
                 }
             }
         }
+    }
+
+    private static long[] toLongArray( int[] intArray )
+    {
+        long[] result = new long[intArray.length];
+        for ( int i = 0; i < intArray.length; i++ )
+        {
+            result[i] = intArray[i];
+        }
+        return result;
     }
 
     @Override
