@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
@@ -151,6 +152,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LeaseService leaseService;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
+    private final BooleanSupplier stoppedCheck;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
     private final ConstraintSemantics constraintSemantics;
@@ -207,7 +209,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            DatabaseId databaseId, LeaseService leaseService )
+            DatabaseId databaseId, LeaseService leaseService, BooleanSupplier stoppedCheck )
     {
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -215,6 +217,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storageReader = storageEngine.newReader();
         this.commandCreationContext = storageEngine.newCommandCreationContext();
+        this.stoppedCheck = stoppedCheck;
         this.schemaReleaseVisitor = new SchemaReleaseVisitor( commandCreationContext );
         this.storageEngine = storageEngine;
         this.pool = pool;
@@ -754,8 +757,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         "Could not drop created constraint indexes" );
             }
 
-            // Free any acquired id's
-            if ( txState != null )
+            // Free any acquired id's, but only if the db that we're running on isn't stopped (i.e. shutting down)
+            if ( txState != null && !stoppedCheck.getAsBoolean() )
             {
                 try
                 {
