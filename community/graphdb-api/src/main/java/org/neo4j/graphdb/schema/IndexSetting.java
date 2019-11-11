@@ -19,9 +19,153 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.annotations.api.PublicApi;
+
+/**
+ * Index settings are used for fine-tuning the behaviour of schema indexes.
+ * All indexes have a configuration associated with them, and it is only necessary to specify the particular settings in that configuration,
+ * that should differ from their defaults.
+ * <p>
+ * Index settings can only be specified when the index is created.
+ * Once the index has been created, the index configuration becomes immutable.
+ * <p>
+ * Here is an example where a full-text index is created with a custom analyzer:
+ *
+ * <pre><code>
+ *     try ( Transaction tx = database.beginTx() )
+ *     {
+ *         tx.schema().indexFor( Label.label( "Email" ) ).on( "from" ).on( "to" ).on( "cc" ).on( "bcc" )
+ *                 .withName( "email-addresses" )
+ *                 .withIndexType( IndexType.FULLTEXT )
+ *                 .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER(), "email" ) )
+ *                 .create();
+ *         tx.commit();
+ *     }
+ * </code></pre>
+ */
+@PublicApi
 public interface IndexSetting
 {
     String getSettingName();
 
     Class<?> getType();
+
+    /**
+     * Configure the analyzer used in a full-text index, indexes of type {@link IndexType#FULLTEXT}.
+     * <p>
+     * The list of possible analyzers are available via the {@code db.index.fulltext.listAvailableAnalyzers()} procedure.
+     * <p>
+     * This setting is given as a String.
+     */
+    static IndexSetting FULLTEXT_ANALYZER()
+    {
+        return IndexSettingImpl.FULLTEXT_ANALYZER;
+    }
+
+    /**
+     * Configure if a full-text index is allowed to be eventually consistent.
+     * By default full-text indexes are fully consistent, just like other schema indexes.
+     * <p>
+     * This setting is given as a boolean.
+     */
+    static IndexSetting FULLTEXT_EVENTUALLY_CONSISTENT()
+    {
+        return IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minX, minY]}.
+     */
+    static IndexSetting SPATIAL_CARTESIAN_MIN()
+    {
+        return IndexSettingImpl.SPATIAL_CARTESIAN_MIN;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxX, maxY]}.
+     */
+    static IndexSetting SPATIAL_CARTESIAN_MAX()
+    {
+        return IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minX, minY, minZ]}.
+     */
+    static IndexSetting SPATIAL_CARTESIAN_3D_MIN()
+    {
+        return IndexSettingImpl.SPATIAL_CARTESIAN_3D_MIN;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxX, maxY, maxZ]}.
+     */
+    static IndexSetting SPATIAL_CARTESIAN_3D_MAX()
+    {
+        return IndexSettingImpl.SPATIAL_CARTESIAN_3D_MAX;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minLongitude, minLatitude]}.
+     */
+    static IndexSetting SPATIAL_WGS84_MIN()
+    {
+        return IndexSettingImpl.SPATIAL_WGS84_MIN;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxLongitude, maxLatitude]}.
+     */
+    static IndexSetting SPATIAL_WGS84_MAX()
+    {
+        return IndexSettingImpl.SPATIAL_WGS84_MAX;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set min value for envelope in dimension order {@code [minLongitude, minLatitude, minZ]}.
+     */
+    static IndexSetting SPATIAL_WGS84_3D_MIN()
+    {
+        return IndexSettingImpl.SPATIAL_WGS84_3D_MIN;
+    }
+
+    /**
+     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * <p>
+     * Configuration for cartesian coordinate reference system.
+     * <p>
+     * Set max value for envelope in dimension order {@code [maxLongitude, maxLatitude, maxZ]}.
+     */
+    static IndexSetting SPATIAL_WGS84_3D_MAX()
+    {
+        return IndexSettingImpl.SPATIAL_WGS84_3D_MAX;
+    }
 }

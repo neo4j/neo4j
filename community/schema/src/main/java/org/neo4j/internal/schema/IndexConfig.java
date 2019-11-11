@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.graphdb.schema.IndexSetting;
-import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
@@ -40,6 +39,10 @@ import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_3D_MAX
 import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_3D_MIN;
 import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
 import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MIN;
+import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MAX;
+import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MIN;
+import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX;
+import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN;
 
 /**
  * The index configuration is an immutable map from Strings to Values.
@@ -105,9 +108,9 @@ public final class IndexConfig
         case "cartesian-3d":
             return SPATIAL_CARTESIAN_3D_MIN;
         case "wgs-84":
-            return IndexSettingImpl.SPATIAL_WGS84_MIN;
+            return SPATIAL_WGS84_MIN;
         case "wgs-84-3d":
-            return IndexSettingImpl.SPATIAL_WGS84_3D_MIN;
+            return SPATIAL_WGS84_3D_MIN;
         default:
             throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
         }
@@ -122,9 +125,9 @@ public final class IndexConfig
         case "cartesian-3d":
             return SPATIAL_CARTESIAN_3D_MAX;
         case "wgs-84":
-            return IndexSettingImpl.SPATIAL_WGS84_MAX;
+            return SPATIAL_WGS84_MAX;
         case "wgs-84-3d":
-            return IndexSettingImpl.SPATIAL_WGS84_3D_MAX;
+            return SPATIAL_WGS84_3D_MAX;
         default:
             throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
         }
