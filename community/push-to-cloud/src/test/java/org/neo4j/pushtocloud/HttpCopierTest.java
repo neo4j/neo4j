@@ -119,6 +119,8 @@ public class HttpCopierTest
         assertTrue( progressListener.doneCalled );
         // we need to add 3 to the progress listener because of the database phases
         assertEquals( sourceLength + 3, progressListener.progress );
+        // assert dump was deleted
+        assertEquals( false, source.toFile().exists() );
     }
 
     @Test
