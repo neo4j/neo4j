@@ -143,5 +143,31 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
             failsToParse
           }
       }
+
+      // Dropping instead of creating name management privileges
+
+      test(s"$command DROP NEW LABEL ON DATABASE * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command DROP NEW TYPE ON DATABASE * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command DROP NEW NAME ON DATABASE * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command DROP LABEL ON DATABASE * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command DROP TYPE ON DATABASE * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command DROP NAME ON DATABASE * $preposition role") {
+        failsToParse
+      }
   }
 }
