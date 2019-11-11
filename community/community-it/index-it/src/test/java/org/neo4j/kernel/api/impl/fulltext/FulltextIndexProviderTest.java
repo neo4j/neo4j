@@ -504,7 +504,7 @@ public class FulltextIndexProviderTest
         }
 
         // Modify the full-text index such that it has an analyzer configured that does not exist.
-        db.restartDatabase( (fs, databaseLayout) ->
+        db.restartDatabase( ( fs, databaseLayout ) ->
         {
             DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs, RecoveryCleanupWorkCollector.ignore() );
             try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -572,6 +572,7 @@ public class FulltextIndexProviderTest
     public void indexWithAnalyzerThatThrowsWillNotBeCreated() throws Exception
     {
         BrokenAnalyzerProvider.shouldThrow = true;
+        BrokenAnalyzerProvider.shouldReturnNull = false;
         try ( Transaction tx = db.beginTx() )
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
@@ -633,9 +634,75 @@ public class FulltextIndexProviderTest
 
     @ResourceLock( "BrokenAnalyzerProvider" )
     @Test
+    public void indexWithAnalyzerThatReturnsNullWillNotBeCreated() throws Exception
+    {
+        BrokenAnalyzerProvider.shouldThrow = false;
+        BrokenAnalyzerProvider.shouldReturnNull = true;
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
+                    .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .on( "prop" )
+                    .withName( NAME );
+
+            // Validation must initially prevent this index from being created.
+            var e = assertThrows( RuntimeException.class, creator::create );
+            assertThat( e.getMessage(), containsString( "null" ) );
+
+            // Create the index anyway.
+            BrokenAnalyzerProvider.shouldReturnNull = false;
+            creator.create();
+            BrokenAnalyzerProvider.shouldReturnNull = true;
+
+            // The analyzer will now return null during the index population, and the index should then enter a FAILED state.
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            var e = assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS ) );
+            assertThat( e.getMessage(), containsString( "FAILED" ) );
+            IndexDefinition index = tx.schema().getIndexByName( NAME );
+            assertThat( tx.schema().getIndexState( index ), is( Schema.IndexState.FAILED ) );
+            index.drop();
+            tx.commit();
+        }
+
+        BrokenAnalyzerProvider.shouldReturnNull = false;
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
+                    .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .on( "prop" )
+                    .withName( NAME );
+
+            // The analyzer no longer returns null.
+            creator.create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
+            IndexDefinition index = tx.schema().getIndexByName( NAME );
+            Schema.IndexState indexState = tx.schema().getIndexState( index );
+            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+        }
+        db.restartDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( NAME );
+            Schema.IndexState indexState = tx.schema().getIndexState( index );
+            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+        }
+    }
+
+    @ResourceLock( "BrokenAnalyzerProvider" )
+    @Test
     public void indexWithAnalyzerProviderThatThrowsAnExceptionOnStartupWillBeMarkedAsFailedOnStartup() throws Exception
     {
         BrokenAnalyzerProvider.shouldThrow = false;
+        BrokenAnalyzerProvider.shouldReturnNull = false;
         try ( Transaction tx = db.beginTx() )
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
@@ -674,7 +741,51 @@ public class FulltextIndexProviderTest
             tx.commit();
         }
     }
-    // todo index with analyzer provider that returns null will be marked as failed on startup
+
+    @ResourceLock( "BrokenAnalyzerProvider" )
+    @Test
+    public void indexWithAnalyzerProviderThatReturnsNullWillBeMarkedAsFailedOnStartup() throws Exception
+    {
+        BrokenAnalyzerProvider.shouldThrow = false;
+        BrokenAnalyzerProvider.shouldReturnNull = false;
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
+                    .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
+                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .on( "prop" )
+                    .withName( NAME );
+
+            // The analyzer no longer returns null.
+            creator.create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
+            IndexDefinition index = tx.schema().getIndexByName( NAME );
+            Schema.IndexState indexState = tx.schema().getIndexState( index );
+            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+        }
+
+        BrokenAnalyzerProvider.shouldReturnNull = true;
+        db.restartDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( NAME );
+            Schema.IndexState indexState = tx.schema().getIndexState( index );
+            assertThat( indexState, is( Schema.IndexState.FAILED ) );
+            String indexFailure = tx.schema().getIndexFailure( index );
+            assertThat( indexFailure, containsString( "null" ) );
+            index.drop();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().getIndexByName( NAME ) );
+            tx.commit();
+        }
+    }
 
     private TokenRead tokenRead( Transaction tx )
     {

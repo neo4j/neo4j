@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
+import java.util.Objects;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -36,18 +38,6 @@ final class FulltextIndexSettings
     private FulltextIndexSettings()
     {}
 
-    static Analyzer createAnalyzer( String analyzerName )
-    {
-        try
-        {
-            return Services.loadOrFail( AnalyzerProvider.class, analyzerName ).createAnalyzer();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Could not create fulltext analyzer: " + analyzerName, e );
-        }
-    }
-
     static Analyzer createAnalyzer( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         TextValue analyzerName = descriptor.getIndexConfig().get( ANALYZER );
@@ -55,14 +45,18 @@ final class FulltextIndexSettings
         {
             throw new RuntimeException( "Index has no analyzer configured: " + descriptor.userDescription( tokenNameLookup ) );
         }
+        Analyzer analyzer;
         try
         {
-            return Services.loadOrFail( AnalyzerProvider.class, analyzerName.stringValue() ).createAnalyzer();
+            AnalyzerProvider analyzerProvider = Services.loadOrFail( AnalyzerProvider.class, analyzerName.stringValue() );
+            analyzer = analyzerProvider.createAnalyzer();
         }
         catch ( Exception e )
         {
             throw new RuntimeException( "Could not create fulltext analyzer: " + analyzerName, e );
         }
+        Objects.requireNonNull( analyzer, "The '" + analyzerName + "' analyzer provider returned a null analyzer." );
+        return analyzer;
     }
 
     static String[] createPropertyNames( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )

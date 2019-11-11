@@ -30,6 +30,7 @@ public class BrokenAnalyzerProvider extends AnalyzerProvider
 {
     static final String NAME = "throwing-analyzer";
     static volatile boolean shouldThrow;
+    static volatile boolean shouldReturnNull;
 
     public BrokenAnalyzerProvider()
     {
@@ -42,6 +43,10 @@ public class BrokenAnalyzerProvider extends AnalyzerProvider
         if ( shouldThrow )
         {
             throw new RuntimeException( "boom" );
+        }
+        if ( shouldReturnNull )
+        {
+            return null;
         }
         return new StandardAnalyzer();
     }
