@@ -65,7 +65,7 @@ class LuceneSchemaIndexCorruptionTest
     private TestDirectory testDirectory;
     @Inject
     private EphemeralFileSystemAbstraction fs;
-    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final IndexProvider.Monitor monitor = new LoggingMonitor( logProvider.getLog( "test" ) );
 
     @Test
@@ -182,6 +182,6 @@ class LuceneSchemaIndexCorruptionTest
     private static AssertableLogProvider.LogMatcher loggedException( Throwable exception )
     {
         return inLog( CoreMatchers.any( String.class ) )
-                .error( CoreMatchers.any( String.class ), sameInstance( exception ) );
+                .warn( CoreMatchers.any( String.class ), sameInstance( exception ) );
     }
 }

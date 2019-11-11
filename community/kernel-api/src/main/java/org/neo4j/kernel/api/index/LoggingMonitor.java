@@ -41,7 +41,14 @@ public class LoggingMonitor implements IndexProvider.Monitor
     @Override
     public void failedToOpenIndex( IndexDescriptor descriptor, String action, Exception cause )
     {
-        log.error( "Failed to open index:" + descriptor.getId() + ". " + action, cause );
+        if ( log.isDebugEnabled() )
+        {
+            log.warn( "Failed to open index:" + descriptor.getId() + ". " + action, cause );
+        }
+        else
+        {
+            log.warn( "Failed to open index:" + descriptor.getId() + ". " + action + " Cause: " + cause.getMessage() );
+        }
     }
 
     @Override
