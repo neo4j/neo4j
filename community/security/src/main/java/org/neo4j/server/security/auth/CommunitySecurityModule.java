@@ -34,7 +34,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
@@ -82,9 +81,7 @@ public class CommunitySecurityModule extends SecurityModule
         }
         catch ( KernelException e )
         {
-            Log log = logProvider.getLog( getClass() );
-            log.error( e.getMessage() );
-            throw new RuntimeException( e );
+            throw logAndWrapProcedureException( e, logProvider.getLog( getClass() ) );
         }
     }
 
