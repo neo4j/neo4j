@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
-interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier
+public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier
 {
     /**
      * Returns true if this index is only meant to allow one value per key.

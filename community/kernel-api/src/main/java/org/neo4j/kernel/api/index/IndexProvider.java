@@ -211,6 +211,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         this.directoryStructure = directoryStructureFactory.forProvider( descriptor );
     }
 
+    public IndexDropper getDropper( IndexDescriptor descriptor )
+    {
+        return getPopulator( descriptor, new IndexSamplingConfig( 1, 0.1, false ), ByteBufferFactory.heapBufferFactory( 0 ) );
+    }
+
     /**
      * Used for initially populating a created index, using batch insertion.
      */

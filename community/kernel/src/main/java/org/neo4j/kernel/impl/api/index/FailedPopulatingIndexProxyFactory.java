@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 
@@ -29,19 +29,19 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
     private final IndexDescriptor descriptor;
-    private final IndexPopulator populator;
+    private final IndexDropper indexDropper;
     private final String indexUserDescription;
     private final IndexStatisticsStore indexStatisticsStore;
     private final LogProvider logProvider;
 
     FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
-            IndexPopulator populator,
+            IndexDropper indexDropper,
             String indexUserDescription,
             IndexStatisticsStore indexStatisticsStore,
             LogProvider logProvider )
     {
         this.descriptor = descriptor;
-        this.populator = populator;
+        this.indexDropper = indexDropper;
         this.indexUserDescription = indexUserDescription;
         this.indexStatisticsStore = indexStatisticsStore;
         this.logProvider = logProvider;
@@ -50,7 +50,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     @Override
     public IndexProxy create( Throwable failure )
     {
-        return new FailedIndexProxy( descriptor, indexUserDescription, populator, failure( failure ),
+        return new FailedIndexProxy( descriptor, indexUserDescription, indexDropper, failure( failure ),
                 indexStatisticsStore, logProvider );
     }
 }

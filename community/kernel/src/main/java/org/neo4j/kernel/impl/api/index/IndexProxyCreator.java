@@ -25,13 +25,13 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 
 /**
  * Helper class of {@link IndexingService}. Used mainly as factory of index proxies.
@@ -122,12 +122,12 @@ class IndexProxyCreator
     {
         // Note about the buffer factory instantiation here. Question is why an index populator is instantiated for a failed index proxy to begin with.
         // The byte buffer factory should not be used here anyway so the buffer size doesn't actually matter.
-        IndexPopulator indexPopulator = populatorFromProvider( descriptor, samplingConfig, heapBufferFactory( 1024 ) );
+        IndexDropper indexDropper = dropperFromProvider( descriptor );
         String indexUserDescription = indexUserDescription( descriptor );
         IndexProxy proxy;
         proxy = new FailedIndexProxy( descriptor,
                 indexUserDescription,
-                indexPopulator,
+                indexDropper,
                 populationFailure,
                 indexStatisticsStore,
                 logProvider );
@@ -141,15 +141,21 @@ class IndexProxyCreator
                 descriptor.schema().userDescription( tokenNameLookup ), descriptor.getIndexProvider().toString() );
     }
 
-    private IndexPopulator populatorFromProvider( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    private IndexPopulator populatorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
-        IndexProvider indexProvider = providerMap.lookup( descriptor.getIndexProvider() );
-        return indexProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
+        IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
+        return provider.getPopulator( index, samplingConfig, bufferFactory );
     }
 
-    private IndexAccessor onlineAccessorFromProvider( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    private IndexDropper dropperFromProvider( IndexDescriptor index )
     {
-        IndexProvider indexProvider = providerMap.lookup( descriptor.getIndexProvider() );
-        return indexProvider.getOnlineAccessor( descriptor, samplingConfig );
+        IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
+        return provider.getDropper( index );
+    }
+
+    private IndexAccessor onlineAccessorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
+    {
+        IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
+        return provider.getOnlineAccessor( index, samplingConfig );
     }
 }

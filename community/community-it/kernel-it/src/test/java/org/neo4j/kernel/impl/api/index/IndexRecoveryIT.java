@@ -309,7 +309,8 @@ class IndexRecoveryIT
             assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
             assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.FAILED ) );
         }
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( mockedIndexProvider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( mockedIndexProvider ).getDropper( any( IndexDescriptor.class ) );
     }
 
     private void startDb()

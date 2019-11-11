@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -81,9 +82,9 @@ class IndexPopulationTest
         return new OnlineIndexProxy( dummyMeta(), IndexAccessor.EMPTY, indexStatisticsStore, false );
     }
 
-    private FailedIndexProxy failedIndexProxy( IndexPopulator.Adapter populator, IndexStatisticsStore indexStatisticsStore )
+    private FailedIndexProxy failedIndexProxy( IndexDropper dropper, IndexStatisticsStore indexStatisticsStore )
     {
-        return new FailedIndexProxy( dummyMeta(), "userDescription", populator, IndexPopulationFailure
+        return new FailedIndexProxy( dummyMeta(), "userDescription", dropper, IndexPopulationFailure
                 .failure( "failure" ), indexStatisticsStore, NullLogProvider.getInstance() );
     }
 

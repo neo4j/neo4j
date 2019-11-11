@@ -31,10 +31,13 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -42,6 +45,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -51,21 +57,34 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.recordstorage.SchemaStorage;
+import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.VerboseTimeout;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -464,6 +483,88 @@ public class FulltextIndexProviderTest
             transaction.success();
         }
     }
+
+    @Test
+    public void indexWithUnknownAnalyzerWillBeMarkedAsFailedOnStartup() throws Exception
+    {
+        // Create a full-text index.
+        long indexId;
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+        {
+            int[] propertyIds = {propIdHa};
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{labelIdHa}, propertyIds );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema ).withIndexType( FULLTEXT ).withName( NAME );
+            SchemaWrite schemaWrite = transaction.schemaWrite();
+            IndexDescriptor index = schemaWrite.indexCreate( prototype );
+            indexId = index.getId();
+            transaction.success();
+        }
+
+        // Modify the full-text index such that it has an analyzer configured that does not exist.
+        db.restartDatabase( (fs, databaseLayout) ->
+        {
+            DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs, RecoveryCleanupWorkCollector.ignore() );
+            try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
+                  PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler ) )
+            {
+
+                StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance() );
+                try ( NeoStores neoStores = factory.openAllNeoStores( false ) )
+                {
+                    TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores );
+                    SchemaStore schemaStore = neoStores.getSchemaStore();
+                    SchemaStorage storage = new SchemaStorage( schemaStore, tokens );
+                    IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule( indexId );
+                    Map<String,Value> indexConfigMap = new HashMap<>( index.getIndexConfig().asMap() );
+                    for ( Map.Entry<String,Value> entry : indexConfigMap.entrySet() )
+                    {
+                        if ( entry.getKey().contains( "analyzer" ) )
+                        {
+                            entry.setValue( Values.stringValue( "bla-bla-lyzer" ) ); // This analyzer does not exist!
+                        }
+                    }
+                    index = index.withIndexConfig( IndexConfig.with( indexConfigMap ) );
+                    storage.writeSchemaRule( index );
+                    schemaStore.flush();
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
+
+        // Verify that the index comes up in a failed state.
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = tx.schema().getIndexByName( NAME );
+
+            Schema.IndexState indexState = tx.schema().getIndexState( index );
+            assertThat( indexState, is( Schema.IndexState.FAILED ) );
+
+            String indexFailure = tx.schema().getIndexFailure( index );
+            assertThat( indexFailure, containsString( "bla-bla-lyzer" ) );
+        }
+
+        // Verify that the failed index can be dropped.
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().getIndexByName( NAME ).drop();
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().getIndexByName( NAME ) );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().getIndexByName( NAME ) );
+        }
+        db.restartDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().getIndexByName( NAME ) );
+        }
+    }
+    // todo index with analyzer provider that throws an exception will be marked as failed on startup
+    // todo index with analyzer provider that returns null will be marked as failed on startup
 
     private TokenRead tokenRead( Transaction tx )
     {

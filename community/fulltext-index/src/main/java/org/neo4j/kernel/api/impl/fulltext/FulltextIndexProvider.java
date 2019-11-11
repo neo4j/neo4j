@@ -26,18 +26,22 @@ import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -45,6 +49,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -155,17 +160,38 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor index )
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+        PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
         String failure = indexStorage.getStoredIndexFailure();
         if ( failure != null )
         {
             return InternalIndexState.FAILED;
         }
+
+        // Verify that the index configuration is still valid.
+        // For instance, that it doesn't refer to an analyzer that has since been removed.
         try
         {
-            return indexIsOnline( indexStorage, descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            validateIndexRef( index );
+        }
+        catch ( Exception e )
+        {
+            try
+            {
+                indexStorage.storeIndexFailure( Exceptions.stringify( e ) );
+            }
+            catch ( IOException ex )
+            {
+                ex.addSuppressed( e );
+                log.warn( "Failed to persist index failure. Index failure added as suppressed exception.", ex );
+            }
+            return InternalIndexState.FAILED;
+        }
+
+        try
+        {
+            return indexIsOnline( indexStorage, index ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }
         catch ( IOException e )
         {
@@ -174,9 +200,28 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     }
 
     @Override
+    public IndexDropper getDropper( IndexDescriptor descriptor )
+    {
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+        DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableFulltextIndex(
+                new DroppableLuceneFulltextIndex( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
+        log.debug( "Creating dropper for fulltext schema index: %s", descriptor );
+        return new FulltextIndexDropper( descriptor, fulltextIndex, isReadOnly() );
+    }
+
+    private boolean isReadOnly()
+    {
+        return isSingleInstance && config.get( GraphDatabaseSettings.read_only );
+    }
+
+    @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
             ByteBufferFactory bufferFactory )
     {
+        if ( isReadOnly() )
+        {
+            throw new UnsupportedOperationException( "Can't create populator for read only index" );
+        }
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
@@ -188,10 +233,6 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
                 .withIndexStorage( indexStorage )
                 .withPopulatingMode( true )
                 .build();
-        if ( fulltextIndex.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create populator for read only index" );
-        }
         log.debug( "Creating populator for fulltext schema index: %s", descriptor );
         return new FulltextIndexPopulator( descriptor, fulltextIndex, propertyNames );
     }
@@ -230,17 +271,22 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     @Override
     public void validatePrototype( IndexPrototype prototype )
     {
+        validateIndexRef( prototype );
+    }
+
+    private void validateIndexRef( IndexRef<?> ref )
+    {
         String providerName = getProviderDescriptor().name();
-        if ( prototype.getIndexType() != IndexType.FULLTEXT )
+        if ( ref.getIndexType() != IndexType.FULLTEXT )
         {
-            throw new IllegalArgumentException( "The '" + providerName + "' index provider only supports FULLTEXT index types: " + prototype );
+            throw new IllegalArgumentException( "The '" + providerName + "' index provider only supports FULLTEXT index types: " + ref );
         }
-        if ( !prototype.schema().isFulltextSchemaDescriptor() )
+        if ( !ref.schema().isFulltextSchemaDescriptor() )
         {
-            throw new IllegalArgumentException( "The " + prototype.schema() + " index schema is not a full-text index schema, " +
+            throw new IllegalArgumentException( "The " + ref.schema() + " index schema is not a full-text index schema, " +
                     "which it is required to be for the '" + providerName + "' index provider to be able to create an index." );
         }
-        Value value = prototype.getIndexConfig().get( ANALYZER );
+        Value value = ref.getIndexConfig().get( ANALYZER );
         if ( value != null )
         {
             if ( value.valueGroup() == ValueGroup.TEXT )
@@ -258,7 +304,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         }
 
         TokenHolder propertyKeyTokens = tokenHolders.propertyKeyTokens();
-        for ( int propertyId : prototype.schema().getPropertyIds() )
+        for ( int propertyId : ref.schema().getPropertyIds() )
         {
             try
             {
