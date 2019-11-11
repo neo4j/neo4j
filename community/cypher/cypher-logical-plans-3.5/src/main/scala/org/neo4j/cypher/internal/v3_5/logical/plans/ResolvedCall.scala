@@ -100,7 +100,6 @@ case class ResolvedCall(signature: ProcedureSignature,
     val totalNumArgs = signature.inputSignature.length
     val numArgsWithDefaults = signature.inputSignature.flatMap(_.default).size
     val minNumArgs = totalNumArgs - numArgsWithDefaults
-    val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
     val givenNumArgs = callArguments.length
 
     if (declaredArguments) {
@@ -150,7 +149,7 @@ case class ResolvedCall(signature: ProcedureSignature,
         }
       }
     } else {
-      if (expectedNumArgs == 0)
+      if (totalNumArgs == 0)
         error(_: SemanticState, SemanticError("Procedure call is missing parentheses: " + signature.name, position))
       else
         error(_: SemanticState, SemanticError("Procedure call inside a query does not support passing arguments implicitly. " +
