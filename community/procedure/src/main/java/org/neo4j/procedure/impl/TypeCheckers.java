@@ -61,7 +61,6 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.lang.Boolean.parseBoolean;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntBoolean;
@@ -88,15 +87,34 @@ public class TypeCheckers
 {
     private static final ExpressionEvaluator EVALUATOR = Evaluator.expressionEvaluator();
 
-    private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny  );
-    private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, DefaultParameterValue::ntString );
-    private static final DefaultValueConverter TO_INTEGER = new DefaultValueConverter( NTInteger, s -> ntInteger( parseLong( s ) ) );
-    private static final DefaultValueConverter TO_FLOAT = new DefaultValueConverter( NTFloat, s -> ntFloat( parseDouble( s ) ) );
-    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber,  TypeCheckers::parseNumber );
-    private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, s -> ntBoolean( parseBoolean( s ) ) );
-    private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, new MapConverter( EVALUATOR ) );
+    private static final Function<String,DefaultParameterValue> PARSE_STRING = DefaultParameterValue::ntString;
+    private static final Function<String,DefaultParameterValue> PARSE_INTEGER = s -> ntInteger( parseLong( s ) );
+    private static final Function<String,DefaultParameterValue> PARSE_FLOAT = s -> ntFloat( parseDouble( s ) );
+    private static final Function<String,DefaultParameterValue> PARSE_NUMBER = TypeCheckers::parseNumber;
+    private static final Function<String,DefaultParameterValue> PARSE_NUMBER2 = new CompositeConverter( PARSE_INTEGER, PARSE_FLOAT );
+    private static final Function<String,DefaultParameterValue> PARSE_BOOLEAN = s -> ntBoolean( parseBooleanOrFail( s ) );
+    private static final MapConverter PARSE_MAP = new MapConverter( EVALUATOR );
+    private static final ListConverter PARSE_LIST = new ListConverter( Object.class, NTAny, EVALUATOR );
+    private static final ByteArrayConverter PARSE_BYTE_ARRAY = new ByteArrayConverter( EVALUATOR );
+
+    private static final CompositeConverter PARSE_ANY = new CompositeConverter(
+            DefaultValueConverter.nullParser( NTAny ),
+            PARSE_MAP,
+            PARSE_BYTE_ARRAY,
+            PARSE_LIST,
+            PARSE_BOOLEAN,
+            PARSE_NUMBER,
+            PARSE_STRING
+    );
+    private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny, PARSE_ANY );
+    private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, PARSE_STRING );
+    private static final DefaultValueConverter TO_INTEGER = new DefaultValueConverter( NTInteger, PARSE_INTEGER );
+    private static final DefaultValueConverter TO_FLOAT = new DefaultValueConverter( NTFloat, PARSE_FLOAT );
+    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber, PARSE_NUMBER );
+    private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, PARSE_BOOLEAN );
+    private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, PARSE_MAP );
     private static final DefaultValueConverter TO_LIST = toList( TO_ANY, Object.class );
-    private final DefaultValueConverter TO_BYTE_ARRAY = new DefaultValueConverter( NTByteArray, new ByteArrayConverter( EVALUATOR ) );
+    private final DefaultValueConverter TO_BYTE_ARRAY = new DefaultValueConverter( NTByteArray, PARSE_BYTE_ARRAY );
 
     private final Map<Type,DefaultValueConverter> javaToNeo = new HashMap<>();
 
@@ -107,11 +125,10 @@ public class TypeCheckers
     }
 
     /**
-     * We don't have Node, Relationship, Property available down here - and don't strictly want to,
-     * we want the procedures to be independent of which Graph API is being used (and we don't want
-     * them to get tangled up with kernel code). So, we only register the "core" type system here,
-     * scalars and collection types. Node, Relationship, Path and any other future graph types should
-     * be registered from the outside in the same place APIs to work with those types is registered.
+     * We don't have Node, Relationship, Property available down here - and don't strictly want to, we want the procedures to be independent of which Graph API
+     * is being used (and we don't want them to get tangled up with kernel code). So, we only register the "core" type system here, scalars and collection
+     * types. Node, Relationship, Path and any other future graph types should be registered from the outside in the same place APIs to work with those types is
+     * registered.
      */
     private void registerScalarsAndCollections()
     {
@@ -160,7 +177,7 @@ public class TypeCheckers
         if ( isAnyValue( javaType ) )
         {
             //For AnyValue we support subtyping
-           javaType = findValidSuperClass( javaType );
+            javaType = findValidSuperClass( javaType );
         }
 
         DefaultValueConverter converter = javaToNeo.get( javaType );
@@ -237,6 +254,19 @@ public class TypeCheckers
         }
     }
 
+    private static boolean parseBooleanOrFail( String s )
+    {
+        if ( "true".equalsIgnoreCase( s ) )
+        {
+            return true;
+        }
+        if ( "false".equalsIgnoreCase( s ) )
+        {
+            return false;
+        }
+        throw new IllegalArgumentException( String.format( "%s is not a valid boolean expression", s ) );
+    }
+
     private static DefaultValueConverter toList( DefaultValueConverter inner, Type type )
     {
         return new DefaultValueConverter( NTList( inner.type() ), new ListConverter( type, inner.type(), EVALUATOR ) );
@@ -245,16 +275,16 @@ public class TypeCheckers
     private ProcedureException javaToNeoMappingError( Type cls )
     {
         List<String> types = Iterables.asList( javaToNeo.keySet() )
-                .stream()
-                .filter( t -> !isAnyValue(t) )
-                .map( Type::getTypeName )
-                .sorted( String::compareTo )
-                .collect( Collectors.toList() );
+                                      .stream()
+                                      .filter( t -> !isAnyValue( t ) )
+                                      .map( Type::getTypeName )
+                                      .sorted( String::compareTo )
+                                      .collect( Collectors.toList() );
 
         return new ProcedureException( Status.Statement.TypeError,
-                "Don't know how to map `%s` to the Neo4j Type System.%n" +
-                        "Please refer to to the documentation for full details.%n" +
-                        "For your reference, known types are: %s", cls.getTypeName(), types );
+                                       "Don't know how to map `%s` to the Neo4j Type System.%n" +
+                                       "Please refer to to the documentation for full details.%n" +
+                                       "For your reference, known types are: %s", cls.getTypeName(), types );
     }
 
     public abstract static class TypeChecker
@@ -265,11 +295,11 @@ public class TypeCheckers
         {
             this.type = type;
         }
+
         public AnyType type()
         {
             return type;
         }
-
     }
 
     public static final class DefaultValueConverter extends TypeChecker
@@ -287,9 +317,8 @@ public class TypeCheckers
             this.parser = parser;
         }
 
-        public Optional<DefaultParameterValue> defaultValue( Name parameter ) throws ProcedureException
+        public Optional<DefaultParameterValue> defaultValue( String defaultValue ) throws ProcedureException
         {
-            String defaultValue = parameter.defaultValue();
             if ( defaultValue.equals( Name.DEFAULT_VALUE ) )
             {
                 return Optional.empty();
@@ -303,8 +332,8 @@ public class TypeCheckers
                 catch ( Exception e )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                            "Default value `%s` could not be parsed as a %s", parameter.defaultValue(),
-                            type.toString() );
+                                                  "Default value `%s` could not be parsed as a %s", defaultValue,
+                                                  type.toString() );
                 }
             }
         }

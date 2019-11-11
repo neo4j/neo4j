@@ -81,7 +81,7 @@ class MethodSignatureCompiler
             try
             {
                 DefaultValueConverter valueConverter = typeCheckers.converterFor( type );
-                Optional<DefaultParameterValue> defaultValue = valueConverter.defaultValue( parameter );
+                Optional<DefaultParameterValue> defaultValue = valueConverter.defaultValue( parameter.defaultValue() );
                 //it is not allowed to have holes in default values
                 if ( seenDefault && !defaultValue.isPresent() )
                 {
