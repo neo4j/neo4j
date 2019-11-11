@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Expressio
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.v3_5.logical.plans
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
+import org.neo4j.cypher.internal.v3_5.logical.plans
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 import org.neo4j.cypher.internal.v3_5.util.{Eagerly, InternalException}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -108,7 +108,6 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         ProjectionPipe(source,  InterpretedCommandProjection(Eagerly.immutableMapValues(expressions, buildExpression)))(id = id)
 
       case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, directed, length) =>
-        ProjectEndpointsPipe(source, rel,
         ProjectEndpointsPipe(source, rel,
           start, startInScope,
           end, endInScope,
