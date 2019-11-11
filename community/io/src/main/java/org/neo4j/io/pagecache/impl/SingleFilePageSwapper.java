@@ -237,7 +237,7 @@ public class SingleFilePageSwapper implements PageSwapper
         if ( value * blockSize != filePageSize )
         {
             throw new IllegalArgumentException( "Direct IO can be used only when page cache page size is a multiplier of a block size. "
-                    + "Page cache size: " + filePageSize + ", block size: " + blockSize );
+                    + "File page size: " + filePageSize + ", block size: " + blockSize );
         }
     }
 

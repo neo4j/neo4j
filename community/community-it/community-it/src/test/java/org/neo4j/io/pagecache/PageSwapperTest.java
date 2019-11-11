@@ -938,7 +938,7 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    void doNotAllowDirectIOForNonPagesNotAlignedWithBlockSize() throws IOException
+    void doNotAllowDirectIOForPagesNotMultipleOfBlockSize() throws IOException
     {
         PageSwapperFactory factory = createSwapperFactory();
         File file = file( "file" );
