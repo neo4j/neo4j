@@ -22,37 +22,40 @@ package org.neo4j.cypher.security;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
+import org.mockito.Mockito;
 
-import java.io.PrintStream;
+import java.time.Clock;
 
-import org.neo4j.cli.ExecutionContext;
-import org.neo4j.commandline.admin.security.SetInitialPasswordCommand;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.security.FormatException;
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.logging.Log;
+import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFails;
 import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFailsWithTooManyAttempts;
 import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
+import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.createUser;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 @TestDirectoryExtension
-public class BasicSystemGraphRealmIT
+class BasicSystemGraphRealmIT
 {
     private BasicSystemGraphRealmTestHelper.TestDatabaseManager dbManager;
     private Config defaultConfig;
@@ -60,11 +63,16 @@ public class BasicSystemGraphRealmIT
     @Inject
     private TestDirectory testDirectory;
 
+    private UserRepository oldUsers;
+    private UserRepository initialPassword;
+
     @BeforeEach
     void setUp()
     {
         dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseManager( testDirectory );
         defaultConfig = Config.defaults();
+        oldUsers = new InMemoryUserRepository();
+        initialPassword = new InMemoryUserRepository();
     }
 
     @AfterEach
@@ -76,144 +84,123 @@ public class BasicSystemGraphRealmIT
     @Test
     void shouldCreateDefaultUserIfNoneExist() throws Throwable
     {
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( new BasicImportOptionsBuilder(), dbManager, defaultConfig );
-
-        final User user = getExistingUser( realm, INITIAL_USER_NAME );
-        assertTrue( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
-        assertTrue( user.passwordChangeRequired() );
-    }
-
-    @Test
-    void shouldLoadInitialUserIfNoneExist() throws Throwable
-    {
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().initialUser( "123", false );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
-
-        final User user = getExistingUser( realm, INITIAL_USER_NAME );
-        assertTrue( user.credentials().matchesPassword( password("123") ) );
-        assertFalse( user.passwordChangeRequired() );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
+        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
     }
 
     @Test
     void shouldLoadInitialUserWithInitialPassword() throws Throwable
     {
-        // Given
-        simulateSetInitialPasswordCommand(testDirectory);
-
-        // When
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( dbManager, testDirectory, defaultConfig );
-
-        // Then
-        final User user = getExistingUser( realm, INITIAL_USER_NAME );
-        assertFalse( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
-        assertTrue( user.credentials().matchesPassword( password( SIMULATED_INITIAL_PASSWORD ) ) );
-        assertFalse( user.passwordChangeRequired() );
+        initialPassword.create( createUser( INITIAL_USER_NAME, "123", false ) );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
+        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "123" );
     }
 
     @Test
     void shouldLoadInitialUserWithInitialPasswordOnRestart() throws Throwable
     {
         // Given
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( dbManager, testDirectory, defaultConfig );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
 
-        User user = getExistingUser( realm, INITIAL_USER_NAME );
-        assertTrue( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
-        assertTrue( user.passwordChangeRequired() );
+        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
 
         realm.stop();
 
-        simulateSetInitialPasswordCommand(testDirectory);
+        initialPassword.create( createUser( INITIAL_USER_NAME, "abc", false ) );
 
         // When
         realm.start();
 
         // Then
-        user = getExistingUser( realm, INITIAL_USER_NAME );
-        assertFalse( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
-        assertTrue( user.credentials().matchesPassword( password( SIMULATED_INITIAL_PASSWORD ) ) );
-        assertFalse( user.passwordChangeRequired() );
+        assertAuthenticationFails( realm, INITIAL_USER_NAME, INITIAL_PASSWORD );
+        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "abc" );
     }
 
     @Test
     void shouldNotLoadInitialUserWithInitialPasswordOnRestartWhenAlreadyChanged() throws Throwable
     {
         // Given
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( dbManager, testDirectory, defaultConfig );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
         realm.stop();
-        simulateSetInitialPasswordCommand( testDirectory, "neo4j2" );
+        initialPassword.create( createUser( INITIAL_USER_NAME, "neo4j2", false ) );
         realm.start();
         realm.stop();
 
         // When
-        simulateSetInitialPasswordCommand(testDirectory);
+        initialPassword.clear();
+        initialPassword.create( createUser( INITIAL_USER_NAME, "abc", false ) );
         realm.start();
 
         // Then
-        User user = getExistingUser( realm, INITIAL_USER_NAME );
-        assertFalse( user.credentials().matchesPassword( password( INITIAL_PASSWORD ) ) );
-        assertFalse( user.credentials().matchesPassword( password( SIMULATED_INITIAL_PASSWORD ) ) );
-        assertTrue( user.credentials().matchesPassword( password("neo4j2") ) );
+        assertAuthenticationFails( realm, INITIAL_USER_NAME, INITIAL_PASSWORD );
+        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "neo4j2" );
+        assertAuthenticationFails( realm, INITIAL_USER_NAME, "abc" );
     }
 
     @Test
     void shouldNotAddInitialUserIfUsersExist() throws Throwable
     {
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm(
-                new BasicImportOptionsBuilder().initialUser( "123", false ).migrateUser( "oldUser", "321", false ), dbManager, defaultConfig );
+        initialPassword.create( createUser( INITIAL_USER_NAME, "123", false ) );
+        oldUsers.create( createUser( "oldUser", "321", false ) );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
 
-        final User initUser = silentlyGetUser( realm, INITIAL_USER_NAME );
+        User initUser;
+        try
+        {
+            initUser = realm.getUser( INITIAL_USER_NAME );
+        }
+        catch ( InvalidArgumentsException | FormatException e )
+        {
+            initUser = null;
+        }
+
         assertNull( initUser );
-
-        final User oldUser = getExistingUser( realm, "oldUser" );
-        assertTrue( oldUser.credentials().matchesPassword( password( "321" ) ) );
-        assertFalse( oldUser.passwordChangeRequired() );
+        assertAuthenticationSucceeds( realm, "oldUser", "321" );
     }
 
     @Test
     void shouldNotUpdateUserIfInitialUserExist() throws Throwable
     {
-        BasicImportOptionsBuilder importOptions =
-                new BasicImportOptionsBuilder().initialUser( "newPassword", false ).migrateUser( INITIAL_USER_NAME, "oldPassword", true );
+        oldUsers.create( createUser( INITIAL_USER_NAME, "oldPassword", true ) );
+        initialPassword.create( createUser( INITIAL_USER_NAME, "newPassword", false ) );
 
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
 
-        final User oldUser = getExistingUser( realm, INITIAL_USER_NAME );
-        assertTrue( oldUser.credentials().matchesPassword( password( "oldPassword" ) ) );
-        assertTrue( oldUser.passwordChangeRequired() );
+        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "oldPassword", true );
     }
 
     @Test
     void shouldRateLimitAuthentication() throws Throwable
     {
         int maxFailedAttempts = Config.defaults().get( GraphDatabaseSettings.auth_max_failed_attempts );
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice", "bob" );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
+        oldUsers.create( createUser( "alice", "correct", false ) );
+        oldUsers.create( createUser( "bob", "password", false ) );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
 
         // First make sure one of the users will have a cached successful authentication result for variation
-        assertAuthenticationSucceeds( realm, "alice" );
+        assertAuthenticationSucceeds( realm, "alice", "correct" );
 
-        assertAuthenticationFailsWithTooManyAttempts( realm, "alice", maxFailedAttempts + 1 );
-        assertAuthenticationFailsWithTooManyAttempts( realm, "bob", maxFailedAttempts + 1 );
+        assertAuthenticationFailsWithTooManyAttempts( realm, "alice", "bad", maxFailedAttempts + 1 );
+        assertAuthenticationFailsWithTooManyAttempts( realm, "bob", "worse", maxFailedAttempts + 1 );
     }
 
     @Test
     void shouldHandleCustomDefaultDatabase() throws Throwable
     {
         defaultConfig.set( default_database, "foo" );
+        oldUsers.create( createUser( "alice", "foo", false ) );
 
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice" );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
-
-        assertAuthenticationSucceeds( realm, "alice" );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
+        assertAuthenticationSucceeds( realm, "alice", "foo" );
     }
 
     @Test
     void shouldHandleSwitchOfDefaultDatabase() throws Throwable
     {
-        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice" );
-        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
+        oldUsers.create( createUser( "alice", "bar", false ) );
+        BasicSystemGraphRealm realm = startSystemGraphRealm();
 
-        assertAuthenticationSucceeds( realm, "alice" );
+        assertAuthenticationSucceeds( realm, "alice", "bar" );
 
         realm.stop();
 
@@ -223,7 +210,7 @@ public class BasicSystemGraphRealmIT
         realm.start();
 
         // Alice should still be able to authenticate
-        assertAuthenticationSucceeds( realm, "alice" );
+        assertAuthenticationSucceeds( realm, "alice", "bar" );
 
         realm.stop();
 
@@ -233,43 +220,21 @@ public class BasicSystemGraphRealmIT
         realm.start();
 
         // Alice should still be able to authenticate
-        assertAuthenticationSucceeds( realm, "alice" );
+        assertAuthenticationSucceeds( realm, "alice", "bar" );
     }
 
-    public static void simulateSetInitialPasswordCommand( TestDirectory testDirectory )
+    private BasicSystemGraphRealm startSystemGraphRealm() throws Exception
     {
-        simulateSetInitialPasswordCommand( testDirectory, SIMULATED_INITIAL_PASSWORD );
-    }
+        Config config = Config.defaults( DatabaseManagementSystemSettings.auth_store_directory, testDirectory.directory( "data/dbms" ).toPath() );
+        SecureHasher secureHasher = new SecureHasher();
+        DefaultSystemGraphInitializer systemGraphInitializer = new DefaultSystemGraphInitializer( dbManager, config );
 
-    public static void simulateSetInitialPasswordCommand( TestDirectory testDirectory, String newPwd )
-    {
+        UserSecurityGraphInitializer securityGraphInitializer =
+                new UserSecurityGraphInitializer( dbManager, systemGraphInitializer, Mockito.mock( Log.class ), oldUsers, initialPassword, secureHasher );
 
-        SetInitialPasswordCommand command =
-                new SetInitialPasswordCommand( new ExecutionContext( testDirectory.homeDir().toPath(), testDirectory.directory( "conf" ).toPath(),
-                        mock( PrintStream.class ), mock( PrintStream.class ), testDirectory.getFileSystem() ) );
-
-        CommandLine.populateCommand( command, newPwd );
-        command.execute();
-    }
-
-    public static final String SIMULATED_INITIAL_PASSWORD = "neo4j1";
-
-    public static User getExistingUser( BasicSystemGraphRealm realm, String username )
-    {
-        User user = silentlyGetUser( realm, username );
-        assertNotNull( user );
-        return user;
-    }
-
-    private static User silentlyGetUser( BasicSystemGraphRealm realm, String username )
-    {
-        try
-        {
-            return realm.getUser( username );
-        }
-        catch ( InvalidArgumentsException | FormatException e )
-        {
-            return null;
-        }
+        RateLimitedAuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( Clock.systemUTC(), config );
+        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( securityGraphInitializer, dbManager, secureHasher, authStrategy, true );
+        realm.start();
+        return realm;
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.server.security.systemgraph;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
@@ -57,18 +56,18 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     protected final SystemGraphInitializer systemGraphInitializer;
     protected Log log;
 
-    private final Supplier<UserRepository> migrationUserRepositorySupplier;
-    private final Supplier<UserRepository> initialUserRepositorySupplier;
+    protected final UserRepository migrationUserRepository;
+    private final UserRepository initialUserRepository;
     private final SecureHasher secureHasher;
 
     public UserSecurityGraphInitializer( DatabaseManager<?> databaseManager, SystemGraphInitializer systemGraphInitializer, Log log,
-            Supplier<UserRepository> migrationUserRepositorySupplier, Supplier<UserRepository> initialUserRepositorySupplier, SecureHasher secureHasher )
+                                         UserRepository migrationUserRepository, UserRepository initialUserRepository, SecureHasher secureHasher )
     {
         this.databaseManager = databaseManager;
         this.systemGraphInitializer = systemGraphInitializer;
         this.log = log;
-        this.migrationUserRepositorySupplier = migrationUserRepositorySupplier;
-        this.initialUserRepositorySupplier = initialUserRepositorySupplier;
+        this.migrationUserRepository = migrationUserRepository;
+        this.initialUserRepository = initialUserRepository;
         this.secureHasher = secureHasher;
     }
 
@@ -151,9 +150,9 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 
     private boolean migrateFromAuthFile( Transaction tx ) throws Exception
     {
-        UserRepository userRepository = startUserRepository( migrationUserRepositorySupplier );
-        boolean migratedUsers = doMigrateUsers( tx, userRepository );
-        stopUserRepository( userRepository );
+        startUserRepository( this.migrationUserRepository );
+        boolean migratedUsers = doMigrateUsers( tx, migrationUserRepository );
+        stopUserRepository( migrationUserRepository );
         return migratedUsers;
     }
 
@@ -183,12 +182,10 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         addUser( tx, INITIAL_USER_NAME, initialCredential, true, false );
     }
 
-    protected UserRepository startUserRepository( Supplier<UserRepository> supplier ) throws Exception
+    protected void startUserRepository( UserRepository userRepository ) throws Exception
     {
-        UserRepository userRepository = supplier.get();
         userRepository.init();
         userRepository.start();
-        return userRepository;
     }
 
     protected void stopUserRepository( UserRepository userRepository ) throws Exception
@@ -225,10 +222,10 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     private Credential getInitialPassword() throws Exception
     {
         Credential credential = null;
-        if ( initialUserRepositorySupplier != null )
+        if ( initialUserRepository != null )// TODO should not be able to be null
         {
-            UserRepository initialUserRepository = startUserRepository( initialUserRepositorySupplier );
-            if ( initialUserRepository.numberOfUsers() > 0 )
+            startUserRepository( this.initialUserRepository );
+            if ( initialUserRepository.numberOfUsers() == 1 )
             {
                 // In alignment with InternalFlatFileRealm we only allow the INITIAL_USER_NAME here for now
                 // (This is what we get from the `set-initial-password` command)
@@ -237,6 +234,18 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
                 {
                     credential = initialUser.credentials();
                 }
+                else
+                {
+                    String errorMessage = "Invalid `auth.ini` file: the user in the file is not named " + INITIAL_USER_NAME;
+                    log.error( errorMessage );
+                    throw new SecurityException( errorMessage );
+                }
+            }
+            else if ( initialUserRepository.numberOfUsers() > 1 )
+            {
+                String errorMessage = "Invalid `auth.ini` file: the file contains more than one user";
+                log.error( errorMessage );
+                throw new SecurityException( errorMessage );
             }
             stopUserRepository( initialUserRepository );
         }

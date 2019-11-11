@@ -304,8 +304,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       databaseManager,
       new DefaultSystemGraphInitializer(databaseManager, config),
       mock[Log],
-      () => new InMemoryUserRepository,
-      () => new InMemoryUserRepository,
+      new InMemoryUserRepository,
+      new InMemoryUserRepository,
       new SecureHasher())
 
     securityGraphInitializer.initializeSecurityGraph()

@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.security;
 
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.ExcessiveAttemptsException;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -33,40 +30,51 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.ShiroAuthToken;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
+import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 public class BasicSystemGraphRealmTestHelper
 {
     public static class TestDatabaseManager extends LifecycleAdapter implements DatabaseManager<StandaloneDatabaseContext>
     {
-        GraphDatabaseFacade testSystemDb;
-        private final DatabaseManagementService managementService;
+        protected GraphDatabaseFacade testSystemDb;
+        protected final DatabaseManagementService managementService;
         private final DatabaseIdRepository.Caching databaseIdRepository = new TestDatabaseIdRepository();
 
-        TestDatabaseManager( TestDirectory testDir )
+        protected TestDatabaseManager( TestDirectory testDir )
         {
-            managementService = new TestDatabaseManagementServiceBuilder( testDir.homeDir() ).impermanent()
-                    .setConfig( GraphDatabaseSettings.auth_enabled, false ).build();
+            managementService = createManagementService( testDir );
             testSystemDb = (GraphDatabaseFacade) managementService.database( SYSTEM_DATABASE_NAME );
         }
 
-        DatabaseManagementService getManagementService()
+        protected DatabaseManagementService createManagementService( TestDirectory testDir )
+        {
+            return new TestDatabaseManagementServiceBuilder( testDir.homeDir() ).impermanent()
+                    .setConfig( GraphDatabaseSettings.auth_enabled, false ).build();
+        }
+
+        public DatabaseManagementService getManagementService()
         {
             return managementService;
         }
@@ -117,50 +125,57 @@ public class BasicSystemGraphRealmTestHelper
         }
     }
 
-    public static ShiroAuthToken testAuthenticationToken( String username, String password )
+    private static Map<String,Object> testAuthenticationToken( String username, String password )
     {
         Map<String,Object> authToken = new TreeMap<>();
         authToken.put( AuthToken.PRINCIPAL, username );
         authToken.put( AuthToken.CREDENTIALS, UTF8.encode( password ) );
-        return new ShiroAuthToken( authToken );
+        authToken.put( AuthToken.SCHEME_KEY, AuthToken.BASIC_SCHEME );
+        return authToken;
     }
 
-    // For simplified testing where username equals password
-    public static void assertAuthenticationSucceeds( BasicSystemGraphRealm realm, String username )
+    public static void assertAuthenticationSucceeds( BasicSystemGraphRealm realm, String username, String password ) throws Exception
     {
-        // NOTE: Password is the same as username
-        assertAuthenticationSucceeds( realm, username, username );
+        assertAuthenticationSucceeds( realm, username, password, false );
     }
 
-    public static void assertAuthenticationSucceeds( BasicSystemGraphRealm realm, String username, String password )
+    public static void assertAuthenticationSucceeds( BasicSystemGraphRealm realm, String username, String password, boolean changeRequired )
+            throws Exception
     {
-        // Try twice to rule out differences if authentication info has been cached or not
-        assertNotNull( realm.getAuthenticationInfo( testAuthenticationToken( username, password ) ) );
-        assertNotNull( realm.getAuthenticationInfo( testAuthenticationToken( username, password ) ) );
-
-        // Also test the non-cached result explicitly
-        assertNotNull( realm.doGetAuthenticationInfo( testAuthenticationToken( username, password ) ) );
+        var user = realm.getUser( username );
+        assertTrue( user.credentials().matchesPassword( password( password ) ) );
+        assertEquals( changeRequired, user.passwordChangeRequired() );
     }
 
-    static void assertAuthenticationFailsWithTooManyAttempts( BasicSystemGraphRealm realm, String username, int attempts )
+    public static void assertAuthenticationFails( BasicSystemGraphRealm realm, String username, String password ) throws Exception
     {
-        // NOTE: Password is the same as username
+        var user = realm.getUser( username );
+        assertFalse( user.credentials().matchesPassword( password( password ) ) );
+    }
+
+    static void assertAuthenticationFailsWithTooManyAttempts( BasicSystemGraphRealm realm, String username, String badPassword, int attempts )
+            throws InvalidAuthTokenException
+    {
         for ( int i = 0; i < attempts; i++ )
         {
-            try
+            LoginContext login = realm.login( testAuthenticationToken( username, badPassword ) );
+            if ( AuthenticationResult.SUCCESS.equals( login.subject().getAuthenticationResult() ) )
             {
-                assertNull( realm.getAuthenticationInfo( testAuthenticationToken( username, "wrong_password" ) ) );
+                fail( "Unexpectedly succeeded in logging in" );
             }
-            catch ( ExcessiveAttemptsException e )
+            else if ( AuthenticationResult.TOO_MANY_ATTEMPTS.equals( login.subject().getAuthenticationResult() ) )
             {
-                // This is what we were really looking for
+                // this is what we wanted
                 return;
-            }
-            catch ( AuthenticationException e )
-            {
-                // This is expected
             }
         }
         fail( "Did not get an ExcessiveAttemptsException after " + attempts + " attempts." );
+    }
+
+    public static User createUser( String userName, String password, boolean pwdChangeRequired )
+    {
+        return new User.Builder( userName, credentialFor( password ) )
+                .withRequiredPasswordChange( pwdChangeRequired )
+                .build();
     }
 }

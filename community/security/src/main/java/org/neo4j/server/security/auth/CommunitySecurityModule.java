@@ -20,7 +20,6 @@
 package org.neo4j.server.security.auth;
 
 import java.io.File;
-import java.util.function.Supplier;
 
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
@@ -128,12 +127,12 @@ public class CommunitySecurityModule extends SecurityModule
     {
         SecureHasher secureHasher = new SecureHasher();
 
-        Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
-        Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
+        UserRepository migrationUserRepository = CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
+        UserRepository initialUserRepository = CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
         UserSecurityGraphInitializer securityGraphInitializer =
                 new UserSecurityGraphInitializer( databaseManager, systemGraphInitializer, logProvider.getLog( getClass() ),
-                        migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher );
+                        migrationUserRepository, initialUserRepository, secureHasher );
 
         return new BasicSystemGraphRealm(
                 securityGraphInitializer, // always init on start in community
