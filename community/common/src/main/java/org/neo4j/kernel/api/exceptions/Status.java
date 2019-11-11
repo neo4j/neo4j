@@ -509,7 +509,8 @@ public interface Status
 
     enum Fabric implements Status
     {
-        RemoteExecutionFailed( DatabaseError, "The database was unable to execute a remote part of the statement." );
+        RemoteExecutionFailed( DatabaseError, "The database was unable to execute a remote part of the statement." ),
+        AccessMode( ClientError, "The request could not be completed due to access mode violation" );
 
         private final Code code;
 
