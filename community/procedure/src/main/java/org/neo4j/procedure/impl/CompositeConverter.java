@@ -35,6 +35,6 @@ final class CompositeConverter implements Function<String,DefaultParameterValue>
             }
         }
 
-        throw new IllegalArgumentException( String.format( "%s is not a valid map expression", s ) );
+        throw new IllegalArgumentException( String.format( "%s is not a valid default value expression", s ) );
     }
 }
