@@ -221,7 +221,7 @@ public class PushToCloudCommand implements AdminCommand
             }
 
             String to = arguments.get( ARG_DUMP_TO );
-            Path dumpFile = to != null ? Paths.get( to ) : homeDir.resolve( "dump-of" + database + "-" + currentTimeMillis() );
+            Path dumpFile = to != null ? Paths.get( to ) : homeDir.resolve( "dump-of-" + database + "-" + currentTimeMillis() );
             if ( Files.exists( dumpFile ) )
             {
                 throw new CommandFailed( format( "The provided dump-to target '%s' file already exists", dumpFile ) );
