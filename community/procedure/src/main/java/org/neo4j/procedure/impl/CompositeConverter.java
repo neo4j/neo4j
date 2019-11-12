@@ -5,14 +5,17 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
 final class CompositeConverter implements Function<String,DefaultParameterValue>
 {
+    private final Neo4jTypes.AnyType upCastTo;
     private final Iterable<Function<String,DefaultParameterValue>> functions;
 
     @SafeVarargs
-    CompositeConverter( Function<String,DefaultParameterValue>... functions )
+    CompositeConverter( Neo4jTypes.AnyType upCastTo, Function<String,DefaultParameterValue>... functions )
     {
+        this.upCastTo = upCastTo;
         this.functions = List.of( functions );
     }
 
@@ -24,7 +27,7 @@ final class CompositeConverter implements Function<String,DefaultParameterValue>
             Function<String,DefaultParameterValue> function = iterator.next();
             try
             {
-                return function.apply( s );
+                return function.apply( s ).castAs( upCastTo );
             }
             catch ( IllegalArgumentException invalidConversion )
             {

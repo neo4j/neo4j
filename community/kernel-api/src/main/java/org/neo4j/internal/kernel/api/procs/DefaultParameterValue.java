@@ -85,9 +85,9 @@ public class DefaultParameterValue
         return new DefaultParameterValue( null, type );
     }
 
-    public DefaultParameterValue castAsAny()
+    public DefaultParameterValue castAs( Neo4jTypes.AnyType type )
     {
-        return new DefaultParameterValue( value, Neo4jTypes.NTAny );
+        return new DefaultParameterValue( value, type );
     }
 
     @Override

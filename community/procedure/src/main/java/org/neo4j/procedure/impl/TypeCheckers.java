@@ -90,20 +90,24 @@ public class TypeCheckers
     private static final Function<String,DefaultParameterValue> PARSE_STRING = DefaultParameterValue::ntString;
     private static final Function<String,DefaultParameterValue> PARSE_INTEGER = s -> ntInteger( parseLong( s ) );
     private static final Function<String,DefaultParameterValue> PARSE_FLOAT = s -> ntFloat( parseDouble( s ) );
-    private static final Function<String,DefaultParameterValue> PARSE_NUMBER = TypeCheckers::parseNumber;
-    private static final Function<String,DefaultParameterValue> PARSE_NUMBER2 = new CompositeConverter( PARSE_INTEGER, PARSE_FLOAT );
+    private static final Function<String,DefaultParameterValue> PARSE_NUMBER = new CompositeConverter(
+            NTNumber,
+            PARSE_INTEGER,
+            PARSE_FLOAT
+    );
     private static final Function<String,DefaultParameterValue> PARSE_BOOLEAN = s -> ntBoolean( parseBooleanOrFail( s ) );
     private static final MapConverter PARSE_MAP = new MapConverter( EVALUATOR );
     private static final ListConverter PARSE_LIST = new ListConverter( Object.class, NTAny, EVALUATOR );
     private static final ByteArrayConverter PARSE_BYTE_ARRAY = new ByteArrayConverter( EVALUATOR );
 
     private static final CompositeConverter PARSE_ANY = new CompositeConverter(
+            NTAny,
             DefaultValueConverter.nullParser( NTAny ),
-            PARSE_MAP.andThen( DefaultParameterValue::castAsAny ),
-            PARSE_LIST.andThen( DefaultParameterValue::castAsAny ),
-            PARSE_BOOLEAN.andThen( DefaultParameterValue::castAsAny ),
-            PARSE_NUMBER.andThen( DefaultParameterValue::castAsAny ),
-            PARSE_STRING.andThen( DefaultParameterValue::castAsAny )
+            PARSE_MAP,
+            PARSE_LIST,
+            PARSE_BOOLEAN,
+            PARSE_NUMBER,
+            PARSE_STRING
     );
     private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny, PARSE_ANY );
     private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, PARSE_STRING );

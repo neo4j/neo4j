@@ -71,15 +71,15 @@ class TypeCheckersTest
     {
         return Stream.of(
                 of( Object.class, "null", DefaultParameterValue.nullValue( NTAny ) ),
-                of( Object.class, "{}", DefaultParameterValue.ntMap( emptyMap() ).castAsAny() ),
-                of( Object.class, "[]", DefaultParameterValue.ntList( emptyList(), NTAny ).castAsAny() ),
-                of( Object.class, "true", DefaultParameterValue.ntBoolean( true ).castAsAny() ),
-                of( Object.class, "false", DefaultParameterValue.ntBoolean( false ).castAsAny() ),
-                of( Object.class, "42", DefaultParameterValue.ntInteger( 42 ).castAsAny() ),
-                of( Object.class, "13.37", DefaultParameterValue.ntFloat( 13.37 ).castAsAny() ),
-                of( Object.class, "foo", DefaultParameterValue.ntString( "foo" ).castAsAny() ),
-                of( Object.class, "{foo: 'bar'}", DefaultParameterValue.ntMap( Map.of( "foo", "bar" ) ).castAsAny() ),
-                of( Object.class, "['foo', 42, true]", DefaultParameterValue.ntList( List.of( "foo", 42L, true ), NTAny ).castAsAny() ),
+                of( Object.class, "{}", DefaultParameterValue.ntMap( emptyMap() ).castAs( NTAny ) ),
+                of( Object.class, "[]", DefaultParameterValue.ntList( emptyList(), NTAny ).castAs( NTAny ) ),
+                of( Object.class, "true", DefaultParameterValue.ntBoolean( true ).castAs( NTAny ) ),
+                of( Object.class, "false", DefaultParameterValue.ntBoolean( false ).castAs( NTAny ) ),
+                of( Object.class, "42", DefaultParameterValue.ntInteger( 42 ).castAs( NTAny ) ),
+                of( Object.class, "13.37", DefaultParameterValue.ntFloat( 13.37 ).castAs( NTAny ) ),
+                of( Object.class, "foo", DefaultParameterValue.ntString( "foo" ).castAs( NTAny ) ),
+                of( Object.class, "{foo: 'bar'}", DefaultParameterValue.ntMap( Map.of( "foo", "bar" ) ).castAs( NTAny ) ),
+                of( Object.class, "['foo', 42, true]", DefaultParameterValue.ntList( List.of( "foo", 42L, true ), NTAny ).castAs( NTAny ) ),
 
                 of( Map.class, "null", DefaultParameterValue.ntMap( null ) ),
                 of( Map.class, "{}", DefaultParameterValue.ntMap( emptyMap() ) ),
@@ -101,11 +101,12 @@ class TypeCheckersTest
 
                 of( long.class, "42", DefaultParameterValue.ntInteger( 42 ) ),
                 of( Long.class, "42", DefaultParameterValue.ntInteger( 42 ) ),
-                of( Number.class, "42", DefaultParameterValue.ntInteger( 42 ) ),
 
                 of( double.class, "13.37", DefaultParameterValue.ntFloat( 13.37 ) ),
                 of( Double.class, "13.37", DefaultParameterValue.ntFloat( 13.37 ) ),
-                of( Number.class, "13.37", DefaultParameterValue.ntFloat( 13.37 ) ),
+
+                of( Number.class, "42", DefaultParameterValue.ntInteger( 42 ).castAs( NTNumber ) ),
+                of( Number.class, "13.37", DefaultParameterValue.ntFloat( 13.37 ).castAs( NTNumber ) ),
 
                 of( String.class, "null", DefaultParameterValue.ntString( "null" ) ),
                 of( String.class, "{}", DefaultParameterValue.ntString( "{}" ) ),
