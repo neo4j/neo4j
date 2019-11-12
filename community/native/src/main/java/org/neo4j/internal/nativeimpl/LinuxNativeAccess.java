@@ -195,22 +195,25 @@ public class LinuxNativeAccess implements NativeAccess
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling strerror_r() and strerror_l().
         final int bufferLength = 1024;
         final long bufferPointer = Native.malloc( bufferLength );
-        try
+        if ( bufferPointer > 0 )
         {
-            long result = strerror_r( errorCode, bufferPointer, bufferLength );
-            // not error, not EINVAL and not ERANGE
-            if ( result != NativeAccess.ERROR && result != 22 && result != 34 )
+            try
             {
-                return new Pointer( result ).getString( 0 );
+                long result = strerror_r( errorCode, bufferPointer, bufferLength );
+                // not error, not EINVAL and not ERANGE
+                if ( result != NativeAccess.ERROR && result != 22 && result != 34 )
+                {
+                    return new Pointer( result ).getString( 0 );
+                }
             }
-        }
-        catch ( Throwable t )
-        {
-            // ignore and use generic error message instead.
-        }
-        finally
-        {
-            Native.free( bufferPointer );
+            catch ( Throwable t )
+            {
+                // ignore and use generic error message instead.
+            }
+            finally
+            {
+                Native.free( bufferPointer );
+            }
         }
         return "Error occurred calling native function. Please check error code.";
     }

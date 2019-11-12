@@ -37,6 +37,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -60,7 +61,7 @@ class LogFileChannelNativeAccessorTest
     void setUp() throws IOException
     {
         var filesContext = mock( TransactionLogFilesContext.class );
-        nativeAccess = mock( NativeAccess.class );
+        nativeAccess = mock( NativeAccess.class, RETURNS_MOCKS );
         when( filesContext.getNativeAccess() ).thenReturn( nativeAccess );
         when( filesContext.getLogProvider() ).thenReturn( logProvider );
         when( filesContext.getRotationThreshold() ).thenReturn( new AtomicLong( 5 ) );
