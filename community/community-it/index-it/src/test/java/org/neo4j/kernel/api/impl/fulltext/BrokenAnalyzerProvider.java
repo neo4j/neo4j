@@ -28,7 +28,7 @@ import org.neo4j.graphdb.schema.AnalyzerProvider;
 @ServiceProvider
 public class BrokenAnalyzerProvider extends AnalyzerProvider
 {
-    static final String NAME = "throwing-analyzer";
+    static final String NAME = "broken-analyzer";
     static volatile boolean shouldThrow;
     static volatile boolean shouldReturnNull;
 
@@ -49,5 +49,11 @@ public class BrokenAnalyzerProvider extends AnalyzerProvider
             return null;
         }
         return new StandardAnalyzer();
+    }
+
+    @Override
+    public String description()
+    {
+        return "An implementation of the standard analyzer, which can be broken in various ways.";
     }
 }
