@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.newchecker.ParallelExecution.ThrowingRunnable;
-import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
@@ -69,10 +68,7 @@ class IndexSizes
         execution.run( "Estimate index sizes", indexes.stream().map( index -> (ThrowingRunnable) () ->
         {
             IndexAccessor accessor = indexAccessors.accessorFor( index );
-            try ( BoundedIterable<Long> reader = accessor.newAllEntriesReader() )
-            {
-                indexSizes.put( index, reader.maxCount() );
-            }
+            indexSizes.put( index, accessor.estimateNumberOfEntries() );
         } ).toArray( ThrowingRunnable[]::new ) );
     }
 

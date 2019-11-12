@@ -120,4 +120,17 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
+
+    @Override
+    public long estimateNumberOfEntries()
+    {
+        try
+        {
+            return tree.estimateNumberOfEntriesInTree();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
 }

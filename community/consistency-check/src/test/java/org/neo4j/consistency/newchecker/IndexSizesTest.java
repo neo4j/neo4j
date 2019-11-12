@@ -24,13 +24,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.index.IndexAccessors;
-import org.neo4j.internal.helpers.collection.BoundedIterable;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -63,26 +60,7 @@ class IndexSizesTest
         when( indexAccessors.accessorFor( any() ) ).then( invocation ->
         {
             IndexAccessor mock = mock( IndexAccessor.class );
-            BoundedIterable<Long> b = new BoundedIterable<>()
-            {
-                @Override
-                public long maxCount()
-                {
-                    return invocation.getArgument( 0, IndexDescriptor.class ).getId(); //using id as "size"
-                }
-
-                @Override
-                public void close()
-                {
-                }
-
-                @Override
-                public Iterator<Long> iterator()
-                {
-                    return Iterators.iterator();
-                }
-            };
-            when( mock.newAllEntriesReader() ).thenReturn( b );
+            when( mock.estimateNumberOfEntries() ).thenReturn( invocation.getArgument( 0, IndexDescriptor.class ).getId() );
             return mock;
         } );
 
@@ -177,9 +155,6 @@ class IndexSizesTest
 
     private IndexPrototype prototype()
     {
-        SchemaDescriptor schema = mock( SchemaDescriptor.class );
-        when( schema.entityType() ).thenReturn( EntityType.NODE );
-        when( schema.getPropertyIds() ).thenReturn( new int[]{1, 2} );
-        return IndexPrototype.forSchema( schema ).withName( "foo" );
+        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1, 2 ) ).withName( "foo" );
     }
 }

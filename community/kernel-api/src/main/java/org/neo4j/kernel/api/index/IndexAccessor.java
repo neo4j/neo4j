@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -44,6 +45,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
  */
 public interface IndexAccessor extends Closeable, IndexConfigProvider, ConsistencyCheckable
 {
+    long UNKNOWN_NUMBER_OF_ENTRIES = -1;
     IndexAccessor EMPTY = new Adapter();
 
     /**
@@ -106,9 +108,19 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
 
     BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive );
 
+    /**
+     * Returns one or more {@link IndexEntriesReader readers} reading all entries in this index. The supplied {@code partitions} is a hint
+     * for how many readers the caller wants back, each reader only reading a part of the whole index. The returned readers can be
+     * read individually in parallel and collectively all partitions will read all the index entries in this index.
+     *
+     * @param partitions a hint for how many partitions will be returned.
+     * @return the partitions that can read the index entries in this index. The implementation should strive to adhere to this number,
+     * but the only real contract is that the returned number of readers is between 1 <= numberOfReturnedReaders <= partitions.
+     */
     default IndexEntriesReader[] newAllIndexEntriesReader( int partitions )
     {
-        Iterator<Long> ids = newAllEntriesReader().iterator();
+        BoundedIterable<Long> entriesReader = newAllEntriesReader();
+        Iterator<Long> ids = entriesReader.iterator();
         IndexEntriesReader reader = new IndexEntriesReader()
         {
             @Override
@@ -132,6 +144,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
             @Override
             public void close()
             {
+                IOUtils.closeAllUnchecked( entriesReader );
             }
         };
         return new IndexEntriesReader[]{reader};
@@ -166,6 +179,11 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
     default void validateBeforeCommit( Value[] tuple )
     {
         // For most value types there are no specific validations to be made.
+    }
+
+    default long estimateNumberOfEntries()
+    {
+        return UNKNOWN_NUMBER_OF_ENTRIES;
     }
 
     class Adapter implements IndexAccessor
