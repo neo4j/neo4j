@@ -316,6 +316,26 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("c").withSingleRow(sizeHint / 2)
   }
 
+  test("should count(DISTINCT n.prop)") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i % (sizeHint/ 8))
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(DISTINCT x.num) AS c"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(sizeHint / 8)
+  }
+
   test("should collect(n.prop)") {
     given {
       nodePropertyGraph(sizeHint, {
