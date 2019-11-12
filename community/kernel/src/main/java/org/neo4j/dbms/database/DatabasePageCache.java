@@ -99,7 +99,7 @@ public class DatabasePageCache implements PageCache
     }
 
     @Override
-    public synchronized void close() throws IllegalStateException
+    public synchronized void close()
     {
         if ( closed )
         {

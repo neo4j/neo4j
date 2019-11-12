@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema.config;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
@@ -121,16 +122,19 @@ public class SpaceFillingCurveSettings
         return 31 * extents.hashCode() + maxLevels;
     }
 
-    public boolean equals( SpaceFillingCurveSettings other )
-    {
-        return this.dimensions == other.dimensions && this.maxLevels == other.maxLevels && this.extents.equals( other.extents );
-    }
-
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        return obj instanceof SpaceFillingCurveSettings && equals( (SpaceFillingCurveSettings) obj );
-    }
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        SpaceFillingCurveSettings that = (SpaceFillingCurveSettings) o;
+        return dimensions == that.dimensions && maxLevels == that.maxLevels && Objects.equals( extents, that.extents ); }
 
     @Override
     public String toString()

@@ -31,7 +31,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 {
     private final Entity entity;
 
-    public PropertiesRepresentation( Entity entity )
+    PropertiesRepresentation( Entity entity )
     {
         super( RepresentationType.PROPERTIES );
         this.entity = entity;
@@ -203,7 +203,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchByteArrayProperty( PropertyArray<byte[], Byte> array, String param )
+        protected Void dispatchByteArrayProperty( PropertyArray<Byte> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.BYTE, param );
             for ( Byte b : array )
@@ -216,7 +216,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchShortArrayProperty( PropertyArray<short[], Short> array, String param )
+        protected Void dispatchShortArrayProperty( PropertyArray<Short> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.SHORT, param );
             for ( Short s : array )
@@ -229,7 +229,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchCharacterArrayProperty( PropertyArray<char[], Character> array, String param )
+        protected Void dispatchCharacterArrayProperty( PropertyArray<Character> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.CHAR, param );
             for ( Character c : array )
@@ -242,7 +242,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchIntegerArrayProperty( PropertyArray<int[], Integer> array, String param )
+        protected Void dispatchIntegerArrayProperty( PropertyArray<Integer> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.INTEGER, param );
             for ( Integer i : array )
@@ -255,7 +255,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchLongArrayProperty( PropertyArray<long[], Long> array, String param )
+        protected Void dispatchLongArrayProperty( PropertyArray<Long> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.LONG, param );
             for ( Long j : array )
@@ -268,7 +268,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchFloatArrayProperty( PropertyArray<float[], Float> array, String param )
+        protected Void dispatchFloatArrayProperty( PropertyArray<Float> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.FLOAT, param );
             for ( Float f : array )
@@ -281,7 +281,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchDoubleArrayProperty( PropertyArray<double[], Double> array, String param )
+        protected Void dispatchDoubleArrayProperty( PropertyArray<Double> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.DOUBLE, param );
             for ( Double d : array )
@@ -294,7 +294,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchBooleanArrayProperty( PropertyArray<boolean[], Boolean> array, String param )
+        protected Void dispatchBooleanArrayProperty( PropertyArray<Boolean> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.BOOLEAN, param );
             for ( Boolean z : array )
@@ -305,7 +305,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
             return null;
         }
 
-        private void writePoint( MappingWriter pointWriter, Point property )
+        private static void writePoint( MappingWriter pointWriter, Point property )
         {
             pointWriter.writeString( "type", property.getGeometryType() );
             //write coordinates

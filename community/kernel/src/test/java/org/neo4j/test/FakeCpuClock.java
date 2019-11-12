@@ -26,16 +26,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.resources.CpuClock;
 
-public class FakeCpuClock extends CpuClock
+public class FakeCpuClock implements CpuClock
 {
-    public static final CpuClock NOT_AVAILABLE = new CpuClock()
-    {
-        @Override
-        public long cpuTimeNanos( long threadId )
-        {
-            return -1;
-        }
-    };
+    public static final CpuClock NOT_AVAILABLE = threadId -> -1;
     private final MutableLongLongMap cpuTimes = new LongLongHashMap();
 
     @Override

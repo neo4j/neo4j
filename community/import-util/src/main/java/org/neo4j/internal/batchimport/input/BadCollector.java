@@ -33,7 +33,7 @@ import org.neo4j.util.concurrent.AsyncEvents;
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 
-public class BadCollector implements Collector
+public final class BadCollector implements Collector
 {
     public static final String BAD_FILE_NAME = "bad.log";
 

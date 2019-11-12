@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.util.IntCounter;
 import org.neo4j.util.LocalIntCounter;
 
 /**
@@ -38,9 +38,9 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
 {
     private MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges = new LongObjectHashMap<>();
     private final Loader<RECORD,ADDITIONAL> loader;
-    private final IntCounter changeCounter;
+    private final MutableInt changeCounter;
 
-    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, IntCounter globalCounter )
+    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter )
     {
         this.loader = loader;
         this.changeCounter = new LocalIntCounter( globalCounter );
@@ -90,7 +90,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     @Override
     public int changeSize()
     {
-        return changeCounter.value();
+        return changeCounter.intValue();
     }
 
     @Override
@@ -105,7 +105,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
             // Let's not allow the internal maps to grow too big over time.
             recordChanges = new LongObjectHashMap<>();
         }
-        changeCounter.clear();
+        changeCounter.setValue( 0 );
     }
 
     @Override
@@ -132,7 +132,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     public static class RecordChange<RECORD,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
     {
         private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges;
-        private final IntCounter changeCounter;
+        private final MutableInt changeCounter;
         private final Loader<RECORD,ADDITIONAL> loader;
 
         private final ADDITIONAL additionalData;
@@ -143,7 +143,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         private RECORD before;
         private boolean changed;
 
-        public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, IntCounter changeCounter,
+        public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, MutableInt changeCounter,
                 long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData )
         {
             this.allChanges = allChanges;

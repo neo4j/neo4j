@@ -34,7 +34,7 @@ import org.neo4j.values.storable.CSVHeaderInformation;
  * Header of tabular/csv data input, specifying meta data about values in each "column", for example
  * semantically of which {@link Type} they are and which {@link Extractor type of value} they are.
  */
-public class Header implements Cloneable
+public class Header
 {
     public interface Factory
     {
@@ -78,18 +78,16 @@ public class Header implements Cloneable
         return Arrays.toString( entries );
     }
 
-    @Override
-    public Header clone()
+    public Header( Header other )
     {
-        Entry[] entries = new Entry[this.entries.length];
-        for ( int i = 0; i < entries.length; i++ )
+        this.entries = new Entry[other.entries.length];
+        for ( int i = 0; i < other.entries.length; i++ )
         {
-            entries[i] = this.entries[i].clone();
+            this.entries[i] = new Entry( other.entries[i] );
         }
-        return new Header( entries );
     }
 
-    public static class Entry implements Cloneable
+    public static class Entry
     {
         private final String name;
         private final Type type;
@@ -152,7 +150,7 @@ public class Header implements Cloneable
             return name;
         }
 
-        public CSVHeaderInformation optionalParameter()
+        CSVHeaderInformation optionalParameter()
         {
             return optionalParameter;
         }
@@ -192,18 +190,17 @@ public class Header implements Cloneable
                     nullSafeEquals( optionalParameter, other.optionalParameter );
         }
 
-        @Override
-        public Entry clone()
+        Entry( Entry other )
         {
-            return new Entry( name, type, group, extractor != null ? extractor.clone() : null, optionalParameter );
+            this( other.name, other.type, other.group, other.extractor != null ? other.extractor.clone() : null, other.optionalParameter );
         }
 
-        private boolean nullSafeEquals( Object o1, Object o2 )
+        private static boolean nullSafeEquals( Object o1, Object o2 )
         {
             return o1 == null || o2 == null ? o1 == o2 : o1.equals( o2 );
         }
 
-        private boolean extractorEquals( Extractor<?> first, Extractor<?> other )
+        private static boolean extractorEquals( Extractor<?> first, Extractor<?> other )
         {
             if ( first == null || other == null )
             {
@@ -233,7 +230,7 @@ public class Header implements Cloneable
         private final PrintStream out;
         private boolean first = true;
 
-        public PrintingMonitor( PrintStream out )
+        PrintingMonitor( PrintStream out )
         {
             this.out = out;
         }

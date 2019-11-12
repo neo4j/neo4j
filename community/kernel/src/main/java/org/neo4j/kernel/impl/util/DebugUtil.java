@@ -63,6 +63,14 @@ public class DebugUtil
         }
     }
 
+    private static class TraceLog extends Exception
+    {
+        TraceLog( String message )
+        {
+            super( message );
+        }
+    }
+
     private static void printLimitedStackTrace( PrintStream out, Throwable cause, int skip, int limit )
     {
         synchronized ( out )

@@ -53,11 +53,6 @@ public class Converters
         return from -> null;
     }
 
-    public static <T> Function<String,T> withDefault( final T defaultValue )
-    {
-        return from -> defaultValue;
-    }
-
     public static Function<String,File> toFile()
     {
         return File::new;
@@ -109,7 +104,7 @@ public class Converters
         };
     }
 
-    public static SocketAddress toSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort )
+    static SocketAddress toSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort )
     {
         String hostname = removeIpV6Brackets( hostnamePort.getHost() != null ? hostnamePort.getHost() : defaultHostname );
         // port 0 only makes sense for a listen address, not advertised address

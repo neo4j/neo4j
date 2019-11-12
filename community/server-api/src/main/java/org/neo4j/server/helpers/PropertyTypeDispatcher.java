@@ -23,6 +23,7 @@ import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.spatial.Point;
@@ -33,15 +34,13 @@ import org.neo4j.internal.helpers.collection.ArrayIterator;
  */
 public abstract class PropertyTypeDispatcher<K, T>
 {
-    public abstract static class PropertyArray<A, T> implements Iterable<T>
+    public abstract static class PropertyArray<T> implements Iterable<T>
     {
         private PropertyArray()
         {
         }
 
         public abstract int length();
-
-        public abstract A getClonedArray();
 
         public abstract Class<?> getType();
     }
@@ -60,7 +59,7 @@ public abstract class PropertyTypeDispatcher<K, T>
     {
         if ( property == null )
         {
-            return dispatchNullProperty( param );
+            return dispatchNullProperty();
         }
         else if ( property instanceof String )
         {
@@ -120,7 +119,7 @@ public abstract class PropertyTypeDispatcher<K, T>
             }
             else
             {
-                return dispatchOtherProperty( property, param );
+                return dispatchOtherProperty( property );
             }
         }
     }
@@ -165,7 +164,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
-    protected T dispatchOtherArray( Object[] property, K param )
+    private T dispatchOtherArray( Object[] property, K param )
     {
         if ( property instanceof Byte[] )
         {
@@ -207,7 +206,7 @@ public abstract class PropertyTypeDispatcher<K, T>
     }
 
     @SuppressWarnings( "boxing" )
-    protected T dispatchNumberProperty( Number property, K param )
+    private T dispatchNumberProperty( Number property, K param )
     {
         if ( property instanceof Long )
         {
@@ -239,7 +238,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
-    protected T dispatchNullProperty( K param )
+    private T dispatchNullProperty()
     {
         return null;
     }
@@ -271,37 +270,30 @@ public abstract class PropertyTypeDispatcher<K, T>
     //not abstract in order to not break existing code, since this was fixed in point release
     protected T dispatchPointProperty( Point property, K param )
     {
-        return dispatchOtherProperty( property, param );
+        return dispatchOtherProperty( property );
     }
 
     //not abstract in order to not break existing code, since this was fixed in point release
     protected T dispatchTemporalProperty( Temporal property, K param )
     {
-        return dispatchOtherProperty( property, param );
+        return dispatchOtherProperty( property );
     }
 
     //not abstract in order to not break existing code, since this was fixed in point release
     protected T dispatchTemporalAmountProperty( TemporalAmount property, K param )
     {
-        return dispatchOtherProperty( property, param );
+        return dispatchOtherProperty( property );
     }
 
-    protected T dispatchOtherProperty( Object property, K param )
+    private T dispatchOtherProperty( Object property )
     {
-        throw new IllegalArgumentException( "Unsupported property type: "
-                + property.getClass() );
+        throw new IllegalArgumentException( "Unsupported property type: " + property.getClass() );
     }
 
-    protected T dispatchByteArrayProperty( final byte[] property, K param )
+    private T dispatchByteArrayProperty( final byte[] property, K param )
     {
         return dispatchByteArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public byte[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -323,16 +315,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchCharacterArrayProperty( final char[] property, K param )
+    private T dispatchCharacterArrayProperty( final char[] property, K param )
     {
         return dispatchCharacterArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public char[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -354,16 +340,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchShortArrayProperty( final short[] property, K param )
+    private T dispatchShortArrayProperty( final short[] property, K param )
     {
         return dispatchShortArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public short[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -385,16 +365,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchIntegerArrayProperty( final int[] property, K param )
+    private T dispatchIntegerArrayProperty( final int[] property, K param )
     {
         return dispatchIntegerArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public int[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -416,16 +390,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchLongArrayProperty( final long[] property, K param )
+    private T dispatchLongArrayProperty( final long[] property, K param )
     {
         return dispatchLongArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public long[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -447,16 +415,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchFloatArrayProperty( final float[] property, K param )
+    private T dispatchFloatArrayProperty( final float[] property, K param )
     {
         return dispatchFloatArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public float[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -478,16 +440,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchDoubleArrayProperty( final double[] property, K param )
+    private T dispatchDoubleArrayProperty( final double[] property, K param )
     {
         return dispatchDoubleArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public double[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -509,16 +465,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchBooleanArrayProperty( final boolean[] property, K param )
+    private T dispatchBooleanArrayProperty( final boolean[] property, K param )
     {
         return dispatchBooleanArrayProperty( new PrimitiveArray<>()
         {
-            @Override
-            public boolean[] getClonedArray()
-            {
-                return property.clone();
-            }
-
             @Override
             public int length()
             {
@@ -540,271 +490,139 @@ public abstract class PropertyTypeDispatcher<K, T>
         }, param );
     }
 
-    protected T dispatchByteArrayProperty( final Byte[] property, K param )
+    private T dispatchByteArrayProperty( final Byte[] property, K param )
     {
-        return dispatchByteArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public byte[] getClonedArray()
-            {
-                byte[] result = new byte[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchByteArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchCharacterArrayProperty( final Character[] property, K param )
+    private T dispatchCharacterArrayProperty( final Character[] property, K param )
     {
-        return dispatchCharacterArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public char[] getClonedArray()
-            {
-                char[] result = new char[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchCharacterArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchShortArrayProperty( final Short[] property, K param )
+    private T dispatchShortArrayProperty( final Short[] property, K param )
     {
-        return dispatchShortArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public short[] getClonedArray()
-            {
-                short[] result = new short[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchShortArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchIntegerArrayProperty( final Integer[] property, K param )
+    private T dispatchIntegerArrayProperty( final Integer[] property, K param )
     {
-        return dispatchIntegerArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public int[] getClonedArray()
-            {
-                int[] result = new int[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchIntegerArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchLongArrayProperty( final Long[] property, K param )
+    private T dispatchLongArrayProperty( final Long[] property, K param )
     {
-        return dispatchLongArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public long[] getClonedArray()
-            {
-                long[] result = new long[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchLongArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchFloatArrayProperty( final Float[] property, K param )
+    private T dispatchFloatArrayProperty( final Float[] property, K param )
     {
-        return dispatchFloatArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public float[] getClonedArray()
-            {
-                float[] result = new float[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchFloatArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchDoubleArrayProperty( final Double[] property, K param )
+    private T dispatchDoubleArrayProperty( final Double[] property, K param )
     {
-        return dispatchDoubleArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public double[] getClonedArray()
-            {
-                double[] result = new double[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchDoubleArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchBooleanArrayProperty( final Boolean[] property, K param )
+    private T dispatchBooleanArrayProperty( final Boolean[] property, K param )
     {
-        return dispatchBooleanArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            @SuppressWarnings( "boxing" )
-            public boolean[] getClonedArray()
-            {
-                boolean[] result = new boolean[property.length];
-                for ( int i = 0; i < result.length; i++ )
-                {
-                    result[i] = property[i];
-                }
-                return result;
-            }
-        }, param );
+        return dispatchBooleanArrayProperty( new BoxedArray<>( property ), param );
     }
 
     protected abstract T dispatchStringProperty( String property, K param );
 
     protected T dispatchStringArrayProperty( final String[] property, K param )
     {
-        return dispatchStringArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            public String[] getClonedArray()
-            {
-                return property.clone();
-            }
-        }, param );
+        return dispatchStringArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchStringArrayProperty( PropertyArray<String[], String> array, K param )
+    private T dispatchStringArrayProperty( PropertyArray<String> array, K param )
     {
-        return dispatchArray( array, param );
+        return dispatchArray( array );
     }
 
     protected T dispatchPointArrayProperty( final Point[] property, K param )
     {
-        return dispatchPointArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            public Point[] getClonedArray()
-            {
-                return property.clone();
-            }
-        }, param );
+        return dispatchPointArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchPointArrayProperty( PropertyArray<Point[], Point> array, K param )
+    private T dispatchPointArrayProperty( PropertyArray<Point> array, K param )
     {
-        return dispatchArray( array, param );
+        return dispatchArray( array );
     }
 
-    protected T dispatchTemporalArrayProperty( PropertyArray<Temporal[], Temporal> array, K param )
+    private T dispatchTemporalArrayProperty( PropertyArray<Temporal> array, K param )
     {
-        return dispatchArray( array, param );
+        return dispatchArray( array );
     }
 
     protected T dispatchTemporalArrayProperty( final Temporal[] property, K param )
     {
-        return dispatchTemporalArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            public Temporal[] getClonedArray()
-            {
-                return property.clone();
-            }
-        }, param );
+        return dispatchTemporalArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchTemporalAmountArrayProperty( PropertyArray<TemporalAmount[], TemporalAmount> array, K param )
+    private T dispatchTemporalAmountArrayProperty( PropertyArray<TemporalAmount> array, K param )
     {
-        return dispatchArray( array, param );
+        return dispatchArray( array );
     }
 
     protected T dispatchTemporalAmountArrayProperty( final TemporalAmount[] property, K param )
     {
-        return dispatchTemporalAmountArrayProperty( new BoxedArray<>( property )
-        {
-            @Override
-            public TemporalAmount[] getClonedArray()
-            {
-                return property.clone();
-            }
-        }, param );
+        return dispatchTemporalAmountArrayProperty( new BoxedArray<>( property ), param );
     }
 
-    protected T dispatchByteArrayProperty( PropertyArray<byte[], Byte> array, K param )
+    protected T dispatchByteArrayProperty( PropertyArray<Byte> array, K param )
     {
         return dispatchNumberArray( array, param );
     }
 
-    protected T dispatchCharacterArrayProperty( PropertyArray<char[], Character> array, K param )
+    protected T dispatchCharacterArrayProperty( PropertyArray<Character> array, K param )
     {
-        return dispatchArray( array, param );
+        return dispatchArray( array );
     }
 
-    protected T dispatchShortArrayProperty( PropertyArray<short[], Short> array, K param )
-    {
-        return dispatchNumberArray( array, param );
-    }
-
-    protected T dispatchIntegerArrayProperty( PropertyArray<int[], Integer> array, K param )
+    protected T dispatchShortArrayProperty( PropertyArray<Short> array, K param )
     {
         return dispatchNumberArray( array, param );
     }
 
-    protected T dispatchLongArrayProperty( PropertyArray<long[], Long> array, K param )
+    protected T dispatchIntegerArrayProperty( PropertyArray<Integer> array, K param )
     {
         return dispatchNumberArray( array, param );
     }
 
-    protected T dispatchFloatArrayProperty( PropertyArray<float[], Float> array, K param )
+    protected T dispatchLongArrayProperty( PropertyArray<Long> array, K param )
     {
         return dispatchNumberArray( array, param );
     }
 
-    protected T dispatchDoubleArrayProperty( PropertyArray<double[], Double> array, K param )
+    protected T dispatchFloatArrayProperty( PropertyArray<Float> array, K param )
     {
         return dispatchNumberArray( array, param );
     }
 
-    protected T dispatchBooleanArrayProperty( PropertyArray<boolean[], Boolean> array, K param )
+    protected T dispatchDoubleArrayProperty( PropertyArray<Double> array, K param )
     {
-        return dispatchArray( array, param );
+        return dispatchNumberArray( array, param );
     }
 
-    protected T dispatchNumberArray( PropertyArray<?, ? extends Number> array, K param )
+    protected T dispatchBooleanArrayProperty( PropertyArray<Boolean> array, K param )
     {
-        return dispatchArray( array, param );
+        return dispatchArray( array );
     }
 
-    protected T dispatchArray( PropertyArray<?, ?> array, K param )
+    private T dispatchNumberArray( PropertyArray<? extends Number> array, K param )
+    {
+        return dispatchArray( array );
+    }
+
+    private T dispatchArray( PropertyArray<?> array )
     {
         throw new UnsupportedOperationException( "Unhandled array type: " + array.getType() );
     }
 
-    private abstract static class BoxedArray<A, T> extends PropertyArray<A, T>
+    private static final class BoxedArray<T> extends PropertyArray<T>
     {
         private final T[] array;
 
@@ -832,7 +650,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
-    private abstract static class PrimitiveArray<A, T> extends PropertyArray<A, T>
+    private abstract static class PrimitiveArray<T> extends PropertyArray<T>
     {
         @Override
         public Iterator<T> iterator()
@@ -851,14 +669,17 @@ public abstract class PropertyTypeDispatcher<K, T>
                 @Override
                 public T next()
                 {
+                    if ( !hasNext() )
+                    {
+                        throw new NoSuchElementException();
+                    }
                     return item( pos++ );
                 }
 
                 @Override
                 public void remove()
                 {
-                    throw new UnsupportedOperationException(
-                            "Cannot remove element from primitive array." );
+                    throw new UnsupportedOperationException( "Cannot remove element from primitive array." );
                 }
             };
         }

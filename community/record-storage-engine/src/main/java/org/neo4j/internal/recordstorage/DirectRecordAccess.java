@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +30,6 @@ import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.util.IntCounter;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever {@link #commit()}
@@ -41,7 +42,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     private final Loader<RECORD, ADDITIONAL> loader;
     private final Map<Long,DirectRecordProxy> batch = new HashMap<>();
 
-    private final IntCounter changeCounter = new IntCounter();
+    private final MutableInt changeCounter = new MutableInt();
 
     public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD, ADDITIONAL> loader )
     {
@@ -94,7 +95,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     @Override
     public int changeSize()
     {
-        return changeCounter.value();
+        return changeCounter.intValue();
     }
 
     @Override
@@ -227,7 +228,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
 
     public void commit()
     {
-        if ( changeCounter.value() == 0 )
+        if ( changeCounter.intValue() == 0 )
         {
             return;
         }
@@ -238,7 +239,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         {
             proxy.store();
         }
-        changeCounter.clear();
+        changeCounter.setValue( 0 );
         batch.clear();
     }
 }

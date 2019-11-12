@@ -92,7 +92,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
             {
                 ThreadLocalRandom rng = ThreadLocalRandom.current();
                 long x = value.longValue();
-                if ( x != 0 & rng.nextBoolean() )
+                if ( x != 0 && rng.nextBoolean() )
                 {
                     x = ~x;
                 }

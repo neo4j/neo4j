@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v3.messaging.response;
 
+import java.util.Objects;
+
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -63,15 +65,12 @@ public class FailureMessage implements ResponseMessage
         {
             return true;
         }
-        if ( !(o instanceof FailureMessage) )
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
-
         FailureMessage that = (FailureMessage) o;
-
-        return (message != null ? message.equals( that.message ) : that.message == null) &&
-                (status != null ? status.equals( that.status ) : that.status == null);
+        return Objects.equals( status, that.status ) && Objects.equals( message, that.message );
     }
 
     @Override

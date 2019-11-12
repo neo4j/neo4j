@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
-
-import org.neo4j.util.IntCounter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,7 +58,7 @@ class RecordChangesTest
     void shouldCountChanges()
     {
         // Given
-        RecordChanges<Object, Object> change = new RecordChanges<>( loader, new IntCounter() );
+        RecordChanges<Object, Object> change = new RecordChanges<>( loader, new MutableInt() );
 
         // When
         change.getOrLoad( 1, null ).forChangingData();

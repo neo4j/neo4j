@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import org.neo4j.internal.recordstorage.RecordAccess.Loader;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -30,7 +32,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.util.IntCounter;
 
 public class RecordChangeSet implements RecordAccessSet
 {
@@ -42,7 +43,7 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
     private final RecordAccess<LabelTokenRecord, Void> labelTokenChanges;
     private final RecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
-    private final IntCounter changeCounter = new IntCounter();
+    private final MutableInt changeCounter = new MutableInt();
 
     public RecordChangeSet( Loaders loaders )
     {
@@ -127,13 +128,13 @@ public class RecordChangeSet implements RecordAccessSet
     @Override
     public boolean hasChanges()
     {
-        return changeCounter.value() > 0;
+        return changeCounter.intValue() > 0;
     }
 
     @Override
     public int changeSize()
     {
-        return changeCounter.value();
+        return changeCounter.intValue();
     }
 
     @Override
@@ -149,7 +150,7 @@ public class RecordChangeSet implements RecordAccessSet
             propertyKeyTokenChanges.close();
             labelTokenChanges.close();
             relationshipTypeTokenChanges.close();
-            changeCounter.clear();
+            changeCounter.setValue( 0 );
         }
     }
 }

@@ -34,10 +34,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongFunction;
+import java.util.stream.LongStream;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.collection.Dependencies;
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -172,7 +172,6 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
-import static org.neo4j.collection.PrimitiveLongCollections.map;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -917,7 +916,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             NodeRecord record = getNodeRecord( node ).forReadingData();
             long[] labels = parseLabelsField( record ).get( nodeStore );
-            return map( labelIdToLabelFunction, PrimitiveLongCollections.iterator( labels ) );
+            return LongStream.of( labels ).mapToObj( labelIdToLabelFunction ).iterator();
         };
     }
 

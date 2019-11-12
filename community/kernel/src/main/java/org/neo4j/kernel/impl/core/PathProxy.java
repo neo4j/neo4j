@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -196,6 +197,10 @@ public class PathProxy implements Path
             @Override
             public Relationship next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 return relationship( --i );
             }
         };
@@ -217,6 +222,10 @@ public class PathProxy implements Path
             @Override
             public Node next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 return new NodeEntity( internalTransaction, nodes[i++] );
             }
         };
@@ -238,6 +247,10 @@ public class PathProxy implements Path
             @Override
             public Node next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 return new NodeEntity( internalTransaction, nodes[--i] );
             }
         };
@@ -266,6 +279,10 @@ public class PathProxy implements Path
             @Override
             public Entity next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 if ( relationship )
                 {
                     relationship = false;

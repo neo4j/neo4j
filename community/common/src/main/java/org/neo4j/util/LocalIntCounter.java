@@ -19,14 +19,16 @@
  */
 package org.neo4j.util;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 /**
  * Used as a local counter, which manages its own counter as well as delegating changes to a global counter.
  */
-public class LocalIntCounter extends IntCounter
+public class LocalIntCounter extends MutableInt
 {
-    private final IntCounter global;
+    private final MutableInt global;
 
-    public LocalIntCounter( IntCounter globalCounter )
+    public LocalIntCounter( MutableInt globalCounter )
     {
         this.global = globalCounter;
     }
@@ -43,12 +45,6 @@ public class LocalIntCounter extends IntCounter
     {
         super.decrement();
         global.decrement();
-    }
-
-    @Override
-    public void clear()
-    {
-        super.clear();
     }
 
     @Override

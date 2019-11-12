@@ -25,7 +25,7 @@ import java.util.Arrays;
  * Got bits to store, shift and retrieve and they are more than what fits in a long?
  * Use {@link Bits} then.
  */
-public final class Bits implements Cloneable
+public final class Bits
 {
     // 3: ...
     // 2:   [   23    ][   22    ][   21    ][   20    ][   19    ][   18    ][   17    ][   16    ] <--\
@@ -234,12 +234,6 @@ public final class Bits implements Cloneable
             numberToString( builder, value, 8 );
         }
         return builder.toString();
-    }
-
-    @Override
-    public Bits clone()
-    {
-        return new Bits( Arrays.copyOf( longs, longs.length ), numberOfBytes );
     }
 
     public Bits put( byte value )

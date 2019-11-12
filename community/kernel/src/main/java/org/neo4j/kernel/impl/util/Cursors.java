@@ -72,7 +72,7 @@ public class Cursors
             }
 
             @Override
-            public boolean next() throws EX
+            public boolean next()
             {
                 if ( itr.hasNext() )
                 {
@@ -87,7 +87,7 @@ public class Cursors
             }
 
             @Override
-            public void close() throws EX
+            public void close()
             {
                 current.invalidate();
             }

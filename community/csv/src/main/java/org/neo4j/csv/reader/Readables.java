@@ -223,7 +223,11 @@ public class Readables
                 if ( magic.impliesEncoding() )
                 {
                     // Read (and skip) the magic (BOM in this case) from the file we're returning out
-                    in.skip( magic.length() );
+                    long skip = in.skip( magic.length() );
+                    if ( skip != magic.length() )
+                    {
+                        throw new IOException( "Unable to skip " + magic.length() + " bytes, only able to skip " + skip + " bytes." );
+                    }
                     usedCharset = magic.encoding();
                 }
                 return wrap( new InputStreamReader( in, usedCharset )
@@ -237,7 +241,7 @@ public class Readables
             }
         }
 
-        private ZipEntry getSingleSuitableEntry( ZipFile zipFile ) throws IOException
+        private static ZipEntry getSingleSuitableEntry( ZipFile zipFile ) throws IOException
         {
             List<String> unsuitableEntries = new ArrayList<>();
             Enumeration<? extends ZipEntry> enumeration = zipFile.entries();

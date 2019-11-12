@@ -39,22 +39,6 @@ import static org.neo4j.internal.helpers.NamedThreadFactory.named;
 class ListenersTest
 {
     @Test
-    void copyConstructorWithNull()
-    {
-        assertThrows( NullPointerException.class, () -> new Listeners<>( null ) );
-    }
-
-    @Test
-    void copyConstructor()
-    {
-        Listeners<Listener> original = newListeners( new Listener(), new Listener(), new Listener() );
-
-        Listeners<Listener> copy = new Listeners<>( original );
-
-        assertEquals( asList( original ), asList( copy ) );
-    }
-
-    @Test
     void addNull()
     {
         assertThrows( NullPointerException.class, () -> new Listeners<>().add( null ) );

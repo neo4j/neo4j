@@ -41,7 +41,6 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
         this.actual = actual;
         this.theOtherBuffer = new SectionedCharBuffer( bufferSize );
         this.sourceDescription = actual.sourceDescription();
-        start();
     }
 
     /**
@@ -104,7 +103,9 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
 
     public static CharReadable threadAhead( CharReadable actual, int bufferSize )
     {
-        return new ThreadAheadReadable( actual, bufferSize );
+        ThreadAheadReadable threadAheadReadable = new ThreadAheadReadable( actual, bufferSize );
+        threadAheadReadable.start();
+        return threadAheadReadable;
     }
 
     @Override

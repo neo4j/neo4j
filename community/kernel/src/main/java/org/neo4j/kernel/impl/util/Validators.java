@@ -88,15 +88,4 @@ public class Validators
     {
         return value -> {};
     }
-
-    public static <T> Validator<T> all( Validator<T>... validators )
-    {
-        return value ->
-        {
-            for ( Validator<T> validator : validators )
-            {
-                validator.validate( value );
-            }
-        };
-    }
 }

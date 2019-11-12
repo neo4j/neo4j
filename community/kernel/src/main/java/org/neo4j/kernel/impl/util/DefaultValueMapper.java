@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.Entity;
@@ -78,7 +79,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         return new CoreAPIPath( value );
     }
 
-    private <U, V> Iterable<V> asList( U[] values, Function<U,V> mapper )
+    private static <U, V> Iterable<V> asList( U[] values, Function<U,V> mapper )
     {
         return () -> new Iterator<>()
         {
@@ -93,12 +94,16 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             @Override
             public V next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 return mapper.apply( values[index++] );
             }
         };
     }
 
-    private <U, V> Iterable<V> asReverseList( U[] values, Function<U,V> mapper )
+    private static <U, V> Iterable<V> asReverseList( U[] values, Function<U,V> mapper )
     {
         return () -> new Iterator<>()
         {
@@ -113,6 +118,10 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             @Override
             public V next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 return mapper.apply( values[index--] );
             }
         };
@@ -239,6 +248,10 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
                 @Override
                 public Entity next()
                 {
+                    if ( !hasNext() )
+                    {
+                        throw new NoSuchElementException();
+                    }
                     Entity entity;
                     if ( (index & 1) == 0 )
                     {

@@ -102,7 +102,7 @@ public abstract class TokenRecord extends AbstractBaseRecord
         {
             return true;
         }
-        if ( getClass() != o.getClass() )
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }

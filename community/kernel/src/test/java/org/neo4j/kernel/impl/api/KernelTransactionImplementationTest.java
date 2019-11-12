@@ -779,7 +779,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         return commitProcess.transactions.get( 0 );
     }
 
-    private static class ThreadBasedCpuClock extends CpuClock
+    private static class ThreadBasedCpuClock implements CpuClock
     {
         private long iteration;
 

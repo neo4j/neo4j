@@ -45,18 +45,6 @@ public class Listeners<T> implements Iterable<T>
     }
 
     /**
-     * Construct a copy of the given listeners.
-     *
-     * @param other listeners to copy.
-     */
-    public Listeners( Listeners<T> other )
-    {
-        requireNonNull( other, "prototype listeners can't be null" );
-
-        this.listeners = createListeners( other.listeners );
-    }
-
-    /**
      * Adds the specified listener to this container.
      *
      * @param listener the listener to add.

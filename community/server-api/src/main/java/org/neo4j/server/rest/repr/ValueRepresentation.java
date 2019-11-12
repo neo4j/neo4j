@@ -264,7 +264,7 @@ public class ValueRepresentation extends Representation
                 }
 
                 @SuppressWarnings( "unchecked" )
-                private Iterable<Representation> dispatch( PropertyArray<?,?> array )
+                private Iterable<Representation> dispatch( PropertyArray<?> array )
                 {
                     return new IterableWrapper<>( (Iterable<Object>) array )
                     {
@@ -278,63 +278,61 @@ public class ValueRepresentation extends Representation
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchByteArrayProperty( PropertyArray<byte[],Byte> array, Void param )
+                protected Representation dispatchByteArrayProperty( PropertyArray<Byte> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.BYTE, array );
                 }
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchShortArrayProperty( PropertyArray<short[],Short> array, Void param )
+                protected Representation dispatchShortArrayProperty( PropertyArray<Short> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.SHORT, array );
                 }
 
-                private ListRepresentation toListRepresentation( RepresentationType type, PropertyArray<?,?> array )
+                private ListRepresentation toListRepresentation( RepresentationType type, PropertyArray<?> array )
                 {
                     return new ListRepresentation( type, dispatch( array ) );
                 }
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchCharacterArrayProperty( PropertyArray<char[],Character> array,
-                                                                         Void param )
+                protected Representation dispatchCharacterArrayProperty( PropertyArray<Character> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.CHAR, array );
                 }
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchIntegerArrayProperty( PropertyArray<int[],Integer> array, Void param )
+                protected Representation dispatchIntegerArrayProperty( PropertyArray<Integer> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.INTEGER, array );
                 }
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchLongArrayProperty( PropertyArray<long[],Long> array, Void param )
+                protected Representation dispatchLongArrayProperty( PropertyArray<Long> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.LONG, array );
                 }
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchFloatArrayProperty( PropertyArray<float[],Float> array, Void param )
+                protected Representation dispatchFloatArrayProperty( PropertyArray<Float> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.FLOAT, array );
                 }
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchDoubleArrayProperty( PropertyArray<double[],Double> array, Void param )
+                protected Representation dispatchDoubleArrayProperty( PropertyArray<Double> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.DOUBLE, array );
                 }
 
                 @Override
                 @SuppressWarnings( "boxing" )
-                protected Representation dispatchBooleanArrayProperty( PropertyArray<boolean[],Boolean> array,
-                                                                       Void param )
+                protected Representation dispatchBooleanArrayProperty( PropertyArray<Boolean> array, Void param )
                 {
                     return toListRepresentation( RepresentationType.BOOLEAN, array );
                 }

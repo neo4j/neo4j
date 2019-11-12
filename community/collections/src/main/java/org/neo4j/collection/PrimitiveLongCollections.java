@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.function.LongFunction;
 import java.util.function.LongPredicate;
 
 import org.neo4j.graphdb.Resource;
@@ -197,30 +196,6 @@ public final class PrimitiveLongCollections
                     return next( nextValue );
                 }
                 return false;
-            }
-        };
-    }
-
-    public static <T> Iterator<T> map( final LongFunction<T> mapFunction, final LongIterator source )
-    {
-        return new Iterator<>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return source.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return mapFunction.apply( source.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
             }
         };
     }
