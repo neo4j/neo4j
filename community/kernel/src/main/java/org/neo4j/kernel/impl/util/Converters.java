@@ -87,7 +87,7 @@ public class Converters
         return name ->
         {
             Comparator<File> sorting = cleverNumberRegexSort ? BY_FILE_NAME_WITH_CLEVER_NUMBERS : BY_FILE_NAME;
-            List<File> files = Validators.matchingFiles( new File( name ) );
+            List<File> files = Validators.matchingFiles( new File( name.trim() ) );
             files.sort( sorting );
             return files.toArray( new File[files.size()] );
         };
