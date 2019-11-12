@@ -314,10 +314,11 @@ public class SingleFilePageSwapper implements PageSwapper
             while ( read != -1 && (readTotal += read) < filePageSize );
 
             // Zero-fill the rest.
-            assert readTotal >= 0 && filePageSize <= bufferSize && readTotal <= filePageSize : format(
-                    "pointer = %h, readTotal = %s, length = %s, page size = %s",
-                    bufferAddress, readTotal, filePageSize, bufferSize );
-            UnsafeUtil.setMemory( bufferAddress + readTotal, filePageSize - readTotal, MuninnPageCache.ZERO_BYTE );
+            int rest = filePageSize - readTotal;
+            if ( rest > 0 )
+            {
+                UnsafeUtil.setMemory( bufferAddress + readTotal, rest, MuninnPageCache.ZERO_BYTE );
+            }
             return readTotal;
         }
         catch ( IOException e )
@@ -326,11 +327,13 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( Throwable e )
         {
-            String msg = format(
-                    "Read failed after %s of %s bytes from fileOffset %s",
-                    readTotal, filePageSize, fileOffset );
-            throw new IOException( msg, e );
+            throw new IOException( formatSwapInErrorMessage( fileOffset, filePageSize, readTotal ), e );
         }
+    }
+
+    private String formatSwapInErrorMessage( long fileOffset, int filePageSize, int readTotal )
+    {
+        return "Read failed after " + readTotal + " of " + filePageSize + " bytes from fileOffset " + fileOffset + ".";
     }
 
     private int swapOut( long bufferAddress, long fileOffset, StoreChannel channel ) throws IOException
