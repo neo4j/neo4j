@@ -40,6 +40,7 @@ import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,7 +79,25 @@ class SetInitialPasswordCommandIT
     void shouldSetPassword() throws Throwable
     {
         executeCommand( "abc" );
-        assertAuthIniFile( "abc" );
+        assertAuthIniFile( "abc", false );
+
+        verify( out ).println( "Changed password for user 'neo4j'." );
+    }
+
+    @Test
+    void shouldSetPasswordWithRequirePasswordChange() throws Throwable
+    {
+        executeCommand( "abc", "--require-password-change" );
+        assertAuthIniFile( "abc", true );
+
+        verify( out ).println( "Changed password for user 'neo4j'." );
+    }
+
+    @Test
+    void shouldSetPasswordWithRequirePasswordChangeOtherOrder() throws Throwable
+    {
+        executeCommand( "--require-password-change", "abc" );
+        assertAuthIniFile( "abc", true );
 
         verify( out ).println( "Changed password for user 'neo4j'." );
     }
@@ -87,9 +106,9 @@ class SetInitialPasswordCommandIT
     void shouldOverwriteIfSetPasswordAgain() throws Throwable
     {
         executeCommand( "abc" );
-        assertAuthIniFile( "abc" );
+        assertAuthIniFile( "abc", false );
         executeCommand( "muchBetter" );
-        assertAuthIniFile( "muchBetter" );
+        assertAuthIniFile( "muchBetter", false );
 
         verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
     }
@@ -98,9 +117,9 @@ class SetInitialPasswordCommandIT
     void shouldWorkWithSamePassword() throws Throwable
     {
         executeCommand( "neo4j" );
-        assertAuthIniFile( "neo4j" );
+        assertAuthIniFile( "neo4j", false );
         executeCommand( "neo4j" );
-        assertAuthIniFile( "neo4j" );
+        assertAuthIniFile( "neo4j", false );
 
         verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
     }
@@ -174,11 +193,11 @@ class SetInitialPasswordCommandIT
         executeCommand( "should-not-be-ignored" );
 
         // Then
-        assertAuthIniFile( "should-not-be-ignored" );
+        assertAuthIniFile( "should-not-be-ignored", false );
         verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
     }
 
-    private void assertAuthIniFile( String password ) throws Throwable
+    private void assertAuthIniFile( String password, boolean passwordChangeRequired ) throws Throwable
     {
         File authIniFile = getAuthFile( "auth.ini" );
         assertTrue( fileSystem.fileExists( authIniFile ) );
@@ -187,7 +206,7 @@ class SetInitialPasswordCommandIT
         User neo4j = userRepository.getUserByName( AuthManager.INITIAL_USER_NAME );
         assertNotNull( neo4j );
         assertTrue( neo4j.credentials().matchesPassword( password ) );
-        assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
+        assertThat( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ), equalTo( passwordChangeRequired ) );
     }
 
     private void assertNoAuthIniFile()
@@ -200,11 +219,11 @@ class SetInitialPasswordCommandIT
         return new File( new File( new File( homeDir, "data" ), "dbms" ), name );
     }
 
-    private void executeCommand( String password )
+    private void executeCommand( String... args )
     {
         final var ctx = new ExecutionContext( homeDir.toPath(), confDir.toPath(), out, err, fileSystem );
         final var command = new SetInitialPasswordCommand( ctx );
-        CommandLine.populateCommand( command, password );
+        CommandLine.populateCommand( command, args );
         command.execute();
     }
 }

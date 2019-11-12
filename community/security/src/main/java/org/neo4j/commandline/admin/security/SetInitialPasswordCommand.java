@@ -42,14 +42,20 @@ import org.neo4j.util.VisibleForTesting;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
 import static picocli.CommandLine.Parameters;
 
 @Command(
         name = "set-initial-password",
-        description = "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "')."
+        description = "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "'). " +
+                      "And removes the requirement to change password on first login."
 )
 public class SetInitialPasswordCommand extends AbstractCommand
 {
+    @Option( names = "--require-password-change", defaultValue = "false",
+            description = "Require the user to change their password on first login." )
+    private boolean changeRequired;
+
     @Parameters
     private String password;
 
@@ -84,7 +90,7 @@ public class SetInitialPasswordCommand extends AbstractCommand
                 userRepository.start();
                 userRepository.create(
                         new User.Builder( INITIAL_USER_NAME, LegacyCredential.forPassword( UTF8.encode( password ) ) )
-                                .withRequiredPasswordChange( false )
+                                .withRequiredPasswordChange( changeRequired )
                                 .build()
                     );
                 userRepository.shutdown();

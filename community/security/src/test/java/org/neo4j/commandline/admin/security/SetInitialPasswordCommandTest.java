@@ -77,11 +77,12 @@ class SetInitialPasswordCommandTest
         assertThat( baos.toString().trim(), equalTo( String.format(
                 "USAGE%n" +
                 "%n" +
-                "set-initial-password [--verbose] <password>%n" +
+                "set-initial-password [--require-password-change] [--verbose] <password>%n" +
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
-                "Sets the initial password of the initial admin user ('neo4j').%n" +
+                "Sets the initial password of the initial admin user ('neo4j'). And removes the%n" +
+                "requirement to change password on first login.%n" +
                 "%n" +
                 "PARAMETERS%n" +
                 "%n" +
@@ -89,7 +90,9 @@ class SetInitialPasswordCommandTest
                 "%n" +
                 "OPTIONS%n" +
                 "%n" +
-                "      --verbose    Enable verbose output."
+                "      --verbose    Enable verbose output.%n" +
+                "      --require-password-change%n" +
+                "                   Require the user to change their password on first login."
         ) ) );
     }
 

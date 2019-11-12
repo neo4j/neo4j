@@ -208,31 +208,27 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
                 Credential credentials = SystemGraphCredential.deserialize( (String) defaultUser.getProperty( "credentials" ), secureHasher );
                 if ( credentials.matchesPassword( UTF8.encode( INITIAL_PASSWORD ) ) )
                 {
-                    Credential credential = getInitialPassword();
-                    if ( credential != null )
+                    User initialUser = getInitialUser();
+                    if ( initialUser != null )
                     {
-                        defaultUser.setProperty( "credentials", credential.serialize() );
-                        defaultUser.setProperty( "passwordChangeRequired", false );
+                        defaultUser.setProperty( "credentials", initialUser.credentials().serialize() );
+                        defaultUser.setProperty( "passwordChangeRequired", initialUser.passwordChangeRequired() );
                     }
                 }
             }
         }
     }
 
-    private Credential getInitialPassword() throws Exception
+    private User getInitialUser() throws Exception
     {
-        Credential credential = null;
+        User initialUser = null;
         startUserRepository( this.initialUserRepository );
         if ( initialUserRepository.numberOfUsers() == 1 )
         {
             // In alignment with InternalFlatFileRealm we only allow the INITIAL_USER_NAME here for now
             // (This is what we get from the `set-initial-password` command
-            User initialUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
-            if ( initialUser != null )
-            {
-                credential = initialUser.credentials();
-            }
-            else
+            initialUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
+            if ( initialUser == null )
             {
                 String errorMessage = "Invalid `auth.ini` file: the user in the file is not named " + INITIAL_USER_NAME;
                 log.error( errorMessage );
@@ -246,7 +242,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
             throw new IllegalStateException( errorMessage );
         }
         stopUserRepository( initialUserRepository );
-        return credential;
+        return initialUser;
     }
 
     private void addUser( Transaction tx, String username, Credential credentials, boolean passwordChangeRequired, boolean suspended )
