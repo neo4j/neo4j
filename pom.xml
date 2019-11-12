@@ -1478,6 +1478,11 @@
       	<artifactId>aws-java-sdk-s3</artifactId>
       	<version>${amazon-sdk.version}</version>
       </dependency>
+      <dependency>
+      	<groupId>com.amazonaws</groupId>
+      	<artifactId>aws-java-sdk-secretsmanager</artifactId>
+      	<version>${amazon-sdk.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>
