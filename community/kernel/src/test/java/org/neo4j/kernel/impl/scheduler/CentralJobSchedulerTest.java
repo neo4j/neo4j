@@ -61,6 +61,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -248,78 +249,92 @@ class CentralJobSchedulerTest
     }
 
     @Test
-    void scheduledTasksThatThrowsMustPropagateException()
+    @Timeout( 60 )
+    void scheduledTasksThatThrowsDoesNotPropagateException() throws InterruptedException
     {
-        assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
+        life.start();
+
+        RuntimeException boom = new RuntimeException( "boom" );
+        CountDownLatch startCounter = new CountDownLatch( 10 );
+        CountDownLatch executionStart = new CountDownLatch( 1 );
+        AtomicBoolean canceled = new AtomicBoolean();
+        Runnable job = () ->
         {
-            life.start();
+            startCounter.countDown();
+            throw boom;
+        };
 
-            RuntimeException boom = new RuntimeException( "boom" );
-            AtomicInteger triggerCounter = new AtomicInteger();
-            Runnable job = () ->
-            {
-                triggerCounter.incrementAndGet();
-                throw boom;
-            };
+        JobHandle handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
+        handle.registerCancelListener( () -> canceled.set( true ) );
 
-            JobHandle handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
-            ExecutionException e = assertThrows( ExecutionException.class, handle::waitTermination );
-            assertThat( e.getCause(), is( boom ) );
-        } );
+        startCounter.await();
+
+        handle.cancel();
+
+        assertTrue( canceled.get() );
+        ExecutionException e = assertThrows( ExecutionException.class, handle::waitTermination );
+        assertThat( e.getCause(), is( boom ) );
     }
 
     @Test
+    @Timeout( value = 60 )
     void scheduledTasksThatThrowsShouldStop()
     {
-        assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
-        {
-            life.start();
+        life.start();
 
-            BinaryLatch triggerLatch = new BinaryLatch();
-            RuntimeException boom = new RuntimeException( "boom" );
-            AtomicInteger triggerCounter = new AtomicInteger();
-            Runnable job = () ->
+        BinaryLatch triggerLatch = new BinaryLatch();
+        AtomicBoolean canceled = new AtomicBoolean();
+        RuntimeException boom = new RuntimeException( "boom" );
+        AtomicInteger triggerCounter = new AtomicInteger();
+        Runnable job = () ->
+        {
+            try
             {
                 triggerCounter.incrementAndGet();
-                triggerLatch.release();
                 throw boom;
-            };
+            }
+            finally
+            {
+                triggerLatch.release();
+            }
+        };
 
-            scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
+        final JobHandle jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, MILLISECONDS );
+        jobHandle.registerCancelListener( () -> canceled.set( true ) );
 
-            triggerLatch.await();
-            Thread.sleep( 50 );
+        triggerLatch.await();
 
-            assertThat( triggerCounter.get(), is( 1 ) );
-        } );
+        assertThat( triggerCounter.get(), greaterThanOrEqualTo( 1 ) );
+        assertFalse( canceled.get() );
+
+        jobHandle.cancel();
+        assertTrue( canceled.get() );
     }
 
     @Test
+    @Timeout( value = 60 )
     void shutDownMustKillCancelledJobs()
     {
-        assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
-        {
-            life.start();
+        life.start();
 
-            BinaryLatch startLatch = new BinaryLatch();
-            BinaryLatch stopLatch = new BinaryLatch();
-            scheduler.schedule( Group.INDEX_POPULATION, () ->
+        BinaryLatch startLatch = new BinaryLatch();
+        BinaryLatch stopLatch = new BinaryLatch();
+        scheduler.schedule( Group.INDEX_POPULATION, () ->
+        {
+            try
             {
-                try
-                {
-                    startLatch.release();
-                    Thread.sleep( 100_000 );
-                }
-                catch ( InterruptedException e )
-                {
-                    stopLatch.release();
-                    throw new RuntimeException( e );
-                }
-            } );
-            startLatch.await();
-            scheduler.shutdown();
-            stopLatch.await();
+                startLatch.release();
+                Thread.sleep( 100_000 );
+            }
+            catch ( InterruptedException e )
+            {
+                stopLatch.release();
+                throw new RuntimeException( e );
+            }
         } );
+        startLatch.await();
+        scheduler.shutdown();
+        stopLatch.await();
     }
 
     @Test

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -152,22 +152,32 @@ class TimeBasedTaskSchedulerTest
     }
 
     @Test
-    void mustNotRescheduleRecurringTasksThatThrows() throws Exception
+    void mustRescheduleRecurringTasksThatThrows() throws Exception
     {
+        var executionCountDown = new CountDownLatch( 20 );
         Runnable runnable = () ->
         {
-            semaphore.release();
-            throw new RuntimeException( "boom" );
+            try
+            {
+                semaphore.release();
+                throw new RuntimeException( "boom" );
+            }
+            finally
+            {
+                executionCountDown.countDown();
+            }
         };
-        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 100, 100 );
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 10, 10 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         assertSemaphoreAcquire();
-        clock.forward( 100, TimeUnit.NANOSECONDS );
-        scheduler.tick();
-        ExecutionException exception = assertThrows( ExecutionException.class, handle::waitTermination );
-        assertThat( exception.getCause().getMessage(), is( "boom" ) );
-        assertThat( semaphore.drainPermits(), is( 0 ) );
+
+        do
+        {
+            clock.forward( 100, TimeUnit.NANOSECONDS );
+            scheduler.tick();
+        }
+        while ( executionCountDown.await( 1, TimeUnit.MILLISECONDS ) );
     }
 
     @Test

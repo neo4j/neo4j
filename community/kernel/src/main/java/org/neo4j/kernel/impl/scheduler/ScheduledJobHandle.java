@@ -42,9 +42,8 @@ import org.neo4j.util.concurrent.BinaryLatch;
  * <li>A handle that is both due and SUBMITTED is <em>overdue</em>, and its execution will be delayed until it
  * changes out of the SUBMITTED state.</li>
  * <li>If a scheduled handle successfully finishes its execution, it will transition back to the RUNNABLE state.</li>
- * <li>If an exception is thrown during the execution, then the handle transitions to the FAILED state, which is a
- * terminal state.</li>
- * <li>Failed handles will not be scheduled again.</li>
+ * <li>If an exception is thrown during the execution, then the handle transitions to the FAILED state in case task is not recurring,
+ * otherwise its rescheduled for next execution.</li>
  * </ul>
  */
 final class ScheduledJobHandle extends AtomicInteger implements JobHandle
@@ -78,13 +77,25 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
         this.nextDeadlineNanos = nextDeadlineNanos;
         handleRelease = new BinaryLatch();
         cancelListeners = new CopyOnWriteArrayList<>();
+        boolean isRecurring = reschedulingDelayNanos > 0;
         this.task = () ->
         {
             try
             {
                 task.run();
+            }
+            catch ( Throwable e )
+            {
+                lastException = e;
+                if ( !isRecurring )
+                {
+                    set( FAILED );
+                }
+            }
+            finally
+            {
                 // Use compareAndSet to avoid overriding any cancellation state.
-                if ( compareAndSet( SUBMITTED, RUNNABLE ) && reschedulingDelayNanos > 0 )
+                if ( compareAndSet( SUBMITTED, RUNNABLE ) && isRecurring )
                 {
                     // We only reschedule if the rescheduling delay is greater than zero.
                     // A rescheduling delay of zero means this is a delayed task.
@@ -92,11 +103,6 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
                     this.nextDeadlineNanos += reschedulingDelayNanos;
                     scheduler.enqueueTask( this );
                 }
-            }
-            catch ( Throwable e )
-            {
-                lastException = e;
-                set( FAILED );
             }
         };
     }
