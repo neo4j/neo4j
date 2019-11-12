@@ -371,9 +371,10 @@ abstract class Read implements TxStateHolder,
         public void close()
         {
             closeInternal();
-            if ( getCloseListener() != null )
+            var listener = closeListener;
+            if ( listener != null )
             {
-                getCloseListener().onClosed( this );
+                listener.onClosed( this );
             }
         }
 

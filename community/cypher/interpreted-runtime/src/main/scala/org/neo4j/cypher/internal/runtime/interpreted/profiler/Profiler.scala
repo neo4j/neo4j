@@ -223,6 +223,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def setCloseListener(closeListener: CloseListener): Unit = inner.setCloseListener(closeListener)
 
     override def getCloseListener: CloseListener = inner.getCloseListener
+
   }
 
   class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {

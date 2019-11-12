@@ -150,9 +150,9 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     public void close()
     {
         closeInternal();
-        if ( getCloseListener() != null )
+        if (closeListener != null )
         {
-            getCloseListener().onClosed( this );
+           closeListener.onClosed( this );
         }
     }
 

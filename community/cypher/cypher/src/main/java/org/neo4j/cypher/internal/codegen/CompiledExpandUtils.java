@@ -248,9 +248,10 @@ public abstract class CompiledExpandUtils
             public void close()
             {
                 closeInternal();
-                if ( getCloseListener() != null )
+                CloseListener closeListener = allRelationships.getCloseListener();
+                if ( closeListener != null )
                 {
-                    getCloseListener().onClosed( this );
+                    closeListener.onClosed( this );
                 }
             }
 

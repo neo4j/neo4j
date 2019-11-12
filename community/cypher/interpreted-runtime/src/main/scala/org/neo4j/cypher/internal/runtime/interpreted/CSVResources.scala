@@ -55,7 +55,8 @@ case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseLi
 
   override def close(): Unit = {
     closeInternal()
-    if (getCloseListener != null) getCloseListener.onClosed(this)
+    val listener = closeListener
+    if (listener != null) listener.onClosed(this)
   }
 
   // This is not correct, but hopefully the defensive answer. We don't expect this to be called,

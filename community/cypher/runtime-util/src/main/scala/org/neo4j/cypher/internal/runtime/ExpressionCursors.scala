@@ -39,7 +39,8 @@ class ExpressionCursors(cursorFactory: CursorFactory) extends DefaultCloseListen
 
   override def close(): Unit = {
     closeInternal()
-    if (getCloseListener != null) getCloseListener.onClosed(this)
+    val listener = closeListener
+    if (listener != null) listener.onClosed(this)
   }
 
   override def closeInternal(): Unit = {

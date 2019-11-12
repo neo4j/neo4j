@@ -21,14 +21,14 @@ package org.neo4j.internal.kernel.api;
 
 public abstract class DefaultCloseListenable
 {
-    private CloseListener closeListener;
+    protected CloseListener closeListener;
 
     public void setCloseListener( CloseListener closeListener )
     {
         this.closeListener = closeListener;
     }
 
-    public CloseListener getCloseListener()
+    public final CloseListener getCloseListener()
     {
         return this.closeListener;
     }

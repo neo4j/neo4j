@@ -384,7 +384,8 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends DefaultCl
 
   override def close(): Unit = {
     closeInternal()
-    if (getCloseListener != null) getCloseListener.onClosed(this)
+    val listener = closeListener
+    if (listener != null) listener.onClosed(this)
   }
 
   override def closeInternal(): Unit = _next = false

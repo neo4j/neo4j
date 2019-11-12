@@ -85,9 +85,9 @@ public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements 
     public void close()
     {
         closeInternal();
-        if ( getCloseListener() != null )
+        if ( closeListener != null )
         {
-            getCloseListener().onClosed( this );
+            closeListener.onClosed( this );
         }
     }
 

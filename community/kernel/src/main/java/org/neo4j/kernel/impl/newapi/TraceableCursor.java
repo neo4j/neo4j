@@ -49,9 +49,10 @@ abstract class TraceableCursor extends DefaultCloseListenable implements Cursor
     public void close()
     {
         closeInternal();
-        if ( getCloseListener() != null )
+        var listener = closeListener;
+        if ( listener != null )
         {
-            getCloseListener().onClosed( this );
+            listener.onClosed( this );
         }
     }
 }

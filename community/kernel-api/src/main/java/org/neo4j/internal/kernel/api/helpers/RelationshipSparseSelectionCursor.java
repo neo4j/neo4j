@@ -42,9 +42,10 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     public void close()
     {
         closeInternal();
-        if ( getCloseListener() != null )
+        final var listener = closeListener;
+        if ( listener != null )
         {
-            getCloseListener().onClosed( this );
+            listener.onClosed( this );
         }
     }
 
