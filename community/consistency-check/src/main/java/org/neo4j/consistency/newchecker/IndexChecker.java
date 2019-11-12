@@ -38,9 +38,7 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
@@ -49,7 +47,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
@@ -363,11 +360,7 @@ public class IndexChecker implements Checker
         {
             this.descriptor = descriptor;
             this.cacheSlotOffset = cacheSlotOffset;
-
-            IndexCapability capabilities = descriptor.getCapability();
-            ValueCategory[] categories = new ValueCategory[descriptor.schema().getPropertyIds().length];
-            Arrays.fill( categories, ValueCategory.UNKNOWN );
-            this.hasValues = capabilities.valueCapability( categories ) == IndexValueCapability.YES && !descriptor.schema().isFulltextSchemaDescriptor();
+            this.hasValues = IndexSizes.hasValues( descriptor );
         }
     }
 }

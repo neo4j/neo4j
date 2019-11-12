@@ -20,6 +20,7 @@
 package org.neo4j.consistency.newchecker;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +30,11 @@ import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.newchecker.ParallelExecution.ThrowingRunnable;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Calculates index sizes in parallel and caches the sizes
@@ -91,12 +95,27 @@ class IndexSizes
         int threshold = 0;
         for ( IndexDescriptor index : indexes )
         {
+            if ( !hasValues( index ) )
+            {
+                // Skip those that we cannot read values from. They should not be checked by the IndexChecker,
+                // but the "inefficient" way of doing a lookup per node/index in NodeChecker instead
+                continue;
+            }
+
             if ( getSizeFactor( index ) > SMALL_INDEX_FACTOR_THRESHOLD || threshold % IndexChecker.NUM_INDEXES_IN_CACHE != 0 )
             {
                 threshold++;
             }
         }
         return indexes.subList( 0, threshold );
+    }
+
+    static boolean hasValues( IndexDescriptor index )
+    {
+        IndexCapability capabilities = index.getCapability();
+        ValueCategory[] categories = new ValueCategory[index.schema().getPropertyIds().length];
+        Arrays.fill( categories, ValueCategory.UNKNOWN );
+        return capabilities.valueCapability( categories ) == IndexValueCapability.YES && !index.schema().isFulltextSchemaDescriptor();
     }
 
     private double getSizeFactor( IndexDescriptor index )

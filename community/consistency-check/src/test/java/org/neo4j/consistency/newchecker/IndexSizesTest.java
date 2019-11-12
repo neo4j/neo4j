@@ -31,18 +31,20 @@ import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.newchecker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.newchecker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
-
 
 class IndexSizesTest
 {
@@ -72,7 +74,6 @@ class IndexSizesTest
                 @Override
                 public void close()
                 {
-
                 }
 
                 @Override
@@ -137,20 +138,31 @@ class IndexSizesTest
         assertEquals( 0, sizes.smallIndexes( EntityType.NODE ).size() );
     }
 
+    @Test
+    void shouldNotConsiderIndexWithoutValueCapabilityAsLarge() throws Exception
+    {
+        // given
+        indexes.add( prototype().materialise( 0 ) /*w/o value capability*/ );
+        sizes.initialize();
+
+        // when/then
+        assertTrue( sizes.largeIndexes( EntityType.NODE ).isEmpty() );
+        assertEquals( indexes, sizes.smallIndexes( EntityType.NODE ) );
+    }
+
     private void createIndexes( int numSmall, int numLarge )
     {
-        SchemaDescriptor schema = mock( SchemaDescriptor.class );
-        when( schema.entityType() ).thenReturn( EntityType.NODE );
-        IndexPrototype.forSchema( schema ).withName( "foo" );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema ).withName( "foo" );
+        IndexCapability capabilityWithValue = mock( IndexCapability.class );
+        when( capabilityWithValue.valueCapability( any() ) ).thenReturn( IndexValueCapability.YES );
+        IndexPrototype prototype = prototype();
 
         for ( int i = 0; i < numLarge; i++ )
         {
-            indexes.add( prototype.materialise( highNodeId / 2 + i ) ); //using id as "size"
+            indexes.add( prototype.materialise( highNodeId / 2 + i ).withIndexCapability( capabilityWithValue ) ); //using id as "size"
         }
         for ( int i = 0; i < numSmall; i++ )
         {
-            indexes.add( prototype.materialise( i ) ); //using id as "size"
+            indexes.add( prototype.materialise( i ).withIndexCapability( capabilityWithValue ) ); //using id as "size"
         }
 
         try
@@ -161,5 +173,13 @@ class IndexSizesTest
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private IndexPrototype prototype()
+    {
+        SchemaDescriptor schema = mock( SchemaDescriptor.class );
+        when( schema.entityType() ).thenReturn( EntityType.NODE );
+        when( schema.getPropertyIds() ).thenReturn( new int[]{1, 2} );
+        return IndexPrototype.forSchema( schema ).withName( "foo" );
     }
 }

@@ -408,6 +408,7 @@ class NodeChecker implements Checker
         SchemaDescriptor schema = descriptor.schema();
         PropertySchemaType propertySchemaType = schema.propertySchemaType();
         long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
+        indexEntityTokenIds = sortAndDeduplicate( indexEntityTokenIds );
         try ( BoundedIterable<Long> allEntriesReader = accessor.newAllEntriesReader( range.from(), range.to() ) )
         {
             for ( long entityId : allEntriesReader )
