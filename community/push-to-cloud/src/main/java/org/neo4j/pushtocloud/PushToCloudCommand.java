@@ -47,6 +47,7 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_PASSWORD = "password";
     static final String ENV_USERNAME = "NEO4J_USERNAME";
     static final String ENV_PASSWORD = "NEO4J_PASSWORD";
+    static final String DUMP_PREFIX = "push-to-cloud-dump-of-";
 
     static final Arguments arguments = new Arguments()
             // Provide a (potentially running?) database
@@ -220,7 +221,7 @@ public class PushToCloudCommand implements AdminCommand
             }
 
             String to = arguments.get( ARG_DUMP_TO );
-            Path dumpFile = to != null ? Paths.get( to ) : homeDir.resolve( "dump-of-" + database + "-" + currentTimeMillis() );
+            Path dumpFile = to != null ? Paths.get( to ) : homeDir.resolve( DUMP_PREFIX + database + "-" + currentTimeMillis() );
             if ( Files.exists( dumpFile ) )
             {
                 throw new CommandFailed( format( "The provided dump-to target '%s' file already exists", dumpFile ) );

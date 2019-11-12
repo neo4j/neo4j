@@ -96,10 +96,29 @@ public class HttpCopierTest
     @Test
     public void shouldHandleSuccessfulHappyCaseRunThroughOfTheWholeProcess() throws Exception
     {
+        // create dump that fakes internally created naming scheme
+        Path source = createDumpPushToCloudDumpPrefix();
+        runHappyPathTest( source );
+        // assert dump was deleted
+        assertEquals( false, source.toFile().exists() );
+    }
+
+    @Test
+    public void shouldHandleSuccessfulHappyCaseRunThroughOfTheWholeProcessWithExistingDump() throws Exception
+    {
+        // create dump that fakes externally provided naming scheme
+        Path source = createDump();
+        runHappyPathTest( source );
+        // assert externally provided dump was not deleted
+        assertEquals( true, source.toFile().exists() );
+    }
+
+    private void runHappyPathTest( Path source ) throws CommandFailed
+    {
         // given
         ControlledProgressListener progressListener = new ControlledProgressListener();
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, ( name, length ) -> progressListener );
-        Path source = createDump();
+
         long sourceLength = fs.getFileSize( source.toFile() );
 
         String authorizationTokenResponse = "abc";
@@ -127,8 +146,6 @@ public class HttpCopierTest
         assertTrue( progressListener.doneCalled );
         // we need to add 100 extra ticks to the progress listener because of the database phases
         assertEquals( sourceLength + 100, progressListener.progress );
-        // assert dump was deleted
-        assertEquals( false, source.toFile().exists() );
     }
 
     @Test
@@ -846,6 +863,14 @@ public class HttpCopierTest
         return put( urlEqualTo( uploadLocationPath ) )
                 .withHeader( "Content-Length", equalTo( "0" ) )
                 .withHeader( "Content-Range", equalTo( "bytes */" + sourceLength ) );
+    }
+
+    private Path createDumpPushToCloudDumpPrefix() throws IOException
+    {
+        File file = directory.file( DUMP_PREFIX + "something" );
+        assertTrue( file.createNewFile() );
+        Files.write( file.toPath(), "this is simply some weird dump data, but may do the trick for this test of uploading it".getBytes() );
+        return file.toPath();
     }
 
     private Path createDump() throws IOException

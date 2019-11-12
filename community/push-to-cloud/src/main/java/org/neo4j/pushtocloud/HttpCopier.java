@@ -60,6 +60,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.compress.utils.IOUtils.toByteArray;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
+import static org.neo4j.pushtocloud.PushToCloudCommand.DUMP_PREFIX;
 
 public class HttpCopier implements PushToCloudCommand.Copier
 {
@@ -141,7 +142,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private void deleteDumpFile( boolean verbose, Path source )
     {
-        source.toFile().delete();
+        if ( source.toFile().getName().startsWith( DUMP_PREFIX ) )
+        {
+            source.toFile().delete();
+        }
     }
 
     private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken, long fileSize )
