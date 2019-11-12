@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.security;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -29,11 +30,18 @@ public abstract class SecurityModule implements Lifecycle, SecurityProvider
 {
     protected final LifeSupport life = new LifeSupport();
 
-    protected final RuntimeException logAndWrapProcedureException( KernelException e, Log log )
+    protected final void registerProcedure( GlobalProcedures globalProcedures, Log log, Class procedureClass, String warning )
     {
-        String message = "Failed to register security procedures: " + e.getMessage();
-        log.error( message, e );
-        return new RuntimeException( message, e );
+        try
+        {
+            globalProcedures.registerProcedure( procedureClass, true, warning );
+        }
+        catch ( KernelException e )
+        {
+            String message = "Failed to register security procedures: " + e.getMessage();
+            log.error( message, e );
+            throw new RuntimeException( message, e );
+        }
     }
 
     public abstract void setup();

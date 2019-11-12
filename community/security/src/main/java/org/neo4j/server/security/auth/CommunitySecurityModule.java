@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -75,14 +74,7 @@ public class CommunitySecurityModule extends SecurityModule
         authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem );
 
         life.add( dependencySatisfier.satisfyDependency( authManager ) );
-        try
-        {
-            globalProcedures.registerProcedure( AuthProcedures.class );
-        }
-        catch ( KernelException e )
-        {
-            throw logAndWrapProcedureException( e, logProvider.getLog( getClass() ) );
-        }
+        registerProcedure( globalProcedures, logProvider.getLog( getClass() ), AuthProcedures.class, null );
     }
 
     @Override
