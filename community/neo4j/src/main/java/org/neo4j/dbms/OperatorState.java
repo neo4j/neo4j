@@ -29,4 +29,6 @@ public interface OperatorState
      * @return human readable name for the desired state.
      */
     String description();
+
+    int ordinal();
 }

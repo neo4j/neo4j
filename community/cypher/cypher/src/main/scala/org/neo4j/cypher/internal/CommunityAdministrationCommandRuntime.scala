@@ -207,35 +207,17 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // SHOW DATABASES
     case ShowDatabases() => (_, _, _) =>
-      val query =
-        """
-          |MATCH (d: Database)
-          |CALL dbms.database.state(d.uuid) yield status, error, address, role
-          |WITH d, status as currentStatus, error, address, role
-          |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error, d.default as isDefault
-        """.stripMargin
+      val query = makeShowDatabasesQuery()
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine, query, VirtualValues.EMPTY_MAP)
 
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>
-      val query =
-        """
-          |MATCH (d: Database {default: true})
-          |CALL dbms.database.state(d.uuid) yield status, error, address, role
-          |WITH d, status as currentStatus, error, address, role
-          |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error
-        """.stripMargin
+      val query = makeShowDatabasesQuery(isDefault = true)
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine, query, VirtualValues.EMPTY_MAP)
 
     // SHOW DATABASE foo
     case ShowDatabase(normalizedName) => (_, _, _) =>
-      val query =
-        """
-          |MATCH (d: Database {name: $name})
-          |CALL dbms.database.state(d.uuid) yield status, error, address, role
-          |WITH d, status as currentStatus, error, address, role
-          |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error, d.default as isDefault
-        """.stripMargin
+      val query = makeShowDatabasesQuery(nameSpecified = true)
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query,
         VirtualValues.map(Array("name"), Array(Values.stringValue(normalizedName.name))))
 
@@ -294,6 +276,18 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Ignore the log command in community
     case LogSystemCommand(source, _) => (context, parameterMapping, securityContext) =>
       fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext)
+  }
+
+  private def makeShowDatabasesQuery(isDefault: Boolean = false, nameSpecified: Boolean = false): String = {
+    val props = if(isDefault) "{default:true}" else if(nameSpecified) "{name:$name}"  else ""
+    val defaultColumn = if (isDefault) "" else ", d.default as default"
+
+    s"""
+      |MATCH (d: Database $props)
+      |CALL dbms.database.state(d.name) yield status, error, address, role
+      |WITH d, status as currentStatus, error, address, role
+      |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn
+    """.stripMargin
   }
 
   override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {

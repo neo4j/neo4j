@@ -24,42 +24,42 @@ import java.util.Optional;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.database.DatabaseId;
 
-class DefaultDatabaseState implements DatabaseState
+final class CommunityDatabaseState implements DatabaseState
 {
-    private final StandaloneDatabaseContext context;
+    private final DatabaseId databaseId;
+    private final boolean isStarted;
+    private final boolean hasFailed;
+    private final Throwable failureCause;
 
-    DefaultDatabaseState( StandaloneDatabaseContext context )
+    CommunityDatabaseState( DatabaseId databaseId, boolean isStarted, boolean hasFailed, Throwable failureCause )
     {
-        this.context = context;
+        this.databaseId = databaseId;
+        this.isStarted = isStarted;
+        this.hasFailed = hasFailed;
+        this.failureCause = failureCause;
     }
 
     @Override
     public DatabaseId databaseId()
     {
-        return context.database().getDatabaseId();
+        return databaseId;
     }
 
     @Override
     public OperatorState operatorState()
     {
-        return started( context );
+        return isStarted ? DefaultOperatorState.STARTED : DefaultOperatorState.STOPPED;
     }
 
     @Override
     public boolean hasFailed()
     {
-        return context.isFailed();
+        return hasFailed;
     }
 
     @Override
     public Optional<Throwable> failure()
     {
-        return Optional.ofNullable( context.failureCause() );
-    }
-
-    private DefaultOperatorState started( StandaloneDatabaseContext databaseContext )
-    {
-
-        return databaseContext.database().isStarted() ? DefaultOperatorState.STARTED : DefaultOperatorState.STOPPED;
+        return Optional.ofNullable( failureCause );
     }
 }

@@ -163,7 +163,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME, "status" -> onlineStatus)))
+    result.toList should be(List(defaultDb(DEFAULT_DATABASE_NAME)))
   }
 
   test("should show custom default database using show default database command") {
@@ -176,7 +176,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(Map("name" -> "foo", "status" -> onlineStatus)))
+    result.toList should be(List(defaultDb("foo")))
   }
 
   test("should show correct default database for switch of default database") {
@@ -188,7 +188,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toSet should be(Set(Map("name" -> DEFAULT_DATABASE_NAME, "status" -> onlineStatus)))
+    result.toSet should be(Set(defaultDb(DEFAULT_DATABASE_NAME)))
 
     // GIVEN
     config.set(default_database, "foo")
@@ -198,7 +198,11 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result2 = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result2.toSet should be(Set(Map("name" -> "foo", "status" -> onlineStatus)))
+
+    // Required because current acceptance test machinery doesn't actually start foo
+    //   but the defaultDb row constructor assumes currentStatus -> started
+    val expectedRow = defaultDb("foo") + ("currentStatus" -> "unknown")
+    result2.toSet should be(Set(expectedRow))
   }
 
   test("should fail when showing default database when not on system database") {
@@ -267,7 +271,21 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   }
 
   private def db(name: String, status: String = onlineStatus, default: Boolean = false) =
-    Map("name" -> name, "status" -> status, "default" -> default)
+    Map("name" -> name,
+      "address" -> "localhost:7687",
+      "role" -> "standalone",
+      "requestedStatus" -> status,
+      "currentStatus" -> status,
+      "error" -> "",
+      "default" -> default)
+
+  private def defaultDb(name: String = DEFAULT_DATABASE_NAME, status: String = onlineStatus) =
+    Map("name" -> name,
+      "address" -> "localhost:7687",
+      "role" -> "standalone",
+      "requestedStatus" -> status,
+      "currentStatus" -> status,
+      "error" -> "")
 
   // Disable normal database creation because we need different settings on each test
   override protected def initTest() {}

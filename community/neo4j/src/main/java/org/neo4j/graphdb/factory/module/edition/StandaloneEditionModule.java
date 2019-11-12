@@ -39,11 +39,11 @@ import org.neo4j.token.TokenHolders;
 public abstract class StandaloneEditionModule extends AbstractEditionModule
 {
     protected CommitProcessFactory commitProcessFactory;
+    protected DatabaseStateService databaseStateService;
     IdContextFactory idContextFactory;
     Function<DatabaseId,TokenHolders> tokenHoldersProvider;
     Supplier<Locks> locksSupplier;
     Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
-    DatabaseStateService databaseStateService;
 
     @Override
     public EditionDatabaseComponents createDatabaseComponents( DatabaseId databaseId )
@@ -84,7 +84,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
 
         globalModule.getGlobalLife().add( databaseManager );
         globalModule.getGlobalDependencies().satisfyDependency( databaseManager );
-        globalModule.getGlobalDependencies().satisfyDependencies( databaseStateService );
+        globalModule.getGlobalDependencies().satisfyDependency( databaseStateService );
 
         return databaseManager;
     }

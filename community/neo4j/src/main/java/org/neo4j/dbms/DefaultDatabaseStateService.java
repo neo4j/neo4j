@@ -42,7 +42,11 @@ public final class DefaultDatabaseStateService implements DatabaseStateService
     public OperatorState stateOfDatabase( DatabaseId databaseId )
     {
         return databaseManager.getDatabaseContext( databaseId )
-                .map( ctx -> new DefaultDatabaseState( ctx ).operatorState() )
+                .map( ctx ->
+                        new CommunityDatabaseState( ctx.database().getDatabaseId(),
+                                ctx.database().isStarted(),
+                                ctx.isFailed(),
+                                ctx.failureCause() ).operatorState() )
                 .orElse( DefaultOperatorState.UNKNOWN );
     }
 

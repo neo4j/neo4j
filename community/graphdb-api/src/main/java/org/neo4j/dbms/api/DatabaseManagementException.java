@@ -47,4 +47,13 @@ public class DatabaseManagementException extends RuntimeException
     {
         super( cause );
     }
+
+    public static DatabaseManagementException wrap( Throwable toWrap )
+    {
+        if ( toWrap instanceof DatabaseManagementException )
+        {
+            return (DatabaseManagementException) toWrap;
+        }
+        return new DatabaseManagementException( toWrap.getMessage(), toWrap );
+    }
 }

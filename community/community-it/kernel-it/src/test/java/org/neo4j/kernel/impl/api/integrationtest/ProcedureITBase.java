@@ -173,7 +173,11 @@ public interface ProcedureITBase
                         "Attaches a map of data to the transaction. The data will be printed when listing queries, and inserted into the query log.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS", false),
                 proc( "dbms.getTXMetaData", "() :: (metadata :: MAP?)", "Provides attached transaction metadata.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ));
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.database.state",
+                        "(databaseName :: STRING?) :: (role :: STRING?, address :: STRING?, status :: STRING?, error :: STRING?)",
+                        "The actual status of the database with the provided name on this neo4j instance.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS", true ) );
     }
 
     default List<Object[]> getExpectedEnterpriseProcs()
