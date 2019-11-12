@@ -400,6 +400,10 @@ class ClosingExecutionResultTest extends CypherFunSuite {
       this.nCalls should equal(1)
     }
 
+    override def start(query: ExecutingQuery): Unit = {
+      //Start is not called from ClosingExecutionResult
+    }
+
     def assertFailure(query: ExecutingQuery): Unit = {
       this.reason should equal(Failure)
       this.query should equal(query)

@@ -102,6 +102,11 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
     // QueryExecutionMonitor
 
     @Override
+    public void start( ExecutingQuery query )
+    {
+    }
+
+    @Override
     public void endFailure( ExecutingQuery query, Throwable failure )
     {
     }

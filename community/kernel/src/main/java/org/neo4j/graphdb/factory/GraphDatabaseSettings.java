@@ -861,6 +861,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> log_queries =
             setting( "dbms.logs.query.enabled", BOOLEAN, FALSE );
 
+    @Description( "Enables verbose query logging, logging all queries on both start and end of the query" )
+    @Dynamic
+    @Internal
+    public static final Setting<Boolean> log_queries_verbose =
+            setting( "unsupported.dbms.logs.query.verbose", BOOLEAN, FALSE );
+
     @Description( "Send user logs to the process stdout. " +
             "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory. " +
             "For location of the Logs directory, see <<file-locations>>." )

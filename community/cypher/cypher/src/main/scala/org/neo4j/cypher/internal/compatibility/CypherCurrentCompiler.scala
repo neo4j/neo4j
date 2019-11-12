@@ -187,6 +187,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
 
+      val monitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+      monitor.start( transactionalContext.executingQuery() )
+
       runSafely {
 
         val internalExecutionResult =
@@ -211,13 +214,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                 innerExecutionMode,
                                                 planDescriptionBuilder)
           }
-
         new ExecutionResult(
           ClosingExecutionResult.wrapAndInitiate(
             transactionalContext.executingQuery(),
             internalExecutionResult,
             runSafely,
-            kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+            monitor
           )
         )
       } (e => taskCloser.close(false))
