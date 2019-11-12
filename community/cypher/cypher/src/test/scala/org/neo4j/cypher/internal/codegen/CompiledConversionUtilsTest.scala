@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.codegen
 import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
-import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable._
 
@@ -34,7 +32,7 @@ import scala.collection.JavaConverters._
 
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
-  val testPredicates = Seq(
+  private val testPredicates = Seq(
     (true, true),
     (false, false),
     (null, false),
@@ -78,7 +76,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     import scala.collection.JavaConverters._
     CompiledConversionUtils.toSet(null) should equal(Set.empty.asJava)
     CompiledConversionUtils.toSet(List(1, 1, 2, 3).asJava) should equal(Set(1, 2, 3).asJava)
-    CompiledConversionUtils.toSet(IntStream.of(1, 2, 3, 1)) should equal(Set(1, 2, 3).asJava)
+    CompiledConversionUtils.toSet(IntStream.of(1, 0, 0, 1)) should equal(Set(true, false).asJava)
     CompiledConversionUtils.toSet(LongStream.of(1L, 2L, 3L, 1L)) should equal(Set(1L, 2L, 3L).asJava)
     CompiledConversionUtils.toSet(DoubleStream.of(1.1, 2.2, 3.3, 1.1)) should equal(Set(1.1, 2.2, 3.3).asJava)
     CompiledConversionUtils.toSet(Array(1, 1, 3, 2)) should equal(Set(1, 2, 3).asJava)
@@ -88,7 +86,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     CompiledConversionUtils.toSet(ValueUtils.of(List(1, 1, 2, 3).asJava)) should equal(Set(Values.intValue(1), Values.intValue(2), Values.intValue(3)).asJava)
   }
 
-  val testMakeSafe = Seq(
+  private val testMakeSafe = Seq(
     Array(1, 2, 3) -> classOf[IntArray],
     Array[AnyRef](Byte.box(1), Byte.box(2), Byte.box(3)) -> classOf[ByteArray],
     Array[AnyRef](Byte.box(1), Byte.box(2), Short.box(3)) -> classOf[ShortArray],
@@ -124,7 +122,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       i += 1
   }
 
-  val testEquality = Seq(
+  private val testEquality = Seq(
     (null, "foo") -> null,
     (false, false) -> true,
     (9007199254740993L, 9007199254740992D) -> false,
@@ -183,7 +181,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       }
   }
 
-  val testOr = Seq(
+  val testOr: Seq[((Any, Any), Any)] = Seq(
     (null, true) -> true,
     (null, false) -> null,
     (true, null) -> true,
@@ -228,7 +226,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       }
   }
 
-  val testNot = Seq(
+  private val testNot = Seq(
     (null, null),
     (false, true),
     (true, false),

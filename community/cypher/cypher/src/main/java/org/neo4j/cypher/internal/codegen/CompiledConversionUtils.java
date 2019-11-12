@@ -137,8 +137,8 @@ public abstract class CompiledConversionUtils
         }
         else if ( value instanceof IntStream )
         {
-            IntStream stream = (IntStream) value;
-            return stream.boxed().collect( Collectors.toSet() );
+            //IntStream is used only for storing booleans
+            return ((IntStream) value).mapToObj( i -> i == 0 ? Boolean.FALSE : Boolean.TRUE ).collect( Collectors.toSet() );
         }
         else if ( value instanceof DoubleStream )
         {
