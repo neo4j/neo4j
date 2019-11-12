@@ -120,7 +120,7 @@ class ProcedureTest
         return Config.builder().withoutEncryption()
                 .withLogging( Logging.none() )
                 .withConnectionTimeout( 10, TimeUnit.SECONDS )
-                .toConfig();
+                .build();
     }
 
 }
