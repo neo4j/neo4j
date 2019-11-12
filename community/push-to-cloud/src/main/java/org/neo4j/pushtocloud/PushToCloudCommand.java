@@ -47,7 +47,6 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_PASSWORD = "password";
     static final String ENV_USERNAME = "NEO4J_USERNAME";
     static final String ENV_PASSWORD = "NEO4J_PASSWORD";
-    static final String DUMP_PREFIX = "push-to-cloud-dump-of-";
 
     static final Arguments arguments = new Arguments()
             // Provide a (potentially running?) database
@@ -151,8 +150,9 @@ public class PushToCloudCommand implements AdminCommand
             String bearerToken = copier.authenticate( verbose, consoleURL, username, password, "true".equals( confirmationViaArgument ) );
 
             Path source = initiateSource( arguments );
+            boolean sourceProvided = arguments.get( ARG_DUMP ) != null;
 
-            copier.copy( verbose, consoleURL, boltURI, source, bearerToken );
+            copier.copy( verbose, consoleURL, boltURI, source, sourceProvided, bearerToken );
         }
         catch ( Exception e )
         {
@@ -221,7 +221,7 @@ public class PushToCloudCommand implements AdminCommand
             }
 
             String to = arguments.get( ARG_DUMP_TO );
-            Path dumpFile = to != null ? Paths.get( to ) : homeDir.resolve( DUMP_PREFIX + database + "-" + currentTimeMillis() );
+            Path dumpFile = to != null ? Paths.get( to ) : homeDir.resolve( "dump-of" + database + "-" + currentTimeMillis() );
             if ( Files.exists( dumpFile ) )
             {
                 throw new CommandFailed( format( "The provided dump-to target '%s' file already exists", dumpFile ) );
@@ -241,7 +241,7 @@ public class PushToCloudCommand implements AdminCommand
          * @param username the username.
          * @param password the password.
          * @param consentConfirmed user confirmed to overwrite existing database.
-         * @return a bearer token to pass into {@link #copy(boolean, String, String, Path, String)} later on.
+         * @return a bearer token to pass into {@link #copy(boolean, String, String, Path, boolean, String)} later on.
          * @throws CommandFailed on authentication failure or some other unexpected failure.
          */
         String authenticate( boolean verbose, String consoleURL, String username, char[] password, boolean consentConfirmed ) throws CommandFailed;
@@ -253,10 +253,11 @@ public class PushToCloudCommand implements AdminCommand
          * @param consoleURL console URI to target.
          * @param boltUri bolt URI to target database.
          * @param source dump to copy to the target.
+         * @param deleteSourceAfterImport delete the dump after successful import
          * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[], boolean)} call.
          * @throws CommandFailed on copy failure or some other unexpected failure.
          */
-        void copy( boolean verbose, String consoleURL, String boltUri, Path source, String bearerToken ) throws CommandFailed;
+        void copy( boolean verbose, String consoleURL, String boltUri, Path source, boolean deleteSourceAfterImport, String bearerToken ) throws CommandFailed;
     }
 
     public interface DumpCreator
