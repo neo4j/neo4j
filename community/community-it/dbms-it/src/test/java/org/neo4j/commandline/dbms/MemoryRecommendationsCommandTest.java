@@ -35,6 +35,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -61,6 +63,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
@@ -76,6 +79,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
@@ -149,29 +154,44 @@ class MemoryRecommendationsCommandTest
     }
 
     @Test
-    void mustRecommendPageCacheMemory()
+    void mustRecommendPageCacheMemoryWithOffHeapTxState()
     {
-        assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 8 ), mebiBytes( 50 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ) ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
+        assertThat( recommendPageCacheMemory( mebiBytes( 100 ), mebiBytes( 130 ) ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ), mebiBytes( 260 ) ), between( mebiBytes( 8 ), mebiBytes( 50 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 3 ), mebiBytes( 368 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 6 ), mebiBytes( 780 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 192 ), gibiBytes( 10 ) ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ), gibiBytes( 10 ) ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
 
         // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
-        assertThat( recommendPageCacheMemory( exbiBytes( 1 ) ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
+        assertThat( recommendPageCacheMemory( exbiBytes( 1 ), gibiBytes( 100 ) ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
+    }
+
+    @Test
+    void mustRecommendPageCacheMemoryWithOnHeapTxState()
+    {
+        assertThat( recommendPageCacheMemory( mebiBytes( 100 ), 0 ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ), 0 ), between( mebiBytes( 20 ), mebiBytes( 60 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 3 ), 0 ), between( mebiBytes( 256 ), mebiBytes( 728 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 6 ), 0 ), between( mebiBytes( 728 ), mebiBytes( 1056 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 192 ), 0 ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ), 0 ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
+
+        // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
+        assertThat( recommendPageCacheMemory( exbiBytes( 1 ), gibiBytes( 100 ) ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
     }
 
     @Test
     void recommendTxStatMemory()
     {
-        assertEquals( mebiBytes( 128 ), recommendTxStateMemory( mebiBytes( 100 ) ) );
-        assertEquals( mebiBytes( 128 ), recommendTxStateMemory( mebiBytes( 512 ) ) );
-        assertEquals( mebiBytes( 192 ), recommendTxStateMemory( mebiBytes( 768 ) ) );
-        assertEquals( mebiBytes( 256 ), recommendTxStateMemory( gibiBytes( 1 ) ) );
-        assertEquals( gibiBytes( 4 ), recommendTxStateMemory( gibiBytes( 16 ) ) );
-        assertEquals( gibiBytes( 8 ), recommendTxStateMemory( gibiBytes( 32 ) ) );
-        assertEquals( gibiBytes( 8 ), recommendTxStateMemory( gibiBytes( 128 ) ) );
+        final Config config = Config.defaults();
+        assertEquals( mebiBytes( 128 ), recommendTxStateMemory( config, mebiBytes( 100 ) ) );
+        assertEquals( mebiBytes( 128 ), recommendTxStateMemory( config, mebiBytes( 512 ) ) );
+        assertEquals( mebiBytes( 192 ), recommendTxStateMemory( config, mebiBytes( 768 ) ) );
+        assertEquals( mebiBytes( 256 ), recommendTxStateMemory( config, gibiBytes( 1 ) ) );
+        assertEquals( gibiBytes( 4 ), recommendTxStateMemory( config, gibiBytes( 16 ) ) );
+        assertEquals( gibiBytes( 8 ), recommendTxStateMemory( config, gibiBytes( 32 ) ) );
+        assertEquals( gibiBytes( 8 ), recommendTxStateMemory( config, gibiBytes( 128 ) ) );
     }
 
     @Test
@@ -206,13 +226,42 @@ class MemoryRecommendationsCommandTest
 
         CommandLine.populateCommand( command, "--memory=8g" );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), gibiBytes( 2 ) ) );
+        String offHeap = bytesToString( gibiBytes( 2 ) );
 
         command.execute();
 
         verify( output ).println( initialHeapSize.name() + "=" + heap );
         verify( output ).println( maxHeapSize.name() + "=" + heap );
         verify( output ).println( pagecache_memory.name() + "=" + pagecache );
+        verify( output ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
+    }
+
+    @Test
+    void doNotPrintRecommendationsForOffHeapWhenOnHeapIsConfigured() throws Exception
+    {
+        PrintStream output = mock( PrintStream.class );
+        Path homeDir = testDirectory.homeDir().toPath();
+        Path configDir = homeDir.resolve( "conf" );
+        Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
+        configDir.toFile().mkdirs();
+        store( stringMap( data_directory.name(), homeDir.toString(),
+                tx_state_memory_allocation.name(), TransactionStateMemoryAllocation.ON_HEAP.name() ), configFile.toFile() );
+
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
+                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
+
+        CommandLine.populateCommand( command, "--memory=8g" );
+        String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), 0 ) );
+        String offHeap = bytesToString( gibiBytes( 2 ) );
+
+        command.execute();
+
+        verify( output ).println( initialHeapSize.name() + "=" + heap );
+        verify( output ).println( maxHeapSize.name() + "=" + heap );
+        verify( output ).println( pagecache_memory.name() + "=" + pagecache );
+        verify( output, never() ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
     }
 
     @Test
@@ -251,7 +300,7 @@ class MemoryRecommendationsCommandTest
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
                 new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), gibiBytes( 2 ) ) );
 
         // when
         CommandLine.populateCommand( command, "--memory=8g" );

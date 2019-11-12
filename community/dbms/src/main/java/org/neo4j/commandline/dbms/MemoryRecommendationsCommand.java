@@ -27,7 +27,6 @@ import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.function.ToDoubleFunction;
 
 import org.neo4j.cli.AbstractCommand;
@@ -47,11 +46,13 @@ import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
+import static java.util.Locale.ROOT;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.io.ByteUnit.ONE_GIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_KIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_MEBI_BYTE;
@@ -116,19 +117,27 @@ class MemoryRecommendationsCommand extends AbstractCommand
         return brackets.recommend( Bracket::heapMemory );
     }
 
-    static long recommendTxStateMemory( long heapMemoryBytes )
+    static long recommendTxStateMemory( Config config, long heapMemoryBytes )
     {
-        long recommendation = heapMemoryBytes / 4;
-        recommendation = Math.max( mebiBytes( 128 ), recommendation );
-        recommendation = Math.min( gibiBytes( 8 ), recommendation );
-        return recommendation;
+        switch ( config.get( tx_state_memory_allocation ) )
+        {
+            case OFF_HEAP:
+                long recommendation = heapMemoryBytes / 4;
+                recommendation = Math.max( mebiBytes( 128 ), recommendation );
+                recommendation = Math.min( gibiBytes( 8 ), recommendation );
+                return recommendation;
+            case ON_HEAP:
+                return 0;
+            default:
+                throw new IllegalArgumentException( "Unsupported type of memory allocation." );
+        }
     }
 
-    static long recommendPageCacheMemory( long totalMemoryBytes )
+    static long recommendPageCacheMemory( long totalMemoryBytes, long offHeapMemory )
     {
         long osMemory = recommendOsMemory( totalMemoryBytes );
         long heapMemory = recommendHeapMemory( totalMemoryBytes );
-        long recommendation = totalMemoryBytes - osMemory - heapMemory - recommendTxStateMemory( heapMemory );
+        long recommendation = totalMemoryBytes - osMemory - heapMemory - offHeapMemory;
         recommendation = Math.max( mebiBytes( 8 ), recommendation );
         recommendation = Math.min( tebiBytes( 16 ), recommendation );
         return recommendation;
@@ -169,11 +178,11 @@ class MemoryRecommendationsCommand extends AbstractCommand
             double modMebi = bytes % gibi1;
             if ( modMebi >= mebi100 )
             {
-                return format( Locale.ROOT, "%dm", Math.round( bytes / mebi100 ) * 100 );
+                return format( ROOT, "%dm", Math.round( bytes / mebi100 ) * 100 );
             }
             else
             {
-                return format( Locale.ROOT, "%.0fg", gibibytes );
+                return format( ROOT, "%.0fg", gibibytes );
             }
         }
         else if ( bytes >= mebi1 )
@@ -182,18 +191,18 @@ class MemoryRecommendationsCommand extends AbstractCommand
             double modKibi = bytes % mebi1;
             if ( modKibi >= kibi100 )
             {
-                return format( Locale.ROOT, "%dk", Math.round( bytes / kibi100 ) * 100 );
+                return format( ROOT, "%dk", Math.round( bytes / kibi100 ) * 100 );
             }
             else
             {
-                return format( Locale.ROOT, "%.0fm", mebibytes );
+                return format( ROOT, "%.0fm", mebibytes );
             }
         }
         else
         {
             // For kilobytes there's no need to bother with decimals, just print a rough figure rounded upwards
             double kibiBytes = bytes / kibi1;
-            return format( Locale.ROOT, "%dk", (long) Math.ceil( kibiBytes ) );
+            return format( ROOT, "%dk", (long) Math.ceil( kibiBytes ) );
         }
     }
 
@@ -204,13 +213,15 @@ class MemoryRecommendationsCommand extends AbstractCommand
         {
             memory = OsBeanUtil.getTotalPhysicalMemory();
         }
-
-        String os = bytesToString( recommendOsMemory( memory ) );
-        String heap = bytesToString( recommendHeapMemory( memory ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( memory ) );
-        String txState = bytesToString( recommendTxStateMemory( memory ) );
         File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
         Config config = getConfig( configFile );
+
+        final long offHeapMemory = recommendTxStateMemory( config, memory );
+        String os = bytesToString( recommendOsMemory( memory ) );
+        String heap = bytesToString( recommendHeapMemory( memory ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( memory, offHeapMemory ) );
+        String txState = bytesToString( offHeapMemory );
+
         File databasesRoot = config.get( databases_root_path ).toFile();
         Neo4jLayout storeLayout = Neo4jLayout.of( config );
         Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
@@ -248,7 +259,10 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( initialHeapSize.name() + "=" + heap );
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
-        print( tx_state_max_off_heap_memory.name() + "=" + txState );
+        if ( offHeapMemory != 0 )
+        {
+            print( tx_state_max_off_heap_memory.name() + "=" + txState );
+        }
         print( "#" );
         print( "# The numbers below have been derived based on your current databases located at: '" + databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );
