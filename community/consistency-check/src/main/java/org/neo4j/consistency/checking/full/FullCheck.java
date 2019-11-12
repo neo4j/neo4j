@@ -144,6 +144,12 @@ public class FullCheck
     {
         try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(), samplingConfig ) )
         {
+            if ( flags.isCheckIndexStructure() )
+            {
+                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes,
+                        allIdGenerators( directStoreAccess ), report, progressFactory );
+            }
+
             if ( !useExperimentalChecker )
             {
                 CacheAccess cacheAccess =
@@ -161,11 +167,6 @@ public class FullCheck
                 ConsistencyCheckTasks taskCreator =
                         new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(),
                                 indexes, multiPass, reporter, threads );
-                if ( flags.isCheckIndexStructure() )
-                {
-                    consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes,
-                            allIdGenerators( directStoreAccess ), report, progressFactory );
-                }
                 List<ConsistencyCheckerTask> tasks = taskCreator.createTasksForFullCheck( flags.isCheckLabelScanStore(), flags.isCheckIndexes(),
                         flags.isCheckGraph() );
                 progress.build();
