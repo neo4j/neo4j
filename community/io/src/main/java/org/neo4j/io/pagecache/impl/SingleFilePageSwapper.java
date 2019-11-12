@@ -44,7 +44,6 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
-import static java.lang.String.format;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
 import static org.neo4j.util.FeatureToggles.flag;
@@ -300,7 +299,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return (int) (filePageId >>> CHANNEL_STRIPE_SHIFT) & channelStripeMask;
     }
 
-    private int swapIn( StoreChannel channel, long bufferAddress, int bufferSize, long fileOffset, int filePageSize ) throws IOException
+    private int swapIn( StoreChannel channel, long bufferAddress, long fileOffset, int filePageSize ) throws IOException
     {
         int readTotal = 0;
         try
@@ -360,23 +359,23 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+    public long read( long filePageId, long bufferAddress ) throws IOException
     {
-        return readAndRetryIfInterrupted( filePageId, bufferAddress, bufferSize, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
+        return readAndRetryIfInterrupted( filePageId, bufferAddress, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
     }
 
-    private long readAndRetryIfInterrupted( long filePageId, long bufferAddress, int bufferSize, int attemptsLeft ) throws IOException
+    private long readAndRetryIfInterrupted( long filePageId, long bufferAddress, int attemptsLeft ) throws IOException
     {
         long fileOffset = pageIdToPosition( filePageId );
         try
         {
             if ( fileOffset < getCurrentFileSize() )
             {
-                return swapIn( channel( filePageId ), bufferAddress, bufferSize, fileOffset, filePageSize );
+                return swapIn( channel( filePageId ), bufferAddress, fileOffset, filePageSize );
             }
             else
             {
-                clear( bufferAddress, bufferSize );
+                clear( bufferAddress, filePageSize );
             }
         }
         catch ( ClosedChannelException e )
@@ -389,7 +388,7 @@ public class SingleFilePageSwapper implements PageSwapper
             }
 
             boolean interrupted = Thread.interrupted();
-            long bytesRead = readAndRetryIfInterrupted( filePageId, bufferAddress, bufferSize, attemptsLeft - 1 );
+            long bytesRead = readAndRetryIfInterrupted( filePageId, bufferAddress, attemptsLeft - 1 );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -400,7 +399,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
+    public long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         if ( POSITION_LOCK_GETTER != null && hasPositionLock )
         {
@@ -418,7 +417,7 @@ public class SingleFilePageSwapper implements PageSwapper
                 // isn't exactly an IOException. Instead, we'll try our fallback code and see what it says.
             }
         }
-        return readPositionedVectoredFallback( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
+        return readPositionedVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
     private long readPositionedVectoredToFileChannel(
@@ -495,14 +494,13 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int readPositionedVectoredFallback(
-            long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
+    private int readPositionedVectoredFallback( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         int bytes = 0;
         for ( int i = 0; i < length; i++ )
         {
             long address = bufferAddresses[arrayOffset + i];
-            bytes += read( startFilePageId + i, address, bufferSize );
+            bytes += read( startFilePageId + i, address );
         }
         return bytes;
     }

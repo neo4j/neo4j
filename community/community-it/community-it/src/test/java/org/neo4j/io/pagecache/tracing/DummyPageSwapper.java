@@ -26,8 +26,8 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 public class DummyPageSwapper implements PageSwapper
 {
-    private final String filename;
-    private final int filePageSize;
+    protected final String filename;
+    protected final int filePageSize;
 
     public DummyPageSwapper( String filename, int filePageSize )
     {
@@ -36,9 +36,9 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+    public long read( long filePageId, long bufferAddress ) throws IOException
     {
-        return bufferSize;
+        return filePageSize;
     }
 
     @Override
@@ -85,7 +85,7 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length )
+    public long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
     {
         return 0;
     }

@@ -43,7 +43,7 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException;
+    long read( long filePageId, long bufferAddress ) throws IOException;
 
     /**
      * Read pages from the file into the pages given by the bufferAddresses, starting from the given startFilePageId.
@@ -61,7 +61,7 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException;
+    long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException;
 
     /**
      * Write the contents of the page given by the bufferAddress and the bufferSize,

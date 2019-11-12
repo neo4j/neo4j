@@ -431,7 +431,7 @@ class PageList
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         setFilePageId( pageRef, filePageId ); // Page now considered isLoaded()
-        long bytesRead = swapper.read( filePageId, getAddress( pageRef ), cachePageSize );
+        long bytesRead = swapper.read( filePageId, getAddress( pageRef ) );
         event.addBytesRead( bytesRead );
         event.setCachePageId( toId( pageRef ) );
         setSwapperId( pageRef, swapperId ); // Page now considered isBoundTo( swapper, filePageId )

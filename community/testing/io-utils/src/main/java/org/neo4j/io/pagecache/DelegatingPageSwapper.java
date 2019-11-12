@@ -37,9 +37,9 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+    public long read( long filePageId, long bufferAddress ) throws IOException
     {
-        return delegate.read( filePageId, bufferAddress, bufferSize );
+        return delegate.read( filePageId, bufferAddress );
     }
 
     @Override
@@ -91,9 +91,9 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
+    public long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
-        return delegate.read( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
+        return delegate.read( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
     @Override

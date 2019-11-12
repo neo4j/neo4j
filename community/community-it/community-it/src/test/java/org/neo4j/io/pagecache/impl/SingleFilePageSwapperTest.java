@@ -147,7 +147,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory();
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, bool( noChannelStriping ) );
         long target = createPage( 4 );
-        swapper.read( 0, target, sizeOfAsInt( target ) );
+        swapper.read( 0, target );
 
         assertThat( array( target ), byteArray( bytes ) );
     }
@@ -169,7 +169,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory();
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, bool( noChannelStriping ) );
         long target = createPage( 4 );
-        swapper.read( 1, target, sizeOfAsInt( target ) );
+        swapper.read( 1, target );
 
         assertThat( array( target ), byteArray( new byte[]{5, 6, 0, 0} ) );
     }
@@ -343,7 +343,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         File file = testDir.file( "file" );
         fileSystem.write( file ).close();
 
-        createSwapper( factory, file, 4, NO_CALLBACK, false, false ).close();
+        createSwapper( factory, file, 4, NO_CALLBACK, false, bool( noChannelStriping ) ).close();
 
         try ( StoreFileChannel channel = fileSystem.write( file );
               FileLock fileLock = channel.tryLock() )
@@ -472,7 +472,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             for ( int i = 0; i < 10_000; i++ )
             {
                 clear( page );
-                assertThat( swapper.read( 0, page, sizeOfAsInt( page ) ), is( (long) bytesTotal ) );
+                assertThat( swapper.read( 0, page ), is( (long) bytesTotal ) );
                 assertThat( array( page ), is( data ) );
             }
         }
@@ -511,7 +511,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 assertThat( swapper.write( 0, page ), is( (long) bytesTotal ) );
                 clear( page );
                 adversary.setProbabilityFactor( 0 );
-                swapper.read( 0, page, sizeOfAsInt( page ) );
+                swapper.read( 0, page );
                 assertThat( array( page ), is( data ) );
             }
         }
@@ -564,7 +564,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 {
                     clear( page );
                 }
-                assertThat( swapper.read( 0, pages, bytesPerPage, 0, pages.length ), is( (long) bytesTotal ) );
+                assertThat( swapper.read( 0, pages, 0, pages.length ), is( (long) bytesTotal ) );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     System.arraycopy( data, j * bytesPerPage, temp, 0, bytesPerPage );
@@ -620,7 +620,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                     clear( readPage );
                 }
                 adversary.setProbabilityFactor( 0 );
-                assertThat( swapper.read( 0, readPages, bytesPerPage, 0, pageCount ), is( (long) bytesTotal ) );
+                assertThat( swapper.read( 0, readPages, 0, pageCount ), is( (long) bytesTotal ) );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     assertThat( array( readPages[j] ), is( array( writePages[j] ) ) );

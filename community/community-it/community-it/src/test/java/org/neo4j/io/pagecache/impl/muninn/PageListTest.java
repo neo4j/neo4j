@@ -1340,12 +1340,12 @@ public class PageListTest
         PageSwapper swapper = new DummyPageSwapper( "some file", pageSize )
         {
             @Override
-            public long read( long fpId, long bufferAddress, int bufferSize ) throws IOException
+            public long read( long fpId, long bufferAddress ) throws IOException
             {
                 if ( fpId == filePageId )
                 {
-                    UnsafeUtil.setMemory( bufferAddress, bufferSize, pageByteContents );
-                    return bufferSize;
+                    UnsafeUtil.setMemory( bufferAddress, filePageSize, pageByteContents );
+                    return filePageSize;
                 }
                 throw new IOException( "Did not expect this file page id = " + fpId );
             }
@@ -1402,7 +1402,7 @@ public class PageListTest
         PageSwapper swapper = new DummyPageSwapper( "file", pageSize )
         {
             @Override
-            public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long read( long filePageId, long bufferAddress ) throws IOException
             {
                 throw new IOException( "boo" );
             }
@@ -1459,7 +1459,7 @@ public class PageListTest
         DummyPageSwapper swapper = new DummyPageSwapper( "", pageSize )
         {
             @Override
-            public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long read( long filePageId, long bufferAddress ) throws IOException
             {
                 throw new IOException( "boom" );
             }
@@ -1485,7 +1485,7 @@ public class PageListTest
         DummyPageSwapper swapper = new DummyPageSwapper( "", pageSize )
         {
             @Override
-            public long read( long filePageId, long bufferAddress, int bufferSize )
+            public long read( long filePageId, long bufferAddress )
             {
                 return 333;
             }
