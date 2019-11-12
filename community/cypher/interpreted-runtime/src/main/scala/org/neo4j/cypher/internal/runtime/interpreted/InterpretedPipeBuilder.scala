@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Expressio
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.v3_5.logical.plans
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
+import org.neo4j.cypher.internal.v3_5.logical.plans
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 import org.neo4j.cypher.internal.v3_5.util.{Eagerly, InternalException}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -111,7 +111,7 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         ProjectEndpointsPipe(source, rel,
           start, startInScope,
           end, endInScope,
-          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)()
+          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)(id = id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
@@ -131,7 +131,7 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>
-        LockNodesPipe(source, nodesToLock)()
+        LockNodesPipe(source, nodesToLock)(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicates) =>
         val predicate: Predicate = predicates.map(buildPredicate(id, _)).reduceOption(_ andWith _).getOrElse(True())

@@ -192,6 +192,84 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   }
 
+  test("should not use RollupApply for PatternComprehensions in coalesce") {
+    val q =
+      """
+        |MATCH (a)
+        |WHERE coalesce(
+        |     [1, 2, 3],
+        |     [(a)<--(c) | c.prop5 = '0'],
+        |     [true])
+        |RETURN a
+      """.stripMargin
+
+    val plan = planFor(q)._2
+    println(plan)
+    plan.treeExists({
+      case _:RollUpApply => true
+    }) should be(false)
+  }
+
+  test("should not use RollupApply for PatternComprehensions in head") {
+    val q =
+      """
+        |MATCH (a)
+        |WHERE head( [(a)<--(b) | b.prop4 = true] ) = true
+        |RETURN a
+      """.stripMargin
+
+    val plan = planFor(q)._2
+    println(plan)
+    plan.treeExists({
+      case _:RollUpApply => true
+    }) should be(false)
+  }
+
+  test("should not use RollupApply for PatternComprehensions in container index") {
+    val q =
+      """
+        |MATCH (a)
+        |WHERE [(a)<--(b) | b.prop4 = true][2]
+        |RETURN a
+      """.stripMargin
+
+    val plan = planFor(q)._2
+    println(plan)
+    plan.treeExists({
+      case _:RollUpApply => true
+    }) should be(false)
+  }
+
+  test("should not use RollupApply for PatternComprehensions in list slice to") {
+    val q =
+      """
+        |MATCH (a)
+        |WHERE [(a)<--(b) | b.prop4 = true][..5]
+        |RETURN a
+      """.stripMargin
+
+    val plan = planFor(q)._2
+    println(plan)
+    plan.treeExists({
+      case _:RollUpApply => true
+    }) should be(false)
+  }
+
+  test("should not use RollupApply for PatternComprehensions in list slice from/to") {
+    val q =
+      """
+        |MATCH (a)
+        |WHERE [ (a)<--(b) | b.prop4 = true ][2..5]
+        |RETURN a
+      """.stripMargin
+
+    val plan = planFor(q)._2
+    println(plan)
+    plan.treeExists({
+      case _:RollUpApply => true
+    }) should be(false)
+  }
+
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
     queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty
 }
