@@ -79,9 +79,11 @@ class TypeCheckersTest
                 of( Object.class, "{foo: 'bar'}", DefaultParameterValue.ntMap( Map.of( "foo", "bar" ) ) ),
                 of( Object.class, "['foo', 42, true]", DefaultParameterValue.ntList( List.of( "foo", 42L, true ), NTAny ) ),
 
+                of( Map.class, "null", DefaultParameterValue.ntMap( null ) ),
                 of( Map.class, "{}", DefaultParameterValue.ntMap( emptyMap() ) ),
                 of( Map.class, "{foo: 'bar'}", DefaultParameterValue.ntMap( Map.of( "foo", "bar" ) ) ),
 
+                of( List.class, "null", DefaultParameterValue.ntList( null, NTAny ) ),
                 of( List.class, "[]", DefaultParameterValue.ntList( emptyList(), NTAny ) ),
                 of( List.class, "['foo', 42, true]", DefaultParameterValue.ntList( List.of( "foo", 42L, true ), NTAny ) ),
                 of( List.class, "[1, 3, 3, 7, 42]", DefaultParameterValue.ntList( List.of( 1L, 3L, 3L, 7L, 42L ), NTAny ) ),
