@@ -29,12 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
@@ -119,6 +121,54 @@ class TypeCheckersTest
         );
     }
 
+    private static Stream<Arguments> defaultValuesNegative()
+    {
+        return Stream.of(
+                of( Map.class, "[]" ),
+                of( Map.class, "true" ),
+                of( Map.class, "3.14" ),
+
+                of( List.class, "{}" ),
+                of( List.class, "false" ),
+                of( List.class, "-42" ),
+
+                of( byte[].class, "-42" ),
+                of( byte[].class, "{}" ),
+                of( byte[].class, "false" ),
+
+                of( boolean.class, "[]" ),
+                of( boolean.class, "{}" ),
+                of( Boolean.class, "null" ),
+                of( Boolean.class, "3.14" ),
+
+                of( long.class, "3.14" ),
+                of( long.class, "[]" ),
+                of( long.class, "{}" ),
+                of( long.class, "null" ),
+                of( long.class, "false" ),
+                of( Long.class, "3.14" ),
+                of( Long.class, "[]" ),
+                of( Long.class, "{}" ),
+                of( Long.class, "null" ),
+                of( Long.class, "true" ),
+
+                of( double.class, "[]" ),
+                of( double.class, "{}" ),
+                of( double.class, "null" ),
+                of( double.class, "false" ),
+                of( Double.class, "[]" ),
+                of( Double.class, "{}" ),
+                of( Double.class, "null" ),
+                of( Double.class, "true" ),
+
+                of( Number.class, "[]" ),
+                of( Number.class, "{}" ),
+                of( Number.class, "null" ),
+                of( Number.class, "true" ),
+                of( Number.class, "foo" )
+        );
+    }
+
     private static final Type listOfListOfMap = typeOf( "listOfListOfMap" );
 
     @ParameterizedTest( name = "{0} to {1}" )
@@ -136,6 +186,17 @@ class TypeCheckersTest
         var maybeParsedValue = new TypeCheckers().converterFor( javaClass ).defaultValue( defaultValue );
         assertTrue( maybeParsedValue.isPresent() );
         assertEquals( expected, maybeParsedValue.get() );
+    }
+
+    @ParameterizedTest( name = "{1} as {0} -> {2}" )
+    @MethodSource( "defaultValuesNegative" )
+    void shouldFailToConvertInvalidDefaultValue( Type javaClass, String defaultValue ) throws Throwable
+    {
+        var converter = new TypeCheckers().converterFor( javaClass );
+        var exception = assertThrows( ProcedureException.class, () -> converter.defaultValue( defaultValue ) );
+
+        var expectedMessage = String.format( "Default value `%s` could not be parsed as a %s", defaultValue, converter.type );
+        assertEquals( expectedMessage, exception.getMessage() );
     }
 
     @SuppressWarnings( "unused" )
