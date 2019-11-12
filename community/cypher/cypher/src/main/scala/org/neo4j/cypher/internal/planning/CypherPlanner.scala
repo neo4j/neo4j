@@ -169,6 +169,10 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
     val syntacticQuery = getOrParse(preParsedQuery, params, notificationLogger, preParsedQuery.options.offset, tracer, innerVariableNamer)
 
+    // The parser populates the notificationLogger as a side-effect of its work, therefore
+    // in the case of a cached query the notificationLogger will not be properly filled
+    syntacticQuery.maybeSemantics.map(_.notifications).getOrElse(Set.empty).foreach(notificationLogger.log)
+
     doPlan(syntacticQuery, preParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, innerVariableNamer)
   }
 
