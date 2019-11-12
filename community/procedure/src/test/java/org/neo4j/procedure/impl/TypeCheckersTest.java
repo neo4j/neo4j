@@ -78,14 +78,17 @@ class TypeCheckersTest
                 of( Object.class, "foo", DefaultParameterValue.ntString( "foo" ) ),
                 of( Object.class, "{foo: 'bar'}", DefaultParameterValue.ntMap( Map.of( "foo", "bar" ) ) ),
                 of( Object.class, "['foo', 42, true]", DefaultParameterValue.ntList( List.of( "foo", 42L, true ), NTAny ) ),
-                of( Object.class, "[1, 3, 3, 7, 42]", DefaultParameterValue.ntByteArray( new byte[]{1, 3, 3, 7, 42} ) ),
 
                 of( Map.class, "{}", DefaultParameterValue.ntMap( emptyMap() ) ),
                 of( Map.class, "{foo: 'bar'}", DefaultParameterValue.ntMap( Map.of( "foo", "bar" ) ) ),
 
                 of( List.class, "[]", DefaultParameterValue.ntList( emptyList(), NTAny ) ),
-                of( List.class, "['foo', 42, true]", DefaultParameterValue.ntList( List.of( "foo", 42, true ), NTAny ) ),
+                of( List.class, "['foo', 42, true]", DefaultParameterValue.ntList( List.of( "foo", 42L, true ), NTAny ) ),
                 of( List.class, "[1, 3, 3, 7, 42]", DefaultParameterValue.ntList( List.of( 1L, 3L, 3L, 7L, 42L ), NTAny ) ),
+
+                of( byte[].class, "[1, 3, 3, 7, 42]", DefaultParameterValue.ntByteArray( new byte[]{1, 3, 3, 7, 42} ) ),
+                of( byte[].class, "[]", DefaultParameterValue.ntByteArray( new byte[]{} ) ),
+                of( byte[].class, "[127, -128]", DefaultParameterValue.ntByteArray( new byte[]{127, -128} ) ),
 
                 of( boolean.class, "true", DefaultParameterValue.ntBoolean( true ) ),
                 of( boolean.class, "false", DefaultParameterValue.ntBoolean( false ) ),

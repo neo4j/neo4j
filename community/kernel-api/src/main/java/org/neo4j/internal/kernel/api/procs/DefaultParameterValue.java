@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.procs;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -107,11 +108,15 @@ public class DefaultParameterValue
 
         DefaultParameterValue that = (DefaultParameterValue) o;
 
-        if ( !Objects.equals( value, that.value ) )
+        if ( !type.equals( that.type ) )
         {
             return false;
         }
-        return type.equals( that.type );
+        if ( type.equals( Neo4jTypes.NTByteArray ) )
+        {
+            return Arrays.deepEquals( new Object[]{value}, new Object[]{that.value} );
+        }
+        return Objects.equals( value, that.value );
     }
 
     @Override

@@ -100,7 +100,6 @@ public class TypeCheckers
     private static final CompositeConverter PARSE_ANY = new CompositeConverter(
             DefaultValueConverter.nullParser( NTAny ),
             PARSE_MAP,
-            PARSE_BYTE_ARRAY,
             PARSE_LIST,
             PARSE_BOOLEAN,
             PARSE_NUMBER,
