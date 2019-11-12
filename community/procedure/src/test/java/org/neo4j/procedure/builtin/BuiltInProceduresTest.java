@@ -144,6 +144,7 @@ class BuiltInProceduresTest
         when( tx.tokenRead() ).thenReturn( tokens );
         when( tx.dataRead() ).thenReturn( read );
         when( tx.schemaRead() ).thenReturn( schemaRead );
+        when( tx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         when( callContext.isCalledFromCypher() ).thenReturn( false );
         when( schemaRead.snapshot() ).thenReturn( schemaReadCore );
 
