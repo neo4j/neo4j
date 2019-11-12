@@ -71,6 +71,14 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         }
       }
     }
+    def planRevokes(source: Option[PrivilegePlan],
+                   revokeType: RevokeType,
+                   planRevoke: (Option[PrivilegePlan], String) => Some[PrivilegePlan]): Some[PrivilegePlan] = revokeType match {
+      case t: RevokeBothType =>
+        val revokeGrant = planRevoke(source, RevokeGrantType()(t.position).relType)
+        planRevoke(revokeGrant, RevokeDenyType()(t.position).relType)
+      case t => planRevoke(source, t.relType)
+    }
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // SHOW USERS
       case _: ShowUsers =>
@@ -201,7 +209,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
         planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
-          (plan, role, act) => Some(plans.RevokeDatabaseAction(plan, act, database, role, revokeType))
+          (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, act, database, role, r)))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
@@ -225,7 +233,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (source, (roleName, segment)) => Some(plans.RevokeTraverse(source, database, segment, roleName, revokeType))
+          case (source, (roleName, segment)) => planRevokes(source, revokeType, (s, r) => Some(plans.RevokeTraverse(s, database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT WRITE ON GRAPH foo ELEMENTS * (*) TO role
@@ -249,7 +257,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (source, (roleName, segment)) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName, revokeType))
+          case (source, (roleName, segment)) => planRevokes(source, revokeType, (s, r) => Some(plans.RevokeWrite(s, AllResource()(InputPosition.NONE), database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT READ {prop} ON GRAPH foo ELEMENTS A (*) TO role
@@ -292,7 +300,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment, resource)
         }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (source, (roleName, (segment, resource))) => Some(plans.RevokeRead(source, resource, database, segment, roleName, revokeType))
+          case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => Some(plans.RevokeRead(s, resource, database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // SHOW [ALL | USER user | ROLE role] PRIVILEGES
