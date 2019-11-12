@@ -74,7 +74,7 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
         }
         catch ( NonUniqueTokenException e )
         {
-            throw new UnspecifiedKernelException( Status.General.UnknownError, "Newly created token should be unique.", e );
+            throw new UnspecifiedKernelException( Status.General.UnknownError, e, "Newly created token should be unique." );
         }
         return id;
     }
