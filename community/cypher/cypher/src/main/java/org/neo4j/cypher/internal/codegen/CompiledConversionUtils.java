@@ -138,21 +138,7 @@ public abstract class CompiledConversionUtils
         else if ( value instanceof IntStream )
         {
             //IntStream is used only for storing booleans
-            IntStream stream = (IntStream) value;
-            return stream.mapToObj( i -> {
-                if ( i == 0 )
-                {
-                    return Boolean.FALSE;
-                }
-                else if ( i == 1 )
-                {
-                    return Boolean.TRUE;
-                }
-                else
-                {
-                    throw new IllegalArgumentException( "Invalid boolean representation: " + i );
-                }
-            } ).collect( Collectors.toSet() );
+            return ((IntStream) value).mapToObj( i -> i == 0 ? Boolean.FALSE : Boolean.TRUE ).collect( Collectors.toSet() );
         }
         else if ( value instanceof DoubleStream )
         {
