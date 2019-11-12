@@ -99,11 +99,11 @@ public class TypeCheckers
 
     private static final CompositeConverter PARSE_ANY = new CompositeConverter(
             DefaultValueConverter.nullParser( NTAny ),
-            PARSE_MAP,
-            PARSE_LIST,
-            PARSE_BOOLEAN,
-            PARSE_NUMBER,
-            PARSE_STRING
+            PARSE_MAP.andThen( DefaultParameterValue::castAsAny ),
+            PARSE_LIST.andThen( DefaultParameterValue::castAsAny ),
+            PARSE_BOOLEAN.andThen( DefaultParameterValue::castAsAny ),
+            PARSE_NUMBER.andThen( DefaultParameterValue::castAsAny ),
+            PARSE_STRING.andThen( DefaultParameterValue::castAsAny )
     );
     private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny, PARSE_ANY );
     private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, PARSE_STRING );
