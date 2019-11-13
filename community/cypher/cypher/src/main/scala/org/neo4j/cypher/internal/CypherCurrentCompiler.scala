@@ -117,14 +117,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalPlan: LogicalPlan = resolveParameterForManagementCommands(planState.logicalPlan)
     val queryType = getQueryType(planState)
 
-    val runtimeContext = contextManager.create(logicalPlanResult.plannerContext.planContext,
-                                               transactionalContext.kernelTransaction().schemaRead(),
-                                               logicalPlanResult.plannerContext.clock,
-                                               logicalPlanResult.plannerContext.debugOptions,
-                                               query.options.useCompiledExpressions,
-                                               query.options.materializedEntitiesMode,
-                                               query.options.operatorEngine,
-                                               query.options.interpretedPipesFallback)
+    val runtimeContext: CONTEXT = contextManager.create(logicalPlanResult.plannerContext.planContext,
+                                                        transactionalContext.kernelTransaction().schemaRead(),
+                                                        logicalPlanResult.plannerContext.clock,
+                                                        logicalPlanResult.plannerContext.debugOptions,
+                                                        query.options.useCompiledExpressions,
+                                                        query.options.materializedEntitiesMode,
+                                                        query.options.operatorEngine,
+                                                        query.options.interpretedPipesFallback)
 
     val logicalQuery = LogicalQuery(logicalPlan,
                                     planState.queryText,
@@ -154,7 +154,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planState.plannerName,
       query.options.version,
       queryType,
-      logicalPlanResult.shouldBeCached)
+      logicalPlanResult.shouldBeCached,
+      runtimeContext.config.enableMonitors)
   }
 
   private def buildCompilerInfo(logicalPlan: LogicalPlan,
@@ -212,10 +213,13 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         plannerName: PlannerName,
                                         cypherVersion: CypherVersion,
                                         internalQueryType: InternalQueryType,
-                                        override val shouldBeCached: Boolean) extends ExecutableQuery {
+                                        override val shouldBeCached: Boolean,
+                                        enableMonitors: Boolean) extends ExecutableQuery {
 
-    private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
-    private val resourceMonitor = kernelMonitors.newMonitor(classOf[ResourceMonitor])
+    //Monitors are implemented via dynamic proxies which are slow compared to NOOP which is why we want to able to completely disable
+    private val searchMonitor = if (enableMonitors) kernelMonitors.newMonitor(classOf[IndexSearchMonitor]) else IndexSearchMonitor.NOOP
+    private val resourceMonitor = if (enableMonitors) kernelMonitors.newMonitor(classOf[ResourceMonitor]) else ResourceMonitor.NOOP
+
     private val planDescriptionBuilder =
       new PlanDescriptionBuilder(logicalPlan,
         plannerName,

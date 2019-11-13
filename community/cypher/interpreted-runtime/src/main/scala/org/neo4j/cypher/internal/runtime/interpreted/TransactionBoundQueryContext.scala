@@ -1041,4 +1041,12 @@ object TransactionBoundQueryContext {
     def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit
   }
 
+  object IndexSearchMonitor {
+    val NOOP: IndexSearchMonitor = new IndexSearchMonitor {
+      override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {}
+
+      override def lockingUniqueIndexSeek(index: IndexDescriptor,
+                                          values: Seq[Any]): Unit = {}
+    }
+  }
 }

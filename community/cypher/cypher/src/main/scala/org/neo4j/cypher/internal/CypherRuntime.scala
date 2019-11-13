@@ -195,7 +195,8 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       morselSizeBig: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       lenientCreateRelationship: Boolean,
-                                      memoryTrackingController: MemoryTrackingController) {
+                                      memoryTrackingController: MemoryTrackingController,
+                                      enableMonitors: Boolean) {
 
   Preconditions.checkArgument(morselSizeSmall <= morselSizeBig, s"morselSizeSmall (got $morselSizeSmall) must be <= morselSizeBig (got $morselSizeBig)")
 }

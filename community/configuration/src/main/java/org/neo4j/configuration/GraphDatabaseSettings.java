@@ -342,6 +342,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<CypherReplanAlgorithm> cypher_replan_algorithm =
             newBuilder( "unsupported.cypher.replan_algorithm", ofEnum( CypherReplanAlgorithm.class ), CypherReplanAlgorithm.DEFAULT ).build();
 
+    @Description( "Set this to allow monitors in the runtime." )
+    @Internal
+    public static final Setting<Boolean> cypher_enable_runtime_monitors =
+            newBuilder( "unsupported.cypher.enable_runtime_monitors", BOOL, false ).build();
+
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
             + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static final Setting<Boolean> allow_file_urls =
