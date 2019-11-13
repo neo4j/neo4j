@@ -120,6 +120,32 @@ public class PushToCloudCommandTest
     }
 
     @Test
+    public void shouldAcceptEmptyConfirmationViaCommandLine() throws Exception
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        char[] password = {'a', 'b', 'c'};
+        OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() )
+                .withPromptResponse( username )
+                .withPasswordResponse( password );
+        PushToCloudCommand command = command()
+                .copier( targetCommunicator )
+                .outsideWorld( outsideWorld )
+                .build();
+
+        // when
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ),
+                arg( ARG_OVERWRITE, null ) ) ); // arg value null is equivalent to --overwrite
+
+        // then
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
+    }
+
+    @Test
     public void shouldAcceptDumpAsSource() throws Exception
     {
         // given

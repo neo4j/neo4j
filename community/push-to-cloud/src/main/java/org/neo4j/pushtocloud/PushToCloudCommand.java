@@ -19,6 +19,10 @@ package org.neo4j.pushtocloud;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -144,7 +148,7 @@ public class PushToCloudCommand implements AdminCommand
                 throw new IncorrectUsage( "Please provide a Neo4j Cloud Bolt URI of the target location to push the database to, " +
                         "using the --bolt-uri argument." );
             }
-            String confirmationViaArgument = arguments.get( ARG_OVERWRITE );
+            String confirmationViaArgument = arguments.get( ARG_OVERWRITE, "false", "true" );
 
             String consoleURL = buildConsoleURI( boltURI );
             String bearerToken = copier.authenticate( verbose, consoleURL, username, password, "true".equals( confirmationViaArgument ) );
