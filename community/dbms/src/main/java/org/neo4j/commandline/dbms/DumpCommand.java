@@ -122,7 +122,6 @@ public class DumpCommand extends AbstractCommand
                 .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() ).build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;
-
     }
 
     private static Path calculateArchive( String database, Path to )

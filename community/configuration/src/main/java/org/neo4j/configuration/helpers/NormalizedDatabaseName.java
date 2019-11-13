@@ -25,8 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 public class NormalizedDatabaseName
 {
-
-    private String name;
+    private final String name;
 
     public NormalizedDatabaseName( String name )
     {

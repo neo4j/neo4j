@@ -21,6 +21,7 @@ package org.neo4j.internal.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntFunction;
@@ -96,7 +97,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         this.archetypalFulltextSchema = propertySchemaType == PARTIAL_ANY_TOKEN;
     }
 
-    private static void validatePropertyIds( int[] propertyIds )
+    private static void validatePropertyIds( int... propertyIds )
     {
         for ( int propertyId : propertyIds )
         {

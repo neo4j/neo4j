@@ -237,7 +237,7 @@ public class KernelToken implements Token
         return store.relationshipTypeCount();
     }
 
-    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    private static String checkValidTokenName( String name ) throws IllegalTokenNameException
     {
         if ( name == null || name.isEmpty() || name.contains( "\0" ) || name.contains( "`" ) )
         {
@@ -274,7 +274,7 @@ public class KernelToken implements Token
         }
     }
 
-    private void assertSameLength( String[] names, int[] ids )
+    private static void assertSameLength( String[] names, int[] ids )
     {
         if ( names.length != ids.length )
         {

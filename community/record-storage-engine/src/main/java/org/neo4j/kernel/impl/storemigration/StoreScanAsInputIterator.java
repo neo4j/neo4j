@@ -57,7 +57,7 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
         }
         long startId = id;
         id = min( highId, startId + batchSize );
-        ((StoreScanChunk)chunk).initialize( startId, id );
+        ((StoreScanChunk<?>) chunk).initialize( startId, id );
         return true;
     }
 }

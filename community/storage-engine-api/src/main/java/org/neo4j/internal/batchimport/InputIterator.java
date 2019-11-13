@@ -28,6 +28,7 @@ import org.neo4j.internal.batchimport.input.InputChunk;
 
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
+ * WARNING: Implementations must be thread safe
  */
 public interface InputIterator extends Closeable
 {

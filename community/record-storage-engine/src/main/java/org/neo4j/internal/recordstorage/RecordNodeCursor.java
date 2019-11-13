@@ -32,7 +32,7 @@ import static java.lang.Math.min;
 
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
-    private NodeStore read;
+    private final NodeStore read;
     private PageCursor pageCursor;
     private long next;
     private long highMark;

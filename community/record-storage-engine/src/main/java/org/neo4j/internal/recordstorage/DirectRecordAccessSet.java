@@ -137,7 +137,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
 
     public void commit()
     {
-        for ( DirectRecordAccess access : all )
+        for ( DirectRecordAccess<?,?> access : all )
         {
             access.commit();
         }
@@ -146,7 +146,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
     @Override
     public boolean hasChanges()
     {
-        for ( DirectRecordAccess access : all )
+        for ( DirectRecordAccess<?,?> access : all )
         {
             if ( access.changeSize() > 0 )
             {
@@ -160,7 +160,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
     public int changeSize()
     {
         int total = 0;
-        for ( DirectRecordAccess access : all )
+        for ( DirectRecordAccess<?,?> access : all )
         {
             total += access.changeSize();
         }

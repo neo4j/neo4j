@@ -196,7 +196,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         freeUnusedIds( propertyStore.getArrayStore(), arrayPropertyIds );
     }
 
-    void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch )
+    static void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch )
     {
         // Free unused property ids still in the last pre-allocated batch
         try ( Marker marker = store.getIdGenerator().marker() )

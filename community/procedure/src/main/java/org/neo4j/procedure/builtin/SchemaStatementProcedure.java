@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.StringJoiner;
+import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -51,7 +52,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
-final class SchemaStatementProcedure
+public final class SchemaStatementProcedure
 {
 
     private static final String CREATE_UNIQUE_PROPERTY_CONSTRAINT = "CALL db.createUniquePropertyConstraint( '%s', %s, %s, '%s', %s )";
@@ -99,7 +100,7 @@ final class SchemaStatementProcedure
             {
                 String name = constraint.getName();
                 String type = SchemaRuleType.CONSTRAINT.name();
-                String createStatement = createStatement( schemaRead, tokenRead, constraint );
+                String createStatement = createStatement( schemaRead::indexGetForName, tokenRead, constraint );
                 String dropStatement = dropStatement( constraint );
                 schemaStatements.put( name, new BuiltInProcedures.SchemaStatementResult( name, type, createStatement, dropStatement ) );
             }
@@ -154,7 +155,8 @@ final class SchemaStatementProcedure
         }
     }
 
-    private static String createStatement( SchemaReadCore schemaRead, TokenRead tokenRead, ConstraintDescriptor constraint ) throws ProcedureException
+    public static String createStatement( Function<String,IndexDescriptor> indexLookup, TokenRead tokenRead, ConstraintDescriptor constraint )
+            throws ProcedureException
     {
         try
         {
@@ -163,7 +165,7 @@ final class SchemaStatementProcedure
             {
                 final String labelsOrRelTypes = labelsOrRelTypesAsStringArray( tokenRead, constraint.schema() );
                 final String properties = propertiesAsStringArray( tokenRead, constraint.schema() );
-                IndexDescriptor backingIndex = schemaRead.indexGetForName( name );
+                IndexDescriptor backingIndex = indexLookup.apply( name );
                 String providerName = backingIndex.getIndexProvider().name();
                 String config = btreeConfigAsString( backingIndex );
                 if ( constraint.isUniquenessConstraint() )
@@ -210,7 +212,7 @@ final class SchemaStatementProcedure
         return format( DROP_CONSTRAINT, constraint.getName() );
     }
 
-    private static String createStatement( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws ProcedureException
+    public static String createStatement( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws ProcedureException
     {
         try
         {

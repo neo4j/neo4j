@@ -100,6 +100,6 @@ public enum RecordLoad
      */
     public boolean checkForOutOfBounds( PageCursor cursor )
     {
-        return cursor.checkAndClearBoundsFlag() & this == NORMAL;
+        return cursor.checkAndClearBoundsFlag() && this == NORMAL;
     }
 }

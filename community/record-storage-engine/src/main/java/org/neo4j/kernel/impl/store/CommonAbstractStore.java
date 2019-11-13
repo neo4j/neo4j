@@ -328,6 +328,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return pagedFile.pageSize() / recordSize;
     }
 
+    public long getLastPageId() throws IOException
+    {
+        return pagedFile.getLastPageId();
+    }
+
     public byte[] getRawRecordData( long id ) throws IOException
     {
         byte[] data = new byte[recordSize];
@@ -684,6 +689,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public final int getRecordSize()
     {
         return recordSize;
+    }
+
+    public long getStoreSize() throws IOException
+    {
+        return pagedFile.fileSize();
     }
 
     @Override
