@@ -505,10 +505,7 @@ object Prettifier {
     (resourceName, extractDbScope(dbScope), segment)
   }
 
-  def revokeOperation(operation: String, revokeType: RevokeType): String = revokeType match {
-    case _: RevokeBothType => s"$operation(ALL)"
-    case _ => s"$operation(${revokeType.name})"
-  }
+  def revokeOperation(operation: String, revokeType: String) = s"$operation($revokeType)"
 
   def extractDbScope(dbScope: GraphScope): String = dbScope match {
     case NamedGraphScope(name) => escapeName(name)
