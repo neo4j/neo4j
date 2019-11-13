@@ -49,6 +49,7 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
     private final ReadWriteLock initializationLock;
     private final Log log;
 
+    private long startingNumber;
     private OutOfOrderSequence sequence;
 
     public DefaultReconciledTransactionTracker( LogService logService )
@@ -74,6 +75,7 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
                 log.info( "Re-initializing from %s to transaction ID %s", sequence, reconciledTransactionId );
             }
             sequence = new ArrayQueueOutOfOrderSequence( reconciledTransactionId, INITIAL_ARRAY_SIZE, NO_METADATA );
+            startingNumber = reconciledTransactionId;
         }
         finally
         {
@@ -105,7 +107,15 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
         {
             checkState( sequence != null, "Not initialized" );
 
+            if ( reconciledTransactionId < startingNumber )
+            {
+                // this can happen when a store copy happens concurrently with a reconciliation
+                log.info( "Ignoring pre-initialization ID  %s", reconciledTransactionId );
+                return;
+            }
+
             var currentLastReconciledTxId = getLastReconciledTransactionId();
+
             // gap-free ID should always be lower than the given ID
             checkArgument( reconciledTransactionId > currentLastReconciledTxId,
                     "Received illegal transaction ID %s which is lower than the current transaction ID %s. Sequence: %s",

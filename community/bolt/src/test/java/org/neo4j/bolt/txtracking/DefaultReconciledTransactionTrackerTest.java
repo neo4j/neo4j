@@ -113,4 +113,20 @@ class DefaultReconciledTransactionTrackerTest
 
         assertThrows( IllegalArgumentException.class, () -> tracker.setLastReconciledTransactionId( 2 ) );
     }
+
+    @Test
+    void shouldIgnorePreInitializationIds()
+    {
+        tracker.initialize( 1 );
+        tracker.setLastReconciledTransactionId( 0 );
+        assertEquals( 1, tracker.getLastReconciledTransactionId() );
+
+        tracker.initialize( 42 );
+        tracker.setLastReconciledTransactionId( 40 );
+        tracker.setLastReconciledTransactionId( 41 );
+        assertEquals( 42, tracker.getLastReconciledTransactionId() );
+
+        tracker.setLastReconciledTransactionId( 43 );
+        assertEquals( 43, tracker.getLastReconciledTransactionId() );
+    }
 }
