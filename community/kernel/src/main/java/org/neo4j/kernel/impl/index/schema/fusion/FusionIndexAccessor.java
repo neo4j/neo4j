@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -175,5 +176,14 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public boolean consistencyCheck( ReporterFactory reporterFactory )
     {
         return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporterFactory );
+    }
+
+    @Override
+    public long estimateNumberOfEntries()
+    {
+        List<Long> counts = instanceSelector.transform( IndexAccessor::estimateNumberOfEntries );
+        return counts.stream().anyMatch( count -> count == UNKNOWN_NUMBER_OF_ENTRIES )
+               ? UNKNOWN_NUMBER_OF_ENTRIES
+               : counts.stream().mapToLong( Long::longValue ).sum();
     }
 }

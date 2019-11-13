@@ -131,7 +131,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
         catch ( TreeInconsistencyException e )
         {

@@ -170,6 +170,12 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
         return isConsistent;
     }
 
+    @Override
+    public long estimateNumberOfEntries()
+    {
+        return luceneIndex.allDocumentsReader().maxCount();
+    }
+
     protected abstract class AbstractLuceneIndexUpdater implements IndexUpdater
     {
         private final boolean idempotent;

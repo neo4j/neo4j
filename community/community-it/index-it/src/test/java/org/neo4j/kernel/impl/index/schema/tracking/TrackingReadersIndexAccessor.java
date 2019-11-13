@@ -19,24 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema.tracking;
 
-import java.io.File;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.helpers.collection.BoundedIterable;
-import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.values.storable.Value;
 
-public class TrackingReadersIndexAccessor implements IndexAccessor
+public class TrackingReadersIndexAccessor extends IndexAccessor.Delegating
 {
-    private final IndexAccessor accessor;
     private static final AtomicLong openReaders = new AtomicLong();
     private static final AtomicLong closedReaders = new AtomicLong();
 
@@ -52,79 +41,13 @@ public class TrackingReadersIndexAccessor implements IndexAccessor
 
     TrackingReadersIndexAccessor( IndexAccessor accessor )
     {
-        this.accessor = accessor;
-    }
-
-    @Override
-    public void drop()
-    {
-        accessor.drop();
-    }
-
-    @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
-    {
-        return accessor.newUpdater( mode );
-    }
-
-    @Override
-    public void force( IOLimiter ioLimiter )
-    {
-        accessor.force( ioLimiter );
-    }
-
-    @Override
-    public void refresh()
-    {
-        accessor.refresh();
-    }
-
-    @Override
-    public void close()
-    {
-        accessor.close();
+        super( accessor );
     }
 
     @Override
     public IndexReader newReader()
     {
         openReaders.incrementAndGet();
-        return new TrackingIndexReader( accessor.newReader(), closedReaders );
-    }
-
-    @Override
-    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
-    {
-        return accessor.newAllEntriesReader( fromIdInclusive, toIdExclusive );
-    }
-
-    @Override
-    public ResourceIterator<File> snapshotFiles()
-    {
-        return accessor.snapshotFiles();
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
-    {
-        accessor.verifyDeferredConstraints( nodePropertyAccessor );
-    }
-
-    @Override
-    public boolean isDirty()
-    {
-        return accessor.isDirty();
-    }
-
-    @Override
-    public void validateBeforeCommit( Value[] tuple )
-    {
-        accessor.validateBeforeCommit( tuple );
-    }
-
-    @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
-    {
-        return accessor.consistencyCheck( reporterFactory );
+        return new TrackingIndexReader( super.newReader(), closedReaders );
     }
 }

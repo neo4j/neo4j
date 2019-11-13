@@ -53,6 +53,7 @@ import org.neo4j.values.storable.Value;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -474,6 +475,53 @@ abstract class FusionIndexAccessorTest
         {
             // then
             verifyNoMoreInteractions( aliveAccessor );
+        }
+    }
+
+    @Test
+    void estimateNumberOfEntriesShouldSumCountFromAllParts()
+    {
+        // given
+        long expected = 0;
+        long nextCount = 9;
+        for ( IndexAccessor accessor : aliveAccessors )
+        {
+            when( accessor.estimateNumberOfEntries() ).thenReturn( nextCount );
+            expected += nextCount;
+            nextCount *= 31;
+        }
+
+        // when
+        long numberOfEntries = fusionIndexAccessor.estimateNumberOfEntries();
+
+        // then
+        assertEquals( expected, numberOfEntries );
+        for ( IndexAccessor aliveAccessor : aliveAccessors )
+        {
+            verify( aliveAccessor ).estimateNumberOfEntries();
+        }
+    }
+
+    @Test
+    void estimateNumberOfEntriesShouldReturnUnknownIfAnyPartIsUnknown()
+    {
+        // given
+        long nextCount = 9;
+        for ( int i = 0; i < aliveAccessors.length; i++ )
+        {
+            IndexAccessor accessor = aliveAccessors[i];
+            when( accessor.estimateNumberOfEntries() ).thenReturn( i == 0 ? IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES : nextCount );
+            nextCount *= 31;
+        }
+
+        // when
+        long numberOfEntries = fusionIndexAccessor.estimateNumberOfEntries();
+
+        // then
+        assertEquals( IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES, numberOfEntries );
+        for ( IndexAccessor aliveAccessor : aliveAccessors )
+        {
+            verify( aliveAccessor ).estimateNumberOfEntries();
         }
     }
 

@@ -101,11 +101,17 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
      */
     IndexReader newReader();
 
+    /**
+     * @return a {@link BoundedIterable} to access all entity ids indexed in this index.
+     */
     default BoundedIterable<Long> newAllEntriesReader()
     {
         return newAllEntriesReader( 0, Long.MAX_VALUE );
     }
 
+    /**
+     * @return a {@link BoundedIterable} to access all entity ids indexed in the range {@code fromIdInclusive}-{@code toIdExclusive} in this index.
+     */
     BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive );
 
     /**
@@ -185,10 +191,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
      * @return an estimate of the number of entries, i.e. entityId+values pairs, in this index, or {@link #UNKNOWN_NUMBER_OF_ENTRIES}
      * if number of entries couldn't be determined.
      */
-    default long estimateNumberOfEntries()
-    {
-        return UNKNOWN_NUMBER_OF_ENTRIES;
-    }
+    long estimateNumberOfEntries();
 
     class Adapter implements IndexAccessor
     {
@@ -269,6 +272,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         public boolean consistencyCheck( ReporterFactory reporterFactory )
         {
             return true;
+        }
+
+        @Override
+        public long estimateNumberOfEntries()
+        {
+            return UNKNOWN_NUMBER_OF_ENTRIES;
         }
     }
 
@@ -369,6 +378,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         public boolean consistencyCheck( ReporterFactory reporterFactory )
         {
             return delegate.consistencyCheck( reporterFactory );
+        }
+
+        @Override
+        public long estimateNumberOfEntries()
+        {
+            return delegate.estimateNumberOfEntries();
         }
     }
 }
