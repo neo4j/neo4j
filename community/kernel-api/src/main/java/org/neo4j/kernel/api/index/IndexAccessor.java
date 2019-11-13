@@ -181,6 +181,10 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         // For most value types there are no specific validations to be made.
     }
 
+    /**
+     * @return an estimate of the number of entries, i.e. entityId+values pairs, in this index, or {@link #UNKNOWN_NUMBER_OF_ENTRIES}
+     * if number of entries couldn't be determined.
+     */
     default long estimateNumberOfEntries()
     {
         return UNKNOWN_NUMBER_OF_ENTRIES;

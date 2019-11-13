@@ -988,9 +988,17 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             boolean goodRead;
+            RootCatchup rootCatchup = rootCatchupSupplier.get();
+            Root root = this.root;
+            boolean didRetry = true;
             do
             {
                 goodRead = false;
+                if ( !didRetry )
+                {
+                    // Only do a new root catchup if we made a clean and uninterrupted read from the page cursor
+                    root = rootCatchup.catchupFrom( root.id() );
+                }
                 rootKeys = new ArrayList<>();
                 root.goTo( cursor );
                 byte nodeType = TreeNode.nodeType( cursor );
@@ -1015,7 +1023,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 }
                 goodRead = true;
             }
-            while ( cursor.shouldRetry() || !goodRead );
+            while ( (didRetry = cursor.shouldRetry()) || !goodRead );
         }
 
         KeyPartitioning<KEY> partitioning = new KeyPartitioning<>( layout );

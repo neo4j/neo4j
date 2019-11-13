@@ -124,7 +124,7 @@ public class FullCheck
         // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
         // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
         CountsStore countsStore = CountsStore.nullInstance;
-        if ( flags.isCheckGraph() )
+        if ( flags.isCheckGraph() || flags.isCheckIndexStructure() )
         {
             try
             {

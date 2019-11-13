@@ -26,10 +26,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.function.ThrowingFunction;
@@ -51,7 +50,6 @@ public class IndexAccessors implements Closeable
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
     private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
-    private final EnumMap<EntityType,List<IndexDescriptor>> onlineIndexRulesByEntityType = new EnumMap<>( EntityType.class );
 
     public IndexAccessors(
             IndexProviderMap providers,
@@ -90,8 +88,6 @@ public class IndexAccessors implements Closeable
                         if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor ) )
                         {
                             onlineIndexRules.add( indexDescriptor );
-                            onlineIndexRulesByEntityType.computeIfAbsent( indexDescriptor.schema().entityType(), type -> new ArrayList<>() ).add(
-                                    indexDescriptor );
                         }
                         else
                         {
@@ -141,7 +137,9 @@ public class IndexAccessors implements Closeable
 
     public List<IndexDescriptor> onlineRules( EntityType entityType )
     {
-        return onlineIndexRulesByEntityType.getOrDefault( entityType, Collections.emptyList() );
+        return onlineIndexRules.stream()
+                .filter( index -> index.schema().entityType() == entityType )
+                .collect( Collectors.toList() );
     }
 
     public IndexReaders readers()

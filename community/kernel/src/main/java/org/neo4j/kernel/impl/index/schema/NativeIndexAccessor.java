@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -131,6 +132,10 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+        catch ( TreeInconsistencyException e )
+        {
+            return UNKNOWN_NUMBER_OF_ENTRIES;
         }
     }
 }

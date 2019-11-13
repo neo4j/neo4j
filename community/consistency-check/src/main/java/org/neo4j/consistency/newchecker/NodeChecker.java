@@ -98,9 +98,12 @@ class NodeChecker implements Checker
         execution.run( getClass().getSimpleName() + "-checkNodes", execution.partition( nodeIdRange,
                 ( from, to, last ) -> () -> check( from, to, lastRange && last ) ) );
 
-        execution.run( getClass().getSimpleName() + "-checkIndexesVsNodes", smallIndexes.stream()
-                .map( indexDescriptor -> (ParallelExecution.ThrowingRunnable) () -> checkIndexVsNodes( nodeIdRange, indexDescriptor ) )
-                .toArray( ParallelExecution.ThrowingRunnable[]::new ) );
+        if ( context.consistencyFlags.isCheckIndexes() )
+        {
+            execution.run( getClass().getSimpleName() + "-checkIndexesVsNodes", smallIndexes.stream()
+                    .map( indexDescriptor -> (ParallelExecution.ThrowingRunnable) () -> checkIndexVsNodes( nodeIdRange, indexDescriptor ) )
+                    .toArray( ParallelExecution.ThrowingRunnable[]::new ) );
+        }
     }
 
     @Override
