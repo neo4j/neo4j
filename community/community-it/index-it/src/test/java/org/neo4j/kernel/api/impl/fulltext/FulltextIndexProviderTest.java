@@ -577,7 +577,7 @@ public class FulltextIndexProviderTest
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
                     .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), BrokenAnalyzerProvider.NAME ) )
                     .on( "prop" )
                     .withName( NAME );
 
@@ -608,7 +608,7 @@ public class FulltextIndexProviderTest
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
                     .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), BrokenAnalyzerProvider.NAME ) )
                     .on( "prop" )
                     .withName( NAME );
 
@@ -642,7 +642,7 @@ public class FulltextIndexProviderTest
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
                     .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), BrokenAnalyzerProvider.NAME ) )
                     .on( "prop" )
                     .withName( NAME );
 
@@ -673,7 +673,7 @@ public class FulltextIndexProviderTest
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
                     .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), BrokenAnalyzerProvider.NAME ) )
                     .on( "prop" )
                     .withName( NAME );
 
@@ -707,7 +707,7 @@ public class FulltextIndexProviderTest
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
                     .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), BrokenAnalyzerProvider.NAME ) )
                     .on( "prop" )
                     .withName( NAME );
 
@@ -752,7 +752,7 @@ public class FulltextIndexProviderTest
         {
             IndexCreator creator = tx.schema().indexFor( label( "Label" ) )
                     .withIndexType( org.neo4j.graphdb.schema.IndexType.FULLTEXT )
-                    .withIndexConfiguration( Map.of( IndexSetting.FULLTEXT_ANALYZER, BrokenAnalyzerProvider.NAME ) )
+                    .withIndexConfiguration( Map.of( IndexSetting.fulltext_Analyzer(), BrokenAnalyzerProvider.NAME ) )
                     .on( "prop" )
                     .withName( NAME );
 
