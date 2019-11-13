@@ -212,7 +212,7 @@ public class KernelToken implements Token
         ktx.assertOpen();
         AccessMode mode = ktx.securityContext().mode();
         return Iterators.stream( tokenHolders.relationshipTypeTokens().getAllTokens().iterator() )
-                .filter( relType -> mode.allowsTraverseRelType( relType.id()) )
+                .filter( relType -> mode.allowsTraverseRelType( relType.id() ) )
                 .iterator();
     }
 

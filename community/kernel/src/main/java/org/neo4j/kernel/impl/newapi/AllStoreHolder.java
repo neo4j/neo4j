@@ -34,6 +34,7 @@ import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -210,7 +211,7 @@ public class AllStoreHolder extends Read
         }
     }
 
-    private long countsByAllRelationshipScan( int typeId )
+    private long countsByAllRelationshipScan( int startLabelId, int typeId, int endLabelId )
     {
         // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
         // We need to calculate the counts through expensive operations.
@@ -223,7 +224,27 @@ public class AllStoreHolder extends Read
             {
                 if ( typeId == TokenRead.ANY_RELATIONSHIP_TYPE || rels.type() == typeId )
                 {
-                    count++;
+                    try ( NodeCursor node = this.cursors().allocateNodeCursor() )
+                    {
+                        boolean startNodeCorrect = startLabelId == TokenRead.ANY_LABEL;
+                        boolean endNodeCorrect = endLabelId == TokenRead.ANY_LABEL;
+                        if ( !startNodeCorrect )
+                        {
+                            this.singleNode( rels.sourceNodeReference(), node );
+                            node.next();
+                            startNodeCorrect = node.hasLabel( startLabelId );
+                        }
+                        if ( !endNodeCorrect )
+                        {
+                            this.singleNode( rels.targetNodeReference(), node );
+                            node.next();
+                            endNodeCorrect = node.hasLabel( endLabelId );
+                        }
+                        if ( startNodeCorrect && endNodeCorrect )
+                        {
+                            count++;
+                        }
+                    }
                 }
             }
             return count;
@@ -260,7 +281,7 @@ public class AllStoreHolder extends Read
         if ( !mode.allowsTraverseAllRelTypes() )
         {
             // expensive path
-            return countsByAllRelationshipScan( typeId );
+            return countsByAllRelationshipScan( startLabelId, typeId, endLabelId );
         }
 
         long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
