@@ -26,6 +26,15 @@ import static java.util.Objects.requireNonNullElse;
 
 public class Version
 {
+    private static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
+    private static final Version KERNEL_VERSION = new Version( KERNEL_ARTIFACT_ID, Version.class.getPackage().getImplementationVersion() );
+    private static final String VENDOR = "Neo Technology";
+
+    private final String artifactId;
+    private final String title;
+    private final String version;
+    private final String releaseVersion;
+
     public static Version getKernel()
     {
         return KERNEL_VERSION;
@@ -40,12 +49,6 @@ public class Version
     {
         return getKernel().getReleaseVersion();
     }
-
-    private final String artifactId;
-    private final String title;
-    private final String vendor;
-    private final String version;
-    private final String releaseVersion;
 
     @Override
     public String toString()
@@ -93,7 +96,6 @@ public class Version
     {
         this.artifactId = artifactId;
         this.title = artifactId;
-        this.vendor = "Neo Technology";
         this.version = version == null ? "dev" : version;
         this.releaseVersion = parseReleaseVersion( this.version );
     }
@@ -123,22 +125,4 @@ public class Version
         // If we don't recognize the version pattern, do the safe thing and keep it in full
         return version;
     }
-
-    /**
-     * A very nice to have main-method for quickly checking the version of a neo4j kernel,
-     * for example given a kernel jar file.
-     */
-    public static void main( String[] args )
-    {
-        Version kernelVersion = getKernel();
-        System.out.println( kernelVersion );
-        System.out.println( "Title: " + kernelVersion.title );
-        System.out.println( "Vendor: " + kernelVersion.vendor );
-        System.out.println( "ArtifactId: " + kernelVersion.artifactId );
-        System.out.println( "Version: " + kernelVersion.getVersion() );
-    }
-
-    static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
-    private static final Version KERNEL_VERSION = new Version( KERNEL_ARTIFACT_ID,
-            Version.class.getPackage().getImplementationVersion() );
 }
