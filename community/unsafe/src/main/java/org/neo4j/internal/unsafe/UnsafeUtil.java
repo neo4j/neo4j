@@ -53,6 +53,7 @@ import static org.neo4j.util.FeatureToggles.flag;
  */
 public final class UnsafeUtil
 {
+    private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( UnsafeUtil.class, "printReflectionExceptions", false );
     /**
      * Whether or not to explicitly dirty the allocated memory. This is off by default.
      * The {@link UnsafeUtil#allocateMemory(long, MemoryAllocationTracker)} method is not guaranteed to allocate
@@ -173,6 +174,24 @@ public final class UnsafeUtil
 
     private UnsafeUtil()
     {
+    }
+
+    public static void disableIllegalAccessLogger()
+    {
+        try
+        {
+            Class<?> clazz = Class.forName( "jdk.internal.module.IllegalAccessLogger" );
+            Field logger = clazz.getDeclaredField( "logger" );
+            unsafe.putObjectVolatile( clazz, unsafe.staticFieldOffset( logger ), null );
+        }
+        catch ( Exception e )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                //noinspection CallToPrintStackTrace
+                e.printStackTrace();
+            }
+        }
     }
 
     private static Unsafe getUnsafe()

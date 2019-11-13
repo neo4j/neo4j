@@ -34,6 +34,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.neo4j.cli.AdminTool.VersionProvider;
+import static org.neo4j.internal.unsafe.UnsafeUtil.disableIllegalAccessLogger;
 import static picocli.CommandLine.IVersionProvider;
 
 @Command(
@@ -51,6 +52,7 @@ public final class AdminTool
 
     public static void main( String[] args )
     {
+        disableIllegalAccessLogger();
         final var homeDir = getDirOrExit( "NEO4J_HOME" );
         final var confDir = getDirOrExit( "NEO4J_CONF" );
         final var ctx = new ExecutionContext( homeDir, confDir );
