@@ -334,6 +334,18 @@ public abstract class CompiledExpandUtils
             {
                 return allRelationships.getCloseListener();
             }
+
+            @Override
+            public void setToken( int token )
+            {
+                allRelationships.setToken( token );
+            }
+
+            @Override
+            public int getToken()
+            {
+                return allRelationships.getToken();
+            }
         };
     }
 }

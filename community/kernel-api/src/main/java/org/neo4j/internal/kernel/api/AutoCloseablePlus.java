@@ -40,4 +40,8 @@ public interface AutoCloseablePlus extends AutoCloseable
     void setCloseListener( CloseListener closeListener );
 
     CloseListener getCloseListener();
+
+    void setToken( int token );
+
+    int getToken();
 }

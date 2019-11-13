@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CloseListener}
+import org.neo4j.util.Preconditions
 
 class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource with CloseListener {
   protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor)
@@ -104,22 +105,24 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor) extend
   def add(resource: AutoCloseablePlus): Unit = {
     ensureCapacity()
     closeables(highMark) = resource
+    resource.setToken(highMark)
     highMark += 1
   }
 
   def remove(resource: AutoCloseablePlus): Boolean = {
-    var i = 0
-    while (i < highMark) {
-      if (closeables(i) eq resource) {
-        closeables(i) = null
-        if (i == highMark - 1) { //we removed the last item, hence no holes
-          highMark -= 1
-        }
-        return true
+    val i = resource.getToken
+    if (i < highMark) {
+      if (!(closeables(i) eq resource)) {
+        throw new IllegalStateException(s"$resource does not match ${closeables(i)}")
       }
-      i += 1
+      closeables(i) = null
+      if (i == highMark - 1) { //we removed the last item, hence no holes
+        highMark -= 1
+      }
+      true
+    } else {
+      false
     }
-    false
   }
 
   def all(): Iterator[AutoCloseablePlus] = new Iterator[AutoCloseablePlus] {
