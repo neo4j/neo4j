@@ -41,6 +41,11 @@
     <property name="message" value="Two or more consecutive empty lines"/>
   </module>
 
+  <module name="LineLength">
+    <property name="max" value="160"/>
+    <property name="ignorePattern" value="a href|href|http://|https://"/>
+  </module>
+
   <module name="TreeWalker">
 
     <module name="PackageDeclaration"/>
@@ -88,10 +93,6 @@
     <module name="AvoidStarImport"/>
     <module name="GenericWhitespace"/>
     <module name="ExplicitInitialization"/>
-    <module name="LineLength">
-      <property name="max" value="160"/>
-      <property name="ignorePattern" value="a href|href|http://|https://"/>
-    </module>
 
     <module name="IllegalImport">
       <property name="illegalPkgs" value="junit.framework"/>
