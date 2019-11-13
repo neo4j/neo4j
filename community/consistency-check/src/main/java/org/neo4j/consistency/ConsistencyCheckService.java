@@ -30,6 +30,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.AccessStatistics;
 import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
@@ -252,7 +253,7 @@ public class ConsistencyCheckService
             }
             storeAccess.initialize();
             DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
-            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose );
+            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsManager, new DuplicatingLog( log, reportLog ) );
         }
         finally

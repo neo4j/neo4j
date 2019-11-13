@@ -332,7 +332,7 @@ class RelationshipChainChecker implements Checker
                 else
                 {
                     otherRelationship.clear();
-                    link.reportDoesNotReferenceBack( reporter, relationshipCursor, otherRelationship );
+                    link.reportDoesNotReferenceBack( reporter, recordLoader.relationship( relationshipCursor.getId() ), otherRelationship );
                 }
             }
             else

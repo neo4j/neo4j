@@ -50,6 +50,7 @@ import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.Applier;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
+import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsStore;
@@ -2280,8 +2281,13 @@ public class FullCheckIntegrationTest
         Config config = config();
         final var consistencyFlags = new ConsistencyFlags( true, true, true, true, true );
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
-                consistencyFlags, config, false );
+                consistencyFlags, config, false, memoryLimit() );
         return checker.execute( pageCache, stores, counts, FormattedLog.toOutputStream( System.out ) );
+    }
+
+    protected NodeBasedMemoryLimiter.Factory memoryLimit()
+    {
+        return NodeBasedMemoryLimiter.DEFAULT;
     }
 
     private Config config()

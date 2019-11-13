@@ -19,8 +19,10 @@
  */
 package org.neo4j.consistency.newchecker;
 
+import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.io.os.OsBeanUtil;
 
 import static java.lang.Long.max;
 import static java.lang.Long.min;
@@ -30,8 +32,21 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
-class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
+public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
 {
+    public interface Factory
+    {
+        NodeBasedMemoryLimiter create( long pageCacheMemory, long highNodeId );
+    }
+
+    public static Factory DEFAULT = ( pageCacheMemory, highNodeId ) ->
+    {
+        long jvmMemory = Runtime.getRuntime().maxMemory();
+        long machineMemory = OsBeanUtil.getTotalPhysicalMemory();
+        long perNodeMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
+        return new NodeBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perNodeMemory, highNodeId );
+    };
+
     // Original parameters
     private final long pageCacheMemory;
     private final long jvmMemory;
@@ -48,7 +63,7 @@ class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
     private long currentRangeStart;
     private long currentRangeEnd;
 
-    NodeBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerNode, long highNodeId )
+    public NodeBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerNode, long highNodeId )
     {
         // Store the original parameters so that they can be printed for reference later
         this.pageCacheMemory = pageCacheMemory;

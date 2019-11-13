@@ -31,6 +31,7 @@ import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
+import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.newchecker.RecordStorageConsistencyChecker;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -71,20 +72,15 @@ public class FullCheck
     private final boolean useExperimentalChecker;
     private final Config config;
     private final boolean verbose;
+    private final NodeBasedMemoryLimiter.Factory memoryLimit;
     private final ProgressMonitorFactory progressFactory;
     private final ConsistencyFlags flags;
     private final IndexSamplingConfig samplingConfig;
     private final int threads;
     private final Statistics statistics;
 
-    public FullCheck( ConsistencyFlags consistencyFlags, Config config, ProgressMonitorFactory progressFactory,
-            Statistics statistics, int threads )
-    {
-        this( progressFactory, statistics, threads, consistencyFlags, config, false );
-    }
-
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
-                      ConsistencyFlags consistencyFlags, Config config, boolean verbose )
+                      ConsistencyFlags consistencyFlags, Config config, boolean verbose, NodeBasedMemoryLimiter.Factory memoryLimit )
     {
         this.statistics = statistics;
         this.threads = threads;
@@ -94,6 +90,7 @@ public class FullCheck
         this.config = config;
         this.useExperimentalChecker = config.get( experimental_consistency_checker );
         this.verbose = verbose;
+        this.memoryLimit = memoryLimit;
     }
 
     public ConsistencySummaryStatistics execute( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier,
@@ -178,7 +175,7 @@ public class FullCheck
             {
                 try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
                         directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(), indexes, report, progressFactory,
-                        config, threads, verbose, flags ) )
+                        config, threads, verbose, flags, memoryLimit ) )
                 {
                     checker.check();
                 }

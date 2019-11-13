@@ -118,12 +118,12 @@ class RelationshipChecker implements Checker
                     continue;
                 }
 
-                // Source/target nodes
-                long sourceNode = relationshipCursor.getFirstNode();
-                boolean startNodeIsWithinRange = nodeIdRange.isWithinRangeExclusiveTo( sourceNode );
+                // Start/end nodes
+                long startNode = relationshipCursor.getFirstNode();
+                boolean startNodeIsWithinRange = nodeIdRange.isWithinRangeExclusiveTo( startNode );
                 if ( startNodeIsWithinRange )
                 {
-                    checkRelationshipVsNode( client, relationshipCursor, sourceNode, relationshipCursor.isFirstInFirstChain(),
+                    checkRelationshipVsNode( client, relationshipCursor, startNode, relationshipCursor.isFirstInFirstChain(),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).sourceNodeNotInUse( node ),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).sourceNodeDoesNotReferenceBack( node ),
                             ( relationship, node ) -> reporter.forNode( node ).relationshipNotFirstInSourceChain( relationship ),
@@ -144,9 +144,9 @@ class RelationshipChecker implements Checker
 
                 if ( firstRound )
                 {
-                    if ( sourceNode >= context.highNodeId )
+                    if ( startNode >= context.highNodeId )
                     {
-                        reporter.forRelationship( relationshipCursor ).sourceNodeNotInUse( context.recordLoader.node( sourceNode ) );
+                        reporter.forRelationship( relationshipCursor ).sourceNodeNotInUse( context.recordLoader.node( startNode ) );
                     }
 
                     if ( endNode >= context.highNodeId )
@@ -218,7 +218,7 @@ class RelationshipChecker implements Checker
                 if ( nodeNextRel != relationshipCursor.getId() )
                 {
                     // Report RELATIONSHIP -> NODE inconsistency
-                    reportNodeDoesNotReferenceBack.accept( relationshipCursor, recordLoader.node( node ) );
+                    reportNodeDoesNotReferenceBack.accept( recordLoader.relationship( relationshipCursor.getId() ), recordLoader.node( node ) );
                     // Before marking this node as fully checked we should also check and report any NODE -> RELATIONSHIP inconsistency
                     RelationshipRecord relationshipThatNodeActuallyReferences = recordLoader.relationship( nodeNextRel );
                     if ( !relationshipThatNodeActuallyReferences.inUse() )

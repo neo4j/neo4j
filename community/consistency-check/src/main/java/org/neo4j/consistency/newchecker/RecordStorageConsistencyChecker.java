@@ -29,7 +29,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.cache.CacheAccess;
-import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -45,7 +44,6 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -82,8 +80,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final ProgressMonitorFactory.MultiPartBuilder progress;
 
     public RecordStorageConsistencyChecker( PageCache pageCache, NeoStores neoStores, CountsStore counts, LabelScanStore labelScanStore,
-            IndexAccessors indexAccessors, InconsistencyReport report, ProgressMonitorFactory progressFactory, Config config,
-            int numberOfThreads, boolean debug, ConsistencyFlags consistencyFlags )
+            IndexAccessors indexAccessors, InconsistencyReport report, ProgressMonitorFactory progressFactory, Config config, int numberOfThreads,
+            boolean debug, ConsistencyFlags consistencyFlags, NodeBasedMemoryLimiter.Factory memoryLimit )
     {
         this.pageCache = pageCache;
         this.neoStores = neoStores;
@@ -114,7 +112,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                 exception -> cancel( "Unexpected exception" ), // Exceptions should interrupt all threads to exit faster
                 DEFAULT_IDS_PER_CHUNK );
         RecordLoading recordLoading = new RecordLoading( neoStores );
-        this.limiter = instantiateMemoryLimiter();
+        this.limiter = instantiateMemoryLimiter( memoryLimit );
         this.cacheAccess = new DefaultCacheAccess( defaultByteArray( limiter.rangeSize() ), Counts.NONE, numberOfThreads );
         this.observedCounts = new CountsState( neoStores, cacheAccess );
         this.progress = progressFactory.multipleParts( "Consistency check" );
@@ -191,7 +189,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         }
     }
 
-    private NodeBasedMemoryLimiter instantiateMemoryLimiter()
+    private NodeBasedMemoryLimiter instantiateMemoryLimiter( NodeBasedMemoryLimiter.Factory memoryLimit )
     {
         // The checker makes use of a large memory array to hold data per node. For large stores there may not be enough memory
         // to hold all node data and in that case the checking will happen iteratively where one part of the node store is selected
@@ -199,11 +197,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         // is selected until all the nodes, e.g. all the data have been checked.
 
         long pageCacheMemory = pageCache.maxCachedPages() * pageCache.pageSize();
-        long jvmMemory = Runtime.getRuntime().maxMemory();
-        long machineMemory = OsBeanUtil.getTotalPhysicalMemory();
-        long perNodeMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
         long nodeCount = neoStores.getNodeStore().getHighId();
-        return new NodeBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perNodeMemory, nodeCount );
+        return memoryLimit.create( pageCacheMemory, nodeCount );
     }
 
     @Override
