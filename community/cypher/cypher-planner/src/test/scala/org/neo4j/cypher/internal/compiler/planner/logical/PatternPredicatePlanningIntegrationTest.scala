@@ -769,24 +769,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  test("should not use RollupApply for PatternComprehensions in coalesce") {
-    val q =
-      """
-        |MATCH (a)
-        |WHERE coalesce(
-        |     [1, 2, 3],
-        |     [(a)<--(c) | c.prop5 = '0'],
-        |     [true])
-        |RETURN a
-      """.stripMargin
-
-    val plan = planFor(q)._2
-    println(plan)
-    plan.treeExists({
-      case _:RollUpApply => true
-    }) should be(false)
-  }
-
   test("should not use RollupApply for PatternComprehensions in head") {
     val q =
       """
