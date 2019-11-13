@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.mockito.Mockito.{never, verify, verifyNoMoreInteractions, when}
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api.AutoCloseablePlus
+import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CloseListener}
 
 import scala.util.Try
 
@@ -37,6 +38,7 @@ class ResourceManagerTest extends CypherFunSuite {
     verifyMonitorClose(resource, monitor)
 
     resources.close()
+    verify(resource).getToken
     verifyNoMoreInteractions(resource, monitor)
   }
 
@@ -64,8 +66,8 @@ class ResourceManagerTest extends CypherFunSuite {
   }
 
   test("should be able to trace and release multiple resources") {
-    val resource1 = mock[AutoCloseablePlus]
-    val resource2 = mock[AutoCloseablePlus]
+    val resource1 = new DummyResource
+    val resource2 = new DummyResource
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
     verifyTrace(resource1, monitor, resources)
@@ -77,7 +79,7 @@ class ResourceManagerTest extends CypherFunSuite {
     verifyMonitorClose(resource2, monitor)
 
     resources.close()
-    verifyNoMoreInteractions(resource1, resource2, monitor)
+    verifyNoMoreInteractions(monitor)
   }
 
   test("should close the unreleased resources when closed") {
@@ -95,8 +97,8 @@ class ResourceManagerTest extends CypherFunSuite {
   }
 
   test("should close only the unreleased resources when closed") {
-    val resource1 = mock[AutoCloseablePlus]
-    val resource2 = mock[AutoCloseablePlus]
+    val resource1 = new DummyResource
+    val resource2 = new DummyResource
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
     verifyTrace(resource1, monitor, resources)
@@ -107,7 +109,7 @@ class ResourceManagerTest extends CypherFunSuite {
 
     resources.close()
     verifyClose(resource1, monitor)
-    verifyNoMoreInteractions(resource1, resource2, monitor)
+    verifyNoMoreInteractions(monitor)
   }
 
   test("should close all the resources even in case of exceptions") {
@@ -149,12 +151,12 @@ class ResourceManagerTest extends CypherFunSuite {
   }
 
   test("Should be able to remove resource") {
-    val resources = Array(mock[AutoCloseablePlus],
-                          mock[AutoCloseablePlus],
-                          mock[AutoCloseablePlus],
-                          mock[AutoCloseablePlus],
-                          mock[AutoCloseablePlus])
-    for(i <- resources.indices) {
+    val resources = Array(new DummyResource,
+                          new DummyResource,
+                          new DummyResource,
+                          new DummyResource,
+                          new DummyResource)
+    for (i <- resources.indices) {
       //given
       val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
       resources.foreach(pool.add)
@@ -189,11 +191,11 @@ class ResourceManagerTest extends CypherFunSuite {
   test("Should not call close on removed item") {
     for(i <- 0 until 5) {
       //given
-      val resources = Array(mock[AutoCloseablePlus],
-                            mock[AutoCloseablePlus],
-                            mock[AutoCloseablePlus],
-                            mock[AutoCloseablePlus],
-                            mock[AutoCloseablePlus])
+      val resources = Array(new DummyResource,
+                            new DummyResource,
+                            new DummyResource,
+                            new DummyResource,
+                            new DummyResource)
       val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
       resources.foreach(pool.add)
       pool.remove(resources(i))
@@ -204,9 +206,9 @@ class ResourceManagerTest extends CypherFunSuite {
       //then
       for(j <- 0 until 5) {
         if (i == j) {
-          verify(resources(j), never).close()
+          resources(j).isClosed shouldBe false
         } else {
-          verify(resources(j)).close()
+          resources(j).isClosed shouldBe true
         }
       }
     }
@@ -215,6 +217,14 @@ class ResourceManagerTest extends CypherFunSuite {
   private def verifyTrace(resource: AutoCloseablePlus, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
     resources.trace(resource)
     verify(resource).setCloseListener(resources)
+    verify(resource).setToken(anyInt())
+    verify(monitor).trace(resource)
+  }
+
+  private def verifyTrace(resource: DummyResource, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
+    resources.trace(resource)
+    resource.getCloseListener should equal(resources)
+    resource.getToken should be >= 0
     verify(monitor).trace(resource)
   }
 
@@ -223,9 +233,43 @@ class ResourceManagerTest extends CypherFunSuite {
     verify(resource).setCloseListener(null)
   }
 
+  private def verifyMonitorClose(resource: DummyResource, monitor: ResourceMonitor): Unit = {
+    verify(monitor).close(resource)
+    resource.getCloseListener shouldBe null
+  }
+
   private def verifyClose(resource: AutoCloseablePlus, monitor: ResourceMonitor): Unit = {
     verifyMonitorClose(resource, monitor)
     verify(resource).setCloseListener(null)
     verify(resource).close()
   }
+
+  private def verifyClose(resource: DummyResource, monitor: ResourceMonitor): Unit = {
+    verifyMonitorClose(resource, monitor)
+    resource.getCloseListener shouldBe null
+    resource.isClosed shouldBe true
+  }
+
+  class DummyResource extends AutoCloseablePlus {
+    private var listener: CloseListener = _
+    private var token = -1
+    private var closed = false
+
+    override def close(): Unit = {
+      this.closed = true
+    }
+    override def closeInternal(): Unit = {
+      close()
+    }
+    override def isClosed: Boolean = closed
+    override def setCloseListener(closeListener: CloseListener): Unit = {
+      this.listener = closeListener
+    }
+    override def getCloseListener: CloseListener = listener
+    override def setToken(token: Int): Unit = {
+      this.token = token
+    }
+    override def getToken: Int = token
+  }
+
 }
