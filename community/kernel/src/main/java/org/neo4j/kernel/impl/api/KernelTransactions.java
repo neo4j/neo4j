@@ -246,6 +246,21 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     }
 
     /**
+     * Give an approximate set of all transactions currently executing. In contrast to {@link #activeTransactions}, this also includes transactions in the
+     * closing state, e.g. committing or rolling back. This is not guaranteed to be exact, as transactions may stop and start while this set is gathered.
+     *
+     * @return the (approximate) set of executing transactions.
+     */
+    public Set<KernelTransactionHandle> executingTransactions()
+    {
+        return allTransactions
+                .stream()
+                .map( this::createHandle )
+                .filter( h -> h.isOpen() || h.isClosing() )
+                .collect( toSet() );
+    }
+
+    /**
      * Dispose of all pooled transactions. This is done on shutdown.
      */
     public void disposeAll()

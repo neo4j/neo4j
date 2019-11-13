@@ -169,6 +169,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public boolean isClosing()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public SecurityContext securityContext()
     {
         throw new UnsupportedOperationException( "not implemented" );

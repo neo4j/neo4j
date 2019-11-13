@@ -219,6 +219,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     boolean isOpen();
 
     /**
+     * @return {@code true} if the transaction is closing, i.e. committing or rolling back.
+     */
+    boolean isClosing();
+
+    /**
      * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
      */
     Optional<Status> getReasonIfTerminated();

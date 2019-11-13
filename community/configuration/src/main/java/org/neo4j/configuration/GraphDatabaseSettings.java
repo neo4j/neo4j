@@ -964,9 +964,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<List<String>> procedure_unrestricted =
             newBuilder( "dbms.security.procedures.unrestricted", listOf( STRING ), emptyList() ) .build();
 
-    @Description( "Specifies whether or not dbms.killQueries produces a verbose output, with information about which queries were not found" )
-    public static final Setting<Boolean> kill_query_verbose = newBuilder( "dbms.procedures.kill_query_verbose", BOOL, true ).build();
-
     @Description( "A list of procedures (comma separated) that are to be loaded. " +
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
             "If this setting is left empty no procedures will be loaded." )

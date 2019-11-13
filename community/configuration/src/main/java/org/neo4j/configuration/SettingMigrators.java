@@ -265,6 +265,22 @@ public final class SettingMigrators
     }
 
     @ServiceProvider
+    public static class KillQueryVerboseMigrator implements SettingMigrator
+    {
+        private static final String settingName = "dbms.procedures.kill_query_verbose";
+
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            if ( values.containsKey( settingName ) )
+            {
+                log.warn( "Setting %s is removed. It's no longer possible to disable verbose kill query logging.", settingName );
+                values.remove( settingName );
+            }
+        }
+    }
+
+    @ServiceProvider
     public static class QueryLoggerMigrator implements SettingMigrator
     {
         private static final String deprecationMessage = "Use of deprecated setting value %s=%s. It is replaced by %s=%s";

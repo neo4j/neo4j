@@ -71,10 +71,16 @@ public interface KernelTransactionHandle
     /**
      * Check if the underlying transaction is open.
      *
-     * @return {@code true} if the underlying transaction ({@link KernelTransaction#close()} was not called),
-     * {@code false} otherwise.
+     * @return {@code true} if the underlying transaction {@link KernelTransaction#close()} was not called, {@code false} otherwise.
      */
     boolean isOpen();
+
+    /**
+     * Check if the underlying transaction is closing. Closing means that the transaction is closed by the user and currently doing commit or rollback.
+     *
+     * @return {@code true} if the underlying transaction ({@link KernelTransaction#close()} is called, but not finished, {@code false} otherwise.
+     */
+    boolean isClosing();
 
     /**
      * Mark the underlying transaction for termination.

@@ -109,6 +109,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
+    public boolean isClosing()
+    {
+        return tx.isClosing() && txReuseCount == tx.getReuseCount();
+    }
+
+    @Override
     public boolean markForTermination( Status reason )
     {
         return tx.markForTermination( txReuseCount, reason );

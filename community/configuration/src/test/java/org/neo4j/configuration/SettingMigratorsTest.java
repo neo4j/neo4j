@@ -169,7 +169,20 @@ class SettingMigratorsTest
                 "dbms.connector.bolt2.type" ) );
         logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
                 "dbms.connector.bolt2.listen_address" ) );
+    }
 
+    @Test
+    void testKillQueryVerbose() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of( "dbms.procedures.kill_query_verbose=false" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        logProvider.assertAtLeastOnce( inLog( Config.class )
+                .warn( "Setting %s is removed. It's no longer possible to disable verbose kill query logging.", "dbms.procedures.kill_query_verbose" ) );
     }
 
     @TestFactory

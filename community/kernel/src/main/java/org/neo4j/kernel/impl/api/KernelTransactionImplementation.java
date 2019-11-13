@@ -514,7 +514,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return txState != null && txState.hasChanges();
     }
 
-    private void markAsClosed( long txId )
+    private void markAsClosed()
     {
         assertTransactionOpen();
         closed = true;
@@ -625,6 +625,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    @Override
     public boolean isClosing()
     {
         return closing;
@@ -738,7 +739,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             else
             {
-                afterCommit( txId, listenersState );
+                afterCommit( listenersState );
             }
         }
     }
@@ -943,11 +944,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void afterCommit( long txId, TransactionListenersState listenersState )
+    private void afterCommit( TransactionListenersState listenersState )
     {
         try
         {
-            markAsClosed( txId );
+            markAsClosed();
             eventListeners.afterCommit( listenersState );
         }
         finally
@@ -960,7 +961,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            markAsClosed( ROLLBACK );
+            markAsClosed();
             eventListeners.afterRollback( listenersState );
         }
         finally

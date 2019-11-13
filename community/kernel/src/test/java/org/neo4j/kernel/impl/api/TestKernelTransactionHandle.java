@@ -78,6 +78,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
+    public boolean isClosing()
+    {
+        return tx.isClosing();
+    }
+
+    @Override
     public boolean markForTermination( Status reason )
     {
         tx.markForTermination( reason );

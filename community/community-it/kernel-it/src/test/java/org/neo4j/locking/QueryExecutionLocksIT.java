@@ -645,6 +645,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public boolean isClosing()
+        {
+            return internal.isClosing();
+        }
+
+        @Override
         public SecurityContext securityContext()
         {
             return internal.securityContext();

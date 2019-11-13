@@ -160,8 +160,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return transformedResult;
     }
 
-    private InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
-            long timeoutMillis )
+    private InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeoutMillis )
     {
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
         return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction );
@@ -179,8 +178,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return databaseInfo;
     }
 
-    KernelTransaction beginKernelTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
-            long timeout )
+    KernelTransaction beginKernelTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout )
     {
         try
         {
