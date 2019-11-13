@@ -911,7 +911,7 @@
       <!-- Checkstyle is always validated -->
       <plugin>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
         <configuration>
           <configLocation>checkstyle/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
@@ -924,7 +924,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.12</version>
+            <version>8.26</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>

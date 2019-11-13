@@ -98,7 +98,7 @@ public class SubGraphExporter
                     throw new RuntimeException( "Exporting compound indexes is not implemented yet" );
                 }
 
-                if ( !index.isMultiTokenIndex() )
+                if ( !index.isMultiTokenIndex() && index.isNodeIndex() )
                 {
                     String key = quote( id );
                     String label = quote( single( index.getLabels() ).name() );
