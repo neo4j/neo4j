@@ -230,7 +230,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     public enum CypherRuntime
     {
-        DEFAULT, INTERPRETED, COMPILED, SLOTTED, MORSEL
+        DEFAULT, INTERPRETED, COMPILED, SLOTTED,
+        PIPELINED
     }
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
@@ -395,25 +396,25 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Long> query_max_memory =
             newBuilder( "cypher.query_max_allocations", BYTES, BYTES.parse( "0" ) ).addConstraint( min( 0L ) ).dynamic().build();
 
-    @Description( "Enable tracing of morsel runtime scheduler." )
+    @Description( "Enable tracing of pipelined runtime scheduler." )
     @Internal
-    public static final Setting<Boolean> enable_morsel_runtime_trace =
-            newBuilder( "unsupported.cypher.morsel.enable_runtime_trace", BOOL, false ).build();
+    public static final Setting<Boolean> enable_pipelined_runtime_trace =
+            newBuilder( "unsupported.cypher.pipelined.enable_runtime_trace", BOOL, false ).build();
 
-    @Description( "Path to the morsel runtime scheduler trace. If 'stdOut' and tracing is on, will print to std out." )
+    @Description( "Path to the pipelined runtime scheduler trace. If 'stdOut' and tracing is on, will print to std out." )
     @Internal
-    public static final Setting<Path> morsel_scheduler_trace_filename =
-            newBuilder( "unsupported.cypher.morsel.runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
+    public static final Setting<Path> pipelined_scheduler_trace_filename =
+            newBuilder( "unsupported.cypher.pipelined.runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
 
-    @Description( "The size of batches in the morsel runtime for queries which work with few rows." )
+    @Description( "The size of batches in the pipelined runtime for queries which work with few rows." )
     @Internal
-    public static final Setting<Integer> cypher_morsel_size_small =
-            newBuilder( "unsupported.cypher.morsel.batch_size_small", INT, 128 ).addConstraint( min( 1 ) ).build();
+    public static final Setting<Integer> cypher_pipelined_batch_size_small =
+            newBuilder( "unsupported.cypher.pipelined.batch_size_small", INT, 128 ).addConstraint( min( 1 ) ).build();
 
-    @Description( "The size of batches in the morsel runtime for queries which work with many rows." )
+    @Description( "The size of batches in the pipelined runtime for queries which work with many rows." )
     @Internal
-    public static final Setting<Integer> cypher_morsel_size_big =
-            newBuilder( "unsupported.cypher.morsel.batch_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
+    public static final Setting<Integer> cypher_pipelined_batch_size_big =
+            newBuilder( "unsupported.cypher.pipelined.batch_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
 
     @Description( "Number of threads to allocate to Cypher worker threads. If set to 0, two workers will be started" +
             " for every physical core in the system." )
@@ -430,22 +431,22 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "More optimizations such as operator fusion may apply. " +
                   "Operator fusion means that multiple operators such as for example " +
                   "AllNodesScan -> Filter -> ProduceResult can be compiled into a single specialized operator. " +
-                  "This setting only applies to the morsel and parallel runtime. " +
+                  "This setting only applies to the pipelined and parallel runtime. " +
                   "Allowed values are \"COMPILED\" (default) and \"INTERPRETED\"." )
     @Internal
     public static final Setting<CypherOperatorEngine> cypher_operator_engine =
-            newBuilder( "unsupported.cypher.morsel.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.COMPILED ).build();
+            newBuilder( "unsupported.cypher.pipelined.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.COMPILED ).build();
 
-    @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the morsel runtime. " +
+    @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the pipelined runtime. " +
                   "Allowed values are \"disabled\", \"default\" (the default) and \"all\" (experimental). " +
                   "The default is to enable the use of a subset of whitelisted operators that are known to be supported, whereas \"all\" is an " +
                   "experimental option that enables the fallback to be used for all possible operators that are not known to be unsupported." )
     @Internal
-    public static final Setting<CypherMorselInterpretedPipesFallback> cypher_morsel_interpreted_pipes_fallback =
-            newBuilder( "unsupported.cypher.morsel_interpreted_pipes_fallback", ofEnum( CypherMorselInterpretedPipesFallback.class ),
-                    CypherMorselInterpretedPipesFallback.DEFAULT ).build();
+    public static final Setting<CypherPipelinedInterpretedPipesFallback> cypher_pipelined_interpreted_pipes_fallback =
+            newBuilder( "unsupported.cypher.pipelined_interpreted_pipes_fallback", ofEnum( CypherPipelinedInterpretedPipesFallback.class ),
+                    CypherPipelinedInterpretedPipesFallback.DEFAULT ).build();
 
-    public enum CypherMorselInterpretedPipesFallback
+    public enum CypherPipelinedInterpretedPipesFallback
     {
         DISABLED, DEFAULT, ALL
     }

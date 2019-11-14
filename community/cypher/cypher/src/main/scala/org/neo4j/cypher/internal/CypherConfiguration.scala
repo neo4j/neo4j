@@ -47,13 +47,13 @@ object CypherConfiguration {
       CypherExpressionEngineOption(config.get(GraphDatabaseSettings.cypher_expression_engine).toString),
       config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
       config.get(GraphDatabaseSettings.cypher_worker_count),
-      config.get(GraphDatabaseSettings.cypher_morsel_size_small),
-      config.get(GraphDatabaseSettings.cypher_morsel_size_big),
-      config.get(GraphDatabaseSettings.enable_morsel_runtime_trace),
-      config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename).toFile,
+      config.get(GraphDatabaseSettings.cypher_pipelined_batch_size_small),
+      config.get(GraphDatabaseSettings.cypher_pipelined_batch_size_big),
+      config.get(GraphDatabaseSettings.enable_pipelined_runtime_trace),
+      config.get(GraphDatabaseSettings.pipelined_scheduler_trace_filename).toFile,
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       CypherOperatorEngineOption(config.get(GraphDatabaseSettings.cypher_operator_engine).toString),
-      CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseSettings.cypher_morsel_interpreted_pipes_fallback).toString),
+      CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseSettings.cypher_pipelined_interpreted_pipes_fallback).toString),
       new ConfigMemoryTrackingController(config),
       config.get(GraphDatabaseSettings.cypher_enable_runtime_monitors)
     )
