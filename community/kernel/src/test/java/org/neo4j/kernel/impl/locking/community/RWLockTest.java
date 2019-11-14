@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.locking.community;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -43,7 +42,6 @@ import static org.mockito.Mockito.mock;
 
 class RWLockTest
 {
-    private static final long TEST_TIMEOUT_SECS = 10;
 
     private static ExecutorService executor;
 
@@ -99,7 +97,6 @@ class RWLockTest
      * into a waiting list, wait till resource will be free and grab it.
      */
     @Test
-    @Timeout( TEST_TIMEOUT_SECS )
     void testWaitingWriterLock() throws Exception
     {
         RagManager ragManager = new RagManager();
@@ -145,7 +142,6 @@ class RWLockTest
     }
 
     @Test
-    @Timeout( TEST_TIMEOUT_SECS )
     void testWaitingReaderLock() throws Exception
     {
         RagManager ragManager = new RagManager();
@@ -185,7 +181,6 @@ class RWLockTest
     }
 
     @Test
-    @Timeout( TEST_TIMEOUT_SECS )
     void testThreadRemovedFromWaitingListOnDeadlock() throws Exception
     {
         RagManager ragManager = mock( RagManager.class );
@@ -331,8 +326,7 @@ class RWLockTest
         executor.execute( readerLockNode1 );
 
         // Deadlock should occur
-        assertTrue(
-            deadLockDetector.await( TEST_TIMEOUT_SECS, TimeUnit.SECONDS ), "Deadlock was detected as expected." );
+        assertTrue( deadLockDetector.await( 100, TimeUnit.SECONDS ), "Deadlock was detected as expected." );
 
         lockNode3.releaseWriteLock( client3Transaction );
         lockNode2.releaseWriteLock( client2Transaction );
@@ -340,7 +334,6 @@ class RWLockTest
     }
 
     @Test
-    @Timeout( TEST_TIMEOUT_SECS )
     void testLockRequestsTermination() throws Exception
     {
         // given
