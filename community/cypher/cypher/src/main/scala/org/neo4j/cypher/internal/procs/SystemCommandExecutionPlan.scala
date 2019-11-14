@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, ProfileMode, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, ProfileMode}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
@@ -38,43 +38,33 @@ import org.neo4j.values.virtual.MapValue
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
                                       queryHandler: QueryHandler = QueryHandler.handleError(identity),
                                       source: Option[ExecutionPlan] = None)
-  extends ExecutionPlan {
+  extends ChainedExecutionPlan(source) {
 
-  override def run(originalCtx: QueryContext,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   ignore: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult = {
+  override def runSpecific(ctx: SystemUpdateCountingQueryContext,
+                           executionMode: ExecutionMode,
+                           params: MapValue,
+                           prePopulateResults: Boolean,
+                           ignore: InputDataStream,
+                           subscriber: QuerySubscriber): RuntimeResult = {
 
-    val ctx = SystemUpdateCountingQueryContext.from(originalCtx)
-    // Only the outermost query should be tied into the reactive results stream. The source queries should use an empty subscriber
-    val sourceResult = source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, QuerySubscriber.DO_NOTHING_SUBSCRIBER))
-    sourceResult match {
-      case Some(IgnoredRuntimeResult) => IgnoredRuntimeResult
-      case _ =>
-        // Only the outermost query should be tied into the reactive results stream. The source queries should be exhausted eagerly
-        sourceResult.foreach(_.consumeAll())
+    val tc = ctx.kernelTransactionalContext
 
-        val tc = ctx.kernelTransactionalContext
+    var revertAccessModeChange: KernelTransaction.Revertable = null
+    try {
+      val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
+      revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
-        var revertAccessModeChange: KernelTransaction.Revertable = null
-        try {
-          val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
-          revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
+      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber, enableQueryExecutionMonitor = false).asInstanceOf[InternalExecutionResult]
+      systemSubscriber.assertNotFailed()
 
-          val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
-          val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber, enableQueryExecutionMonitor = false).asInstanceOf[InternalExecutionResult]
-          systemSubscriber.assertNotFailed()
-
-          if (systemSubscriber.shouldIgnoreResult()) {
-            IgnoredRuntimeResult
-          } else {
-            SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
-          }
-        } finally {
-          if (revertAccessModeChange != null) revertAccessModeChange
-        }
+      if (systemSubscriber.shouldIgnoreResult()) {
+        IgnoredRuntimeResult
+      } else {
+        SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
+      }
+    } finally {
+      if (revertAccessModeChange != null) revertAccessModeChange
     }
   }
 

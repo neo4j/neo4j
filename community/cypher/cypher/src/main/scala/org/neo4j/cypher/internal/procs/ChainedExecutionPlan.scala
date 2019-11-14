@@ -28,6 +28,14 @@ import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
 import org.neo4j.values.virtual.MapValue
 
+/**
+ * System commands are broken down into a linear chain of sub-commands. The outermost (or last) command
+ * will be passed the original QuerySubscriber (coming from the BOLT server) and this can be tied into
+ * the reactive-results system. For this reason it is important to make sure that outer subscriber is
+ * treated correctly for reactive results. The inner commands can instead be passed simple QuerySubscribers
+ * that either do nothing or simply track the existence of database changes in order to keep a count of inner
+ * commands.
+ */
 abstract class ChainedExecutionPlan(source: Option[ExecutionPlan]) extends ExecutionPlan {
   def runSpecific(ctx: SystemUpdateCountingQueryContext,
                    executionMode: ExecutionMode,
@@ -43,11 +51,16 @@ abstract class ChainedExecutionPlan(source: Option[ExecutionPlan]) extends Execu
                    ignore: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult = {
     val ctx = SystemUpdateCountingQueryContext.from(originalCtx)
+    // Only the outermost query should be tied into the reactive results stream. The source queries use a simplified counting subscriber
     val sourceResult = source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, new QuerySubscriberAdapter() {
       override def onResultCompleted(statistics: QueryStatistics): Unit = if (statistics.containsUpdates()) ctx.systemUpdates.increase()
     }))
     sourceResult match {
-      case Some(IgnoredRuntimeResult) => IgnoredRuntimeResult
+      case Some(IgnoredRuntimeResult) =>
+        // When an operation in the chain switches the entire chain to ignore mode we still need to notify the outer most subscriber
+        // This is a no-op for all elements of the chain except the last (outermost) which will be the BoltAdapterSubscriber
+        subscriber.onResultCompleted(ctx.getStatistics)
+        IgnoredRuntimeResult
       case _ =>
         runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     }

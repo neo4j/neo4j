@@ -122,7 +122,7 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   }
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = Some(Right(new IgnoreResults))
+    override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
   }
 
   def handleResult(handler: (Int, AnyValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
@@ -130,7 +130,7 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   }
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(new IgnoreResults))
+    override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
   }
 }
 
