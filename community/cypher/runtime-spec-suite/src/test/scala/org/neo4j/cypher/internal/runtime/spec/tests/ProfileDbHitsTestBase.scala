@@ -527,7 +527,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    // assertions on property dbHits are tricky because in morsel more dbHits are reported for
+    // assertions on property dbHits are tricky because in pipelined more dbHits are reported for
     // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
     queryProfile.operatorProfile(1).dbHits() should
       (be (sizeHint * (2 * (costOfGetPropertyChain + costOfProperty) + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) or // prop is the first prop

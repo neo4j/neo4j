@@ -340,7 +340,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle arguments spanning two morsels") {
-    // NOTE: This is a specific test for morsel runtime with morsel size _4_
+    // NOTE: This is a specific test for pipelined runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 
     // given
@@ -427,7 +427,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
-// Supported by interpreted, slotted, morsel, parallel
+// Supported by interpreted, slotted, pipelined, parallel
 trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   self: ExpandIntoTestBase[CONTEXT] =>
 
@@ -450,7 +450,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle arguments spanning two morsels with sort") {
-    // NOTE: This is a specific test for morsel runtime with morsel size _4_
+    // NOTE: This is a specific test for pipelined runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 
     val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }

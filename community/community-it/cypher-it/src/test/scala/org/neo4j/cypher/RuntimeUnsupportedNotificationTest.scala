@@ -33,16 +33,16 @@ import scala.language.reflectiveCalls
 class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
 
   test("Should say when an enterprise runtime is not supported on community") {
-    val result = execute("CYPHER runtime=morsel EXPLAIN RETURN 1")
+    val result = execute("CYPHER runtime=pipelined EXPLAIN RETURN 1")
     result.notifications should contain(RUNTIME_UNSUPPORTED.notification(InputPosition.empty,
-      NotificationDetail.Factory.message("Runtime unsupported", "This version of Neo4j does not support requested runtime: morsel")))
+      NotificationDetail.Factory.message("Runtime unsupported", "This version of Neo4j does not support requested runtime: pipelined")))
   }
 
   test("can also be configured to fail hard") {
     restartWithConfig(Map(GraphDatabaseSettings.cypher_hints_error -> TRUE))
     eengine = createEngine(graph)
 
-    val exception = intercept[RuntimeUnsupportedException](execute("CYPHER runtime=morsel EXPLAIN RETURN 1"))
-    exception.getMessage should be ("This version of Neo4j does not support requested runtime: morsel")
+    val exception = intercept[RuntimeUnsupportedException](execute("CYPHER runtime=pipelined EXPLAIN RETURN 1"))
+    exception.getMessage should be ("This version of Neo4j does not support requested runtime: pipelined")
   }
 }

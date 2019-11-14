@@ -100,7 +100,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
-// Supported by interpreted, slotted, morsel, parallel
+// Supported by interpreted, slotted, pipelined, parallel
 trait AllNodeScanWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   self: AllNodeScanTestBase[CONTEXT] =>
 

@@ -85,7 +85,7 @@ object ScenarioTestHelper {
                   // else failed as expected
                   // Not supported
                 case _ =>
-                  // TODO consider failing here, once we fixed Ordering in morsel runtime.
+                  // TODO consider failing here, once we fixed Ordering in pipelined runtime.
                   // Wrong results
               }
           }

@@ -30,7 +30,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
                                                               sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  // We always get OperatorProfile.NO_DATA for page cache hits and misses in Morsel
+  // We always get OperatorProfile.NO_DATA for page cache hits and misses in Pipelined
   private val NO_PROFILE = new OperatorProfile.ConstOperatorProfile(0, 0, 0, OperatorProfile.NO_DATA, OperatorProfile.NO_DATA)
 
   // time is profiled in nano-seconds, but we can only assert > 0, because the operators take

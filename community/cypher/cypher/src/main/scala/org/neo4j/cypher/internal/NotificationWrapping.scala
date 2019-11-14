@@ -78,7 +78,7 @@ object NotificationWrapping {
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>
-      NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("MORSEL", msg))
+      NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("PARALLEL", msg))
     case SuboptimalIndexForConstainsQueryNotification(label, properties) =>
       NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
     case SuboptimalIndexForEndsWithQueryNotification(label, properties) =>
