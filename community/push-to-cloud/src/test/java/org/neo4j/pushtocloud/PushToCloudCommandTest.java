@@ -115,7 +115,7 @@ public class PushToCloudCommandTest
                 arg( ARG_OVERWRITE, "true" ) ) );
 
         // then
-        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), eq( true  ) );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
     }
 
@@ -138,10 +138,10 @@ public class PushToCloudCommandTest
         command.execute( array(
                 arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ),
-                arg( ARG_OVERWRITE, null ) ) ); // arg value null is equivalent to --overwrite
+                format( "--%s", ARG_OVERWRITE ) ) ); // add --overwrite
 
         // then
-        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), eq( true  ) );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
