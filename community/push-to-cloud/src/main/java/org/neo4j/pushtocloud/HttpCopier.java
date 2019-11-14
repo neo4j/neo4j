@@ -150,7 +150,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken, long fileSize )
             throws IOException, InterruptedException, CommandFailed
     {
-        outsideWorld.stdOutLine( "We have received your export and it is currently being loaded into your cloud instance." );
+        outsideWorld.stdOutLine( "We have received your export and it is currently being loaded into your Aura instance." );
         outsideWorld.stdOutLine( "You can wait here, or abort this command and head over to the console to be notified of when your database is running." );
         String bearerTokenHeader = "Bearer " + bearerToken;
         ProgressTrackingOutputStream.Progress statusProgress =
@@ -200,7 +200,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             }
             sleeper.sleep( 2000 );
         }
-        outsideWorld.stdOutLine( "Your data was successfully pushed to cloud and is now running." );
+        outsideWorld.stdOutLine( "Your data was successfully pushed to Aura and is now running." );
         long importDurationMillis = System.currentTimeMillis() - importStarted;
         debug( verbose, format( "Import took about %d minutes to complete excluding upload (%d ms)",
                 TimeUnit.MILLISECONDS.toMinutes( importDurationMillis ), importDurationMillis ) );
@@ -679,7 +679,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private CommandFailed resumePossibleErrorResponse( HttpURLConnection connection, Path dump, String boltUri ) throws IOException
     {
         debugErrorResponse( true, connection );
-        return new CommandFailed( "We encountered a problem while communicating to the Neo4j cloud system. \n" +
+        return new CommandFailed( "We encountered a problem while communicating to the Neo4j Aura system. \n" +
                 "You can re-try using the existing dump by running this command: \n" +
                 String.format( "neo4j-admin push-to-cloud --%s=%s --%s=%s", ARG_DUMP, dump.toFile().getAbsolutePath(), ARG_BOLT_URI, boltUri ) );
     }
@@ -687,7 +687,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private CommandFailed updatePluginErrorResponse( HttpURLConnection connection ) throws IOException
     {
         debugErrorResponse( true, connection );
-        return new CommandFailed( "We encountered a problem while communicating to the Neo4j cloud system. " +
+        return new CommandFailed( "We encountered a problem while communicating to the Neo4j Aura system. " +
                 "Please check that you are using the latest version of the push-to-cloud plugin and upgrade if necessary. " +
                 "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal." );
     }

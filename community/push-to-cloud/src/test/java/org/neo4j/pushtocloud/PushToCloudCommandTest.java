@@ -260,57 +260,42 @@ public class PushToCloudCommandTest
     }
 
     @Test
-    public void shouldNotAcceptOnlyUsernameOrPasswordFromArgument() throws IOException, CommandFailed
+    public void shouldAcceptPasswordViaArgAndEnvAndPromptForUsername() throws IOException, CommandFailed, IncorrectUsage
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
         char[] password = {'a', 'b', 'c'};
         OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() )
-                .withPromptResponse( username )
-                .withPasswordResponse( password );
+                .withPromptResponse( username );
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
                 .outsideWorld( outsideWorld )
                 .build();
 
         // when
-        try
-        {
-            command.execute( array(
-                    arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                    arg( ARG_USERNAME, "user" ),
-                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
-            fail( "Should have failed" );
-        }
-        catch ( IncorrectUsage incorrectUsage )
-        {
-            // then good
-        }
 
-        try
-        {
-            command.execute( array(
-                    arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                    arg( ARG_PASSWORD, "pass" ),
-                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
-            fail( "Should have failed" );
-        }
-        catch ( IncorrectUsage incorrectUsage )
-        {
-            // then good
-        }
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_PASSWORD, "pass" ),
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+
+        environmentVariables.set("NEO4J_USERNAME", null);
+        environmentVariables.set("NEO4J_PASSWORD", "pass");
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+
     }
 
     @Test
-    public void shouldNotAcceptOnlyUsernameOrPasswordFromEnvVar() throws IOException, CommandFailed
+    public void shouldAcceptUsernameViaArgAndEnvAndPromptForPassword() throws IOException, CommandFailed, IncorrectUsage
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
         char[] password = {'a', 'b', 'c'};
         OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() )
-                .withPromptResponse( username )
                 .withPasswordResponse( password );
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
@@ -318,37 +303,21 @@ public class PushToCloudCommandTest
                 .build();
 
         // when
-        try
-        {
-            environmentVariables.set("NEO4J_USERNAME", "neo4j");
-            environmentVariables.set("NEO4J_PASSWORD", null);
-            command.execute( array(
-                    arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
-            fail( "Should have failed" );
-        }
-        catch ( IncorrectUsage incorrectUsage )
-        {
-            // then good
-        }
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_USERNAME, "user" ),
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
-        try
-        {
-            environmentVariables.set("NEO4J_USERNAME", null);
-            environmentVariables.set("NEO4J_PASSWORD", "pass");
-            command.execute( array(
-                    arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
-            fail( "Should have failed" );
-        }
-        catch ( IncorrectUsage incorrectUsage )
-        {
-            // then good
-        }
+        environmentVariables.set("NEO4J_USERNAME", "neo4j");
+        environmentVariables.set("NEO4J_PASSWORD", null);
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+
     }
 
     @Test
-    public void shouldNotAcceptOnlyUsernameAndPasswordFromEnvAndCli() throws IOException, CommandFailed
+    public void shouldAcceptOnlyUsernameAndPasswordFromEnvAndCli() throws IOException, CommandFailed, IncorrectUsage
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
@@ -363,22 +332,15 @@ public class PushToCloudCommandTest
                 .build();
 
         // when
-        try
-        {
-            environmentVariables.set("NEO4J_USERNAME", "neo4j");
-            environmentVariables.set("NEO4J_PASSWORD", "pass");
-            command.execute( array(
-                    arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                    arg( ARG_USERNAME, "neo4j" ),
-                    arg( ARG_PASSWORD, "pass" ),
-                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
-            fail( "Should have failed" );
-        }
-        catch ( IncorrectUsage incorrectUsage )
-        {
-            // then good
-        }
+        environmentVariables.set("NEO4J_USERNAME", "neo4jenv");
+        environmentVariables.set("NEO4J_PASSWORD", "passenv");
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_USERNAME, "neo4jcli" ),
+                arg( ARG_PASSWORD, "passcli" ),
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
+        verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "neo4jcli" ), eq( "passcli".toCharArray() ), anyBoolean() );
     }
 
     @Test
