@@ -32,8 +32,8 @@ case object SlottedRuntimeName extends RuntimeName {
   override val name = "SLOTTED"
 }
 
-case object MorselRuntimeName extends RuntimeName {
-  override val name = "MORSEL"
+case object PipelinedRuntimeName extends RuntimeName {
+  override val name = "PIPELINED"
 }
 
 case object CompiledRuntimeName extends RuntimeName {
@@ -57,7 +57,7 @@ object RuntimeName {
   def apply(name: String): RuntimeName = name.toUpperCase match {
     case InterpretedRuntimeName.name => InterpretedRuntimeName
     case SlottedRuntimeName.name => SlottedRuntimeName
-    case MorselRuntimeName.name => MorselRuntimeName
+    case PipelinedRuntimeName.name => PipelinedRuntimeName
     case CompiledRuntimeName.name => CompiledRuntimeName
     case ParallelRuntimeName.name => ParallelRuntimeName
     case SchemaRuntimeName.name => SchemaRuntimeName

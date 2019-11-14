@@ -20,14 +20,11 @@
 package org.neo4j.cypher.internal
 
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 import org.neo4j.configuration.{Config, GraphDatabaseSettings, SettingChangeListener}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.runtime._
-
-import scala.concurrent.duration.Duration
 
 /**
   * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
@@ -118,8 +115,8 @@ case class CypherConfiguration(version: CypherVersion,
                                expressionEngineOption: CypherExpressionEngineOption,
                                lenientCreateRelationship: Boolean,
                                workers: Int,
-                               morselSizeSmall: Int,
-                               morselSizeBig: Int,
+                               pipelinedBatchSizeSmall: Int,
+                               pipelinedBatchSizeBig: Int,
                                doSchedulerTracing: Boolean,
                                schedulerTracingFile: File,
                                recompilationLimit: Int,
@@ -131,8 +128,8 @@ case class CypherConfiguration(version: CypherVersion,
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
       workers = workers,
-      morselSizeSmall = morselSizeSmall,
-      morselSizeBig = morselSizeBig,
+      pipelinedBatchSizeSmall = pipelinedBatchSizeSmall,
+      pipelinedBatchSizeBig = pipelinedBatchSizeBig,
       schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
       lenientCreateRelationship = lenientCreateRelationship,
       memoryTrackingController = memoryTrackingController,
