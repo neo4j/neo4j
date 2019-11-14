@@ -26,9 +26,12 @@ import java.util.Objects;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.time.Instant.ofEpochMilli;
+
 public final class ClockContext
 {
     private final SystemNanoClock system;
+    private final ZoneId timezone;
     private Clock statement;
     private Clock transaction;
 
@@ -40,11 +43,12 @@ public final class ClockContext
     public ClockContext( SystemNanoClock clock )
     {
         this.system = Objects.requireNonNull( clock, "system clock" );
+        this.timezone = clock.getZone();
     }
 
-    void initializeTransaction()
+    void initializeTransaction( long transactionStartTimeMillis )
     {
-        this.transaction = Clock.fixed( system.instant(), timezone() );
+        this.transaction = Clock.fixed( ofEpochMilli( transactionStartTimeMillis ), timezone );
         this.statement = null;
     }
 
@@ -56,13 +60,8 @@ public final class ClockContext
         }
         else // this is not the first statement in the transaction, initialize with a new time
         {
-            this.statement = Clock.fixed( system.instant(), timezone() );
+            this.statement = Clock.fixed( system.instant(), timezone );
         }
-    }
-
-    public ZoneId timezone()
-    {
-        return system.getZone();
     }
 
     public SystemNanoClock systemClock()

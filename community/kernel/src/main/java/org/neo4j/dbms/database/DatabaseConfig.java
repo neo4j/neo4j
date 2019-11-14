@@ -52,7 +52,7 @@ public class DatabaseConfig extends Config implements Lifecycle
     @Override
     public <T> T get( Setting<T> setting )
     {
-        if ( databaseId.isSystemDatabase() && read_only.equals( setting ) )
+        if ( read_only.equals( setting ) && databaseId.isSystemDatabase() )
         {
             return (T) FALSE;
         }

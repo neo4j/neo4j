@@ -283,7 +283,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clientInfo = clientInfo;
         PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
         this.statistics.init( currentThread().getId(), pageCursorTracer );
-        this.currentStatement.initialize( statementLocks, pageCursorTracer );
+        this.currentStatement.initialize( statementLocks, pageCursorTracer, startTimeMillis );
         this.operations.initialize();
         this.initializationTrace = traceProvider.getTraceInfo();
         return this;
