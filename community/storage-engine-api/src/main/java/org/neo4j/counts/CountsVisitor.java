@@ -21,6 +21,7 @@ package org.neo4j.counts;
 
 public interface CountsVisitor
 {
+    @FunctionalInterface
     interface Visitable
     {
         void accept( CountsVisitor visitor );
