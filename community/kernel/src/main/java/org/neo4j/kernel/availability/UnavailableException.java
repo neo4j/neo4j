@@ -31,6 +31,6 @@ public class UnavailableException extends Exception implements Status.HasStatus
     @Override
     public Status status()
     {
-        return Status.General.DatabaseUnavailable;
+        return Status.Database.DatabaseUnavailable;
     }
 }

@@ -62,7 +62,7 @@ class Neo4jErrorTest
         Neo4jError error = Neo4jError.from( ex );
 
         // Then
-        assertThat( error.status(), equalTo( Status.General.DatabaseUnavailable ) );
+        assertThat( error.status(), equalTo( Status.Database.DatabaseUnavailable ) );
         assertThat( error.cause(), equalTo( ex ) );
     }
 }

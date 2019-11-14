@@ -150,7 +150,7 @@ public class Neo4jError
         {
             if ( cause instanceof DatabaseShutdownException )
             {
-                return new Neo4jError( Status.General.DatabaseUnavailable, cause, isFatal );
+                return new Neo4jError( Status.Database.DatabaseUnavailable, cause, isFatal );
             }
             if ( cause instanceof Status.HasStatus )
             {

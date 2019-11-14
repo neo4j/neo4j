@@ -73,7 +73,7 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
         }
         catch ( UnavailableException e )
         {
-            throw new BoltIOException( Status.General.DatabaseUnavailable, format( "Database `%s` is unavailable.", databaseName ) );
+            throw new BoltIOException( Status.Database.DatabaseUnavailable, format( "Database `%s` is unavailable.", databaseName ) );
         }
     }
 

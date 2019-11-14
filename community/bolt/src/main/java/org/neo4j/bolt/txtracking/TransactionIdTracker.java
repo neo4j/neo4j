@@ -33,7 +33,7 @@ import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
-import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.BookmarkTimeout;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 

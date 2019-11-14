@@ -751,7 +751,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         // when
         stopped.setTrue();
-        tx.markForTermination( Status.General.DatabaseUnavailable );
+        tx.markForTermination( Status.Database.DatabaseUnavailable );
         tx.close(); // effectively rollback
 
         // then
