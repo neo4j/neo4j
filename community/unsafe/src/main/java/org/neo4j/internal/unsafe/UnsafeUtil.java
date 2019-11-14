@@ -184,12 +184,12 @@ public final class UnsafeUtil
             Field logger = clazz.getDeclaredField( "logger" );
             unsafe.putObjectVolatile( clazz, unsafe.staticFieldOffset( logger ), null );
         }
-        catch ( Exception e )
+        catch ( Throwable t )
         {
             if ( PRINT_REFLECTION_EXCEPTIONS )
             {
                 //noinspection CallToPrintStackTrace
-                e.printStackTrace();
+                t.printStackTrace();
             }
         }
     }
