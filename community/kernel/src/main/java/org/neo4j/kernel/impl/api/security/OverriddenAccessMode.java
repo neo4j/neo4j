@@ -68,15 +68,15 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsTraverseLabel( long label )
+    public boolean allowsTraverseAllNodesWithLabel( long label )
     {
-        return wrapping.allowsTraverseLabel( label );
+        return wrapping.allowsTraverseAllNodesWithLabel( label );
     }
 
     @Override
-    public boolean allowsLabel( long label )
+    public boolean allowsSeeLabelToken( long label )
     {
-        return wrapping.allowsLabel( label );
+        return wrapping.allowsSeeLabelToken( label );
     }
 
     @Override
@@ -86,15 +86,9 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean disallowsTraverseType( long type )
+    public boolean allowsTraverseNode( long... labels )
     {
-        return wrapping.disallowsTraverseType( type );
-    }
-
-    @Override
-    public boolean allowsTraverseNodeLabels( long... labels )
-    {
-        return wrapping.allowsTraverseNodeLabels( labels );
+        return wrapping.allowsTraverseNode( labels );
     }
 
     @Override
@@ -140,9 +134,9 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsPropertyReads( int propertyKey )
+    public boolean allowsSeePropertyKeyToken( int propertyKey )
     {
-        return wrapping.allowsPropertyReads( propertyKey );
+        return wrapping.allowsSeePropertyKeyToken( propertyKey );
     }
 
     @Override

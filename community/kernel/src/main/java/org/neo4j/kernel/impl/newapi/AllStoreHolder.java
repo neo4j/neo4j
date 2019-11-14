@@ -310,8 +310,8 @@ public class AllStoreHolder extends Read
     {
         AccessMode mode = ktx.securityContext().mode();
         if ( (typeId == TokenRead.ANY_RELATIONSHIP_TYPE && mode.allowsTraverseAllRelTypes() || mode.allowsTraverseRelType( typeId )) &&
-                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabel( startLabelId )) &&
-                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabel( endLabelId )) )
+                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( startLabelId )) &&
+                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( endLabelId )) )
         {
             return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
         }
@@ -511,7 +511,7 @@ public class AllStoreHolder extends Read
 
     Iterator<IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
     {
-        if ( ktx.securityContext().mode().allowsTraverseNodeLabels( labelId ) )
+        if ( ktx.securityContext().mode().allowsTraverseNode( labelId ) )
         {
             Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
 

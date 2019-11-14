@@ -245,7 +245,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
 
     boolean allowsTraverse()
     {
-        return accessMode.allowsTraverseAllLabels() || accessMode.allowsTraverseNodeLabels( storeCursor.labels() );
+        return accessMode.allowsTraverseAllLabels() || accessMode.allowsTraverseNode( storeCursor.labels() );
     }
 
     @Override

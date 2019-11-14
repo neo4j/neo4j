@@ -160,7 +160,7 @@ abstract class Read implements TxStateHolder,
             {
                 for ( int label : schema.getEntityTokenIds() )
                 {
-                    if ( !accessMode.allowsTraverseLabel( label ) || accessMode.disallowsReadPropertyForSomeLabel( prop ) ||
+                    if ( !accessMode.allowsTraverseAllNodesWithLabel( label ) || accessMode.disallowsReadPropertyForSomeLabel( prop ) ||
                             !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), prop ) )
                     {
                         // We need to filter the index result if the property is not allowed on some label
@@ -314,7 +314,7 @@ abstract class Read implements TxStateHolder,
         indexCursor.setRead( this );
         IndexProgressor indexProgressor;
         AccessMode accessMode = ktx.securityContext().mode();
-        if ( accessMode.allowsTraverseLabel( label ) )
+        if ( accessMode.allowsTraverseAllNodesWithLabel( label ) )
         {
             // all nodes will be allowed
             LabelScan labelScan = labelScanReader().nodeLabelScan( label );
@@ -364,7 +364,7 @@ abstract class Read implements TxStateHolder,
                 }
                 labels = node.labels();
             }
-            return inner.acceptNode( reference, labels ) && accessMode.allowsTraverseNodeLabels( labels.all() );
+            return inner.acceptNode( reference, labels ) && accessMode.allowsTraverseNode( labels.all() );
         }
 
         @Override

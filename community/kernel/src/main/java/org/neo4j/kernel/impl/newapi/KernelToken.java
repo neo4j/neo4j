@@ -192,7 +192,7 @@ public class KernelToken implements Token
         ktx.assertOpen();
         AccessMode mode = ktx.securityContext().mode();
         return Iterators.stream( tokenHolders.labelTokens().getAllTokens().iterator() )
-                .filter( label -> mode.allowsLabel( label.id() ) )
+                .filter( label -> mode.allowsSeeLabelToken( label.id() ) )
                 .iterator();
     }
 
@@ -202,7 +202,7 @@ public class KernelToken implements Token
         ktx.assertOpen();
         AccessMode mode = ktx.securityContext().mode();
         return Iterators.stream( tokenHolders.propertyKeyTokens().getAllTokens().iterator() )
-                .filter( propKey -> mode.allowsPropertyReads( propKey.id() ) )
+                .filter( propKey -> mode.allowsSeePropertyKeyToken( propKey.id() ) )
                 .iterator();
     }
 

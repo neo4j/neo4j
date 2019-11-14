@@ -112,13 +112,13 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsTraverseLabel( long label )
+        public boolean allowsTraverseAllNodesWithLabel( long label )
         {
             return read;
         }
 
         @Override
-        public boolean allowsLabel( long label )
+        public boolean allowsSeeLabelToken( long label )
         {
             return read;
         }
@@ -130,13 +130,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean disallowsTraverseType( long type )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean allowsTraverseNodeLabels( long... labels )
+        public boolean allowsTraverseNode( long... labels )
         {
             return read;
         }
@@ -184,7 +178,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsPropertyReads( int propertyKey )
+        public boolean allowsSeePropertyKeyToken( int propertyKey )
         {
             return read;
         }
@@ -209,18 +203,15 @@ public interface AccessMode
 
     /** true if all nodes can be traversed */
     boolean allowsTraverseAllLabels();
-    /** true if all nodes with this label can be traversed */
-    boolean allowsTraverseLabel( long label );
+    /** true if all nodes with this label always can be traversed */
+    boolean allowsTraverseAllNodesWithLabel( long label );
     /** true if this label is visible */
-    boolean allowsLabel( long label );
+    boolean allowsSeeLabelToken( long label );
     /** true if this label is blacklisted for traversal */
     boolean disallowsTraverseLabel( long label );
 
-    /** true if this type is blacklisted for traversal */
-    boolean disallowsTraverseType( long type );
-
     /** true if a particular node with exactly these labels can be traversed */
-    boolean allowsTraverseNodeLabels( long... labels );
+    boolean allowsTraverseNode( long... labels );
 
     boolean allowsTraverseAllRelTypes();
     boolean allowsTraverseRelType( int relType );
@@ -232,7 +223,7 @@ public interface AccessMode
     boolean allowsReadPropertyAllRelTypes( int propertyKey );
     boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey );
 
-    boolean allowsPropertyReads( int propertyKey );
+    boolean allowsSeePropertyKeyToken( int propertyKey );
 
     /**
      * Determines whether this mode allows execution of a procedure with the parameter string array in its

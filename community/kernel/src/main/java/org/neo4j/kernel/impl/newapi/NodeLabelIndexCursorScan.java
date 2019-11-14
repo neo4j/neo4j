@@ -60,7 +60,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
         IndexProgressor indexProgressor;
 
         AccessMode mode = read.ktx.securityContext().mode();
-        if ( mode.allowsTraverseLabel( label ) )
+        if ( mode.allowsTraverseAllNodesWithLabel( label ) )
         {
             // all nodes will be allowed
             indexProgressor = storageScan.initializeBatch( indexCursor.nodeLabelClient(), sizeHint );

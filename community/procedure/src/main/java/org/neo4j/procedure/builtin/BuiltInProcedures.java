@@ -113,7 +113,7 @@ public class BuiltInProcedures
             // Get all labels that are in use as seen by a super user
             labelsInUse = stream( LABELS.inUse( kernelTransaction ) )
                     // filter out labels that are denied or aren't explicitly allowed
-                    .filter( label -> mode.allowsTraverseNodeLabels( tokenRead.nodeLabel( label.name() ) ) )
+                    .filter( label -> mode.allowsTraverseNode( tokenRead.nodeLabel( label.name() ) ) )
                     .map( LabelResult::new )
                     .collect( Collectors.toList() );
         }

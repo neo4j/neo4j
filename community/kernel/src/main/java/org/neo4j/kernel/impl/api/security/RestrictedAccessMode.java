@@ -68,15 +68,15 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsTraverseLabel( long label )
+    public boolean allowsTraverseAllNodesWithLabel( long label )
     {
-        return original.allowsTraverseLabel( label ) && wrapping.allowsTraverseLabel( label );
+        return original.allowsTraverseAllNodesWithLabel( label ) && wrapping.allowsTraverseAllNodesWithLabel( label );
     }
 
     @Override
-    public boolean allowsLabel( long label )
+    public boolean allowsSeeLabelToken( long label )
     {
-        return original.allowsLabel( label ) && wrapping.allowsLabel( label );
+        return original.allowsSeeLabelToken( label ) && wrapping.allowsSeeLabelToken( label );
     }
 
     @Override
@@ -86,15 +86,9 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean disallowsTraverseType( long type )
+    public boolean allowsTraverseNode( long... labels )
     {
-        return original.disallowsTraverseType( type ) || wrapping.disallowsTraverseType( type );
-    }
-
-    @Override
-    public boolean allowsTraverseNodeLabels( long... labels )
-    {
-        return original.allowsTraverseNodeLabels( labels ) && wrapping.allowsTraverseNodeLabels( labels );
+        return original.allowsTraverseNode( labels ) && wrapping.allowsTraverseNode( labels );
     }
 
     @Override
@@ -140,9 +134,9 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsPropertyReads( int propertyKey )
+    public boolean allowsSeePropertyKeyToken( int propertyKey )
     {
-        return original.allowsPropertyReads( propertyKey ) && wrapping.allowsPropertyReads( propertyKey );
+        return original.allowsSeePropertyKeyToken( propertyKey ) && wrapping.allowsSeePropertyKeyToken( propertyKey );
     }
 
     @Override
