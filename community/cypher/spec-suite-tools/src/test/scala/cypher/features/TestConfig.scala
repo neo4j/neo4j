@@ -31,7 +31,7 @@ case object SlottedTestConfig extends TestConfig(Some("slotted.txt"),"CYPHER pla
 
 case object SlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("slotted.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
 
-case object MorselTestConfig extends TestConfig(Some("morsel-single-threaded.txt"), "CYPHER planner=cost runtime=morsel")
+case object PipelinedTestConfig extends TestConfig(Some("pipelined-single-threaded.txt"), "CYPHER planner=cost runtime=morsel")
 
 case object ParallelTestConfig extends TestConfig(Some("parallel.txt"), "CYPHER planner=cost runtime=parallel")
 
@@ -40,8 +40,8 @@ case object CompiledTestConfig extends TestConfig(Some("compiled.txt"),
 
 case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
 
-case object MorselFullTestConfig extends TestConfig(
-  Some("morsel-single-threaded-full.txt"),
-  "CYPHER planner=cost runtime=morsel interpretedPipesFallback=all",
+case object PipelinedFullTestConfig extends TestConfig(
+  Some("pipelined-single-threaded-full.txt"),
+  "CYPHER planner=cost runtime=pipelined interpretedPipesFallback=all",
   experimental = true
 )
