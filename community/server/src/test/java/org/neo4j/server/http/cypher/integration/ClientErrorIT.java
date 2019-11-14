@@ -84,7 +84,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                 },
                 new Object[]{
                         "CREATE (n:``)",
-                        Status.Schema.TokenNameError
+                        Status.Statement.SyntaxError
                 },
                 new Object[]{
                         "CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})",
