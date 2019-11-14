@@ -241,7 +241,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 switch ( responseCode )
                 {
                 case HTTP_NOT_FOUND:
-                    // fallthrough
+                    throw errorResponse( verbose, connection, "We encountered a problem while contacting your Neo4j Aura instance, " +
+                            "please check your Bolt URI" );
                 case HTTP_MOVED_PERM:
                     throw updatePluginErrorResponse( connection );
                 case HTTP_UNAUTHORIZED:
