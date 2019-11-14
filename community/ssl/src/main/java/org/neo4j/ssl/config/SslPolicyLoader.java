@@ -195,14 +195,6 @@ public class SslPolicyLoader
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
         File trustedCertificatesDir = config.get( policyConfig.trusted_dir ).toFile();
 
-        PrivateKey privateKey;
-
-        X509Certificate[] keyCertChain;
-        File keyCertChainFile = config.get( policyConfig.public_certificate ).toFile();
-
-        privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
-        keyCertChain = loadCertificateChain( keyCertChainFile );
-
         ClientAuth clientAuth = config.get( policyConfig.client_auth );
         KeyStore trustStore;
         try
@@ -213,6 +205,19 @@ public class SslPolicyLoader
         {
             throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
         }
+
+        if ( policyConfig.getScope().isClientOnly() && !privateKeyFile.exists() )
+        {
+            return new KeyAndChain( null, new X509Certificate[0], trustStore );
+        }
+
+        PrivateKey privateKey;
+
+        X509Certificate[] keyCertChain;
+        File keyCertChainFile = config.get( policyConfig.public_certificate ).toFile();
+
+        privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
+        keyCertChain = loadCertificateChain( keyCertChainFile );
 
         return new KeyAndChain( privateKey, keyCertChain, trustStore );
     }

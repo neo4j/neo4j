@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration.ssl;
 
+import static org.neo4j.configuration.ssl.ClientAuth.NONE;
 import static org.neo4j.configuration.ssl.ClientAuth.OPTIONAL;
 import static org.neo4j.configuration.ssl.ClientAuth.REQUIRE;
 
@@ -28,15 +29,28 @@ public enum SslPolicyScope
     HTTPS( OPTIONAL, "certificates/https" ),
     CLUSTER( REQUIRE, "certificates/cluster" ),
     BACKUP( REQUIRE, "certificates/backup" ),
+    FABRIC( NONE, "certificates/fabric", true ),
     TESTING( REQUIRE, "certificates/testing" );
 
     final ClientAuth authDefault;
     final String baseDir;
+    private final boolean clientOnly;
 
     SslPolicyScope( ClientAuth authDefault, String baseDir )
     {
+        this( authDefault, baseDir, false );
+    }
+
+    SslPolicyScope( ClientAuth authDefault, String baseDir, boolean clientOnly )
+    {
         this.authDefault = authDefault;
         this.baseDir = baseDir;
+        this.clientOnly = clientOnly;
+    }
+
+    public boolean isClientOnly()
+    {
+        return clientOnly;
     }
 
     static SslPolicyScope fromName( String name )
