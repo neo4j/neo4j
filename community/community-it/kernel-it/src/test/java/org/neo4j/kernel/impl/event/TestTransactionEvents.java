@@ -1142,6 +1142,48 @@ public class TestTransactionEvents
     }
 
     @Test
+    public void shouldHaveTransactionIdInAfterCommit()
+    {
+        dbRule.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        {
+            @Override
+            public void afterCommit( TransactionData data, Object state )
+            {
+                data.getTransactionId();
+            }
+        } );
+        long nodeId = 0;
+
+        // Must not throw on plain write transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            nodeId = dbRule.createNode().getId();
+            tx.success();
+        }
+
+        // Must not throw on plain read transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.getNodeById( nodeId );
+            tx.success();
+        }
+
+        // Must not throw on schema transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.schema().indexFor( label( "Label" ) ).on( "prop" ).create();
+            tx.success();
+        }
+
+        // Must not throw on zero-change write transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode().delete();
+            tx.success();
+        }
+    }
+
+    @Test
     public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed()
     {
         // given
