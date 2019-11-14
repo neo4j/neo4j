@@ -245,18 +245,6 @@ public class TypeCheckers
         return javaToNeo.keySet();
     }
 
-    private static DefaultParameterValue parseNumber( String s )
-    {
-        try
-        {
-            return ntInteger( parseLong( s ) );
-        }
-        catch ( NumberFormatException e )
-        {
-            return ntFloat( parseDouble( s ) );
-        }
-    }
-
     private static boolean parseBooleanOrFail( String s )
     {
         if ( "true".equalsIgnoreCase( s ) )
