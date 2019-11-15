@@ -31,24 +31,22 @@ import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.helpers.MathUtil.DEFAULT_EPSILON;
 
 class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
 {
-    private static final double epsilon = NoneStrictMath.EPSILON;
     private static final String length = "length";
-    private final CostEvaluator evaluator = CommonEvaluators.doubleCostEvaluator( length );
+    private static final CostEvaluator<Double> evaluator = CommonEvaluators.doubleCostEvaluator( length );
     private TopFetchingWeightedPathIterator topFetcher;
 
     @Test
     void shouldHandleEmptySource()
     {
-        topFetcher = new TopFetchingWeightedPathIterator(
-                Collections.emptyIterator(), evaluator );
+        topFetcher = new TopFetchingWeightedPathIterator( Collections.emptyIterator(), evaluator , DEFAULT_EPSILON );
 
         assertFalse( topFetcher.hasNext(), "Expected iterator to be empty" );
         assertNull( topFetcher.fetchNextOrNull(), "Expected null after report has no next" );
@@ -63,7 +61,7 @@ class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
             List<Path> list = new ArrayList<>();
             list.add( a );
 
-            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
+            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, DEFAULT_EPSILON );
 
             assertTrue( topFetcher.hasNext(), "Expected at least one element" );
             assertPathDef( a, topFetcher.next() );
@@ -84,7 +82,7 @@ class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
             list.add( a );
             list.add( b );
 
-            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
+            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, DEFAULT_EPSILON );
             List<Path> result = new ArrayList<>();
             while ( topFetcher.hasNext() )
             {
@@ -108,7 +106,7 @@ class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
             Path e = graph.makePathWithRelProperty( transaction, length, "e1-0-e2-0-e3-0-e4-1-e5" );   // 1
 
             List<Path> list = Arrays.asList( a, b, c, d, e );
-            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
+            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, DEFAULT_EPSILON );
 
             List<Path> result = new ArrayList<>();
             while ( topFetcher.hasNext() )

@@ -44,8 +44,8 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
@@ -62,20 +62,11 @@ import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
 public class DijkstraBidirectional implements PathFinder<WeightedPath>
 {
     private final EvaluationContext context;
-    private final PathExpander expander;
-    private final InitialBranchState stateFactory;
+    private final PathExpander<Double> expander;
+    private final InitialBranchState<Double> stateFactory;
     private final CostEvaluator<Double> costEvaluator;
     private final double epsilon;
     private Traverser lastTraverser;
-
-    /**
-     * See {@link #DijkstraBidirectional(EvaluationContext, PathExpander, CostEvaluator, double)}
-     * Using {@link NoneStrictMath#EPSILON} as tolerance.
-     */
-    public DijkstraBidirectional( EvaluationContext context, PathExpander expander, CostEvaluator<Double> costEvaluator )
-    {
-        this( context, expander, costEvaluator, NoneStrictMath.EPSILON );
-    }
 
     /**
      * Construct a new bidirectional dijkstra algorithm.
@@ -85,7 +76,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
      *                          relationship
      * @param epsilon           The tolerance level to be used when comparing floating point numbers.
      */
-    public DijkstraBidirectional( EvaluationContext context, PathExpander expander, CostEvaluator<Double> costEvaluator, double epsilon )
+    public DijkstraBidirectional( EvaluationContext context, PathExpander<Double> expander, CostEvaluator<Double> costEvaluator, double epsilon )
     {
         this.context = context;
         this.expander = expander;
@@ -98,15 +89,15 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
         final Traverser traverser = traverser( start, end, PathInterestFactory.allShortest( epsilon ) );
-        return () -> new TopFetchingWeightedPathIterator( traverser.iterator(), costEvaluator );
+        return () -> new TopFetchingWeightedPathIterator( traverser.iterator(), costEvaluator, epsilon );
     }
 
-    private Traverser traverser( Node start, final Node end, PathInterest interest )
+    private Traverser traverser( Node start, final Node end, PathInterest<Double> interest )
     {
         final MutableDouble shortestSoFar = new MutableDouble( Double.MAX_VALUE );
         final MutableDouble startSideShortest = new MutableDouble( 0 );
         final MutableDouble endSideShortest = new MutableDouble( 0 );
-        PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
+        PathExpander<Double> dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
                 startSideShortest, endSideShortest, epsilon );
 
         var transaction = context.transaction();
@@ -134,7 +125,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     public WeightedPath findSinglePath( Node start, Node end )
     {
         return firstOrNull( new TopFetchingWeightedPathIterator(
-                traverser( start, end, PathInterestFactory.single( epsilon ) ).iterator(), costEvaluator ) );
+                traverser( start, end, PathInterestFactory.single( epsilon ) ).iterator(), costEvaluator, epsilon ) );
     }
 
     @Override
@@ -145,14 +136,14 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
 
     private static class DijkstraBidirectionalPathExpander implements PathExpander<Double>
     {
-        private final PathExpander source;
+        private final PathExpander<Double> source;
         private final MutableDouble shortestSoFar;
         private final MutableDouble otherSideShortest;
         private final double epsilon;
         private final MutableDouble thisSideShortest;
         private final boolean stopAfterLowestCost;
 
-        DijkstraBidirectionalPathExpander( PathExpander source, MutableDouble shortestSoFar,
+        DijkstraBidirectionalPathExpander( PathExpander<Double> source, MutableDouble shortestSoFar,
                 boolean stopAfterLowestCost, MutableDouble thisSideShortest, MutableDouble otherSideShortest,
                 double epsilon )
         {
@@ -169,8 +160,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         {
             double thisState = state.getState();
             thisSideShortest.setValue( thisState );
-            if ( NoneStrictMath.compare( thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon ) > 0 &&
-                 stopAfterLowestCost )
+            if ( MathUtil.compare( thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon ) > 0 && stopAfterLowestCost )
             {
                 return Iterables.emptyResourceIterable();
             }

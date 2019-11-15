@@ -21,9 +21,12 @@ package org.neo4j.internal.helpers;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class MathUtil
 {
+    public static final double DEFAULT_EPSILON = 1.0E-8;
+
     private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
 
     private MathUtil()
@@ -123,6 +126,38 @@ public class MathUtil
             throw new ArithmeticException( "integer underflow past zero" );
         }
         return value - 1;
+    }
+
+    /**
+     * Compares two numbers given some amount of allowed error.
+     */
+    public static int compare( double x, double y, double eps )
+    {
+        return equals( x, y, eps ) ? 0 : x < y ? -1 : 1;
+    }
+
+    /**
+     * Returns true if both arguments are equal or within the range of allowed error (inclusive)
+     */
+    public static boolean equals( double x, double y, double eps )
+    {
+        return Math.abs( x - y ) <= eps;
+    }
+
+    public static class CommonToleranceComparator implements Comparator<Double>
+    {
+        private final double epsilon;
+
+        public CommonToleranceComparator( double epsilon )
+        {
+            this.epsilon = epsilon;
+        }
+
+        @Override
+        public int compare( Double x, Double y )
+        {
+            return MathUtil.compare( x, y, epsilon );
+        }
     }
 }
 

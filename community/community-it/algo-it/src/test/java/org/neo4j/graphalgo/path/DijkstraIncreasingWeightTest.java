@@ -23,9 +23,7 @@ import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.PathFinder;
@@ -33,21 +31,15 @@ import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.graphdb.traversal.InitialBranchState;
-import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.NoneStrictMath;
+import org.neo4j.internal.helpers.MathUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.helpers.MathUtil.DEFAULT_EPSILON;
 
 class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 {
@@ -76,8 +68,9 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "c", "d", "length", 10 );
             graph.makeEdge( transaction, "d", "t", "length", 10 );
 
-            PathExpander expander = PathExpanders.allTypesAndDirections();
-            Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), PathInterestFactory.all( NoneStrictMath.EPSILON ) );
+            PathExpander<Double> expander = PathExpanders.allTypesAndDirections();
+            Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), DEFAULT_EPSILON,
+                    PathInterestFactory.all( DEFAULT_EPSILON ) );
 
             Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
@@ -122,23 +115,24 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "d", "a", "length", 0 );
             graph.makeEdge( transaction, "d", "t", "length", 1 );
 
-            PathExpander expander = PathExpanders.allTypesAndDirections();
-            Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), PathInterestFactory.all( NoneStrictMath.EPSILON ) );
+            PathExpander<Double> expander = PathExpanders.allTypesAndDirections();
+            Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), DEFAULT_EPSILON,
+                    PathInterestFactory.all( DEFAULT_EPSILON ) );
 
             Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
             for ( int i = 1; i <= 3; i++ )
             {
                 assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
-                assertTrue( NoneStrictMath.equals( paths.next().weight(), 2 ), "Expected 3 paths of cost 2" );
+                assertTrue( MathUtil.equals( paths.next().weight(), 2, DEFAULT_EPSILON ), "Expected 3 paths of cost 2" );
             }
             for ( int i = 1; i <= 3; i++ )
             {
                 assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
-                assertTrue( NoneStrictMath.equals( paths.next().weight(), 3 ), "Expected 3 paths of cost 3" );
+                assertTrue( MathUtil.equals( paths.next().weight(), 3, DEFAULT_EPSILON ), "Expected 3 paths of cost 3" );
             }
             assertTrue( paths.hasNext(), "Expected at least 7 paths" );
-            assertTrue( NoneStrictMath.equals( paths.next().weight(), 4 ), "Expected 1 path of cost 4" );
+            assertTrue( MathUtil.equals( paths.next().weight(), 4, DEFAULT_EPSILON ), "Expected 1 path of cost 4" );
             assertFalse( paths.hasNext(), "Expected exactly 7 paths" );
             transaction.commit();
         }
@@ -181,9 +175,9 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "c1", "a4", "length", 0 );
             graph.makeEdge( transaction, "a4", "t", "length", 1 );
 
-            PathExpander expander = PathExpanders.allTypesAndDirections();
-            Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ),
-                PathInterestFactory.all( NoneStrictMath.EPSILON ) );
+            PathExpander<Double> expander = PathExpanders.allTypesAndDirections();
+            Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), DEFAULT_EPSILON,
+                    PathInterestFactory.all( DEFAULT_EPSILON ) );
 
             Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
@@ -229,9 +223,9 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "e", "f", "length", 3 );
             graph.makeEdge( transaction, "f", "t", "length", 3 );
 
-            PathExpander expander = PathExpanders.allTypesAndDirections();
-            PathFinder<WeightedPath> algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ),
-                    PathInterestFactory.numberOfShortest( NoneStrictMath.EPSILON, 6 ) );
+            PathExpander<Double> expander = PathExpanders.allTypesAndDirections();
+            PathFinder<WeightedPath> algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), DEFAULT_EPSILON,
+                    PathInterestFactory.numberOfShortest( DEFAULT_EPSILON, 6 ) );
 
             Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
@@ -249,77 +243,11 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
                 {
                     expectedWeight = 3.0;
                 }
-                assertTrue( NoneStrictMath.equals( path.weight(), expectedWeight ), "Expected path number " + count + " to have weight of " + expectedWeight );
+                assertTrue( MathUtil.equals( path.weight(), expectedWeight, DEFAULT_EPSILON ),
+                        "Expected path number " + count + " to have weight of " + expectedWeight );
             }
             assertEquals( 6, count, "Expected exactly 6 returned paths" );
             transaction.commit();
         }
-    }
-
-    @Test
-    void withState()
-    {
-        /* Graph
-         *
-         * (a)-[1]->(b)-[2]->(c)-[5]->(d)
-         */
-
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
-            graph.makeEdgeChain( transaction, "a,b,c,d" );
-            setWeight( transaction, "a", "b", 1 );
-            setWeight( transaction, "b", "c", 2 );
-            setWeight( transaction, "c", "d", 5 );
-
-            InitialBranchState<Integer> state = new InitialBranchState.State<>( 0, 0 );
-            final Map<Node,Integer> encounteredState = new HashMap<>();
-            PathExpander<Integer> expander = new PathExpander<>()
-            {
-                @Override
-                public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
-                {
-                    if ( path.length() > 0 )
-                    {
-                        int newState = state.getState() + ((Number) path.lastRelationship().getProperty( "weight" )).intValue();
-                        state.setState( newState );
-                        encounteredState.put( path.endNode(), newState );
-                    }
-                    return path.endNode().getRelationships();
-                }
-
-                @Override
-                public PathExpander<Integer> reverse()
-                {
-                    return this;
-                }
-            };
-
-            PathFinder<WeightedPath> finder = new Dijkstra( expander, state, CommonEvaluators.doubleCostEvaluator( "weight" ) );
-            assertPaths( finder.findAllPaths( graph.getNode( transaction, "a" ), graph.getNode( transaction, "d" ) ), "a,b,c,d" );
-            assertEquals( 1, encounteredState.get( graph.getNode( transaction, "b" ) ).intValue() );
-            assertEquals( 3, encounteredState.get( graph.getNode( transaction, "c" ) ).intValue() );
-            assertEquals( 8, encounteredState.get( graph.getNode( transaction, "d" ) ).intValue() );
-            transaction.commit();
-        }
-    }
-
-    private static void setWeight( Transaction transaction, String start, String end, double weight )
-    {
-        Node startNode = graph.getNode( transaction, start );
-        Node endNode = graph.getNode( transaction, end );
-        ResourceIterable<Relationship> relationships = Iterables.asResourceIterable( startNode.getRelationships() );
-        try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
-        {
-            while ( resourceIterator.hasNext() )
-            {
-                Relationship rel = resourceIterator.next();
-                if ( rel.getOtherNode( startNode ).equals( endNode ) )
-                {
-                    rel.setProperty( "weight", weight );
-                    return;
-                }
-            }
-        }
-        throw new RuntimeException( "No relationship between nodes " + start + " and " + end );
     }
 }

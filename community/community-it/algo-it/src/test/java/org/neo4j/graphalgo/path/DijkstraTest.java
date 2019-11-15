@@ -38,6 +38,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
 import org.neo4j.graphalgo.impl.path.DijkstraBidirectional;
+import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -45,8 +46,7 @@ import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.traversal.InitialBranchState;
-import org.neo4j.kernel.impl.util.NoneStrictMath;
+import org.neo4j.internal.helpers.MathUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -54,11 +54,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.internal.helpers.MathUtil.DEFAULT_EPSILON;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 class DijkstraTest extends Neo4jAlgoTestCase
 {
-
     @ParameterizedTest
     @MethodSource( "params" )
     void pathToSelfReturnsZero( DijkstraFactory factory )
@@ -123,7 +123,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             Node nodeA = graph.makeNode( transaction, "A" );
             graph.makeEdge( transaction, "A", "A", "length", 1d );
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             assertPaths( finder.findAllPaths( nodeA, nodeA ), "A" );
             transaction.commit();
         }
@@ -142,7 +142,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             Node nodeB = graph.makeNode( transaction, "B" );
             graph.makeEdge( transaction, "A", "B", "length", 1 );
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             assertPaths( finder.findAllPaths( nodeA, nodeB ), "A,B" );
             transaction.commit();
         }
@@ -165,7 +165,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "A", "B", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             assertPaths( finder.findAllPaths( nodeA, nodeB ), "A,B", "A,B" );
             transaction.commit();
         }
@@ -188,7 +188,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "A", "B", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeB ).iterator();
             assertTrue( paths.hasNext(), "Expect at least one path" );
             WeightedPath path = paths.next();
@@ -228,7 +228,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "H", "F", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             Iterator<WeightedPath> paths = finder.findAllPaths( a, f ).iterator();
 
             assertTrue( paths.hasNext(), "Expect at least one path" );
@@ -260,7 +260,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "A", "C", "length", (byte) 10 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeC ).iterator();
             assertTrue( paths.hasNext(), "expected at least one path" );
             assertPath( paths.next(), nodeA, nodeB, nodeC );
@@ -304,7 +304,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "A", "D", "length", (float) 6 ); // = 6
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             assertPaths( finder.findAllPaths( nodeA, nodeD ), "A,B,C,D", "A,D" );
             transaction.commit();
         }
@@ -333,7 +333,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "A", "C", "length", 5d );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeC ).iterator();
             for ( int i = 0; i < 2; i++ )
             {
@@ -389,7 +389,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "A", "F", "length", (long) 25 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             // Try the search in both directions.
             for ( Node[] nodes : new Node[][]{{nodeA, nodeF}, {nodeF, nodeA}} )
             {
@@ -457,20 +457,20 @@ class DijkstraTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "d", "t", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
-            PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
+            PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             Iterator<WeightedPath> paths = finder.findAllPaths( s, t ).iterator();
 
             for ( int i = 1; i <= 3; i++ )
             {
                 assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
-                assertTrue( NoneStrictMath.equals( paths.next().weight(), 2 ), "Expected 3 paths of cost 2" );
+                assertTrue( MathUtil.equals( paths.next().weight(), 2, DEFAULT_EPSILON ), "Expected 3 paths of cost 2" );
             }
             assertFalse( paths.hasNext(), "Expected exactly 3 paths" );
             transaction.commit();
         }
     }
 
-    private Relationship createGraph( Transaction transaction, boolean includeOnes )
+    private static Relationship createGraph( Transaction transaction, boolean includeOnes )
     {
         /* Layout:
          *                       (y)
@@ -560,7 +560,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
         }
     }
 
-    private void assertContainsRelationship( WeightedPath path,
+    private static void assertContainsRelationship( WeightedPath path,
             Relationship relationship )
     {
         for ( Relationship rel : path.relationships() )
@@ -576,63 +576,46 @@ class DijkstraTest extends Neo4jAlgoTestCase
     private static Stream<Arguments> params()
     {
         return Stream.of(
-            arguments( new DijkstraFactory()
-                       {
-                           @Override
-                           public PathFinder dijkstra( EvaluationContext context, PathExpander expander )
+                arguments( new DijkstraFactory()
                            {
-                               return new Dijkstra( expander,
-                                   CommonEvaluators.doubleCostEvaluator( "length" ) );
-                           }
+                               @Override
+                               public PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander )
+                               {
+                                   return new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), DEFAULT_EPSILON,
+                                           PathInterestFactory.allShortest( DEFAULT_EPSILON ) );
+                               }
 
-                           @Override
-                           public PathFinder dijkstra( EvaluationContext context, PathExpander expander, CostEvaluator costEvaluator )
-                           {
-                               return new Dijkstra( expander, costEvaluator );
+                               @Override
+                               public PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander,
+                                       CostEvaluator<Double> costEvaluator )
+                               {
+                                   return new Dijkstra( expander, costEvaluator, DEFAULT_EPSILON, PathInterestFactory.allShortest( DEFAULT_EPSILON ) );
+                               }
                            }
-                       }
-            ),
-           // DijkstraBidirectional
-            arguments( new DijkstraFactory()
-                       {
-                           @Override
-                           public PathFinder dijkstra( EvaluationContext context, PathExpander expander )
+                ),
+                // DijkstraBidirectional
+                arguments( new DijkstraFactory()
                            {
-                               return new DijkstraBidirectional( context, expander,
-                                   CommonEvaluators.doubleCostEvaluator( "length" ) );
-                           }
+                               @Override
+                               public PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander )
+                               {
+                                   return new DijkstraBidirectional( context, expander,
+                                           CommonEvaluators.doubleCostEvaluator( "length" ), DEFAULT_EPSILON );
+                               }
 
-                           @Override
-                           public PathFinder dijkstra( EvaluationContext context, PathExpander expander, CostEvaluator costEvaluator )
-                           {
-                               return new DijkstraBidirectional( context, expander, costEvaluator );
+                               @Override
+                               public PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander,
+                                       CostEvaluator<Double> costEvaluator )
+                               {
+                                   return new DijkstraBidirectional( context, expander, costEvaluator, DEFAULT_EPSILON );
+                               }
                            }
-                       }
-            ),
-
-            // Dijkstra (mono directional) with state.
-            arguments( new DijkstraFactory()
-                       {
-                           @Override
-                           public PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander expander )
-                           {
-                               return new Dijkstra( expander, InitialBranchState.NO_STATE,
-                                   CommonEvaluators.doubleCostEvaluator( "length" ) );
-                           }
-
-                           @Override
-                           public PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander expander,
-                               CostEvaluator costEvaluator )
-                           {
-                               return new Dijkstra( expander, InitialBranchState.NO_STATE, costEvaluator );
-                           }
-                       }
-            ) );
+                ) );
     }
 
     private interface DijkstraFactory
     {
-        PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander expander );
-        PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander expander, CostEvaluator costEvaluator );
+        PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander );
+        PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander, CostEvaluator<Double> costEvaluator );
     }
 }

@@ -70,7 +70,7 @@ class TestAStar extends Neo4jAlgoTestCase
             arguments( (Function<EvaluationContext,PathFinder<WeightedPath>>) context ->
                             aStar( context, allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR ) ),
             arguments( (Function<EvaluationContext,PathFinder<WeightedPath>>) context ->
-                    new TraversalAStar( context, allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR ) )
+                    new TraversalAStar<>( context, allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR ) )
         );
     }
 
@@ -265,7 +265,7 @@ class TestAStar extends Neo4jAlgoTestCase
             double initialStateValue = 0D;
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder<WeightedPath> traversalFinder =
-                    new TraversalAStar( context, expander,
+                    new TraversalAStar<>( context, expander,
                             new InitialBranchState.State( initialStateValue, initialStateValue ), doubleCostEvaluator( "length" ),
                             ESTIMATE_EVALUATOR );
             WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC );

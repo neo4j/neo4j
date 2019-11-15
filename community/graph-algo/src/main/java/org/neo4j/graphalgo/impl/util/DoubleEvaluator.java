@@ -25,18 +25,17 @@ import org.neo4j.graphdb.Relationship;
 
 public class DoubleEvaluator implements CostEvaluator<Double>
 {
-    private String costPropertyName;
+    private final String costPropertyName;
 
     public DoubleEvaluator( String costPropertyName )
     {
-        super();
         this.costPropertyName = costPropertyName;
     }
 
     @Override
     public Double getCost( Relationship relationship, Direction direction )
     {
-        Object costProp = relationship.getProperty(costPropertyName);
+        Object costProp = relationship.getProperty( costPropertyName );
         if ( costProp instanceof Number )
         {
             return ((Number) costProp).doubleValue();

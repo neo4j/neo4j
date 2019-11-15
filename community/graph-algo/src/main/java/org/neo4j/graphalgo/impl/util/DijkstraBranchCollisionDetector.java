@@ -28,15 +28,15 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.kernel.impl.util.NoneStrictMath;
+import org.neo4j.internal.helpers.MathUtil;
 
 public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDetector
 {
-    private final CostEvaluator costEvaluator;
+    private final CostEvaluator<Double> costEvaluator;
     private final MutableDouble shortestSoFar;
     private final double epsilon;
 
-    public DijkstraBranchCollisionDetector( Evaluator evaluator, CostEvaluator costEvaluator,
+    public DijkstraBranchCollisionDetector( Evaluator evaluator, CostEvaluator<Double> costEvaluator,
             MutableDouble shortestSoFar, double epsilon, Predicate<Path> pathPredicate )
     {
         super( evaluator, pathPredicate );
@@ -87,7 +87,7 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
         {
             shortestSoFar.setValue( cost );
         }
-        return NoneStrictMath.compare( cost, shortestSoFar.doubleValue(), epsilon ) <= 0;
+        return MathUtil.compare( cost, shortestSoFar.doubleValue(), epsilon ) <= 0;
 
     }
 }

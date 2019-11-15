@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Path;
+import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
 {
@@ -34,13 +34,7 @@ public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
     private Double foundWeight;
     private int foundTotal;
     private final double epsilon;
-    private final PathInterest interest;
-
-    public WeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator,
-            boolean stopAfterLowestWeight )
-    {
-        this( paths, costEvaluator, NoneStrictMath.EPSILON, stopAfterLowestWeight );
-    }
+    private final PathInterest<?> interest;
 
     public WeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator,
             double epsilon, boolean stopAfterLowestWeight )
@@ -49,8 +43,7 @@ public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
                                                                      PathInterestFactory.all( epsilon ) );
     }
 
-    public WeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator,
-            double epsilon, PathInterest interest )
+    public WeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator, double epsilon, PathInterest<?> interest )
     {
         this.paths = paths;
         this.costEvaluator = costEvaluator;
@@ -70,8 +63,7 @@ public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
             return null;
         }
         WeightedPath path = new WeightedPathImpl( costEvaluator, paths.next() );
-        if ( interest.stopAfterLowestCost() && foundWeight != null &&
-             NoneStrictMath.compare( path.weight(), foundWeight, epsilon ) > 0 )
+        if ( interest.stopAfterLowestCost() && foundWeight != null && MathUtil.compare( path.weight(), foundWeight, epsilon ) > 0 )
         {
             return null;
         }

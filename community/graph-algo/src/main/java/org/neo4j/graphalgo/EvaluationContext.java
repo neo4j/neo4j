@@ -19,9 +19,11 @@
  */
 package org.neo4j.graphalgo;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
+@PublicApi
 public interface EvaluationContext
 {
     Transaction transaction();
