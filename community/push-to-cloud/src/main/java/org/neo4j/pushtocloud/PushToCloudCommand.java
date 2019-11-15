@@ -113,7 +113,7 @@ public class PushToCloudCommand implements AdminCommand
                 }
                 else
                 {
-                    username = outsideWorld.promptLine( "Neo4j Aura database username [default: neo4j]: " );
+                    username = outsideWorld.promptLine( "Neo4j Aura database username (default: neo4j): " );
                 }
             }
             // default username to neo4j if user pressed 'enter' during the prompt
