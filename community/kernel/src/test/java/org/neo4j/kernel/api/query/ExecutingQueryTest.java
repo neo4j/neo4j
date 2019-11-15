@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
@@ -204,7 +203,7 @@ class ExecutingQueryTest
                 ClientConnectionInfo.EMBEDDED_CONNECTION, randomNamedDatabaseId(), "neo4j", "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
-                () -> lockCount, PageCursorTracer.NULL,
+                () -> lockCount, () -> 0, () -> 1,
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
@@ -227,7 +226,8 @@ class ExecutingQueryTest
                 EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount,
-                PageCursorTracer.NULL,
+                () -> 0,
+                () -> 1,
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
@@ -409,7 +409,7 @@ class ExecutingQueryTest
             FakeClock clock, FakeCpuClock cpuClock, NamedDatabaseId dbID, MapValue params )
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, dbID, "neo4j", hello_world,
-                params, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
+                params, Collections.emptyMap(), () -> lockCount, () -> 0, () -> 1, Thread.currentThread().getId(),
                 Thread.currentThread().getName(), clock, cpuClock );
     }
 

@@ -33,7 +33,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.LockTracer;
@@ -57,7 +56,6 @@ public class ExecutingQuery
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
     private final LockTracer lockTracer = this::waitForLock;
-    private final PageCursorCounters pageCursorCounters;
     private final String username;
     private final ClientConnectionInfo clientConnection;
     private final String rawQueryText;
@@ -65,6 +63,8 @@ public class ExecutingQuery
     private final long startTimeNanos;
     private final long startTimestampMillis;
     private final NamedDatabaseId namedDatabaseId;
+    private final LongSupplier hitsSupplier;
+    private final LongSupplier faultsSupplier;
     /** Uses write barrier of {@link #status}. */
     private long compilationCompletedNanos;
     private String obfuscatedQueryText;
@@ -89,10 +89,13 @@ public class ExecutingQuery
     private OptionalMemoryTracker memoryTracker = OptionalMemoryTracker.NONE;
 
     public ExecutingQuery( long queryId, ClientConnectionInfo clientConnection, NamedDatabaseId namedDatabaseId, String username, String queryText,
-            MapValue queryParameters, Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount, PageCursorCounters pageCursorCounters,
+            MapValue queryParameters, Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount,
+            LongSupplier hitsSupplier, LongSupplier faultsSupplier,
             long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock )
     {
         this.namedDatabaseId = namedDatabaseId;
+        this.hitsSupplier = hitsSupplier;
+        this.faultsSupplier = faultsSupplier;
         // Capture timestamps first
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
         this.startTimeNanos = clock.nanos();
@@ -100,7 +103,6 @@ public class ExecutingQuery
         // then continue with assigning fields
         this.queryId = queryId;
         this.clientConnection = clientConnection;
-        this.pageCursorCounters = pageCursorCounters;
         this.username = username;
 
         this.rawQueryText = queryText;
@@ -163,7 +165,7 @@ public class ExecutingQuery
         // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
         long totalActiveLocks = this.activeLockCount.getAsLong();
         // just needs to be captured at some point...
-        PageCounterValues pageCounters = new PageCounterValues( pageCursorCounters );
+        PageCounterValues pageCounters = new PageCounterValues( hitsSupplier, faultsSupplier );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
         long compilationTimeNanos = (status.isPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;

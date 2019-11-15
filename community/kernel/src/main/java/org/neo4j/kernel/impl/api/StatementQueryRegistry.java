@@ -68,8 +68,7 @@ public class StatementQueryRegistry implements QueryRegistry
         KernelTransactionImplementation transaction = statement.getTransaction();
         ExecutingQuery executingQuery =
                 new ExecutingQuery( queryId, transaction.clientInfo(), namedDatabaseId, statement.username(), queryText, queryParameters,
-                        transaction.getMetaData(), () -> statement.locks().activeLockCount(),
-                        statement.getHits(), statement.getFaults(),
+                        transaction.getMetaData(), () -> statement.locks().activeLockCount(), statement::getHits, statement::getFaults,
                         threadId, threadName, clock, cpuClockRef.get() );
         registerExecutingQuery( executingQuery );
         return executingQuery;
