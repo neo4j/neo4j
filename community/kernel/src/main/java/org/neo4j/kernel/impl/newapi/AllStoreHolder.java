@@ -224,7 +224,8 @@ public class AllStoreHolder extends Read
             {
                 if ( typeId == TokenRead.ANY_RELATIONSHIP_TYPE || rels.type() == typeId )
                 {
-                    try ( NodeCursor node = this.cursors().allocateNodeCursor() )
+                    // The user is allowed to see both start and end node, so we don't need to check here again
+                    try ( NodeCursor node = this.cursors().allocateFullAccessNodeCursor() )
                     {
                         boolean startNodeCorrect = startLabelId == TokenRead.ANY_LABEL;
                         boolean endNodeCorrect = endLabelId == TokenRead.ANY_LABEL;
