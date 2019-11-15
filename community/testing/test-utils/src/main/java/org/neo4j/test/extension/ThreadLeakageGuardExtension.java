@@ -28,7 +28,6 @@ import org.junit.platform.commons.util.ExceptionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +36,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toCollection;
 
 public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllCallback
 {
@@ -72,30 +72,35 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             return;
         }
 
+        ThreadIds beforeThreads = getStore( context ).remove( KEY, ThreadIds.class );
+
         List<String> leakedThreads = new ArrayList<>();
-
-        final ThreadNamesCollection startupThreads = getStore( context ).remove( KEY, ThreadNamesCollection.class );
         long startTime = System.currentTimeMillis();
-        for ( Thread thread : getActiveThreads() )
-        {
-            if ( !startupThreads.contains( getThreadID( thread ) ) )
-            {
-                long waitTimeForThread = MAXIMUM_WAIT_TIME_MILLIS - ( System.currentTimeMillis() - startTime );
-                if ( thread.isAlive() && waitTimeForThread > 0 )
-                {
-                    thread.join( waitTimeForThread );
-                }
 
-                if ( thread.isAlive() )
-                {
-                    leakedThreads.add( format( "%s (ID:%d, Group:%s)\n%s\n",
-                            thread.getName(),
-                            thread.getId(),
-                            getThreadGroupName( thread ),
-                            StacktraceToString( thread.getStackTrace() ) ) );
-                }
+        for ( Thread afterThread : getActiveThreads() )
+        {
+            if ( beforeThreads.contains( afterThread.getId() ) )
+            {
+                continue;
+            }
+
+            long remainingWait = MAXIMUM_WAIT_TIME_MILLIS - ( System.currentTimeMillis() - startTime );
+            if ( afterThread.isAlive() && remainingWait > 0 )
+            {
+                afterThread.join( remainingWait );
+            }
+
+            if ( afterThread.isAlive() )
+            {
+                leakedThreads.add( format( "%s (ID:%d, Group:%s)\n%s\n",
+                        afterThread.getName(),
+                        afterThread.getId(),
+                        getThreadGroupName( afterThread ),
+                        StacktraceToString( afterThread.getStackTrace() ) ) );
             }
         }
+
+        beforeThreads.clear();
 
         if ( !leakedThreads.isEmpty() )
         {
@@ -113,11 +118,12 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             return;
         }
 
-        Set<String> startupThreads = getActiveThreads().stream()
-                .map( ThreadLeakageGuardExtension::getThreadID )
-                .collect( Collectors.toCollection( ThreadNamesCollection::new ));
+        ThreadIds activeThreads = getActiveThreads()
+                .stream()
+                .map( Thread::getId )
+                .collect( toCollection( ThreadIds::new ) );
 
-        getStore( context ).put( KEY, startupThreads );
+        getStore( context ).put( KEY, activeThreads );
     }
 
     private static boolean skipThreadLeakageGuard( ExtensionContext context )
@@ -130,7 +136,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         return "concurrent".equals( System.getProperty( "junit.jupiter.execution.parallel.mode.classes.default" ) );
     }
 
-    private static Collection<Thread> getActiveThreads()
+    private static Set<Thread> getActiveThreads()
     {
         ThreadGroup root = Thread.currentThread().getThreadGroup();
         while ( root.getParent() != null )
@@ -152,11 +158,6 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
                 .filter( Thread::isAlive )
                 .filter( thread -> THREAD_NAME_FILTER.stream().noneMatch( prefix -> thread.getName().startsWith( prefix ) ) )
                 .collect( Collectors.toSet() );
-    }
-
-    private static String getThreadID( Thread thread )
-    {
-        return format( "%s-%d-%s", thread.getName(), thread.getId(), getThreadGroupName( thread ) );
     }
 
     private static String getThreadGroupName( Thread thread )
@@ -193,9 +194,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         }
     }
 
-    private static class ThreadNamesCollection extends HashSet<String>
+    private static class ThreadIds extends HashSet<Long>
     {
-
     }
 }
-
