@@ -65,8 +65,8 @@ class ExecutingQueryTest
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
     private final FakeCpuClock cpuClock = new FakeCpuClock().add( randomLong( 0x1_0000_0000L ) );
     private final PageCursorCountersStub page = new PageCursorCountersStub();
-    private final ExecutingQuery query = createExecutingquery( 1, "hello world", page, clock, cpuClock );
-    private final ExecutingQuery subQuery = createExecutingquery( 2, "goodbye world", page, clock, cpuClock );
+    private final ExecutingQuery query = createExecutingQuery( 1, "hello world", page, clock, cpuClock );
+    private final ExecutingQuery subQuery = createExecutingQuery( 2, "goodbye world", page, clock, cpuClock );
     private long lockCount;
 
     @Test
@@ -291,13 +291,13 @@ class ExecutingQueryTest
     void shouldObfuscateCreateUser()
     {
         var queryPart = "create USER foo SET PaSsWoRd ";
-        var exeQuery1 = createExecutingquery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
+        var exeQuery1 = createExecutingQuery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
         assertThat( exeQuery1.queryText(), equalTo( queryPart + "'******'" ) );
         assertThat( exeQuery1.queryParameters().size(), equalTo( 0 ) );
 
         MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
         MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
-        var exeQuery2 = createExecutingquery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
+        var exeQuery2 = createExecutingQuery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
         assertThat( exeQuery2.queryText(), equalTo( queryPart + "$password" ) );
         assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams ) );
     }
@@ -306,13 +306,13 @@ class ExecutingQueryTest
     void shouldObfuscateAlterUser()
     {
         var queryPart = "alter USER foo SET PaSsWoRd ";
-        var exeQuery = createExecutingquery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
+        var exeQuery = createExecutingQuery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
         assertThat( exeQuery.queryText(), equalTo( queryPart + "'******'" ) );
         assertThat( exeQuery.queryParameters().size(), equalTo( 0 ) );
 
         MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
         MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
-        var exeQuery2 = createExecutingquery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
+        var exeQuery2 = createExecutingQuery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
         assertThat( exeQuery2.queryText(), equalTo( queryPart + "$password" ) );
         assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams ) );
     }
@@ -321,19 +321,19 @@ class ExecutingQueryTest
     void shouldObfuscateAlterCurrentUser()
     {
         var queryPart = "alter CuRRenT USER foo SET PaSsWoRd FROM ";
-        var exeQuery = createExecutingquery( 1, queryPart + "'bar' TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
+        var exeQuery = createExecutingQuery( 1, queryPart + "'bar' TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
         assertThat( exeQuery.queryText(), equalTo( queryPart + "'******' TO '******'" ) );
         assertThat( exeQuery.queryParameters().size(), equalTo( 0 ) );
 
         MapValue params2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "bar" ), stringValue( "baz" )} );
         MapValue obfuscatedParams2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "******" ), stringValue( "******" )} );
-        var exeQuery2 = createExecutingquery( 1, queryPart + "$old TO $new", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params2 );
+        var exeQuery2 = createExecutingQuery( 1, queryPart + "$old TO $new", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params2 );
         assertThat( exeQuery2.queryText(), equalTo( queryPart + "$old TO $new" ) );
         assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams2 ) );
 
         MapValue params3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "bar" )} );
         MapValue obfuscatedParams3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "******" )} );
-        var exeQuery3 = createExecutingquery( 1, queryPart + "$old TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params3 );
+        var exeQuery3 = createExecutingQuery( 1, queryPart + "$old TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params3 );
         assertThat( exeQuery3.queryText(), equalTo( queryPart + "$old TO '******'" ) );
         assertThat( exeQuery3.queryParameters(), equalTo( obfuscatedParams3 ) );
 
@@ -399,17 +399,17 @@ class ExecutingQueryTest
         return ThreadLocalRandom.current().nextLong( bound );
     }
 
-    private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
+    private ExecutingQuery createExecutingQuery( int queryId, String hello_world, PageCursorCountersStub page,
             FakeClock clock, FakeCpuClock cpuClock )
     {
-        return createExecutingquery( queryId, hello_world, page, clock, cpuClock, randomNamedDatabaseId(), EMPTY_MAP );
+        return createExecutingQuery( queryId, hello_world, page, clock, cpuClock, randomNamedDatabaseId(), EMPTY_MAP );
     }
 
-    private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
+    private ExecutingQuery createExecutingQuery( int queryId, String hello_world, PageCursorCountersStub page,
             FakeClock clock, FakeCpuClock cpuClock, NamedDatabaseId dbID, MapValue params )
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, dbID, "neo4j", hello_world,
-                params, Collections.emptyMap(), () -> lockCount, () -> 0, () -> 1, Thread.currentThread().getId(),
+                params, Collections.emptyMap(), () -> lockCount, page::hits, page::faults, Thread.currentThread().getId(),
                 Thread.currentThread().getName(), clock, cpuClock );
     }
 

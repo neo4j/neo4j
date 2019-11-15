@@ -1211,7 +1211,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          */
         long totalTransactionPageCacheHits()
         {
-            return pageCursorTracer.faults();
+            return pageCursorTracer.hits();
         }
 
         /**
