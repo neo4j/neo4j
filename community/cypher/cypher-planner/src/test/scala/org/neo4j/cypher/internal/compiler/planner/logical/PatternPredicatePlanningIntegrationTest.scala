@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ir.{QueryGraph, RegularSinglePlannerQuery}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.symbols.CTAny
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.{MapKeys, SetExtractor}
 
@@ -218,7 +217,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     val plan = planFor(q)._2
-    println(plan)
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -643,8 +641,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case EmptyResult(
-      DeleteNode(
-                 Apply(_, RollUpApply(Eager(Argument(SetExtractor("nodes"))), _/* <- This is the subQuery */, _, _, _)), _),
+        DeleteNode(_, ContainerIndex(Variable("nodes"), ReduceExpression(_, _, NestedPlanExpression(_, _))))
       ) => ()
     }
   }
@@ -659,8 +656,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case EmptyResult(
-      DeleteRelationship(
-                 Apply(_, RollUpApply(Eager(Argument(SetExtractor("rels"))), _/* <- This is the subQuery */, _, _, _)), _),
+        DeleteRelationship(_, ContainerIndex(Variable("rels"), ReduceExpression(_, _, NestedPlanExpression(_, _))))
       ) => ()
     }
   }
@@ -675,10 +671,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case EmptyResult(
-      Apply(_,
-            DeleteExpression(
-                             RollUpApply(Eager(Argument(SetExtractor("rels"))), _/* <- This is the subQuery */, _, _, _), _
-      ))) => ()
+        Apply(_,
+          DeleteExpression(_, ContainerIndex(Variable("rels"), FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanExpression(_, _))))
+      )))) => ()
     }
   }
 
@@ -778,7 +773,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     val plan = planFor(q)._2
-    println(plan)
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -793,7 +787,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     val plan = planFor(q)._2
-    println(plan)
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -808,7 +801,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     val plan = planFor(q)._2
-    println(plan)
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -823,7 +815,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     val plan = planFor(q)._2
-    println(plan)
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
