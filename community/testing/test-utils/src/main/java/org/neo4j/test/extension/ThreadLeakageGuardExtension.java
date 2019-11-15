@@ -139,7 +139,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         }
 
         Thread[] threads;
-        int numThreads = Thread.activeCount() + 1;
+        int numThreads = root.activeCount() + 1;
         do
         {
             threads = new Thread[numThreads * 2];
