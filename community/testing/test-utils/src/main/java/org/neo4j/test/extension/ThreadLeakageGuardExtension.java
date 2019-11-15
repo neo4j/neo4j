@@ -96,7 +96,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
                         afterThread.getName(),
                         afterThread.getId(),
                         getThreadGroupName( afterThread ),
-                        StacktraceToString( afterThread.getStackTrace() ) ) );
+                        stacktraceToString( afterThread.getStackTrace() ) ) );
             }
         }
 
@@ -111,7 +111,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
     }
 
     @Override
-    public void beforeAll( ExtensionContext context ) throws Exception
+    public void beforeAll( ExtensionContext context )
     {
         if ( skipThreadLeakageGuard( context ) )
         {
@@ -164,7 +164,6 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
     {
         ThreadGroup group = thread.getThreadGroup();
         return group != null ? group.getName() : "unknown group";
-
     }
 
     private static ExtensionContext.Store getStore( ExtensionContext context )
@@ -172,7 +171,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         return context.getStore( NAMESPACE );
     }
 
-    private String StacktraceToString( StackTraceElement[] stackTraceElements )
+    private String stacktraceToString( StackTraceElement[] stackTraceElements )
     {
         stacktraceHolderException.setStackTrace( stackTraceElements );
         return ExceptionUtils.readStackTrace( stacktraceHolderException );
@@ -180,7 +179,6 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
 
     private static class StacktraceHolderException extends RuntimeException
     {
-
         @Override
         public synchronized Throwable fillInStackTrace()
         {
