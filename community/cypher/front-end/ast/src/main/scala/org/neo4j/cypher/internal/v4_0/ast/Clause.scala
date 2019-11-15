@@ -723,17 +723,20 @@ sealed trait ProjectionClause extends HorizonClause {
           checkLimit chain
           where.semanticCheck) (innerState)
 
-      // When there is an ORDER BY or a WHERE, but no DISTINCT or aggregation, these 2 clauses have a special scope
-      // TODO ...
+      // The two clauses ORDER BY and WHERE, following a WITH clause where there is no DISTINCT or aggregation, have a special scope such that they
+      // can see both variables from before the WITH and variables introduced by the WITH
+      // (SKIP and LIMIT clauses are not allowed to access variables anyway, so they do not need to be included in this condition even when they are standalone)
       val specialScopeForSubClausesNeeded = (orderBy.isDefined || where.isDefined) && !(returnItems.containsAggregate || distinct)
 
       if (specialScopeForSubClausesNeeded) {
-        // Special scope for ORDER BY, SKIP, LIMIT and WHERE
+        // Special scope for ORDER BY and WHERE (SKIP and LIMIT are also checked in isolated scopes)
         val stateForSubClauses = state.newChildScope
 
         val SemanticCheckResult(nextState, errors1) = runChecks(stateForSubClauses)
 
-        // For the RETURN and onwards
+        // New sibling scope for the WITH/RETURN clause itself and onwards.
+        // Re-declare projected variables in the new scope since the sub-scope is discarded
+        // (We do not need to check warnOnAccessToRetrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
         val returnState = nextState.popScope.newSiblingScope
         val SemanticCheckResult(finalState, errors2) = returnItems.declareVariables(state.currentScope.scope)(returnState)
 
