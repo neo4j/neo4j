@@ -33,7 +33,6 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -193,15 +192,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext;
-        try
-        {
-            securityContext = loginContext.authorize( tokenHoldersIdLookup, namedDatabaseId.name() );
-        }
-        catch ( KernelException ke )
-        {
-            throw new TransactionFailureException( "Fail to start new transaction.", ke );
-        }
+        SecurityContext securityContext = loginContext.authorize( tokenHoldersIdLookup, namedDatabaseId.name() );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )

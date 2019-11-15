@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.token.TokenHolders;
 
@@ -33,20 +32,20 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
     }
 
     @Override
-    public int getOrCreatePropertyKeyId( String name ) throws KernelException
+    public int getPropertyKeyId( String name )
     {
-        return tokens.propertyKeyTokens().getOrCreateId( name );
+        return tokens.propertyKeyTokens().getIdByName( name );
     }
 
     @Override
-    public int getOrCreateLabelId( String name ) throws KernelException
+    public int getLabelId( String name )
     {
-        return tokens.labelTokens().getOrCreateId( name );
+        return tokens.labelTokens().getIdByName( name );
     }
 
     @Override
-    public int getOrCreateRelTypeId( String name ) throws KernelException
+    public int getRelTypeId( String name )
     {
-        return tokens.relationshipTypeTokens().getOrCreateId( name );
+        return tokens.relationshipTypeTokens().getIdByName( name );
     }
 }

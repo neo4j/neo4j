@@ -35,8 +35,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -159,16 +157,9 @@ class KernelTransactionTestBase
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
-        try
-        {
-            SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
-            tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.explicit,
-                    securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
-        }
-        catch ( KernelException e )
-        {
-            throw new TransactionFailureException( "Failed to start transaction.", e );
-        }
+        SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
+        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.explicit,
+                securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
         return tx;
     }
 

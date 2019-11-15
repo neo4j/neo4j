@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import org.neo4j.exceptions.KernelException;
-
 /**
  * The LoginContext hold the executing authenticated user (subject).
  * By calling {@link #authorize(IdLookup, String)} the user is also authorized, and a full SecurityContext is returned,
@@ -40,7 +38,7 @@ public interface LoginContext
      * @param dbName the name of the database the user should be authorized against
      * @return the security context
      */
-    SecurityContext authorize( IdLookup idLookup, String dbName ) throws KernelException;
+    SecurityContext authorize( IdLookup idLookup, String dbName );
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
@@ -59,28 +57,28 @@ public interface LoginContext
 
     interface IdLookup
     {
-        int getOrCreatePropertyKeyId( String name ) throws KernelException;
+        int getPropertyKeyId( String name );
 
-        int getOrCreateLabelId( String name ) throws KernelException;
+        int getLabelId( String name );
 
-        int getOrCreateRelTypeId( String name ) throws KernelException;
+        int getRelTypeId( String name );
 
         IdLookup EMPTY = new IdLookup()
         {
             @Override
-            public int getOrCreatePropertyKeyId( String name )
+            public int getPropertyKeyId( String name )
             {
                 return -1;
             }
 
             @Override
-            public int getOrCreateLabelId( String name )
+            public int getLabelId( String name )
             {
                 return -1;
             }
 
             @Override
-            public int getOrCreateRelTypeId( String name )
+            public int getRelTypeId( String name )
             {
                 return -1;
             }
