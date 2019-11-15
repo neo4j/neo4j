@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 import org.neo4j.cypher.{CypherExecutionMode, CypherVersion}
 import org.neo4j.exceptions.{Neo4jException, ParameterNotFoundException, ParameterWrongTypeException}
 import org.neo4j.graphdb.{Notification, QueryExecutionType}
-import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
@@ -117,14 +116,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalPlan: LogicalPlan = resolveParameterForManagementCommands(planState.logicalPlan)
     val queryType = getQueryType(planState)
 
-    val runtimeContext: CONTEXT = contextManager.create(logicalPlanResult.plannerContext.planContext,
-                                                        transactionalContext.kernelTransaction().schemaRead(),
-                                                        logicalPlanResult.plannerContext.clock,
-                                                        logicalPlanResult.plannerContext.debugOptions,
-                                                        query.options.useCompiledExpressions,
-                                                        query.options.materializedEntitiesMode,
-                                                        query.options.operatorEngine,
-                                                        query.options.interpretedPipesFallback)
+    val runtimeContext = contextManager.create(logicalPlanResult.plannerContext.planContext,
+                                               transactionalContext.kernelTransaction().schemaRead(),
+                                               logicalPlanResult.plannerContext.clock,
+                                               logicalPlanResult.plannerContext.debugOptions,
+                                               query.options.useCompiledExpressions,
+                                               query.options.materializedEntitiesMode,
+                                               query.options.operatorEngine,
+                                               query.options.interpretedPipesFallback)
 
     val logicalQuery = LogicalQuery(logicalPlan,
                                     planState.queryText,

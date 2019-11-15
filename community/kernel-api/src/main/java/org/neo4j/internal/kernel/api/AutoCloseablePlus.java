@@ -41,7 +41,14 @@ public interface AutoCloseablePlus extends AutoCloseable
 
     CloseListener getCloseListener();
 
+    /**
+     * Assigns a token to the AutoCloseable that can be used to as an index for faster lookups.
+     * @param token the token to assign to the AutoCloseable
+     */
     void setToken( int token );
 
+    /**
+     * Retrieves the token associated with the AutoCloseable
+     */
     int getToken();
 }
