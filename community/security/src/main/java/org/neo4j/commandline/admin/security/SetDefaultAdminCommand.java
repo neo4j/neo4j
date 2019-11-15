@@ -50,7 +50,7 @@ public class SetDefaultAdminCommand extends AbstractCommand
     @Parameters
     private String username;
 
-    SetDefaultAdminCommand( ExecutionContext ctx )
+    public SetDefaultAdminCommand( ExecutionContext ctx )
     {
         super( ctx );
     }
