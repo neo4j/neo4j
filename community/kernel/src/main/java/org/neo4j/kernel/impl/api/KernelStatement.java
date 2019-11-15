@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 
+import static java.lang.Math.subtractExact;
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.toggle;
@@ -84,6 +85,8 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
     private final ClockContext clockContext;
     private final VersionContextSupplier versionContextSupplier;
+    private long initialStatementHits;
+    private long initialStatementFaults;
 
     public KernelStatement( KernelTransactionImplementation transaction, LockTracer systemLockTracer, ClockContext clockContext,
             VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId )
@@ -146,9 +149,14 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         return tracer == null ? systemLockTracer : systemLockTracer.combine( tracer );
     }
 
-    public PageCursorTracer getPageCursorTracer()
+    public long getHits()
     {
-        return pageCursorTracer;
+        return subtractExact( pageCursorTracer.hits(), initialStatementHits );
+    }
+
+    public long getFaults()
+    {
+        return subtractExact( pageCursorTracer.faults(), initialStatementFaults );
     }
 
     public final void acquire()
@@ -156,6 +164,8 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         if ( referenceCount++ == 0 )
         {
             clockContext.initializeStatement();
+            this.initialStatementHits = pageCursorTracer.hits();
+            this.initialStatementFaults = pageCursorTracer.faults();
         }
         recordOpenCloseMethods();
     }
@@ -178,7 +188,6 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
                 throw new StatementNotClosedException( message, statementOpenCloseCalls );
             }
         }
-        pageCursorTracer.reportEvents();
     }
 
     private static String getStatementNotClosedMessage( int leakedStatements )

@@ -808,14 +808,14 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         private long iteration = 1;
 
         @Override
-        public long accumulatedHits()
+        public long hits()
         {
             iteration++;
             return iteration * 2;
         }
 
         @Override
-        public long accumulatedFaults()
+        public long faults()
         {
             return iteration;
         }

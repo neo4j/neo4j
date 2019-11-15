@@ -199,6 +199,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * instances are pooled.
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
+    private PageCursorTracer pageCursorTracer;
 
     public KernelTransactionImplementation( Config config,
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
@@ -281,7 +282,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
-        PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
+        this.pageCursorTracer = cursorTracerSupplier.get();
         this.statistics.init( currentThread().getId(), pageCursorTracer );
         this.currentStatement.initialize( statementLocks, pageCursorTracer, startTimeMillis );
         this.operations.initialize();
@@ -388,6 +389,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public boolean isSchemaTransaction()
     {
         return writeState == TransactionWriteState.SCHEMA;
+    }
+
+    @Override
+    public PageCursorTracer pageCursorTracer()
+    {
+        return pageCursorTracer;
     }
 
     private boolean markForTerminationIfPossible( Status reason )
@@ -1006,6 +1013,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             statistics.reset();
             releaseStatementResources();
             operations.release();
+            pageCursorTracer.reportEvents();
             initializationTrace = null;
             pool.release( this );
         }
@@ -1203,7 +1211,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          */
         long totalTransactionPageCacheHits()
         {
-            return pageCursorTracer.accumulatedHits();
+            return pageCursorTracer.faults();
         }
 
         /**
@@ -1212,7 +1220,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          */
         long totalTransactionPageCacheFaults()
         {
-            return pageCursorTracer.accumulatedFaults();
+            return pageCursorTracer.faults();
         }
 
         /**

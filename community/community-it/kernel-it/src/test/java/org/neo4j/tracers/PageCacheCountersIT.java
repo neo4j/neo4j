@@ -42,7 +42,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.Cancelable;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -186,18 +185,13 @@ class PageCacheCountersIT
             ThreadLocalRandom localRandom = ThreadLocalRandom.current();
             while ( !canceled )
             {
-                PageCursorCounters pageCursorCounters;
                 try ( Transaction transaction = db.beginTx() )
                 {
-                    try ( KernelStatement kernelStatement = (KernelStatement) ((InternalTransaction) transaction).kernelTransaction().acquireStatement() )
-                    {
-                        pageCursorCounters = kernelStatement.getPageCursorTracer();
-                    }
                     Node node = transaction.createNode();
                     node.setProperty( "name", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );
                     node.setProperty( "surname", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );
                     node.setProperty( "age", localRandom.nextInt( 100 ) );
-                    storeCounters( pageCursorCounters );
+                    storeCounters( ((InternalTransaction) transaction).kernelTransaction().pageCursorTracer() );
                     transaction.commit();
                 }
             }

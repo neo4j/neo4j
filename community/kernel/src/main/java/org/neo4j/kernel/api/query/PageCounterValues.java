@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
-
 class PageCounterValues
 {
     final long hits;
     final long faults;
 
-    PageCounterValues( PageCursorCounters page )
+    PageCounterValues( long hits, long faults )
     {
-        this.hits = page.hits();
-        this.faults = page.faults();
+        this.hits = hits;
+        this.faults = faults;
     }
 }
