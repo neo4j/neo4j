@@ -250,18 +250,72 @@ class CentralJobSchedulerTest
 
     @Test
     @Timeout( 60 )
-    void scheduledTasksThatThrowsDoesNotPropagateException() throws InterruptedException
+    void scheduledTasksThatThrowsPropagateLastException() throws InterruptedException
     {
         life.start();
 
         RuntimeException boom = new RuntimeException( "boom" );
-        CountDownLatch startCounter = new CountDownLatch( 10 );
-        CountDownLatch executionStart = new CountDownLatch( 1 );
+        CountDownLatch latch = new CountDownLatch( 1 );
+        AtomicBoolean throwException = new AtomicBoolean();
         AtomicBoolean canceled = new AtomicBoolean();
         Runnable job = () ->
         {
-            startCounter.countDown();
-            throw boom;
+            try
+            {
+                if ( throwException.get() )
+                {
+                    latch.countDown();
+                    throw boom;
+                }
+            }
+            finally
+            {
+                throwException.set( true );
+            }
+        };
+
+        JobHandle handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
+        handle.registerCancelListener( () -> canceled.set( true ) );
+
+        latch.await();
+
+        handle.cancel();
+
+        assertTrue( canceled.get() );
+        var e = assertThrows( Exception.class, handle::waitTermination );
+        if ( e instanceof ExecutionException )
+        {
+            assertThat( e.getCause(), is( boom ) );
+        }
+        else
+        {
+            assertThat( e, instanceOf( CancellationException.class ) );
+        }
+    }
+
+    @Test
+    @Timeout( 60 )
+    void scheduledTasksThatThrowsPropagateDoNotPropagateExceptionAfterSubsequentExecution() throws InterruptedException
+    {
+        life.start();
+
+        RuntimeException boom = new RuntimeException( "boom" );
+        AtomicBoolean throwException = new AtomicBoolean();
+        CountDownLatch startCounter = new CountDownLatch( 10 );
+        AtomicBoolean canceled = new AtomicBoolean();
+        Runnable job = () ->
+        {
+            try
+            {
+                if ( throwException.compareAndSet( false, true ) )
+                {
+                    throw boom;
+                }
+            }
+            finally
+            {
+                startCounter.countDown();
+            }
         };
 
         JobHandle handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
@@ -272,8 +326,8 @@ class CentralJobSchedulerTest
         handle.cancel();
 
         assertTrue( canceled.get() );
-        ExecutionException e = assertThrows( ExecutionException.class, handle::waitTermination );
-        assertThat( e.getCause(), is( boom ) );
+
+        assertThrows( CancellationException.class, handle::waitTermination );
     }
 
     @Test

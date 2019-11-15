@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -83,6 +84,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
             try
             {
                 task.run();
+                lastException = null;
             }
             catch ( Throwable e )
             {
@@ -138,21 +140,34 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     public void waitTermination() throws ExecutionException, InterruptedException
     {
         handleRelease.await();
-        JobHandle handleDelegate = this.latestHandle;
-        if ( handleDelegate != null )
+        RuntimeException runtimeException = null;
+        try
         {
-            handleDelegate.waitTermination();
+            JobHandle handleDelegate = this.latestHandle;
+            if ( handleDelegate != null )
+            {
+                handleDelegate.waitTermination();
+            }
+        }
+        catch ( RuntimeException t )
+        {
+            runtimeException = t;
         }
         if ( get() == FAILED )
         {
             Throwable exception = this.lastException;
             if ( exception != null )
             {
-                throw new ExecutionException( exception );
+                var executionException = new ExecutionException( exception );
+                if ( runtimeException != null )
+                {
+                    executionException.addSuppressed( runtimeException );
+                }
+                throw executionException;
             }
             else
             {
-                throw new CancellationException();
+                throw Exceptions.chain( new CancellationException(), runtimeException );
             }
         }
     }
