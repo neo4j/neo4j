@@ -44,6 +44,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
+import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.CONTEXT;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.DATABASE;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.SERVERS;
@@ -77,7 +79,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
     public final RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         var databaseId = extractDatabaseId( input );
-        assertDatabaseExists( databaseId );
+        assertDatabaseOperational( databaseId );
 
         var routingContext = extractRoutingContext( input );
 
@@ -113,23 +115,27 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .orElseThrow( () -> databaseNotFoundException( databaseName ) );
     }
 
-    private void assertDatabaseExists( DatabaseId databaseId ) throws ProcedureException
+    private void assertDatabaseOperational( DatabaseId databaseId ) throws ProcedureException
     {
-        var databaseExists = databaseManager.getDatabaseContext( databaseId )
-                .map( ctx -> ctx.database().isStarted() )
-                .orElse( false );
-
-        if ( !databaseExists )
+        var databaseContext = databaseManager.getDatabaseContext( databaseId );
+        if ( databaseContext.isEmpty() )
         {
-            throw databaseNotFoundException( databaseId );
+            throw databaseNotFoundException( databaseId.name() );
+        }
+
+        var db = databaseContext.get().database();
+        if ( !db.getDatabaseAvailabilityGuard().isAvailable() )
+        {
+            throw databaseUnavailableException( databaseId.name() );
         }
     }
 
-    private static void assertRoutingResultNotEmpty( RoutingResult result, DatabaseId databaseId ) throws ProcedureException
+    private void assertRoutingResultNotEmpty( RoutingResult result, DatabaseId databaseId ) throws ProcedureException
     {
         if ( result.containsNoEndpoints() )
         {
-            throw databaseNotFoundException( databaseId );
+            assertDatabaseOperational( databaseId );
+            throw new ProcedureException( ProcedureCallFailed, "Routing table for database " + databaseId.name() + " is empty" );
         }
     }
 
@@ -163,14 +169,15 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .build();
     }
 
-    private static ProcedureException databaseNotFoundException( DatabaseId databaseId )
-    {
-        return databaseNotFoundException( databaseId.name() );
-    }
-
     private static ProcedureException databaseNotFoundException( String databaseName )
     {
         return new ProcedureException( DatabaseNotFound,
                 "Unable to get a routing table for database '" + databaseName + "' because this database does not exist" );
+    }
+
+    private static ProcedureException databaseUnavailableException( String databaseName )
+    {
+        return new ProcedureException( DatabaseUnavailable,
+                "Unable to get a routing table for database '" + databaseName + "' because this database is unavailable" );
     }
 }

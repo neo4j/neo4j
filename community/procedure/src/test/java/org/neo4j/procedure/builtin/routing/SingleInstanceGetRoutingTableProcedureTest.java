@@ -34,7 +34,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -55,6 +55,8 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller.DEFAULT_NAMESPACE;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -136,7 +138,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var input = new AnyValue[]{MapValue.EMPTY, stringValue( UNKNOWN_ID.name() )};
 
         var error = assertThrows( ProcedureException.class, () -> procedure.apply( null, input, null ) );
-        assertEquals( Status.Database.DatabaseNotFound, error.status() );
+        assertEquals( DatabaseNotFound, error.status() );
     }
 
     @Test
@@ -150,7 +152,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var input = new AnyValue[]{MapValue.EMPTY, stringValue( ID.name() )};
 
         var error = assertThrows( ProcedureException.class, () -> procedure.apply( null, input, null ) );
-        assertEquals( Status.Database.DatabaseNotFound, error.status() );
+        assertEquals( DatabaseUnavailable, error.status() );
     }
 
     protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
@@ -186,16 +188,20 @@ public class SingleInstanceGetRoutingTableProcedureTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private static DatabaseManager<DatabaseContext> databaseManagerMock( Config config, boolean databaseStarted )
+    private static DatabaseManager<DatabaseContext> databaseManagerMock( Config config, boolean databaseAvailable )
     {
         var databaseManager = mock( DatabaseManager.class );
         var databaseContext = mock( DatabaseContext.class );
         var database = mock( Database.class );
+        var availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+
         when( databaseContext.database() ).thenReturn( database );
         when( database.getConfig() ).thenReturn( config );
-        when( database.isStarted() ).thenReturn( databaseStarted );
+        when( database.getDatabaseAvailabilityGuard() ).thenReturn( availabilityGuard );
+        when( availabilityGuard.isAvailable() ).thenReturn( databaseAvailable );
         when( databaseManager.getDatabaseContext( ID ) ).thenReturn( Optional.of( databaseContext ) );
         when( databaseManager.databaseIdRepository() ).thenReturn( databaseIdRepository );
+
         return databaseManager;
     }
 }
