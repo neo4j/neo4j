@@ -31,6 +31,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.CRC32;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -122,7 +123,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
             triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), boltUri, source, crc32Sum, bearerTokenHeader );
 
-            doStatusPolling( verbose, consoleURL, bearerToken );
+            doStatusPolling( verbose, consoleURL, bearerToken, sourceLength );
 
             deleteDumpFile( verbose, source );
         }
@@ -137,15 +138,23 @@ public class HttpCopier implements PushToCloudCommand.Copier
         source.toFile().delete();
     }
 
-    private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken ) throws IOException, InterruptedException, CommandFailed
+    private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken, long fileSize )
+            throws IOException, InterruptedException, CommandFailed
     {
         outsideWorld.stdOutLine( "We have received your export and it is currently being loaded into your cloud instance." );
         outsideWorld.stdOutLine( "You can wait here, or abort this command and head over to the console to be notified of when your database is running." );
         String bearerTokenHeader = "Bearer " + bearerToken;
         ProgressTrackingOutputStream.Progress statusProgress =
-                new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Import status", 3L ), 0 );
+                new ProgressTrackingOutputStream.Progress(
+                        progressListenerFactory.create( "Import progress (estimated)", 100L ), 0 );
         boolean firstRunning = true;
-        long importStartedTimeout = System.currentTimeMillis() + 90 * 1000; // timeout to switch from first running to loading = 1.5 minute
+        long importStarted = System.currentTimeMillis();
+        double importTimeEstimateMinutes = 5 + (3 * bytesToGibibytes( fileSize ));
+        long importTimeEstimateMillis = TimeUnit.SECONDS.toMillis( (long) (importTimeEstimateMinutes * 60) );
+        long importStartedTimeout = importStarted + 90 * 1000; // timeout to switch from first running to loading = 1.5 minute
+        debug( verbose, format(
+                "Rough guess for how long dump file import will take: %.0f minutes; file size is %.1f GB (%d bytes)",
+                importTimeEstimateMinutes, bytesToGibibytes( fileSize ), fileSize ) );
         while ( !statusProgress.isDone() )
         {
             String status = getDatabaseStatus( verbose, safeUrl( consoleURL + "/import/status" ), bearerTokenHeader );
@@ -158,12 +167,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     if ( !firstRunning )
                     {
                         statusProgress.rewindTo( 0 );
-                        statusProgress.add( 3 );
+                        statusProgress.add( 100 );
                         statusProgress.done();
                     }
                     else
                     {
-                        boolean passedStartImportTimeout = System.currentTimeMillis() > importStartedTimeout;
+                        boolean passedStartImportTimeout = importStarted > importStartedTimeout;
                         if ( passedStartImportTimeout )
                         {
                             throw new CommandFailed( "We're sorry, it couldn't be detected that the import was started, " +
@@ -171,27 +180,41 @@ public class HttpCopier implements PushToCloudCommand.Copier
                         }
                     }
                     break;
-                case "loading":
-                    firstRunning = false;
-                    statusProgress.rewindTo( 0 );
-                    statusProgress.add( 1 );
-                    break;
-                case "restoring":
-                    firstRunning = false;
-                    statusProgress.rewindTo( 0 );
-                    statusProgress.add( 2 );
-                    break;
                 case "loading failed":
                     throw new CommandFailed( "We're sorry, something has gone wrong. We did not recognize the file you uploaded as a valid Neo4j dump file. " +
                             "Please check the file and try again. If you have received this error after confirming the type of file being uploaded," +
                             "please open a support case." );
                 default:
-                    throw new CommandFailed( String.format( "We're sorry, something has failed during the loading of your database. " +
-                            "Please try again and if this problem persists, please open up a support case. Database status: %s", status ) );
+                    firstRunning = false;
+                    long elapsed = System.currentTimeMillis() - importStarted;
+                    statusProgress.rewindTo( 0 );
+                    statusProgress.add( importStatusProgressEstimate(status, elapsed, importTimeEstimateMillis ) );
+                    break;
             }
             sleeper.sleep( 2000 );
         }
         outsideWorld.stdOutLine( "Your data was successfully pushed to cloud and is now running." );
+        long importDurationMillis = System.currentTimeMillis() - importStarted;
+        debug( verbose, format( "Import took about %d minutes to complete excluding upload (%d ms)",
+                TimeUnit.MILLISECONDS.toMinutes( importDurationMillis ), importDurationMillis ) );
+    }
+
+    int importStatusProgressEstimate( String databaseStatus, long elapsed, long importTimeEstimateMillis )
+            throws CommandFailed
+    {
+        switch ( databaseStatus )
+        {
+        case "running":
+            return 0;
+        case "loading":
+            int loadProgressEstimation = (int) Math.min( 98, (elapsed * 98) / importTimeEstimateMillis );
+            return 1 + loadProgressEstimation;
+        default:
+            throw new CommandFailed( String.format(
+                    "We're sorry, something has failed during the loading of your database. "
+                            + "Please try again and if this problem persists, please open up a support case. Database status: %s",
+                    databaseStatus ) );
+        }
     }
 
     @Override
@@ -656,12 +679,17 @@ public class HttpCopier implements PushToCloudCommand.Copier
         return new CommandFailed(
                 format( "There is insufficient space in your Neo4j Aura instance to upload your data. "
                         + "Please go to the Neo4j Aura Console to increase the size of your database "
-                        + "with at least %.1f GB of storage.", fileSize / (double) (1024 * 1024 * 1024) ) );
+                        + "with at least %.1f GB of storage.", bytesToGibibytes( fileSize ) ) );
     }
 
     private CommandFailed unexpectedResponse( boolean verbose, HttpURLConnection connection, String requestDescription ) throws IOException
     {
         return errorResponse( verbose, connection, format( "Unexpected response code %d from request: %s", connection.getResponseCode(), requestDescription ) );
+    }
+
+    private double bytesToGibibytes( long sizeInBytes )
+    {
+        return sizeInBytes / (double) (1024 * 1024 * 1024);
     }
 
     // Simple structs for mapping JSON to objects, used by the jackson parser which Neo4j happens to depend on anyway

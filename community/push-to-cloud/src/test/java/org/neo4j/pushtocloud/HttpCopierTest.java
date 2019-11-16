@@ -42,7 +42,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
-import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
@@ -117,8 +116,8 @@ public class HttpCopierTest
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) ) );
         verify( postRequestedFor( urlEqualTo( "/import/upload-complete" ) ) );
         assertTrue( progressListener.doneCalled );
-        // we need to add 3 to the progress listener because of the database phases
-        assertEquals( sourceLength + 3, progressListener.progress );
+        // we need to add 100 extra ticks to the progress listener because of the database phases
+        assertEquals( sourceLength + 100, progressListener.progress );
         // assert dump was deleted
         assertEquals( false, source.toFile().exists() );
     }
@@ -309,11 +308,12 @@ public class HttpCopierTest
     @Test
     public void shouldHandleConflictResponseFromInitiateUploadTargetAndContinueOnUserConsent() throws IOException, CommandFailed
     {
+        HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
         ControlledOutsideWorld outsideWorld = new ControlledOutsideWorld( fs );
         outsideWorld.withPromptResponse( "my-username" ); // prompt for username
         outsideWorld.withPasswordResponse( "pass".toCharArray() ); // prompt for password
         outsideWorld.withPromptResponse( "y" ); // prompt for consent to overwrite db
-        HttpCopier copier = new HttpCopier( outsideWorld );
+        HttpCopier copier = new HttpCopier( outsideWorld, sleeper, NO_OP_PROGRESS );
         Path source = createDump();
         long sourceLength = fs.getFileSize( source.toFile() );
         String authorizationTokenResponse = "abc";
@@ -438,8 +438,8 @@ public class HttpCopierTest
                 .withHeader( "Content-Length", equalTo( "0" ) )
                 .withHeader( "Content-Range", equalTo( "bytes */" + sourceLength ) ) );
         assertTrue( progressListener.doneCalled );
-        // we need to add 3 to the progress listener because of the database phases
-        assertEquals( sourceLength + 3, progressListener.progress );
+        // we need to add 100 extra ticks to the progress listener because of the database phases
+        assertEquals( sourceLength + 100, progressListener.progress );
     }
 
     @Test
@@ -522,6 +522,28 @@ public class HttpCopierTest
         assertThrows( CommandFailed.class, containsString( "Upload failed after numerous attempts" ),
                 () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
         Mockito.verify( sleeper, atLeast( 30 ) ).sleep( anyLong() );
+    }
+
+    @Test
+    public void shouldEstimateImportProgressBased() throws IOException, InterruptedException, CommandFailed
+    {
+        // given
+        HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), sleeper, NO_OP_PROGRESS );
+        // when/then
+        assertEquals( 0, copier.importStatusProgressEstimate( "running", 1234500000L, 6789000000L ) );
+        assertEquals( 1, copier.importStatusProgressEstimate( "loading", 0, 1234567890 ) );
+        // ...and when/then
+        assertEquals( 2, copier.importStatusProgressEstimate( "loading", 1, 98 ) );
+        assertEquals( 50, copier.importStatusProgressEstimate( "loading", 49, 98 ) );
+        assertEquals( 98, copier.importStatusProgressEstimate( "loading", 97, 98 ) );
+        assertEquals( 99, copier.importStatusProgressEstimate( "loading", 98, 98 ) );
+        assertEquals( 99, copier.importStatusProgressEstimate( "loading", 99, 98 ) );
+        assertEquals( 99, copier.importStatusProgressEstimate( "loading", 100, 98 ) );
+        // ...and when/then
+        assertEquals( 1, copier.importStatusProgressEstimate( "loading", 1, 196 ) );
+        assertEquals( 2, copier.importStatusProgressEstimate( "loading", 2, 196 ) );
+        assertEquals( 50, copier.importStatusProgressEstimate( "loading", 98, 196 ) );
     }
 
     private MappingBuilder authenticationRequest( boolean userConsent )
