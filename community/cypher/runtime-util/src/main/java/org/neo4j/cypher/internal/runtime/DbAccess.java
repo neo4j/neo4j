@@ -51,6 +51,8 @@ public interface DbAccess extends EntityById
 
     int relationshipType( String name );
 
+    String relationshipTypeName( int type );
+
     boolean nodeHasProperty( long node,
             int property,
             NodeCursor nodeCursor,

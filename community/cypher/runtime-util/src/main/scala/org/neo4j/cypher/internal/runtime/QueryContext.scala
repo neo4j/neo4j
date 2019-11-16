@@ -203,6 +203,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   override def relationshipType(name: String): Int = transactionalContext.tokenRead.relationshipType(name)
 
+  override def relationshipTypeName(token: Int): String = transactionalContext.tokenRead.relationshipTypeName(token)
+
   override def nodeProperty(node: Long,
                             property: Int,
                             nodeCursor: NodeCursor,
