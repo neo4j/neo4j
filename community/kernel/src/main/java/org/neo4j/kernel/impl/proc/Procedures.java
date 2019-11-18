@@ -177,7 +177,7 @@ public class Procedures extends LifecycleAdapter
      */
     public void registerBuiltInFunctions( Class<?> func ) throws KernelException
     {
-        for ( CallableUserFunction function : compiler.withoutNamingRestrictions().compileFunction( func ) )
+        for ( CallableUserFunction function : compiler.withoutNamingRestrictions().compileFunction( func, true ) )
         {
             register( function, false );
         }
@@ -219,7 +219,7 @@ public class Procedures extends LifecycleAdapter
      */
     public void registerFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
     {
-        for ( CallableUserFunction function : compiler.compileFunction( func ) )
+        for ( CallableUserFunction function : compiler.compileFunction( func, false ) )
         {
             register( function, overrideCurrentImplementation );
         }

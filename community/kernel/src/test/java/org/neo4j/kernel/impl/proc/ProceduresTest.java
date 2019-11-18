@@ -27,14 +27,19 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
+import org.neo4j.kernel.builtinprocs.BuiltInFunctions;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
@@ -42,7 +47,10 @@ import org.neo4j.procedure.Procedure;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
@@ -221,6 +229,21 @@ public class ProceduresTest
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
         procs.registerProcedure( ProcedureWithDBMSConflictAnnotation.class );
+    }
+
+    @Test
+    public void shouldRegisterNonWhitelistedBuiltinFunctions() throws KernelException
+    {
+        Procedures procedures = new Procedures( null, null, null, NullLog.getInstance(),
+                                                new ProcedureConfig( Config.defaults( procedure_whitelist, "" ) ) );
+
+        QualifiedName functionName = new QualifiedName( new String[0], "randomUUID" );
+
+        assertNull( procedures.function( functionName ) );
+
+        procedures.registerBuiltInFunctions( BuiltInFunctions.class );
+
+        assertNotNull( procedures.function( functionName ) );
     }
 
     public static class ProcedureWithReadConflictAnnotation
