@@ -60,7 +60,10 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.{MapKeys, Set
 
   test("should get the right scope for pattern comprehensions in ORDER BY") {
     // The important thing for this test is "RETURN u.id" instead of "RETURN u".
-    // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression.
+    // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression
+
+    val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None,None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,OUTGOING,false,None),NodePattern(Some(Variable(u2)),List(LabelName(User)),None,None))),None,Property(Variable(u2),PropertyKeyName(id))))"
+
     planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")._2 should equal(
       Projection(
         Sort(
@@ -88,11 +91,11 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.{MapKeys, Set
               "  FRESHID41",
               Set("u")
             ),
-            Map("  FRESHID36" -> function("size", varFor("  FRESHID42")))
+            Map(patternComprehensionExpressionKeyString -> function("size", Variable("  FRESHID42")(pos)))
           ),
-          Seq(Ascending("  FRESHID36"))
+          Seq(Ascending(patternComprehensionExpressionKeyString))
         ),
-        Map("u.id" -> prop("u", "id"))
+        Map("u.id" -> cachedNodeProp("u", "id"))
       )
     )
   }
