@@ -132,7 +132,26 @@ public class AllStoreHolder extends Read
                 return true;
             }
         }
-        return storageReader.nodeExists( reference );
+
+        AccessMode mode = ktx.securityContext().mode();
+        boolean existsInNodeStore = storageReader.nodeExists( reference );
+
+        if ( mode.allowsTraverseAllLabels() )
+        {
+            return existsInNodeStore;
+        }
+        else if ( !existsInNodeStore )
+        {
+            return false;
+        }
+        else
+        {
+            try ( DefaultNodeCursor node = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
+            {
+                ktx.dataRead().singleNode( reference, node );
+                return node.next();
+            }
+        }
     }
 
     @Override
