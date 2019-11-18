@@ -20,6 +20,9 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
+
+import wiremock.com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
@@ -34,6 +37,7 @@ import java.nio.file.Path;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.pushtocloud.HttpCopier.ErrorBody;
 import org.neo4j.test.rule.TestDirectory;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -61,6 +65,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -68,7 +73,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_EXCEEDS_MAX_SIZE;
+import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_UNSUPPORTED_INDEXES;
 import static org.neo4j.pushtocloud.HttpCopier.HTTP_RESUME_INCOMPLETE;
+import static org.neo4j.pushtocloud.HttpCopier.HTTP_UNPROCESSABLE_ENTITY;
+import static org.neo4j.pushtocloud.HttpCopier.StatusBody;
 
 public class HttpCopierTest
 {
@@ -306,6 +315,122 @@ public class HttpCopierTest
     }
 
     @Test
+    public void shouldHandleValidationFailureResponseFromInitiateUploadTarget() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        ObjectMapper mapper = new ObjectMapper();
+        Path source = createDump();
+        String token = "abc";
+        String errorMessage = "Dump file rejected for some reason.";
+        String errorReason = "some-kind-of-error-reason-code-goes-here";
+        String errorUrl = "https://example.com/heres-how-to-fix-this-error";
+        ErrorBody errorBody = new ErrorBody( errorMessage, errorReason, errorUrl );
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( token )
+                .willReturn( aResponse()
+                        .withBody( mapper.writeValueAsString( errorBody ) )
+                        .withHeader( "Content-Type", "application/json" )
+                        .withStatus( HTTP_UNPROCESSABLE_ENTITY ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class,
+                allOf( containsString( errorMessage ), containsString( errorUrl ), not( containsString( errorReason ) ),
+                        not( containsString( ".." ) ) ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleValidationFailureResponseWithoutUrlFromInitiateUploadTarget() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        ObjectMapper mapper = new ObjectMapper();
+        Path source = createDump();
+        String token = "abc";
+        String errorMessage = "Something bad happened, but we don't have a URL to share with more information.";
+        String errorReason = "the-bad-thing-happened";
+        ErrorBody errorBody = new ErrorBody( errorMessage, errorReason, null );
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( token )
+                .willReturn( aResponse()
+                        .withBody( mapper.writeValueAsString( errorBody ) )
+                        .withHeader( "Content-Type", "application/json" )
+                        .withStatus( HTTP_UNPROCESSABLE_ENTITY ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, not( containsString( "null" ) ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleEmptyValidationFailureResponseFromInitiateUploadTarget() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        String token = "abc";
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( token )
+                .willReturn( aResponse().withStatus( HTTP_UNPROCESSABLE_ENTITY ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class,
+                allOf( containsString( "No content to map to Object due to end of input" ),
+                        not( containsString( "null" ) ),
+                        not( containsString( ".." ) ) ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleValidationFailureResponseWithShortMessageFromInitiateUploadTarget() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        ObjectMapper mapper = new ObjectMapper();
+        Path source = createDump();
+        String token = "abc";
+        // ...and a short error message with no capitalisation or punctuation
+        String errorMessage = "something bad happened";
+        String errorUrl = "https://example.com/";
+        ErrorBody errorBody = new ErrorBody( errorMessage, null, errorUrl );
+        // ...and
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( token )
+                .willReturn( aResponse().withBody( mapper.writeValueAsString( errorBody ) )
+                        .withHeader( "Content-Type", "application/json" ).withStatus( HTTP_UNPROCESSABLE_ENTITY ) ) );
+
+        // when/then the final error message is well formatted with punctuation
+        assertThrows( CommandFailed.class, containsString( "Error: something bad happened. See: https://example.com/" ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleSizeValidationFailureResponseFromInitiateUploadTarget() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        ObjectMapper mapper = new ObjectMapper();
+        Path source = createDump();
+        String token = "abc";
+        String errorMessage = "There is insufficient space in your Neo4j Aura instance to upload your data. "
+                + "Please use the Console to increase the size of your database.";
+        String errorUrl = "https://console.neo4j.io/";
+        ErrorBody errorBody = new ErrorBody( errorMessage, ERROR_REASON_EXCEEDS_MAX_SIZE, errorUrl );
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( token )
+                .willReturn( aResponse().withBody( mapper.writeValueAsString( errorBody ) )
+                        .withHeader( "Content-Type", "application/json" ).withStatus( HTTP_UNPROCESSABLE_ENTITY ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class,
+                allOf( containsString( errorMessage ),
+                        containsString( "Minimum storage space required: 0.0 GB." ),
+                        containsString( "See: https://console.neo4j.io" ), not( containsString( ".." ) ) ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
     public void shouldHandleConflictResponseFromInitiateUploadTargetAndContinueOnUserConsent() throws IOException, CommandFailed
     {
         HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
@@ -440,6 +565,50 @@ public class HttpCopierTest
         assertTrue( progressListener.doneCalled );
         // we need to add 100 extra ticks to the progress listener because of the database phases
         assertEquals( sourceLength + 100, progressListener.progress );
+    }
+
+    @Test
+    public void shouldHandleFailedImport() throws IOException, CommandFailed
+    {
+        // given
+        ObjectMapper mapper = new ObjectMapper();
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, ( name, length ) -> progressListener );
+        Path source = createDump();
+        long sourceLength = fs.getFileSize( source.toFile() );
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+
+        wireMock.stubFor( authenticationRequest( false )
+                .willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
+                .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
+        wireMock.stubFor( initiateUploadRequest( signedURIPath )
+                .willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
+        wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength )
+                .willReturn( successfulResumeUploadResponse() ) );
+        wireMock.stubFor(
+                triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
+        // ...and
+        StatusBody statusBody = new StatusBody();
+        statusBody.Status = "loading failed";
+        String errorMessage = "The uploaded dump file contains deprecated indexes, "
+                + "which we are unable to import in the current version of Neo4j Aura. "
+                + "Please upgrade to the recommended index provider.";
+        String errorUrl = "https://aura.support.neo4j.com/";
+        statusBody.Error = new ErrorBody( errorMessage, ERROR_REASON_UNSUPPORTED_INDEXES, errorUrl );
+
+        wireMock.stubFor( get( urlEqualTo( "/import/status" ) )
+                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
+                .willReturn( aResponse().withBody( mapper.writeValueAsString( statusBody ) )
+                        .withHeader( "Content-Type", "application/json" ).withStatus( HTTP_OK ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class,
+                allOf( containsString( errorMessage ), containsString( errorUrl ),
+                        not( containsString( ERROR_REASON_UNSUPPORTED_INDEXES ) ), not( containsString( ".." ) ) ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -704,7 +873,7 @@ public class HttpCopierTest
     private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, String username, char[] password ) throws CommandFailed
     {
         String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password, false );
-        copier.copy( false, TEST_CONSOLE_URL, "bolt+routing://deadbeef.databases.neo4j.io", source,  bearerToken );
+        copier.copy( true, TEST_CONSOLE_URL, "bolt+routing://deadbeef.databases.neo4j.io", source, bearerToken );
     }
 
     private interface ThrowingRunnable
