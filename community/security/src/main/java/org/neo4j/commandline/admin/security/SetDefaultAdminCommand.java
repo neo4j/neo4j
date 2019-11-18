@@ -20,10 +20,8 @@
 package org.neo4j.commandline.admin.security;
 
 import java.io.File;
-import java.util.Set;
 
 import org.neo4j.cli.AbstractCommand;
-import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
@@ -41,7 +39,8 @@ import static picocli.CommandLine.Parameters;
 
 @Command(
         name = "set-default-admin",
-        description = "Sets the default admin user when no roles are present."
+        description = "Sets the default admin user.%n" +
+                      "This user will be granted the admin role on startup if the system has no roles."
 )
 public class SetDefaultAdminCommand extends AbstractCommand
 {
@@ -59,31 +58,8 @@ public class SetDefaultAdminCommand extends AbstractCommand
     public void execute()
     {
         Config config = loadNeo4jConfig();
-        FileUserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(), ctx.fs() );
-
         try
         {
-            users.init();
-            users.start();
-            Set<String> userNames = users.getAllUsernames();
-            users.stop();
-            users.shutdown();
-
-            if ( userNames.isEmpty() )
-            {
-                FileUserRepository initialUsers = CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), ctx.fs() );
-                initialUsers.init();
-                initialUsers.start();
-                userNames = initialUsers.getAllUsernames();
-                initialUsers.stop();
-                initialUsers.shutdown();
-            }
-
-            if ( !userNames.contains( username ) )
-            {
-                throw new CommandFailedException( String.format( "no such user: '%s'", username ) );
-            }
-
             File adminIniFile = new File( CommunitySecurityModule.getUserRepositoryFile( config ).getParentFile(), ADMIN_INI );
             if ( ctx.fs().fileExists( adminIniFile ) )
             {
@@ -95,10 +71,6 @@ public class SetDefaultAdminCommand extends AbstractCommand
             admins.create( new User.Builder( username, LegacyCredential.INACCESSIBLE ).build() );
             admins.stop();
             admins.shutdown();
-        }
-        catch ( CommandFailedException e )
-        {
-            throw e;
         }
         catch ( Exception e )
         {

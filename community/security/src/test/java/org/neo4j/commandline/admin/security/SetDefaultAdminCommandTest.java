@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,9 +45,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -94,7 +91,8 @@ class SetDefaultAdminCommandTest
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
-                "Sets the default admin user when no roles are present.%n" +
+                "Sets the default admin user.%n" +
+                "This user will be granted the admin role on startup if the system has no roles.%n" +
                 "%n" +
                 "PARAMETERS%n" +
                 "%n" +
@@ -121,15 +119,7 @@ class SetDefaultAdminCommandTest
         assertAdminIniFile( "jake" );
     }
 
-    @Test
-    void shouldNotSetDefaultAdminForNonExistentUser() throws Throwable
-    {
-        CommandLine.populateCommand( command, "noName" );
-
-        var e = assertThrows( CommandFailedException.class, () -> command.execute() );
-        assertEquals( "no such user: 'noName'", e.getMessage() );
-    }
-
+    @SuppressWarnings( "SameParameterValue" )
     private void assertAdminIniFile( String username ) throws Throwable
     {
         assertTrue( fileSystem.fileExists( adminIniFile ) );

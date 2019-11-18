@@ -27,24 +27,16 @@ import picocli.CommandLine;
 import java.io.File;
 import java.io.PrintStream;
 
-import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.LegacyCredential;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class SetDefaultAdminCommandIT
@@ -68,17 +60,6 @@ class SetDefaultAdminCommandIT
     @Test
     void shouldSetDefaultAdmin() throws Throwable
     {
-        insertUser( "jane", false );
-        execute( "jane" );
-        assertAdminIniFile( "jane" );
-
-        verify( out ).println( "default admin user set to 'jane'" );
-    }
-
-    @Test
-    void shouldSetDefaultAdminForInitialUser() throws Throwable
-    {
-        insertUser( "jane", true );
         execute( "jane" );
         assertAdminIniFile( "jane" );
 
@@ -88,8 +69,6 @@ class SetDefaultAdminCommandIT
     @Test
     void shouldOverwrite() throws Throwable
     {
-        insertUser( "jane", false );
-        insertUser( "janette", false );
         execute( "jane" );
         assertAdminIniFile( "jane" );
         execute( "janette" );
@@ -99,44 +78,9 @@ class SetDefaultAdminCommandIT
         verify( out ).println( "default admin user set to 'janette'" );
     }
 
-    @Test
-    void shouldErrorWithNoSuchUser()
-    {
-        var e = assertThrows( CommandFailedException.class, () -> execute( "bob" ) );
-        assertThat( e.getMessage(), containsString( "no such user: 'bob'" ) );
-        verify( out, never() ).println( anyString() );
-    }
-
-    @Test
-    void shouldIgnoreInitialUserIfUsersExist() throws Throwable
-    {
-        insertUser( "jane", false );
-        insertUser( "janette", true );
-        execute( "jane" );
-        assertAdminIniFile( "jane" );
-
-        var e = assertThrows( CommandFailedException.class, () -> execute( "janette" ) );
-        assertThat( e.getMessage(), containsString( "no such user: 'janette'" ) );
-
-        verify( out ).println( "default admin user set to 'jane'" );
-    }
-
-    private void insertUser( String username, boolean initial ) throws Throwable
-    {
-        File userFile = getAuthFile( initial ? CommunitySecurityModule.INITIAL_USER_STORE_FILENAME :
-                CommunitySecurityModule.USER_STORE_FILENAME );
-        FileUserRepository userRepository = new FileUserRepository( fileSystem, userFile,
-                NullLogProvider.getInstance() );
-        userRepository.start();
-        userRepository.create( new User.Builder( username, LegacyCredential.INACCESSIBLE ).build() );
-        Assertions.assertTrue( userRepository.getAllUsernames().contains( username ) );
-        userRepository.stop();
-        userRepository.shutdown();
-    }
-
     private void assertAdminIniFile( String username ) throws Throwable
     {
-        File adminIniFile = getAuthFile( SetDefaultAdminCommand.ADMIN_INI );
+        File adminIniFile = new File( new File( new File( homeDir, "data" ), "dbms" ), SetDefaultAdminCommand.ADMIN_INI );
         Assertions.assertTrue( fileSystem.fileExists( adminIniFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
                 NullLogProvider.getInstance() );
@@ -144,11 +88,6 @@ class SetDefaultAdminCommandIT
         assertThat( userRepository.getAllUsernames(), containsInAnyOrder( username ) );
         userRepository.stop();
         userRepository.shutdown();
-    }
-
-    private File getAuthFile( String name )
-    {
-        return new File( new File( new File( homeDir, "data" ), "dbms" ), name );
     }
 
     private void execute( String username )
