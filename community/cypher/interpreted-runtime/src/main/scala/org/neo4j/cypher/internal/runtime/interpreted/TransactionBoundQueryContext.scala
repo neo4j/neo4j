@@ -445,15 +445,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       getTxStateNodePropertyOrNull(nodeId, propertyKeyId)
 
     override def hasProperty(id: Long, propertyKey: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Boolean = {
-      reads().singleNode(id, nodeCursor)
-      if (!nodeCursor.next()) false
-      else {
-        nodeCursor.properties(propertyCursor)
-        while (propertyCursor.next()) {
-          if (propertyCursor.propertyKey() == propertyKey) return true
-        }
-        false
-      }
+      CursorUtils.nodeHasProperty(reads(), nodeCursor, id, propertyCursor, propertyKey)
     }
 
     override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Option[Boolean] = {
@@ -554,15 +546,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def hasProperty(id: Long, propertyKey: Int, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Boolean = {
-      reads().singleRelationship(id, relationshipCursor)
-      if (!relationshipCursor.next()) false
-      else {
-        relationshipCursor.properties(propertyCursor)
-        while (propertyCursor.next()) {
-          if (propertyCursor.propertyKey() == propertyKey) return true
-        }
-        false
-      }
+      CursorUtils.relationshipHasProperty(reads(), relationshipCursor, id, propertyCursor, propertyKey)
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = {

@@ -78,6 +78,7 @@ public final class CursorUtils
     {
         return nodeGetProperty( read, nodeCursor, node, propertyCursor, prop, true );
     }
+
     /**
      * Fetches a given property from a node
      *
@@ -117,6 +118,37 @@ public final class CursorUtils
         }
         nodeCursor.properties( propertyCursor );
         return propertyCursor.seekProperty( prop ) ? propertyCursor.propertyValue() : NO_VALUE;
+    }
+
+    /**
+     * Checks if a given node has the given property
+     *
+     * @param read The current Read instance
+     * @param nodeCursor The node cursor to use
+     * @param node The id of the node
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @return <code>true</code> if node has property otherwise <code>false</code>
+     */
+    public static boolean nodeHasProperty(
+            Read read,
+            NodeCursor nodeCursor,
+            long node,
+            PropertyCursor propertyCursor,
+            int prop
+    ) throws EntityNotFoundException
+    {
+        if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return false;
+        }
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+           return false;
+        }
+        nodeCursor.properties( propertyCursor );
+        return propertyCursor.seekProperty( prop );
     }
 
     /**
@@ -222,6 +254,37 @@ public final class CursorUtils
         }
         relationshipCursor.properties( propertyCursor );
         return propertyCursor.seekProperty( prop ) ? propertyCursor.propertyValue() : NO_VALUE;
+    }
+
+    /**
+     * Checks if a given relationship has the given property
+     *
+     * @param read The current Read instance
+     * @param relationshipCursor The relationship cursor to use
+     * @param relationship The id of the relationship
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @return <code>true</code> if relationship has property otherwise <code>false</code>
+     */
+    public static Boolean relationshipHasProperty(
+            Read read,
+            RelationshipScanCursor relationshipCursor,
+            long relationship,
+            PropertyCursor propertyCursor,
+            int prop
+    ) throws EntityNotFoundException
+    {
+        if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return false;
+        }
+        read.singleRelationship( relationship, relationshipCursor );
+        if ( !relationshipCursor.next() )
+        {
+            return false;
+        }
+        relationshipCursor.properties( propertyCursor );
+        return propertyCursor.seekProperty( prop );
     }
 
     public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
