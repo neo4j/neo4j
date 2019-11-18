@@ -36,7 +36,6 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -102,7 +101,7 @@ public final class CursorUtils
     {
         if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
@@ -113,19 +112,11 @@ public final class CursorUtils
             }
             else
             {
-                return Values.NO_VALUE;
+                return NO_VALUE;
             }
         }
         nodeCursor.properties( propertyCursor );
-        while ( propertyCursor.next() )
-        {
-            if ( propertyCursor.propertyKey() == prop )
-            {
-                return propertyCursor.propertyValue();
-            }
-        }
-
-        return Values.NO_VALUE;
+        return propertyCursor.seekProperty( prop ) ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
     /**
@@ -214,7 +205,7 @@ public final class CursorUtils
     {
         if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
         read.singleRelationship( relationship, relationshipCursor );
         if ( !relationshipCursor.next() )
@@ -226,19 +217,11 @@ public final class CursorUtils
             }
             else
             {
-                return Values.NO_VALUE;
+                return NO_VALUE;
             }
         }
         relationshipCursor.properties( propertyCursor );
-        while ( propertyCursor.next() )
-        {
-            if ( propertyCursor.propertyKey() == prop )
-            {
-                return propertyCursor.propertyValue();
-            }
-        }
-
-        return Values.NO_VALUE;
+        return propertyCursor.seekProperty( prop ) ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
     public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,

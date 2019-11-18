@@ -143,7 +143,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   }
 
 
-  test("should handle node property access") {
+  test("should handle node property access on top of allNode") {
     // given
     val size = 100
     given {
@@ -157,6 +157,51 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .produceResults("prop")
       .projection("x.prop AS prop")
       .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("prop").withRows(singleColumn(0 until size))
+  }
+
+  test("should handle node property access on top of labelScan") {
+    // given
+    val size = 100
+    given {
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("x.prop AS prop")
+      .nodeByLabelScan("x", "Label")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("prop").withRows(singleColumn(0 until size))
+  }
+
+  test("should handle node property access on top of indexScan") {
+    // given
+    val size = 100
+    given {
+      index("Label", "prop")
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("x.prop AS prop")
+      .nodeIndexOperator("x:Label(prop)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

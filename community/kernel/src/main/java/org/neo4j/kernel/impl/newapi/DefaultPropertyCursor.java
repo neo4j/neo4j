@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.txstate.EntityState;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -209,6 +210,23 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
         assertOpen.assertOpen();
         return value;
+    }
+
+    @Override
+    public boolean seekProperty( int property )
+    {
+        if ( property == TokenConstants.NO_TOKEN  )
+        {
+            return false;
+        }
+        while ( next() )
+        {
+            if ( property == this.propertyKey() )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

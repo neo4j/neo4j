@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api.helpers;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 
 /**
  * Helper cursor for traversing specific types and directions.
@@ -46,6 +47,8 @@ public interface RelationshipSelectionCursor extends AutoCloseablePlus
     long targetNodeReference();
 
     long propertiesReference();
+
+    void properties( PropertyCursor cursor );
 
     final class Empty extends DefaultCloseListenable implements RelationshipSelectionCursor
     {
@@ -101,6 +104,12 @@ public interface RelationshipSelectionCursor extends AutoCloseablePlus
         public long propertiesReference()
         {
             return -1;
+        }
+
+        @Override
+        public void properties( PropertyCursor cursor )
+        {
+            //nothing to do
         }
 
         @Override

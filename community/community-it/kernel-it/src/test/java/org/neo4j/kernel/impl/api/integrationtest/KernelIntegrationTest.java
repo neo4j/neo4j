@@ -253,14 +253,7 @@ public abstract class KernelIntegrationTest
             else
             {
                 cursor.properties( properties );
-                while ( properties.next() )
-                {
-                    if ( properties.propertyKey() == property )
-                    {
-                        return properties.propertyValue();
-                    }
-                }
-                return NO_VALUE;
+                return properties.seekProperty( property ) ? properties.propertyValue() : NO_VALUE;
             }
         }
     }

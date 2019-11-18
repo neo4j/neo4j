@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 /**
@@ -84,6 +85,12 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     public long propertiesReference()
     {
         return cursor.propertiesReference();
+    }
+
+    @Override
+    public void properties( PropertyCursor propertyCursor )
+    {
+        cursor.properties( propertyCursor );
     }
 
     @Override

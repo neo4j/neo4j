@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 
@@ -295,6 +296,12 @@ public abstract class CompiledExpandUtils
             public long propertiesReference()
             {
                 return allRelationships.propertiesReference();
+            }
+
+            @Override
+            public void properties( PropertyCursor cursor )
+            {
+                allRelationships.properties( cursor );
             }
 
             @Override

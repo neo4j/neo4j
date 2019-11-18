@@ -269,14 +269,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
     private boolean hasKey( PropertyCursor propertyCursor, int key )
     {
-        while ( propertyCursor.next() )
-        {
-            if ( propertyCursor.propertyKey() == key )
-            {
-                return true;
-            }
-        }
-        return false;
+       return propertyCursor.seekProperty( key );
     }
 
     private void addConstraints( String... labelProps )

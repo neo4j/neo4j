@@ -61,13 +61,6 @@ class CursorPropertyAccessor implements NodePropertyAccessor, AutoCloseable
         }
 
         nodeCursor.properties( propertyCursor );
-        while ( propertyCursor.next() )
-        {
-            if ( propertyCursor.propertyKey() == propertyKeyId )
-            {
-                return propertyCursor.propertyValue();
-            }
-        }
-        return Values.NO_VALUE;
+        return propertyCursor.seekProperty( propertyKeyId ) ? propertyCursor.propertyValue() : Values.NO_VALUE;
     }
 }

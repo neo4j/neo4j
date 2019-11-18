@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKern
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.RelationshipVisitor;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -340,19 +339,11 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         PropertyCursor properties = transaction.ambientPropertyCursor();
         singleRelationship( transaction, relationships );
         relationships.properties( properties );
-        while ( properties.next() )
+        if ( !properties.seekProperty( propertyKey ) )
         {
-            if ( propertyKey == properties.propertyKey() )
-            {
-                Value value = properties.propertyValue();
-                if ( value == Values.NO_VALUE )
-                {
-                    throw new NotFoundException( format( "No such property, '%s'.", key ) );
-                }
-                return value.asObjectCopy();
-            }
+            throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
-        throw new NotFoundException( format( "No such property, '%s'.", key ) );
+        return properties.propertyValue().asObjectCopy();
     }
 
     @Override
@@ -372,15 +363,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         }
         singleRelationship( transaction, relationships );
         relationships.properties( properties );
-        while ( properties.next() )
-        {
-            if ( propertyKey == properties.propertyKey() )
-            {
-                Value value = properties.propertyValue();
-                return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
-            }
-        }
-        return defaultValue;
+        return properties.seekProperty( propertyKey ) ? properties.propertyValue().asObjectCopy() : defaultValue;
     }
 
     @Override
@@ -402,14 +385,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         PropertyCursor properties = transaction.ambientPropertyCursor();
         singleRelationship( transaction, relationships );
         relationships.properties( properties );
-        while ( properties.next() )
-        {
-            if ( propertyKey == properties.propertyKey() )
-            {
-                return true;
-            }
-        }
-        return false;
+        return properties.seekProperty( propertyKey );
     }
 
     @Override

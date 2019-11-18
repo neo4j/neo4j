@@ -32,4 +32,6 @@ public interface PropertyCursor extends Cursor
     ValueGroup propertyType();
 
     Value propertyValue();
+
+    boolean seekProperty( int property );
 }

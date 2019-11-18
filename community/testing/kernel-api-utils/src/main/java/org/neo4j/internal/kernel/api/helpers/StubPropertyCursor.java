@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -84,6 +85,23 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     public Value propertyValue()
     {
         return values[offset];
+    }
+
+    @Override
+    public boolean seekProperty( int property )
+    {
+        if ( property == TokenConstants.NO_TOKEN  )
+        {
+            return false;
+        }
+        while ( next() )
+        {
+            if ( property == this.propertyKey() )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
