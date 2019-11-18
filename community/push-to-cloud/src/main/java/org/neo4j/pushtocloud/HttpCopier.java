@@ -91,7 +91,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
      * Do the actual transfer of the source (a Neo4j database dump) to the target.
      */
     @Override
-    public void copy( boolean verbose, String consoleURL, String boltUri, Path source, String bearerToken ) throws CommandFailed
+    public void copy( boolean verbose, String consoleURL, String boltUri, Path source, boolean deleteSourceAfterImport, String bearerToken )
+            throws CommandFailed
     {
         try
         {
@@ -131,17 +132,19 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
             doStatusPolling( verbose, consoleURL, bearerToken, sourceLength );
 
-            deleteDumpFile( verbose, source );
+            if ( deleteSourceAfterImport )
+            {
+                source.toFile().delete();
+            }
+            else
+            {
+                outsideWorld.stdOutLine( String.format( "It is safe to delete the dump file now: %s", source.toFile().getAbsolutePath() ) );
+            }
         }
         catch ( InterruptedException | IOException e )
         {
             throw new CommandFailed( e.getMessage(), e );
         }
-    }
-
-    private void deleteDumpFile( boolean verbose, Path source )
-    {
-        source.toFile().delete();
     }
 
     private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken, long fileSize )
