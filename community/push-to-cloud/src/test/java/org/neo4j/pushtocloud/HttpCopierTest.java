@@ -354,7 +354,7 @@ public class HttpCopierTest
         assertThrows( CommandFailed.class,
                 allOf( containsString( errorMessage ), containsString( errorUrl ), not( containsString( errorReason ) ),
                         not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -377,7 +377,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, not( containsString( "null" ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -396,7 +396,7 @@ public class HttpCopierTest
                 allOf( containsString( "No content to map to Object due to end of input" ),
                         not( containsString( "null" ) ),
                         not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -419,7 +419,7 @@ public class HttpCopierTest
 
         // when/then the final error message is well formatted with punctuation
         assertThrows( CommandFailed.class, containsString( "Error: something bad happened. See: https://example.com/" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -444,7 +444,7 @@ public class HttpCopierTest
                 allOf( containsString( errorMessage ),
                         containsString( "Minimum storage space required: 0.0 GB." ),
                         containsString( "See: https://console.neo4j.io" ), not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -625,7 +625,7 @@ public class HttpCopierTest
         assertThrows( CommandFailed.class,
                 allOf( containsString( errorMessage ), containsString( errorUrl ),
                         not( containsString( ERROR_REASON_UNSUPPORTED_INDEXES ) ), not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
