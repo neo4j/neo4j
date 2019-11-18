@@ -96,10 +96,29 @@ public class HttpCopierTest
     @Test
     public void shouldHandleSuccessfulHappyCaseRunThroughOfTheWholeProcess() throws Exception
     {
+        // create dump
+        Path source = createDump();
+        runHappyPathTest( source, true );
+        // assert dump was deleted
+        assertEquals( false, source.toFile().exists() );
+    }
+
+    @Test
+    public void shouldHandleSuccessfulHappyCaseRunThroughOfTheWholeProcessWithExistingDump() throws Exception
+    {
+        // create dump
+        Path source = createDump();
+        runHappyPathTest( source, false );
+        // assert externally provided dump was not deleted
+        assertEquals( true, source.toFile().exists() );
+    }
+
+    private void runHappyPathTest( Path source, boolean sourceProvided ) throws CommandFailed
+    {
         // given
         ControlledProgressListener progressListener = new ControlledProgressListener();
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, ( name, length ) -> progressListener );
-        Path source = createDump();
+
         long sourceLength = fs.getFileSize( source.toFile() );
 
         String authorizationTokenResponse = "abc";
@@ -115,7 +134,7 @@ public class HttpCopierTest
         wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
-        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, sourceProvided, "user", "pass".toCharArray() );
 
         // then
         verify( postRequestedFor( urlEqualTo( "/import/auth" ) ) );
@@ -127,8 +146,6 @@ public class HttpCopierTest
         assertTrue( progressListener.doneCalled );
         // we need to add 100 extra ticks to the progress listener because of the database phases
         assertEquals( sourceLength + 100, progressListener.progress );
-        // assert dump was deleted
-        assertEquals( false, source.toFile().exists() );
     }
 
     @Test
@@ -151,7 +168,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, containsString( "You can re-try using the existing dump by running this command" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source,  true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -177,7 +194,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, containsString( "You can re-try using the existing dump by running this command" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -191,7 +208,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.equalTo( "Invalid username/password credentials" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -205,7 +222,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -226,7 +243,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -252,7 +269,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -266,7 +283,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "administrative access" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -280,7 +297,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, allOf( containsString( "Unexpected response" ), containsString( "Authorization" ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -295,7 +312,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "authorization token is invalid" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -311,7 +328,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "increase the size of your database" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -337,7 +354,7 @@ public class HttpCopierTest
         assertThrows( CommandFailed.class,
                 allOf( containsString( errorMessage ), containsString( errorUrl ), not( containsString( errorReason ) ),
                         not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -360,7 +377,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, not( containsString( "null" ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -379,7 +396,7 @@ public class HttpCopierTest
                 allOf( containsString( "No content to map to Object due to end of input" ),
                         not( containsString( "null" ) ),
                         not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -402,7 +419,7 @@ public class HttpCopierTest
 
         // when/then the final error message is well formatted with punctuation
         assertThrows( CommandFailed.class, containsString( "Error: something bad happened. See: https://example.com/" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -427,7 +444,7 @@ public class HttpCopierTest
                 allOf( containsString( errorMessage ),
                         containsString( "Minimum storage space required: 0.0 GB." ),
                         containsString( "See: https://console.neo4j.io" ), not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -457,7 +474,7 @@ public class HttpCopierTest
         wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
-        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
         verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "false" ) ) );
@@ -481,7 +498,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, containsString( "No consent to overwrite" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
         verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "false" ) ) );
@@ -503,7 +520,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, allOf( containsString( "Unexpected response" ), containsString( "Initiating upload target" ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -521,7 +538,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, allOf( containsString( "Unexpected response" ), containsString( "Initiating database upload" ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -550,7 +567,7 @@ public class HttpCopierTest
         wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
-        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() );
 
         // then
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) )
@@ -608,7 +625,7 @@ public class HttpCopierTest
         assertThrows( CommandFailed.class,
                 allOf( containsString( errorMessage ), containsString( errorUrl ),
                         not( containsString( ERROR_REASON_UNSUPPORTED_INDEXES ) ), not( containsString( ".." ) ) ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -633,7 +650,7 @@ public class HttpCopierTest
         wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
-        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() );
 
         // then
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) )
@@ -664,7 +681,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, containsString( "The target database contained data and consent to overwrite the data was not given." ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -689,7 +706,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "Upload failed after numerous attempts" ),
-                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
         Mockito.verify( sleeper, atLeast( 30 ) ).sleep( anyLong() );
     }
 
@@ -870,10 +887,11 @@ public class HttpCopierTest
         }
     }
 
-    private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, String username, char[] password ) throws CommandFailed
+    private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, boolean sourceProvided, String username, char[] password )
+            throws CommandFailed
     {
         String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password, false );
-        copier.copy( true, TEST_CONSOLE_URL, "bolt+routing://deadbeef.databases.neo4j.io", source, bearerToken );
+        copier.copy( true, TEST_CONSOLE_URL, "bolt+routing://deadbeef.databases.neo4j.io", source,  sourceProvided,bearerToken );
     }
 
     private interface ThrowingRunnable

@@ -150,8 +150,9 @@ public class PushToCloudCommand implements AdminCommand
             String bearerToken = copier.authenticate( verbose, consoleURL, username, password, "true".equals( confirmationViaArgument ) );
 
             Path source = initiateSource( arguments );
+            boolean sourceProvided = arguments.get( ARG_DUMP ) != null;
 
-            copier.copy( verbose, consoleURL, boltURI, source, bearerToken );
+            copier.copy( verbose, consoleURL, boltURI, source, sourceProvided, bearerToken );
         }
         catch ( Exception e )
         {
@@ -240,7 +241,7 @@ public class PushToCloudCommand implements AdminCommand
          * @param username the username.
          * @param password the password.
          * @param consentConfirmed user confirmed to overwrite existing database.
-         * @return a bearer token to pass into {@link #copy(boolean, String, String, Path, String)} later on.
+         * @return a bearer token to pass into {@link #copy(boolean, String, String, Path, boolean, String)} later on.
          * @throws CommandFailed on authentication failure or some other unexpected failure.
          */
         String authenticate( boolean verbose, String consoleURL, String username, char[] password, boolean consentConfirmed ) throws CommandFailed;
@@ -252,10 +253,11 @@ public class PushToCloudCommand implements AdminCommand
          * @param consoleURL console URI to target.
          * @param boltUri bolt URI to target database.
          * @param source dump to copy to the target.
+         * @param deleteSourceAfterImport delete the dump after successful import
          * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[], boolean)} call.
          * @throws CommandFailed on copy failure or some other unexpected failure.
          */
-        void copy( boolean verbose, String consoleURL, String boltUri, Path source, String bearerToken ) throws CommandFailed;
+        void copy( boolean verbose, String consoleURL, String boltUri, Path source, boolean deleteSourceAfterImport, String bearerToken ) throws CommandFailed;
     }
 
     public interface DumpCreator
