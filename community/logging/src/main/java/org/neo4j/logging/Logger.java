@@ -23,9 +23,12 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * A log into which messages can be written
  */
+@PublicApi
 public interface Logger
 {
     /**
