@@ -27,7 +27,7 @@ import org.neo4j.graphdb.{Label, Node, Relationship}
 
 abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                              runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
-  test("should check if label is set on node") {
+  test("hasLabel on top of allNodeScan") {
     // given
     val size = 100
     given {
@@ -44,6 +44,58 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .produceResults("hasLabel")
       .projection("x:Label AS hasLabel")
       .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("hasLabel").withRows(singleColumn((0 until size).map(_ % 2 == 0)))
+  }
+
+  test("hasLabel on top of indexScan") {
+    // given
+    val size = 100
+    given {
+      index("Label", "prop")
+      for (i <- 0 until size) {
+        if (i % 2 == 0) {
+          tx.createNode(Label.label("Label"), Label.label("Other")).setProperty("prop", i)
+        } else {
+          tx.createNode(Label.label("Label")).setProperty("prop", i)
+        }
+      }
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasLabel")
+      .projection("x:Other AS hasLabel")
+      .nodeIndexOperator("x:Label(prop)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("hasLabel").withRows(singleColumn((0 until size).map(_ % 2 == 0)))
+  }
+
+  test("hasLabel on top of labelNodeScan") {
+    // given
+    val size = 100
+    given {
+      index("Label", "prop")
+      for (i <- 0 until size) {
+        if (i % 2 == 0) {
+          tx.createNode(Label.label("Label"), Label.label("Other")).setProperty("prop", i)
+        } else {
+          tx.createNode(Label.label("Label")).setProperty("prop", i)
+        }
+      }
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasLabel")
+      .projection("x:Other AS hasLabel")
+      .nodeByLabelScan("x", "Label")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -70,6 +122,26 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // then
     runtimeResult should beColumns("hasLabel").withRows(singleColumn(Seq(false)))
   }
+
+  test("should get type of relationship") {
+    // given
+    val size = 11
+    val paths = given { chainGraphs(size, "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("t")
+      .projection("type(r) AS t")
+      .expand("(x)-[r]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("t").withRows(singleColumn((1 to size).map(_ => "TO")))
+  }
+
 
   test("should handle node property access") {
     // given
