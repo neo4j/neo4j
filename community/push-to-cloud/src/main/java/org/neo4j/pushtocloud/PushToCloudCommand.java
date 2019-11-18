@@ -19,6 +19,10 @@ package org.neo4j.pushtocloud;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -97,19 +101,10 @@ public class PushToCloudCommand implements AdminCommand
             String usernameFromEnv = System.getenv( ENV_USERNAME );
             String passwordFromEnv = System.getenv( ENV_PASSWORD );
 
-            if ( ( username == null && passwordFromArg != null ) || ( username != null && passwordFromArg == null ) )
-            {
-                throw new IncorrectUsage( "Provide either 'username' and 'password' as argument or none." );
-            }
-            if ( ( usernameFromEnv == null && passwordFromEnv != null ) || ( usernameFromEnv != null && passwordFromEnv == null ) )
-            {
-                throw new IncorrectUsage( "Provide either 'ENV_USERNAME' and 'ENV_PASSWORD' as environment variable or none." );
-            }
-            if ( passwordFromEnv != null && passwordFromArg != null )
-            {
-                throw new IncorrectUsage( "It is not allowed to provide 'username' and 'password' as argument and environment variable." );
-            }
-
+            // the strategy here is to have a priority of ways to pass in username/password
+            // 1. highest priority is cli argument, e.g. --username
+            // 2. priority is the environment variable, e.g. ENV_USERNAME
+            // if 1. and 2. is not configured, prompt for input.
             if ( username == null )
             {
                 if ( usernameFromEnv != null )
@@ -118,9 +113,15 @@ public class PushToCloudCommand implements AdminCommand
                 }
                 else
                 {
-                    username = outsideWorld.promptLine( "Neo4j Cloud database username: " );
+                    username = outsideWorld.promptLine( "Neo4j Aura database username (default: neo4j): " );
                 }
             }
+            // default username to neo4j if user pressed 'enter' during the prompt
+            if ( username == null || "".equals( username ) )
+            {
+                username = "neo4j";
+            }
+
             char[] password;
             if ( passwordFromArg != null )
             {
@@ -134,17 +135,21 @@ public class PushToCloudCommand implements AdminCommand
                 }
                 else
                 {
-                    password = outsideWorld.promptPassword( "Neo4j Cloud database password: " );
+                    password = outsideWorld.promptPassword( format( "Neo4j Aura database password for %s: ", username ) );
                 }
             }
 
             String boltURI = arguments.get( ARG_BOLT_URI );
             if ( boltURI == null || "".equals( boltURI ) )
             {
-                throw new IncorrectUsage( "Please provide a Neo4j Cloud Bolt URI of the target location to push the database to, " +
+                boltURI = outsideWorld.promptLine( "Neo4j Aura database Bolt URI: " );
+            }
+            if ( boltURI == null || "".equals( boltURI ) )
+            {
+                throw new IncorrectUsage( "Please provide a Neo4j Aura Bolt URI of the target location to push the database to, " +
                         "using the --bolt-uri argument." );
             }
-            String confirmationViaArgument = arguments.get( ARG_OVERWRITE );
+            String confirmationViaArgument = arguments.get( ARG_OVERWRITE, "false", "true" );
 
             String consoleURL = buildConsoleURI( boltURI );
             String bearerToken = copier.authenticate( verbose, consoleURL, username, password, "true".equals( confirmationViaArgument ) );

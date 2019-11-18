@@ -212,7 +212,7 @@ public class HttpCopierTest
     }
 
     @Test
-    public void shouldHandleAuthenticateMovedRoute() throws IOException
+    public void shouldHandleUnknownDbid() throws IOException
     {
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
@@ -221,7 +221,7 @@ public class HttpCopierTest
                 .withStatus( HTTP_NOT_FOUND ) ) );
 
         // when/then
-        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
+        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please check your Bolt URI" ),
                 () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
     }
 
