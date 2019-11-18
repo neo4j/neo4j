@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -76,7 +76,6 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -96,7 +95,6 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
 @Neo4jLayoutExtension
 class IndexRecoveryIT
 {
-    private static final Duration TIMEOUT = Duration.ofMinutes( 5 );
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -109,10 +107,13 @@ class IndexRecoveryIT
     private final Label myLabel = label( "MyLabel" );
     private final Monitors monitors = new Monitors();
     private DatabaseManagementService managementService;
+    private ExecutorService executor;
+    private final Object lock = new Object();
 
     @BeforeEach
     void setUp()
     {
+        executor = newSingleThreadExecutor();
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
@@ -122,6 +123,7 @@ class IndexRecoveryIT
     @AfterEach
     void after()
     {
+        executor.shutdown();
         if ( db != null )
         {
             managementService.shutdown();
@@ -129,113 +131,107 @@ class IndexRecoveryIT
     }
 
     @Test
-    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws IOException
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws Exception
     {
-        assertTimeoutPreemptively( TIMEOUT, () ->
+        // Given
+        startDb();
+
+        Semaphore populationSemaphore = new Semaphore( 0 );
+        Future<Void> killFuture;
+        try
         {
-            // Given
+            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
+                    indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+            createIndex( myLabel );
+
+            // And Given
+            killFuture = killDbInSeparateThread();
+            int iterations = 0;
+            do
+            {
+                rotateLogsAndCheckPoint();
+                Thread.sleep( 10 );
+            } while ( iterations++ < 100 && !killFuture.isDone() );
+        }
+        finally
+        {
+            populationSemaphore.release();
+        }
+
+        killFuture.get();
+
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+        Semaphore recoverySemaphore = new Semaphore( 0 );
+        try
+        {
+            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
+                    indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
+            boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), databaseLayout, defaults() );
+            monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
+            // When
             startDb();
 
-            Semaphore populationSemaphore = new Semaphore( 0 );
-            Future<Void> killFuture;
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
-                when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
-                        indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
-                createIndex( myLabel );
-
-                // And Given
-                killFuture = killDbInSeparateThread();
-                int iterations = 0;
-                do
-                {
-                    rotateLogsAndCheckPoint();
-                    Thread.sleep( 10 );
-                } while ( iterations++ < 100 && !killFuture.isDone() );
+                assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
+                assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
             }
-            finally
-            {
-                populationSemaphore.release();
-            }
-
-            killFuture.get();
-
-            when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
-            Semaphore recoverySemaphore = new Semaphore( 0 );
-            try
-            {
-                when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
-                        indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
-                boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), databaseLayout, defaults() );
-                monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
-                // When
-                startDb();
-
-                try ( Transaction transaction = db.beginTx() )
-                {
-                    assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
-                    assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
-                }
-                // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
-                // we will not gonna need to get index populators during recovery index service start
-                verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( IndexDescriptor.class ),
-                        any( IndexSamplingConfig.class ), any() );
-                verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-            }
-            finally
-            {
-                recoverySemaphore.release();
-            }
-        } );
+            // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
+            // we will not gonna need to get index populators during recovery index service start
+            verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( IndexDescriptor.class ),
+                    any( IndexSamplingConfig.class ), any() );
+            verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        }
+        finally
+        {
+            recoverySemaphore.release();
+        }
     }
 
     @Test
-    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex()
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws IOException, ExecutionException, InterruptedException
     {
-        assertTimeoutPreemptively( TIMEOUT, () ->
+        // Given
+        Semaphore populationSemaphore = new Semaphore( 1 );
+        try
         {
-            // Given
-            Semaphore populationSemaphore = new Semaphore( 1 );
-            try
-            {
-                startDb();
+            startDb();
 
-                when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
-                        indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
-                createIndex( myLabel );
+            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
+                    indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+            createIndex( myLabel );
 
-                // And Given
-                Future<Void> killFuture = killDbInSeparateThread();
-                populationSemaphore.release();
-                killFuture.get();
-            }
-            finally
-            {
-                populationSemaphore.release();
-            }
+            // And Given
+            Future<Void> killFuture = killDbInSeparateThread();
+            populationSemaphore.release();
+            killFuture.get();
+        }
+        finally
+        {
+            populationSemaphore.release();
+        }
 
-            // When
-            when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
-            populationSemaphore = new Semaphore( 1 );
-            try
-            {
-                when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
-                        indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
-                startDb();
+        // When
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+        populationSemaphore = new Semaphore( 1 );
+        try
+        {
+            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
+                    indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+            startDb();
 
-                try ( Transaction transaction = db.beginTx() )
-                {
-                    assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
-                    assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
-                }
-                verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
-                verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-            }
-            finally
+            try ( Transaction transaction = db.beginTx() )
             {
-                populationSemaphore.release();
+                assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
+                assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
             }
-        } );
+            verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+            verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        }
+        finally
+        {
+            populationSemaphore.release();
+        }
     }
 
     @Test
@@ -336,7 +332,7 @@ class IndexRecoveryIT
         if ( db != null )
         {
             File snapshotDir = testDirectory.directory( "snapshot" );
-            synchronized ( this )
+            synchronized ( lock )
             {
                 snapshotFs( snapshotDir );
             }
@@ -378,20 +374,20 @@ class IndexRecoveryIT
 
     private Future<Void> killDbInSeparateThread()
     {
-        ExecutorService executor = newSingleThreadExecutor();
-        Future<Void> result = executor.submit( () ->
+        return executor.submit( () ->
         {
             killDb();
             return null;
         } );
-        executor.shutdown();
-        return result;
     }
 
-    private synchronized void rotateLogsAndCheckPoint() throws IOException
+    private void rotateLogsAndCheckPoint() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        synchronized ( lock )
+        {
+            db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
+            db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        }
     }
 
     private void createIndexAndAwaitPopulation( Label label )
@@ -482,7 +478,7 @@ class IndexRecoveryIT
         };
     }
 
-    private class MyRecoveryMonitor implements RecoveryMonitor
+    private static class MyRecoveryMonitor implements RecoveryMonitor
     {
         private final Semaphore recoverySemaphore;
 
