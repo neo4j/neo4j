@@ -777,4 +777,31 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
+
+  // This is a defensive measure, since push down property reads are performed after eagerness analysis (which inserts
+  // eager operators to guarantee semantic correctness of read-write queries where we have data dependencies between reads and writes within the query).
+  // If we move reads past eager boundaries we _may_ end up breaking correctness in edge-cases.
+  test("should not pushdown read past eager") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop AS x").withCardinality(100)
+      .expandAll("(n)-->(q)").withCardinality(100)
+      .eager().withCardinality(10)
+      .expandAll("(n)-->(m)").withCardinality(50)
+      .filter("id(n) <> 0").withCardinality(5)
+      .allNodeScan("n").withCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .projection("n.prop AS x")
+        .expandAll("(n)-->(q)")
+        .cacheProperties("n.prop")
+        .eager()
+        .expandAll("(n)-->(m)")
+        .filter("id(n) <> 0")
+        .allNodeScan("n")
+        .build()
+  }
 }

@@ -83,7 +83,9 @@ case object PushdownPropertyReads {
 
           plan match {
             case _: Aggregation |
-                 _: OrderedAggregation =>
+                 _: OrderedAggregation |
+                 _: Eager =>
+              // Do _not_ pushdown past these plans
               val newVariables = plan.availableSymbols
               val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
 
