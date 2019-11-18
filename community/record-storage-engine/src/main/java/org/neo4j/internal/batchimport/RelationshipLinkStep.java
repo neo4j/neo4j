@@ -26,6 +26,7 @@ import org.neo4j.internal.batchimport.cache.NodeType;
 import org.neo4j.internal.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
@@ -81,7 +82,16 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
             RelationshipRecord item = batch[i];
             if ( item != null && item.inUse() )
             {
-                int changeCount = process( item, id, processors );
+                int changeCount;
+                try
+                {
+                    changeCount = process( item, id, processors );
+                }
+                catch ( Exception e )
+                {
+                    Exceptions.withMessage( e, e.getMessage() + " - ERROR when processing " + item );
+                    throw e;
+                }
                 if ( changeCount == -1 )
                 {
                     // No change for this record, it's OK, all the processors will reach the same conclusion
