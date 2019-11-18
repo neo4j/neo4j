@@ -17,7 +17,10 @@
 package org.neo4j.pushtocloud;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.BufferedInputStream;
@@ -61,7 +64,10 @@ import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 public class HttpCopier implements PushToCloudCommand.Copier
 {
     static final int HTTP_RESUME_INCOMPLETE = 308;
+    static final int HTTP_UNPROCESSABLE_ENTITY = 422;
     static final int HTTP_TOO_MANY_REQUESTS = 429;
+    static final String ERROR_REASON_UNSUPPORTED_INDEXES = "LegacyIndexes";
+    static final String ERROR_REASON_EXCEEDS_MAX_SIZE = "ImportExceedsMaxSize";
     private static final long POSITION_UPLOAD_COMPLETED = -1;
     private static final long MAXIMUM_RETRY_BACKOFF = SECONDS.toMillis( 64 );
 
@@ -157,8 +163,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 importTimeEstimateMinutes, bytesToGibibytes( fileSize ), fileSize ) );
         while ( !statusProgress.isDone() )
         {
-            String status = getDatabaseStatus( verbose, safeUrl( consoleURL + "/import/status" ), bearerTokenHeader );
-            switch ( status )
+            StatusBody statusBody = getDatabaseStatus( verbose, safeUrl( consoleURL + "/import/status" ), bearerTokenHeader );
+            switch ( statusBody.Status )
             {
                 case "running":
                     // It could happen that the very first call of this method is so fast, that the database is still in state
@@ -181,14 +187,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     }
                     break;
                 case "loading failed":
-                    throw new CommandFailed( "We're sorry, something has gone wrong. We did not recognize the file you uploaded as a valid Neo4j dump file. " +
-                            "Please check the file and try again. If you have received this error after confirming the type of file being uploaded," +
-                            "please open a support case." );
+                    throw formatCommandFailedError( statusBody.Error.getMessage(), statusBody.Error.getUrl() );
                 default:
                     firstRunning = false;
                     long elapsed = System.currentTimeMillis() - importStarted;
                     statusProgress.rewindTo( 0 );
-                    statusProgress.add( importStatusProgressEstimate(status, elapsed, importTimeEstimateMillis ) );
+                    statusProgress.add( importStatusProgressEstimate( statusBody.Status, elapsed, importTimeEstimateMillis ) );
                     break;
             }
             sleeper.sleep( 2000 );
@@ -305,8 +309,11 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "The given authorization token is invalid or has expired" );
+            // Deprecated: the use of this status code for the purpose below should be replaced with HTTP_UNPROCESSABLE_ENTITY in a future release.
             case HTTP_NOT_ACCEPTABLE:
                 throw insufficientSpaceErrorResponse( verbose, connection, fileSize );
+            case HTTP_UNPROCESSABLE_ENTITY:
+                throw validationFailureErrorResponse( verbose, connection, fileSize );
             case HTTP_ACCEPTED:
                 // the import request was accepted, and the server has not seen this dump file, meaning the import request is a new operation.
                 return safeUrl( extractSignedURIFromResponse( verbose, connection ) );
@@ -436,7 +443,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private String getDatabaseStatus( boolean verbose, URL statusURL, String bearerToken )
+    private StatusBody getDatabaseStatus( boolean verbose, URL statusURL, String bearerToken )
             throws IOException, CommandFailed
     {
         HttpURLConnection connection = (HttpURLConnection) statusURL.openConnection();
@@ -457,7 +464,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     try ( InputStream responseData = connection.getInputStream() )
                     {
                         String json = new String( toByteArray( responseData ), UTF_8 );
-                        return parseJsonUsingJacksonParser( json, StatusBody.class ).Status;
+                        return parseJsonUsingJacksonParser( json, StatusBody.class );
                     }
                 default:
                     throw unexpectedResponse( verbose, connection, "Trigger import/restore after successful upload" );
@@ -596,6 +603,20 @@ public class HttpCopier implements PushToCloudCommand.Copier
     {
         if ( verbose )
         {
+            String responseString = "not available";
+            try ( InputStream responseData = successful ? connection.getInputStream() : connection.getErrorStream() )
+            {
+                responseString = new String( toByteArray( responseData ), UTF_8 );
+            }
+            debugResponse( true, responseString, connection, successful );
+        }
+    }
+
+    private void debugResponse( boolean verbose, String responseBody, HttpURLConnection connection, boolean successful )
+            throws IOException
+    {
+        if ( verbose )
+        {
             debug( true, "=== Unexpected response ===" );
             debug( true, "Response message: " + connection.getResponseMessage() );
             debug( true, "Response headers:" );
@@ -606,11 +627,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     debug( true, "  " + key + ": " + value );
                 }
             } );
-            try ( InputStream responseData = successful ? connection.getInputStream() : connection.getErrorStream() )
-            {
-                String responseString = new String( toByteArray( responseData ), UTF_8 );
-                debug( true, "Error response data: " + responseString );
-            }
+            debug( true, "Error response data: " + responseBody );
         }
     }
 
@@ -672,6 +689,31 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal." );
     }
 
+    private CommandFailed validationFailureErrorResponse( boolean verbose, HttpURLConnection connection, long fileSize )
+            throws IOException
+    {
+        try ( InputStream responseData = connection.getErrorStream() )
+        {
+            String responseString = new String( toByteArray( responseData ), UTF_8 );
+            debugResponse( verbose, responseString, connection, false );
+            ErrorBody errorBody = parseJsonUsingJacksonParser( responseString, ErrorBody.class );
+
+            String message = errorBody.getMessage();
+
+            switch ( errorBody.getReason() )
+            {
+            case ERROR_REASON_EXCEEDS_MAX_SIZE:
+                String trimmedMessage = StringUtils.removeEnd( message, "." );
+                message = format( "%s. Minimum storage space required: %.1f GB", trimmedMessage, bytesToGibibytes( fileSize ) );
+                break;
+            default:
+                break; // No special treatment required
+            }
+
+            return formatCommandFailedError( message, errorBody.getUrl() );
+        }
+    }
+
     private CommandFailed insufficientSpaceErrorResponse( boolean verbose, HttpURLConnection connection, long fileSize )
             throws IOException
     {
@@ -685,6 +727,19 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private CommandFailed unexpectedResponse( boolean verbose, HttpURLConnection connection, String requestDescription ) throws IOException
     {
         return errorResponse( verbose, connection, format( "Unexpected response code %d from request: %s", connection.getResponseCode(), requestDescription ) );
+    }
+
+    private CommandFailed formatCommandFailedError( String message, String url )
+    {
+        if ( StringUtils.isEmpty( url ) )
+        {
+            return new CommandFailed( message );
+        }
+        else
+        {
+            String trimmedMessage = StringUtils.removeEnd( message, "." );
+            return new CommandFailed( format( "Error: %s. See: %s", trimmedMessage, url ) );
+        }
     }
 
     private double bytesToGibibytes( long sizeInBytes )
@@ -706,9 +761,49 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     @JsonIgnoreProperties( ignoreUnknown = true )
-    private static class StatusBody
+    static class StatusBody
     {
         public String Status;
+        public ErrorBody Error = new ErrorBody();
+    }
+
+    @JsonIgnoreProperties( ignoreUnknown = true )
+    static class ErrorBody
+    {
+        private static final String DEFAULT_MESSAGE =
+                "an unexpected problem ocurred, please contact customer support for assistance";
+        private static final String DEFAULT_REASON = "UnknownError";
+
+        private final String message;
+        private final String reason;
+        private final String url;
+
+        ErrorBody()
+        {
+            this( null, null, null );
+        }
+
+        @JsonCreator
+        ErrorBody( @JsonProperty( "Message" ) String message, @JsonProperty( "Reason" ) String reason,
+                @JsonProperty( "Url" ) String url )
+        {
+            this.message = message;
+            this.reason = reason;
+            this.url = url;
+        }
+
+        public String getMessage()
+        {
+            return StringUtils.defaultIfBlank( this.message, DEFAULT_MESSAGE );
+        }
+        public String getReason()
+        {
+            return StringUtils.defaultIfBlank( this.reason, DEFAULT_REASON );
+        }
+        public String getUrl()
+        {
+            return this.url;
+        }
     }
 
     interface Sleeper
