@@ -190,10 +190,9 @@ class StoreLogServiceTest
                 Level[] levels = new Level[]{Level.INFO, Level.WARN, Level.ERROR};
                 for ( Level level : levels )
                 {
-                    Thread.sleep( tlRandom.nextInt( 50 ) );
+                    Thread.sleep( tlRandom.nextInt( 5_000 ) );
                     levelChanger.accept( logService, level );
                 }
-                Thread.sleep( tlRandom.nextInt( 50 ) );
                 end.set( true );
             } ) );
             race.go();
