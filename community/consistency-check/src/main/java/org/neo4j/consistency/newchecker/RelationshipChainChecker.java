@@ -144,55 +144,12 @@ class RelationshipChainChecker implements Checker
         };
 
         // I/O worker that paves the way for the record reader so that it won't have to spend time page faulting
-        if ( direction == ScanDirection.FORWARD )
+        workers[workers.length - 1] = () ->
         {
-            // Simply read ahead
-            workers[workers.length - 1] = () ->
-            {
-                try ( PageCursor cursor = relationshipStore.openPageCursorForReading( 0 ) )
-                {
-                    long currentPageId;
-                    while ( cursor.next() && !context.isCancelled() )
-                    {
-                        currentPageId = cursor.getCurrentPageId();
-                        while ( currentPageId - currentWorkingPage.get() > ioReadAheadSize && !context.isCancelled() )
-                        {
-                            Thread.sleep( 10 );
-                        }
-                    }
-                }
-            };
-        }
-        else
-        {
-            // Jump backwards and read batch sequentially forwards
-            workers[workers.length - 1] = () ->
-            {
-                try ( PageCursor cursor = relationshipStore.openPageCursorForReading( 0 ) )
-                {
-                    relationshipStore.getRecordByCursor( highId - 1, relationshipStore.newRecord(), RecordLoad.FORCE, cursor );
-                    long endPageId = cursor.getCurrentPageId();
-                    long startPageId = max( 0, endPageId - ioReadAheadSize );
-                    while ( startPageId > 0 && endPageId > 0 && !context.isCancelled() )
-                    {
-                        cursor.next( startPageId );
-                        while ( cursor.getCurrentPageId() <= endPageId && !context.isCancelled() )
-                        {
-                            if ( cursor.next() )
-                            {
-                                break;
-                            }
-                        }
-                        endPageId = max( 0, startPageId - 1 );
-                        startPageId = max( 0, endPageId - ioReadAheadSize );
-                        while ( currentWorkingPage.get() - startPageId > 3 * ioReadAheadSize / 2 && !context.isCancelled() )
-                        {
-                            Thread.sleep( 10 );
-                        }
-                    }
-                }
-            };
-        }
+            StorePagePrefetcher prefetcher =
+                    new StorePagePrefetcher( relationshipStore, ioReadAheadSize, context::isCancelled, StorePagePrefetcher.NO_MONITOR );
+            prefetcher.prefetch( currentWorkingPage::get, direction == ScanDirection.FORWARD );
+        };
 
         Stopwatch stopwatch = Stopwatch.start();
         cacheAccess.clearCache();
