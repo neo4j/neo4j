@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -1139,6 +1140,54 @@ public class TestTransactionEvents
         assertThat( deletedToString.get(), containsString( type.name() ) );
         assertThat( deletedToString.get(), containsString( format( "(%d)", startNode.getId() ) ) );
         assertThat( deletedToString.get(), containsString( format( "(%d)", endNode.getId() ) ) );
+    }
+
+    @Test
+    public void shouldHaveTransactionIdInAfterCommit()
+    {
+        AtomicBoolean called = new AtomicBoolean();
+        dbRule.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        {
+            @Override
+            public void afterCommit( TransactionData data, Object state )
+            {
+                data.getTransactionId();
+                called.set( true );
+            }
+        } );
+        long nodeId = 0;
+
+        // Must not throw on plain write transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            nodeId = dbRule.createNode().getId();
+            tx.success();
+        }
+        assertTrue( called.getAndSet( false ) );
+
+        // Must not throw on plain read transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.getNodeById( nodeId );
+            tx.success();
+        }
+        assertFalse( called.getAndSet( false ) ); // No afterCommit on pure read transactions.
+
+        // Must not throw on schema transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.schema().indexFor( label( "Label" ) ).on( "prop" ).create();
+            tx.success();
+        }
+        assertFalse( called.getAndSet( false ) ); // No afterCommit when there's been no data changes.
+
+        // Must not throw on zero-change write transactions.
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode().delete();
+            tx.success();
+        }
+        assertTrue( called.getAndSet( false ) );
     }
 
     @Test
