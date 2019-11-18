@@ -112,7 +112,7 @@ public class ProcedureJarLoader
         {
             Class<?> next = classes.next();
             target.addAllProcedures( compiler.compileProcedure( next, null, false ) );
-            target.addAllFunctions( compiler.compileFunction( next ) );
+            target.addAllFunctions( compiler.compileFunction( next, false ) );
             target.addAllAggregationFunctions( compiler.compileAggregationFunction( next ) );
         }
         return target;
