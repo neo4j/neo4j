@@ -719,7 +719,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation,
                             versionContextSupplier.getVersionContext() );
-                    txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
+                    txId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }
             }
@@ -739,6 +739,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             else
             {
+                transactionId = txId;
                 afterCommit( listenersState );
             }
         }
