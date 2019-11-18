@@ -142,7 +142,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), eq( true  ) );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
     }
 
     @Test
