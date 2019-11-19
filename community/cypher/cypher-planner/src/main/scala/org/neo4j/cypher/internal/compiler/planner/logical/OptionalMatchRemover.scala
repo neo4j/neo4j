@@ -39,17 +39,17 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
   override def postConditions: Set[Condition] = Set.empty
 
   override def instance(ignored: PlannerContext): Rewriter = topDown(Rewriter.lift {
-    case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, _)
+    case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, queryInput)
       if validAggregations(aggregations) =>
       val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail)
+      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
 
-    case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, _) =>
+    case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, queryInput) =>
       val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail)
+      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
   })
 
-  private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, interestingOrder: InterestingOrder, proj: QueryProjection, tail: Option[SinglePlannerQuery]): RegularSinglePlannerQuery = {
+  private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, interestingOrder: InterestingOrder, proj: QueryProjection, tail: Option[SinglePlannerQuery], queryInput: Option[Seq[String]]): RegularSinglePlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
     val gen = new PositionGenerator
@@ -94,7 +94,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     }
 
     val matches = graph.withOptionalMatches(optionalMatches)
-    RegularSinglePlannerQuery(matches, interestingOrder, horizon = proj, tail = tail)
+    RegularSinglePlannerQuery(matches, interestingOrder, horizon = proj, tail = tail, queryInput = queryInput)
 
   }
 

@@ -35,6 +35,10 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c RETURN *")._2 should equal(Input(Seq("a", "b", "c")))
   }
 
+  test("INPUT DATA STREAM a, b, c RETURN DISTINCT a") {
+    new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c RETURN DISTINCT a")._2 should equal(Distinct(Input(Seq("a", "b", "c")), Map("a" -> varFor("a"))))
+  }
+
   test("INPUT DATA STREAM a, b, c RETURN sum(a)") {
     new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c RETURN sum(a)")._2 should equal(
       Aggregation(Input(Seq("a", "b", "c")), Map.empty, Map("sum(a)" -> sum(varFor("a"))))
