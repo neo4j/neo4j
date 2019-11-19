@@ -105,7 +105,7 @@ class ProcedureCompiler
         this.restrictions = restrictions;
     }
 
-    List<CallableUserFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
+    List<CallableUserFunction> compileFunction( Class<?> fcnDefinition, boolean isBuiltin ) throws KernelException
     {
         try
         {
@@ -127,7 +127,7 @@ class ProcedureCompiler
                 String valueName = method.getAnnotation( UserFunction.class ).value();
                 String definedName = method.getAnnotation( UserFunction.class ).name();
                 QualifiedName funcName = extractName( fcnDefinition, method, valueName, definedName );
-                if ( config.isWhitelisted( funcName.toString() ) )
+                if ( isBuiltin || config.isWhitelisted( funcName.toString() ) )
                 {
                     out.add( compileFunction( fcnDefinition, method, funcName ) );
                 }

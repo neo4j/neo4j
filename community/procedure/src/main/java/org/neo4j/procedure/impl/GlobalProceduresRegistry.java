@@ -186,7 +186,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     @Override
     public void registerBuiltInFunctions( Class<?> func ) throws KernelException
     {
-        for ( CallableUserFunction function : compiler.withoutNamingRestrictions().compileFunction( func ) )
+        for ( CallableUserFunction function : compiler.withoutNamingRestrictions().compileFunction( func, true ) )
         {
             register( function, false );
         }
@@ -232,7 +232,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     @Override
     public void registerFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
     {
-        for ( CallableUserFunction function : compiler.compileFunction( func ) )
+        for ( CallableUserFunction function : compiler.compileFunction( func, false ) )
         {
             register( function, overrideCurrentImplementation );
         }

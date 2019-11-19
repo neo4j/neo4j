@@ -151,7 +151,7 @@ public class ResourceInjectionTest
     {
         // Given
         CallableUserFunction proc =
-                compiler.compileFunction( FunctionWithInjectedAPI.class).get( 0 );
+                compiler.compileFunction( FunctionWithInjectedAPI.class, false ).get( 0 );
 
         // When
         AnyValue out = proc.apply( prepareContext(), new AnyValue[0] );
@@ -163,7 +163,7 @@ public class ResourceInjectionTest
     @Test
     void shouldFailNicelyWhenFunctionUsesUnknownAPI()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compiler.compileFunction( FunctionWithUnknownAPI.class ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compiler.compileFunction( FunctionWithUnknownAPI.class, false ) );
         assertThat( exception.getMessage(), equalTo( "Unable to set up injection for procedure `FunctionWithUnknownAPI`, " +
                                                     "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " +
                                                     "which is not a known injectable component." ) );
@@ -174,7 +174,7 @@ public class ResourceInjectionTest
     {
         //When
         List<CallableUserFunction> procList =
-                compiler.compileFunction( FunctionWithUnsafeAPI.class);
+                compiler.compileFunction( FunctionWithUnsafeAPI.class, false );
         verify( log ).warn( notAvailableMessage( "org.neo4j.procedure.impl.listCoolPeople" ) );
 
         assertThat( procList.size(), equalTo( 1 ) );
@@ -228,7 +228,7 @@ public class ResourceInjectionTest
     void shouldFailNicelyWhenAllUsesUnsafeAPI() throws Throwable
     {
         //When
-        compiler.compileFunction( FunctionsAndProcedureUnsafe.class );
+        compiler.compileFunction( FunctionsAndProcedureUnsafe.class, false );
         compiler.compileProcedure( FunctionsAndProcedureUnsafe.class, null, false );
         compiler.compileAggregationFunction( FunctionsAndProcedureUnsafe.class );
         // Then
