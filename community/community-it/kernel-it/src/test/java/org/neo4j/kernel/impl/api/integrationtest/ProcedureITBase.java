@@ -103,23 +103,15 @@ public interface ProcedureITBase
                 proc( "db.createIndex",
                         "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, config = {} :: MAP?) :: " +
                                 "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named schema index with specified index provider. " +
-                                "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
-                                "Note that settings keys might need to be escaped with back-ticks, " +
-                                "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. Example: " +
-                                "CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\", {`spatial.cartesian.maxLevels`: 5}) - " +
-                                "YIELD name, labels, properties, providerName, status",
+                        "Create a named schema index with specified index provider and configuration (optional). " +
+                                "Yield: name, labels, properties, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.createUniquePropertyConstraint",
                         "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
                                 "config = {} :: MAP?) :: " +
                                 "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named unique property constraint with index backed by specified index provider. " +
-                                "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
-                                "Note that settings keys might need to be escaped with back-ticks, " +
-                                "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. Example: " +
-                                "CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\", " +
-                                "{`spatial.cartesian.maxLevels`: 5}) - YIELD name, labels, properties, providerName, status",
+                        "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). " +
+                                "Yield: name, labels, properties, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
                         "Wait for the updates from recently committed transactions to be applied to any eventually-consistent full-text indexes.",
@@ -217,12 +209,8 @@ public interface ProcedureITBase
                         "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
                                 "config = {} :: MAP?) " +
                                 ":: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named node key constraint with index backed by specified index provider. " +
-                                "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
-                                "Note that settings keys might need to be escaped with back-ticks, " +
-                                "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. " +
-                                "Example: CALL db.createNodeKey(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\") - " +
-                                "YIELD name, labels, properties, providerName, status",
+                        "Create a named node key constraint. Backing index will use specified index provider and configuration (optional). " +
+                                "Yield: name, labels, properties, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "dbms.listActiveLocks", "(queryId :: STRING?) :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
                         "List the active lock requests granted for the transaction executing the query with the given query id.",

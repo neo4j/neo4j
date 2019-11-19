@@ -456,12 +456,8 @@ public class BuiltInProcedures
         return result.stream();
     }
 
-    @Description( "Create a named schema index with specified index provider. " +
-            "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
-            "Note that settings keys might need to be escaped with back-ticks, " +
-            "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. " +
-            "Example: CALL db.createIndex(\"MyIndex\", [\"Person\"], [\"name\"], \"native-btree-1.0\", {`spatial.cartesian.maxLevels`: 5}) - " +
-            "YIELD name, labels, properties, providerName, status" )
+    @Description( "Create a named schema index with specified index provider and configuration (optional). " +
+            "Yield: name, labels, properties, providerName, status" )
     @Procedure( name = "db.createIndex", mode = SCHEMA )
     public Stream<SchemaIndexInfo> createIndex(
             @Name( "indexName" ) String indexName,
@@ -476,12 +472,8 @@ public class BuiltInProcedures
         return indexProcedures.createIndex( indexName, labels, properties, indexProviderDescriptor, config );
     }
 
-    @Description( "Create a named unique property constraint with index backed by specified index provider. " +
-            "The optional 'config' parameter can be used to supply settings to the index. Config settings are submitted as a map. " +
-            "Note that settings keys might need to be escaped with back-ticks, " +
-            "config example: {`spatial.cartesian.maxLevels`: 5, `spatial.cartesian.min`: [-45.0, -45.0]}. Example: " +
-            "CALL db.createUniquePropertyConstraint(\"MyConstraint\", [\"Person\"], [\"name\"], \"native-btree-1.0\", {`spatial.cartesian.maxLevels`: 5}) - " +
-            "YIELD name, labels, properties, providerName, status" )
+    @Description( "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). " +
+            "Yield: name, labels, properties, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
             @Name( "constraintName" ) String constraintName,
