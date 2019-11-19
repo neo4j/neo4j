@@ -31,8 +31,7 @@ class CursorUtilsTest extends CypherFunSuite {
     val nodeCursor = mock[NodeCursor]
     val propertyCursor = mock[PropertyCursor]
     when(nodeCursor.next()).thenReturn(true)
-    when(propertyCursor.next()).thenReturn(true, true, true, false)
-    when(propertyCursor.propertyKey()).thenReturn(1336, 1337, 1338)
+    when(propertyCursor.seekProperty(1337)).thenReturn(true)
     when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
 
     // When
@@ -46,9 +45,7 @@ class CursorUtilsTest extends CypherFunSuite {
     val nodeCursor = mock[NodeCursor]
     val propertyCursor = mock[PropertyCursor]
     when(nodeCursor.next()).thenReturn(true)
-    when(propertyCursor.next()).thenReturn(true, true, true, false)
-    when(propertyCursor.propertyKey()).thenReturn(1336, 1337, 1338)
-    when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
+    when(propertyCursor.seekProperty(1339)).thenReturn(false)
 
     // When
     val value = nodeGetProperty(mock[Read], nodeCursor, 42L, propertyCursor, 1339)
@@ -71,8 +68,7 @@ class CursorUtilsTest extends CypherFunSuite {
     val relationshipCursor = mock[RelationshipScanCursor]
     val propertyCursor = mock[PropertyCursor]
     when(relationshipCursor.next()).thenReturn(true)
-    when(propertyCursor.next()).thenReturn(true, true, true, false)
-    when(propertyCursor.propertyKey()).thenReturn(1336, 1337, 1338)
+    when(propertyCursor.seekProperty(1337)).thenReturn(true)
     when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
 
     // When
@@ -86,9 +82,7 @@ class CursorUtilsTest extends CypherFunSuite {
     val relationshipCursor = mock[RelationshipScanCursor]
     val propertyCursor = mock[PropertyCursor]
     when(relationshipCursor.next()).thenReturn(true)
-    when(propertyCursor.next()).thenReturn(true, true, true, false)
-    when(propertyCursor.propertyKey()).thenReturn(1336, 1337, 1338)
-    when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
+    when(propertyCursor.seekProperty(1339)).thenReturn(false)
 
     // When
     val value = relationshipGetProperty(mock[Read], relationshipCursor, 42L, propertyCursor, 1339)
