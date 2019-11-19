@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.assertion;
 
+import org.awaitility.Awaitility;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
@@ -32,12 +33,30 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
 
+import static java.time.Duration.ZERO;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
 
 public final class Assert
 {
     private Assert()
     {
+    }
+
+    public static <E extends Exception> void awaitUntilAsserted( ThrowingAction<E> condition )
+    {
+        awaitUntilAsserted( null, condition );
+    }
+
+    public static <E extends Exception> void awaitUntilAsserted( String alias, ThrowingAction<E> condition )
+    {
+        Awaitility.await( alias )
+                .atMost( 1, MINUTES )
+                .pollDelay( ZERO )
+                .pollInterval( 50, MILLISECONDS )
+                .pollInSameThread()
+                .untilAsserted( condition::apply );
     }
 
     public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException )

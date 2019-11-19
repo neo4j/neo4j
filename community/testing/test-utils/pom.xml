@@ -112,5 +112,10 @@
             <artifactId>bcpkix-jdk15on</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

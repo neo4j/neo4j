@@ -114,6 +114,7 @@
     <jackson.version>2.10.0</jackson.version>
 	<amazon-sdk.version>1.11.524</amazon-sdk.version>
     <guava.version>28.1-jre</guava.version>
+    <awaitility.version>4.0.1</awaitility.version>
   </properties>
 
   <modules>
@@ -1126,6 +1127,13 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>3.0.0</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
         <scope>test</scope>
       </dependency>
 
