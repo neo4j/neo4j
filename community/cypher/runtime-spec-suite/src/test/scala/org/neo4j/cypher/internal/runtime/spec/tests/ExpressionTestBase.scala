@@ -123,26 +123,6 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     runtimeResult should beColumns("hasLabel").withRows(singleColumn(Seq(false)))
   }
 
-  test("should get type of relationship") {
-    // given
-    val size = 11
-    val paths = given { chainGraphs(size, "TO") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("t")
-      .projection("type(r) AS t")
-      .expand("(x)-[r]->(y)")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("t").withRows(singleColumn((1 to size).map(_ => "TO")))
-  }
-
-
   test("should handle node property access on top of allNode") {
     // given
     val size = 100
@@ -379,6 +359,30 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
     // then
     runtimeResult should beColumns("prop").withRows(singleColumn(Seq(null)))
+  }
+}
+
+// Supported by all non-parallel runtimes
+trait ThreadUnsafeExpressionTests[CONTEXT <: RuntimeContext] {
+  self: ExpressionTestBase[CONTEXT] =>
+
+  test("should get type of relationship") {
+    // given
+    val size = 11
+    val paths = given { chainGraphs(size, "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("t")
+      .projection("type(r) AS t")
+      .expand("(x)-[r]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("t").withRows(singleColumn((1 to size).map(_ => "TO")))
   }
 }
 
