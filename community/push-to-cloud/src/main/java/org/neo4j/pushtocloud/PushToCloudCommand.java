@@ -155,9 +155,10 @@ public class PushToCloudCommand implements AdminCommand
             String bearerToken = copier.authenticate( verbose, consoleURL, username, password, "true".equals( confirmationViaArgument ) );
 
             Path source = initiateSource( arguments );
-            boolean sourceProvided = arguments.get( ARG_DUMP ) != null;
+            // only mark dump to delete after processing, if we just created it
+            boolean deleteDump = arguments.get( ARG_DUMP ) == null;
 
-            copier.copy( verbose, consoleURL, boltURI, source, sourceProvided, bearerToken );
+            copier.copy( verbose, consoleURL, boltURI, source, deleteDump, bearerToken );
         }
         catch ( Exception e )
         {
