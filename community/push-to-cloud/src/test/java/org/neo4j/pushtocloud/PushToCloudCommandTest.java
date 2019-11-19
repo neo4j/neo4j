@@ -41,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -90,7 +91,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( false ), any() );
     }
 
     @Test
@@ -116,7 +117,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), eq( true  ) );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( false ), any() );
     }
 
     @Test
@@ -142,7 +143,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), eq( true  ) );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( false ), any() );
     }
 
     @Test
@@ -159,7 +160,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( dump ), anyBoolean(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( dump ), eq( false ), any() );
     }
 
     @Test
@@ -181,7 +182,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( eq( databaseName ), any() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( true ), any() );
     }
 
     @Test
@@ -205,7 +206,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( databaseName, dumpFile );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( true ), any() );
     }
 
     @Test
@@ -302,17 +303,22 @@ public class PushToCloudCommandTest
                 .outsideWorld( outsideWorld )
                 .build();
 
+        Path dump = createSimpleDatabaseDump();
         // when
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_USERNAME, "user" ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+
+        assertTrue( dump.toFile().exists() );
 
         environmentVariables.set("NEO4J_USERNAME", "neo4j");
         environmentVariables.set("NEO4J_PASSWORD", null);
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+
+        assertTrue( dump.toFile().exists() );
 
     }
 
@@ -358,7 +364,7 @@ public class PushToCloudCommandTest
         // then
         String defaultDatabase = new Database().defaultValue();
         verify( dumpCreator ).dumpDatabase( eq( defaultDatabase ), any() );
-        verify( copier ).copy( anyBoolean(), any(), any(), any(), anyBoolean(), any() );
+        verify( copier ).copy( anyBoolean(), any(), any(), any(), eq( true ), any() );
     }
 
     @Test
@@ -398,7 +404,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ),
-                eq( "bolt+routing://mydbid-testenvironment.databases.neo4j.io" ), any(), anyBoolean(), any() );
+                eq( "bolt+routing://mydbid-testenvironment.databases.neo4j.io" ), any(), eq( false ), any() );
     }
 
     @Test
@@ -415,7 +421,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ),
-                eq( "bolt+routing://mydbid.databases.neo4j.io" ), any(), anyBoolean(), any() );
+                eq( "bolt+routing://mydbid.databases.neo4j.io" ), any(), eq( false ), any() );
     }
 
     @Test
@@ -431,10 +437,10 @@ public class PushToCloudCommandTest
 
         // then
         InOrder inOrder = inOrder( copier, dumper );
-        inOrder.verify( copier ).authenticate( anyBoolean(), anyString(), anyString(), any(), anyBoolean() );
+        inOrder.verify( copier ).authenticate( anyBoolean(), anyString(), anyString(), any(), eq( false ) );
         inOrder.verify( dumper ).dumpDatabase( anyString(), any() );
         inOrder.verify( copier ).copy( anyBoolean(), anyString(), eq( "bolt+routing://mydbid.databases.neo4j.io" ), any(),
-                anyBoolean(), anyString() );
+                eq( true ), anyString() );
     }
 
     private Copier mockedTargetCommunicator() throws CommandFailed
