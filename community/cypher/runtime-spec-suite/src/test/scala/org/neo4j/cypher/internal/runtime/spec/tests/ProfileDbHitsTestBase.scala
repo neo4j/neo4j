@@ -39,6 +39,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  cartesianProductChunkSize: Long // The size of a LHS chunk for cartesian product
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  protected def canFuseOverPipelines: Boolean = false
+
   test("should profile dbHits of all nodes scan") {
     given { nodeGraph(sizeHint) }
 
@@ -454,10 +456,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // node hash join
-    queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
-    queryProfile.operatorProfile(4).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(4).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(5).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
   }
 
@@ -504,10 +507,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe (size / 2 * size) * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
-    queryProfile.operatorProfile(3).dbHits() shouldBe size * size * (costOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(3).dbHits() shouldBe size * size * (fusedCostOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(4).dbHits() should (be (size * size) or be (size * (1+size))) // all node scan
     queryProfile.operatorProfile(5).dbHits() should (be (size) or be (size + 1)) // all node scan
   }
@@ -526,12 +530,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     // assertions on property dbHits are tricky because in pipelined more dbHits are reported for
     // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
     queryProfile.operatorProfile(1).dbHits() should
-      (be (sizeHint * (2 * (costOfGetPropertyChain + costOfProperty) + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) or // prop is the first prop
-        be (sizeHint * ((costOfGetPropertyChain + costOfProperty) + 2 * (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty)))) // prop is the second prop
+      (be (sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) or // prop is the first prop
+        be (sizeHint * ((fusedCostOfGetPropertyChain + costOfProperty) + 2 * (fusedCostOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty)))) // prop is the second prop
   }
 
   test("should profile dbHits of aggregation") {
@@ -548,8 +553,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty)
+    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)
   }
 
   test("should profile dbHits of aggregation with grouping") {
@@ -568,10 +574,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint *
-      ((costOfGetPropertyChain + costOfProperty) // first prop in chain
-        + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
+      ((fusedCostOfGetPropertyChain + costOfProperty) // first prop in chain
+        + (fusedCostOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
   }
 
   test("should profile dbHits of cartesian product") {
