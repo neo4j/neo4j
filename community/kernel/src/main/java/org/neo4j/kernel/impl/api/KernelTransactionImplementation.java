@@ -152,6 +152,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LeaseService leaseService;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
+    private final NamedDatabaseId namedDatabaseId;
     private final BooleanSupplier stoppedCheck;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
@@ -218,6 +219,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storageReader = storageEngine.newReader();
         this.commandCreationContext = storageEngine.newCommandCreationContext();
+        this.namedDatabaseId = namedDatabaseId;
         this.stoppedCheck = stoppedCheck;
         this.schemaReleaseVisitor = new SchemaReleaseVisitor( commandCreationContext );
         this.storageEngine = storageEngine;
@@ -1143,6 +1145,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void addIndexDoDropToTxState( IndexDescriptor index )
     {
         txState().indexDoDrop( index );
+    }
+
+    public String getDatabaseName()
+    {
+        return namedDatabaseId.name();
     }
 
     public static class Statistics

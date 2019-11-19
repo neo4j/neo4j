@@ -41,7 +41,7 @@ import org.neo4j.time.SystemNanoClock;
  */
 class KernelTransactionImplementationHandle implements KernelTransactionHandle
 {
-    private static final String USER_TRANSACTION_NAME_PREFIX = "transaction-";
+    private static final String USER_TRANSACTION_NAME_SEPARATOR = "-transaction-";
 
     private final long txReuseCount;
     private final long lastTransactionIdWhenStarted;
@@ -58,6 +58,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final Map<String,Object> metaData;
     private final long userTransactionId;
     private final TransactionInitializationTrace initializationTrace;
+    private final String databaseName;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx, SystemNanoClock clock )
     {
@@ -74,6 +75,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.userTransactionId = tx.userTransactionId();
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
+        databaseName = tx.getDatabaseName();
         this.tx = tx;
         this.clock = clock;
     }
@@ -153,7 +155,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public String getUserTransactionName()
     {
-        return USER_TRANSACTION_NAME_PREFIX + getUserTransactionId();
+        return databaseName + USER_TRANSACTION_NAME_SEPARATOR + getUserTransactionId();
     }
 
     @Override

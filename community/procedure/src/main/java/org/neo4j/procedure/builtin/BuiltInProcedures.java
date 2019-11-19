@@ -237,7 +237,7 @@ public class BuiltInProcedures
         return SchemaStatementProcedure.createSchemaStatementResults( schemaRead, tokenRead ).stream();
     }
 
-    private IndexResult asIndexResult( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
+    private static IndexResult asIndexResult( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
     {
         SchemaDescriptor schema = index.schema();
         long id = index.getId();
@@ -253,7 +253,7 @@ public class BuiltInProcedures
         return new IndexResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties, provider );
     }
 
-    private IndexDetailResult asIndexDetails( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
+    private static IndexDetailResult asIndexDetails( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
     {
         long id = index.getId();
         String name = index.getName();

@@ -99,7 +99,7 @@ public interface ProcedureITBase
                 proc( "db.createProperty", "(newProperty :: STRING?) :: VOID", "Create a Property", stringArray( "editor", "publisher", "architect", "admin" ),
                         "WRITE", false ), proc( "db.createRelationshipType", "(newRelationshipType :: STRING?) :: VOID", "Create a RelationshipType",
                         stringArray( "editor", "publisher", "architect", "admin" ), "WRITE", false ),
-                proc( "dbms.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", stringArray( "admin" ), "DBMS" ),
+                proc( "db.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", stringArray( "admin" ), "DBMS" ),
                 proc( "db.createIndex",
                         "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, config = {} :: MAP?) :: " +
                                 "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
@@ -161,10 +161,10 @@ public interface ProcedureITBase
                         "Returns endpoints of this instance.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.cluster.routing.getRoutingTable", "(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
                         "Returns endpoints of this instance.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.setTXMetaData", "(data :: MAP?) :: VOID",
+                proc( "tx.setMetaData", "(data :: MAP?) :: VOID",
                         "Attaches a map of data to the transaction. The data will be printed when listing queries, and inserted into the query log.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS", false),
-                proc( "dbms.getTXMetaData", "() :: (metadata :: MAP?)", "Provides attached transaction metadata.",
+                proc( "tx.getMetaData", "() :: (metadata :: MAP?)", "Provides attached transaction metadata.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.database.state",
                         "(databaseName :: STRING?) :: (role :: STRING?, address :: STRING?, status :: STRING?, error :: STRING?)",
@@ -183,7 +183,7 @@ public interface ProcedureITBase
                                 "activeLockCount :: INTEGER?, status :: STRING?, resourceInformation :: MAP?, elapsedTimeMillis :: INTEGER?, " +
                                 "cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, allocatedBytes :: INTEGER?, " +
                                 "allocatedDirectBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, " +
-                                "initializationStackTrace :: STRING?)",
+                                "initializationStackTrace :: STRING?, database :: STRING?)",
                         "List all transactions currently executing at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.killQuery", "(id :: STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
@@ -196,13 +196,14 @@ public interface ProcedureITBase
                                 " overhead to a system, and will slow it down.", stringArray( "admin" ), "DBMS" ),
                 proc( "dbms.killQueries", "(ids :: LIST? OF STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
                         "Kill all transactions executing a query with any of the given query ids.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ), proc( "dbms.listQueries",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.listQueries",
                         "() :: (queryId :: STRING?, username :: STRING?, metaData :: MAP?, query :: STRING?, parameters :: MAP?," +
                                 " planner :: STRING?, runtime :: STRING?, indexes :: LIST? OF MAP?, startTime :: STRING?, protocol :: STRING?, " +
                                 "clientAddress :: STRING?, requestUri :: STRING?, status :: STRING?, resourceInformation :: MAP?, " +
                                 "activeLockCount :: INTEGER?, " +
                                 "elapsedTimeMillis :: INTEGER?, cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, " +
-                                "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?)",
+                                "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, database :: STRING?)",
                         "List all queries currently executing at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "db.createNodeKey",
@@ -220,7 +221,7 @@ public interface ProcedureITBase
                                 "default value. Changes will not persist and will be lost if the server is restarted.", stringArray( "admin" ), "DBMS" ),
                 proc( "dbms.killConnection", "(id :: STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
                         "Kill network connection with the given connection id.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.checkpoint", "() :: (success :: BOOLEAN?, message :: STRING?)",
+                proc( "db.checkpoint", "() :: (success :: BOOLEAN?, message :: STRING?)",
                         "Initiate and wait for a new check point, or wait any already on-going check point to complete. " +
                                 "Note that this temporarily disables the `dbms.checkpoint.iops.limit` setting in order to make the check point " +
                                 "complete faster." + " This might cause transaction throughput to degrade slightly, due to increased IO load.",

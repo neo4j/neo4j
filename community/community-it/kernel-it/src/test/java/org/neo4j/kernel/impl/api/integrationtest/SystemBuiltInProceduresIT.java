@@ -408,7 +408,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
                 "CALL db.createUniquePropertyConstraint('MyConstraint', ['Person'], ['age'], 'lucene+native-3.0')",
                 "CALL db.index.fulltext.createNodeIndex('businessNameIndex', ['Business'],['name'])",
                 "CALL db.index.fulltext.createRelationshipIndex('owner of index', ['IS_OWNER_OF'],['name'])",
-                "CALL dbms.setTXMetaData( { User: 'Sascha' } )",
+                "CALL tx.setMetaData( { User: 'Sascha' } )",
                 "CALL db.index.fulltext.drop('businessNameIndex')");
 
         // First validate that all queries can actually run on normal db

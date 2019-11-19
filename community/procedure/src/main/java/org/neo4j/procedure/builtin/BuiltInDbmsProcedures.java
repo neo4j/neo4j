@@ -86,7 +86,7 @@ public class BuiltInDbmsProcedures
 
     @Description( "Attaches a map of data to the transaction. The data will be printed when listing queries, and " +
             "inserted into the query log." )
-    @Procedure( name = "dbms.setTXMetaData", mode = DBMS )
+    @Procedure( name = "tx.setMetaData", mode = DBMS )
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
         securityContext.assertCredentialsNotExpired();
@@ -107,7 +107,7 @@ public class BuiltInDbmsProcedures
 
     @SystemProcedure
     @Description( "Provides attached transaction metadata." )
-    @Procedure( name = "dbms.getTXMetaData", mode = DBMS )
+    @Procedure( name = "tx.getMetaData", mode = DBMS )
     public Stream<MetadataResult> getTXMetaData()
     {
         securityContext.assertCredentialsNotExpired();
@@ -155,7 +155,7 @@ public class BuiltInDbmsProcedures
     @Admin
     @SystemProcedure
     @Description( "Clears all query caches." )
-    @Procedure( name = "dbms.clearQueryCaches", mode = DBMS )
+    @Procedure( name = "db.clearQueryCaches", mode = DBMS )
     public Stream<StringResult> clearAllQueryCaches()
     {
         QueryExecutionEngine queryExecutionEngine = graph.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
@@ -163,7 +163,7 @@ public class BuiltInDbmsProcedures
 
         String result = numberOfClearedQueries == 0 ? "Query cache already empty."
                                                     : "Query caches successfully cleared of " + numberOfClearedQueries + " queries.";
-        log.info( "Called dbms.clearQueryCaches(): " + result );
+        log.info( "Called db.clearQueryCaches(): " + result );
         return Stream.of( new StringResult( result ) );
     }
 
