@@ -45,9 +45,9 @@ setup_environment() {
 }
 
 setup_heap() {
-  JAVA_MEMORY_OPTS=()
   if [[ -n "${HEAP_SIZE:-}" ]]; then
-    JAVA_MEMORY_OPTS+=("-Xmx${HEAP_SIZE}")
+    JAVA_MEMORY_OPTS_XMS="-Xms${HEAP_SIZE}"
+    JAVA_MEMORY_OPTS_XMX="-Xmx${HEAP_SIZE}"
   fi
 }
 
@@ -74,7 +74,8 @@ detect_os() {
 }
 
 setup_memory_opts() {
-  if [[ -n "${dbms_memory_heap_initial_size:-}" ]]; then
+  # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
+  if [[ -n "${dbms_memory_heap_initial_size:-}" && -z "${JAVA_MEMORY_OPTS_XMS-}" ]]; then
     local mem="${dbms_memory_heap_initial_size}"
     if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
       mem="${mem}m"
@@ -87,9 +88,10 @@ WARNING: dbms.memory.heap.initial_size will require a unit suffix in a
                                           ^
 EOF
     fi
-    JAVA_MEMORY_OPTS+=("-Xms${mem}")
+    JAVA_MEMORY_OPTS_XMS="-Xms${mem}"
   fi
-  if [[ -n "${dbms_memory_heap_max_size:-}" ]]; then
+  # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
+  if [[ -n "${dbms_memory_heap_max_size:-}" && -z "${JAVA_MEMORY_OPTS_XMX-}" ]]; then
     local mem="${dbms_memory_heap_max_size}"
     if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
       mem="${mem}m"
@@ -102,7 +104,7 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
                                       ^
 EOF
     fi
-    JAVA_MEMORY_OPTS+=("-Xmx${mem}")
+    JAVA_MEMORY_OPTS_XMX="-Xmx${mem}"
   fi
 }
 
@@ -159,7 +161,7 @@ call_main_class() {
 
   export NEO4J_HOME NEO4J_CONF
 
-  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS[@]:-} \
+  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-} \
     -classpath "${CLASSPATH}" \
     ${EXTRA_JVM_ARGUMENTS:-} \
     $class_name "$@"
