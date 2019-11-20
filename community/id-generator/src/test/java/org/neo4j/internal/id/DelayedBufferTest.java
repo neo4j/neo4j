@@ -34,7 +34,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -57,7 +56,8 @@ class DelayedBufferTest
         VerifyingConsumer consumer = new VerifyingConsumer( size );
         final FakeClock clock = Clocks.fakeClock();
         Supplier<Long> chunkThreshold = clock::millis;
-        Predicate<Long> safeThreshold = time -> clock.millis() - bufferTime >= time;
+        AtomicBoolean end = new AtomicBoolean();
+        Predicate<Long> safeThreshold = time -> end.get() || clock.millis() - bufferTime >= time;
         final DelayedBuffer<Long> buffer = new DelayedBuffer<>( chunkThreshold, safeThreshold, 10, consumer );
         MaintenanceThread maintenance = new MaintenanceThread( buffer, 5 );
         Race adders = new Race();
@@ -88,7 +88,7 @@ class DelayedBufferTest
             assertEquals( (byte) 1, offeredIds[i], "ID " + i );
         }
         maintenance.halt();
-        clock.forward( 1, SECONDS );
+        end.set( true );
         buffer.maintenance();
         buffer.close();
 
