@@ -25,8 +25,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -41,36 +40,36 @@ class HostnamePortTest
     void testHostnameOnly()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost" );
-        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 0 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
+        assertThat( hostnamePort.getHost() ).isEqualTo( "myhost" );
+        assertThat( hostnamePort.getPort() ).isZero();
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{0, 0} );
     }
 
     @Test
     void testHostnamePort()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1234" );
-        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 1234 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[] {1234, 1234} ) );
+        assertThat( hostnamePort.getHost() ).isEqualTo( "myhost" );
+        assertThat( hostnamePort.getPort() ).isEqualTo( 1234 );
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{1234, 1234} );
     }
 
     @Test
     void testHostnamePortRange()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1234-1243" );
-        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 1234 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[] {1234, 1243} ) );
+        assertThat( hostnamePort.getHost() ).isEqualTo( "myhost" );
+        assertThat( hostnamePort.getPort() ).isEqualTo( 1234 );
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{1234, 1243} );
     }
 
     @Test
     void testHostnamePortRangeInversed()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1243-1234" );
-        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 1243 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[] {1243, 1234} ) );
+        assertThat( hostnamePort.getHost() ).isEqualTo( "myhost" );
+        assertThat( hostnamePort.getPort() ).isEqualTo( 1243 );
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{1243, 1234} );
     }
 
     @Test
@@ -78,8 +77,8 @@ class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( ":1234" );
         assertNull( hostnamePort.getHost() );
-        assertThat( hostnamePort.getPort(), equalTo( 1234 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[] { 1234, 1234 } ) );
+        assertThat( hostnamePort.getPort() ).isEqualTo( 1234 );
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{1234, 1234} );
     }
 
     @Test
@@ -87,15 +86,15 @@ class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( ":1230-1240" );
         assertNull( hostnamePort.getHost() );
-        assertThat( hostnamePort.getPort(), equalTo( 1230 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[] { 1230, 1240 } ) );
+        assertThat( hostnamePort.getPort() ).isEqualTo( 1230 );
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{1230, 1240} );
     }
 
     @Test
     void testDefaultHost()
     {
         HostnamePort hostnamePort = new HostnamePort( ":1234" );
-        assertThat( hostnamePort.getHost( "1.2.3.4" ), equalTo( "1.2.3.4" ) );
+        assertThat( hostnamePort.getHost( "1.2.3.4" ) ).isEqualTo( "1.2.3.4" );
     }
 
     @Test
@@ -107,11 +106,10 @@ class HostnamePortTest
         // When & Then
 
         // should return default, when host is null
-        assertThat( HostnamePort.getHostAddress( null, "default" ), equalTo( "default" ) );
+        assertThat( HostnamePort.getHostAddress( null, "default" ) ).isEqualTo( "default" );
 
         // should return host ip address when host is known
-        assertThat( HostnamePort.getHostAddress( hostName, "default" ), equalTo( hostName ) );
-
+        assertThat( HostnamePort.getHostAddress( hostName, "default" ) ).isEqualTo( hostName );
     }
 
     @Test
@@ -123,7 +121,7 @@ class HostnamePortTest
         assertThrows( UnknownHostException.class, () -> InetAddress.getByName( unknownHost ) );
 
         // should return hostname when it is unknown
-        assertThat( HostnamePort.getHostAddress( unknownHost, "default" ), equalTo( unknownHost ) );
+        assertThat( HostnamePort.getHostAddress( unknownHost, "default" ) ).isEqualTo( unknownHost );
     }
 
     @Test
@@ -182,7 +180,7 @@ class HostnamePortTest
         String host1 = InetAddress.getLocalHost().getHostAddress();
         // Building fake IP for host2
         StringBuilder host2 = new StringBuilder();
-        String [] host1Parts = host1.split( "\\." );
+        String[] host1Parts = host1.split( "\\." );
         for ( String part : host1Parts )
         {
             int partnum = Integer.parseInt( part );
@@ -259,7 +257,6 @@ class HostnamePortTest
         // Should not match, no port
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 ) ) );
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname2 ) ) );
-
     }
 
     @Test
@@ -277,10 +274,10 @@ class HostnamePortTest
         // When & Then
 
         // should return false if matched with any unknown host
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234") ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1234") ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1235") ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1236") ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1235" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1236" ) ) );
     }
 
     @Test
@@ -323,7 +320,6 @@ class HostnamePortTest
         // Should not match, no port
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 ) ) );
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 ) ) );
-
     }
 
     @Test
@@ -341,10 +337,10 @@ class HostnamePortTest
         // When & Then
 
         // should return false if matched with any unknown host
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234") ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1234") ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1235") ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1236") ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1235" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost + ":1236" ) ) );
     }
 
     @Test
@@ -417,9 +413,9 @@ class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( "[2001:cdba:0:0:0:0:3257:9652]" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( "[2001:cdba:0:0:0:0:3257:9652]" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 0 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
+        assertThat( hostnamePort.getHost( null ) ).isEqualTo( "[2001:cdba:0:0:0:0:3257:9652]" );
+        assertThat( hostnamePort.getPort() ).isZero();
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{0, 0} );
     }
 
     @Test
@@ -427,9 +423,9 @@ class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( "foo://[ff02::1:1]:9191" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( "[ff02::1:1]" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 9191 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[]{9191, 9191} ) );
+        assertThat( hostnamePort.getHost( null ) ).isEqualTo( "[ff02::1:1]" );
+        assertThat( hostnamePort.getPort() ).isEqualTo( 9191 );
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{9191, 9191} );
     }
 
     @Test
@@ -437,9 +433,9 @@ class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( "[::1]" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( "[::1]" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 0 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
+        assertThat( hostnamePort.getHost( null ) ).isEqualTo( "[::1]" );
+        assertThat( hostnamePort.getPort() ).isZero();
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{0, 0} );
     }
 
     @Test
@@ -447,8 +443,8 @@ class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( "foo://[::1]:6362" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( "[::1]" ) );
-        assertThat( hostnamePort.getPort(), equalTo( 6362 ) );
-        assertThat( hostnamePort.getPorts(), equalTo( new int[]{6362, 6362} ) );
+        assertThat( hostnamePort.getHost( null ) ).isEqualTo( "[::1]" );
+        assertThat( hostnamePort.getPort() ).isEqualTo( 6362 );
+        assertThat( hostnamePort.getPorts() ).isEqualTo( new int[]{6362, 6362} );
     }
 }

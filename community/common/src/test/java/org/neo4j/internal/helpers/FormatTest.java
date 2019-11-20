@@ -23,8 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.Format.duration;
 
@@ -87,8 +86,8 @@ class FormatTest
     @Test
     void displayDuration()
     {
-        assertThat( duration( MINUTES.toMillis( 1 ) + SECONDS.toMillis( 2 ) ), is( "1m 2s" ) );
-        assertThat( duration( 42 ), is( "42ms" ) );
-        assertThat( duration( 0 ), is( "0ms" ) );
+        assertThat( duration( MINUTES.toMillis( 1 ) + SECONDS.toMillis( 2 ) ) ).isEqualTo( "1m 2s" );
+        assertThat( duration( 42 ) ).isEqualTo( "42ms" );
+        assertThat( duration( 0 ) ).isEqualTo( "0ms" );
     }
 }

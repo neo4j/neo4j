@@ -30,8 +30,7 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.NamedThreadFactory.named;
@@ -136,10 +135,10 @@ class ListenersTest
         executor.awaitTermination( 1, TimeUnit.MINUTES );
 
         assertEquals( message, listener1.message );
-        assertThat( listener1.threadName, startsWith( threadNamePrefix ) );
+        assertThat( listener1.threadName ).startsWith( threadNamePrefix );
 
         assertEquals( message, listener2.message );
-        assertThat( listener2.threadName, startsWith( threadNamePrefix ) );
+        assertThat( listener2.threadName ).startsWith( threadNamePrefix );
     }
 
     @Test

@@ -24,9 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ProfilerTest
 {
@@ -41,7 +39,7 @@ class ProfilerTest
             expensiveComputation();
         }
         String output = getProfilerOutput( profiler );
-        assertThat( output, containsString( "expensiveComputation" ) );
+        assertThat( output ).contains( "expensiveComputation" );
     }
 
     @Test
@@ -54,7 +52,7 @@ class ProfilerTest
         }
         otherIntenseWork();
         String output = getProfilerOutput( profiler );
-        assertThat( output, not( containsString( "otherIntensiveWork" ) ) );
+        assertThat( output ).doesNotContain( "otherIntensiveWork" );
     }
 
     private static String getProfilerOutput( Profiler profiler ) throws InterruptedException

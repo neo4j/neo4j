@@ -27,8 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.LongStream;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ThreadSafePeakMemoryAllocationTrackerTest
@@ -46,11 +45,11 @@ class ThreadSafePeakMemoryAllocationTrackerTest
                 for ( int i = 1; i < 100; i++ )
                 {
                     tracker.allocated( i );
-                    assertThat( tracker.usedDirectMemory(), greaterThan( 0L ) );
+                    assertThat( tracker.usedDirectMemory() ).isGreaterThan( 0L );
                 }
                 for ( int i = 1; i < 100; i++ )
                 {
-                    assertThat( tracker.usedDirectMemory(), greaterThan( 0L ) );
+                    assertThat( tracker.usedDirectMemory() ).isGreaterThan( 0L );
                     tracker.deallocated( i );
                 }
             } );

@@ -21,9 +21,7 @@ package org.neo4j.kernel.lifecycle;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.NONE;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.SHUTDOWN;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTED;
@@ -35,29 +33,25 @@ class TestLifecycleException
     @Test
     void shouldMakeNoneToStoppedIntoHumanReadableInitMessage()
     {
-        assertThat( exceptionFor( NONE, STOPPED ).getMessage(),
-                is( "Component 'SomeComponent' failed to initialize." ) );
+        assertThat( exceptionFor( NONE, STOPPED ).getMessage() ).isEqualTo( "Component 'SomeComponent' failed to initialize." );
     }
 
     @Test
     void shouldMakeStoppedToStartedIntoHumanReadableStartingMessage()
     {
-        assertThat( exceptionFor( STOPPED, STARTED ).getMessage(),
-                is( "Component 'SomeComponent' was successfully initialized, but failed to start." ) );
+        assertThat( exceptionFor( STOPPED, STARTED ).getMessage() ).isEqualTo( "Component 'SomeComponent' was successfully initialized, but failed to start." );
     }
 
     @Test
     void shouldMakeStartedToStoppedIntoHumanReadableStoppingMessage()
     {
-        assertThat( exceptionFor( STARTED, STOPPED ).getMessage(),
-                is( "Component 'SomeComponent' failed to stop." ) );
+        assertThat( exceptionFor( STARTED, STOPPED ).getMessage() ).isEqualTo( "Component 'SomeComponent' failed to stop." );
     }
 
     @Test
     void shouldMakeShutdownIntoHumanReadableShutdownMessage()
     {
-        assertThat( exceptionFor( STOPPED, SHUTDOWN ).getMessage(),
-                is( "Component 'SomeComponent' failed to shut down." ) );
+        assertThat( exceptionFor( STOPPED, SHUTDOWN ).getMessage() ).isEqualTo( "Component 'SomeComponent' failed to shut down." );
     }
 
     @Test
@@ -65,8 +59,7 @@ class TestLifecycleException
     {
         Exception root = new Exception( "big bad root cause" );
         Exception intermediate = new Exception( "intermediate exception", root );
-        assertThat( exceptionFor( STARTED, STOPPED, intermediate ).getMessage(),
-                containsString( root.getMessage()));
+        assertThat( exceptionFor( STARTED, STOPPED, intermediate ) ).hasMessageContaining( root.getMessage() );
     }
 
     private static LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to )
@@ -85,5 +78,4 @@ class TestLifecycleException
             }
         }, from, to, cause );
     }
-
 }

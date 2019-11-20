@@ -26,10 +26,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -162,7 +159,7 @@ class LifeSupportTest
         {
             assertEquals( startThrowable, throwable.getCause() );
             assertEquals( 1, throwable.getSuppressed().length );
-            assertThat( throwable.getSuppressed()[0], instanceOf( LifecycleException.class ) );
+            assertThat( throwable.getSuppressed()[0] ).isInstanceOf( LifecycleException.class );
             assertEquals( stopThrowable, throwable.getSuppressed()[0].getCause() );
         }
 
@@ -330,7 +327,6 @@ class LifeSupportTest
             assertEquals( runtimeException, e.getCause() );
             assertEquals( 0, e.getSuppressed().length );
         }
-
     }
 
     @Test
@@ -355,9 +351,8 @@ class LifeSupportTest
             assertEquals( initRuntimeException, e.getCause() );
             assertEquals( 1, e.getSuppressed().length );
             assertEquals( shutdownRuntimeException, e.getSuppressed()[0].getCause() );
-            assertThat( e.getSuppressed()[0], instanceOf( LifecycleException.class ) );
+            assertThat( e.getSuppressed()[0] ).isInstanceOf( LifecycleException.class );
         }
-
     }
 
     @Test
@@ -378,7 +373,6 @@ class LifeSupportTest
             assertEquals( runtimeException, e.getCause() );
             assertEquals( 0, e.getSuppressed().length );
         }
-
     }
 
     @Test
@@ -403,9 +397,8 @@ class LifeSupportTest
             assertEquals( startRuntimeException, e.getCause() );
             assertEquals( 1, e.getSuppressed().length );
             assertEquals( stopRuntimeException, e.getSuppressed()[0].getCause() );
-            assertThat( e.getSuppressed()[0], instanceOf( LifecycleException.class ) );
+            assertThat( e.getSuppressed()[0] ).isInstanceOf( LifecycleException.class );
         }
-
     }
 
     @Test
@@ -427,7 +420,6 @@ class LifeSupportTest
             assertEquals( runtimeException, e.getCause() );
             assertEquals( 0, e.getSuppressed().length );
         }
-
     }
 
     @Test
@@ -453,9 +445,8 @@ class LifeSupportTest
             assertEquals( stopRuntimeException, e.getCause() );
             assertEquals( 1, e.getSuppressed().length );
             assertEquals( shutdownRuntimeException, e.getSuppressed()[0].getCause() );
-            assertThat( e.getSuppressed()[0], instanceOf( LifecycleException.class ) );
+            assertThat( e.getSuppressed()[0] ).isInstanceOf( LifecycleException.class );
         }
-
     }
 
     @Test
@@ -475,9 +466,8 @@ class LifeSupportTest
         catch ( Exception e )
         {
             String message = getExceptionStackTrace( e );
-            assertThat( message, containsString(
-                    "Exception during graceful attempt to stop partially started component. " +
-                            "Please use non suppressed exception to see original component failure." ) );
+            assertThat( message ).contains( "Exception during graceful attempt to stop partially started component." +
+                    " Please use non suppressed exception to see original component failure." );
         }
 
         assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
@@ -501,9 +491,8 @@ class LifeSupportTest
         catch ( Exception e )
         {
             String message = getExceptionStackTrace( e );
-            assertThat( message, containsString(
-                    "Exception during graceful attempt to shutdown partially initialized component. " +
-                            "Please use non suppressed exception to see original component failure." ) );
+            assertThat( message ).contains( "Exception during graceful attempt to shutdown partially initialized component. " +
+                    "Please use non suppressed exception to see original component failure." );
         }
 
         assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus() );
@@ -533,7 +522,7 @@ class LifeSupportTest
         assertSame( notLastComponent3, lifecycleInstances.get( 2 ) );
         assertSame( notLastComponent4, lifecycleInstances.get( 3 ) );
         assertSame( lastComponent, lifecycleInstances.get( 4 ) );
-        assertThat( lifecycleInstances, hasSize( 5 ) );
+        assertThat( lifecycleInstances ).hasSize( 5 );
     }
 
     @Test
@@ -559,7 +548,7 @@ class LifeSupportTest
         assertSame( notLastComponent3, lifecycleInstances.get( 2 ) );
         assertSame( notLastComponent4, lifecycleInstances.get( 3 ) );
         assertSame( lastComponent, lifecycleInstances.get( 4 ) );
-        assertThat( lifecycleInstances, hasSize( 5 ) );
+        assertThat( lifecycleInstances ).hasSize( 5 );
     }
 
     @Test
@@ -572,7 +561,7 @@ class LifeSupportTest
         List<Lifecycle> lifecycleInstances = lifeSupport.getLifecycleInstances();
 
         assertSame( lastComponent, lifecycleInstances.get( 0 ) );
-        assertThat( lifecycleInstances, hasSize( 1 ) );
+        assertThat( lifecycleInstances ).hasSize( 1 );
     }
 
     @Test
@@ -595,8 +584,7 @@ class LifeSupportTest
 
         List<LifecycleStatus> transitions;
 
-        LifecycleMock( Exception initException, Exception startException, Exception stopException,
-                Exception shutdownExeption )
+        LifecycleMock( Exception initException, Exception startException, Exception stopException, Exception shutdownExeption )
         {
             this.initException = initException;
             this.startException = startException;

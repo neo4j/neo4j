@@ -24,8 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -43,9 +42,9 @@ class SuppliersTest
         Object o = new Object();
         Supplier<Object> supplier = Suppliers.singleton( o );
 
-        assertThat( supplier.get(), sameInstance( o ) );
-        assertThat( supplier.get(), sameInstance( o ) );
-        assertThat( supplier.get(), sameInstance( o ) );
+        assertThat( supplier.get() ).isSameAs( o );
+        assertThat( supplier.get() ).isSameAs( o );
+        assertThat( supplier.get() ).isSameAs( o );
     }
 
     @Test
@@ -58,9 +57,9 @@ class SuppliersTest
 
         verifyZeroInteractions( mockSupplier );
 
-        assertThat( supplier.get(), sameInstance( o ) );
-        assertThat( supplier.get(), sameInstance( o ) );
-        assertThat( supplier.get(), sameInstance( o ) );
+        assertThat( supplier.get() ).isSameAs( o );
+        assertThat( supplier.get() ).isSameAs( o );
+        assertThat( supplier.get() ).isSameAs( o );
 
         verify( mockSupplier ).get();
         verifyNoMoreInteractions( mockSupplier );
@@ -85,12 +84,12 @@ class SuppliersTest
 
         Supplier<Object> supplier = Suppliers.adapted( mockSupplier, mockFunction );
 
-        assertThat( supplier.get(), sameInstance( o1a ) );
-        assertThat( supplier.get(), sameInstance( o1a ) );
-        assertThat( supplier.get(), sameInstance( o1a ) );
-        assertThat( supplier.get(), sameInstance( o2a ) );
-        assertThat( supplier.get(), sameInstance( o3a ) );
-        assertThat( supplier.get(), sameInstance( o3a ) );
+        assertThat( supplier.get() ).isSameAs( o1a );
+        assertThat( supplier.get() ).isSameAs( o1a );
+        assertThat( supplier.get() ).isSameAs( o1a );
+        assertThat( supplier.get() ).isSameAs( o2a );
+        assertThat( supplier.get() ).isSameAs( o3a );
+        assertThat( supplier.get() ).isSameAs( o3a );
 
         verify( mockFunction ).apply( o1 );
         verify( mockFunction ).apply( o2 );

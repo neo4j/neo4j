@@ -31,11 +31,7 @@ import java.util.Map;
 
 import org.neo4j.common.Validator;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.hasEntry;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -191,15 +187,15 @@ class ArgsTest
         Args args = Args.parse( "--no_value" );
 
         // When & then
-        assertThat( args.getBoolean( "not_set", true, true ), equalTo( true ) );
-        assertThat( args.getBoolean( "not_set", false, true ), equalTo( false ) );
-        assertThat( args.getBoolean( "not_set", false, false ), equalTo( false ) );
-        assertThat( args.getBoolean( "not_set", true, false ), equalTo( true ) );
+        assertThat( args.getBoolean( "not_set", true, true ) ).isTrue();
+        assertThat( args.getBoolean( "not_set", false, true ) ).isFalse();
+        assertThat( args.getBoolean( "not_set", false, false ) ).isFalse();
+        assertThat( args.getBoolean( "not_set", true, false ) ).isTrue();
 
-        assertThat( args.getBoolean( "no_value", true, true ), equalTo( true ) );
-        assertThat( args.getBoolean( "no_value", false, true ), equalTo( true ) );
-        assertThat( args.getBoolean( "no_value", false, false ), equalTo( false ) );
-        assertThat( args.getBoolean( "no_value", true, false ), equalTo( false ) );
+        assertThat( args.getBoolean( "no_value", true, true ) ).isTrue();
+        assertThat( args.getBoolean( "no_value", false, true ) ).isTrue();
+        assertThat( args.getBoolean( "no_value", false, false ) ).isFalse();
+        assertThat( args.getBoolean( "no_value", true, false ) ).isFalse();
     }
 
     @Test
@@ -213,12 +209,7 @@ class ArgsTest
 
         // THEN
 
-        assertThat( map, allOf(
-                aMapWithSize( 2 ),
-                hasEntry( "with-value", "value" ),
-                hasEntry( "without-value", null )
-        ) );
-
+        assertThat( map ).hasSize( 2 ).containsEntry( "with-value", "value" ).containsEntry( "without-value", null );
     }
 
     @Test

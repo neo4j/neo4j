@@ -27,8 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.time.FakeClock;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.progress.Indicator.Textual.DOTS_PER_LINE;
 
 class IndicatorTest
@@ -61,14 +60,14 @@ class IndicatorTest
         // then
         out.flush();
         String output = bout.toString();
-        assertThat( output, containsString( "10% D1s" ) );
-        assertThat( output, containsString( "20% D100ms" ) );
-        assertThat( output, containsString( "40% D0ms" ) );
-        assertThat( output, containsString( "50% D0ms" ) );
-        assertThat( output, containsString( "60% D0ms" ) );
-        assertThat( output, containsString( "70% D0ms" ) );
-        assertThat( output, containsString( "80% D0ms" ) );
-        assertThat( output, containsString( "90% D0ms" ) );
-        assertThat( output, containsString( "100% D3s" ) );
+        assertThat( output ).contains( "10% D1s" );
+        assertThat( output ).contains( "20% D100ms" );
+        assertThat( output ).contains( "40% D0ms" );
+        assertThat( output ).contains( "50% D0ms" );
+        assertThat( output ).contains( "60% D0ms" );
+        assertThat( output ).contains( "70% D0ms" );
+        assertThat( output ).contains( "80% D0ms" );
+        assertThat( output ).contains( "90% D0ms" );
+        assertThat( output ).contains( "100% D3s" );
     }
 }
