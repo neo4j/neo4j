@@ -44,8 +44,7 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSp
     {
         if ( next == RelationshipSelections.UNINITIALIZED )
         {
-            fetchNext();
-            next = cursor.relationshipReference();
+            next = fetchNext() ? cursor.relationshipReference() : RelationshipSelections.NO_ID;
         }
 
         if ( next == RelationshipSelections.NO_ID )
