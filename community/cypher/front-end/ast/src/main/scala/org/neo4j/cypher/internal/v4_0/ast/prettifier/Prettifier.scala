@@ -166,6 +166,15 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ RevokeRolesFromUsers(roleNames, userNames) =>
       s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
+    case x @ GrantPrivilege(DbmsPrivilege(_), _, _, _, roleNames) =>
+      s"${x.name} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
+
+    case x @ DenyPrivilege(DbmsPrivilege(_), _, _, _, roleNames) =>
+      s"${x.name} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
+
+    case x @ RevokePrivilege(DbmsPrivilege(_), _, _, _, roleNames, _) =>
+      s"${x.name} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
+
     case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
       val dbName = Prettifier.extractDbScope(dbScope)
       s"${x.name} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"

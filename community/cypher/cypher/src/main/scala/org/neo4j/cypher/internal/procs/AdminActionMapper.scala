@@ -45,11 +45,12 @@ object AdminActionMapper {
     case AlterUserAction => KernelPrivilegeAction.ALTER_USER
     case DropUserAction => KernelPrivilegeAction.DROP_USER
 
+    case AllRoleActions => KernelPrivilegeAction.ROLE_MANAGEMENT
     case ShowRoleAction => KernelPrivilegeAction.SHOW_ROLE
     case CreateRoleAction => KernelPrivilegeAction.CREATE_ROLE
     case DropRoleAction => KernelPrivilegeAction.DROP_ROLE
-    case GrantRoleAction => KernelPrivilegeAction.GRANT_ROLE
-    case RevokeRoleAction => KernelPrivilegeAction.REVOKE_ROLE
+    case AssignRoleAction => KernelPrivilegeAction.ASSIGN_ROLE
+    case RemoveRoleAction => KernelPrivilegeAction.REMOVE_ROLE
 
     case ShowPrivilegeAction => KernelPrivilegeAction.SHOW_PRIVILEGE
     case GrantPrivilegeAction => KernelPrivilegeAction.GRANT_PRIVILEGE
@@ -77,11 +78,12 @@ object AdminActionMapper {
     case KernelPrivilegeAction.ALTER_USER => AlterUserAction
     case KernelPrivilegeAction.DROP_USER => DropUserAction
 
+    case KernelPrivilegeAction.ROLE_MANAGEMENT => AllRoleActions
     case KernelPrivilegeAction.SHOW_ROLE => ShowRoleAction
     case KernelPrivilegeAction.CREATE_ROLE => CreateRoleAction
     case KernelPrivilegeAction.DROP_ROLE => DropRoleAction
-    case KernelPrivilegeAction.GRANT_ROLE => GrantRoleAction
-    case KernelPrivilegeAction.REVOKE_ROLE => RevokeRoleAction
+    case KernelPrivilegeAction.ASSIGN_ROLE => AssignRoleAction
+    case KernelPrivilegeAction.REMOVE_ROLE => RemoveRoleAction
 
     case KernelPrivilegeAction.SHOW_PRIVILEGE => ShowPrivilegeAction
     case KernelPrivilegeAction.GRANT_PRIVILEGE => GrantPrivilegeAction

@@ -66,8 +66,8 @@ public enum PrivilegeAction
     SHOW_ROLE,
     CREATE_ROLE,
     DROP_ROLE,
-    GRANT_ROLE,
-    REVOKE_ROLE,
+    ASSIGN_ROLE,
+    REMOVE_ROLE,
 
     SHOW_PRIVILEGE,
     GRANT_PRIVILEGE,
@@ -182,8 +182,8 @@ public enum PrivilegeAction
                     case SHOW_ROLE:
                     case CREATE_ROLE:
                     case DROP_ROLE:
-                    case GRANT_ROLE:
-                    case REVOKE_ROLE:
+                    case ASSIGN_ROLE:
+                    case REMOVE_ROLE:
                         return true;
                     default:
                         return this == action;

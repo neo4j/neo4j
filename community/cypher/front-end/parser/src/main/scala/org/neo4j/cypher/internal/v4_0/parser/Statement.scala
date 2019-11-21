@@ -46,23 +46,23 @@ trait Statement extends Parser
   }
 
   def GrantCommand: Rule1[CatalogDDL] = rule("Security privilege grant statement") {
-      GrantRole | GrantDatabasePrivilege | GrantTraverse | GrantRead | GrantMatch | GrantWrite
+      GrantRole | GrantDatabasePrivilege | GrantTraverse | GrantRead | GrantMatch | GrantWrite | GrantDbmsPrivilege
   }
 
   def DenyCommand: Rule1[CatalogDDL] = rule("Security privilege deny statement") {
-    DenyDatabasePrivilege | DenyTraverse | DenyRead | DenyMatch | DenyWrite
+    DenyDatabasePrivilege | DenyTraverse | DenyRead | DenyMatch | DenyWrite | DenyDbmsPrivilege
   }
 
   def RevokeCommand: Rule1[CatalogDDL] = rule("Security privilege revoke statement") {
-    RevokeRole | RevokeDatabasePrivilege | RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite | RevokeGrant | RevokeDeny
+    RevokeRole | RevokeDatabasePrivilege | RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite | RevokeGrant | RevokeDeny | RevokeDbmsPrivilege
   }
 
   def RevokeGrant: Rule1[CatalogDDL] = rule("Security privilege revoke grant statement") {
-    RevokeGrantDatabasePrivilege | RevokeGrantTraverse | RevokeGrantRead | RevokeGrantMatch | RevokeGrantWrite
+    RevokeGrantDatabasePrivilege | RevokeGrantTraverse | RevokeGrantRead | RevokeGrantMatch | RevokeGrantWrite | RevokeGrantDbmsPrivilege
   }
 
   def RevokeDeny: Rule1[CatalogDDL] = rule("Security privilege revoke deny statement") {
-    RevokeDenyDatabasePrivilege | RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch | RevokeDenyWrite
+    RevokeDenyDatabasePrivilege | RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch | RevokeDenyWrite | RevokeDenyDbmsPrivilege
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -204,6 +204,32 @@ trait Statement extends Parser
   def RevokeRole: Rule1[RevokeRolesFromUsers] = rule("CATALOG REVOKE ROLE") {
     group(keyword("REVOKE") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNamesList ~~
       keyword("FROM") ~~ SymbolicNamesList) ~~>> (ast.RevokeRolesFromUsers(_, _))
+  }
+
+  //`GRANT ROLE MANAGEMENT ON DBMS TO role`
+  def GrantDbmsPrivilege: Rule1[GrantPrivilege] = rule("CATALOG GRANT dbms privileges") {
+    group(keyword("GRANT") ~~ DbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNamesList) ~~>>
+      ((dbmsAction, grantees) => ast.GrantPrivilege.dbmsAction( dbmsAction, grantees ))
+  }
+
+  def DenyDbmsPrivilege: Rule1[DenyPrivilege] = rule("CATALOG DENY dbms privileges") {
+    group(keyword("DENY") ~~ DbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNamesList) ~~>>
+      ((dbmsAction, grantees) => ast.DenyPrivilege.dbmsAction( dbmsAction, grantees ))
+  }
+
+  def RevokeDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE dbms privileges") {
+    group(keyword("REVOKE") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNamesList) ~~>>
+      ((dbmsAction, grantees) => ast.RevokePrivilege.dbmsAction( dbmsAction, grantees ))
+  }
+
+  def RevokeGrantDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT dbms privileges") {
+    group(keyword("REVOKE GRANT") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNamesList) ~~>>
+      ((dbmsAction, grantees) => ast.RevokePrivilege.grantedDbmsAction( dbmsAction, grantees ))
+  }
+
+  def RevokeDenyDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY dbms privileges") {
+    group(keyword("REVOKE DENY") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNamesList) ~~>>
+      ((dbmsAction, grantees) => ast.RevokePrivilege.deniedDbmsAction( dbmsAction, grantees ))
   }
 
   //`GRANT ACCESS/START/STOP ON DATABASE foo TO role`
@@ -417,6 +443,15 @@ trait Statement extends Parser
       group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.TokenManagementAction) |
       group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
   )
+
+  private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {
+    keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
+    keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
+    keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
+    keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
+    keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
+    keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction)
+  }
 
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
 
