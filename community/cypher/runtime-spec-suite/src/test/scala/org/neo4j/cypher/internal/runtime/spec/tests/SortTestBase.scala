@@ -184,4 +184,41 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x", "y", "z").withRows(groupedBy("x", "y").asc("z"))
   }
+
+  test("should handle sort after distinct removed rows (FilteringExecutionContext and cancelled rows) I") {
+    //this test is mostly testing pipelined runtime and assumes a morsel/batch size of 4
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("A")
+      .sort(Seq(Ascending("A")))
+      .distinct("x AS A")
+      .input(variables = Seq("x"))
+      .build()
+
+    // when (one element in each batch will be cancelled)
+    val runtimeResult = execute(logicalQuery, runtime,
+                                inputValues(Array(4), Array(2), Array(4), Array(1), Array(3), Array(5), Array(3)))
+
+    //then
+    runtimeResult should beColumns("A").withRows(List(Array(1), Array(2), Array(3), Array(4), Array(5)))
+  }
+
+  test("should handle sort after distinct removed rows (FilteringExecutionContext and cancelled rows) II") {
+    //this test is mostly testing pipelined runtime and assumes a morsel/batch size of 4
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("A")
+      .sort(Seq(Ascending("B")))
+      .projection("A AS A", "A AS B")
+      .distinct("x AS A")
+      .input(variables = Seq("x"))
+      .build()
+
+    //when (the first element of the second batch will be cancelled)
+    val runtimeResult = execute(logicalQuery, runtime,
+                                inputValues(Array(1), Array(2), Array(3), Array(4), Array(4), Array(5), Array(6)))
+
+    //then
+    runtimeResult should beColumns("A").withRows(List(Array(1), Array(2), Array(3), Array(4), Array(5), Array(6)))
+  }
 }
