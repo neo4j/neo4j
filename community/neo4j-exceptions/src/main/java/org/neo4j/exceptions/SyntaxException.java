@@ -75,7 +75,7 @@ public class SyntaxException extends Neo4jException
         if ( offset.isPresent() )
         {
             //split can be empty if query = '\n'
-            var split = query.split( "\r?\n" );
+            var split = query.split( "\n" );
             return super.getMessage() + lineSeparator() + findErrorLine( offset.get(), split.length != 0 ? split : new String[]{""} );
         }
         else
@@ -101,7 +101,7 @@ public class SyntaxException extends Neo4jException
                 {
                     if ( element.length() >= currentOffset )
                     {
-                        builder.append( "\"" ).append( element ).append( "\"" ).append( lineSeparator() ).append( " ".repeat( currentOffset ) ).append( " ^" );
+                        buildErrorString( builder, element, currentOffset );
                         break;
                     }
                     else
@@ -112,11 +112,20 @@ public class SyntaxException extends Neo4jException
                 }
                 else
                 {
-                    int spaces = Math.min( element.length(), currentOffset );
-                    builder.append( "\"" ).append( element ).append( "\"" ).append( lineSeparator() ).append( " ".repeat( spaces ) ).append( " ^" );
+                    buildErrorString( builder, element, Math.min( element.length(), currentOffset ) );
                 }
             }
             return builder.toString();
         }
+    }
+
+    private void buildErrorString( StringBuilder builder, String element, int currentOffset )
+    {
+        builder.append( "\"" )
+               .append( element.stripTrailing() ) // removes potential \r at the end
+               .append( "\"" )
+               .append( lineSeparator() )
+               .append( " ".repeat( currentOffset + 1 ) ) // extra space to compensate for an opening quote
+               .append( "^" );
     }
 }
