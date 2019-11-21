@@ -50,14 +50,14 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.EXECUTE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRANT_PRIVILEGE;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRANT_ROLE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.KILL_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.KILL_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.READ;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REVOKE_PRIVILEGE;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REVOKE_ROLE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ROLE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SCHEMA;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONNECTION;
@@ -82,7 +82,7 @@ class PrivilegeActionTest
         expected.put( ADMIN, Set.of( DATABASE_MANAGEMENT, TRANSACTION_MANAGEMENT, ROLE_MANAGEMENT, USER_MANAGEMENT, PRIVILEGE_MANAGEMENT ) );
         expected.put( DATABASE_MANAGEMENT, Set.of( START_DATABASE, STOP_DATABASE, CREATE_DATABASE, DROP_DATABASE ) );
         expected.put( TRANSACTION_MANAGEMENT, Set.of( SHOW_TRANSACTION, KILL_TRANSACTION, SHOW_CONNECTION, KILL_CONNECTION ) );
-        expected.put( ROLE_MANAGEMENT, Set.of( SHOW_ROLE, CREATE_ROLE, DROP_ROLE, GRANT_ROLE, REVOKE_ROLE ) );
+        expected.put( ROLE_MANAGEMENT, Set.of( SHOW_ROLE, CREATE_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE ) );
         expected.put( USER_MANAGEMENT, Set.of( SHOW_USER, CREATE_USER, DROP_USER, ALTER_USER ) );
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, GRANT_PRIVILEGE, DENY_PRIVILEGE, REVOKE_PRIVILEGE ) );
 

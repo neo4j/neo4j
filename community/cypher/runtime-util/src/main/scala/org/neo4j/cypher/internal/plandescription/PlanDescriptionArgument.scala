@@ -116,6 +116,11 @@ object Arguments {
     override def name = "runtime-impl"
   }
 
+  case class DbmsAction(value: String) extends Argument {
+
+    override def name = "dbms-action"
+  }
+
   case class DatabaseAction(value: String) extends Argument {
 
     override def name = "database-action"

@@ -227,6 +227,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
+      case GrantDbmsAction(_, action, roleName) =>
+        PlanDescriptionImpl(id, "GrantDbmsAction", NoChildren, Seq(DbmsAction(action.name), Role(roleName)), variables)
+
+      case DenyDbmsAction(_, action, roleName) =>
+        PlanDescriptionImpl(id, "DenyDbmsAction", NoChildren, Seq(DbmsAction(action.name), Role(roleName)), variables)
+
+      case RevokeDbmsAction(_, action, roleName, revokeType) =>
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), NoChildren, Seq(DbmsAction(action.name), Role(roleName)), variables)
+
       case GrantDatabaseAction(_, action, database, roleName) =>
         val dbName = Prettifier.extractDbScope(database)
         PlanDescriptionImpl(id, "GrantDatabaseAction", NoChildren, Seq(DatabaseAction(action.name), Database(dbName), Role(roleName)), variables)
@@ -522,15 +531,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       // TODO: These are currently required in both leaf and one-child code paths, surely there is a way to not require that?
       case CreateUser(_, name, _, _, _, _) =>
         val userName = User(Prettifier.escapeName(name))
-        PlanDescriptionImpl(id, "CreateUser", NoChildren, Seq(userName), variables)
+        PlanDescriptionImpl(id, "CreateUser", children, Seq(userName), variables)
 
       case DropUser(_, name) =>
         val userName = User(Prettifier.escapeName(name))
-        PlanDescriptionImpl(id, "DropUser", NoChildren, Seq(userName), variables)
+        PlanDescriptionImpl(id, "DropUser", children, Seq(userName), variables)
 
       case DropRole(_, name) =>
         val roleName = Role(Prettifier.escapeName(name))
-        PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
+        PlanDescriptionImpl(id, "DropRole", children, Seq(roleName), variables)
 
       case CreateRole(_, name) =>
         val roleName = Role(Prettifier.escapeName(name))
@@ -551,17 +560,26 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
+      case GrantDbmsAction(_, action, roleName) =>
+        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(DbmsAction(action.name), Role(roleName)), variables)
+
+      case DenyDbmsAction(_, action, roleName) =>
+        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(DbmsAction(action.name), Role(roleName)), variables)
+
+      case RevokeDbmsAction(_, action, roleName, revokeType) =>
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(DbmsAction(action.name), Role(roleName)), variables)
+
       case GrantDatabaseAction(_, action, database, roleName) =>
         val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, "GrantDatabaseAction", NoChildren, Seq(DatabaseAction(action.name), Database(dbName), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "GrantDatabaseAction", children, Seq(DatabaseAction(action.name), Database(dbName), Role(roleName)), variables)
 
       case DenyDatabaseAction(_, action, database, roleName) =>
         val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, "DenyDatabaseAction", NoChildren, Seq(DatabaseAction(action.name), Database(dbName), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "DenyDatabaseAction", children, Seq(DatabaseAction(action.name), Database(dbName), Role(roleName)), variables)
 
       case RevokeDatabaseAction(_, action, database, roleName, revokeType) =>
         val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), NoChildren,
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), children,
           Seq(DatabaseAction(action.name), Database(dbName), Role(roleName)), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
@@ -570,7 +588,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case DenyTraverse(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
-        PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "DenyTraverse", children, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
@@ -582,7 +600,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case DenyRead(_, resource, database, qualifier, roleName) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "DenyRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "DenyRead", children, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
@@ -590,37 +608,37 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case GrantWrite(_, resource, database, qualifier, roleName) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "GrantWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "GrantWrite", children, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case DenyWrite(_, resource, database, qualifier, roleName) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "DenyWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "DenyWrite", children, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case RevokeWrite(_, resource, database, qualifier, roleName, revokeType) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case CreateDatabase(_, normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)
+        PlanDescriptionImpl(id, "CreateDatabase", children, Seq(dbName), variables)
 
       case DropDatabase(_, normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
+        PlanDescriptionImpl(id, "DropDatabase", children, Seq(dbName), variables)
 
       case StopDatabase(_, normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
+        PlanDescriptionImpl(id, "StopDatabase", children, Seq(dbName), variables)
 
       case EnsureValidNonSystemDatabase(_, normalizedName, _) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", NoChildren, Seq(dbName), variables)
+        PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", children, Seq(dbName), variables)
 
       case EnsureValidNumberOfDatabases(_) =>
-        PlanDescriptionImpl(id, "EnsureValidNumberOfDatabases", NoChildren, Seq.empty, variables)
+        PlanDescriptionImpl(id, "EnsureValidNumberOfDatabases", children, Seq.empty, variables)
 
       case LogSystemCommand(_, _) =>
-        PlanDescriptionImpl(id, "LogSystemCommand", NoChildren, Seq.empty, variables)
+        PlanDescriptionImpl(id, "LogSystemCommand", children, Seq.empty, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }

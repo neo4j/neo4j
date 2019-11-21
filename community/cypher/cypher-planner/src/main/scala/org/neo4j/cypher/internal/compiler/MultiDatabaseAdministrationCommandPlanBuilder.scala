@@ -71,6 +71,20 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         }
       }
     }
+    def planDbmsRevokePrivileges(source: Option[PrivilegePlan],
+                                 roleNames: Seq[String],
+                                 action: AdminAction,
+                                 planAction: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan]): Option[PrivilegePlan] = {
+      def planActions(source: Option[PrivilegePlan], roleName: String, g: AdminAction*): Option[PrivilegePlan] = g.foldLeft(source) {
+        case (plan, act) => planAction(plan, roleName, act)
+      }
+      roleNames.foldLeft(source) {
+        case (source, roleName) => action match {
+          case AllRoleActions => planActions(source, roleName, AllRoleActions, CreateRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction, ShowRoleAction)
+          case _ => planAction(source, roleName, action)
+        }
+      }
+    }
     def planRevokes(source: Option[PrivilegePlan],
                    revokeType: RevokeType,
                    planRevoke: (Option[PrivilegePlan], String) => Some[PrivilegePlan]): Some[PrivilegePlan] = revokeType match {
@@ -179,7 +193,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@GrantRolesToUsers(roleNames, userNames) =>
         (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
-        }).foldLeft(Some(plans.AssertDbmsAdmin(GrantRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan])) {
           case (source, (userName, roleName)) => Some(plans.GrantRoleToUser(source, userName, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -187,9 +201,31 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@RevokeRolesFromUsers(roleNames, userNames) =>
         (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
-        }).foldLeft(Some(plans.AssertDbmsAdmin(RevokeRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(RemoveRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan])) {
           case (source, (userName, roleName)) => Some(plans.RevokeRoleFromUser(source, userName, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // GRANT CREATE ROLE ON DBMS TO role
+      case c@GrantPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
+        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+          case (source, roleName) => Some(plans.GrantDbmsAction(source, action, roleName))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // DENY CREATE ROLE ON DBMS TO role
+      case c@DenyPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
+        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+          case (source, roleName) => Some(plans.DenyDbmsAction(source, action, roleName))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // REVOKE CREATE ROLE ON DBMS FROM role
+      case c@RevokePrivilege(DbmsPrivilege(action), _, _, _, roleNames, revokeType) =>
+        planDbmsRevokePrivileges(
+          Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+          (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, act, role, r)))
+        ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+//        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+//          case (source, roleName) => planRevokes(source, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, action, roleName, r)))
+//        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT ACCESS/START/STOP ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
