@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.Direction;
@@ -40,12 +41,18 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
+
+import static org.neo4j.internal.helpers.collection.Iterators.stream;
+import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
+import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
 
 public class SchemaProcedure
 {
@@ -61,82 +68,100 @@ public class SchemaProcedure
         final Map<String,VirtualNodeHack> nodes = new HashMap<>();
         final Map<String,Set<VirtualRelationshipHack>> relationships = new HashMap<>();
         final KernelTransaction kernelTransaction = internalTransaction.kernelTransaction();
+        AccessMode mode = kernelTransaction.securityContext().mode();
 
-        Read dataRead = kernelTransaction.dataRead();
-        TokenRead tokenRead = kernelTransaction.tokenRead();
-        TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( tokenRead );
-        SchemaRead schemaRead = kernelTransaction.schemaRead();
-
-        List<Pair<String,Integer>> labelNamesAndIds = new ArrayList<>();
-
-        // add all labelsInDatabase
-        for ( Label label : internalTransaction.getAllLabelsInUse() )
+        try ( KernelTransaction.Revertable ignore = kernelTransaction.overrideWith( SecurityContext.AUTH_DISABLED ) )
         {
-            String labelName = label.name();
-            int labelId = tokenRead.nodeLabel( labelName );
-            labelNamesAndIds.add( Pair.of( labelName, labelId ) );
+            Read dataRead = kernelTransaction.dataRead();
+            TokenRead tokenRead = kernelTransaction.tokenRead();
+            TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( tokenRead );
+            SchemaRead schemaRead = kernelTransaction.schemaRead();
 
-            Map<String,Object> properties = new HashMap<>();
+            List<Pair<String,Integer>> labelNamesAndIds = new ArrayList<>();
 
-            Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel( labelId );
-            ArrayList<String> indexes = new ArrayList<>();
-            while ( indexReferences.hasNext() )
+            // Get all labels that are in use as seen by a super user
+            List<Label> labelsInUse = stream( LABELS.inUse( kernelTransaction ) ).collect( Collectors.toList() );
+
+            for ( Label label: labelsInUse )
             {
-                IndexDescriptor index = indexReferences.next();
-                if ( !index.isUnique() )
+                String labelName = label.name();
+                int labelId = tokenRead.nodeLabel( labelName );
+
+                // Filter out labels that are denied or aren't explicitly allowed
+                if ( mode.allowsTraverseNode( labelId ) )
                 {
-                    String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenNameLookup, index.schema().getPropertyIds() );
-                    indexes.add( String.join( ",", propertyNames ) );
-                }
-            }
-            properties.put( "indexes", indexes );
+                    labelNamesAndIds.add( Pair.of( labelName, labelId ) );
 
-            Iterator<ConstraintDescriptor> nodePropertyConstraintIterator = schemaRead.constraintsGetForLabel( labelId );
-            ArrayList<String> constraints = new ArrayList<>();
-            while ( nodePropertyConstraintIterator.hasNext() )
-            {
-                ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
-                constraints.add( constraint.prettyPrint( tokenNameLookup ) );
-            }
-            properties.put( "constraints", constraints );
+                    Map<String,Object> properties = new HashMap<>();
 
-            getOrCreateLabel( label.name(), properties, nodes );
-        }
+                    Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel( labelId );
+                    ArrayList<String> indexes = new ArrayList<>();
+                    while ( indexReferences.hasNext() )
+                    {
+                        IndexDescriptor index = indexReferences.next();
+                        if ( !index.isUnique() )
+                        {
+                            String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenNameLookup, index.schema().getPropertyIds() );
+                            indexes.add( String.join( ",", propertyNames ) );
+                        }
+                    }
+                    properties.put( "indexes", indexes );
 
-        //add all relationships
+                    Iterator<ConstraintDescriptor> nodePropertyConstraintIterator = schemaRead.constraintsGetForLabel( labelId );
+                    ArrayList<String> constraints = new ArrayList<>();
+                    while ( nodePropertyConstraintIterator.hasNext() )
+                    {
+                        ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
+                        constraints.add( constraint.prettyPrint( tokenNameLookup ) );
+                    }
+                    properties.put( "constraints", constraints );
 
-        for ( RelationshipType relationshipType : internalTransaction.getAllRelationshipTypesInUse() )
-        {
-            String relationshipTypeGetName = relationshipType.name();
-            int relId = tokenRead.relationshipType( relationshipTypeGetName );
-            List<VirtualNodeHack> startNodes = new LinkedList<>();
-            List<VirtualNodeHack> endNodes = new LinkedList<>();
-
-            for( Pair<String, Integer> labelNameAndId: labelNamesAndIds )
-            {
-                String labelName = labelNameAndId.first();
-                int labelId = labelNameAndId.other();
-
-                Map<String,Object> properties = new HashMap<>();
-                VirtualNodeHack node = getOrCreateLabel( labelName, properties, nodes );
-
-                if ( dataRead.countsForRelationship( labelId, relId, TokenRead.ANY_LABEL ) > 0 )
-                {
-                    startNodes.add( node );
-                }
-                if ( dataRead.countsForRelationship( TokenRead.ANY_LABEL, relId, labelId ) > 0 )
-                {
-                    endNodes.add( node );
+                    getOrCreateLabel( label.name(), properties, nodes );
                 }
             }
 
-            for ( VirtualNodeHack startNode : startNodes )
+            // Get all relTypes that are in use as seen by a super user
+            List<RelationshipType> relTypesInUse = stream( RELATIONSHIP_TYPES.inUse( kernelTransaction ) ).collect( Collectors.toList() );
+
+            for ( RelationshipType relationshipType : relTypesInUse )
             {
-                for ( VirtualNodeHack endNode : endNodes )
+                String relationshipTypeGetName = relationshipType.name();
+                int relId = tokenRead.relationshipType( relationshipTypeGetName );
+
+                // Filter out relTypes that are denied or aren't explicitly allowed
+                if ( mode.allowsTraverseRelType( tokenRead.relationshipType( relationshipTypeGetName ) ) )
                 {
-                    addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
+                    List<VirtualNodeHack> startNodes = new LinkedList<>();
+                    List<VirtualNodeHack> endNodes = new LinkedList<>();
+
+                    for ( Pair<String, Integer> labelNameAndId: labelNamesAndIds )
+                    {
+                        String labelName = labelNameAndId.first();
+                        int labelId = labelNameAndId.other();
+
+                        Map<String,Object> properties = new HashMap<>();
+                        VirtualNodeHack node = getOrCreateLabel( labelName, properties, nodes );
+
+                        if ( dataRead.countsForRelationship( labelId, relId, TokenRead.ANY_LABEL ) > 0 )
+                        {
+                            startNodes.add( node );
+                        }
+                        if ( dataRead.countsForRelationship( TokenRead.ANY_LABEL, relId, labelId ) > 0 )
+                        {
+                            endNodes.add( node );
+                        }
+                    }
+
+                    for ( VirtualNodeHack startNode : startNodes )
+                    {
+                        for ( VirtualNodeHack endNode : endNodes )
+                        {
+                            addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
+                        }
+                    }
                 }
             }
+
         }
         return getGraphResult( nodes, relationships );
     }
