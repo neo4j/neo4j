@@ -23,6 +23,8 @@ import java.lang.System.lineSeparator
 
 import org.neo4j.kernel.api.exceptions.Status
 
+import scala.annotation.tailrec
+
 class SyntaxException(message: String, val query:String,  val offset: Option[Int], cause: Throwable) extends CypherException(message, cause) {
   def this(message: String, query:String, offset: Option[Int]) = this(message,query,offset,null)
   def this(message: String, query:String, offset: Int) = this(message,query,Some(offset),null)
@@ -31,30 +33,29 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
 
   override def getMessage: String = offset match {
     case Some(idx) =>
-      //split can be empty if query = '\n'
-      val split = query.split("\r?\n").toList
+      val split = query.linesWithSeparators.toList
       message + lineSeparator() + findErrorLine(idx, if (split.nonEmpty) split else List(""))
     case None => message
   }
 
   override val status = Status.Statement.SyntaxError
 
+  @tailrec
   private def findErrorLine(idx: Int, message: List[String]): String =
-    message.toList match {
+    message match {
       case Nil => throw new IllegalArgumentException("message converted to empty list")
 
-      case List(x) =>
-        val spaces = if (x.length > idx)
-          idx
-        else
-          x.length
+      case List(lastLine) =>
+        formatErrorMessage(lastLine, math.min(idx, lastLine.length))
 
-        "\"" + x + "\"" + lineSeparator() +  " " * spaces + " ^"
-
-      case head :: tail => if (head.length > idx) {
-        "\"" + head + "\"\n" + " " * idx + " ^"
+      case currentLine :: otherLines => if (currentLine.length > idx) {
+        formatErrorMessage(currentLine, idx)
       } else {
-        findErrorLine(idx - head.length - 1, tail) //The extra minus one is there for the now missing \n
+        findErrorLine(idx - currentLine.length, otherLines)
       }
     }
+
+  private def formatErrorMessage(errorLine: String, spaces: Int) = {
+    "\"" + errorLine.stripLineEnd + "\"" + lineSeparator() + " " * (spaces + 1) + "^" // extra space to compensate for an opening quote
+  }
 }
