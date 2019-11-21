@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -65,10 +66,16 @@ public class SchemaProcedure
         TokenRead tokenRead = kernelTransaction.tokenRead();
         TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( tokenRead );
         SchemaRead schemaRead = kernelTransaction.schemaRead();
+
+        List<Pair<String,Integer>> labelNamesAndIds = new ArrayList<>();
+
         // add all labelsInDatabase
         for ( Label label : internalTransaction.getAllLabelsInUse() )
         {
-            int labelId = tokenRead.nodeLabel( label.name() );
+            String labelName = label.name();
+            int labelId = tokenRead.nodeLabel( labelName );
+            labelNamesAndIds.add( Pair.of( labelName, labelId ) );
+
             Map<String,Object> properties = new HashMap<>();
 
             Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel( labelId );
@@ -102,17 +109,16 @@ public class SchemaProcedure
         {
             String relationshipTypeGetName = relationshipType.name();
             int relId = tokenRead.relationshipType( relationshipTypeGetName );
-            Iterator<Label> labelsInUse = internalTransaction.getAllLabelsInUse().iterator();
             List<VirtualNodeHack> startNodes = new LinkedList<>();
             List<VirtualNodeHack> endNodes = new LinkedList<>();
 
-            while ( labelsInUse.hasNext() )
+            for( Pair<String, Integer> labelNameAndId: labelNamesAndIds )
             {
-                Label labelToken = labelsInUse.next();
-                String labelName = labelToken.name();
+                String labelName = labelNameAndId.first();
+                int labelId = labelNameAndId.other();
+
                 Map<String,Object> properties = new HashMap<>();
                 VirtualNodeHack node = getOrCreateLabel( labelName, properties, nodes );
-                int labelId = tokenRead.nodeLabel( labelName );
 
                 if ( dataRead.countsForRelationship( labelId, relId, TokenRead.ANY_LABEL ) > 0 )
                 {
