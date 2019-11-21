@@ -159,6 +159,12 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
+    public void removeTracer()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public boolean next()
     {
         if ( offset == Integer.MAX_VALUE )

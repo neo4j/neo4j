@@ -28,4 +28,6 @@ public interface Cursor extends AutoCloseablePlus
     boolean next();
 
     void setTracer( KernelReadTracer tracer );
+
+    void removeTracer();
 }

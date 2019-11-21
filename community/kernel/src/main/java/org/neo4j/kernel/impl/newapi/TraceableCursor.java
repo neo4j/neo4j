@@ -26,23 +26,22 @@ import org.neo4j.util.Preconditions;
 
 abstract class TraceableCursor extends DefaultCloseListenable implements Cursor
 {
-    private KernelReadTracer tracer;
+    protected KernelReadTracer tracer;
 
     TraceableCursor()
     {
-        this.tracer = KernelReadTracer.NONE;
     }
 
     @Override
     public final void setTracer( KernelReadTracer tracer )
     {
-        Preconditions.checkArgument( tracer != null, "tracer cannot be null, use KernelReadTracer.NONE instead" );
         this.tracer = tracer;
     }
 
-    public KernelReadTracer getTracer()
+    @Override
+    public void removeTracer()
     {
-        return tracer;
+        this.tracer = null;
     }
 
     @Override

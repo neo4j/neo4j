@@ -91,4 +91,10 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
+
+    @Override
+    public void removeTracer()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
 }

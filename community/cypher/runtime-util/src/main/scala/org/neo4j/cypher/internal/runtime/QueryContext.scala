@@ -395,4 +395,6 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends DefaultCl
   override def score(): Float = Float.NaN
 
   override def setTracer(tracer: KernelReadTracer): Unit = throw new UnsupportedOperationException("not implemented")
+
+  override def removeTracer(): Unit = throw new UnsupportedOperationException("not implemented")
 }

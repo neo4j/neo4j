@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.schema.IndexOrder;
+
 /**
  * Tracer of kernel API reads. The Kernel will callback the tracer methods on various key events
  * of kernel reads, allowing a tracer to analyze the read patterns.
@@ -73,43 +75,4 @@ public interface KernelReadTracer
      * @param propertyKey the property key of the next property.
      */
     void onProperty( int propertyKey );
-
-    KernelReadTracer NONE = new KernelReadTracer()
-    {
-        @Override
-        public void onNode( long nodeReference )
-        {
-        }
-
-        @Override
-        public void onAllNodesScan()
-        {
-        }
-
-        @Override
-        public void onLabelScan( int label )
-        {
-        }
-
-        @Override
-        public void onIndexSeek()
-        {
-        }
-
-        @Override
-        public void onRelationship( long relationshipReference )
-        {
-        }
-
-        @Override
-        public void onRelationshipGroup( int type )
-        {
-        }
-
-        @Override
-        public void onProperty( int propertyKey )
-        {
-        }
-    };
-
 }

@@ -59,7 +59,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
-        getTracer().onLabelScan( label );
+        if ( tracer != null )
+        {
+            tracer.onLabelScan( label );
+        }
     }
 
     public void scan( IndexProgressor progressor, LongIterator added, LongSet removed )
@@ -69,7 +72,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         this.removed = removed;
     }
 
-    public NodeLabelClient nodeLabelClient()
+    NodeLabelClient nodeLabelClient()
     {
         return ( reference, labels ) ->
         {
@@ -93,15 +96,18 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         if ( added != null && added.hasNext() )
         {
             this.node = added.next();
-            getTracer().onNode( this.node );
+            if ( tracer != null )
+            {
+                tracer.onNode( this.node );
+            }
             return true;
         }
         else
         {
             boolean hasNext = innerNext();
-            if ( hasNext )
+            if ( tracer != null && hasNext )
             {
-                getTracer().onNode( this.node );
+                tracer.onNode( this.node );
             }
             return hasNext;
         }

@@ -33,7 +33,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -183,7 +182,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             assertTrue( cursor.next() );
             tracer.assertEvents( OnNode( foo ) );
 
-            cursor.setTracer( KernelReadTracer.NONE );
+            cursor.removeTracer( );
             read.singleNode( bar, cursor );
             assertTrue( cursor.next() );
             tracer.assertEvents();
@@ -269,7 +268,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( has ) );
 
-            cursor.setTracer( KernelReadTracer.NONE );
+            cursor.removeTracer();
             read.singleRelationship( is, cursor );
             assertTrue( cursor.next() );
             tracer.assertEvents();
@@ -303,7 +302,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
 
-            cursor.setTracer( KernelReadTracer.NONE );
+            cursor.removeTracer();
             assertTrue( cursor.next() );
             tracer.assertEvents();
 
@@ -348,7 +347,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
 
-            cursor.setTracer( KernelReadTracer.NONE );
+            cursor.removeTracer();
             assertTrue( cursor.next() );
             tracer.assertEvents();
 
@@ -384,7 +383,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             int expectedType = groupCursor.type();
             tracer.assertEvents( OnRelationshipGroup( expectedType ) );
 
-            groupCursor.setTracer( KernelReadTracer.NONE );
+            groupCursor.removeTracer();
             assertTrue( groupCursor.next() );
             tracer.assertEvents();
 
@@ -416,7 +415,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             assertTrue( propertyCursor.next() );
             tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
 
-            propertyCursor.setTracer( KernelReadTracer.NONE );
+            propertyCursor.removeTracer();
             assertTrue( propertyCursor.next() );
             tracer.assertEvents();
 

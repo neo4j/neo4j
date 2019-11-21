@@ -133,7 +133,10 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
             if ( txStateChangedProperties.hasNext() )
             {
                 txStateValue = txStateChangedProperties.next();
-                getTracer().onProperty( propertyKey() );
+                if ( tracer != null )
+                {
+                    tracer.onProperty( propertyKey() );
+                }
                 return true;
             }
             else
@@ -148,7 +151,10 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
             if ( !skip && allowed( ) )
             {
-                getTracer().onProperty( propertyKey() );
+                if ( tracer != null )
+                {
+                    tracer.onProperty( propertyKey() );
+                }
                 return true;
             }
         }
