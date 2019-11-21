@@ -86,7 +86,10 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
             if ( addedRelationships.hasNext() )
             {
                 read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
-                getTracer().onRelationship( relationshipReference() );
+                if ( tracer != null )
+                {
+                    tracer.onRelationship( relationshipReference() );
+                }
                 return true;
             }
             else
@@ -101,7 +104,10 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
             AccessMode mode = read.ktx.securityContext().mode();
             if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
             {
-                getTracer().onRelationship( relationshipReference() );
+                if ( tracer != null )
+                {
+                    tracer.onRelationship( relationshipReference() );
+                }
                 return true;
             }
         }

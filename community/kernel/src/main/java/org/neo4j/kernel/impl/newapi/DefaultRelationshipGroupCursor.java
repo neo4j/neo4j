@@ -98,13 +98,19 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
             boolean next = nextFromTxState();
             if ( next )
             {
-                getTracer().onRelationshipGroup( type() );
+                if ( tracer != null )
+                {
+                    tracer.onRelationshipGroup( type() );
+                }
             }
             return next;
         }
 
         markTypeAsSeen( type() );
-        getTracer().onRelationshipGroup( type() );
+        if ( tracer != null )
+        {
+            tracer.onRelationshipGroup( type() );
+        }
         return true;
     }
 

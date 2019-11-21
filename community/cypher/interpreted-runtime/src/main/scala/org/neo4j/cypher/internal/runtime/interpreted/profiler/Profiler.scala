@@ -222,6 +222,8 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
 
     override def setCloseListener(closeListener: CloseListener): Unit = inner.setCloseListener(closeListener)
 
+    override def removeTracer(): Unit = inner.removeTracer()
+
     override def getCloseListener: CloseListener = inner.getCloseListener
 
     override def setToken(token: Int): Unit = inner.setToken(token)

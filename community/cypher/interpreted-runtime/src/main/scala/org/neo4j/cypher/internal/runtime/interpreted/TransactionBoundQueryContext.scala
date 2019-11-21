@@ -1029,6 +1029,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def score(): Float = inner.score()
 
     override def setTracer(tracer: KernelReadTracer): Unit = inner.setTracer(tracer)
+
+    override def removeTracer(): Unit = inner.removeTracer()
   }
 }
 

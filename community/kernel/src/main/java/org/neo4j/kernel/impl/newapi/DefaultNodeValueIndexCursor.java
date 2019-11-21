@@ -94,7 +94,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.needsValues = needsValues;
         this.query = query;
 
-        getTracer().onIndexSeek();
+        if ( tracer != null )
+        {
+            tracer.onIndexSeek( );
+        }
 
         if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0 )
         {
@@ -223,7 +226,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             this.node = added.next();
             this.values = null;
-            getTracer().onNode( nodeReference() );
+            if ( tracer != null )
+            {
+                tracer.onNode( node );
+            }
             return true;
         }
         else if ( needsValues && addedWithValues.hasNext() )
@@ -231,7 +237,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             NodeWithPropertyValues nodeWithPropertyValues = addedWithValues.next();
             this.node = nodeWithPropertyValues.getNodeId();
             this.values = nodeWithPropertyValues.getValues();
-            getTracer().onNode( nodeReference() );
+            if ( tracer != null )
+            {
+                tracer.onNode( node );
+            }
             return true;
         }
         else if ( added.hasNext() || addedWithValues.hasNext() )
@@ -241,9 +250,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         else
         {
             boolean next = innerNext();
-            if ( next )
+            if ( tracer != null && next )
             {
-                getTracer().onNode( nodeReference() );
+               tracer.onNode( node );
             }
             return next;
         }
@@ -264,9 +273,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
         sortedMergeJoin.next( this );
         boolean next = node != -1;
-        if ( next )
+        if ( tracer != null && next )
         {
-            getTracer().onNode( nodeReference() );
+            tracer.onNode( node );
         }
         return next;
     }

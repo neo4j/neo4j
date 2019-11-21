@@ -37,13 +37,13 @@ public interface QueryProfiler
         @Override
         public OperatorProfileEvent executeOperator( Id queryId )
         {
-            return OperatorProfileEvent.NONE;
+            return null;
         }
 
         @Override
         public OperatorProfileEvent executeOperator( Id operatorId, boolean trackTime )
         {
-            return OperatorProfileEvent.NONE;
+            return null;
         }
     };
 }

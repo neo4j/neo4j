@@ -152,7 +152,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             setupFilterStateIfNeeded();
             if ( filterInitialized && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )
             {
-                getTracer().onRelationship( relationshipReference() );
+                if ( tracer != null )
+                {
+                    tracer.onRelationship( relationshipReference() );
+                }
                 return true;
             }
         }
@@ -167,7 +170,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             if ( addedRelationships.hasNext() )
             {
                 read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
-                getTracer().onRelationship( relationshipReference() );
+                if ( tracer != null )
+                {
+                    tracer.onRelationship( relationshipReference() );
+                }
                 return true;
             }
             else
@@ -182,7 +188,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             AccessMode mode = read.ktx.securityContext().mode();
             if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
             {
-                getTracer().onRelationship( relationshipReference() );
+                if ( tracer != null )
+                {
+                    tracer.onRelationship( relationshipReference() );
+                }
                 return true;
             }
         }

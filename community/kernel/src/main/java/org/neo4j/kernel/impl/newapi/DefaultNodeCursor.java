@@ -66,7 +66,10 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         this.accessMode = read.ktx.securityContext().mode();
-        getTracer().onAllNodesScan();
+        if ( tracer != null )
+        {
+            tracer.onAllNodesScan();
+        }
     }
 
     boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges )
@@ -222,7 +225,10 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
             if ( addedNodes.hasNext() )
             {
                 currentAddedInTx = addedNodes.next();
-                getTracer().onNode( nodeReference() );
+                if ( tracer != null )
+                {
+                    tracer.onNode( nodeReference() );
+                }
                 return true;
             }
             else
@@ -236,7 +242,10 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
             boolean skip = hasChanges && read.txState().nodeIsDeletedInThisTx( storeCursor.entityReference() );
             if ( !skip && allowsTraverse() )
             {
-                getTracer().onNode( nodeReference() );
+                if ( tracer != null )
+                {
+                    tracer.onNode( nodeReference() );
+                }
                 return true;
             }
         }

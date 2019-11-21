@@ -151,6 +151,12 @@ public class StubGroupCursor extends DefaultCloseListenable implements Relations
         throw new UnsupportedOperationException( "not implemented" );
     }
 
+    @Override
+    public void removeTracer()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
     public static class GroupData
     {
         final int out;

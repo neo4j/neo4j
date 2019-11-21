@@ -173,4 +173,10 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
+
+    @Override
+    public void removeTracer()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
 }

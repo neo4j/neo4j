@@ -107,4 +107,9 @@ public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements 
     public void setTracer( KernelReadTracer tracer )
     {
     }
+
+    @Override
+    public void removeTracer()
+    {
+    }
 }

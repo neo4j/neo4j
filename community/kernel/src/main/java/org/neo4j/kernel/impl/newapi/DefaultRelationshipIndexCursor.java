@@ -140,9 +140,9 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     public boolean next()
     {
         boolean next = super.innerNext();
-        if ( next )
+        if ( tracer != null && next )
         {
-            getTracer().onRelationship( relationshipReference() );
+           tracer.onRelationship( relationship );
         }
         return next;
     }
