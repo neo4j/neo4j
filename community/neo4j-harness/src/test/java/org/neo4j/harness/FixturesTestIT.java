@@ -29,8 +29,6 @@ import java.io.File;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.internal.InProcessNeo4j;
-import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -45,7 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
-import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
+import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 @TestDirectoryExtension

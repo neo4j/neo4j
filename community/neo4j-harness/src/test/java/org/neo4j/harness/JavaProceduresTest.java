@@ -28,9 +28,6 @@ import org.junit.jupiter.api.parallel.Resources;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.internal.InProcessNeo4j;
-import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.internal.TestNeo4jBuilders;
 import org.neo4j.harness.junit.extension.Neo4j;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
@@ -135,7 +132,7 @@ class JavaProceduresTest
 
     private Neo4jBuilder createServer( Class<?> procedureClass )
     {
-        return TestNeo4jBuilders.newInProcessBuilder()
+        return Neo4jBuilders.newInProcessBuilder()
                                  .withProcedure( procedureClass );
     }
 

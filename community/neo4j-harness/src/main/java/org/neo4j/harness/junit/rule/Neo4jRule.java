@@ -34,14 +34,14 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.harness.internal.InProcessNeo4j;
-import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.InProcessNeo4j;
+import org.neo4j.harness.Neo4jBuilder;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
 
-import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
+import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 
 /**
  * Community Neo4j JUnit {@link org.junit.Rule rule}.

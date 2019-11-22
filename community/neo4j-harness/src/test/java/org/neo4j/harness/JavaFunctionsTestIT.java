@@ -23,9 +23,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.internal.InProcessNeo4j;
-import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.internal.TestNeo4jBuilders;
 import org.neo4j.harness.junit.extension.Neo4j;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
@@ -98,7 +95,7 @@ class JavaFunctionsTestIT
 
     private Neo4jBuilder createServer( Class<?> functionClass )
     {
-        return TestNeo4jBuilders.newInProcessBuilder()
+        return Neo4jBuilders.newInProcessBuilder()
                                  .withFunction( functionClass );
     }
 

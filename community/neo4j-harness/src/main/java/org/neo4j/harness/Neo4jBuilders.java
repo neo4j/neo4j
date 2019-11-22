@@ -17,14 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness.internal;
+package org.neo4j.harness;
 
 import java.io.File;
+
+import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.harness.internal.InProcessNeo4jBuilder;
 
 /**
  * Factories for creating {@link Neo4jBuilder} instances.
  */
-public final class TestNeo4jBuilders
+@PublicApi
+public final class Neo4jBuilders
 {
     /**
      * Create a builder capable of starting an in-process Neo4j instance. This builder will use the standard java temp
@@ -43,5 +47,5 @@ public final class TestNeo4jBuilders
         return new InProcessNeo4jBuilder( workingDirectory );
     }
 
-    private TestNeo4jBuilders(){}
+    private Neo4jBuilders(){}
 }

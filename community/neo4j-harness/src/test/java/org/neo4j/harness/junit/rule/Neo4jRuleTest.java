@@ -25,8 +25,8 @@ import org.junit.runners.model.Statement;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.harness.internal.InProcessNeo4j;
-import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.InProcessNeo4j;
+import org.neo4j.harness.Neo4jBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;

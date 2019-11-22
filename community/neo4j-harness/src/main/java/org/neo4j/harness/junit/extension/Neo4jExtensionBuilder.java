@@ -25,13 +25,13 @@ import java.util.function.Function;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.Neo4jBuilder;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
 
-import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
+import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 
 /**
  * {@link Neo4jExtension} extension builder.
