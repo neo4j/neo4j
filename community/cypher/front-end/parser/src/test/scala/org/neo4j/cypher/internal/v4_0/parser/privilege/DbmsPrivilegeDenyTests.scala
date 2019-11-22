@@ -16,6 +16,6 @@
  */
 package org.neo4j.cypher.internal.v4_0.parser.privilege
 
-class RevokeTests extends WritePrivilegeAdministrationCommandParserTest {
-  privilegeTests("REVOKE", "FROM", revokeBoth)
+class DbmsPrivilegeDenyTests extends DbmsPrivilegeAdministrationCommandParserTest {
+  privilegeTests("DENY", "TO", denyDbmsPrivilege)
 }
