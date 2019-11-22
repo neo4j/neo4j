@@ -129,7 +129,7 @@ public class SchemaProcedure
                 int relId = tokenRead.relationshipType( relationshipTypeGetName );
 
                 // Filter out relTypes that are denied or aren't explicitly allowed
-                if ( mode.allowsTraverseRelType( tokenRead.relationshipType( relationshipTypeGetName ) ) )
+                if ( mode.allowsTraverseRelType( relId ) )
                 {
                     List<VirtualNodeHack> startNodes = new LinkedList<>();
                     List<VirtualNodeHack> endNodes = new LinkedList<>();
