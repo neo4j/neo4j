@@ -36,10 +36,8 @@ import java.util.function.Supplier;
 import org.neo4j.collection.PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator;
 
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -194,16 +192,16 @@ class PrimitiveLongCollectionsTest
     {
         LongSet longSet = newSetWith( 1L, 3L, 5L );
         Set<Long> longs = PrimitiveLongCollections.toSet( longSet );
-        assertThat( longs, containsInAnyOrder(1L, 3L, 5L) );
+        assertThat( longs ).contains( 1L, 3L, 5L );
     }
 
     @Test
     void mergeLongIterableToSet()
     {
-        assertThat( mergeToSet( new LongHashSet(), new LongHashSet() ), equalTo( new LongHashSet() ) );
-        assertThat( mergeToSet( newSetWith( 1, 2, 3 ), new LongHashSet() ), equalTo( newSetWith( 1, 2, 3 ) ) );
-        assertThat( mergeToSet( newSetWith( 1, 2, 3 ), newSetWith( 1, 2, 3, 4, 5, 6 ) ), equalTo( newSetWith( 1, 2, 3, 4, 5, 6 ) ) );
-        assertThat( mergeToSet( newSetWith( 1, 2, 3 ), newSetWith( 4, 5, 6 ) ), equalTo( newSetWith( 1, 2, 3, 4, 5, 6 ) ) );
+        assertThat( mergeToSet( new LongHashSet(), new LongHashSet() ) ).isEqualTo( new LongHashSet() );
+        assertThat( mergeToSet( newSetWith( 1, 2, 3 ), new LongHashSet() ) ).isEqualTo( newSetWith( 1, 2, 3 ) );
+        assertThat( mergeToSet( newSetWith( 1, 2, 3 ), newSetWith( 1, 2, 3, 4, 5, 6 ) ) ).isEqualTo( newSetWith( 1, 2, 3, 4, 5, 6 ) );
+        assertThat( mergeToSet( newSetWith( 1, 2, 3 ), newSetWith( 4, 5, 6 ) ) ).isEqualTo( newSetWith( 1, 2, 3, 4, 5, 6 ) );
     }
 
     private static void assertNoMoreItems( LongIterator iterator )

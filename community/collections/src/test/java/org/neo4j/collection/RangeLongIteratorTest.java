@@ -22,8 +22,7 @@ package org.neo4j.collection;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RangeLongIteratorTest
@@ -38,7 +37,7 @@ class RangeLongIteratorTest
         RangeLongIterator iterator = new RangeLongIterator( array, 2, 2 );
 
         // then
-        assertThat( PrimitiveLongCollections.asList( iterator ), equalTo( asList( 3L, 4L ) ) );
+        assertThat( PrimitiveLongCollections.asList( iterator ) ).isEqualTo( asList( 3L, 4L ) );
     }
 
     @Test

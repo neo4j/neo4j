@@ -29,8 +29,7 @@ import java.util.List;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DependenciesTest
@@ -48,7 +47,7 @@ class DependenciesTest
         String instance = dependencies.resolveDependency( String.class );
 
         // Then
-        assertThat( instance, equalTo( foo ) );
+        assertThat( instance ).isEqualTo( foo );
     }
 
     @Test
@@ -64,7 +63,7 @@ class DependenciesTest
         AbstractList instance = dependencies.resolveDependency( AbstractList.class );
 
         // Then
-        assertThat( instance, equalTo( foo ) );
+        assertThat( instance ).isEqualTo( foo );
     }
 
     @Test
@@ -80,7 +79,7 @@ class DependenciesTest
         List instance = dependencies.resolveDependency( List.class );
 
         // Then
-        assertThat( instance, equalTo( foo ) );
+        assertThat( instance ).isEqualTo( foo );
     }
 
     @Test
@@ -96,7 +95,7 @@ class DependenciesTest
         Collection instance = dependencies.resolveDependency( Collection.class );
 
         // Then
-        assertThat( instance, equalTo( foo ) );
+        assertThat( instance ).isEqualTo( foo );
     }
 
     @Test
@@ -113,7 +112,7 @@ class DependenciesTest
         Collection instance = dependencies.resolveDependency( Collection.class );
 
         // Then
-        assertThat( instance, equalTo( foo ) );
+        assertThat( instance ).isEqualTo( foo );
     }
 
     @Test
@@ -131,7 +130,7 @@ class DependenciesTest
         Collection instance = dependencies.resolveDependency( Collection.class );
 
         // Then
-        assertThat( instance, equalTo( foo ) );
+        assertThat( instance ).isEqualTo( foo );
     }
 
     @Test

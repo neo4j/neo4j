@@ -19,14 +19,12 @@
  */
 package org.neo4j.collection;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
+import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.internal.Longs;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.collection.PrimitiveArrays.countUnique;
 
 class PrimitiveArraysTest
 {
@@ -40,11 +38,11 @@ class PrimitiveArraysTest
     @Test
     void union_shouldHandleNullInput()
     {
-        assertThat( PrimitiveArrays.union( null, null ), nullValue() );
-        assertThat( PrimitiveArrays.union( null, NO_INTS ), equalTo( NO_INTS ) );
-        assertThat( PrimitiveArrays.union( NO_INTS, null ), equalTo( NO_INTS ) );
-        assertThat( PrimitiveArrays.union( null, ONE_INT ), equalTo( ONE_INT ) );
-        assertThat( PrimitiveArrays.union( ONE_INT, null ), equalTo( ONE_INT ) );
+        assertThat( PrimitiveArrays.union( null, null ) ).isNull();
+        assertThat( PrimitiveArrays.union( null, NO_INTS ) ).isEqualTo( NO_INTS );
+        assertThat( PrimitiveArrays.union( NO_INTS, null ) ).isEqualTo( NO_INTS );
+        assertThat( PrimitiveArrays.union( null, ONE_INT ) ).isEqualTo( ONE_INT );
+        assertThat( PrimitiveArrays.union( ONE_INT, null ) ).isEqualTo( ONE_INT );
     }
 
     // intersect()
@@ -52,42 +50,34 @@ class PrimitiveArraysTest
     @Test
     void intersect_shouldHandleNullInput()
     {
-        assertThat( PrimitiveArrays.intersect( null, null ), equalTo( NO_LONGS ) );
-        assertThat( PrimitiveArrays.intersect( null, NO_LONGS ), equalTo( NO_LONGS ) );
-        assertThat( PrimitiveArrays.intersect( NO_LONGS, null ), equalTo( NO_LONGS ) );
-        assertThat( PrimitiveArrays.intersect( null, ONE_LONG ), equalTo( NO_LONGS ) );
-        assertThat( PrimitiveArrays.intersect( ONE_LONG, null ), equalTo( NO_LONGS ) );
+        assertThat( PrimitiveArrays.intersect( null, null ) ).isEqualTo( NO_LONGS );
+        assertThat( PrimitiveArrays.intersect( null, NO_LONGS ) ).isEqualTo( NO_LONGS );
+        assertThat( PrimitiveArrays.intersect( NO_LONGS, null ) ).isEqualTo( NO_LONGS );
+        assertThat( PrimitiveArrays.intersect( null, ONE_LONG ) ).isEqualTo( NO_LONGS );
+        assertThat( PrimitiveArrays.intersect( ONE_LONG, null ) ).isEqualTo( NO_LONGS );
     }
 
     @Test
     void intersect_shouldHandleNonIntersectingArrays()
     {
-        assertThat( PrimitiveArrays.intersect( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
-                equalTo( NO_LONGS ) );
+        assertThat( PrimitiveArrays.intersect( new long[]{1, 2, 3}, new long[]{4, 5, 6} ) ).isEqualTo( NO_LONGS );
 
-        assertThat( PrimitiveArrays.intersect( new long[]{14, 15, 16}, new long[]{1, 2, 3} ),
-                equalTo( NO_LONGS ) );
+        assertThat( PrimitiveArrays.intersect( new long[]{14, 15, 16}, new long[]{1, 2, 3} ) ).isEqualTo( NO_LONGS );
     }
 
     @Test
     void intersect_shouldHandleIntersectingArrays()
     {
-        assertThat( PrimitiveArrays.intersect( new long[]{1, 2, 3}, new long[]{3, 4, 5} ),
-                isArray( 3 ) );
+        assertThat( PrimitiveArrays.intersect( new long[]{1, 2, 3}, new long[]{3, 4, 5} ) ).containsExactly( 3 );
 
-        assertThat( PrimitiveArrays.intersect( new long[]{3, 4, 5}, new long[]{1, 2, 3, 4} ),
-                isArray( 3, 4 ) );
+        assertThat( PrimitiveArrays.intersect( new long[]{3, 4, 5}, new long[]{1, 2, 3, 4} ) ).containsExactly( 3, 4 );
     }
 
     @Test
     void intersect_shouldHandleComplexIntersectingArraysWithGaps()
     {
-        assertThat(
-                PrimitiveArrays.intersect( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
-                isArray( 4, 9, 12 ) );
-        assertThat(
-                PrimitiveArrays.intersect( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ),
-                isArray( 4, 9, 12 ) );
+        assertThat( PrimitiveArrays.intersect( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ) ).containsExactly( 4, 9, 12 );
+        assertThat( PrimitiveArrays.intersect( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ) ).containsExactly( 4, 9, 12 );
     }
 
     // symmetricDifference()
@@ -95,44 +85,36 @@ class PrimitiveArraysTest
     @Test
     void symDiff_shouldHandleNullInput()
     {
-        assertThat( PrimitiveArrays.symmetricDifference( null, null ), equalTo( null ) );
-        assertThat( PrimitiveArrays.symmetricDifference( null, NO_LONGS ), equalTo( NO_LONGS ) );
-        assertThat( PrimitiveArrays.symmetricDifference( NO_LONGS, null ), equalTo( NO_LONGS ) );
-        assertThat( PrimitiveArrays.symmetricDifference( null, ONE_LONG ), equalTo( ONE_LONG ) );
-        assertThat( PrimitiveArrays.symmetricDifference( ONE_LONG, null ), equalTo( ONE_LONG ) );
+        assertThat( PrimitiveArrays.symmetricDifference( null, null ) ).isEqualTo( null );
+        assertThat( PrimitiveArrays.symmetricDifference( null, NO_LONGS ) ).isEqualTo( NO_LONGS );
+        assertThat( PrimitiveArrays.symmetricDifference( NO_LONGS, null ) ).isEqualTo( NO_LONGS );
+        assertThat( PrimitiveArrays.symmetricDifference( null, ONE_LONG ) ).isEqualTo( ONE_LONG );
+        assertThat( PrimitiveArrays.symmetricDifference( ONE_LONG, null ) ).isEqualTo( ONE_LONG );
     }
 
     @Test
     void symDiff_shouldHandleNonIntersectingArrays()
     {
-        assertThat( PrimitiveArrays.symmetricDifference( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
-                isArray( 1, 2, 3, 4, 5, 6 ) );
+        assertThat( PrimitiveArrays.symmetricDifference( new long[]{1, 2, 3}, new long[]{4, 5, 6} ) ).containsExactly( 1, 2, 3, 4, 5, 6 );
 
-        assertThat( PrimitiveArrays.symmetricDifference( new long[]{14, 15, 16}, new long[]{1, 2, 3} ),
-                isArray( 1, 2, 3, 14, 15, 16 ) );
+        assertThat( PrimitiveArrays.symmetricDifference( new long[]{14, 15, 16}, new long[]{1, 2, 3} ) ).containsExactly( 1, 2, 3, 14, 15, 16 );
     }
 
     @Test
     void symDiff_shouldHandleIntersectingArrays()
     {
-        assertThat( PrimitiveArrays.symmetricDifference( new long[]{1, 2, 3}, new long[]{3, 4, 5} ),
-                isArray( 1, 2, 4, 5 ) );
+        assertThat( PrimitiveArrays.symmetricDifference( new long[]{1, 2, 3}, new long[]{3, 4, 5} ) ).containsExactly( 1, 2, 4, 5 );
 
-        assertThat( PrimitiveArrays.symmetricDifference( new long[]{3, 4, 5}, new long[]{1, 2, 3, 4} ),
-                isArray( 1, 2, 5 ) );
+        assertThat( PrimitiveArrays.symmetricDifference( new long[]{3, 4, 5}, new long[]{1, 2, 3, 4} ) ).containsExactly( 1, 2, 5 );
     }
 
     @Test
     void symDiff_shouldHandleComplexIntersectingArraysWithGaps()
     {
-        assertThat(
-                PrimitiveArrays
-                        .symmetricDifference( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
-                isArray( 2, 3, 6, 7, 8, 11, 15, 16, 19 ) );
-        assertThat(
-                PrimitiveArrays
-                        .symmetricDifference( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ),
-                isArray( 2, 3, 6, 7, 8, 11, 15, 16, 19 ) );
+        assertThat( PrimitiveArrays.symmetricDifference( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ) ).containsExactly( 2, 3, 6,
+                7, 8, 11, 15, 16, 19 );
+        assertThat( PrimitiveArrays.symmetricDifference( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ) ).containsExactly( 2, 3, 6,
+                7, 8, 11, 15, 16, 19 );
     }
 
     // count unique
@@ -140,66 +122,45 @@ class PrimitiveArraysTest
     @Test
     void shouldCountUnique()
     {
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
-                isIntPair( 3, 3 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{1, 2, 3}, new long[]{4, 5, 6} ) ).hasCounts( 3, 3 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{1, 2, 3}, new long[]{3, 6} ),
-                isIntPair( 2, 1 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{1, 2, 3}, new long[]{3, 6} ) ).hasCounts( 2, 1 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{1, 2, 3}, new long[]{3} ),
-                isIntPair( 2, 0 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{1, 2, 3}, new long[]{3} ) ).hasCounts( 2, 0 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{3}, new long[]{1, 2, 3} ),
-                isIntPair( 0, 2 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{3}, new long[]{1, 2, 3} ) ).hasCounts( 0, 2 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{3}, new long[]{3} ),
-                isIntPair( 0, 0 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{3}, new long[]{3} ) ).hasCounts( 0, 0 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{3, 6, 8}, new long[]{} ),
-                isIntPair( 3, 0 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{3, 6, 8}, new long[]{} ) ).hasCounts( 3, 0 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{}, new long[]{3, 6, 8} ),
-                isIntPair( 0, 3 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{}, new long[]{3, 6, 8} ) ).hasCounts( 0, 3 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{}, new long[]{} ),
-                isIntPair( 0, 0 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{}, new long[]{} ) ).hasCounts( 0, 0 );
 
-        assertThat(
-                PrimitiveArrays.countUnique( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
-                isIntPair( 3, 6 ) );
+        IntPairAssert.assertThat( countUnique( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ) ).hasCounts( 3, 6 );
     }
 
-    // helpers
-
-    private static Matcher<Long> isIntPair( int left, int right )
+    private static class IntPairAssert extends AbstractAssert<IntPairAssert,Long>
     {
-        return new BaseMatcher<>()
+        private final Longs longs = Longs.instance();
+
+        static IntPairAssert assertThat( long value )
         {
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendValue( left );
-                description.appendValue( right );
-            }
+            return new IntPairAssert( value );
+        }
 
-            @Override
-            public boolean matches( Object o )
-            {
-                return o instanceof Long && ((Long) o) == (((long) left << 32) | right);
-            }
-        };
-    }
+        IntPairAssert( Long value )
+        {
+            super( value, IntPairAssert.class );
+        }
 
-    private static Matcher<long[]> isArray( long... values )
-    {
-        return equalTo( values );
+        IntPairAssert hasCounts( int left, int right )
+        {
+            isNotNull();
+            long expectedValue = (long) left << 32 | right;
+            longs.assertEqual( info, actual, expectedValue );
+            return myself;
+        }
     }
 }
