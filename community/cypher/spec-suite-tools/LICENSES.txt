@@ -13,6 +13,7 @@ Apache Software License, Version 2.0
   casbah-core
   casbah-query
   Gherkin Repackaged Dependencies
+  Java Concurrency Tools Core Library
   Joda convert
   Joda-Time
   Lucene codecs

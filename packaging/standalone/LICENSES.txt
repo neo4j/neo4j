@@ -33,6 +33,7 @@ Apache Software License, Version 2.0
   firebase
   forever-agent
   grpc
+  Java Concurrency Tools Core Library
   long
   Lucene codecs
   Lucene Common Analyzers
