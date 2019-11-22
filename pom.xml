@@ -1026,7 +1026,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>4.0.0-beta03</version>
+        <version>4.0.0-rc1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
