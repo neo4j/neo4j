@@ -73,7 +73,7 @@ class JavaAggregationFunctionsTestIT
     void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyFunctions.class ).build() )
+        try ( Neo4j server = createServer( MyFunctions.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
@@ -92,7 +92,7 @@ class JavaAggregationFunctionsTestIT
     void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyFunctions.class ).build() )
+        try ( Neo4j server = createServer( MyFunctions.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),

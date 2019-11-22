@@ -29,7 +29,6 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.InProcessNeo4j;
 
 /**
  * Manages user-defined cypher fixtures that can be exercised against the server.

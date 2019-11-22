@@ -31,7 +31,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.harness.junit.extension.Neo4j;
+import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.junit.extension.Neo4jExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.tooling.procedure.procedures.valid.Procedures;

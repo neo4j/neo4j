@@ -34,7 +34,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.harness.InProcessNeo4j;
+import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilder;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.procedure.Procedure;
@@ -56,7 +56,7 @@ import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 public class Neo4jRule implements TestRule
 {
     private Neo4jBuilder builder;
-    private InProcessNeo4j neo4j;
+    private Neo4j neo4j;
     private Supplier<PrintStream> dumpLogsOnFailureTarget;
 
     protected Neo4jRule( Neo4jBuilder builder )
@@ -82,7 +82,7 @@ public class Neo4jRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                try ( InProcessNeo4j sc = neo4j = builder.build() )
+                try ( Neo4j sc = neo4j = builder.build() )
                 {
                     try
                     {

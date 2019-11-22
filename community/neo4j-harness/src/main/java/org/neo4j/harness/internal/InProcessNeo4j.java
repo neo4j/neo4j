@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness;
+package org.neo4j.harness.internal;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -35,14 +35,14 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.harness.junit.extension.Neo4j;
+import org.neo4j.harness.Neo4j;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 
 @PublicApi
-public class InProcessNeo4j implements Neo4j, AutoCloseable
+public class InProcessNeo4j implements Neo4j
 {
     private final File serverFolder;
     private final File userLogFile;

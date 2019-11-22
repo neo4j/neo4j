@@ -65,7 +65,7 @@ class FixturesTestIT
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try ( InProcessNeo4j server = getServerBuilder( targetFolder ).withFixture( fixture ).build() )
+        try ( Neo4j server = getServerBuilder( targetFolder ).withFixture( fixture ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
@@ -93,7 +93,7 @@ class FixturesTestIT
                 false );
 
         // When
-        try ( InProcessNeo4j server = getServerBuilder( targetFolder ).withFixture( targetFolder ).build() )
+        try ( Neo4j server = getServerBuilder( targetFolder ).withFixture( targetFolder ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
@@ -118,7 +118,7 @@ class FixturesTestIT
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try ( InProcessNeo4j server = getServerBuilder( targetFolder )
+        try ( Neo4j server = getServerBuilder( targetFolder )
                 .withFixture( fixture1 )
                 .withFixture( fixture2 )
                 .build() )
@@ -138,7 +138,7 @@ class FixturesTestIT
         File targetFolder = testDir.homeDir();
 
         // When
-        try ( InProcessNeo4j server = getServerBuilder( targetFolder )
+        try ( Neo4j server = getServerBuilder( targetFolder )
                 .withFixture( "CREATE (a:User)" )
                 .build() )
         {
@@ -160,7 +160,7 @@ class FixturesTestIT
         FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "", false );
 
         // When
-        try ( InProcessNeo4j server = getServerBuilder( targetFolder )
+        try ( Neo4j server = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).build() )
         {
             // Then
@@ -179,7 +179,7 @@ class FixturesTestIT
         FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "this is not a valid cypher statement", false );
 
         // When
-        try ( InProcessNeo4j ignore = getServerBuilder( targetFolder )
+        try ( Neo4j ignore = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).build() )
         {
             fail( "Should have thrown exception" );
@@ -199,7 +199,7 @@ class FixturesTestIT
         File targetFolder = testDir.homeDir();
 
         // When
-        try ( InProcessNeo4j server = getServerBuilder( targetFolder )
+        try ( Neo4j server = getServerBuilder( targetFolder )
                 .withFixture( graphDatabaseService ->
                 {
                     try ( Transaction tx = graphDatabaseService.beginTx() )

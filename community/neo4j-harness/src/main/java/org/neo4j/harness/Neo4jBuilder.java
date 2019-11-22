@@ -21,7 +21,6 @@ package org.neo4j.harness;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.harness.junit.extension.Neo4j;
 
 /**
  * Builder for constructing and starting Neo4j for test purposes.
@@ -35,5 +34,5 @@ public interface Neo4jBuilder extends Neo4jConfigurator<Neo4jBuilder>
      * {@link #withConfig(Setting, Object)} method or disable web server completely. Please refer to the Neo4j Manual for
      * details on available configuration options.
      */
-    InProcessNeo4j build();
+    Neo4j build();
 }

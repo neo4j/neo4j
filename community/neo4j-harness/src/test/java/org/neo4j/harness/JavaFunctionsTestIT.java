@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.junit.extension.Neo4j;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.UserFunction;
@@ -104,7 +103,7 @@ class JavaFunctionsTestIT
     {
         // When
         Class<MyFunctions> functionClass = MyFunctions.class;
-        try ( InProcessNeo4j server = createServer( functionClass ).build() )
+        try ( Neo4j server = createServer( functionClass ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
@@ -123,7 +122,7 @@ class JavaFunctionsTestIT
     void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyFunctions.class ).build() )
+        try ( Neo4j server = createServer( MyFunctions.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
@@ -139,7 +138,7 @@ class JavaFunctionsTestIT
     void shouldWorkWithInjectableFromExtension() throws Throwable
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyFunctionsUsingMyService.class ).build() )
+        try ( Neo4j server = createServer( MyFunctionsUsingMyService.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
@@ -156,7 +155,7 @@ class JavaFunctionsTestIT
     void shouldWorkWithInjectableFromExtensionWithMorePower() throws Throwable
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyFunctionsUsingMyCoreAPI.class ).build() )
+        try ( Neo4j server = createServer( MyFunctionsUsingMyCoreAPI.class ).build() )
         {
             HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson( "{ 'statements': [ { 'statement': 'CREATE (), (), ()' } ] }" ) );

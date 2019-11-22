@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness.junit.extension;
+package org.neo4j.harness;
 
 import java.io.PrintStream;
 import java.net.URI;
@@ -31,7 +31,7 @@ import org.neo4j.graphdb.config.Configuration;
  * Neo4j test instance.
  */
 @PublicApi
-public interface Neo4j
+public interface Neo4j extends AutoCloseable
 {
     /**
      * Returns the URI to the Bolt Protocol connector of the instance.
@@ -75,4 +75,9 @@ public interface Neo4j
      * @param out the stream to print to.
      */
     void printLogs( PrintStream out );
+
+    /**
+     * Shutdown neo4j test instance.
+     */
+    void close();
 }

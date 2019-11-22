@@ -32,8 +32,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.harness.InProcessNeo4j;
+import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilder;
+import org.neo4j.harness.internal.InProcessNeo4j;
 
 import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 
@@ -92,7 +93,7 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Para
     @Override
     public void beforeAll( ExtensionContext context )
     {
-        InProcessNeo4j neo = builder.build();
+        Neo4j neo = builder.build();
         DatabaseManagementService managementService = neo.databaseManagementService();
         GraphDatabaseService service = neo.defaultDatabaseService();
         context.getStore( NAMESPACE ).put( Neo4j.class, neo );

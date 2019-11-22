@@ -28,7 +28,6 @@ import org.junit.jupiter.api.parallel.Resources;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.junit.extension.Neo4j;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
@@ -140,7 +139,7 @@ class JavaProceduresTest
     void shouldLaunchWithDeclaredProcedures() throws Exception
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyProcedures.class ).build() )
+        try ( Neo4j server = createServer( MyProcedures.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
@@ -157,7 +156,7 @@ class JavaProceduresTest
     void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyProcedures.class ).build() )
+        try ( Neo4j server = createServer( MyProcedures.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
@@ -173,7 +172,7 @@ class JavaProceduresTest
     void shouldWorkWithInjectableFromExtension() throws Throwable
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyProceduresUsingMyService.class ).build() )
+        try ( Neo4j server = createServer( MyProceduresUsingMyService.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
@@ -190,8 +189,7 @@ class JavaProceduresTest
     void shouldWorkWithInjectableFromExtensionWithMorePower() throws Throwable
     {
         // When
-        try ( InProcessNeo4j server = createServer( MyProceduresUsingMyCoreAPI.class )
-                .build() )
+        try ( Neo4j server = createServer( MyProceduresUsingMyCoreAPI.class ).build() )
         {
             // Then
             assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 0L );

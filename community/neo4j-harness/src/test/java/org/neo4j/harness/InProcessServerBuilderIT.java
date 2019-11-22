@@ -101,7 +101,7 @@ class InProcessServerBuilderIT
         File workDir = directory.directory( "specific" );
 
         // When
-        try ( InProcessNeo4j neo4j = getTestBuilder( workDir ).build() )
+        try ( Neo4j neo4j = getTestBuilder( workDir ).build() )
         {
             // Then
             assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
@@ -130,7 +130,7 @@ class InProcessServerBuilderIT
         new File( certificates, "trusted" ).mkdir();
         new File( certificates, "revoked" ).mkdir();
 
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withConfig( HttpConnector.enabled, true )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) )
                 .withConfig( HttpsConnector.enabled, true )
@@ -157,7 +157,7 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByClass()
     {
         // When
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withUnmanagedExtension( "/path/to/my/extension", MyUnmanagedExtension.class )
                 .build() )
         {
@@ -171,7 +171,7 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByPackage()
     {
         // When
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withUnmanagedExtension( "/path/to/my/extension", "org.neo4j.harness.extensionpackage" )
                 .build() )
         {
@@ -184,7 +184,7 @@ class InProcessServerBuilderIT
     @Test
     void startWithCustomExtension()
     {
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withExtensionFactories( asIterable( new TestExtensionFactory() ) ).build() )
         {
             assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
@@ -195,7 +195,7 @@ class InProcessServerBuilderIT
     @Test
     void startWithDisabledServer()
     {
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() ).withDisabledServer().build() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() ).withDisabledServer().build() )
         {
             assertThrows( IllegalStateException.class, neo4j::httpURI );
             assertThrows( IllegalStateException.class, neo4j::httpsURI );
@@ -216,10 +216,10 @@ class InProcessServerBuilderIT
     void shouldFindFreePort()
     {
         // Given one server is running
-        try ( InProcessNeo4j firstServer = getTestBuilder( directory.homeDir() ).build() )
+        try ( Neo4j firstServer = getTestBuilder( directory.homeDir() ).build() )
         {
             // When I build a second server
-            try ( InProcessNeo4j secondServer = getTestBuilder( directory.homeDir() ).build() )
+            try ( Neo4j secondServer = getTestBuilder( directory.homeDir() ).build() )
             {
                 // Then
                 assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
@@ -246,7 +246,7 @@ class InProcessServerBuilderIT
             managementService.shutdown();
         }
 
-        try ( InProcessNeo4j neo4j = getTestBuilder( existingHomeDir ).copyFrom( existingHomeDir ).build() )
+        try ( Neo4j neo4j = getTestBuilder( existingHomeDir ).copyFrom( existingHomeDir ).build() )
         {
             // Then
             GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
@@ -283,7 +283,7 @@ class InProcessServerBuilderIT
     void shouldOpenBoltPort()
     {
         // given
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() ).build() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() ).build() )
         {
             URI uri = neo4j.boltURI();
 
@@ -366,7 +366,7 @@ class InProcessServerBuilderIT
             serverBuilder.withConfig( SslPolicyConfig.forScope( HTTPS ).base_directory, certificates.toPath() );
         }
 
-        try ( InProcessNeo4j neo4j = serverBuilder.build() )
+        try ( Neo4j neo4j = serverBuilder.build() )
         {
             GraphDatabaseService db = neo4j.defaultDatabaseService();
 
