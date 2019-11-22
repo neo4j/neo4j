@@ -26,10 +26,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -143,5 +150,64 @@ class CachingOffHeapBlockAllocatorTest
         assertEquals( 0, memoryTracker.usedDirectMemory() );
 
         verify( allocator, times( EXTRA * 2 ) ).doFree( any(), any() );
+    }
+
+    @Test
+    void benchmark() throws Exception
+    {
+        CachingOffHeapBlockAllocator allocator = new CachingOffHeapBlockAllocator();
+        int threadCount = Runtime.getRuntime().availableProcessors() / 2;
+        ExecutorService executor = Executors.newFixedThreadPool( threadCount );
+        CountDownLatch ready = new CountDownLatch( threadCount );
+        BinaryLatch start = new BinaryLatch();
+        Callable<Void> task = () ->
+        {
+            LocalMemoryTracker tracker = new LocalMemoryTracker();
+            OffHeapMemoryAllocator alloc = new OffHeapMemoryAllocator( tracker, allocator );
+            ready.countDown();
+            start.await();
+            benchmarkLoop( alloc );
+            return null;
+        };
+        List<Future<Void>> futures = new ArrayList<>();
+        for ( int i = 0; i < threadCount; i++ )
+        {
+            futures.add( executor.submit( task ) );
+        }
+        ready.await();
+        start.release();
+        for ( Future<Void> future : futures )
+        {
+            future.get();
+        }
+        executor.shutdown();
+    }
+
+    private void benchmarkLoop( OffHeapMemoryAllocator alloc )
+    {
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        for ( int i = 0; i < 10_000_000L; i++ )
+        {
+            benchmarkIteration( alloc, rng );
+        }
+    }
+
+    private void benchmarkIteration( OffHeapMemoryAllocator alloc, ThreadLocalRandom rng )
+    {
+        int size;
+        switch ( rng.nextInt( 6 ) )
+        {
+        case 0: size = 32; break;
+        case 1: size = 64; break;
+        case 2: size = 128; break;
+        case 3: size = 256; break;
+        case 4: size = 512; break;
+        case 5: size = 1024; break;
+        default: throw new RuntimeException( "weird size" );
+        }
+        Memory memory = alloc.allocate( size, true );
+        assertEquals( 0L, memory.readLong( 0 ) );
+        memory.writeLong( 0, 0 );
+        memory.free();
     }
 }
