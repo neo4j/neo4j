@@ -29,8 +29,8 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.junit.extension.Neo4jExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -55,7 +55,7 @@ class ProcedureTest
                 Session session = driver.session() )
         {
 
-            StatementResult result = session.run( "CALL " + procedureNamespace + ".theAnswer()" );
+            Result result = session.run( "CALL " + procedureNamespace + ".theAnswer()" );
 
             assertThat( result.single().get( "value" ).asLong() ).isEqualTo( 42L );
         }
