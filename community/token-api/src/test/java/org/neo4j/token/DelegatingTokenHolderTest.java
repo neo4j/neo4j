@@ -32,9 +32,7 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.oneOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -63,8 +61,8 @@ class DelegatingTokenHolderTest
     void mustCreateAndCacheNewTokens() throws Exception
     {
         when( creator.createToken( "token", false ) ).thenReturn( 42 );
-        assertThat( holder.getOrCreateId( "token" ), is( 42 ) );
-        assertThat( holder.getOrCreateId( "token" ), is( 42 ) );
+        assertThat( holder.getOrCreateId( "token" ) ).isEqualTo( 42 );
+        assertThat( holder.getOrCreateId( "token" ) ).isEqualTo( 42 );
         // Verify implies that the call only happens once.
         verify( creator ).createToken( "token", false );
         verifyNoMoreInteractions( creator );
@@ -77,9 +75,9 @@ class DelegatingTokenHolderTest
         String[] names = {"token"};
         int[] ids = new int[1];
         holder.getOrCreateIds( names, ids );
-        assertThat( ids[0], is( 42 ) );
+        assertThat( ids[0] ).isEqualTo( 42 );
         holder.getOrCreateIds( names, ids );
-        assertThat( ids[0], is( 42 ) );
+        assertThat( ids[0] ).isEqualTo( 42 );
         // Verify implies that the call only happens once.
         verify( creator ).createTokens( any( String[].class ), any( int[].class ), eq( false ), any( IntPredicate.class ) );
         verifyNoMoreInteractions( creator );
@@ -92,9 +90,9 @@ class DelegatingTokenHolderTest
         String[] names = {"token"};
         int[] ids = new int[1];
         holder.getOrCreateInternalIds( names, ids );
-        assertThat( ids[0], is( 42 ) );
+        assertThat( ids[0] ).isEqualTo( 42 );
         holder.getOrCreateInternalIds( names, ids );
-        assertThat( ids[0], is( 42 ) );
+        assertThat( ids[0] ).isEqualTo( 42 );
         // Verify implies that the call only happens once.
         verify( creator ).createTokens( any( String[].class ), any( int[].class ), eq( true ), any( IntPredicate.class ) );
         verifyNoMoreInteractions( creator );
@@ -103,24 +101,22 @@ class DelegatingTokenHolderTest
     @Test
     void batchTokenGetMustReturnWhetherThereWereUnresolvedTokens()
     {
-        holder.setInitialTokens( asList(
-                token( "a", 1 ),
-                token( "b", 2 ) ) );
+        holder.setInitialTokens( asList( token( "a", 1 ), token( "b", 2 ) ) );
         String[] names;
         int[] ids;
 
         names = new String[]{"a", "X", "b"};
         ids = new int[]{-1, -1, -1};
         assertTrue( holder.getIdsByNames( names, ids ) );
-        assertThat( ids[0], is( 1 ) );
-        assertThat( ids[1], is( -1 ) );
-        assertThat( ids[2], is( 2 ) );
+        assertThat( ids[0] ).isEqualTo( 1 );
+        assertThat( ids[1] ).isEqualTo( -1 );
+        assertThat( ids[2] ).isEqualTo( 2 );
 
         names = new String[]{"a", "b"};
         ids = new int[]{-1, -1};
         assertFalse( holder.getIdsByNames( names, ids ) );
-        assertThat( ids[0], is( 1 ) );
-        assertThat( ids[1], is( 2 ) );
+        assertThat( ids[0] ).isEqualTo( 1 );
+        assertThat( ids[1] ).isEqualTo( 2 );
     }
 
     @Test
@@ -134,13 +130,13 @@ class DelegatingTokenHolderTest
         String[] names = new String[]{"b", "X", "a", "Y", "c"};
         int[] ids = new int[names.length];
         holder.getOrCreateIds( names, ids );
-        assertThat( ids.length, is( 5 ) );
-        assertThat( ids[0], is( 2 ) );
-        assertThat( ids[1], is( oneOf( 42, 43 ) ) );
-        assertThat( ids[2], is( 1 ) );
-        assertThat( ids[3], is( oneOf( 42, 43 ) ) );
-        assertThat( ids[4], is( 3 ) );
-        assertThat( nextId.get(), is( 44 ) );
+        assertThat( ids.length ).isEqualTo( 5 );
+        assertThat( ids[0] ).isEqualTo( 2 );
+        assertThat( ids[1] ).isIn( 42, 43 );
+        assertThat( ids[2] ).isEqualTo( 1 );
+        assertThat( ids[3] ).isIn( 42, 43 );
+        assertThat( ids[4] ).isEqualTo( 3 );
+        assertThat( nextId.get() ).isEqualTo( 44 );
 
         // And these should not throw.
         holder.getTokenById( 42 );
@@ -158,13 +154,13 @@ class DelegatingTokenHolderTest
         String[] names = new String[]{"b", "X", "a", "Y", "c"};
         int[] ids = new int[names.length];
         holder.getOrCreateInternalIds( names, ids );
-        assertThat( ids.length, is( 5 ) );
-        assertThat( ids[0], is( 2 ) );
-        assertThat( ids[1], is( oneOf( 42, 43 ) ) );
-        assertThat( ids[2], is( 1 ) );
-        assertThat( ids[3], is( oneOf( 42, 43 ) ) );
-        assertThat( ids[4], is( 3 ) );
-        assertThat( nextId.get(), is( 44 ) );
+        assertThat( ids.length ).isEqualTo( 5 );
+        assertThat( ids[0] ).isEqualTo( 2 );
+        assertThat( ids[1] ).isIn( 42, 43 );
+        assertThat( ids[2] ).isEqualTo( 1 );
+        assertThat( ids[3] ).isIn( 42, 43 );
+        assertThat( ids[4] ).isEqualTo( 3 );
+        assertThat( nextId.get() ).isEqualTo( 44 );
 
         // And these should not throw.
         holder.getInternalTokenById( 42 );
@@ -177,21 +173,21 @@ class DelegatingTokenHolderTest
         mockAssignNewTokenIdsInBatch( new AtomicInteger( 10 ) );
 
         int[] ids = new int[2];
-        holder.getOrCreateIds( new String[] {"a", "b"}, ids );
-        assertThat( ids[0], is( 10 ) );
-        assertThat( ids[1], is( 11 ) );
+        holder.getOrCreateIds( new String[]{"a", "b"}, ids );
+        assertThat( ids[0] ).isEqualTo( 10 );
+        assertThat( ids[1] ).isEqualTo( 11 );
 
-        holder.getOrCreateInternalIds( new String[] {"b", "c"}, ids );
-        assertThat( ids[0], is( 12 ) );
-        assertThat( ids[1], is( 13 ) );
+        holder.getOrCreateInternalIds( new String[]{"b", "c"}, ids );
+        assertThat( ids[0] ).isEqualTo( 12 );
+        assertThat( ids[1] ).isEqualTo( 13 );
 
-        holder.getOrCreateIds( new String[] {"b", "c"}, ids );
-        assertThat( ids[0], is( 11 ) );
-        assertThat( ids[1], is( 14 ) );
+        holder.getOrCreateIds( new String[]{"b", "c"}, ids );
+        assertThat( ids[0] ).isEqualTo( 11 );
+        assertThat( ids[1] ).isEqualTo( 14 );
 
-        holder.getOrCreateInternalIds( new String[] {"c", "d"}, ids );
-        assertThat( ids[0], is( 13 ) );
-        assertThat( ids[1], is( 15 ) );
+        holder.getOrCreateInternalIds( new String[]{"c", "d"}, ids );
+        assertThat( ids[0] ).isEqualTo( 13 );
+        assertThat( ids[1] ).isEqualTo( 15 );
     }
 
     private void mockAssignNewTokenIdsInBatch( AtomicInteger nextId ) throws KernelException
@@ -218,7 +214,7 @@ class DelegatingTokenHolderTest
                 token( "b", 2 ) ) );
 
         when( creator.createToken( "c", false ) ).thenReturn( 3 );
-        assertThat( holder.getOrCreateId( "c" ), is( 3 ) );
+        assertThat( holder.getOrCreateId( "c" ) ).isEqualTo( 3 );
     }
 
     private void initialInternalTokensABC()
@@ -242,14 +238,14 @@ class DelegatingTokenHolderTest
         int[] ids = new int[names.length];
         holder.getOrCreateIds( names, ids );
 
-        assertThat( ids.length, is( 6 ) );
-        assertThat( ids[0], is( 2 ) );
-        assertThat( ids[1], is( 2 ) );
-        assertThat( ids[2], is( 42 ) );
-        assertThat( ids[3], is( 1 ) );
-        assertThat( ids[4], is( 42 ) );
-        assertThat( ids[5], is( 3 ) );
-        assertThat( nextId.get(), is( 43 ) );
+        assertThat( ids.length ).isEqualTo( 6 );
+        assertThat( ids[0] ).isEqualTo( 2 );
+        assertThat( ids[1] ).isEqualTo( 2 );
+        assertThat( ids[2] ).isEqualTo( 42 );
+        assertThat( ids[3] ).isEqualTo( 1 );
+        assertThat( ids[4] ).isEqualTo( 42 );
+        assertThat( ids[5] ).isEqualTo( 3 );
+        assertThat( nextId.get() ).isEqualTo( 43 );
 
         // And this should not throw.
         holder.getTokenById( 42 );

@@ -30,11 +30,7 @@ import org.neo4j.token.api.NonUniqueTokenException;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,7 +56,7 @@ class TokenRegistryTest
 
         NamedToken token = new NamedToken( INBOUND1_TYPE, 3 );
         NonUniqueTokenException exception = assertThrows( NonUniqueTokenException.class, () -> registry.put( token ) );
-        assertThat( exception.getMessage(), containsString( format( "The testType %s is not unique", token ) ) );
+        assertThat( exception.getMessage() ).contains( format( "The testType %s is not unique", token ) );
     }
 
     @Test
@@ -71,7 +67,7 @@ class TokenRegistryTest
 
         NamedToken token = new NamedToken( INBOUND1_TYPE, 3, true );
         NonUniqueTokenException exception = assertThrows( NonUniqueTokenException.class, () -> registry.put( token ) );
-        assertThat( exception.getMessage(), containsString( format( "The testType %s is not unique", token ) ) );
+        assertThat( exception.getMessage() ).contains( format( "The testType %s is not unique", token ) );
     }
 
     @Test
@@ -119,12 +115,12 @@ class TokenRegistryTest
     void putAllMustNotThrowWhenPublicAndInternalTokenHaveSameName()
     {
         registry.putAll( asList( new NamedToken( INBOUND1_TYPE, 1 ), new NamedToken( INBOUND1_TYPE, 2, true ) ) );
-        assertThat( registry.getId( INBOUND1_TYPE ), is( 1 ) );
-        assertThat( registry.getIdInternal( INBOUND1_TYPE ), is( 2 ) );
-        assertThat( registry.getToken( 1 ), is( new NamedToken( INBOUND1_TYPE, 1 ) ) );
-        assertThat( registry.getTokenInternal( 1 ), is( nullValue() ) );
-        assertThat( registry.getToken( 2 ), is( nullValue() ) );
-        assertThat( registry.getTokenInternal( 2 ), is( new NamedToken( INBOUND1_TYPE, 2, true ) ) );
+        assertThat( registry.getId( INBOUND1_TYPE ) ).isEqualTo( 1 );
+        assertThat( registry.getIdInternal( INBOUND1_TYPE ) ).isEqualTo( 2 );
+        assertThat( registry.getToken( 1 ) ).isEqualTo( new NamedToken( INBOUND1_TYPE, 1 ) );
+        assertThat( registry.getTokenInternal( 1 ) ).isNull();
+        assertThat( registry.getToken( 2 ) ).isNull();
+        assertThat( registry.getTokenInternal( 2 ) ).isEqualTo( new NamedToken( INBOUND1_TYPE, 2, true ) );
     }
 
     @Test
@@ -194,9 +190,9 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         assertThrows( NonUniqueTokenException.class, () -> registry.putAll( singletonList( new NamedToken( INBOUND2_TYPE, 1 ) ) ) );
-        assertThat( registry.getToken( 1 ), is( new NamedToken( INBOUND1_TYPE, 1 ) ) );
-        assertThat( registry.getId( INBOUND1_TYPE ), is( 1 ) );
-        assertThat( registry.getId( INBOUND2_TYPE ), is( nullValue() ) );
+        assertThat( registry.getToken( 1 ) ).isEqualTo( new NamedToken( INBOUND1_TYPE, 1 ) );
+        assertThat( registry.getId( INBOUND1_TYPE ) ).isEqualTo( 1 );
+        assertThat( registry.getId( INBOUND2_TYPE ) ).isNull();
     }
 
     @Test
@@ -204,23 +200,23 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         assertThrows( NonUniqueTokenException.class, () -> registry.putAll( singletonList( new NamedToken( INBOUND2_TYPE, 1, true ) ) ) );
-        assertThat( registry.getToken( 1 ), is( new NamedToken( INBOUND1_TYPE, 1 ) ) );
-        assertThat( registry.getId( INBOUND1_TYPE ), is( 1 ) );
-        assertThat( registry.getId( INBOUND2_TYPE ), is( nullValue() ) );
-        assertThat( registry.getIdInternal( INBOUND1_TYPE ), is( nullValue() ) );
-        assertThat( registry.getIdInternal( INBOUND2_TYPE ), is( nullValue() ) );
+        assertThat( registry.getToken( 1 ) ).isEqualTo( new NamedToken( INBOUND1_TYPE, 1 ) );
+        assertThat( registry.getId( INBOUND1_TYPE ) ).isEqualTo( 1 );
+        assertThat( registry.getId( INBOUND2_TYPE ) ).isNull();
+        assertThat( registry.getIdInternal( INBOUND1_TYPE ) ).isNull();
+        assertThat( registry.getIdInternal( INBOUND2_TYPE ) ).isNull();
     }
     @Test
     void putAllMustThrowOnDuplicateIdWithExistingTokenEvenAcrossInternalAndPublicTokens()
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
         assertThrows( NonUniqueTokenException.class, () -> registry.putAll( singletonList( new NamedToken( INBOUND2_TYPE, 1 ) ) ) );
-        assertThat( registry.getTokenInternal( 1 ), is( new NamedToken( INBOUND1_TYPE, 1, true ) ) );
-        assertThat( registry.getToken( 1 ), is( nullValue() ) );
-        assertThat( registry.getId( INBOUND1_TYPE ), is( nullValue() ) );
-        assertThat( registry.getId( INBOUND2_TYPE ), is( nullValue() ) );
-        assertThat( registry.getIdInternal( INBOUND1_TYPE ), is( 1 ) );
-        assertThat( registry.getIdInternal( INBOUND2_TYPE ), is( nullValue() ) );
+        assertThat( registry.getTokenInternal( 1 ) ).isEqualTo( new NamedToken( INBOUND1_TYPE, 1, true ) );
+        assertThat( registry.getToken( 1 ) ).isNull();
+        assertThat( registry.getId( INBOUND1_TYPE ) ).isNull();
+        assertThat( registry.getId( INBOUND2_TYPE ) ).isNull();
+        assertThat( registry.getIdInternal( INBOUND1_TYPE ) ).isEqualTo( 1 );
+        assertThat( registry.getIdInternal( INBOUND2_TYPE ) ).isNull();
     }
 
     @Test
@@ -235,7 +231,7 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
 
-        assertThat( registry.getId( INBOUND1_TYPE ), is( nullValue() ) );
+        assertThat( registry.getId( INBOUND1_TYPE ) ).isNull();
     }
 
     @Test
@@ -243,7 +239,7 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
 
-        assertThat( registry.getIdInternal( INBOUND1_TYPE ), is( 1 ) );
+        assertThat( registry.getIdInternal( INBOUND1_TYPE ) ).isEqualTo( 1 );
     }
 
     @Test
@@ -251,7 +247,7 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1 ) );
 
-        assertThat( registry.getIdInternal( INBOUND1_TYPE ) , is( nullValue() ) );
+        assertThat( registry.getIdInternal( INBOUND1_TYPE ) ).isNull();
     }
 
     @Test
@@ -259,7 +255,7 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
 
-        assertThat( registry.getToken( 1 ), is( nullValue() ) );
+        assertThat( registry.getToken( 1 ) ).isNull();
     }
 
     @Test
@@ -267,7 +263,7 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
 
-        assertThat( registry.getTokenInternal( 1 ), is( new NamedToken( INBOUND1_TYPE, 1, true ) ) );
+        assertThat( registry.getTokenInternal( 1 ) ).isEqualTo( new NamedToken( INBOUND1_TYPE, 1, true ) );
     }
 
     @Test
@@ -275,7 +271,7 @@ class TokenRegistryTest
     {
         registry.put( new NamedToken( INBOUND1_TYPE, 1 ) );
 
-        assertThat( registry.getTokenInternal( 1 ), is( nullValue() ) );
+        assertThat( registry.getTokenInternal( 1 ) ).isNull();
     }
 
     @Test
@@ -286,7 +282,7 @@ class TokenRegistryTest
                 new NamedToken( INBOUND2_TYPE, 3 ), new NamedToken( INBOUND2_TYPE, 4, true ) ) );
 
         Collection<NamedToken> tokens = registry.allTokens();
-        assertThat( tokens, containsInAnyOrder( new NamedToken( INBOUND1_TYPE, 1 ), new NamedToken( INBOUND2_TYPE, 3 ) ) );
+        assertThat( tokens ).contains( new NamedToken( INBOUND1_TYPE, 1 ), new NamedToken( INBOUND2_TYPE, 3 ) );
     }
 
     @Test
@@ -297,7 +293,7 @@ class TokenRegistryTest
                 new NamedToken( INBOUND2_TYPE, 3 ), new NamedToken( INBOUND2_TYPE, 4, true ) ) );
 
         Collection<NamedToken> tokens = registry.allInternalTokens();
-        assertThat( tokens, containsInAnyOrder( new NamedToken( INBOUND1_TYPE, 2, true ), new NamedToken( INBOUND2_TYPE, 4, true ) ) );
+        assertThat( tokens ).contains( new NamedToken( INBOUND1_TYPE, 2, true ), new NamedToken( INBOUND2_TYPE, 4, true ) );
     }
 
     @Test
@@ -307,7 +303,7 @@ class TokenRegistryTest
                 new NamedToken( INBOUND1_TYPE, 1 ),
                 new NamedToken( INBOUND2_TYPE, 3 ), new NamedToken( INBOUND2_TYPE, 4, true ) ) );
 
-        assertThat( registry.size(), is( 2 ) );
+        assertThat( registry.size() ).isEqualTo( 2 );
     }
 
     @Test
@@ -317,7 +313,7 @@ class TokenRegistryTest
                 new NamedToken( INBOUND1_TYPE, 1 ), new NamedToken( INBOUND1_TYPE, 2, true ),
                 new NamedToken( INBOUND2_TYPE, 4, true ) ) );
 
-        assertThat( registry.sizeInternal(), is( 2 ) );
+        assertThat( registry.sizeInternal() ).isEqualTo( 2 );
     }
 
     @Test
