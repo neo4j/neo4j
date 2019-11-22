@@ -105,9 +105,7 @@ check_limits() {
 }
 
 setup_java_opts() {
-  JAVA_OPTS=("-server")
-
-  [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && JAVA_OPTS+=("${JAVA_MEMORY_OPTS[@]}")
+  JAVA_OPTS=("-server" ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-})
 
   if [[ "${dbms_logs_gc_enabled:-}" = "true" ]]; then
     if [[ "${JAVA_VERSION}" = "1.8"* ]]; then
