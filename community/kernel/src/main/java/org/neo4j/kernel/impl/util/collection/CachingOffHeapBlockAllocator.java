@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
@@ -41,7 +39,7 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  *     <li>Size must be power of 2
  *     <li>Size must be less or equal to {@link #maxCacheableBlockSize}
  * </ul>
- *
+ * <p>
  * This class is thread safe.
  */
 public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
@@ -51,7 +49,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
      */
     private final long maxCacheableBlockSize;
     private volatile boolean released;
-    private final BlockingQueue<MemoryBlock>[] caches;
+    private final Queue<MemoryBlock>[] caches;
 
     @VisibleForTesting
     public CachingOffHeapBlockAllocator()
@@ -70,7 +68,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
 
         final int numOfCaches = log2floor( maxCacheableBlockSize ) + 1;
         //noinspection unchecked
-        this.caches = new BlockingQueue[numOfCaches];
+        this.caches = new Queue[numOfCaches];
         for ( int i = 0; i < caches.length; i++ )
         {
             caches[i] = new ArrayBlockingQueue<>( maxCachedBlocks );
@@ -87,7 +85,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
             return allocateNew( size, tracker );
         }
 
-        final BlockingQueue<MemoryBlock> cache = caches[log2floor( size )];
+        final Queue<MemoryBlock> cache = caches[log2floor( size )];
         MemoryBlock block = cache.poll();
         if ( block == null )
         {
@@ -109,7 +107,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
             return;
         }
 
-        final BlockingQueue<MemoryBlock> cache = caches[log2floor( block.size )];
+        final Queue<MemoryBlock> cache = caches[log2floor( block.size )];
         if ( !cache.offer( block ) )
         {
             doFree( block, tracker );
@@ -131,12 +129,13 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     public void release()
     {
         released = true;
-        final List<MemoryBlock> blocks = new ArrayList<>();
-        for ( final BlockingQueue<MemoryBlock> cache : caches )
+        for ( Queue<MemoryBlock> cache : caches )
         {
-            cache.drainTo( blocks );
-            blocks.forEach( block -> UnsafeUtil.free( block.unalignedAddr, block.unalignedSize ) );
-            blocks.clear();
+            MemoryBlock block;
+            while ( (block = cache.poll()) != null )
+            {
+                UnsafeUtil.free( block.unalignedAddr, block.unalignedSize );
+            }
         }
     }
 
