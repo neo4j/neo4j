@@ -53,6 +53,7 @@ Apache Software License, Version 2.0
   jackson-databind
   Jackson-JAXRS-base
   Jackson-JAXRS-JSON
+  Java Concurrency Tools Core Library
   Javassist
   jersey-container-servlet
   jersey-container-servlet-core
