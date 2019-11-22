@@ -83,7 +83,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     {
         requirePositive( size );
         checkState( !released, "Allocator is already released" );
-        if ( !isCacheable( size ) )
+        if ( notCacheable( size ) )
         {
             return allocateNew( size, tracker );
         }
@@ -104,7 +104,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     @Override
     public void free( MemoryBlock block, MemoryAllocationTracker tracker )
     {
-        if ( released || !isCacheable( block.size ) )
+        if ( released || notCacheable( block.size ) )
         {
             doFree( block, tracker );
             return;
@@ -157,8 +157,8 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         return new MemoryBlock( addr, size, unalignedAddr, unalignedSize );
     }
 
-    private boolean isCacheable( long size )
+    private boolean notCacheable( long size )
     {
-        return isPowerOfTwo( size ) && size <= maxCacheableBlockSize;
+        return !isPowerOfTwo( size ) || size > maxCacheableBlockSize;
     }
 }
