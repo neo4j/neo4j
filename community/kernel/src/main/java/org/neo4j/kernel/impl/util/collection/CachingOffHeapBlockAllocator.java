@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.jctools.queues.QueueFactory;
+import org.jctools.queues.spec.ConcurrentQueueSpec;
+
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
@@ -67,11 +69,12 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         this.maxCacheableBlockSize = requirePowerOfTwo( maxCacheableBlockSize );
 
         final int numOfCaches = log2floor( maxCacheableBlockSize ) + 1;
+        ConcurrentQueueSpec spec = ConcurrentQueueSpec.createBoundedMpmc( maxCachedBlocks );
         //noinspection unchecked
         this.caches = new Queue[numOfCaches];
         for ( int i = 0; i < caches.length; i++ )
         {
-            caches[i] = new ArrayBlockingQueue<>( maxCachedBlocks );
+            caches[i] = QueueFactory.newQueue( spec );
         }
     }
 
