@@ -27,8 +27,7 @@ import java.nio.file.Path;
 import java.util.HashSet;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.test.ports.PortConstants.EphemeralPortMinimum;
 
@@ -43,7 +42,7 @@ class PortRepositoryIT
         int port2 = portRepository1.reserveNextPort( "foo" );
         int port3 = portRepository1.reserveNextPort( "foo" );
 
-        assertThat( new HashSet<>( asList( port1, port2, port3) ).size(), is( 3 ) );
+        assertThat( new HashSet<>( asList( port1, port2, port3 ) ).size() ).isEqualTo( 3 );
     }
 
     @Test
@@ -60,7 +59,7 @@ class PortRepositoryIT
         int port5 = portRepository2.reserveNextPort( "foo" );
         int port6 = portRepository1.reserveNextPort( "foo" );
 
-        assertThat( new HashSet<>( asList( port1, port2, port3, port4, port5, port6 ) ).size(), is( 6 ) );
+        assertThat( new HashSet<>( asList( port1, port2, port3, port4, port5, port6 ) ).size() ).isEqualTo( 6 );
     }
 
     @Test
@@ -72,7 +71,7 @@ class PortRepositoryIT
         portRepository1.reserveNextPort( "foo" );
 
         IllegalStateException exception = assertThrows( IllegalStateException.class, () -> portRepository1.reserveNextPort( "foo" ) );
-        assertThat( exception.getMessage(), is( "There are no more ports available" ) );
+        assertThat( exception.getMessage() ).isEqualTo( "There are no more ports available" );
     }
 
     private Path temporaryDirectory() throws IOException

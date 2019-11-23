@@ -26,9 +26,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ProcessUtilTest
 {
@@ -54,7 +52,7 @@ class ProcessUtilTest
         BufferedReader in = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
         String line = in.readLine();
 
-        assertThat( process.waitFor(), is( 0 ) );
-        assertThat( line, equalTo( HELLO_WORLD ) );
+        assertThat( process.waitFor() ).isEqualTo( 0 );
+        assertThat( line ).isEqualTo( HELLO_WORLD );
     }
 }

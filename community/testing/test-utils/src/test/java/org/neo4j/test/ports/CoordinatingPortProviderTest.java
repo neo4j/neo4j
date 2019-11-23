@@ -21,10 +21,7 @@ package org.neo4j.test.ports;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,7 +37,7 @@ class CoordinatingPortProviderTest
         int port1 = portProvider.getNextFreePort( "foo" );
         int port2 = portProvider.getNextFreePort( "foo" );
 
-        assertThat( port1, is( not( equalTo( port2 ) ) ) );
+        assertThat( port1 ).isNotEqualTo( port2 );
     }
 
     @Test
@@ -50,9 +47,9 @@ class CoordinatingPortProviderTest
         PortProvider portProvider = new CoordinatingPortProvider( portRepository, port -> false );
 
         when( portRepository.reserveNextPort( "foo" ) ).thenReturn( 40, 41, 43 );
-        assertThat( portProvider.getNextFreePort( "foo" ), is( 40 ) );
-        assertThat( portProvider.getNextFreePort( "foo" ), is( 41 ) );
-        assertThat( portProvider.getNextFreePort( "foo" ), is( 43 ) );
+        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 40 );
+        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 41 );
+        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 43 );
     }
 
     @Test
@@ -67,8 +64,8 @@ class CoordinatingPortProviderTest
         when( portProbe.isOccupied( 41 ) ).thenReturn( false );
         when( portProbe.isOccupied( 42 ) ).thenReturn( true );
         when( portProbe.isOccupied( 43 ) ).thenReturn( false );
-        assertThat( portProvider.getNextFreePort( "foo" ), is( 40 ) );
-        assertThat( portProvider.getNextFreePort( "foo" ), is( 41 ) );
-        assertThat( portProvider.getNextFreePort( "foo" ), is( 43 ) );
+        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 40 );
+        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 41 );
+        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 43 );
     }
 }
