@@ -489,7 +489,8 @@ public final class RelationshipSelections
     private static void setupOutgoingDense( RelationshipDenseSelection denseSelection,
                                             RelationshipGroupCursor groupCursor,
                                             RelationshipTraversalCursor traversalCursor,
-                                            NodeCursor node, int[] types )
+                                            NodeCursor node,
+                                            int[] types )
     {
         node.relationships( groupCursor );
         denseSelection.outgoing( groupCursor, traversalCursor, types );

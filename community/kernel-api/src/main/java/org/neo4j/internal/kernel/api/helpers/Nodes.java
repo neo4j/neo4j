@@ -49,31 +49,43 @@ public final class Nodes
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                nodeCursor.relationships( group );
-                int count = 0;
-                while ( group.next() )
-                {
-                    count += group.outgoingCount() + group.loopCount();
-                }
-                return count;
+               return countOutgoingDense( nodeCursor, group );
             }
         }
         else
         {
             try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
             {
-                int count = 0;
-                nodeCursor.allRelationships( traversal );
-                while ( traversal.next() )
-                {
-                    if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() )
-                    {
-                        count++;
-                    }
-                }
-                return count;
+               return countOutgoingSparse( nodeCursor, traversal );
             }
         }
+    }
+
+    public static int countOutgoingDense( NodeCursor nodeCursor, RelationshipGroupCursor group )
+    {
+        assert nodeCursor.isDense();
+        nodeCursor.relationships( group );
+        int count = 0;
+        while ( group.next() )
+        {
+            count += group.outgoingCount() + group.loopCount();
+        }
+        return count;
+    }
+
+    public static int countOutgoingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
+    {
+        assert !nodeCursor.isDense();
+        int count = 0;
+        nodeCursor.allRelationships( traversal );
+        while ( traversal.next() )
+        {
+            if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() )
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -91,31 +103,43 @@ public final class Nodes
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                nodeCursor.relationships( group );
-                int count = 0;
-                while ( group.next() )
-                {
-                    count += group.incomingCount() + group.loopCount();
-                }
-                return count;
+               return countIncomingDense( nodeCursor, group );
             }
         }
         else
         {
             try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
             {
-                int count = 0;
-                nodeCursor.allRelationships( traversal );
-                while ( traversal.next() )
-                {
-                    if ( traversal.targetNodeReference() == nodeCursor.nodeReference() )
-                    {
-                        count++;
-                    }
-                }
-                return count;
+              return countIncomingSparse( nodeCursor, traversal );
             }
         }
+    }
+
+    public static int countIncomingDense( NodeCursor nodeCursor, RelationshipGroupCursor group )
+    {
+        assert nodeCursor.isDense();
+        nodeCursor.relationships( group );
+        int count = 0;
+        while ( group.next() )
+        {
+            count += group.incomingCount() + group.loopCount();
+        }
+        return count;
+    }
+
+    public static int countIncomingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
+    {
+        assert !nodeCursor.isDense();
+        int count = 0;
+        nodeCursor.allRelationships( traversal );
+        while ( traversal.next() )
+        {
+            if ( traversal.targetNodeReference() == nodeCursor.nodeReference() )
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -131,28 +155,40 @@ public final class Nodes
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                nodeCursor.relationships( group );
-                int count = 0;
-                while ( group.next() )
-                {
-                    count += group.totalCount();
-                }
-                return count;
+              return countAllDense( nodeCursor, group );
             }
         }
         else
         {
             try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
             {
-                int count = 0;
-                nodeCursor.allRelationships( traversal );
-                while ( traversal.next() )
-                {
-                    count++;
-                }
-                return count;
+                return countAllSparse( nodeCursor, traversal );
             }
         }
+    }
+
+    public static int countAllDense( NodeCursor nodeCursor, RelationshipGroupCursor group )
+    {
+        assert nodeCursor.isDense();
+        nodeCursor.relationships( group );
+        int count = 0;
+        while ( group.next() )
+        {
+            count += group.totalCount();
+        }
+        return count;
+    }
+
+    public static int countAllSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
+    {
+        assert !nodeCursor.isDense();
+        int count = 0;
+        nodeCursor.allRelationships( traversal );
+        while ( traversal.next() )
+        {
+            count++;
+        }
+        return count;
     }
 
     /**
@@ -171,33 +207,45 @@ public final class Nodes
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                nodeCursor.relationships( group );
-                while ( group.next() )
-                {
-                    if ( group.type() == type )
-                    {
-                        return group.outgoingCount() + group.loopCount();
-                    }
-                }
-                return 0;
+               return countOutgoingDense( nodeCursor, group, type );
             }
         }
         else
         {
             try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
             {
-                int count = 0;
-                nodeCursor.allRelationships( traversal );
-                while ( traversal.next() )
-                {
-                    if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() && traversal.type() == type )
-                    {
-                        count++;
-                    }
-                }
-                return count;
+               return countOutgoingSparse( nodeCursor, traversal, type );
             }
         }
+    }
+
+    public static int countOutgoingDense( NodeCursor nodeCursor, RelationshipGroupCursor group, int type )
+    {
+        assert nodeCursor.isDense();
+        nodeCursor.relationships( group );
+        while ( group.next() )
+        {
+            if ( group.type() == type )
+            {
+                return group.outgoingCount() + group.loopCount();
+            }
+        }
+        return 0;
+    }
+
+    public static int countOutgoingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
+    {
+        assert !nodeCursor.isDense();
+        int count = 0;
+        nodeCursor.allRelationships( traversal );
+        while ( traversal.next() )
+        {
+            if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() && traversal.type() == type )
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -216,34 +264,46 @@ public final class Nodes
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                nodeCursor.relationships( group );
-                int count = 0;
-                while ( group.next() )
-                {
-                    if ( group.type() == type )
-                    {
-                        return group.incomingCount() + group.loopCount();
-                    }
-                }
-                return count;
+               return countIncomingDense( nodeCursor, group, type );
             }
         }
         else
         {
             try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
             {
-                int count = 0;
-                nodeCursor.allRelationships( traversal );
-                while ( traversal.next() )
-                {
-                    if ( traversal.targetNodeReference() == nodeCursor.nodeReference() && traversal.type() == type )
-                    {
-                        count++;
-                    }
-                }
-                return count;
+               return countIncomingSparse( nodeCursor, traversal, type );
             }
         }
+    }
+
+    public static int countIncomingDense( NodeCursor nodeCursor, RelationshipGroupCursor group, int type )
+    {
+        assert nodeCursor.isDense();
+        nodeCursor.relationships( group );
+        int count = 0;
+        while ( group.next() )
+        {
+            if ( group.type() == type )
+            {
+                return group.incomingCount() + group.loopCount();
+            }
+        }
+        return count;
+    }
+
+    public static int countIncomingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
+    {
+        assert !nodeCursor.isDense();
+        int count = 0;
+        nodeCursor.allRelationships( traversal );
+        while ( traversal.next() )
+        {
+            if ( traversal.targetNodeReference() == nodeCursor.nodeReference() && traversal.type() == type )
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -260,33 +320,45 @@ public final class Nodes
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                nodeCursor.relationships( group );
-                int count = 0;
-                while ( group.next() )
-                {
-                    if ( group.type() == type )
-                    {
-                        return group.totalCount();
-                    }
-                }
-                return count;
+                return countAllDense( nodeCursor, group, type );
             }
         }
         else
         {
             try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
             {
-                int count = 0;
-                nodeCursor.allRelationships( traversal );
-                while ( traversal.next() )
-                {
-                    if ( traversal.type() == type )
-                    {
-                        count++;
-                    }
-                }
-                return count;
+               return countAllSparse( nodeCursor, traversal, type );
             }
         }
+    }
+
+    public static int countAllDense( NodeCursor nodeCursor, RelationshipGroupCursor group, int type )
+    {
+        assert nodeCursor.isDense();
+        nodeCursor.relationships( group );
+        int count = 0;
+        while ( group.next() )
+        {
+            if ( group.type() == type )
+            {
+                return group.totalCount();
+            }
+        }
+        return count;
+    }
+
+    public static int countAllSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
+    {
+        assert !nodeCursor.isDense();
+        int count = 0;
+        nodeCursor.allRelationships( traversal );
+        while ( traversal.next() )
+        {
+            if ( traversal.type() == type )
+            {
+                count++;
+            }
+        }
+        return count;
     }
 }
