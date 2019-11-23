@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 
 abstract class SchemaRuleTestBase
 {
@@ -38,16 +36,16 @@ abstract class SchemaRuleTestBase
 
     void assertEquality( Object o1, Object o2 )
     {
-        assertThat( o1, equalTo( o2 ) );
-        assertThat( o2, equalTo( o1 ) );
-        assertThat( o1.hashCode(), equalTo( o2.hashCode() ) );
+        assertThat( o1 ).isEqualTo( o2 );
+        assertThat( o2 ).isEqualTo( o1 );
+        assertThat( o1.hashCode() ).isEqualTo( o2.hashCode() );
     }
 
     void assertInequality( Object o1, Object o2 )
     {
-        assertThat( o1, not( equalTo( o2 ) ) );
-        assertThat( o2, not( equalTo( o1 ) ) );
-        assertThat( o1.hashCode(), not( equalTo( o2.hashCode() ) ) );
+        assertThat( o1 ).isNotEqualTo( o2 );
+        assertThat( o2 ).isNotEqualTo( o1 );
+        assertThat( o1.hashCode() ).isNotEqualTo( o2.hashCode() );
     }
 
     public static IndexPrototype forLabel( int labelId, int... propertyIds )

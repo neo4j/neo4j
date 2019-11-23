@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.schema;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -31,9 +30,7 @@ import java.util.stream.Stream;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.EntityType.NODE;
@@ -123,9 +120,9 @@ class SchemaRuleTest
 
     private void assertName( SchemaDescriptorSupplier schemaish, String expectedName )
     {
-        String generateName = SchemaRule.generateName( schemaish, new String[] {"A"}, new String[] {"B", "C"} );
-        assertThat( generateName, equalTo( expectedName ) );
-        assertThat( SchemaRule.sanitiseName( generateName ), equalTo( expectedName ) );
+        String generateName = SchemaRule.generateName( schemaish, new String[]{"A"}, new String[]{"B", "C"} );
+        assertThat( generateName ).isEqualTo( expectedName );
+        assertThat( SchemaRule.sanitiseName( generateName ) ).isEqualTo( expectedName );
     }
 
     private void assertUserDescription( String description, SchemaDescriptorSupplier schemaish )

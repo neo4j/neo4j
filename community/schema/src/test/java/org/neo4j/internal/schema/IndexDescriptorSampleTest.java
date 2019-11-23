@@ -25,11 +25,10 @@ import java.util.NoSuchElementException;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.test.assertion.Assert.assertException;
 
 class IndexDescriptorSampleTest extends SchemaRuleTestBase
 {
@@ -41,11 +40,11 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
         IndexDescriptor indexRule = prototype.withName( "index" ).materialise( RULE_ID );
 
         // THEN
-        assertThat( indexRule.getId(), equalTo( RULE_ID ) );
+        assertThat( indexRule.getId() ).isEqualTo( RULE_ID );
         assertFalse( indexRule.isUnique() );
-        assertThat( indexRule.schema(), equalTo( prototype.schema() ) );
-        assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
-        assertException( indexRule.getOwningConstraintId()::getAsLong, NoSuchElementException.class );
+        assertThat( indexRule.schema() ).isEqualTo( prototype.schema() );
+        assertThat( indexRule.getIndexProvider() ).isEqualTo( PROVIDER );
+        assertThrows( NoSuchElementException.class, indexRule.getOwningConstraintId()::getAsLong );
     }
 
     @Test
@@ -56,16 +55,16 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
         IndexDescriptor indexRule = prototype.withName( "index" ).materialise( RULE_ID );
 
         // THEN
-        assertThat( indexRule.getId(), equalTo( RULE_ID ) );
+        assertThat( indexRule.getId() ).isEqualTo( RULE_ID );
         assertTrue( indexRule.isUnique() );
-        assertThat( indexRule.schema(), equalTo( prototype.schema() ) );
-        assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
+        assertThat( indexRule.schema() ).isEqualTo( prototype.schema() );
+        assertThat( indexRule.getIndexProvider() ).isEqualTo( PROVIDER );
         assertTrue( indexRule.getOwningConstraintId().isEmpty() );
 
         IndexDescriptor withConstraint = indexRule.withOwningConstraintId( RULE_ID_2 );
         OptionalLong owningConstraintId = withConstraint.getOwningConstraintId();
         assertTrue( owningConstraintId.isPresent() );
-        assertThat( owningConstraintId.getAsLong(), equalTo( RULE_ID_2 ) );
+        assertThat( owningConstraintId.getAsLong() ).isEqualTo( RULE_ID_2 );
         assertTrue( indexRule.getOwningConstraintId().isEmpty() ); // this is unchanged
     }
 

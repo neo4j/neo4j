@@ -25,11 +25,10 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
-import static org.neo4j.test.assertion.Assert.assertException;
 
 class ConstraintDescriptorTest extends SchemaRuleTestBase
 {
@@ -41,10 +40,10 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase
         ConstraintDescriptor constraint = descriptor.withId( RULE_ID );
 
         // THEN
-        assertThat( constraint.getId(), equalTo( RULE_ID ) );
-        assertThat( constraint.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraint, equalTo( descriptor ) );
-        assertException( () -> constraint.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
+        assertThat( constraint.getId() ).isEqualTo( RULE_ID );
+        assertThat( constraint.schema() ).isEqualTo( descriptor.schema() );
+        assertThat( constraint ).isEqualTo( descriptor );
+        assertThrows( IllegalStateException.class, () -> constraint.asIndexBackedConstraint().ownedIndexId() );
     }
 
     @Test
@@ -55,8 +54,8 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase
         UniquenessConstraintDescriptor constraint = descriptor.withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 );
 
         // THEN
-        assertThat( constraint, equalTo( descriptor ) );
-        assertThat( constraint.ownedIndexId(), equalTo( RULE_ID_2 ) );
+        assertThat( constraint ).isEqualTo( descriptor );
+        assertThat( constraint.ownedIndexId() ).isEqualTo( RULE_ID_2 );
     }
 
     @Test
@@ -67,10 +66,10 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase
         ConstraintDescriptor constraint = descriptor.withId( RULE_ID );
 
         // THEN
-        assertThat( constraint.getId(), equalTo( RULE_ID ) );
-        assertThat( constraint.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraint, equalTo( descriptor ) );
-        assertException( () -> constraint.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
+        assertThat( constraint.getId() ).isEqualTo( RULE_ID );
+        assertThat( constraint.schema() ).isEqualTo( descriptor.schema() );
+        assertThat( constraint ).isEqualTo( descriptor );
+        assertThrows( IllegalStateException.class, () -> constraint.asIndexBackedConstraint().ownedIndexId() );
     }
 
     @Test
@@ -81,8 +80,8 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase
         NodeKeyConstraintDescriptor constraint = descriptor.withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 );
 
         // THEN
-        assertThat( constraint, equalTo( descriptor ) );
-        assertThat( constraint.ownedIndexId(), equalTo( RULE_ID_2 ) );
+        assertThat( constraint ).isEqualTo( descriptor );
+        assertThat( constraint.ownedIndexId() ).isEqualTo( RULE_ID_2 );
     }
 
     @Test
@@ -93,10 +92,10 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase
         ConstraintDescriptor constraint = descriptor.withId( RULE_ID );
 
         // THEN
-        assertThat( constraint.getId(), equalTo( RULE_ID ) );
-        assertThat( constraint.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraint, equalTo( descriptor ) );
-        assertException( () -> constraint.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
+        assertThat( constraint.getId() ).isEqualTo( RULE_ID );
+        assertThat( constraint.schema() ).isEqualTo( descriptor.schema() );
+        assertThat( constraint ).isEqualTo( descriptor );
+        assertThrows( IllegalStateException.class, () -> constraint.asIndexBackedConstraint().ownedIndexId() );
     }
 
     @Test

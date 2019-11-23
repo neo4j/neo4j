@@ -27,14 +27,10 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -124,7 +120,7 @@ class IndexDescriptorTest
             prototype = prototype.withName( IndexDescriptor.NO_INDEX.getName() );
             prototype.materialise( 0 );
         } );
-        assertThat( exception.getMessage(), containsString( IndexDescriptor.NO_INDEX.getName() ) );
+        assertThat( exception.getMessage() ).contains( IndexDescriptor.NO_INDEX.getName() );
     }
 
     @Test
@@ -133,8 +129,8 @@ class IndexDescriptorTest
         IndexPrototype prototype = IndexPrototype.forSchema( SCHEMAS[0] );
         IndexDescriptor index = prototype.withName( "index" ).materialise( 1 );
         String schemaDescription = SCHEMAS[0].userDescription( TokenNameLookup.idTokenNameLookup );
-        assertThat( prototype.toString(), containsString( schemaDescription ) );
-        assertThat( index.toString(), containsString( schemaDescription ) );
+        assertThat( prototype.toString() ).contains( schemaDescription );
+        assertThat( index.toString() ).contains( schemaDescription );
     }
 
     @Test
@@ -144,11 +140,11 @@ class IndexDescriptorTest
         IndexDescriptor aa = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 1 );
         IndexDescriptor b = a.withIndexConfig( a.getIndexConfig().withIfAbsent( "x", Values.stringValue( "y" ) ) );
 
-        assertThat( a.getIndexConfig(), not( equalTo( b.getIndexConfig() ) ) );
-        assertThat( a, equalTo( b ) );
-        assertThat( a, equalTo( aa ) );
-        assertThat( a.getIndexConfig(), equalTo( aa.getIndexConfig() ) );
-        assertThat( b.getIndexConfig().get( "x" ), equalTo( Values.stringValue( "y" ) ) );
-        assertThat( a.getIndexConfig().get( "x" ), is( nullValue() ) );
+        assertThat( a.getIndexConfig() ).isNotEqualTo( b.getIndexConfig() );
+        assertThat( a ).isEqualTo( b );
+        assertThat( a ).isEqualTo( aa );
+        assertThat( a.getIndexConfig() ).isEqualTo( aa.getIndexConfig() );
+        assertThat( (Value) b.getIndexConfig().get( "x" ) ).isEqualTo( Values.stringValue( "y" ) );
+        assertThat( (Value) a.getIndexConfig().get( "x" ) ).isNull();
     }
 }
