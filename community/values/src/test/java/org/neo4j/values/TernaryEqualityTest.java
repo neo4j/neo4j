@@ -34,9 +34,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.values.Equality.UNDEFINED;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -204,23 +202,21 @@ class TernaryEqualityTest
 
     private void assertTernaryEquality( AnyValue a, AnyValue b, Equality expected )
     {
-        assertThat( format( "%s = %s should be %s", a, b, expected ), a.ternaryEquals( b ), equalTo( expected ) );
-        assertThat( format( "%s = %s shoudl be %s", b, a, expected ), b.ternaryEquals( a ), equalTo( expected ) );
+        assertThat( a.ternaryEquals( b ) ).as( format( "%s = %s should be %s", a, b, expected ) ).isEqualTo( expected );
+        assertThat( b.ternaryEquals( a ) ).as( format( "%s = %s shoudl be %s", b, a, expected ) ).isEqualTo( expected );
         switch ( expected )
         {
         case TRUE:
-            assertThat( format( "%s = %s", a, b ), comparator.ternaryCompare( a, b ), equalTo( Comparison.EQUAL ) );
-            assertThat( format( "%s = %s", b, a ), comparator.ternaryCompare( b, a ), equalTo( Comparison.EQUAL ) );
+            assertThat( comparator.ternaryCompare( a, b ) ).as( format( "%s = %s", a, b ) ).isEqualTo( Comparison.EQUAL );
+            assertThat( comparator.ternaryCompare( b, a ) ).as( format( "%s = %s", b, a ) ).isEqualTo( Comparison.EQUAL );
             break;
         case FALSE:
-            assertThat( format( "%s = %s", a, b ), comparator.ternaryCompare( a, b ),
-                    not( equalTo( Comparison.EQUAL ) ) );
-            assertThat( format( "%s = %s", b, a ), comparator.ternaryCompare( b, a ),
-                    not( equalTo( Comparison.EQUAL ) ) );
+            assertThat( comparator.ternaryCompare( a, b ) ).as( format( "%s = %s", a, b ) ).isNotEqualTo( Comparison.EQUAL );
+            assertThat( comparator.ternaryCompare( b, a ) ).as( format( "%s = %s", b, a ) ).isNotEqualTo( Comparison.EQUAL );
             break;
         case UNDEFINED:
-            assertThat( format( "%s = %s", a, b ), comparator.ternaryCompare( a, b ), equalTo( Comparison.UNDEFINED ) );
-            assertThat( format( "%s = %s", b, a ), comparator.ternaryCompare( b, a ), equalTo( Comparison.UNDEFINED ) );
+            assertThat( comparator.ternaryCompare( a, b ) ).as( format( "%s = %s", a, b ) ).isEqualTo( Comparison.UNDEFINED );
+            assertThat( comparator.ternaryCompare( b, a ) ).as( format( "%s = %s", b, a ) ).isEqualTo( Comparison.UNDEFINED );
             break;
         default:
             fail( "This was highly unexpected" );

@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.exceptions.InvalidArgumentException;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.exceptions.TemporalParseException;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.utils.TemporalUtil;
 
 import static java.time.ZoneOffset.UTC;
@@ -39,9 +39,7 @@ import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -669,12 +667,7 @@ class DurationValueTest
     {
         InvalidArgumentException e = assertThrows( InvalidArgumentException.class, () -> duration( months, days, seconds, nanos ) );
 
-        assertThat( e.getMessage(), allOf(
-                containsString( "Invalid value for duration" ),
-                containsString( "months=" + months ),
-                containsString( "days=" + days ),
-                containsString( "seconds=" + seconds ),
-                containsString( "nanos=" + nanos )
-        ) );
+        assertThat( e.getMessage() ).contains( "Invalid value for duration" ).contains( "months=" + months ).contains( "days=" + days ).contains(
+                "seconds=" + seconds ).contains( "nanos=" + nanos );
     }
 }

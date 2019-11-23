@@ -21,11 +21,9 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
-
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -43,7 +41,7 @@ class UTF8StringValueTest
             byte[] bytes = string.getBytes( UTF_8 );
             TextValue utf8 = utf8Value( bytes );
             assertEqual( stringValue, utf8 );
-            assertThat( stringValue.length(), equalTo( utf8.length() ) );
+            assertThat( stringValue.length() ).isEqualTo( utf8.length() );
         }
     }
 
@@ -86,7 +84,7 @@ class UTF8StringValueTest
     {
         String string = "ü";
         TextValue utf8 = utf8Value( string.getBytes( UTF_8 ) );
-        assertThat( utf8.substring( 0, 1 ).stringValue(), equalTo( "ü" ) );
+        assertThat( utf8.substring( 0, 1 ).stringValue() ).isEqualTo( "ü" );
     }
 
     @Test
@@ -124,9 +122,9 @@ class UTF8StringValueTest
         int y = utf8Value1.compareTo( textValue2 );
         int z = utf8Value1.compareTo( utf8Value2 );
 
-        assertThat( Math.signum( a ), equalTo( Math.signum( x ) ) );
-        assertThat( Math.signum( a ), equalTo( Math.signum( y ) ) );
-        assertThat( Math.signum( a ), equalTo( Math.signum( z ) ) );
+        assertThat( Math.signum( a ) ).isEqualTo( Math.signum( x ) );
+        assertThat( Math.signum( a ) ).isEqualTo( Math.signum( y ) );
+        assertThat( Math.signum( a ) ).isEqualTo( Math.signum( z ) );
     }
 
     @Test
@@ -152,7 +150,7 @@ class UTF8StringValueTest
 
         // Then
         assertSame( textValue, stringValue( "de" ) );
-        assertThat( textValue.length(), equalTo( stringValue( "de" ).length() ) );
+        assertThat( textValue.length() ).isEqualTo( stringValue( "de" ).length() );
         assertSame( textValue.reverse(), stringValue( "ed" ) );
     }
 
@@ -192,14 +190,12 @@ class UTF8StringValueTest
 
     private void assertSame( TextValue lhs, TextValue rhs )
     {
-        assertThat( format( "%s.length != %s.length", lhs, rhs ), lhs.length(),
-                equalTo( rhs.length() ) );
-        assertThat( format( "%s != %s", lhs, rhs ), lhs, equalTo( rhs ) );
-        assertThat( format( "%s != %s", rhs, lhs ), rhs, equalTo( lhs ) );
-        assertThat( format( "%s.hashCode != %s.hashCode", rhs, lhs ), lhs.hashCode(), equalTo( rhs.hashCode() ) );
-        assertThat( format( "%s.hashCode64 != %s.hashCode64", rhs, lhs ),
-                lhs.hashCode64(), equalTo( rhs.hashCode64() ) );
-        assertThat( lhs, equalTo( rhs ) );
+        assertThat( lhs.length() ).as( format( "%s.length != %s.length", lhs, rhs ) ).isEqualTo( rhs.length() );
+        assertThat( lhs ).as( format( "%s != %s", lhs, rhs ) ).isEqualTo( rhs );
+        assertThat( rhs ).as( format( "%s != %s", rhs, lhs ) ).isEqualTo( lhs );
+        assertThat( lhs.hashCode() ).as( format( "%s.hashCode != %s.hashCode", rhs, lhs ) ).isEqualTo( rhs.hashCode() );
+        assertThat( lhs.hashCode64() ).as( format( "%s.hashCode64 != %s.hashCode64", rhs, lhs ) ).isEqualTo( rhs.hashCode64() );
+        assertThat( lhs ).isEqualTo( rhs );
     }
 
     @Test
@@ -212,7 +208,7 @@ class UTF8StringValueTest
         TextValue substring = value.substring( 8, 5 );
 
         // Then
-        assertThat( substring, equalTo( StringValue.EMPTY ) );
+        assertThat( substring ).isEqualTo( StringValue.EMPTY );
     }
 
     @Test
@@ -225,7 +221,7 @@ class UTF8StringValueTest
         TextValue substring = value.substring( 3, 76 );
 
         // Then
-        assertThat( substring.stringValue(), equalTo( "lo" ) );
+        assertThat( substring.stringValue() ).isEqualTo( "lo" );
     }
 
     @Test
@@ -263,15 +259,11 @@ class UTF8StringValueTest
                     for ( int otherLength = 0; otherLength < bytes.length - otherOffset; otherLength++ )
                     {
                         TextValue other = utf8Value( bytes, otherOffset, otherLength );
-                        assertThat( value.startsWith( other ),
-                                equalTo( otherLength == 0 || otherOffset == offset && otherLength <= length ) );
-                        assertThat( value.endsWith( other ),
-                                equalTo( otherLength == 0 ||
-                                         otherOffset >= offset && otherLength == length + offset - otherOffset ) );
-                        assertThat( value.contains( other ),
-                                equalTo( otherLength == 0 ||
-                                         otherOffset >= offset && otherLength <= length + offset - otherOffset ) );
-
+                        assertThat( value.startsWith( other ) ).isEqualTo( otherLength == 0 || otherOffset == offset && otherLength <= length );
+                        assertThat( value.endsWith( other ) ).isEqualTo(
+                                otherLength == 0 || otherOffset >= offset && otherLength == length + offset - otherOffset );
+                        assertThat( value.contains( other ) ).isEqualTo(
+                                otherLength == 0 || otherOffset >= offset && otherLength <= length + offset - otherOffset );
                     }
                 }
 

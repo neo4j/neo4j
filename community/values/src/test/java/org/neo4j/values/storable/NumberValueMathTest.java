@@ -21,8 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -46,8 +45,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : integers )
             {
-                assertThat( a.plus( b ), equalTo( longValue( 84 ) ) );
-                assertThat( b.plus( a ), equalTo( longValue( 84 ) ) );
+                assertThat( a.plus( b ) ).isEqualTo( longValue( 84 ) );
+                assertThat( b.plus( a ) ).isEqualTo( longValue( 84 ) );
             }
         }
     }
@@ -62,8 +61,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : integers )
             {
-                assertThat( a.minus( b ), equalTo( longValue( 0 ) ) );
-                assertThat( b.minus( a ), equalTo( longValue( 0 ) ) );
+                assertThat( a.minus( b ) ).isEqualTo( longValue( 0 ) );
+                assertThat( b.minus( a ) ).isEqualTo( longValue( 0 ) );
             }
         }
     }
@@ -78,8 +77,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : integers )
             {
-                assertThat( a.times( b ), equalTo( longValue( 42 * 42 ) ) );
-                assertThat( b.times( a ), equalTo( longValue( 42 * 42 ) ) );
+                assertThat( a.times( b ) ).isEqualTo( longValue( 42 * 42 ) );
+                assertThat( b.times( a ) ).isEqualTo( longValue( 42 * 42 ) );
             }
         }
     }
@@ -96,8 +95,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : floats )
             {
-                assertThat( a.plus( b ), equalTo( doubleValue( 84 ) ) );
-                assertThat( b.plus( a ), equalTo( doubleValue( 84 ) ) );
+                assertThat( a.plus( b ) ).isEqualTo( doubleValue( 84 ) );
+                assertThat( b.plus( a ) ).isEqualTo( doubleValue( 84 ) );
             }
         }
     }
@@ -114,8 +113,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : floats )
             {
-                assertThat( a.minus( b ), equalTo( doubleValue( 0 ) ) );
-                assertThat( b.minus( a ), equalTo( doubleValue( 0 ) ) );
+                assertThat( a.minus( b ) ).isEqualTo( doubleValue( 0 ) );
+                assertThat( b.minus( a ) ).isEqualTo( doubleValue( 0 ) );
             }
         }
     }
@@ -132,8 +131,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : floats )
             {
-                assertThat( a.times( b ), equalTo( doubleValue( 42 * 42 ) ) );
-                assertThat( b.times( a ), equalTo( doubleValue( 42 * 42 ) ) );
+                assertThat( a.times( b ) ).isEqualTo( doubleValue( 42 * 42 ) );
+                assertThat( b.times( a ) ).isEqualTo( doubleValue( 42 * 42 ) );
             }
         }
     }
@@ -148,8 +147,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : integers )
             {
-                assertThat( a.divideBy( b ), equalTo( longValue( 1 ) ) );
-                assertThat( b.divideBy( a ), equalTo( longValue( 1 ) ) );
+                assertThat( a.divideBy( b ) ).isEqualTo( longValue( 1 ) );
+                assertThat( b.divideBy( a ) ).isEqualTo( longValue( 1 ) );
             }
         }
     }
@@ -166,8 +165,8 @@ class NumberValueMathTest
         {
             for ( NumberValue b : floats )
             {
-                assertThat( a.divideBy( b ), equalTo( doubleValue( 1.0 ) ) );
-                assertThat( b.divideBy( a ), equalTo( doubleValue( 1.0 ) ) );
+                assertThat( a.divideBy( b ) ).isEqualTo( doubleValue( 1.0 ) );
+                assertThat( b.divideBy( a ) ).isEqualTo( doubleValue( 1.0 ) );
             }
         }
     }
@@ -193,18 +192,18 @@ class NumberValueMathTest
     @Test
     void shouldNotOverflowOnSafeAddition()
     {
-        assertThat( overflowSafeAdd( Long.MAX_VALUE, 1 ), equalTo( doubleValue( (double) Long.MAX_VALUE + 1 ) ) );
+        assertThat( overflowSafeAdd( Long.MAX_VALUE, 1 ) ).isEqualTo( doubleValue( (double) Long.MAX_VALUE + 1 ) );
     }
 
     @Test
     void shouldNotOverflowOnSafeSubtraction()
     {
-        assertThat( overflowSafeSubtract( Long.MAX_VALUE, -1 ), equalTo( doubleValue( ((double) Long.MAX_VALUE)  + (double) 1 ) ) );
+        assertThat( overflowSafeSubtract( Long.MAX_VALUE, -1 ) ).isEqualTo( doubleValue( ((double) Long.MAX_VALUE) + (double) 1 ) );
     }
 
     @Test
     void shouldNotOverflowOnMultiplication()
     {
-        assertThat( overflowSafeMultiply( Long.MAX_VALUE, 2 ), equalTo( doubleValue( (double) Long.MAX_VALUE * 2 ) ) );
+        assertThat( overflowSafeMultiply( Long.MAX_VALUE, 2 ) ).isEqualTo( doubleValue( (double) Long.MAX_VALUE * 2 ) );
     }
 }

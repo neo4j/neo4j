@@ -21,8 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -40,13 +39,12 @@ class CharValueTest
             TextValue charValue = charValue( c );
             TextValue stringValue = stringValue( Character.toString( c ) );
 
-            assertThat( charValue, equalTo( stringValue ) );
-            assertThat( charValue.length(), equalTo( stringValue.length() ) );
-            assertThat( charValue.hashCode(), equalTo( stringValue.hashCode() ) );
-            assertThat( charValue.split( Character.toString( c ) ),
-                    equalTo( stringValue.split( Character.toString( c ) ) ) );
-            assertThat( charValue.toUpper(), equalTo( stringValue.toUpper() ) );
-            assertThat( charValue.toLower(), equalTo( stringValue.toLower() ) );
+            assertThat( charValue ).isEqualTo( stringValue );
+            assertThat( charValue.length() ).isEqualTo( stringValue.length() );
+            assertThat( charValue.hashCode() ).isEqualTo( stringValue.hashCode() );
+            assertThat( charValue.split( Character.toString( c ) ) ).isEqualTo( stringValue.split( Character.toString( c ) ) );
+            assertThat( charValue.toUpper() ).isEqualTo( stringValue.toUpper() );
+            assertThat( charValue.toLower() ).isEqualTo( stringValue.toLower() );
         }
     }
 
@@ -54,29 +52,29 @@ class CharValueTest
     void shouldSplit()
     {
         CharValue charValue = charValue( 'a' );
-        assertThat( charValue.split( "a" ), equalTo( list( EMPTY_STRING, EMPTY_STRING ) ) );
-        assertThat( charValue.split( "A" ), equalTo( list( charValue ) ) );
+        assertThat( charValue.split( "a" ) ).isEqualTo( list( EMPTY_STRING, EMPTY_STRING ) );
+        assertThat( charValue.split( "A" ) ).isEqualTo( list( charValue ) );
     }
 
     @Test
     void shouldTrim()
     {
-        assertThat( charValue( 'a' ).trim(), equalTo( charValue( 'a' ) ) );
-        assertThat( charValue( ' ' ).trim(), equalTo( EMPTY_STRING ) );
+        assertThat( charValue( 'a' ).trim() ).isEqualTo( charValue( 'a' ) );
+        assertThat( charValue( ' ' ).trim() ).isEqualTo( EMPTY_STRING );
     }
 
     @Test
     void shouldLTrim()
     {
-        assertThat( charValue( 'a' ).ltrim(), equalTo( charValue( 'a' ) ) );
-        assertThat( charValue( ' ' ).ltrim(), equalTo( EMPTY_STRING ) );
+        assertThat( charValue( 'a' ).ltrim() ).isEqualTo( charValue( 'a' ) );
+        assertThat( charValue( ' ' ).ltrim() ).isEqualTo( EMPTY_STRING );
     }
 
     @Test
     void shouldRTrim()
     {
-        assertThat( charValue( 'a' ).rtrim(), equalTo( charValue( 'a' ) ) );
-        assertThat( charValue( ' ' ).rtrim(), equalTo( EMPTY_STRING ) );
+        assertThat( charValue( 'a' ).rtrim() ).isEqualTo( charValue( 'a' ) );
+        assertThat( charValue( ' ' ).rtrim() ).isEqualTo( EMPTY_STRING );
     }
 
     @Test
@@ -85,21 +83,21 @@ class CharValueTest
         for ( char c : CHARS )
         {
             CharValue charValue = charValue( c );
-            assertThat( charValue.reverse(), equalTo( charValue ) );
+            assertThat( charValue.reverse() ).isEqualTo( charValue );
         }
     }
 
     @Test
     void shouldReplace()
     {
-        assertThat( charValue( 'a' ).replace( "a", "a long string" ), equalTo( stringValue( "a long string" ) ) );
-        assertThat( charValue( 'a' ).replace( "b", "a long string" ), equalTo( charValue( 'a' ) ) );
+        assertThat( charValue( 'a' ).replace( "a", "a long string" ) ).isEqualTo( stringValue( "a long string" ) );
+        assertThat( charValue( 'a' ).replace( "b", "a long string" ) ).isEqualTo( charValue( 'a' ) );
     }
 
     @Test
     void shouldSubstring()
     {
-        assertThat( charValue( 'a' ).substring( 0, 1 ), equalTo( charValue( 'a' ) ) );
-        assertThat( charValue( 'a' ).substring( 1, 3 ), equalTo( EMPTY_STRING ) );
+        assertThat( charValue( 'a' ).substring( 0, 1 ) ).isEqualTo( charValue( 'a' ) );
+        assertThat( charValue( 'a' ).substring( 1, 3 ) ).isEqualTo( EMPTY_STRING );
     }
 }

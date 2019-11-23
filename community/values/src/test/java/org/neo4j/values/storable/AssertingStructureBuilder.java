@@ -19,9 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.LinkedHashMap;
@@ -29,37 +26,13 @@ import java.util.Map;
 
 import org.neo4j.values.StructureBuilder;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public final class AssertingStructureBuilder<Input, Result> implements StructureBuilder<Input,Result>
 {
     public static <I, O> AssertingStructureBuilder<I,O> asserting( StructureBuilder<I,O> builder )
     {
         return new AssertingStructureBuilder<>( builder );
-    }
-
-    public static Matcher<Exception> exception( Class<? extends Exception> type, String message )
-    {
-        return exception( type, equalTo( message ) );
-    }
-
-    public static Matcher<Exception> exception( Class<? extends Exception> type, Matcher<String> message )
-    {
-        return new TypeSafeMatcher<>( type )
-        {
-            @Override
-            protected boolean matchesSafely( Exception item )
-            {
-                return message.matches( item.getMessage() );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "Exception of type " ).appendValue( type.getName() ).appendText( " with message " ).appendDescriptionOf( message );
-            }
-        };
     }
 
     private final Map<String,Input> input = new LinkedHashMap<>();
@@ -72,11 +45,6 @@ public final class AssertingStructureBuilder<Input, Result> implements Structure
 
     public void assertThrows( Class<? extends Exception> type, String message )
     {
-        assertThrows( exception( type, message ) );
-    }
-
-    public void assertThrows( Matcher<Exception> matches )
-    {
         var e = Assertions.assertThrows( Exception.class, () ->
         {
             for ( Map.Entry<String, Input> entry : input.entrySet() )
@@ -85,7 +53,7 @@ public final class AssertingStructureBuilder<Input, Result> implements Structure
             }
             builder.build();
         } );
-        assertThat( e, matches );
+        assertThat( e ).isInstanceOf( type ).hasMessageContaining( message );
     }
 
     @Override

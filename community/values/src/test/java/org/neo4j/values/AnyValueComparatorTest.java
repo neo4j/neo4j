@@ -38,9 +38,7 @@ import org.neo4j.values.virtual.VirtualValueTestUtil;
 
 import static java.lang.Integer.signum;
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.values.Comparison.EQUAL;
@@ -203,10 +201,8 @@ class AnyValueComparatorTest
     @Test
     void shouldHandleListCompareWithIteration()
     {
-        assertThat( comparator.compare( list( intValue( 1 ), intValue( 2 ) ), list( intValue( 2 ), intValue( 1 ) ) ),
-                lessThan( 0 ) );
-        assertThat( comparator.compare( concat( list( intValue( 1 ) ), list( intValue( 2 ) ) ),
-                list( intValue( 2 ), intValue( 1 ) ) ), lessThan( 0 ) );
+        assertThat( comparator.compare( list( intValue( 1 ), intValue( 2 ) ), list( intValue( 2 ), intValue( 1 ) ) ) ).isLessThan( 0 );
+        assertThat( comparator.compare( concat( list( intValue( 1 ) ), list( intValue( 2 ) ) ), list( intValue( 2 ), intValue( 1 ) ) ) ).isLessThan( 0 );
     }
 
     @Test
@@ -357,26 +353,26 @@ class AnyValueComparatorTest
     private void assertTernaryCompare( AnyValue a, AnyValue b, Comparison expected )
     {
         Comparison comparison = comparator.ternaryCompare( a, b );
-        assertThat( comparison, equalTo(  expected ));
+        assertThat( comparison ).isEqualTo( expected );
         switch ( expected )
         {
         case GREATER_THAN:
-            assertThat( comparator.ternaryCompare( b, a ), equalTo( SMALLER_THAN ));
+            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( SMALLER_THAN );
             break;
         case EQUAL:
-            assertThat( comparator.ternaryCompare( b, a ), equalTo( EQUAL ));
+            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( EQUAL );
             break;
         case SMALLER_THAN:
-            assertThat( comparator.ternaryCompare( b, a ), equalTo( GREATER_THAN ));
+            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( GREATER_THAN );
             break;
         case UNDEFINED:
-            assertThat( comparator.ternaryCompare( b, a ), equalTo( UNDEFINED ));
+            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( UNDEFINED );
             break;
         case GREATER_THAN_AND_EQUAL:
-            assertThat( comparator.ternaryCompare( b, a ), equalTo( SMALLER_THAN_AND_EQUAL ));
+            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( SMALLER_THAN_AND_EQUAL );
             break;
         case SMALLER_THAN_AND_EQUAL:
-            assertThat( comparator.ternaryCompare( b, a ), equalTo( GREATER_THAN_AND_EQUAL ));
+            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( GREATER_THAN_AND_EQUAL );
             break;
         default:
             fail( "Was not expecting " + expected );

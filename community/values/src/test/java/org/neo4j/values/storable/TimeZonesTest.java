@@ -29,9 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TimeZonesTest
@@ -42,15 +40,15 @@ class TimeZonesTest
         ZoneId.getAvailableZoneIds().forEach( s ->
         {
             short num = TimeZones.map( s );
-            assertThat( "Our time zone table does not have a mapping for " + s, num, greaterThanOrEqualTo( (short) 0 ) );
+            assertThat( num ).as( "Our time zone table does not have a mapping for " + s ).isGreaterThanOrEqualTo( (short) 0 );
 
             String nameFromTable = TimeZones.map( num );
             if ( !s.equals( nameFromTable ) )
             {
                 // The test is running on an older Java version and `s` has been removed since, thus it points to a different zone now.
                 // That zone should point to itself, however.
-                assertThat( "Our time zone table has inconsistent mapping for " + nameFromTable,
-                        TimeZones.map( TimeZones.map( nameFromTable ) ), equalTo( nameFromTable ) );
+                assertThat( TimeZones.map( TimeZones.map( nameFromTable ) ) ).as(
+                        "Our time zone table has inconsistent mapping for " + nameFromTable ).isEqualTo( nameFromTable );
             }
         } );
     }
@@ -61,8 +59,8 @@ class TimeZonesTest
         try
         {
             short eastSaskatchewan = TimeZones.map( "Canada/East-Saskatchewan" );
-            assertThat( "Our time zone table does not remap Canada/East-Saskatchewan to Canada/Saskatchewan",
-                    TimeZones.map( eastSaskatchewan ), equalTo( "Canada/Saskatchewan" ) );
+            assertThat( TimeZones.map( eastSaskatchewan ) ).as(
+                    "Our time zone table does not remap Canada/East-Saskatchewan to Canada/Saskatchewan" ).isEqualTo( "Canada/Saskatchewan" );
         }
         catch ( IllegalArgumentException e )
         {
@@ -82,8 +80,8 @@ class TimeZonesTest
         Path path = Paths.get( TimeZones.class.getResource( "/TZIDS" ).toURI() );
         byte[] timeZonesInfo = Files.readAllBytes( path );
         byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
-        assertThat( timeZonesHash, equalTo(
+        assertThat( timeZonesHash ).isEqualTo(
                 new byte[]{27, -102, 116, 117, -108, -114, 65, 81, 88, 52, 25, 112, -67, 3, -99, 69, -26, 100, -38, -2, 29, -41, 60, -85, -58, 102, -101, -122,
-                        -40, -66, 49, -65} ) );
+                        -40, -66, 49, -65} );
     }
 }

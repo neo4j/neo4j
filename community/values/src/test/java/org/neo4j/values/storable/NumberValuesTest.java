@@ -24,8 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.NumberValues.hash;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.toAnyValue;
@@ -36,14 +35,14 @@ class NumberValuesTest
     @Test
     void shouldHashNaN()
     {
-        assertThat( hash( Double.NaN ), equalTo( hash( Float.NaN ) ) );
+        assertThat( hash( Double.NaN ) ).isEqualTo( hash( Float.NaN ) );
     }
 
     @Test
     void shouldHashInfinite()
     {
-        assertThat( hash( Double.NEGATIVE_INFINITY ), equalTo( hash( Float.NEGATIVE_INFINITY ) ) );
-        assertThat( hash( Double.POSITIVE_INFINITY ), equalTo( hash( Float.POSITIVE_INFINITY ) ) );
+        assertThat( hash( Double.NEGATIVE_INFINITY ) ).isEqualTo( hash( Float.NEGATIVE_INFINITY ) );
+        assertThat( hash( Double.POSITIVE_INFINITY ) ).isEqualTo( hash( Float.POSITIVE_INFINITY ) );
     }
 
     @Test
@@ -57,7 +56,7 @@ class NumberValuesTest
     @Test
     void shouldHashIntegralDoubleAsLong()
     {
-        assertThat( hash( 1337d ), equalTo( hash( 1337L ) ) );
+        assertThat( hash( 1337d ) ).isEqualTo( hash( 1337L ) );
     }
 
     @Test
@@ -74,7 +73,7 @@ class NumberValuesTest
             longs[i] = nextInt;
         }
 
-        assertThat( hash( ints ), equalTo( hash( longs ) ) );
+        assertThat( hash( ints ) ).isEqualTo( hash( longs ) );
     }
 
     @Test
@@ -84,7 +83,7 @@ class NumberValuesTest
         for ( int i = 0; i < 1_000_000; i++ )
         {
             int anInt = r.nextInt();
-            assertThat( anInt, equalTo( hash( (long) anInt ) ) );
+            assertThat( anInt ).isEqualTo( hash( (long) anInt ) );
         }
     }
 
@@ -102,6 +101,6 @@ class NumberValuesTest
             shorts[i] = nextByte;
         }
 
-        assertThat( hash( bytes ), equalTo( hash( shorts ) ) );
+        assertThat( hash( bytes ) ).isEqualTo( hash( shorts ) );
     }
 }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeDiagnosingMatcher;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -30,13 +27,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalField;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class FrozenClock extends Clock implements Supplier<ZoneId>
 {
@@ -111,10 +105,9 @@ class FrozenClock extends Clock implements Supplier<ZoneId>
 
     static <V extends TemporalValue<?,V>> void assertEqualTemporal( V expected, V actual )
     {
-        assertThat( actual, allOf(
-                equalTo( expected ),
-                equalOn( "timezone", FrozenClock::timezone, expected ),
-                equalOn( "temporal", TemporalValue::temporal, expected ) ) );
+        assertThat( actual ).isEqualTo( expected );
+        assertEqualsWithMapping( actual, expected, FrozenClock::timezone );
+        assertEqualsWithMapping( actual, expected, TemporalValue::temporal );
     }
 
     private static ZoneId timezone( TemporalValue<?,?> temporal )
@@ -130,30 +123,8 @@ class FrozenClock extends Clock implements Supplier<ZoneId>
         return null;
     }
 
-    private static <T, U> Matcher<T> equalOn( String trait, Function<T,U> mapping, T expected )
+    private static <T, U> void assertEqualsWithMapping( T actual, T expected, Function<T,U> mapping )
     {
-        return new TypeSafeDiagnosingMatcher<T>( expected.getClass() )
-        {
-            @Override
-            protected boolean matchesSafely( T actual, org.hamcrest.Description mismatchDescription )
-            {
-                U e = mapping.apply( expected );
-                U a = mapping.apply( actual );
-                if ( Objects.equals( e, a ) )
-                {
-                    return true;
-                }
-                mismatchDescription.appendText( "- " );
-                mismatchDescription.appendText( "expected: " ).appendValue( e );
-                mismatchDescription.appendText( " but was: " ).appendValue( a );
-                return false;
-            }
-
-            @Override
-            public void describeTo( org.hamcrest.Description description )
-            {
-                description.appendText( trait ).appendText( " should be equal" );
-            }
-        };
+        assertThat( mapping.apply( expected ) ).isEqualTo( mapping.apply( actual ) );
     }
 }

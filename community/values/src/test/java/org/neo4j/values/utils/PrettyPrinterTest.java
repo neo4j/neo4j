@@ -45,8 +45,7 @@ import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
@@ -73,7 +72,7 @@ class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42)" ) );
+        assertThat( printer.value() ).isEqualTo( "(id=42)" );
     }
 
     @Test
@@ -88,7 +87,7 @@ class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42 :L1:L2:L3 {bar: [1337, \"baz\"], foo: 42})" ) );
+        assertThat( printer.value() ).isEqualTo( "(id=42 :L1:L2:L3 {bar: [1337, \"baz\"], foo: 42})" );
     }
 
     @Test
@@ -103,7 +102,7 @@ class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42 {bar: [1337, \"baz\"], foo: 42})" ) );
+        assertThat( printer.value() ).isEqualTo( "(id=42 {bar: [1337, \"baz\"], foo: 42})" );
     }
 
     @Test
@@ -117,7 +116,7 @@ class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42 :L1:L2:L3)" ) );
+        assertThat( printer.value() ).isEqualTo( "(id=42 :L1:L2:L3)" );
     }
 
     @Test
@@ -131,7 +130,7 @@ class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42)" ) );
+        assertThat( printer.value() ).isEqualTo( "(id=42)" );
     }
 
     @Test
@@ -145,7 +144,7 @@ class PrettyPrinterTest
         rel.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "-[id=42]-" ) );
+        assertThat( printer.value() ).isEqualTo( "-[id=42]-" );
     }
 
     @Test
@@ -162,7 +161,7 @@ class PrettyPrinterTest
         rel.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "-[id=42 :R {bar: [1337, \"baz\"], foo: 42}]-" ) );
+        assertThat( printer.value() ).isEqualTo( "-[id=42 :R {bar: [1337, \"baz\"], foo: 42}]-" );
     }
 
     @Test
@@ -178,7 +177,7 @@ class PrettyPrinterTest
         rel.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "-[id=42 :R]-" ) );
+        assertThat( printer.value() ).isEqualTo( "-[id=42 :R]-" );
     }
 
     @Test
@@ -192,7 +191,7 @@ class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42)" ) );
+        assertThat( printer.value() ).isEqualTo( "(id=42)" );
     }
 
     @Test
@@ -210,7 +209,7 @@ class PrettyPrinterTest
         path.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=1 :L)-[id=42 :R]->(id=2 :L)" ) );
+        assertThat( printer.value() ).isEqualTo( "(id=1 :L)-[id=42 :R]->(id=2 :L)" );
     }
 
     @Test
@@ -224,7 +223,7 @@ class PrettyPrinterTest
         mapValue.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "{k1: 42}" ) );
+        assertThat( printer.value() ).isEqualTo( "{k1: 42}" );
     }
 
     @Test
@@ -238,7 +237,7 @@ class PrettyPrinterTest
         list.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "[\"foo\", 42]" ) );
+        assertThat( printer.value() ).isEqualTo( "[\"foo\", 42]" );
     }
 
     @Test
@@ -252,7 +251,7 @@ class PrettyPrinterTest
         array.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "[\"a\", \"b\", \"c\"]" ) );
+        assertThat( printer.value() ).isEqualTo( "[\"a\", \"b\", \"c\"]" );
     }
 
     @Test
@@ -266,7 +265,7 @@ class PrettyPrinterTest
         array.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "[true, false, true]" ) );
+        assertThat( printer.value() ).isEqualTo( "[true, false, true]" );
     }
 
     @Test
@@ -280,7 +279,7 @@ class PrettyPrinterTest
         array.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "[2, 3, 42]" ) );
+        assertThat( printer.value() ).isEqualTo( "[2, 3, 42]" );
     }
 
     @Test
@@ -293,7 +292,7 @@ class PrettyPrinterTest
         Values.NO_VALUE.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "<null>" ) );
+        assertThat( printer.value() ).isEqualTo( "<null>" );
     }
 
     @Test
@@ -307,10 +306,8 @@ class PrettyPrinterTest
         pointValue.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "{geometry: {type: \"Point\", coordinates: [11.0, 12.0], " +
-                                              "crs: {type: link, properties: " +
-                                              "{href: \"http://spatialreference.org/ref/sr-org/7203/\", code: " +
-                                              "7203}}}}" ) );
+        assertThat( printer.value() ).isEqualTo( "{geometry: {type: \"Point\", coordinates: [11.0, 12.0], " + "crs: {type: link, properties: " +
+                "{href: \"http://spatialreference.org/ref/sr-org/7203/\", code: " + "7203}}}}" );
     }
 
     @Test
@@ -324,7 +321,7 @@ class PrettyPrinterTest
         hello.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "__(ツ)__" ) );
+        assertThat( printer.value() ).isEqualTo( "__(ツ)__" );
     }
 
     @Test

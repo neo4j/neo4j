@@ -37,8 +37,7 @@ import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 
 import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.StringStartsWith.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -90,42 +89,42 @@ class DateTimeValueTest
         assertThrows( TemporalParseException.class, () -> parse( "10000-12-17T17:14:35Z", orFail ) );
 
         // Wrong month
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-13-17T17:14:35", inUTC ) ).getMessage(),
-                startsWith( "Invalid value for MonthOfYear" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-00-17T17:14:35", inUTC ) ).getMessage(),
-                startsWith( "Invalid value for MonthOfYear" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-13-17T17:14:35Z", orFail ) ).getMessage(),
-                startsWith( "Invalid value for MonthOfYear" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-00-17T17:14:35Z", orFail ) ).getMessage(),
-                startsWith( "Invalid value for MonthOfYear" ) );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-13-17T17:14:35", inUTC ) ).getMessage() ).startsWith(
+                "Invalid value for MonthOfYear" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-00-17T17:14:35", inUTC ) ).getMessage() ).startsWith(
+                "Invalid value for MonthOfYear" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-13-17T17:14:35Z", orFail ) ).getMessage() ).startsWith(
+                "Invalid value for MonthOfYear" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-00-17T17:14:35Z", orFail ) ).getMessage() ).startsWith(
+                "Invalid value for MonthOfYear" );
 
         // Wrong day of month
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-32T17:14:35", inUTC ) ).getMessage(),
-                startsWith( "Invalid value for DayOfMonth" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-00T17:14:35", inUTC ) ).getMessage(),
-                startsWith( "Invalid value for DayOfMonth" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-32T17:14:35Z", orFail ) ).getMessage(),
-                startsWith( "Invalid value for DayOfMonth" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-00T17:14:35Z", orFail ) ).getMessage(),
-                startsWith( "Invalid value for DayOfMonth" ) );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-32T17:14:35", inUTC ) ).getMessage() ).startsWith(
+                "Invalid value for DayOfMonth" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-00T17:14:35", inUTC ) ).getMessage() ).startsWith(
+                "Invalid value for DayOfMonth" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-32T17:14:35Z", orFail ) ).getMessage() ).startsWith(
+                "Invalid value for DayOfMonth" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-00T17:14:35Z", orFail ) ).getMessage() ).startsWith(
+                "Invalid value for DayOfMonth" );
 
         // Wrong hour
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T24:14:35", inUTC ) ).getMessage(),
-                startsWith( "Invalid value for HourOfDay" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T24:14:35Z", orFail ) ).getMessage(),
-                startsWith( "Invalid value for HourOfDay" ) );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T24:14:35", inUTC ) ).getMessage() ).startsWith(
+                "Invalid value for HourOfDay" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T24:14:35Z", orFail ) ).getMessage() ).startsWith(
+                "Invalid value for HourOfDay" );
 
         // Wrong minute
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:60:35", inUTC ) ).getMessage(),
-                startsWith( "Invalid value for MinuteOfHour" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:60:35Z", orFail ) ).getMessage(),
-                startsWith( "Invalid value for MinuteOfHour" ) );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:60:35", inUTC ) ).getMessage() ).startsWith(
+                "Invalid value for MinuteOfHour" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:60:35Z", orFail ) ).getMessage() ).startsWith(
+                "Invalid value for MinuteOfHour" );
 
         // Wrong second
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:14:61", inUTC ) ).getMessage(),
-                startsWith( "Invalid value for SecondOfMinute" ) );
-        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:14:61Z", orFail ) ).getMessage(),
-                startsWith( "Invalid value for SecondOfMinute" ) );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:14:61", inUTC ) ).getMessage() ).startsWith(
+                "Invalid value for SecondOfMinute" );
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:14:61Z", orFail ) ).getMessage() ).startsWith(
+                "Invalid value for SecondOfMinute" );
     }
 
     @Test

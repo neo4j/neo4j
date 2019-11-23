@@ -22,9 +22,7 @@ package org.neo4j.values.storable;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ValueTupleTest
@@ -55,14 +53,14 @@ class ValueTupleTest
 
     private void verifyEquals( ValueTuple a, ValueTuple b )
     {
-        assertThat( a, equalTo( b ) );
-        assertThat( b, equalTo( a ) );
+        assertThat( a ).isEqualTo( b );
+        assertThat( b ).isEqualTo( a );
         assertEquals( a.hashCode(), b.hashCode(), format( "Expected hashCode for %s and %s to be equal", a, b ) );
     }
 
     private void assertNotEquals( ValueTuple a, ValueTuple b )
     {
-        assertThat( a, not( equalTo( b ) ) );
-        assertThat( b, not( equalTo( a ) ) );
+        assertThat( a ).isNotEqualTo( b );
+        assertThat( b ).isNotEqualTo( a );
     }
 }

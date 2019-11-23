@@ -23,11 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ValueAsObjectCopyTest
 {
@@ -63,11 +62,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return byte[]" );
 
         byte[] arr = (byte[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = -1;
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (byte[]) value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (byte[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -79,11 +78,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return short[]" );
 
         short[] arr = (short[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = -1;
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (short[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (short[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -95,11 +94,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return int[]" );
 
         int[] arr = (int[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = -1;
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (int[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (int[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -111,11 +110,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return long[]" );
 
         long[] arr = (long[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = -1;
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (long[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (long[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -127,11 +126,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return float[]" );
 
         float[] arr = (float[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = -1;
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (float[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (float[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -143,11 +142,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return double[]" );
 
         double[] arr = (double[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = -1;
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (double[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (double[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -159,11 +158,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return char[]" );
 
         char[] arr = (char[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = 'b';
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (char[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (char[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -175,11 +174,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return String[]" );
 
         String[] arr = (String[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = "b";
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (String[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (String[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     @Test
@@ -191,11 +190,11 @@ class ValueAsObjectCopyTest
         assertNotNull( asObject, "should return boolean[]" );
 
         boolean[] arr = (boolean[]) asObject;
-        assertTrue( Arrays.equals( inStore, arr ), "should have same values" );
+        assertArrayEquals( inStore, arr, "should have same values" );
 
         arr[0] = false;
         assertFalse( Arrays.equals( inStore, arr ), "should not modify inStore array" );
-        assertTrue( Arrays.equals( inStore, (boolean[])value.asObjectCopy() ), "should still generate inStore array" );
+        assertArrayEquals( inStore, (boolean[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
     private AsObjectCopyTest shouldGivePublic( Value value, Object asObject )
@@ -216,7 +215,7 @@ class ValueAsObjectCopyTest
 
         void assertGeneratesPublic()
         {
-            assertThat( value.asObjectCopy(), equalTo( expected ) );
+            assertThat( value.asObjectCopy() ).isEqualTo( expected );
         }
     }
 }

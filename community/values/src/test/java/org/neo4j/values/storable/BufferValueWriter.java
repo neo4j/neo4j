@@ -19,8 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.hamcrest.Matchers;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -31,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.BeginArray;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.EndArray;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.WriteByteArray;
@@ -92,7 +90,7 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
 
     public void assertBuffer( Object... writeEvents )
     {
-        assertThat( buffer, Matchers.contains( writeEvents ) );
+        assertThat( buffer ).containsExactly( writeEvents );
     }
 
     @Override
