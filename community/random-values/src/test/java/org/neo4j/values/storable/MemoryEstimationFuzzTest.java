@@ -25,9 +25,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.virtual.ListValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
@@ -41,12 +39,9 @@ class MemoryEstimationFuzzTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            assertThat( random.nextByteValue().estimatedHeapUsage(),
-                    lessThanOrEqualTo( random.nextShortValue().estimatedHeapUsage() ) );
-            assertThat( random.nextShortValue().estimatedHeapUsage(),
-                    lessThanOrEqualTo( random.nextIntValue().estimatedHeapUsage() ) );
-            assertThat( random.nextIntValue().estimatedHeapUsage(),
-                    lessThanOrEqualTo( random.nextLongValue().estimatedHeapUsage() ) );
+            assertThat( random.nextByteValue().estimatedHeapUsage() ).isLessThanOrEqualTo( random.nextShortValue().estimatedHeapUsage() );
+            assertThat( random.nextShortValue().estimatedHeapUsage() ).isLessThanOrEqualTo( random.nextIntValue().estimatedHeapUsage() );
+            assertThat( random.nextIntValue().estimatedHeapUsage() ).isLessThanOrEqualTo( random.nextLongValue().estimatedHeapUsage() );
         }
     }
 
@@ -55,8 +50,7 @@ class MemoryEstimationFuzzTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            assertThat( random.nextFloatValue().estimatedHeapUsage(),
-                    lessThanOrEqualTo( random.nextDoubleValue().estimatedHeapUsage() ) );
+            assertThat( random.nextFloatValue().estimatedHeapUsage() ).isLessThanOrEqualTo( random.nextDoubleValue().estimatedHeapUsage() );
         }
     }
 
@@ -65,8 +59,7 @@ class MemoryEstimationFuzzTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            assertThat( random.nextTextValue( 10, 10 ).estimatedHeapUsage(),
-                    lessThan( random.nextTextValue( 100, 100 ).estimatedHeapUsage() ));
+            assertThat( random.nextTextValue( 10, 10 ).estimatedHeapUsage() ).isLessThan( random.nextTextValue( 100, 100 ).estimatedHeapUsage() );
         }
     }
 

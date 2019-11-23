@@ -36,17 +36,10 @@ import org.neo4j.values.AnyValue;
 
 import static java.lang.Character.isAlphabetic;
 import static java.lang.Character.isDigit;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -114,13 +107,13 @@ abstract class RandomValuesTest
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             LongValue value = randomValues.nextLongValue( 1337, 1337 + BOUND );
-            assertThat( value, notNullValue() );
-            assertThat( value.compareTo( longValue( 1337 ) ), greaterThanOrEqualTo( 0 ) );
-            assertThat( value.toString(), value.compareTo( longValue( 1337 + BOUND ) ), lessThanOrEqualTo( 0 ) );
+            assertThat( value ).isNotNull();
+            assertThat( value.compareTo( longValue( 1337 ) ) ).isGreaterThanOrEqualTo( 0 );
+            assertThat( value.compareTo( longValue( 1337 + BOUND ) ) ).as( value.toString() ).isLessThanOrEqualTo( 0 );
             values.add( value );
         }
 
-        assertThat( values.size(), greaterThan( 1 ) );
+        assertThat( values.size() ).isGreaterThan( 1 );
     }
 
     @Test
@@ -190,7 +183,7 @@ abstract class RandomValuesTest
             while ( !seen.isEmpty() )
             {
                 NumberValue numberValue = randomValues.nextNumberValue();
-                assertThat( NUMBER_TYPES, hasItem( numberValue.getClass() ) );
+                assertThat( NUMBER_TYPES ).contains( numberValue.getClass() );
                 seen.remove( numberValue.getClass() );
             }
         } );
@@ -211,7 +204,7 @@ abstract class RandomValuesTest
                     for ( int j = 0; j < asString.length(); j++ )
                     {
                         int ch = asString.charAt( j );
-                        assertTrue( "Not a character nor letter: " + ch, isAlphabetic( ch ) || isDigit( ch ) );
+                        assertTrue( isAlphabetic( ch ) || isDigit( ch ), "Not a character nor letter: " + ch );
                         seenDigits.remove( ch );
                     }
                 }
@@ -227,8 +220,8 @@ abstract class RandomValuesTest
             TextValue textValue = randomValues.nextAsciiTextValue( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.length();
-            assertThat( length, greaterThanOrEqualTo( 10 ) );
-            assertThat( length, lessThanOrEqualTo( 20 ) );
+            assertThat( length ).isGreaterThanOrEqualTo( 10 );
+            assertThat( length ).isLessThanOrEqualTo( 20 );
         }
     }
 
@@ -240,8 +233,8 @@ abstract class RandomValuesTest
             TextValue textValue = randomValues.nextTextValue( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.codePointCount( 0, asString.length() );
-            assertThat( length, greaterThanOrEqualTo( 10 ) );
-            assertThat( length, lessThanOrEqualTo( 20 ) );
+            assertThat( length ).isGreaterThanOrEqualTo( 10 );
+            assertThat( length ).isLessThanOrEqualTo( 20 );
         }
     }
 
@@ -254,7 +247,7 @@ abstract class RandomValuesTest
             while ( !seen.isEmpty() )
             {
                 ArrayValue arrayValue = randomValues.nextArray();
-                assertThat( arrayValue.length(), greaterThanOrEqualTo( 1 ) );
+                assertThat( arrayValue.length() ).isGreaterThanOrEqualTo( 1 );
                 AnyValue value = arrayValue.value( 0 );
                 assertKnownType( value.getClass(), TYPES );
                 markSeen( value.getClass(), seen );
@@ -324,7 +317,7 @@ abstract class RandomValuesTest
             TextValue value = randomValues.nextBasicMultilingualPlaneTextValue();
             //make sure the value fits in 16bits, meaning that the size of the char[]
             //matches the number of code points.
-            assertThat( value.length(), equalTo( value.stringValue().length() ) );
+            assertThat( value.length() ).isEqualTo( value.stringValue().length() );
         }
     }
 
@@ -363,11 +356,11 @@ abstract class RandomValuesTest
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             Value value = supplier.get();
-            assertThat( value, notNullValue() );
+            assertThat( value ).isNotNull();
             values.add( value );
         }
 
-        assertThat( values.size(), greaterThan( 1 ) );
+        assertThat( values.size() ).isGreaterThan( 1 );
     }
 
     private void checkBounded( Supplier<NumberValue> supplier )
@@ -375,9 +368,9 @@ abstract class RandomValuesTest
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             NumberValue value = supplier.get();
-            assertThat( value, notNullValue() );
-            assertThat( value.compareTo( ZERO_INT ), greaterThanOrEqualTo( 0 ) );
-            assertThat( value.compareTo( UPPER ), lessThan( 0 ) );
+            assertThat( value ).isNotNull();
+            assertThat( value.compareTo( ZERO_INT ) ).isGreaterThanOrEqualTo( 0 );
+            assertThat( value.compareTo( UPPER ) ).isLessThan( 0 );
         }
     }
 }

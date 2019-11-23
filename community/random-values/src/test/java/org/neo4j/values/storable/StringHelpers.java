@@ -24,8 +24,7 @@ import java.util.function.Function;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -44,8 +43,8 @@ final class StringHelpers
         T b = test.apply( utf8Value );
 
         String errorMsg = format( "operation not consistent for %s", string );
-        assertThat( errorMsg, a, equalTo( b ) );
-        assertThat( errorMsg, b, equalTo( a ) );
+        assertThat( a ).as( errorMsg ).isEqualTo( b );
+        assertThat( b ).as( errorMsg ).isEqualTo( a );
     }
 
     static <T> void assertConsistent( String string1, String string2, BiFunction<TextValue,TextValue,T> test )
@@ -60,11 +59,11 @@ final class StringHelpers
         T z = test.apply( utf8Value1, utf8Value2 );
 
         String errorMsg = format( "operation not consistent for `%s` and `%s`", string1, string2 );
-        assertThat( errorMsg, a, equalTo( x ) );
-        assertThat( errorMsg, x, equalTo( a ) );
-        assertThat( errorMsg, a, equalTo( y ) );
-        assertThat( errorMsg, y, equalTo( a ) );
-        assertThat( errorMsg, a, equalTo( z ) );
-        assertThat( errorMsg, z, equalTo( a ) );
+        assertThat( a ).as( errorMsg ).isEqualTo( x );
+        assertThat( x ).as( errorMsg ).isEqualTo( a );
+        assertThat( a ).as( errorMsg ).isEqualTo( y );
+        assertThat( y ).as( errorMsg ).isEqualTo( a );
+        assertThat( a ).as( errorMsg ).isEqualTo( z );
+        assertThat( z ).as( errorMsg ).isEqualTo( a );
     }
 }

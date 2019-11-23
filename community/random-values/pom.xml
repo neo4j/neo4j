@@ -77,6 +77,12 @@
             <groupId>org.neo4j</groupId>
             <artifactId>test-utils</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>

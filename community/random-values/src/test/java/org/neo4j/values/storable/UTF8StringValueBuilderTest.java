@@ -21,8 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class UTF8StringValueBuilderTest
 {
@@ -41,7 +40,7 @@ class UTF8StringValueBuilderTest
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue(), equalTo("$$$"));
+        assertThat( textValue.stringValue() ).isEqualTo( "$$$" );
     }
 
     @Test
@@ -58,7 +57,7 @@ class UTF8StringValueBuilderTest
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue(), equalTo("¢¢¢"));
+        assertThat( textValue.stringValue() ).isEqualTo( "¢¢¢" );
     }
 
     @Test
@@ -75,7 +74,7 @@ class UTF8StringValueBuilderTest
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue(), equalTo("€€€"));
+        assertThat( textValue.stringValue() ).isEqualTo( "€€€" );
     }
 
     @Test
@@ -92,6 +91,6 @@ class UTF8StringValueBuilderTest
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue(), equalTo("\uD800\uDF48\uD800\uDF48\uD800\uDF48"));
+        assertThat( textValue.stringValue() ).isEqualTo( "\uD800\uDF48\uD800\uDF48\uD800\uDF48" );
     }
 }
