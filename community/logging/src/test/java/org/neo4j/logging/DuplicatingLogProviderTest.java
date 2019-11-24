@@ -22,8 +22,7 @@ package org.neo4j.logging;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -54,7 +53,7 @@ class DuplicatingLogProviderTest
 
         // Then
         DuplicatingLog log = logProvider.getLog( getClass() );
-        assertThat( logProvider.getLog( DuplicatingLogProviderTest.class ), sameInstance( log ) );
+        assertThat( logProvider.getLog( DuplicatingLogProviderTest.class ) ).isSameAs( log );
     }
 
     @Test
@@ -65,7 +64,7 @@ class DuplicatingLogProviderTest
 
         // Then
         DuplicatingLog log = logProvider.getLog( "test context" );
-        assertThat( logProvider.getLog( "test context" ), sameInstance( log ) );
+        assertThat( logProvider.getLog( "test context" ) ).isSameAs( log );
     }
 
     @Test

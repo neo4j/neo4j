@@ -44,8 +44,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Long.max;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -208,7 +207,7 @@ class StoreLogServiceTest
         for ( Level level : new Level[]{Level.DEBUG, Level.INFO, Level.WARN} )
         {
             long highestForLevel = highestIdForLevel[level.ordinal()];
-            assertThat( highestForLevel, greaterThan( 0L ) );
+            assertThat( highestForLevel ).isGreaterThan( 0L );
         }
         assertEquals( nextId.get(), highestIdForLevel[Level.ERROR.ordinal()] );
     }

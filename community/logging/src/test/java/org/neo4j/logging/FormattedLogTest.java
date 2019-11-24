@@ -31,8 +31,7 @@ import java.util.function.Supplier;
 import org.neo4j.function.Suppliers;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FormattedLogTest
@@ -51,8 +50,7 @@ class FormattedLogTest
         log.info( "Terminator 2" );
 
         // Then
-        assertThat( writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Terminator 2%n" ) ) );
+        assertThat( writer.toString() ).isEqualTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Terminator 2%n" ) );
     }
 
     @Test
@@ -66,12 +64,7 @@ class FormattedLogTest
         log.info( "Hasta la vista, baby", newThrowable( "<message>", "<stacktrace>" ) );
 
         // Then
-        assertThat(
-                writer.toString(),
-                equalTo(
-                        format( "1984-10-26 04:23:24.343+0000 INFO [test] Hasta la vista, baby " +
-                                "<message>%n<stacktrace>" ) )
-        );
+        assertThat( writer.toString() ).isEqualTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Hasta la vista, baby " + "<message>%n<stacktrace>" ) );
     }
 
     @Test
@@ -85,10 +78,7 @@ class FormattedLogTest
         log.info( "Hasta la vista, baby", newThrowable( null, "<stacktrace>" ) );
 
         // Then
-        assertThat(
-                writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Hasta la vista, baby%n<stacktrace>" ) )
-        );
+        assertThat( writer.toString() ).isEqualTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Hasta la vista, baby%n<stacktrace>" ) );
     }
 
     @Test
@@ -102,12 +92,8 @@ class FormattedLogTest
         log.info( "I need your %s, your %s and your %s", "clothes", "boots", "motorcycle" );
 
         // Then
-        assertThat(
-                writer.toString(),
-                equalTo(
-                        format( "1984-10-26 04:23:24.343+0000 INFO [test] I need your clothes, your boots and your " +
-                                "motorcycle%n" ) )
-        );
+        assertThat( writer.toString() ).isEqualTo(
+                format( "1984-10-26 04:23:24.343+0000 INFO [test] I need your clothes, your boots and your " + "motorcycle%n" ) );
     }
 
     @Test
@@ -121,10 +107,7 @@ class FormattedLogTest
         log.info( "Come with me if you %s to live!", new Object[]{} );
 
         // Then
-        assertThat(
-                writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Come with me if you %%s to live!%n" ) )
-        );
+        assertThat( writer.toString() ).isEqualTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Come with me if you %%s to live!%n" ) );
     }
 
     @Test
@@ -135,7 +118,7 @@ class FormattedLogTest
         Log log = newFormattedLog( writer );
 
         assertThrows( IllegalFormatException.class, () -> log.info( "%s like me. A T-%d, advanced prototype.", "Not", "1000", 1000 ) );
-        assertThat( writer.toString(), equalTo( "" ) );
+        assertThat( writer.toString() ).isEqualTo( "" );
     }
 
     @Test
@@ -149,7 +132,7 @@ class FormattedLogTest
         log.info( "I know now why you cry. But it's something I can never do." );
 
         // Then
-        assertThat( writer.toString(), equalTo( "" ) );
+        assertThat( writer.toString() ).isEqualTo( "" );
     }
 
     @Test
@@ -167,14 +150,9 @@ class FormattedLogTest
         log.info( "There's 215 bones in the human body. That's one." );
 
         // Then
-        assertThat(
-                writer.toString(),
-                equalTo( format( "%s%n%s%n",
-                        "1984-10-26 04:23:24.343+0000 INFO [test] No, it's when there's nothing wrong with you, but " +
-                                "you hurt anyway. You get it?",
-                        "1984-10-26 04:23:24.343+0000 INFO [test] There's 215 bones in the human body. That's one."
-                ) )
-        );
+        assertThat( writer.toString() ).isEqualTo( format( "%s%n%s%n",
+                "1984-10-26 04:23:24.343+0000 INFO [test] No, it's when there's nothing wrong with you, but " + "you hurt anyway. You get it?",
+                "1984-10-26 04:23:24.343+0000 INFO [test] There's 215 bones in the human body. That's one." ) );
     }
 
     private static FormattedLog newFormattedLog( StringWriter writer )

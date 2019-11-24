@@ -32,10 +32,7 @@ import java.util.Map;
 import org.neo4j.function.Suppliers;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.endsWith;
-import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class FormattedLogProviderTest
 {
@@ -47,7 +44,7 @@ class FormattedLogProviderTest
 
         // Then
         FormattedLog log = logProvider.getLog( getClass() );
-        assertThat( logProvider.getLog( FormattedLogProviderTest.class ), sameInstance( log ) );
+        assertThat( logProvider.getLog( FormattedLogProviderTest.class ) ).isSameAs( log );
     }
 
     @Test
@@ -58,7 +55,7 @@ class FormattedLogProviderTest
 
         // Then
         FormattedLog log = logProvider.getLog( "test context" );
-        assertThat( logProvider.getLog( "test context" ), sameInstance( log ) );
+        assertThat( logProvider.getLog( "test context" ) ).isSameAs( log );
     }
 
     @Test
@@ -73,7 +70,7 @@ class FormattedLogProviderTest
         log.info( "Terminator 2" );
 
         // Then
-        assertThat( writer.toString(), endsWith( format( "INFO [j.i.StringWriter] Terminator 2%n" ) ) );
+        assertThat( writer.toString() ).endsWith( format( "INFO [j.i.StringWriter] Terminator 2%n" ) );
     }
 
     @Test
@@ -90,10 +87,10 @@ class FormattedLogProviderTest
         FormattedLog nonMatchingNamedLog = logProvider.getLog( "java.io.Foo" );
 
         // Then
-        assertThat( stringWriterLog.isDebugEnabled(), is( true ) );
-        assertThat( otherClassLog.isDebugEnabled(), is( false ) );
-        assertThat( matchingNamedLog.isDebugEnabled(), is( true ) );
-        assertThat( nonMatchingNamedLog.isDebugEnabled(), is( false ) );
+        assertThat( stringWriterLog.isDebugEnabled() ).isEqualTo( true );
+        assertThat( otherClassLog.isDebugEnabled() ).isEqualTo( false );
+        assertThat( matchingNamedLog.isDebugEnabled() ).isEqualTo( true );
+        assertThat( nonMatchingNamedLog.isDebugEnabled() ).isEqualTo( false );
     }
 
     @Test
@@ -111,11 +108,11 @@ class FormattedLogProviderTest
         FormattedLog nonMatchingNamedLog = logProvider.getLog( "java.util.Foo" );
 
         // Then
-        assertThat( stringWriterLog.isDebugEnabled(), is( true ) );
-        assertThat( printWriterLog.isDebugEnabled(), is( true ) );
-        assertThat( otherClassLog.isDebugEnabled(), is( false ) );
-        assertThat( matchingNamedLog.isDebugEnabled(), is( true ) );
-        assertThat( nonMatchingNamedLog.isDebugEnabled(), is( false ) );
+        assertThat( stringWriterLog.isDebugEnabled() ).isEqualTo( true );
+        assertThat( printWriterLog.isDebugEnabled() ).isEqualTo( true );
+        assertThat( otherClassLog.isDebugEnabled() ).isEqualTo( false );
+        assertThat( matchingNamedLog.isDebugEnabled() ).isEqualTo( true );
+        assertThat( nonMatchingNamedLog.isDebugEnabled() ).isEqualTo( false );
     }
 
     private static FormattedLogProvider newFormattedLogProvider( StringWriter writer )
