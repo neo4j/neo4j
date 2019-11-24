@@ -32,8 +32,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.mockito.ArgumentMatchers.any;
@@ -98,7 +97,7 @@ class FileVisitorsDecoratorsTest
         for ( var result : FileVisitResult.values() )
         {
             when( wrapped.preVisitDirectory( any(), any() ) ).thenReturn( result );
-            assertThat( decorator.preVisitDirectory( null, null ), is( result ) );
+            assertThat( decorator.preVisitDirectory( null, null ) ).isEqualTo( result );
         }
     }
 
@@ -130,7 +129,7 @@ class FileVisitorsDecoratorsTest
         for ( var result : FileVisitResult.values() )
         {
             when( wrapped.postVisitDirectory( any(), any() ) ).thenReturn( result );
-            assertThat( decorator.postVisitDirectory( null, null ), is( result ) );
+            assertThat( decorator.postVisitDirectory( null, null ) ).isEqualTo( result );
         }
     }
 
@@ -162,7 +161,7 @@ class FileVisitorsDecoratorsTest
         for ( var result : FileVisitResult.values() )
         {
             when( wrapped.visitFile( any(), any() ) ).thenReturn( result );
-            assertThat( decorator.visitFile( null, null ), is( result ) );
+            assertThat( decorator.visitFile( null, null ) ).isEqualTo( result );
         }
     }
 
@@ -194,7 +193,7 @@ class FileVisitorsDecoratorsTest
         for ( var result : FileVisitResult.values() )
         {
             when( wrapped.visitFileFailed( any(), any() ) ).thenReturn( result );
-            assertThat( decorator.visitFileFailed( null, null ), is( result ) );
+            assertThat( decorator.visitFileFailed( null, null ) ).isEqualTo( result );
         }
     }
 

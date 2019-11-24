@@ -26,8 +26,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Path;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -71,28 +70,24 @@ class OnlyMatchingFileVisitorTest
     @Test
     void shouldNotSkipSubtreeFromPreVisitDirectoryIfPredicateDoesntMatch() throws IOException
     {
-        assertThat( onlyMatching( alwaysFalse(), wrapped).preVisitDirectory( null, null ),
-                is( FileVisitResult.SKIP_SUBTREE));
+        assertThat( onlyMatching( alwaysFalse(), wrapped ).preVisitDirectory( null, null ) ).isEqualTo( FileVisitResult.SKIP_SUBTREE );
     }
 
     @Test
     void shouldContinueAfterPostVisitDirectoryIfPredicateDoesntMatch() throws IOException
     {
-        assertThat( onlyMatching( alwaysFalse(), wrapped).postVisitDirectory( null, null ),
-                is( FileVisitResult.CONTINUE));
+        assertThat( onlyMatching( alwaysFalse(), wrapped ).postVisitDirectory( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
     }
 
     @Test
     void shouldContinueAfterVisitFileIfPredicateDoesntMatch() throws IOException
     {
-        assertThat( onlyMatching( alwaysFalse(), wrapped).visitFile( null, null ),
-                is( FileVisitResult.CONTINUE));
+        assertThat( onlyMatching( alwaysFalse(), wrapped ).visitFile( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
     }
 
     @Test
     void shouldContinueAfterVisitFileFailedIfPredicateDoesntMatch() throws IOException
     {
-        assertThat( onlyMatching( alwaysFalse(), wrapped).visitFileFailed( null, null ),
-                is( FileVisitResult.CONTINUE));
+        assertThat( onlyMatching( alwaysFalse(), wrapped ).visitFileFailed( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
     }
 }

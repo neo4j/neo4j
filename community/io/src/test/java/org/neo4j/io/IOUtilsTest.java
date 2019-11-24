@@ -25,9 +25,7 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isA;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -59,8 +57,8 @@ class IOUtilsTest
     void closeAllAndRethrowException()
     {
         final var e = assertThrows( IOException.class, () -> closeAll( goodClosable1, faultyClosable, goodClosable2 ) );
-        assertThat( e.getMessage(), is( "Exception closing multiple resources." ) );
-        assertThat( e.getCause(), isA( IOException.class ) );
+        assertThat( e.getMessage() ).isEqualTo( "Exception closing multiple resources." );
+        assertThat( e.getCause() ).isInstanceOf( IOException.class );
     }
 
     @Test

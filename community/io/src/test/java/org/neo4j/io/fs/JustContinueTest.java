@@ -24,17 +24,16 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class JustContinueTest
 {
     @Test
     void shouldJustContinue() throws IOException
     {
-        assertThat( FileVisitors.justContinue().preVisitDirectory( null, null ), is( FileVisitResult.CONTINUE ) );
-        assertThat( FileVisitors.justContinue().visitFile( null, null ), is( FileVisitResult.CONTINUE ) );
-        assertThat( FileVisitors.justContinue().visitFileFailed( null, null ), is( FileVisitResult.CONTINUE ) );
-        assertThat( FileVisitors.justContinue().postVisitDirectory( null, null ), is( FileVisitResult.CONTINUE ) );
+        assertThat( FileVisitors.justContinue().preVisitDirectory( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
+        assertThat( FileVisitors.justContinue().visitFile( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
+        assertThat( FileVisitors.justContinue().visitFileFailed( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
+        assertThat( FileVisitors.justContinue().postVisitDirectory( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
     }
 }
