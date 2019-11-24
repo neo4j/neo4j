@@ -33,12 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout( 30 )
 class AsyncEventsTest
@@ -97,8 +92,8 @@ class AsyncEventsTest
 
         asyncEvents.shutdown();
 
-        assertThat( firstProcessedEvent, is( firstSentEvent ) );
-        assertThat( secondProcessedEvent, is( secondSentEvent ) );
+        assertThat( firstProcessedEvent ).isEqualTo( firstSentEvent );
+        assertThat( secondProcessedEvent ).isEqualTo( secondSentEvent );
     }
 
     @Test
@@ -114,7 +109,7 @@ class AsyncEventsTest
         Thread processingThread = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
         asyncEvents.shutdown();
 
-        assertThat( processingThread, is( not( Thread.currentThread() ) ) );
+        assertThat( processingThread ).isNotEqualTo( Thread.currentThread() );
     }
 
     @Test
@@ -129,7 +124,7 @@ class AsyncEventsTest
         Thread threadForFirstEvent = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
         asyncEvents.shutdown();
 
-        assertThat( threadForFirstEvent, is( not( Thread.currentThread() ) ) );
+        assertThat( threadForFirstEvent ).isNotEqualTo( Thread.currentThread() );
 
         Thread threadForSubsequentEvents;
         do
@@ -186,7 +181,7 @@ class AsyncEventsTest
                 }
                 else
                 {
-                    assertThat( event.processedBy, is( not( thisThread ) ) );
+                    assertThat( event.processedBy ).isNotEqualTo( thisThread );
                 }
             }
         }
@@ -231,20 +226,20 @@ class AsyncEventsTest
         asyncEvents.send( new Event() );
 
         // Observe 5 events processed
-        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
-        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
-        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
-        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
-        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
+        assertThat( consumer.eventsProcessed.take() ).isNotNull();
+        assertThat( consumer.eventsProcessed.take() ).isNotNull();
+        assertThat( consumer.eventsProcessed.take() ).isNotNull();
+        assertThat( consumer.eventsProcessed.take() ).isNotNull();
+        assertThat( consumer.eventsProcessed.take() ).isNotNull();
 
         // Observe no events left
-        assertThat( consumer.eventsProcessed.poll( 20, TimeUnit.MILLISECONDS ), is( nullValue() ) );
+        assertThat( consumer.eventsProcessed.poll( 20, TimeUnit.MILLISECONDS ) ).isNull();
 
         // Shutdown and await termination
         asyncEvents.shutdown();
         awaitShutdownFuture.get();
 
         // Observe termination
-        assertThat( consumer.eventsProcessed.take(), sameInstance( specialShutdownObservedEvent ) );
+        assertThat( consumer.eventsProcessed.take() ).isSameAs( specialShutdownObservedEvent );
     }
 }

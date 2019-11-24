@@ -27,8 +27,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FuturesTest
@@ -54,6 +53,6 @@ class FuturesTest
         task1.run();
 
         List<String> result = combined.get();
-        assertThat( result, contains( "1", "2", "3" ) );
+        assertThat( result ).containsExactly( "1", "2", "3" );
     }
 }

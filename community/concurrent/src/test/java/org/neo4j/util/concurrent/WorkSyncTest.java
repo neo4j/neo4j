@@ -40,11 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -184,10 +180,10 @@ class WorkSyncTest
     void mustApplyWork() throws Exception
     {
         sync.apply( new AddWork( 10 ) );
-        assertThat( sum.sum(), is( 10L ) );
+        assertThat( sum.sum() ).isEqualTo( 10L );
 
         sync.apply( new AddWork( 20 ) );
-        assertThat( sum.sum(), is( 30L ) );
+        assertThat( sum.sum() ).isEqualTo( 30L );
     }
 
     @Test
@@ -228,7 +224,7 @@ class WorkSyncTest
         {
             task.get();
         }
-        assertThat( count.sum(), lessThan( sum.sum() ) );
+        assertThat( count.sum() ).isLessThan( sum.sum() );
     }
 
     @Test
@@ -238,7 +234,7 @@ class WorkSyncTest
 
         sync.apply( new AddWork( 10 ) );
 
-        assertThat( sum.sum(), is( 10L ) );
+        assertThat( sum.sum() ).isEqualTo( 10L );
         assertTrue( Thread.interrupted() );
     }
 
@@ -269,18 +265,18 @@ class WorkSyncTest
         catch ( ExecutionException exception )
         {
             // Outermost ExecutionException from the ExecutorService
-            assertThat( exception.getCause(), instanceOf( ExecutionException.class ) );
+            assertThat( exception.getCause() ).isInstanceOf( ExecutionException.class );
 
             // Inner ExecutionException from the WorkSync
             exception = (ExecutionException) exception.getCause();
-            assertThat( exception.getCause(), instanceOf( IllegalStateException.class ) );
+            assertThat( exception.getCause() ).isInstanceOf( IllegalStateException.class );
         }
 
         broken.set( false );
         sync.apply( new AddWork( 20 ) );
 
-        assertThat( sum.sum(), is( 20L ) );
-        assertThat( count.sum(), is( 1L ) );
+        assertThat( sum.sum() ).isEqualTo( 20L );
+        assertThat( count.sum() ).isEqualTo( 1L );
     }
 
     @Test
@@ -325,8 +321,8 @@ class WorkSyncTest
             future.get(); // check for any exceptions
         }
 
-        assertThat( count.sum(), lessThan( (long) (workers * iterations) ) );
-        assertThat( sum.sum(), is( (long) (incrementValue * workers * iterations) ) );
+        assertThat( count.sum() ).isLessThan( (long) (workers * iterations) );
+        assertThat( sum.sum() ).isEqualTo( (long) (incrementValue * workers * iterations) );
     }
 
     @Test
@@ -385,8 +381,8 @@ class WorkSyncTest
             future.get(); // check for any exceptions
         }
 
-        assertThat( count.sum(), lessThan( (long) (workers * iterations) ) );
-        assertThat( sum.sum(), is( (long) (incrementValue * workers * iterations) ) );
+        assertThat( count.sum() ).isLessThan( (long) (workers * iterations) );
+        assertThat( sum.sum() ).isEqualTo( (long) (incrementValue * workers * iterations) );
     }
 
     @Test
@@ -394,13 +390,13 @@ class WorkSyncTest
     {
         AsyncApply a = sync.applyAsync( new AddWork( 10 ) );
         a.await();
-        assertThat( sum.sum(), is( 10L ) );
+        assertThat( sum.sum() ).isEqualTo( 10L );
 
         AsyncApply b = sync.applyAsync( new AddWork( 20 ) );
         AsyncApply c = sync.applyAsync( new AddWork( 30 ) );
         b.await();
         c.await();
-        assertThat( sum.sum(), is( 60L ) );
+        assertThat( sum.sum() ).isEqualTo( 60L );
     }
 
     @Test
@@ -415,8 +411,8 @@ class WorkSyncTest
         a.await();
         b.await();
         c.await();
-        assertThat( sum.sum(), is( 4L ) );
-        assertThat( count.sum(), is( 2L ) );
+        assertThat( sum.sum() ).isEqualTo( 4L );
+        assertThat( count.sum() ).isEqualTo( 2L );
     }
 
     @Test
@@ -426,7 +422,7 @@ class WorkSyncTest
 
         sync.applyAsync( new AddWork( 10 ) ).await();
 
-        assertThat( sum.sum(), is( 10L ) );
+        assertThat( sum.sum() ).isEqualTo( 10L );
         assertTrue( Thread.interrupted() );
     }
 
@@ -451,11 +447,11 @@ class WorkSyncTest
         }
         catch ( ExecutionException e )
         {
-            assertThat( e.getCause(), sameInstance( boo ) );
+            assertThat( e.getCause() ).isSameAs( boo );
         }
 
-        assertThat( sum.sum(), is( 10L ) );
-        assertThat( count.sum(), is( 1L ) );
+        assertThat( sum.sum() ).isEqualTo( 10L );
+        assertThat( count.sum() ).isEqualTo( 1L );
 
         try
         {
@@ -464,11 +460,11 @@ class WorkSyncTest
         }
         catch ( ExecutionException e )
         {
-            assertThat( e.getCause(), sameInstance( boo ) );
+            assertThat( e.getCause() ).isSameAs( boo );
         }
 
-        assertThat( sum.sum(), is( 10L ) );
-        assertThat( count.sum(), is( 1L ) );
+        assertThat( sum.sum() ).isEqualTo( 10L );
+        assertThat( count.sum() ).isEqualTo( 1L );
     }
 
     @Test
@@ -497,11 +493,11 @@ class WorkSyncTest
         }
         catch ( ExecutionException e )
         {
-            assertThat( e.getCause(), sameInstance( boo ) );
+            assertThat( e.getCause() ).isSameAs( boo );
         }
 
-        assertThat( sum.sum(), is( 11L ) );
-        assertThat( count.sum(), is( 2L ) );
+        assertThat( sum.sum() ).isEqualTo( 11L );
+        assertThat( count.sum() ).isEqualTo( 2L );
 
         try
         {
@@ -510,10 +506,10 @@ class WorkSyncTest
         }
         catch ( ExecutionException e )
         {
-            assertThat( e.getCause(), sameInstance( boo ) );
+            assertThat( e.getCause() ).isSameAs( boo );
         }
 
-        assertThat( sum.sum(), is( 11L ) );
-        assertThat( count.sum(), is( 2L ) );
+        assertThat( sum.sum() ).isEqualTo( 11L );
+        assertThat( count.sum() ).isEqualTo( 2L );
     }
 }
