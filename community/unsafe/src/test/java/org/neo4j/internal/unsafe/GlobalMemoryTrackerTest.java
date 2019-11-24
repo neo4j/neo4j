@@ -21,8 +21,7 @@ package org.neo4j.internal.unsafe;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class GlobalMemoryTrackerTest
 {
@@ -34,7 +33,7 @@ class GlobalMemoryTrackerTest
         GlobalMemoryTracker.INSTANCE.allocated( 10 );
         GlobalMemoryTracker.INSTANCE.allocated( 20 );
         GlobalMemoryTracker.INSTANCE.allocated( 40 );
-        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo( 70L ) );
+        assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 70L );
     }
 
     @Test
@@ -42,13 +41,13 @@ class GlobalMemoryTrackerTest
     {
         long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
         GlobalMemoryTracker.INSTANCE.allocated( 100 );
-        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo(100L) );
+        assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 100L );
 
         GlobalMemoryTracker.INSTANCE.deallocated( 20 );
-        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo(80L) );
+        assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 80L );
 
         GlobalMemoryTracker.INSTANCE.deallocated( 40 );
-        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo( 40L ) );
+        assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 40L );
     }
 
     private static long currentlyUsedMemory( long initialUsedMemory )
