@@ -39,8 +39,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -189,7 +188,7 @@ class SslPolicyConfigValidatorTest
         // when
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( confFile ).build() );
 
-        assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
+        assertThat( exception.getMessage() ).contains( "Error evaluating value for setting" );
     }
 
     @Test
@@ -206,7 +205,7 @@ class SslPolicyConfigValidatorTest
         // when
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, builder::build );
 
-        assertThat( exception.getMessage(), containsString( "No declared setting with name: dbms.ssl.policy." ) );
+        assertThat( exception.getMessage() ).contains( "No declared setting with name: dbms.ssl.policy." );
     }
 
     @Test
@@ -224,7 +223,7 @@ class SslPolicyConfigValidatorTest
         IllegalArgumentException exception =
                 assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().set( strict_config_validation, true ).fromFile( confFile ).build() );
 
-        assertThat( exception.getMessage(), containsString( "Unrecognized setting" ) );
+        assertThat( exception.getMessage() ).contains( "Unrecognized setting" );
     }
 
     private static Map<String,String> params( String... params )

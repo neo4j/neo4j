@@ -36,10 +36,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,16 +56,16 @@ class GraphDatabaseSettingsTest
     void mustHaveNullDefaultPageCacheMemorySizeInBytes()
     {
         String bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
-        assertThat( bytes, is( nullValue() ) );
+        assertThat( bytes ).isNull();
     }
 
     @Test
     void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue()
     {
         Setting<String> setting = GraphDatabaseSettings.pagecache_memory;
-        assertThat( Config.defaults( setting, "245760" ).get( setting ), is( "245760" ) );
-        assertThat( Config.defaults( setting, "2244g" ).get( setting ), is( "2244g" ) );
-        assertThat( Config.defaults( setting, "string" ).get( setting ), is( "string" ) );
+        assertThat( Config.defaults( setting, "245760" ).get( setting ) ).isEqualTo( "245760" );
+        assertThat( Config.defaults( setting, "2244g" ).get( setting ) ).isEqualTo( "2244g" );
+        assertThat( Config.defaults( setting, "string" ).get( setting ) ).isEqualTo( "string" );
     }
 
     @Test
@@ -263,12 +260,8 @@ class GraphDatabaseSettingsTest
     @Test
     void configValuesContainsConnectors()
     {
-        assertThat( GraphDatabaseSettings.SERVER_DEFAULTS.keySet().stream().map( Setting::name ).collect( Collectors.toList() ), containsInAnyOrder(
-                "dbms.connector.http.enabled",
-                "dbms.connector.https.enabled",
-                "dbms.connector.bolt.enabled",
-                "dbms.security.auth_enabled"
-        ) );
+        assertThat( GraphDatabaseSettings.SERVER_DEFAULTS.keySet().stream().map( Setting::name ).collect( Collectors.toList() ) ).contains(
+                "dbms.connector.http.enabled", "dbms.connector.https.enabled", "dbms.connector.bolt.enabled", "dbms.security.auth_enabled" );
     }
 
     @Test
