@@ -128,8 +128,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
                                  PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier versionContextSupplier )
     {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.open( fs );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         return createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier );
     }
 

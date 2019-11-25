@@ -87,8 +87,7 @@ public class PageCacheStressTest
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-            swapperFactory.open( fs );
+            PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
             try ( PageCache pageCacheUnderTest = new MuninnPageCache(
                     swapperFactory, numberOfCachePages, tracer, pageCursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {

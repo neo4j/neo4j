@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
-import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -34,13 +34,11 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
  *
  * @see org.neo4j.io.pagecache.impl.SingleFilePageSwapper
  */
-@ServiceProvider
 public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
-    private FileSystemAbstraction fs;
+    private final FileSystemAbstraction fs;
 
-    @Override
-    public void open( FileSystemAbstraction fs )
+    public SingleFilePageSwapperFactory( FileSystemAbstraction fs )
     {
         this.fs = fs;
     }
@@ -54,16 +52,9 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             boolean noChannelStriping,
             boolean useDirectIO ) throws IOException
     {
-        if ( !fs.fileExists( file ) )
+        if ( !createIfNotExist && !fs.fileExists( file ) )
         {
-            if ( createIfNotExist )
-            {
-                fs.write( file ).close();
-            }
-            else
-            {
-                throw new NoSuchFileException( file.getPath(), null, "Cannot map non-existing file" );
-            }
+            throw new NoSuchFileException( file.getPath(), null, "Cannot map non-existing file" );
         }
         return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, noChannelStriping, useDirectIO );
     }
@@ -75,14 +66,8 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     }
 
     @Override
-    public String getName()
+    public long getRequiredBufferAlignment( boolean useDirectIO )
     {
-        return "single";
-    }
-
-    @Override
-    public long getRequiredBufferAlignment()
-    {
-        return 1;
+        return useDirectIO ? UnsafeUtil.pageSize() : 1;
     }
 }

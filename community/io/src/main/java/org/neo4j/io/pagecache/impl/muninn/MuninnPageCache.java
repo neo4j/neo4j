@@ -109,6 +109,7 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  */
 public class MuninnPageCache implements PageCache
 {
+    private static final boolean USE_DIRECT_IO = flag( MuninnPageCache.class, "useDirectIO", false );
     public static final byte ZERO_BYTE =
             (byte) (flag( MuninnPageCache.class, "brandedZeroByte", false ) ? 0x0f : 0);
 
@@ -287,7 +288,7 @@ public class MuninnPageCache implements PageCache
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
         this.printExceptionsOnClose = true;
-        long alignment = swapperFactory.getRequiredBufferAlignment();
+        long alignment = swapperFactory.getRequiredBufferAlignment( USE_DIRECT_IO );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
         this.scheduler = jobScheduler;
@@ -417,7 +418,8 @@ public class MuninnPageCache implements PageCache
                 versionContextSupplier,
                 createIfNotExists,
                 truncateExisting,
-                noChannelStriping );
+                noChannelStriping,
+                USE_DIRECT_IO );
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose( deleteOnClose );
         current = new FileMapping( file, pagedFile );

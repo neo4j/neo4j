@@ -104,8 +104,7 @@ class GBPTreePartialCreateFuzzIT
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
-            swapper.open( fs );
+            SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
             try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL,
                     PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {

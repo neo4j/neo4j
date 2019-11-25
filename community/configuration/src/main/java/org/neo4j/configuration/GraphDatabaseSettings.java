@@ -775,7 +775,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<String> pagecache_memory = newBuilder( "dbms.memory.pagecache.size", STRING, null ).build();
 
     @Description( "Specify which page swapper to use for doing paged IO. " +
-            "This is only used when integrating with proprietary storage technology." )
+            "This is only used when integrating with proprietary storage technology. Not used anymore." )
+    @Deprecated
     public static final Setting<String> pagecache_swapper = newBuilder( "dbms.memory.pagecache.swapper", STRING, null ).build();
 
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +

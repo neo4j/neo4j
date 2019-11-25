@@ -60,8 +60,7 @@ class GBPTreeSingleWriterTest
     @BeforeEach
     void createPageCache()
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.open( fileSystem );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
         MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB", new LocalMemoryTracker() );
         jobScheduler = new ThreadPoolJobScheduler();
         pageCache =

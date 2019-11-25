@@ -75,9 +75,8 @@ public class GBPTreeBootstrapper
 
     public static PageCache pageCache( JobScheduler jobScheduler )
     {
-        SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        swapper.open( fs );
+        SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
         PageCursorTracerSupplier cursorTracerSupplier = PageCursorTracerSupplier.NULL;
         return new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }

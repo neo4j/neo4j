@@ -45,9 +45,7 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.open( fileSystem );
-
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;

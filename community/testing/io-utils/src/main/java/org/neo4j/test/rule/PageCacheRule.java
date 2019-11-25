@@ -82,8 +82,7 @@ public class PageCacheRule extends ExternalResource
                 overriddenConfig.pageCursorTracerSupplier,
                 PageCursorTracerSupplier.NULL );
 
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.open( fs );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fs );
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
                 new LocalMemoryTracker() );

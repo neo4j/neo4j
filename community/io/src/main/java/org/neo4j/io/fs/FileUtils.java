@@ -155,7 +155,17 @@ public class FileUtils
 
     public static long blockSize( File file ) throws IOException
     {
-        return Files.getFileStore( file.toPath() ).getBlockSize();
+        requireNonNull( file );
+        var path = file.toPath();
+        while ( path != null && !Files.exists( path ) )
+        {
+            path = path.getParent();
+        }
+        if ( path == null )
+        {
+            throw new IOException( "Fail to determine block size for file: " + file );
+        }
+        return Files.getFileStore( path ).getBlockSize();
     }
 
     public static void deletePathRecursively( Path path, Predicate<Path> removeFilePredicate ) throws IOException

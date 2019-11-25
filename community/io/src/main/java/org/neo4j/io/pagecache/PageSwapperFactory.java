@@ -24,8 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.service.NamedService;
 
 /**
  * Creates PageSwappers for the given files.
@@ -39,22 +37,17 @@ import org.neo4j.service.NamedService;
  * It should never be used directly by user code.
  */
 @Service
-public interface PageSwapperFactory extends NamedService
+public interface PageSwapperFactory
 {
-    /**
-     * Open page swapper factory with provided filesystem and config
-     * @param fs file system to use in page swappers
-     */
-    void open( FileSystemAbstraction fs );
-
     /**
      * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is
      * required for doing direct IO, then {@link UnsafeUtil#pageSize()} can be
      * returned.
      *
      * @return The required buffer alignment byte multiple.
+     * @param useDirectIO true if underlying factory should use direct io
      */
-    long getRequiredBufferAlignment();
+    long getRequiredBufferAlignment( boolean useDirectIO );
 
     /**
      * Create a PageSwapper for the given file.

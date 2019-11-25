@@ -41,12 +41,9 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
-import static org.neo4j.util.FeatureToggles.flag;
-
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 {
     static final int UNMAPPED_TTE = -1;
-    private static final boolean USE_DIRECT_IO = flag( MuninnPagedFile.class, "useDirectIO", false );
     private static final int translationTableChunkSizePower = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.translationTableChunkSizePower", 12 );
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
@@ -122,7 +119,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     MuninnPagedFile( File file, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory,
             PageCacheTracer pageCacheTracer, PageCursorTracerSupplier pageCursorTracerSupplier,
             VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting,
-            boolean noChannelStriping ) throws IOException
+            boolean noChannelStriping, boolean useDirectIo ) throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
@@ -148,7 +145,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         // filled with UNMAPPED_TTE values, and then finally assigns the new outer array to the translationTable field
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
-        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists, noChannelStriping, USE_DIRECT_IO );
+        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists, noChannelStriping, useDirectIo );
         if ( truncateExisting )
         {
             swapper.truncate();

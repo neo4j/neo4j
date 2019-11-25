@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.file.NoSuchFileException;
@@ -168,7 +169,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void mustClosePageSwapperFactoryOnPageCacheClose() throws Exception
     {
         AtomicBoolean closed = new AtomicBoolean();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs )
         {
             @Override
             public void close()
@@ -215,7 +216,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void closingOfPageCacheMustBeConsideredSuccessfulEvenIfPageSwapperFactoryCloseThrows()
     {
         AtomicInteger closed = new AtomicInteger();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs )
         {
             @Override
             public void close()
@@ -3355,6 +3356,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @FunctionalInterface
     private interface PageCursorAction
     {
         void apply( PageCursor cursor );
@@ -3710,7 +3712,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             AtomicBoolean restrictWrites = new AtomicBoolean( true );
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
-                private List<StoreChannel> channels = new CopyOnWriteArrayList<>();
+                private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                 @Override
                 public StoreChannel write( File fileName ) throws IOException
@@ -4113,7 +4115,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
+                    throw new UncheckedIOException( e );
                 }
             };
 
@@ -4472,8 +4474,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void fileMappedWithDeleteOnCloseShouldNotFlushDirtyPagesOnClose() throws Exception
     {
         AtomicInteger flushCounter = new AtomicInteger();
-        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.open( fs );
+        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter );
         File file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 EmptyVersionContextSupplier.EMPTY );
@@ -4490,8 +4491,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void mustFlushAllDirtyPagesWhenClosingPagedFileThatIsNotMappedWithDeleteOnClose() throws Exception
     {
         AtomicInteger flushCounter = new AtomicInteger();
-        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.open( fs );
+        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter );
         File file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 EmptyVersionContextSupplier.EMPTY );
@@ -4504,9 +4504,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( flushCounter.get(), is( 1 ) );
     }
 
-    private static SingleFilePageSwapperFactory flushCountingPageSwapperFactory( AtomicInteger flushCounter )
+    private static SingleFilePageSwapperFactory flushCountingPageSwapperFactory( FileSystemAbstraction fs, AtomicInteger flushCounter )
     {
-        return new SingleFilePageSwapperFactory()
+        return new SingleFilePageSwapperFactory( fs )
         {
             @Override
             public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist,

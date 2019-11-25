@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -391,8 +392,7 @@ public class RandomPageCacheTestHarness implements Closeable
             fs = new AdversarialFileSystemAbstraction( adversary, fs );
         }
 
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.open( fs );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, tracer,
                 cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler );
@@ -460,7 +460,7 @@ public class RandomPageCacheTestHarness implements Closeable
                 {
                     future.cancel( true );
                 }
-                e.printStackTrace();
+                throw new RuntimeException( e );
             }
 
             try
@@ -484,7 +484,7 @@ public class RandomPageCacheTestHarness implements Closeable
             }
             catch ( IOException e )
             {
-                e.printStackTrace();
+                throw new UncheckedIOException( e );
             }
         }
     }

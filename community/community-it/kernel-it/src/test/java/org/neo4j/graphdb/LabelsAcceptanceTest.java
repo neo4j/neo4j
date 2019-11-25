@@ -834,8 +834,6 @@ class LabelsAcceptanceTest
 
     private static PageSwapperFactory swapper( EphemeralFileSystemAbstraction fileSystem )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.open( fileSystem );
-        return factory;
+        return new SingleFilePageSwapperFactory( fileSystem );
     }
 }

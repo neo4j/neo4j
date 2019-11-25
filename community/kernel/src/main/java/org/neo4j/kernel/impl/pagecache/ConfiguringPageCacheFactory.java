@@ -34,11 +34,8 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.service.Services;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 
 public class ConfiguringPageCacheFactory
@@ -81,7 +78,7 @@ public class ConfiguringPageCacheFactory
     {
         if ( pageCache == null )
         {
-            this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
+            this.swapperFactory = createAndConfigureSwapperFactory( fs );
             this.pageCache = createPageCache();
         }
         return pageCache;
@@ -170,24 +167,8 @@ public class ConfiguringPageCacheFactory
         log.info( msg );
     }
 
-    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
+    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs )
     {
-        PageSwapperFactory factory = getPageSwapperFactory( config, log );
-        factory.open( fs );
-        return factory;
-    }
-
-    private static PageSwapperFactory getPageSwapperFactory( Config config, Log log )
-    {
-        String desiredImplementation = config.get( pagecache_swapper );
-        if ( isNotBlank( desiredImplementation ) )
-        {
-
-            final PageSwapperFactory factory = Services.load( PageSwapperFactory.class, desiredImplementation )
-                    .orElseThrow( () -> new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation ) );
-            log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
-            return factory;
-        }
-        return new SingleFilePageSwapperFactory();
+        return new SingleFilePageSwapperFactory( fs );
     }
 }
