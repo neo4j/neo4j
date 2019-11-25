@@ -51,12 +51,12 @@ class RelationshipGroupRecordFormatTest
             RelationshipGroupRecord group = new RelationshipGroupRecord( 2 )
                     .initialize( true, Short.MAX_VALUE + offset, 1, 2, 3, 4, 5 );
             cursor.setOffset( offset );
-            format.write( group, cursor, recordSize );
+            format.write( group, cursor, recordSize, cursor.getCurrentPageSize() / recordSize );
 
             // WHEN
             RelationshipGroupRecord read = new RelationshipGroupRecord( group.getId() );
             cursor.setOffset( offset );
-            format.read( read, cursor, NORMAL, recordSize );
+            format.read( read, cursor, NORMAL, recordSize, cursor.getCurrentPageSize() / recordSize );
 
             // THEN
             assertEquals( group, read );

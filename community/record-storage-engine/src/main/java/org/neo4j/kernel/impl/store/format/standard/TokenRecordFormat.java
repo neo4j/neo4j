@@ -37,7 +37,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     }
 
     @Override
-    public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
+    public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
     {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
@@ -55,7 +55,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     }
 
     @Override
-    public void write( RECORD record, PageCursor cursor, int recordSize )
+    public void write( RECORD record, PageCursor cursor, int recordSize, int recordsPerPage )
     {
         if ( record.inUse() )
         {

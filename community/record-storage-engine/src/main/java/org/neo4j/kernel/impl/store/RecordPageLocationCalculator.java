@@ -32,18 +32,17 @@ public class RecordPageLocationCalculator
      * Calculates which page a record with the given {@code id} should go into.
      *
      * @param id record id
-     * @param pageSize size of each page
-     * @param recordSize size of each record
+     * @param recordsPerPage number of records per page
      * @return which page the record with the given {@code id} should go into, given the
      * {@code pageSize} and {@code recordSize}.
      */
-    public static long pageIdForRecord( long id, int pageSize, int recordSize )
+    public static long pageIdForRecord( long id, int recordsPerPage )
     {
-        return id * recordSize / pageSize;
+        return id / recordsPerPage;
     }
 
     /**
-     * Calculates which offset into the right page (had by {@link #pageIdForRecord(long, int, int)})
+     * Calculates which offset into the right page (had by {@link #pageIdForRecord(long, int)})
      * the given {@code id} lives at.
      *
      * @param id record id

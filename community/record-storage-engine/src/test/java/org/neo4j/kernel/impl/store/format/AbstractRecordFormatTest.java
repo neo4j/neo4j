@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
@@ -52,11 +51,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @SuppressWarnings( "AbstractClassWithoutAbstractMethods" )
 @EphemeralPageCacheExtension
-@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
+@ExtendWith( {RandomExtension.class} )
 @ResourceLock( Resources.SYSTEM_OUT )
 public abstract class AbstractRecordFormatTest
 {
@@ -197,11 +197,11 @@ public abstract class AbstractRecordFormatTest
              Retry loop is needed here because format does not handle retries on the primary cursor.
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
-            int offset = Math.toIntExact( written.getId() * recordSize );
+            int offset = offsetForId( written.getId(), cursor.getCurrentPageSize(), recordSize );
             do
             {
                 cursor.setOffset( offset );
-                format.read( read, cursor, NORMAL, recordSize );
+                format.read( read, cursor, NORMAL, recordSize, storeFile.pageSize() / recordSize );
             }
             while ( cursor.shouldRetry() );
             assertWithinBounds( written, cursor, "reading" );
@@ -238,9 +238,9 @@ public abstract class AbstractRecordFormatTest
                 format.prepare( record, recordSize, idSequence );
             }
 
-            int offset = Math.toIntExact( record.getId() * recordSize );
+            int offset = offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize );
             cursor.setOffset( offset );
-            format.write( record, cursor, recordSize );
+            format.write( record, cursor, recordSize, storeFile.pageSize() / recordSize );
             assertWithinBounds( record, cursor, "writing" );
         }
     }
@@ -260,6 +260,6 @@ public abstract class AbstractRecordFormatTest
 
     private static long idSureToBeOnTheNextPage( int pageSize, int recordSize )
     {
-        return (pageSize + 100) / recordSize;
+        return (pageSize / recordSize) * 2;
     }
 }

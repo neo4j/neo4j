@@ -47,7 +47,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
+    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
     {
         /*
          * First 4b
@@ -127,7 +127,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public void write( DynamicRecord record, PageCursor cursor, int recordSize )
+    public void write( DynamicRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
     {
         if ( record.inUse() )
         {

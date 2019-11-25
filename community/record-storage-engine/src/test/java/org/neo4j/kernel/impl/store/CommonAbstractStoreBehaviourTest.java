@@ -360,7 +360,7 @@ class CommonAbstractStoreBehaviourTest
         }
 
         @Override
-        public void read( IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
+        public void read( IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
         {
             for ( int i = 0; i < intsPerRecord; i++ )
             {
@@ -379,7 +379,7 @@ class CommonAbstractStoreBehaviourTest
         }
 
         @Override
-        public void write( IntRecord record, PageCursor cursor, int recordSize )
+        public void write( IntRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
         {
             for ( int i = 0; i < intsPerRecord; i++ )
             {
@@ -452,10 +452,10 @@ class CommonAbstractStoreBehaviourTest
         }
 
         @Override
-        protected int offsetForId( long id )
+        protected int offsetForId( long id, long pageId )
         {
             Integer override = nextPageOffset.poll();
-            return override != null ? override : super.offsetForId( id );
+            return override != null ? override : super.offsetForId( id, pageId );
         }
     }
 }

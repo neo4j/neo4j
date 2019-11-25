@@ -41,11 +41,11 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
 
     /**
      * Instantiates a new record to use in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
-     * and {@link #write(AbstractBaseRecord, PageCursor, int)}. Records may be reused, which is why the instantiation
+     * and {@link #write(AbstractBaseRecord, PageCursor, int, int)}. Records may be reused, which is why the instantiation
      * is separated from reading and writing.
      *
      * @return a new record instance, usable in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
-     * and {@link #write(AbstractBaseRecord, PageCursor, int)}.
+     * and {@link #write(AbstractBaseRecord, PageCursor, int, int)}.
      */
     RECORD newRecord();
 
@@ -87,7 +87,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * know the record size in advance, but may be read from store header when opening the store.
      * @throws IOException on error reading.
      */
-    void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize ) throws IOException;
+    void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage ) throws IOException;
 
     /**
      * Called when all changes about a record has been gathered
@@ -112,9 +112,10 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param cursor {@link PageCursor} to write the record data into.
      * @param recordSize size of records of this format. This is passed in like this since not all formats
      * know the record size in advance, but may be read from store header when opening the store.
+     * @param recordsPerPage number of records per page. All stores know in advance how many records of particular format can fit on a page.
      * @throws IOException on error writing.
      */
-    void write( RECORD record, PageCursor cursor, int recordSize ) throws IOException;
+    void write( RECORD record, PageCursor cursor, int recordSize, int recordsPerPage ) throws IOException;
 
     /**
      * @param record to obtain "next" reference from.

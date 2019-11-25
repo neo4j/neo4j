@@ -44,7 +44,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public void read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
+    public void read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
     {
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
@@ -80,7 +80,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public void write( RelationshipGroupRecord record, PageCursor cursor, int recordSize )
+    public void write( RelationshipGroupRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
     {
         if ( record.inUse() )
         {

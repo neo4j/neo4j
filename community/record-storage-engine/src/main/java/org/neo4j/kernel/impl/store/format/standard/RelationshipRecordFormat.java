@@ -46,7 +46,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     }
 
     @Override
-    public void read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
+    public void read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
     {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
@@ -108,7 +108,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     }
 
     @Override
-    public void write( RelationshipRecord record, PageCursor cursor, int recordSize )
+    public void write( RelationshipRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
     {
         if ( record.inUse() )
         {

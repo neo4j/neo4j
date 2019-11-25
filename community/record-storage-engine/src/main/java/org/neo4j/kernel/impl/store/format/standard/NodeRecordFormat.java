@@ -43,7 +43,7 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
     }
 
     @Override
-    public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
+    public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
     {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
@@ -74,7 +74,7 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
     }
 
     @Override
-    public void write( NodeRecord record, PageCursor cursor, int recordSize )
+    public void write( NodeRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
     {
         if ( record.inUse() )
         {

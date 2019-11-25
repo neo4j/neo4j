@@ -208,9 +208,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize ) throws IOException
+        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage ) throws IOException
         {
-            actual.read( record, cursor, mode, recordSize );
+            actual.read( record, cursor, mode, recordSize, recordsPerPage );
         }
 
         @Override
@@ -221,9 +221,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void write( RECORD record, PageCursor cursor, int recordSize ) throws IOException
+        public void write( RECORD record, PageCursor cursor, int recordSize, int recordsPerPage ) throws IOException
         {
-            actual.write( record, cursor, recordSize );
+            actual.write( record, cursor, recordSize, recordsPerPage );
         }
 
         @Override

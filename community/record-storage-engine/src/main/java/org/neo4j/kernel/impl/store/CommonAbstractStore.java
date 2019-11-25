@@ -90,6 +90,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected PagedFile pagedFile;
     protected int recordSize;
     private int filePageSize;
+    private int recordsPerPage;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private RuntimeException causeOfStoreNotOk;
@@ -313,10 +314,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     protected long pageIdForRecord( long id )
     {
-        return RecordPageLocationCalculator.pageIdForRecord( id, pagedFile.pageSize(), recordSize );
+        return RecordPageLocationCalculator.pageIdForRecord( id, recordsPerPage );
     }
 
-    protected int offsetForId( long id )
+    protected int offsetForId( long id, long page )
     {
         return RecordPageLocationCalculator.offsetForId( id, pagedFile.pageSize(), recordSize );
     }
@@ -324,7 +325,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public int getRecordsPerPage()
     {
-        return pagedFile.pageSize() / recordSize;
+        return recordsPerPage;
     }
 
     public long getLastPageId() throws IOException
@@ -336,7 +337,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         byte[] data = new byte[recordSize];
         long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
+        int offset = offsetForId( id, pageId );
         try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             if ( cursor.next() )
@@ -375,13 +376,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         storeHeader = header;
         recordSize = determineRecordSize();
-        filePageSize = filePageSize( pageCache.pageSize(), recordSize );
+        int pageSize = pageCache.pageSize();
+        filePageSize = filePageSize( pageSize, recordSize );
+        recordsPerPage = pageSize / recordSize;
     }
 
     public boolean isInUse( long id )
     {
         long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
+        int offset = offsetForId( id, pageId );
 
         try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
@@ -868,7 +871,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         // on that record, so it's to ensure it isn't forgotten.
         record.setId( id );
         long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
+        int offset = offsetForId( id, pageId );
         if ( cursor.next( pageId ) )
         {
             cursor.setOffset( offset );
@@ -917,7 +920,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         do
         {
             prepareForReading( cursor, record );
-            recordFormat.read( record, cursor, mode, recordSize );
+            recordFormat.read( record, cursor, mode, recordSize, recordsPerPage );
         }
         while ( cursor.shouldRetry() );
         checkForDecodingErrors( cursor, id, mode );
@@ -931,13 +934,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         IdValidator.assertValidId( getIdType(), id, recordFormat.getMaxId() );
 
         long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
+        int offset = offsetForId( id, pageId );
         try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() )
             {
                 cursor.setOffset( offset );
-                recordFormat.write( record, cursor, recordSize );
+                recordFormat.write( record, cursor, recordSize, recordsPerPage );
                 checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
@@ -1065,7 +1068,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         RECORD record = newRecord();
         record.setId( recordId );
         long pageId = pageIdForRecord( recordId );
-        int offset = offsetForId( recordId );
+        int offset = offsetForId( recordId, pageId );
         throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
                 record, pageId, offset, recordSize, pagedFile.pageSize(), storageFile.getAbsolutePath() ) );
     }

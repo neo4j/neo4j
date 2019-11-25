@@ -283,7 +283,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         record.setId( position.id );
                         do
                         {
-                            format.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE );
+                            format.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE, filePageSize( pageSize, RECORD_SIZE ) / RECORD_SIZE );
                             if ( record.inUse() )
                             {
                                 value = record.getValue();
@@ -556,7 +556,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         try
         {
             record.setId( position.id );
-            recordFormat.read( record, cursor, FORCE, RECORD_SIZE );
+            recordFormat.read( record, cursor, FORCE, RECORD_SIZE, getRecordsPerPage() );
             if ( record.inUse() )
             {
                 return record.getValue();
@@ -607,7 +607,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             throw new IllegalArgumentException( "Cannot write record without a page cursor that is write-locked" );
         }
-        int offset = offsetForId( position.id );
+        int offset = offsetForId( position.id, cursor.getCurrentPageId() );
         cursor.setOffset( offset );
         cursor.putByte( Record.IN_USE.byteValue() );
         cursor.putLong( value );

@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 /**
  * Basic abstract implementation of a {@link RecordFormat} implementing most functionality except
  * {@link RecordFormat#read(AbstractBaseRecord, PageCursor, org.neo4j.kernel.impl.store.record.RecordLoad, int)} and
- * {@link RecordFormat#write(AbstractBaseRecord, PageCursor, int)}.
+ * {@link RecordFormat#write(AbstractBaseRecord, PageCursor, int, int)}.
  *
  * @param <RECORD> type of record.
  */
