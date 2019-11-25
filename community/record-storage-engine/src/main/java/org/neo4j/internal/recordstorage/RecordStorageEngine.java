@@ -316,7 +316,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
-        if ( consistencyCheckApply )
+        if ( consistencyCheckApply && mode.needsAuxiliaryStores() )
         {
             appliers.add( new ConsistencyCheckingBatchApplier( neoStores ) );
         }
