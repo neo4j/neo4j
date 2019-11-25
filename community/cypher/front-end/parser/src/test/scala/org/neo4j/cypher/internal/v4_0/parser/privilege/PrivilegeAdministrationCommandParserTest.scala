@@ -71,6 +71,10 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
     failsToParse
   }
 
+  test("SHOW USER user1, user2 PRIVILEGES") {
+    failsToParse
+  }
+
   test("SHOW ALL USER user PRIVILEGES") {
     failsToParse
   }
@@ -80,6 +84,10 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   }
 
   test("SHOW ROLE PRIVILEGES") {
+    failsToParse
+  }
+
+  test("SHOW ROLE role1, role2 PRIVILEGES") {
     failsToParse
   }
 
