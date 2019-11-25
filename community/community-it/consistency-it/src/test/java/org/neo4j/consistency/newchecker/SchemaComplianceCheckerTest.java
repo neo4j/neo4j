@@ -29,11 +29,15 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
@@ -45,6 +49,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class SchemaComplianceCheckerTest extends CheckerTestBase
@@ -100,27 +105,20 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         long nodeId;
         try ( AutoCloseable ignored = tx() )
         {
-            IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
             TextValue value = stringValue( "a" );
             // (N1) indexed w/ property A
             {
                 long propId = propertyStore.nextId();
                 nodeId = node( nodeStore.nextId(), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
-                try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE ) )
-                {
-                    indexUpdater.process( add( nodeId, descriptor, value ) );
-                }
+                indexValue( descriptor, indexId, nodeId, value );
             }
             // (N2) indexed w/ property A
             {
                 long propId = propertyStore.nextId();
                 long nodeId2 = node( nodeStore.nextId(), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
-                try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE ) )
-                {
-                    indexUpdater.process( add( nodeId2, descriptor, value ) );
-                }
+                indexValue( descriptor, indexId, nodeId2, value );
             }
         }
 
@@ -151,6 +149,51 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
         // then
         expect( ConsistencyReport.NodeConsistencyReport.class, report -> report.notIndexed( any(), any() ) );
+    }
+
+    @Test
+    void shouldCheckIndexesWithLookupFiltering() throws Exception
+    {
+        // given
+        LabelSchemaDescriptor descriptor = forLabel( label1, propertyKey1 );
+        long indexId = uniqueIndex( descriptor );
+        long nodeId;
+        try ( AutoCloseable ignored = tx() )
+        {
+            PointValue value = pointValue( CoordinateReferenceSystem.WGS84, 2, 4 );
+
+            // (N1) w/ property
+            {
+                long propId = propertyStore.nextId();
+                nodeId = node( nodeStore.nextId(), propId, NULL, label1 );
+                property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
+                indexValue( descriptor, indexId, nodeId, value );
+            }
+
+            // (N2) w/ property
+            {
+                long propId = propertyStore.nextId();
+                long nodeId2 = node( nodeStore.nextId(), propId, NULL, label1 );
+                property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
+                indexValue( descriptor, indexId, nodeId2, value );
+            }
+        }
+
+        // when
+        checkIndexed( nodeId );
+
+        // then it should be successful
+        expect( ConsistencyReport.NodeConsistencyReport.class, report -> report.uniqueIndexNotUnique( any(), any(), anyLong() ) );
+    }
+
+    private void indexValue( LabelSchemaDescriptor descriptor, long indexId, long nodeId, Value value )
+            throws IndexNotFoundKernelException, IndexEntryConflictException
+    {
+        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
+        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE ) )
+        {
+            indexUpdater.process( add( nodeId, descriptor, value ) );
+        }
     }
 
     private void checkIndexed( long nodeId ) throws Exception

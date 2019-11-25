@@ -33,6 +33,7 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -55,12 +57,14 @@ class SchemaComplianceChecker implements AutoCloseable
     private final MutableIntSet reportedMissingMandatoryPropertyKeys = new IntHashSet();
     private final IndexAccessors.IndexReaders indexReaders;
     private final Iterable<IndexDescriptor> indexes;
+    private final DefaultNodePropertyAccessor propertyAccessor;
 
     SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes )
     {
         this.mandatoryProperties = mandatoryProperties;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
+        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ) );
     }
 
     <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties( ENTITY entity, long[] entityTokens, IntObjectMap<Value> values,
@@ -99,7 +103,7 @@ class SchemaComplianceChecker implements AutoCloseable
     @Override
     public void close()
     {
-        closeAllUnchecked( indexReaders );
+        closeAllUnchecked( indexReaders, propertyAccessor );
     }
 
     private <ENTITY extends PrimitiveRecord> void verifyIndexedUniquely( ENTITY entity, Value[] propertyValues, IndexDescriptor indexRule,
@@ -151,7 +155,7 @@ class SchemaComplianceChecker implements AutoCloseable
             throw new RuntimeException( format( "Consistency checking error: index provider does not support exact query %s", Arrays.toString( query ) ), e );
         }
 
-        return reader.hasFullValuePrecision( query ) ? indexedNodeIds : LookupFilter.exactIndexMatches( null /*TODO*/, indexedNodeIds, query );
+        return reader.hasFullValuePrecision( query ) ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyAccessor, indexedNodeIds, query );
     }
 
     private <ENTITY extends PrimitiveRecord> void reportIncorrectIndexCount( ENTITY entity, Value[] propertyValues, IndexDescriptor indexRule,
