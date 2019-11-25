@@ -368,6 +368,35 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .tap(_.errors.size.shouldEqual(0))
   }
 
+  test("union without subquery") {
+    //   WITH a
+    //   RETURN a AS x
+    //     UNION
+    //   WITH b
+    //   RETURN b AS x
+    //     UNION
+    //   WITH c
+    //   RETURN c AS x
+    query(
+      unionDistinct(
+        singleQuery(
+          with_(literal(1).as("a")),
+          return_(varFor("a").as("x"))
+        ),
+        singleQuery(
+          with_(literal(1).as("b")),
+          return_(varFor("b").as("x"))
+        ),
+        singleQuery(
+          with_(literal(1).as("c")),
+          return_(varFor("c").as("x"))
+        )
+      )
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
   test("importing WITH without FROM must be first clause") {
     // WITH 1 AS x
     // CALL {

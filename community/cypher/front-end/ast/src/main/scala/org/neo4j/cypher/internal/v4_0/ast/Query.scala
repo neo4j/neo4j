@@ -276,7 +276,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   def containsUpdates: Boolean = part.containsUpdates || query.containsUpdates
 
-  def semanticCheckAbstract(partCheck: QueryPart => SemanticCheck, queryCheck: SingleQuery => SemanticCheck): SemanticCheck =
+  def semanticCheckAbstract(partCheck: QueryPart => SemanticCheck, queryCheck: SingleQuery => SemanticCheck, checkColumnNamesAgree: SemanticCheck): SemanticCheck =
     checkUnionAggregation chain
       withScopedState(partCheck(part)) chain
       withScopedState(queryCheck(query)) chain
@@ -288,13 +288,17 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def semanticCheck: SemanticCheck =
     semanticCheckAbstract(
       part => part.semanticCheck,
-      query => query.semanticCheck
+      query => query.semanticCheck,
+      checkColumnNamesAgree
     )
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
+    // Because we get an additonal empty base scope as the first sibling of each query part in a sub-query context
+    // we need to add an additonal nested scope around these query parts
     semanticCheckAbstract(
-      part => part.semanticCheckInSubqueryContext(outer),
-      query => query.semanticCheckInSubqueryContext(outer)
+      part => withScopedState(part.semanticCheckInSubqueryContext(outer)),
+      query => withScopedState(query.semanticCheckInSubqueryContext(outer)),
+      checkColumnNamesAgreeInSubQueryContext
     )
 
   private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {
@@ -321,6 +325,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   // Check that columns names agree between both parts of the union
   def checkColumnNamesAgree: SemanticCheck
+  def checkColumnNamesAgreeInSubQueryContext: SemanticCheck
 
   private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
 
@@ -396,11 +401,26 @@ trait UnmappedUnion extends Union {
     }
     semantics.SemanticCheckResult(state, errors)
   }
+
+  override def checkColumnNamesAgreeInSubQueryContext: SemanticCheck = (state: SemanticState) => {
+    val myScope: Scope = state.currentScope.scope
+
+    // In a sub-query context we have an additional nested scope
+    val partScope = part.finalScope(myScope.children.head.children.last)
+    val queryScope = query.finalScope(myScope.children.last.children.last)
+    val errors = if (partScope.symbolNames == queryScope.symbolNames) {
+      Seq.empty
+    } else {
+      Seq(SemanticError("All sub queries in an UNION must have the same column names", position))
+    }
+    semantics.SemanticCheckResult(state, errors)
+  }
 }
 
 trait ProjectingUnion extends Union {
   // If we have a ProjectingUnion we have already checked this before and now they have been rewritten to actually not match.
   override def checkColumnNamesAgree: SemanticCheck = SemanticCheckResult.success
+  override def checkColumnNamesAgreeInSubQueryContext: SemanticCheck = SemanticCheckResult.success
 }
 
 final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends UnmappedUnion
