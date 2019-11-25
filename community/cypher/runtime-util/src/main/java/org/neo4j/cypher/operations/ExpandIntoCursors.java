@@ -117,12 +117,18 @@ public abstract class ExpandIntoCursors
         {
             //we need to point the cursor to fromNode again
             singleNode( read, nodeCursor, fromNode );
+
+            //TODO this closing is for compiled runtime and can be removed with the compiled runtime
+            groupCursor.close();
             return sparseConnectingRelationshipsCursor( direction, traversalCursor, nodeCursor, types, toNode );
         }
         else
         {
             //Either the from node is dense or both are sparse, either way since the node cursor is currently pointing at
             //the toNode lets start from that one.
+
+            //TODO this closing is for compiled runtime and can be removed with the compiled runtime
+            groupCursor.close();
             return sparseConnectingRelationshipsCursor( direction.reverse(), traversalCursor, nodeCursor, types, fromNode );
         }
     }
