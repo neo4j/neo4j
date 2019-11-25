@@ -23,21 +23,18 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class BridgingIndexProgressorTest
 {
-    // We make sure to load this class here before we fork the tests for parallel execution.
-    // The reason for this is we often deadlock on class loading together with DefaultNonUniqueIndexSamplerTest.
-    private static final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 0 );
-
     @Test
     void closeMustCloseAll()
     {
+        IndexDescriptor index = forSchema( forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 0 );
         BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );
 
         IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};
