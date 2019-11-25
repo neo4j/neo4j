@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -384,7 +385,7 @@ public class SchemaCache
                 return Collections.emptySet();
             }
 
-            Set<T> descriptors = new HashSet<>();
+            Set<T> descriptors = UnifiedSet.newSet();
             if ( propertyListIsComplete )
             {
                 set.matchingDescriptorsForCompleteListOfProperties( descriptors, changedEntityTokens, properties );
