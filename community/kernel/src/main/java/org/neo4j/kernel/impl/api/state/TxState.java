@@ -23,10 +23,10 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -92,9 +92,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingDiffSets relationships;
 
-    private Map<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint;
+    private UnifiedMap<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint;
 
-    private Map<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
+    private UnifiedMap<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
 
     private long revision;
     private long dataRevision;
@@ -771,16 +771,16 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( indexUpdates == null )
         {
-            indexUpdates = new HashMap<>();
+            indexUpdates = UnifiedMap.newMap();
         }
-        return indexUpdates.computeIfAbsent( schema, k -> new HashMap<>() );
+        return indexUpdates.getIfAbsentPut( schema, UnifiedMap::newMap );
     }
 
     private Map<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint()
     {
         if ( createdConstraintIndexesByConstraint == null )
         {
-            createdConstraintIndexesByConstraint = new HashMap<>();
+            createdConstraintIndexesByConstraint = UnifiedMap.newMap();
         }
         return createdConstraintIndexesByConstraint;
     }
