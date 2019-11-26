@@ -142,7 +142,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case DropUser(source, userName) => (context, parameterMapping, securityContext) =>
       if (securityContext.subject().hasUsername(userName)) throw new InvalidArgumentsException(s"Failed to delete the specified user '$userName': Deleting yourself is not allowed.")
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
-        """MATCH (user:User {name: $name}) DETACH DELETE user""".stripMargin,
+        """MATCH (user:User {name: $name}) DETACH DELETE user
+          |RETURN 1 AS ignore""".stripMargin,
         VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
         QueryHandler
           .handleError {
