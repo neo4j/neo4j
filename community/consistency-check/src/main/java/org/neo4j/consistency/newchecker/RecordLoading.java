@@ -304,6 +304,7 @@ class RecordLoading
                 {
                     TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE );
                     unusedReporter.accept( entity, tokenRecord );
+                    return false;
                 }
             }
             // Regardless of whether or not it's in use apparently we're expected to count it

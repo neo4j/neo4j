@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -363,6 +364,7 @@ class SafePropertyChainReaderTest extends CheckerTestBase
 
     private void checkNode( SafePropertyChainReader checker, long nodeId )
     {
-        checker.read( new IntObjectHashMap<>(), loadNode( nodeId ), reporter::forNode );
+        boolean chainOk = checker.read( new IntObjectHashMap<>(), loadNode( nodeId ), reporter::forNode );
+        assertFalse( chainOk );
     }
 }

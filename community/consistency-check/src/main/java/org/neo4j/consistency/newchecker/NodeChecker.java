@@ -218,15 +218,13 @@ class NodeChecker implements Checker
             else
             {
                 int label = toIntExact( longLabel );
-                if ( checkValidToken( nodeCursor, label, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(),
+                checkValidToken( nodeCursor, label, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(),
                         ( node, token ) -> reporter.forNode( recordLoader.node( node.getId() ) ).illegalLabel(),
-                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId() ) ).labelNotInUse( token ) ) )
+                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId() ) ).labelNotInUse( token ) );
+                if ( prevLabel != label )
                 {
-                    if ( prevLabel != label )
-                    {
-                        observedCounts.incrementNodeLabel( label, 1 );
-                        prevLabel = label;
-                    }
+                    observedCounts.incrementNodeLabel( label, 1 );
+                    prevLabel = label;
                 }
             }
 

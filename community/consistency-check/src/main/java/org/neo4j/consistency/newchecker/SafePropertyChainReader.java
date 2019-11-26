@@ -128,7 +128,6 @@ class SafePropertyChainReader implements AutoCloseable
                             ( property, token ) -> reporter.forProperty( property ).invalidPropertyKey( block ),
                             ( property, token ) -> reporter.forProperty( property ).keyNotInUse( block, token ) ) )
                     {
-
                         chainIsOk = false;
                     }
                     PropertyType type = block.forceGetType();
@@ -177,12 +176,16 @@ class SafePropertyChainReader implements AutoCloseable
                         catch ( Exception e )
                         {
                             reporter.forProperty( propertyRecord ).invalidPropertyValue( propertyRecord.getId(), block.getKeyIndexId() );
-                            chainIsOk = false;
                         }
                     }
-                    if ( propertyKeyId >= 0 && intoValues.put( propertyKeyId, value ) != null )
+                    if ( value == Values.NO_VALUE )
+                    {
+                        chainIsOk = false;
+                    }
+                    else if ( propertyKeyId >= 0 && intoValues.put( propertyKeyId, value ) != null )
                     {
                         primitiveReporter.apply( entity ).propertyKeyNotUniqueInChain();
+                        chainIsOk = false;
                     }
                 }
             }
