@@ -42,6 +42,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -246,13 +247,14 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
     public User getUser( String username ) throws InvalidArgumentsException, FormatException
     {
+        InvalidArgumentsException userDontExists = new InvalidArgumentsException( "User '" + username + "' does not exist." );
         try ( Transaction tx = getSystemDb().beginTx() )
         {
             Node userNode = tx.findNode( Label.label( "User" ), "name", username );
 
             if ( userNode == null )
             {
-                throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
+                throw userDontExists;
             }
 
             Credential credential = SystemGraphCredential.deserialize( (String) userNode.getProperty( "credentials" ), secureHasher );
@@ -263,6 +265,10 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             User.Builder builder = new User.Builder( username, credential ).withRequiredPasswordChange( requirePasswordChange );
             builder = suspended ? builder.withFlag( IS_SUSPENDED ) : builder.withoutFlag( IS_SUSPENDED );
             return builder.build();
+        }
+        catch ( NotFoundException n )
+        {
+            throw userDontExists;
         }
     }
 
