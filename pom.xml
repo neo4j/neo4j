@@ -67,6 +67,7 @@
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <lucene.version>8.2.0</lucene.version>
     <bouncycastle.version>1.63</bouncycastle.version>
+    <ThreadLeakageGuardExtension.PRINT_ONLY>false</ThreadLeakageGuardExtension.PRINT_ONLY>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
@@ -74,6 +75,7 @@
       -Djdk.nio.maxCachedBufferSize=262144
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data" -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
+      -Dorg.neo4j.test.extension.ThreadLeakageGuardExtension.PRINT_ONLY=${ThreadLeakageGuardExtension.PRINT_ONLY}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true

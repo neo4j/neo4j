@@ -26,24 +26,35 @@ import org.junit.jupiter.api.extension.ExtensionContextException;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.util.ExceptionUtils;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.SuppressOutput.Voice;
+
 import static java.lang.String.format;
+import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toCollection;
+import static org.neo4j.test.extension.SuppressOutputExtension.SUPPRESS_OUTPUT_NAMESPACE;
+import static org.neo4j.util.FeatureToggles.flag;
 
 public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllCallback
 {
+    private static final boolean PRINT_ONLY = flag( ThreadLeakageGuardExtension.class, "PRINT_ONLY", false );
+
     private static final long MAXIMUM_WAIT_TIME_MILLIS = 90_000;
     private static final String KEY = "ThreadLeakageExtension";
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( KEY );
     private final StacktraceHolderException stacktraceHolderException = new StacktraceHolderException();
+
     private static final List<String> THREAD_NAME_FILTER = Arrays.asList(
             "ForkJoinPool",
             "Cleaner",
@@ -60,7 +71,6 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             "neo4j.TransactionTimeoutMonitor",  //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.CheckPoint",                 //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.IndexSampling",              //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
-            "neo4j.ThroughputMonitor",          //Issue with thread leak guard and scheduling of recurring jobs as above?
             "junit-jupiter-timeout-watcher"
     );
 
@@ -92,11 +102,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
 
             if ( afterThread.isAlive() )
             {
-                leakedThreads.add( format( "%s (ID:%d, Group:%s)\n%s\n",
-                        afterThread.getName(),
-                        afterThread.getId(),
-                        getThreadGroupName( afterThread ),
-                        stacktraceToString( afterThread.getStackTrace() ) ) );
+                leakedThreads.add( describeThread( afterThread ) );
             }
         }
 
@@ -104,10 +110,49 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
 
         if ( !leakedThreads.isEmpty() )
         {
-            throw new ExtensionContextException( format( "%d leaked thread(s) detected:\n%s",
-                    leakedThreads.size(),
-                    leakedThreads.toString() ) );
+            String message = format( "%d leaked thread(s) detected:\n%s", leakedThreads.size(), leakedThreads.toString() );
+            if ( PRINT_ONLY )
+            {
+                printError( context, message );
+            }
+            else
+            {
+                throw new ExtensionContextException( message );
+            }
         }
+    }
+
+    private void printError( ExtensionContext context, String message )
+    {
+        ExtensionContext.Store store = context.getStore( SUPPRESS_OUTPUT_NAMESPACE );
+        SuppressOutput suppressOutput = store.get( SuppressOutputExtension.SUPPRESS_OUTPUT, SuppressOutput.class );
+
+        PrintStream errorStream = getErrorStream( suppressOutput );
+        errorStream.println( message );
+    }
+
+    private PrintStream getErrorStream( SuppressOutput suppressOutput )
+    {
+        PrintStream errStream = System.err;
+        if ( suppressOutput == null )
+        {
+            return errStream;
+        }
+
+        Voice errorVoice = suppressOutput.getErrorVoice();
+        if ( errorVoice == null )
+        {
+            return errStream;
+        }
+
+        Optional<PrintStream> originalStream = errorVoice.originalStream();
+
+        if ( originalStream.isPresent() )
+        {
+            errStream = originalStream.get();
+        }
+
+        return errStream;
     }
 
     @Override
@@ -160,10 +205,16 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
                 .collect( Collectors.toSet() );
     }
 
-    private static String getThreadGroupName( Thread thread )
+    private String describeThread( Thread thread )
     {
-        ThreadGroup group = thread.getThreadGroup();
-        return group != null ? group.getName() : "unknown group";
+        String basicInfo = format( "%s %s (PID:%s, TID:%d, Groups:%s)",
+                thread.getName(),
+                thread.getState(),
+                getRuntimeMXBean().getName(),
+                thread.getId(),
+                describeThreadGroupChain( thread ) );
+
+        return format( "%s%n%s%n", basicInfo, describeStack( thread ) );
     }
 
     private static ExtensionContext.Store getStore( ExtensionContext context )
@@ -171,10 +222,29 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         return context.getStore( NAMESPACE );
     }
 
-    private String stacktraceToString( StackTraceElement[] stackTraceElements )
+    private String describeStack( Thread thread )
     {
+        StackTraceElement[] stackTraceElements = thread.getStackTrace();
         stacktraceHolderException.setStackTrace( stackTraceElements );
         return ExceptionUtils.readStackTrace( stacktraceHolderException );
+    }
+
+    private static String describeThreadGroupChain( Thread thread )
+    {
+        ThreadGroup group = thread.getThreadGroup();
+        if ( group == null )
+        {
+            return "<dead>";
+        }
+
+        StringBuilder str = new StringBuilder( group.getName() );
+
+        while ( (group = group.getParent()) != null )
+        {
+            str.append( ":" ).append( group.getName() );
+        }
+
+        return str.toString();
     }
 
     private static class StacktraceHolderException extends RuntimeException

@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -89,16 +90,16 @@ public final class SuppressOutput implements TestRule
         public Voice suppress()
         {
             final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            final PrintStream old = replace( new PrintStream( buffer ) );
-            return new Voice( this, buffer )
+            final PrintStream original = replace( new PrintStream( buffer ) );
+            return new Voice( this, buffer, original )
             {
                 @Override
                 void restore( boolean failure ) throws IOException
                 {
-                    replace( old ).flush();
+                    replace( original ).flush();
                     if ( failure )
                     {
-                        old.write( buffer.toByteArray() );
+                        original.write( buffer.toByteArray() );
                     }
                 }
             };
@@ -107,7 +108,7 @@ public final class SuppressOutput implements TestRule
         abstract PrintStream replace( PrintStream replacement );
     }
 
-    public static Suppressible java_util_logging( final ByteArrayOutputStream redirectTo, Level level )
+    private static Suppressible java_util_logging( final ByteArrayOutputStream redirectTo, Level level )
     {
         final Handler replacement = redirectTo == null ? null : new StreamHandler( redirectTo, new SimpleFormatter() );
         if ( replacement != null && level != null )
@@ -190,7 +191,7 @@ public final class SuppressOutput implements TestRule
         return getVoice( System.err );
     }
 
-    public Voice getVoice( Suppressible suppressible )
+    private Voice getVoice( Suppressible suppressible )
     {
         for ( Voice voice : voices )
         {
@@ -232,23 +233,30 @@ public final class SuppressOutput implements TestRule
 
     public abstract static class Voice
     {
-        private Suppressible suppressible;
-        private ByteArrayOutputStream voiceStream;
+        private final Suppressible suppressible;
+        private final ByteArrayOutputStream replacementBuffer;
+        private final PrintStream original;
 
-        public Voice( Suppressible suppressible, ByteArrayOutputStream originalStream )
+        public Voice( Suppressible suppressible, ByteArrayOutputStream replacementBuffer )
         {
-            this.suppressible = suppressible;
-            this.voiceStream = originalStream;
+            this( suppressible, replacementBuffer, null );
         }
 
-        public Suppressible getSuppressible()
+        public Voice( Suppressible suppressible, ByteArrayOutputStream replacementBuffer, PrintStream original )
+        {
+            this.suppressible = suppressible;
+            this.replacementBuffer = replacementBuffer;
+            this.original = original;
+        }
+
+        Suppressible getSuppressible()
         {
             return suppressible;
         }
 
         public boolean containsMessage( String message )
         {
-            return voiceStream.toString().contains( message );
+            return replacementBuffer.toString().contains( message );
         }
 
         /** Get each line written to this voice since it was suppressed */
@@ -262,7 +270,7 @@ public final class SuppressOutput implements TestRule
         {
             try
             {
-                return voiceStream.toString( StandardCharsets.UTF_8.name() );
+                return replacementBuffer.toString( StandardCharsets.UTF_8.name() );
             }
             catch ( UnsupportedEncodingException e )
             {
@@ -271,6 +279,11 @@ public final class SuppressOutput implements TestRule
         }
 
         abstract void restore( boolean failure ) throws IOException;
+
+        public Optional<PrintStream> originalStream()
+        {
+            return Optional.ofNullable( original );
+        }
     }
 
     public void captureVoices()
@@ -300,7 +313,7 @@ public final class SuppressOutput implements TestRule
         releaseVoices( voices, failure );
     }
 
-    void releaseVoices( Voice[] voices, boolean failure )
+    private void releaseVoices( Voice[] voices, boolean failure )
     {
         List<Throwable> failures = null;
         try
