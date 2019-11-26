@@ -31,11 +31,14 @@ object AdminActionMapper {
     case CreateDatabaseAction => KernelPrivilegeAction.CREATE_DATABASE
     case DropDatabaseAction => KernelPrivilegeAction.DROP_DATABASE
 
+    case IndexManagementAction => KernelPrivilegeAction.INDEX
     case CreateIndexAction => KernelPrivilegeAction.CREATE_INDEX
     case DropIndexAction => KernelPrivilegeAction.DROP_INDEX
+    case ConstraintManagementAction => KernelPrivilegeAction.CONSTRAINT
     case CreateConstraintAction => KernelPrivilegeAction.CREATE_CONSTRAINT
     case DropConstraintAction => KernelPrivilegeAction.DROP_CONSTRAINT
 
+    case TokenManagementAction => KernelPrivilegeAction.TOKEN
     case CreateNodeLabelAction => KernelPrivilegeAction.CREATE_LABEL
     case CreateRelationshipTypeAction => KernelPrivilegeAction.CREATE_RELTYPE
     case CreatePropertyKeyAction => KernelPrivilegeAction.CREATE_PROPERTYKEY
@@ -56,6 +59,8 @@ object AdminActionMapper {
     case GrantPrivilegeAction => KernelPrivilegeAction.GRANT_PRIVILEGE
     case RevokePrivilegeAction => KernelPrivilegeAction.REVOKE_PRIVILEGE
     case DenyPrivilegeAction => KernelPrivilegeAction.DENY_PRIVILEGE
+
+    case AllDatabaseAction => KernelPrivilegeAction.DATABASE_ACTIONS
   }
 
   def asCypherAdminAction(action: KernelPrivilegeAction): AdminAction = action match {
@@ -64,11 +69,14 @@ object AdminActionMapper {
     case KernelPrivilegeAction.CREATE_DATABASE => CreateDatabaseAction
     case KernelPrivilegeAction.DROP_DATABASE => DropDatabaseAction
 
+    case KernelPrivilegeAction.INDEX => IndexManagementAction
     case KernelPrivilegeAction.CREATE_INDEX => CreateIndexAction
     case KernelPrivilegeAction.DROP_INDEX => DropIndexAction
+    case KernelPrivilegeAction.CONSTRAINT => ConstraintManagementAction
     case KernelPrivilegeAction.CREATE_CONSTRAINT => CreateConstraintAction
     case KernelPrivilegeAction.DROP_CONSTRAINT => DropConstraintAction
 
+    case KernelPrivilegeAction.TOKEN => TokenManagementAction
     case KernelPrivilegeAction.CREATE_LABEL => CreateNodeLabelAction
     case KernelPrivilegeAction.CREATE_RELTYPE => CreateRelationshipTypeAction
     case KernelPrivilegeAction.CREATE_PROPERTYKEY => CreatePropertyKeyAction
@@ -89,5 +97,7 @@ object AdminActionMapper {
     case KernelPrivilegeAction.GRANT_PRIVILEGE => GrantPrivilegeAction
     case KernelPrivilegeAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
     case KernelPrivilegeAction.DENY_PRIVILEGE => DenyPrivilegeAction
+
+    case KernelPrivilegeAction.DATABASE_ACTIONS => AllDatabaseAction
   }
 }

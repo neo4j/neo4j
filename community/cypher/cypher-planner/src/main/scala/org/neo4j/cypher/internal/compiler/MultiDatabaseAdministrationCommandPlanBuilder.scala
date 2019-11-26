@@ -50,23 +50,40 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
+    def planRevokeDatabasePrivileges(source: Option[PrivilegePlan],
+                                     roleNames: Seq[String],
+                                     action: AdminAction,
+                                     planAction: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan]): Option[PrivilegePlan] = {
+      planDatabasePrivileges(source, roleNames, action, planAction, planAction)
+    }
     def planDatabasePrivileges(source: Option[PrivilegePlan],
                                roleNames: Seq[String],
                                action: AdminAction,
-                               planAction: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan]): Option[PrivilegePlan] = {
-      def planActions(source: Option[PrivilegePlan], roleName: String, g: AdminAction*): Option[PrivilegePlan] = g.foldLeft(source) {
+                               planAction: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan],
+                               planExtra: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan] = (s, _, _) => s): Option[PrivilegePlan] = {
+      def planActions(source: Option[PrivilegePlan],
+                      action: AdminAction,
+                      roleName: String,
+                      g: AdminAction*): Option[PrivilegePlan] = g.foldLeft(planExtra(source, roleName, action)) {
         case (plan, act) => planAction(plan, roleName, act)
       }
       roleNames.foldLeft(source) {
         case (source, roleName) => action match {
-          case IndexManagementAction => planActions(source, roleName, CreateIndexAction, DropIndexAction)
-          case ConstraintManagementAction => planActions(source, roleName, CreateConstraintAction, DropConstraintAction)
-          case TokenManagementAction => planActions(source, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
-          case AllDatabaseAction => planActions(source, roleName,
-            AccessDatabaseAction, StartDatabaseAction, StopDatabaseAction,
-            CreateIndexAction, DropIndexAction,
-            CreateConstraintAction, DropConstraintAction,
-            CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
+          case IndexManagementAction =>
+            planActions(source, action, roleName, CreateIndexAction, DropIndexAction)
+          case ConstraintManagementAction =>
+            planActions(source, action, roleName, CreateConstraintAction, DropConstraintAction)
+          case TokenManagementAction =>
+            planActions(source, action, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
+          case AllDatabaseAction =>
+            planActions(
+              planActions(
+                planActions(
+                  planActions(source, AllDatabaseAction, roleName, AccessDatabaseAction, StartDatabaseAction, StopDatabaseAction),
+                  IndexManagementAction, roleName, CreateIndexAction, DropIndexAction
+                ),
+                ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction),
+              TokenManagementAction, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
           case _ => planAction(source, roleName, action)
         }
       }
@@ -240,7 +257,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // REVOKE ACCESS/START/STOP ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
-        planDatabasePrivileges(
+        planRevokeDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, act, database, role, r)))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))

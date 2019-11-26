@@ -109,12 +109,33 @@ public enum PrivilegeAction
             {
                 public boolean satisfies( PrivilegeAction action )
                 {
+                    return INDEX.satisfies( action ) || CONSTRAINT.satisfies( action ) || this == action;
+                }
+            },
+
+    CONSTRAINT
+            {
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case CREATE_CONSTRAINT:
+                    case DROP_CONSTRAINT:
+                        return true;
+                    default:
+                        return this == action;
+                    }
+                }
+            },
+
+    INDEX
+            {
+                public boolean satisfies( PrivilegeAction action )
+                {
                     switch ( action )
                     {
                     case CREATE_INDEX:
                     case DROP_INDEX:
-                    case CREATE_CONSTRAINT:
-                    case DROP_CONSTRAINT:
                         return true;
                     default:
                         return this == action;
