@@ -223,9 +223,6 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, act, role, r)))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
-//        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-//          case (source, roleName) => planRevokes(source, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, action, roleName, r)))
-//        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT ACCESS/START/STOP ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
