@@ -54,6 +54,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 
 @PageCacheExtension
 class IdRangeMarkerTest
@@ -220,7 +221,7 @@ class IdRangeMarkerTest
         // when
         Writer writer = mock( Writer.class );
         try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, writer, mock( Lock.class ), mock( ValueMerger.class ), true,
-                new AtomicBoolean(), 1, new AtomicLong( 0 ), true ) )
+                new AtomicBoolean(), 1, new AtomicLong( 0 ), true, NO_MONITOR ) )
         {
             verify( writer, never() ).close();
         }
@@ -238,7 +239,7 @@ class IdRangeMarkerTest
         // when
         MutableLongSet expectedIds = LongSets.mutable.empty();
         try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
-                new AtomicBoolean(), 1, new AtomicLong( reservedId - 1 ), true ) )
+                new AtomicBoolean(), 1, new AtomicLong( reservedId - 1 ), true, NO_MONITOR ) )
         {
             for ( long id = reservedId - 1; id <= reservedId + 1; id++ )
             {
@@ -283,7 +284,7 @@ class IdRangeMarkerTest
         // given
         Writer<IdRangeKey,IdRange> writer = mock( Writer.class );
         try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, writer, mock( Lock.class ), IdRangeMerger.DEFAULT, true,
-                new AtomicBoolean(), 1, new AtomicLong( 0 ), true ) )
+                new AtomicBoolean(), 1, new AtomicLong( 0 ), true, NO_MONITOR ) )
         {
             // when
             marker.markUsed( 10 );
@@ -301,7 +302,7 @@ class IdRangeMarkerTest
     {
         // given
         try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
-                new AtomicBoolean(), 1, new AtomicLong( -1 ), true ) )
+                new AtomicBoolean(), 1, new AtomicLong( -1 ), true, NO_MONITOR ) )
         {
             marker.markUsed( 0 );
             marker.markReserved( 0 );
@@ -309,7 +310,7 @@ class IdRangeMarkerTest
 
         // when
         try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
-                new AtomicBoolean(), 1, new AtomicLong( -1 ), true ) )
+                new AtomicBoolean(), 1, new AtomicLong( -1 ), true, NO_MONITOR ) )
         {
             marker.markDeletedAndFree( 0 );
         }
@@ -333,6 +334,6 @@ class IdRangeMarkerTest
 
     private IdRangeMarker instantiateMarker( Lock lock, ValueMerger merger ) throws IOException
     {
-        return new IdRangeMarker( idsPerEntry, layout, tree.writer(), lock, merger, true, new AtomicBoolean(), 1, highestWritternId, true );
+        return new IdRangeMarker( idsPerEntry, layout, tree.writer(), lock, merger, true, new AtomicBoolean(), 1, highestWritternId, true, NO_MONITOR );
     }
 }

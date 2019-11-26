@@ -54,8 +54,10 @@ class HeaderWriter implements Consumer<PageCursor>
     @Override
     public void accept( PageCursor cursor )
     {
-        cursor.putLong( highId.getAsLong() );
-        cursor.putLong( highestWrittenId.getAsLong() );
+        long highId = this.highId.getAsLong();
+        long highestWrittenId = this.highestWrittenId.getAsLong();
+        cursor.putLong( highId );
+        cursor.putLong( highestWrittenId );
         cursor.putLong( generation );
         cursor.putInt( idsPerEntry );
     }

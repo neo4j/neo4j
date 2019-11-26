@@ -65,7 +65,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -100,7 +102,10 @@ class IndexedIdGeneratorTest
     @AfterEach
     void stop()
     {
-        freelist.close();
+        if ( freelist != null )
+        {
+            freelist.close();
+        }
     }
 
     @Test
@@ -527,6 +532,66 @@ class IndexedIdGeneratorTest
     void shouldNotMarkHighestWrittenAtHighIdIfReadOnly() throws IOException
     {
         assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::markHighestWrittenAtHighId );
+    }
+
+    @Test
+    void shouldInvokeMonitorOnCorrectCalls() throws IOException
+    {
+        stop();
+        IndexedIdGenerator.Monitor monitor = mock( IndexedIdGenerator.Monitor.class );
+        freelist = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, monitor );
+        verify( monitor ).opened( -1, 0 );
+        freelist.start( NO_FREE_IDS );
+
+        long allocatedHighId = freelist.nextId();
+        verify( monitor ).allocatedFromHigh( allocatedHighId );
+
+        try ( Marker marker = freelist.marker() )
+        {
+            marker.markUsed( allocatedHighId );
+            verify( monitor ).markedAsUsed( allocatedHighId );
+            marker.markDeleted( allocatedHighId );
+            verify( monitor ).markedAsDeleted( allocatedHighId );
+            marker.markFree( allocatedHighId );
+            verify( monitor ).markedAsFree( allocatedHighId );
+        }
+
+        long reusedId = freelist.nextId();
+        verify( monitor ).allocatedFromReused( reusedId );
+        try ( Marker marker = freelist.marker() )
+        {
+            marker.markUsed( reusedId );
+            marker.markDeletedAndFree( reusedId );
+            verify( monitor ).markedAsDeletedAndFree( reusedId );
+        }
+        freelist.checkpoint( IOLimiter.UNLIMITED );
+        // two times, one in start and one now in checkpoint
+        verify( monitor, times( 2 ) ).checkpoint( anyLong(), anyLong() );
+        freelist.clearCache();
+        verify( monitor ).clearingCache();
+        verify( monitor ).clearedCache();
+
+        try ( Marker marker = freelist.marker() )
+        {
+            marker.markUsed( allocatedHighId + 3 );
+            verify( monitor ).bridged( allocatedHighId + 1 );
+            verify( monitor ).bridged( allocatedHighId + 2 );
+        }
+
+        freelist.close();
+        verify( monitor ).close();
+
+        // Also test normalization (which requires a restart)
+        freelist = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, monitor );
+        freelist.start( NO_FREE_IDS );
+        try ( Marker marker = freelist.marker() )
+        {
+            marker.markUsed( allocatedHighId + 1 );
+        }
+        verify( monitor ).normalized( 0 );
+
+        freelist.close();
+        freelist = null;
     }
 
     private void assertOperationThrowInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation ) throws IOException

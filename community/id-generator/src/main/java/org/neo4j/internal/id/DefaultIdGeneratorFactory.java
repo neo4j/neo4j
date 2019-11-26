@@ -32,6 +32,7 @@ import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 
+import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.defaultIdMonitor;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
@@ -81,7 +82,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnly,
-                openOptions );
+                defaultIdMonitor( fs, fileName ), openOptions );
     }
 
     @Override
@@ -100,7 +101,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,
-                        openOptions );
+                        defaultIdMonitor( fs, fileName ), openOptions );
         generator.checkpoint( UNLIMITED );
         generators.put( idType, generator );
         return generator;

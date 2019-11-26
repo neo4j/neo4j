@@ -102,8 +102,14 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
      */
     private final IdRange value;
 
+    /**
+     * Receives notifications of events.
+     */
+    private final IndexedIdGenerator.Monitor monitor;
+
     IdRangeMarker( int idsPerEntry, Layout<IdRangeKey,IdRange> layout, Writer<IdRangeKey,IdRange> writer, Lock lock, ValueMerger<IdRangeKey,IdRange> merger,
-            boolean started, AtomicBoolean freeIdsNotifier, long generation, AtomicLong highestWrittenId, boolean bridgeIdGaps )
+            boolean started, AtomicBoolean freeIdsNotifier, long generation, AtomicLong highestWrittenId, boolean bridgeIdGaps,
+            IndexedIdGenerator.Monitor monitor )
     {
         this.idsPerEntry = idsPerEntry;
         this.writer = writer;
@@ -116,6 +122,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
         this.generation = generation;
         this.highestWrittenId = highestWrittenId;
         this.bridgeIdGaps = bridgeIdGaps;
+        this.monitor = monitor;
     }
 
     @Override
@@ -132,6 +139,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
         finally
         {
             lock.unlock();
+            monitor.markSessionDone();
         }
     }
 
@@ -144,6 +152,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
             prepareRange( id, false );
             value.setBitsForAllTypes( idOffset( id ) );
             writer.mergeIfExists( key, value, merger );
+            monitor.markedAsUsed( id );
         }
     }
 
@@ -155,6 +164,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
             prepareRange( id, true );
             value.setBit( BITSET_COMMIT, idOffset( id ) );
             writer.merge( key, value, merger );
+            monitor.markedAsDeleted( id );
         }
     }
 
@@ -166,6 +176,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
             prepareRange( id, true );
             value.setBit( BITSET_RESERVED, idOffset( id ) );
             writer.merge( key, value, merger );
+            monitor.markedAsReserved( id );
         }
     }
 
@@ -177,6 +188,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
             prepareRange( id, false );
             value.setBit( BITSET_RESERVED, idOffset( id ) );
             writer.merge( key, value, merger );
+            monitor.markedAsUnreserved( id );
         }
     }
 
@@ -188,6 +200,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
             prepareRange( id, true );
             value.setBit( BITSET_REUSE, idOffset( id ) );
             writer.merge( key, value, merger );
+            monitor.markedAsFree( id );
         }
 
         freeIdsNotifier.set( true );
@@ -206,6 +219,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
             value.setBit( BITSET_REUSE, offset );    // set this
             value.setBit( BITSET_RESERVED, offset ); // clear this
             writer.merge( key, value, merger );
+            monitor.markedAsDeletedAndFree( id );
         }
 
         freeIdsNotifier.set( true );
@@ -266,6 +280,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
 
                     // Set this flag so that the last range (if updated) will be written below, when exiting this loop
                     dirty = true;
+                    monitor.bridged( bridgeId );
                 }
             }
 

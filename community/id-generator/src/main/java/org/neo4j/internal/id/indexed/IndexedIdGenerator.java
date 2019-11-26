@@ -52,7 +52,6 @@ import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.util.FeatureToggles.flag;
@@ -64,6 +63,132 @@ import static org.neo4j.util.FeatureToggles.flag;
  */
 public class IndexedIdGenerator implements IdGenerator
 {
+    public interface Monitor extends AutoCloseable
+    {
+        void opened( long highestWrittenId, long highId );
+
+        @Override
+        void close();
+
+        void allocatedFromHigh( long allocatedId );
+
+        void allocatedFromReused( long allocatedId );
+
+        void cached( long cachedId );
+
+        void markedAsUsed( long markedId );
+
+        void markedAsDeleted( long markedId );
+
+        void markedAsFree( long markedId );
+
+        void markedAsReserved( long markedId );
+
+        void markedAsUnreserved( long markedId );
+
+        void markedAsDeletedAndFree( long markedId );
+
+        void markSessionDone();
+
+        void normalized( long idRange );
+
+        void bridged( long bridgedId );
+
+        void checkpoint( long highestWrittenId, long highId );
+
+        void clearingCache();
+
+        void clearedCache();
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void opened( long highestWrittenId, long highId )
+        {
+        }
+
+        @Override
+        public void allocatedFromHigh( long allocatedId )
+        {
+        }
+
+        @Override
+        public void allocatedFromReused( long allocatedId )
+        {
+        }
+
+        @Override
+        public void cached( long cachedId )
+        {
+        }
+
+        @Override
+        public void markedAsUsed( long markedId )
+        {
+        }
+
+        @Override
+        public void markedAsDeleted( long markedId )
+        {
+        }
+
+        @Override
+        public void markedAsFree( long markedId )
+        {
+        }
+
+        @Override
+        public void markedAsReserved( long markedId )
+        {
+        }
+
+        @Override
+        public void markedAsUnreserved( long markedId )
+        {
+        }
+
+        @Override
+        public void markedAsDeletedAndFree( long markedId )
+        {
+        }
+
+        @Override
+        public void markSessionDone()
+        {
+        }
+
+        @Override
+        public void normalized( long idRange )
+        {
+        }
+
+        @Override
+        public void bridged( long bridgedId )
+        {
+        }
+
+        @Override
+        public void checkpoint( long highestWrittenId, long highId )
+        {
+        }
+
+        @Override
+        public void clearingCache()
+        {
+        }
+
+        @Override
+        public void clearedCache()
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
+
     /**
      * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
      * Given a scenario where there are multiple concurrent calls to {@link #nextId()} or {@link #nextIdBatch(int)} and there are
@@ -188,8 +313,19 @@ public class IndexedIdGenerator implements IdGenerator
      */
     private volatile boolean started;
 
+    private final IdRangeMerger defaultMerger;
+    private final IdRangeMerger recoveryMerger;
+
+    private final Monitor monitor;
+
+    public IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            IdType idType, boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, OpenOption... openOptions )
+    {
+        this( pageCache, file, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, NO_MONITOR, openOptions );
+    }
+
     public IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, OpenOption... openOptions )
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Monitor monitor, OpenOption... openOptions )
     {
         this.file = file;
         this.readOnly = readOnly;
@@ -198,6 +334,9 @@ public class IndexedIdGenerator implements IdGenerator
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
         this.cache = new SpmcLongQueue( cacheCapacity );
         this.maxId = maxId;
+        this.monitor = monitor;
+        this.defaultMerger = new IdRangeMerger( false, monitor );
+        this.recoveryMerger = new IdRangeMerger( true, monitor );
 
         Optional<HeaderReader> header = readHeader( pageCache, file );
         // We check generation here too since we could get into this scenario:
@@ -224,6 +363,7 @@ public class IndexedIdGenerator implements IdGenerator
             this.generation = STARTING_GENERATION + 1;
             this.idsPerEntry = IDS_PER_ENTRY;
         }
+        monitor.opened( highestWrittenId.get(), highId.get() );
 
         this.layout = new IdRangeLayout( idsPerEntry );
         this.tree = instantiateTree( pageCache, file, recoveryCleanupWorkCollector, readOnly, openOptions );
@@ -239,7 +379,8 @@ public class IndexedIdGenerator implements IdGenerator
         try
         {
             final HeaderWriter headerWriter = new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry );
-            return new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly, openOptions );
+            return new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
+                    readOnly, openOptions );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -263,6 +404,7 @@ public class IndexedIdGenerator implements IdGenerator
         if ( id != NO_ID )
         {
             // We got an ID from the cache, all good
+            monitor.allocatedFromReused( id );
             return id;
         }
 
@@ -277,6 +419,7 @@ public class IndexedIdGenerator implements IdGenerator
             IdValidator.assertIdWithinMaxCapacity( idType, id, maxId );
         }
         while ( IdValidator.isReservedId( id ) );
+        monitor.allocatedFromHigh( id );
         return id;
     }
 
@@ -350,8 +493,8 @@ public class IndexedIdGenerator implements IdGenerator
         try
         {
             return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock,
-                    started && strict ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
-                    started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps );
+                    started && strict ? defaultMerger : recoveryMerger,
+                    started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps, monitor );
         }
         catch ( Exception e )
         {
@@ -363,7 +506,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void close()
     {
-        closeAllUnchecked( scanner, tree );
+        closeAllUnchecked( scanner, tree, monitor );
     }
 
     @Override
@@ -421,6 +564,7 @@ public class IndexedIdGenerator implements IdGenerator
     public void checkpoint( IOLimiter ioLimiter )
     {
         tree.checkpoint( ioLimiter, new HeaderWriter( highId::get, highestWrittenId::get, generation, idsPerEntry ) );
+        monitor.checkpoint( highestWrittenId.get(), highId.get() );
     }
 
     @Override
@@ -439,7 +583,9 @@ public class IndexedIdGenerator implements IdGenerator
         if ( !readOnly )
         {
             // Make the scanner clear it because it needs to coordinate with the scan lock
+            monitor.clearingCache();
             scanner.clearCache();
+            monitor.clearedCache();
         }
     }
 
@@ -518,7 +664,7 @@ public class IndexedIdGenerator implements IdGenerator
     {
         HeaderReader header = readHeader( pageCache, file ).orElseThrow( () -> new NoSuchFileException( file.getAbsolutePath() ) );
         IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
-        try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
+        try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
                 immediate(), true ) )
         {
             tree.visit( new GBPTreeVisitor.Adaptor<>()

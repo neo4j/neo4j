@@ -24,6 +24,7 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.MERGED;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REMOVED;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.UNCHANGED;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 
 /**
  * Merges ID state changes for a particular tree entry. Differentiates between recovery/normal mode.
@@ -31,14 +32,16 @@ import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.UNCHANGED
  */
 final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange>
 {
-    public static final IdRangeMerger DEFAULT = new IdRangeMerger( false );
-    public static final IdRangeMerger RECOVERY = new IdRangeMerger( true );
+    public static final IdRangeMerger DEFAULT = new IdRangeMerger( false, NO_MONITOR );
+    public static final IdRangeMerger RECOVERY = new IdRangeMerger( true, NO_MONITOR );
 
     private final boolean recoveryMode;
+    private final IndexedIdGenerator.Monitor monitor;
 
-    private IdRangeMerger( boolean recoveryMode )
+    IdRangeMerger( boolean recoveryMode, IndexedIdGenerator.Monitor monitor )
     {
         this.recoveryMode = recoveryMode;
+        this.monitor = monitor;
     }
 
     @Override
@@ -48,6 +51,7 @@ final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange>
         {
             existingValue.normalize();
             existingValue.setGeneration( newValue.getGeneration() );
+            monitor.normalized( existingKey.getIdRangeIdx() );
         }
 
         final boolean changed = existingValue.mergeFrom( newValue, recoveryMode );
