@@ -52,7 +52,7 @@ import static org.neo4j.values.storable.Values.longValue;
 @RunWith( Parameterized.class )
 public class RandomValuesTest
 {
-    private static final int ITERATIONS = 500;
+    private static final int ITERATIONS = 1000;
 
     @Parameterized.Parameter()
     public RandomValues randomValues;
