@@ -21,8 +21,6 @@ package org.neo4j.internal.index.label;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,8 +64,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -207,7 +204,7 @@ public class NativeLabelScanStoreTest
         try ( ResourceIterator<File> indexFiles = store.snapshotStoreFiles() )
         {
             List<File> files = Iterators.asList( indexFiles );
-            assertThat( "Should have at least index segment file.", files, hasLabelScanStore() );
+            assertThat( files ).as( "Should have at least index segment file." ).contains( databaseLayout.labelScanStore() );
         }
     }
 
@@ -401,7 +398,7 @@ public class NativeLabelScanStoreTest
                 count.add( nlr.labels( nodeId ).length );
             }
         } );
-        assertThat( count.intValue(), is( 1 ) );
+        assertThat( count.intValue() ).isEqualTo( 1 );
     }
 
     @Test
@@ -517,11 +514,6 @@ public class NativeLabelScanStoreTest
     {
         return new NativeLabelScanStore( pageCache, databaseLayout, fileSystemAbstraction,
                 fullStoreChangeStream, readOnly, monitors, RecoveryCleanupWorkCollector.immediate() );
-    }
-
-    private Matcher<Iterable<? super File>> hasLabelScanStore()
-    {
-        return Matchers.hasItem( Matchers.equalTo( databaseLayout.labelScanStore() ) );
     }
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException

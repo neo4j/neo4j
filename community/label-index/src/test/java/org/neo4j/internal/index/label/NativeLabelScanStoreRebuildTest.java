@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -35,9 +34,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.stringContainsInOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -136,8 +133,8 @@ class NativeLabelScanStoreRebuildTest
         {
             nativeLabelScanStore.init();
             IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, nativeLabelScanStore::start );
-            assertThat( exception.getMessage(), containsString( "unsorted label" ) );
-            assertThat( exception.getMessage(), stringContainsInOrder( Iterables.asIterable( "2", "1" ) ) );
+            assertThat( exception.getMessage() ).contains( "unsorted label" );
+            assertThat( exception.getMessage() ).containsSubsequence( "2", "1" );
         }
         finally
         {

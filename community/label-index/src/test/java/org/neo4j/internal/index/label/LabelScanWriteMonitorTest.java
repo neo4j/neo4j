@@ -37,8 +37,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import static java.lang.Math.abs;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Objects.requireNonNull;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -229,7 +228,7 @@ class LabelScanWriteMonitorTest
         {
             long timestamp = LabelScanWriteMonitor.millisOf( file );
             long diff = endTime - timestamp;
-            assertThat( diff, lessThan( (loopEnded - endTime) + pruneThreshold * 2 ) );
+            assertThat( diff ).isLessThan( (loopEnded - endTime) + pruneThreshold * 2 );
         }
     }
 }
