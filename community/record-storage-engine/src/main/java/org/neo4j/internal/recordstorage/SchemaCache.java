@@ -23,6 +23,8 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
@@ -228,6 +231,7 @@ public class SchemaCache
         return new SchemaCache( schemaCacheState );
     }
 
+    @SuppressWarnings( "ReplaceNullCheck" )
     private static class SchemaCacheState
     {
         private final ConstraintRuleAccessor constraintSemantics;
@@ -245,6 +249,8 @@ public class SchemaCache
         private final Map<String,ConstraintDescriptor> constrainsByName;
 
         private final Map<Class<?>,Object> dependantState;
+        private final ConcurrentMap<Object,Set<IndexDescriptor>> indexCache; // Cache results of getSchemaRelatedTo queries.
+        private final ConcurrentMap<Object,Set<IndexBackedConstraintDescriptor>> constraintCache; // Cache results of getSchemaRelatedTo queries.
 
         SchemaCacheState( ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, Iterable<SchemaRule> rules )
         {
@@ -262,6 +268,8 @@ public class SchemaCache
             this.indexesByName = new HashMap<>();
             this.constrainsByName = new HashMap<>();
             this.dependantState = new ConcurrentHashMap<>();
+            this.indexCache = new ConcurrentHashMap<>();
+            this.constraintCache = new ConcurrentHashMap<>();
             load( rules );
         }
 
@@ -284,6 +292,8 @@ public class SchemaCache
             this.indexesByName = new HashMap<>( schemaCacheState.indexesByName );
             this.constrainsByName = new HashMap<>( schemaCacheState.constrainsByName );
             this.dependantState = new ConcurrentHashMap<>();
+            this.indexCache = new ConcurrentHashMap<>();
+            this.constraintCache = new ConcurrentHashMap<>();
         }
 
         private void cacheUniquenessConstraint( ConstraintDescriptor constraint )
@@ -355,36 +365,76 @@ public class SchemaCache
 
         Iterator<IndexDescriptor> indexesForLabel( int labelId )
         {
-            return getSchemaRelatedTo( indexesByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
+            if ( indexesByNode.isEmpty() )
+            {
+                return Collections.emptyIterator();
+            }
+            IndexesForLabelKey key = new IndexesForLabelKey( labelId );
+            Set<IndexDescriptor> result = indexCache.get( key );
+            if ( result != null )
+            {
+                return result.iterator();
+            }
+            return indexCache.computeIfAbsent( key,
+                    k -> getSchemaRelatedTo( indexesByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ) ).iterator();
         }
 
         Iterator<IndexDescriptor> indexesForRelationshipType( int relationshipType )
         {
-            return getSchemaRelatedTo( indexesByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
+            if ( indexesByRelationship.isEmpty() )
+            {
+                return Collections.emptyIterator();
+            }
+            IndexesForRelationshipTypeKey key = new IndexesForRelationshipTypeKey( relationshipType );
+            Set<IndexDescriptor> result = indexCache.get( key );
+            if ( result != null )
+            {
+                return result.iterator();
+            }
+            return indexCache.computeIfAbsent( key,
+                    k -> getSchemaRelatedTo( indexesByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ) ).iterator();
         }
 
         Set<IndexDescriptor> getIndexesRelatedTo( EntityType entityType, long[] changedEntityTokens,
                 long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
-            return getSchemaRelatedTo( selectIndexSetByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, properties,
-                    propertyListIsComplete );
+            SchemaDescriptorLookupSet<IndexDescriptor> set = selectIndexSetByEntityType( entityType );
+            if ( set.isEmpty() )
+            {
+                return Collections.emptySet();
+            }
+            IndexesRelatedToKey key = new IndexesRelatedToKey( entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
+            Set<IndexDescriptor> result = indexCache.get( key );
+            if ( result != null )
+            {
+                return result;
+            }
+            return indexCache.computeIfAbsent( key,
+                    k -> getSchemaRelatedTo( set, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete ) );
         }
 
         Set<IndexBackedConstraintDescriptor> getUniquenessConstraintsRelatedTo( EntityType entityType, long[] changedEntityTokens,
                 long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
-            return getSchemaRelatedTo( selectUniquenessConstraintSetByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, properties,
-                    propertyListIsComplete );
-        }
-
-        <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,
-                long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
-        {
+            SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> set = selectUniquenessConstraintSetByEntityType( entityType );
             if ( set.isEmpty() )
             {
                 return Collections.emptySet();
             }
+            UniqueIndexesRelatedToKey key = new UniqueIndexesRelatedToKey( entityType, changedEntityTokens, unchangedEntityTokens, properties,
+                    propertyListIsComplete );
+            Set<IndexBackedConstraintDescriptor> result = constraintCache.get( key );
+            if ( result != null )
+            {
+                return result;
+            }
+            return constraintCache.computeIfAbsent( key,
+                    k -> getSchemaRelatedTo( set, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete ) );
+        }
 
+        private <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,
+                long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
+        {
             Set<T> descriptors = UnifiedSet.newSet();
             if ( propertyListIsComplete )
             {
@@ -503,6 +553,208 @@ public class SchemaCache
                 indexesByName.remove( index.getName(), index );
                 selectIndexSetByEntityType( schema.entityType() ).remove( index );
             }
+        }
+    }
+
+    /**
+     * Sub-classes of the QueryCacheKey are used as memoization keys in the indexCache and constraintCache.
+     * These caches hold on to the results of 'getSchemaRelatedTo' calls.
+     */
+    private abstract static class QueryCacheKey
+    {
+        private static BigInteger PRIMES = new BigInteger( "13" );
+
+        static synchronized int nextPrime()
+        {
+            int result = PRIMES.intValue();
+            PRIMES = PRIMES.nextProbablePrime();
+            return result;
+        }
+
+        private final int hash;
+
+        QueryCacheKey( int hash )
+        {
+            this.hash = hash;
+        }
+
+        static int hash( int value )
+        {
+            return Integer.hashCode( value );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hash;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            // This implementation of 'equals' is only here to satisfy checkstyle.
+            throw new UnsupportedOperationException( "Equals needs to be overwritten by sub-classes." );
+        }
+    }
+
+    private static class IndexesForLabelKey extends QueryCacheKey
+    {
+        private static final int PRIME = nextPrime();
+        private final int label;
+
+        private IndexesForLabelKey( int label )
+        {
+            super( hash( label ) * PRIME );
+            this.label = label;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            IndexesForLabelKey that = (IndexesForLabelKey) o;
+
+            return label == that.label;
+        }
+    }
+
+    private static class IndexesForRelationshipTypeKey extends QueryCacheKey
+    {
+        private static final int PRIME = nextPrime();
+        private final int relationshipType;
+
+        IndexesForRelationshipTypeKey( int relationshipType )
+        {
+            super( hash( relationshipType ) * PRIME );
+            this.relationshipType = relationshipType;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            IndexesForRelationshipTypeKey that = (IndexesForRelationshipTypeKey) o;
+
+            return relationshipType == that.relationshipType;
+        }
+    }
+
+    private static class IndexesRelatedToKey extends QueryCacheKey
+    {
+        private static final int PRIME = nextPrime();
+        private final EntityType entityType;
+        private final long[] changedEntityTokens;
+        private final long[] unchangedEntityTokens;
+        private final int[] properties;
+        private final boolean propertyListIsComplete;
+
+        IndexesRelatedToKey( EntityType entityType, long[] changedEntityTokens, long[] unchangedEntityTokens, int[] properties,
+                boolean propertyListIsComplete )
+        {
+            this( hash( entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete ) * PRIME,
+                    entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
+        }
+
+        IndexesRelatedToKey( int hash, EntityType entityType, long[] changedEntityTokens, long[] unchangedEntityTokens, int[] properties,
+                boolean propertyListIsComplete )
+        {
+            super( hash );
+            this.entityType = entityType;
+            this.changedEntityTokens = changedEntityTokens;
+            this.unchangedEntityTokens = unchangedEntityTokens;
+            this.properties = properties;
+            this.propertyListIsComplete = propertyListIsComplete;
+        }
+
+        static int hash( EntityType entityType, long[] changedEntityTokens, long[] unchangedEntityTokens, int[] properties,
+                boolean propertyListIsComplete )
+        {
+            int result = 1;
+            result = 31 * result + entityType.hashCode();
+            result = 31 * result + Arrays.hashCode( changedEntityTokens );
+            result = 31 * result + Arrays.hashCode( unchangedEntityTokens );
+            result = 31 * result + Arrays.hashCode( properties );
+            result = 31 * result + (propertyListIsComplete ? 1 : 0);
+            return result;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            IndexesRelatedToKey that = (IndexesRelatedToKey) o;
+
+            if ( propertyListIsComplete != that.propertyListIsComplete )
+            {
+                return false;
+            }
+            if ( entityType != that.entityType )
+            {
+                return false;
+            }
+            if ( !Arrays.equals( changedEntityTokens, that.changedEntityTokens ) )
+            {
+                return false;
+            }
+            if ( !Arrays.equals( unchangedEntityTokens, that.unchangedEntityTokens ) )
+            {
+                return false;
+            }
+            return Arrays.equals( properties, that.properties );
+        }
+    }
+
+    private static class UniqueIndexesRelatedToKey extends IndexesRelatedToKey
+    {
+        private static final int PRIME = nextPrime();
+
+        UniqueIndexesRelatedToKey( EntityType entityType, long[] changedEntityTokens, long[] unchangedEntityTokens, int[] properties,
+                boolean propertyListIsComplete )
+        {
+            super( hash( entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete ) * PRIME,
+                    entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
         }
     }
 }
