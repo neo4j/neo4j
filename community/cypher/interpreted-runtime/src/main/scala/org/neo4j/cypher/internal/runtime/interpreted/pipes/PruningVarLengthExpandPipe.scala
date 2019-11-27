@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{RelationshipValue, VirtualNodeValue}
+import org.neo4j.values.virtual.{NodeReference, NodeValue, RelationshipValue, VirtualNodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
@@ -156,7 +156,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       nodeState.depths(i) >= stepsLeft
     }
 
-    private def updatePrevFullExpandDepth() = {
+    private def updatePrevFullExpandDepth(): Unit = {
       if ( pathLength > 0 ) {
         val requiredStepsFromPrev = math.max(0, self.min - pathLength + 1)
         if (requiredStepsFromPrev <= 1 || nodeState.isEmitted) {
@@ -269,14 +269,14 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         if (depth == -1) {
           val fromValue = inputRow.getByName(fromName)
           fromValue match {
-            case node: VirtualNodeValue =>
-              push( node = node,
-                pathLength = 0,
-                expandMap = new LongObjectHashMap[NodeState](),
-                prevLocalRelIndex = -1,
-                prevNodeState = NodeState.NOOP )
+            case node: NodeValue =>
+                pushStartNode(node)
 
-            case x: Value if x eq Values.NO_VALUE =>
+            case nodeRef: NodeReference =>
+              val node = queryState.query.nodeOps.getById(nodeRef.id)
+              pushStartNode(node)
+
+            case IsNoValue() =>
               null
 
             case _ =>
@@ -295,6 +295,18 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         null
       }
       else executionContextFactory.copyWith(inputRow, self.toName, endNode)
+    }
+
+    def pushStartNode(node: NodeValue): VirtualNodeValue = {
+      if(filteringStep.filterNode(inputRow, queryState)(node)) {
+        push(node,
+          pathLength = 0,
+          expandMap = new LongObjectHashMap[NodeState](),
+          prevLocalRelIndex = -1,
+          prevNodeState = NodeState.NOOP)
+      } else {
+        null
+      }
     }
 
     def push(node: VirtualNodeValue,
