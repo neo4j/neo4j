@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -463,7 +464,7 @@ class ConfigTest
         Log log = logProvider.getLog( Config.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
-        assumeTrue( confFile.setReadable( false ) );
+        tryRemoveReadPermissions( confFile );
 
         Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
 
@@ -499,7 +500,7 @@ class ConfigTest
     {
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
-        assumeTrue( confFile.setReadable( false ) );
+        tryRemoveReadPermissions( confFile );
         assertThrows( IllegalArgumentException.class, () -> Config.emptyBuilder().fromFile( confFile ).build() );
     }
 
@@ -750,6 +751,17 @@ class ConfigTest
         static final Setting<String> baseString = newBuilder( "test.default.dependency.base", DefaultParser, "base" ).immutable().build();
 
         static final Setting<String> dependingString = newBuilder( "test.default.dependency.dep", DefaultParser, null ).setDependency( baseString ).build();
+    }
+
+    /**
+     * Will try to set the file as not readable. There are cases, as {@link File#canRead()} states, where it returns true even if you remove
+     * the permissions, hence the extra check.
+     * @param file the file to remove permissions from.
+     */
+    private void tryRemoveReadPermissions( File file )
+    {
+        assumeTrue( file.setReadable( false ) );
+        assumeFalse( file.canRead() );
     }
 
 }

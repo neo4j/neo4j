@@ -40,6 +40,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
@@ -73,7 +74,9 @@ class NeoStoreOpenFailureTest
 
         // Make the schema store inaccessible, to sabotage the next initialisation we'll do.
         assumeTrue( schemaStore.setReadable( false ) );
+        assumeFalse( schemaStore.canRead() );
         assumeTrue( schemaStore.setWritable( false ) );
+        assumeFalse( schemaStore.canWrite() );
 
         assertThrows( RuntimeException.class, () ->
                 // This should fail due to the permissions we changed above.
