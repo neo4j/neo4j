@@ -36,8 +36,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -123,7 +122,7 @@ class SslPolicyLoaderTest
 
         // when
         Exception exception = assertThrows( Exception.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
-        assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ) );
+        assertThat( exception.getCause() ).isInstanceOf( FileNotFoundException.class );
     }
 
     @Test

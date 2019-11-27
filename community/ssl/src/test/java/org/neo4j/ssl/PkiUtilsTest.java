@@ -39,11 +39,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -68,11 +64,11 @@ class PkiUtilsTest
         // Then
         // Attempt to load certificate
         var certificates = PkiUtils.loadCertificates( cPath );
-        assertThat( certificates.length, is( greaterThan( 0 ) ) );
+        assertThat( certificates.length ).isGreaterThan( 0 );
 
         // Attempt to load private key
         PrivateKey pk = PkiUtils.loadPrivateKey( pkPath, null );
-        assertThat( pk, notNullValue() );
+        assertThat( pk ).isNotNull();
     }
 
     @Test
@@ -87,7 +83,7 @@ class PkiUtilsTest
         var certificates = PkiUtils.loadCertificates( pemCertificate );
 
         // Then
-        assertThat( certificates.length, equalTo( 1 ) );
+        assertThat( certificates.length ).isEqualTo( 1 );
     }
 
     @Test
@@ -128,7 +124,7 @@ class PkiUtilsTest
         Certificate[] certificates = PkiUtils.loadCertificates( cPath );
 
         // Then
-        assertThat( certificates.length, equalTo( 1 ) );
+        assertThat( certificates.length ).isEqualTo( 1 );
     }
 
     @Test
@@ -139,7 +135,7 @@ class PkiUtilsTest
         copy( resource, keyFile );
 
         PrivateKey pk = PkiUtils.loadPrivateKey( keyFile, "neo4j" );
-        assertThat( pk.getAlgorithm(), is( "RSA") );
+        assertThat( pk.getAlgorithm() ).isEqualTo( "RSA" );
     }
 
     @Test
