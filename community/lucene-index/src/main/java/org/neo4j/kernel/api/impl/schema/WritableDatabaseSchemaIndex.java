@@ -51,7 +51,15 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
     public void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
+        commitCloseLock.lock();
+        try
+        {
+            luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
     }
 
     /**
@@ -61,6 +69,15 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
     public void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
             throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedValueTuples );
+        commitCloseLock.lock();
+        try
+        {
+
+            luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedValueTuples );
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
     }
 }
