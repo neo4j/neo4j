@@ -313,7 +313,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   /**
-    * Create n disjoint chain graphs, where is one is a chain of nodes connected
+    * Create n disjoint chain graphs, where one is a chain of nodes connected
     * by relationships of the given types. The initial node will have the label
     * :START, and the last node the label :END. Note that relationships with a type
     * starting with `FRO` will be created in reverse direction, allowing convenient
