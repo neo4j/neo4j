@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_USER;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_INDEX;
@@ -52,6 +53,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.EXECUTE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRANT_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.KILL_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.KILL_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
@@ -88,7 +90,9 @@ class PrivilegeActionTest
 
         expected.put( DATABASE_ACTIONS, Set.of( GRAPH_ACTIONS, SCHEMA, TOKEN, ACCESS, EXECUTE ) );
         expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE ) );
-        expected.put( SCHEMA, Set.of( CREATE_INDEX, DROP_INDEX, CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
+        expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX ) );
+        expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
+        expected.put( SCHEMA, Set.of( INDEX, CREATE_INDEX, DROP_INDEX, CONSTRAINT, CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
     }
 

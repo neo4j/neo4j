@@ -279,4 +279,16 @@ public enum PrivilegeAction
     {
         return super.toString().toLowerCase();
     }
+
+    public static PrivilegeAction from( String name )
+    {
+        for ( PrivilegeAction action : PrivilegeAction.values() )
+        {
+            if ( action.toString().equalsIgnoreCase( name ) )
+            {
+                return action;
+            }
+        }
+        return null;
+    }
 }
