@@ -27,8 +27,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.logging.NullLogProvider;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.eq;
@@ -90,7 +89,7 @@ class CompositeDatabaseHealthTest
         // then
         assertFalse( compositeDatabaseHealth.isHealthy() );
         Throwable compositeCause = compositeDatabaseHealth.cause();
-        assertThat( compositeCause.getMessage(), containsString( "Some of the databases have panicked" ) );
+        assertThat( compositeCause.getMessage() ).contains( "Some of the databases have panicked" );
         Throwable[] suppressed = compositeCause.getSuppressed();
         assertEquals( numUnhealthyDBs, suppressed.length );
     }
