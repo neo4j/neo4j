@@ -59,16 +59,16 @@ class CoordinateReferenceSystemTest
     void shouldCalculateCartesianDistance()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian;
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 0.0, 1.0 ) ) ).as( "" ).isEqualTo( 1.0 );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 1.0, 0.0 ) ) ).as( "" ).isEqualTo( 1.0 );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 1.0, 1.0 ) ) ).as( "" ).isCloseTo( 1.4, offset( 0.02 ) );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 0.0, -1.0 ) ) ).as( "" ).isEqualTo( 1.0 );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( -1.0, 0.0 ) ) ).as( "" ).isEqualTo( 1.0 );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( -1.0, -1.0 ) ) ).as( "" ).isCloseTo( 1.4, offset( 0.02 ) );
-        assertThat( crs.getCalculator().distance( cart( 1.0, 0.0 ), cart( 0.0, -1.0 ) ) ).as( "" ).isCloseTo( 1.4, offset( 0.02 ) );
-        assertThat( crs.getCalculator().distance( cart( 1.0, 0.0 ), cart( -1.0, 0.0 ) ) ).as( "" ).isEqualTo( 2.0 );
-        assertThat( crs.getCalculator().distance( cart( 1.0, 0.0 ), cart( -1.0, -1.0 ) ) ).as( "" ).isCloseTo( 2.24, offset( 0.01 ) );
-        assertThat( crs.getCalculator().distance( cart( -1000000.0, -1000000.0 ), cart( 1000000.0, 1000000.0 ) ) ).as( "" ).isCloseTo( 2828427.0,
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 0.0, 1.0 ) ) ).isEqualTo( 1.0 );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 1.0, 0.0 ) ) ).isEqualTo( 1.0 );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 1.0, 1.0 ) ) ).isCloseTo( 1.4, offset( 0.02 ) );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 0.0, -1.0 ) ) ).isEqualTo( 1.0 );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( -1.0, 0.0 ) ) ).isEqualTo( 1.0 );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( -1.0, -1.0 ) ) ).isCloseTo( 1.4, offset( 0.02 ) );
+        assertThat( crs.getCalculator().distance( cart( 1.0, 0.0 ), cart( 0.0, -1.0 ) ) ).isCloseTo( 1.4, offset( 0.02 ) );
+        assertThat( crs.getCalculator().distance( cart( 1.0, 0.0 ), cart( -1.0, 0.0 ) ) ).isEqualTo( 2.0 );
+        assertThat( crs.getCalculator().distance( cart( 1.0, 0.0 ), cart( -1.0, -1.0 ) ) ).isCloseTo( 2.24, offset( 0.01 ) );
+        assertThat( crs.getCalculator().distance( cart( -1000000.0, -1000000.0 ), cart( 1000000.0, 1000000.0 ) ) ).isCloseTo( 2828427.0,
                 offset( 1.0 ) );
     }
 
@@ -76,13 +76,13 @@ class CoordinateReferenceSystemTest
     void shouldCalculateCartesianDistance3D()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian_3D;
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 1.0, 0.0, 0.0 ) ) ).as( "" ).isEqualTo( 1.0 );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 0.0, 1.0, 0.0 ) ) ).as( "" ).isEqualTo( 1.0 );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 0.0, 0.0, 1.0 ) ) ).as( "" ).isEqualTo( 1.0 );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 0.0, 1.0, 1.0 ) ) ).as( "" ).isCloseTo( 1.41, offset( 0.01 ) );
-        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 1.0, 1.0, 1.0 ) ) ).as( "" ).isCloseTo( 1.73, offset( 0.01 ) );
-        assertThat( crs.getCalculator().distance( cart( -1000000.0, -1000000.0, -1000000.0 ), cart( 1000000.0, 1000000.0, 1000000.0 ) ) ).as( "" ).isCloseTo(
-                3464102.0, offset( 1.0 ) );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 1.0, 0.0, 0.0 ) ) ).isEqualTo( 1.0 );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 0.0, 1.0, 0.0 ) ) ).isEqualTo( 1.0 );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 0.0, 0.0, 1.0 ) ) ).isEqualTo( 1.0 );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 0.0, 1.0, 1.0 ) ) ).isCloseTo( 1.41, offset( 0.01 ) );
+        assertThat( crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 1.0, 1.0, 1.0 ) ) ).isCloseTo( 1.73, offset( 0.01 ) );
+        assertThat( crs.getCalculator().distance( cart( -1000000.0, -1000000.0, -1000000.0 ), cart( 1000000.0, 1000000.0, 1000000.0 ) ) )
+                .isCloseTo( 3464102.0, offset( 1.0 ) );
     }
 
     @Test
