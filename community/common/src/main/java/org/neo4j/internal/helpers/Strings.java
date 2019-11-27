@@ -21,6 +21,8 @@ package org.neo4j.internal.helpers;
 
 import java.io.IOException;
 import java.util.Arrays;
+import static java.util.stream.Collectors.joining;
+import java.util.Map;
 
 /**
  * Helper functions for working with strings.
@@ -156,5 +158,10 @@ public final class Strings
                     break;
             }
         }
+    }
+
+    public static String printMap( Map<?,?> map, String entrySeparator )
+    {
+        return map.entrySet().stream().map( Object::toString ).collect( joining( entrySeparator ) );
     }
 }
