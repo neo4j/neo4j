@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -625,7 +624,7 @@ class IndexedIdGeneratorTest
             numberOfIdsOutThere -= 1;
             reallocationIds.set( allocation.id, 1, true );
         }
-        assertThat( freelist.getHighId() - highIdBeforeReallocation, Matchers.equalTo( 0L ) );
+        assertThat( freelist.getHighId() - highIdBeforeReallocation ).isEqualTo( 0L );
     }
 
     private void restart() throws IOException
