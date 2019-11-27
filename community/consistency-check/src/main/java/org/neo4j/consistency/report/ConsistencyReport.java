@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.annotations.documented.Documented;
+import org.neo4j.annotations.documented.Warning;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.synthetic.CountsEntry;

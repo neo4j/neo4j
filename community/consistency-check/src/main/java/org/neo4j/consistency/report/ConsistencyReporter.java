@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.annotations.documented.DocumentedUtils;
+import org.neo4j.annotations.documented.Warning;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;

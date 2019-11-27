@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.annotations.documented.Warning;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckerEngine;
