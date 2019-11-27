@@ -40,8 +40,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.test.extension.actors.Actor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -481,7 +480,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
                 }
                 catch ( Exception e )
                 {
-                    assertThat( e, instanceOf( LockClientStoppedException.class ) );
+                    assertThat( e ).isInstanceOf( LockClientStoppedException.class );
                 }
             }
 
@@ -633,7 +632,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
             }
         }
         assertNotNull( executionException, "execution should fail" );
-        assertThat( executionException.getCause(), instanceOf( LockClientStoppedException.class ) );
+        assertThat( executionException.getCause() ).isInstanceOf( LockClientStoppedException.class );
         assertTrue( lockAcquisition.completed(), "locking thread seem to be still in progress" );
     }
 

@@ -27,9 +27,7 @@ import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
 
 class SchemaDescriptorTest
@@ -42,13 +40,13 @@ class SchemaDescriptorTest
     {
         LabelSchemaDescriptor labelDesc;
         labelDesc = SchemaDescriptor.forLabel( LABEL_ID, 1 );
-        assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
-        assertThat( labelDesc.entityType(), is( EntityType.NODE ) );
-        assertThat( labelDesc.propertySchemaType(), is( PropertySchemaType.COMPLETE_ALL_TOKENS ) );
+        assertThat( labelDesc.getLabelId() ).isEqualTo( LABEL_ID );
+        assertThat( labelDesc.entityType() ).isEqualTo( EntityType.NODE );
+        assertThat( labelDesc.propertySchemaType() ).isEqualTo( PropertySchemaType.COMPLETE_ALL_TOKENS );
         assertArray( labelDesc.getPropertyIds(), 1 );
 
         labelDesc = SchemaDescriptor.forLabel( LABEL_ID, 1, 2, 3 );
-        assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
+        assertThat( labelDesc.getLabelId() ).isEqualTo( LABEL_ID );
         assertArray( labelDesc.getPropertyIds(), 1, 2, 3 );
     }
 
@@ -57,13 +55,13 @@ class SchemaDescriptorTest
     {
         RelationTypeSchemaDescriptor relTypeDesc;
         relTypeDesc = SchemaDescriptor.forRelType( REL_TYPE_ID, 1 );
-        assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
-        assertThat( relTypeDesc.entityType(), is( EntityType.RELATIONSHIP ) );
-        assertThat( relTypeDesc.propertySchemaType(), is( PropertySchemaType.COMPLETE_ALL_TOKENS ) );
+        assertThat( relTypeDesc.getRelTypeId() ).isEqualTo( REL_TYPE_ID );
+        assertThat( relTypeDesc.entityType() ).isEqualTo( EntityType.RELATIONSHIP );
+        assertThat( relTypeDesc.propertySchemaType() ).isEqualTo( PropertySchemaType.COMPLETE_ALL_TOKENS );
         assertArray( relTypeDesc.getPropertyIds(), 1 );
 
         relTypeDesc = SchemaDescriptor.forRelType( REL_TYPE_ID, 1, 2, 3 );
-        assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
+        assertThat( relTypeDesc.getRelTypeId() ).isEqualTo( REL_TYPE_ID );
         assertArray( relTypeDesc.getPropertyIds(), 1, 2, 3 );
     }
 
@@ -86,9 +84,7 @@ class SchemaDescriptorTest
     @Test
     void shouldGiveNiceUserDescriptions()
     {
-        assertThat( SchemaDescriptor.forLabel( 1, 2 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ),
-                equalTo( ":Label1(property2)" ) );
-        assertThat( SchemaDescriptor.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ),
-                equalTo( "-[:RelType1(property3)]-" ) );
+        assertThat( SchemaDescriptor.forLabel( 1, 2 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( ":Label1(property2)" );
+        assertThat( SchemaDescriptor.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "-[:RelType1(property3)]-" );
     }
 }

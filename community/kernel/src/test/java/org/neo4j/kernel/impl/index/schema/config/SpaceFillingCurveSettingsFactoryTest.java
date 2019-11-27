@@ -28,8 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SpaceFillingCurveSettingsFactoryTest
 {
@@ -136,7 +135,7 @@ class SpaceFillingCurveSettingsFactoryTest
     {
         ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         SpaceFillingCurveSettings settings = configuredSettings.forCRS( crs );
-        assertThat( "Expected " + dimensions + "D for " + crs.getName(), settings.getDimensions(), equalTo( dimensions ) );
-        assertThat( "Should have normal geographic 2D extents", settings.indexExtents(), equalTo( envelope ) );
+        assertThat( settings.getDimensions() ).as( "Expected " + dimensions + "D for " + crs.getName() ).isEqualTo( dimensions );
+        assertThat( settings.indexExtents() ).as( "Should have normal geographic 2D extents" ).isEqualTo( envelope );
     }
 }

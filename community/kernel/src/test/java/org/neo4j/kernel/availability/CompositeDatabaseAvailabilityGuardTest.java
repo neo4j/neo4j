@@ -34,8 +34,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -131,7 +130,7 @@ class CompositeDatabaseAvailabilityGuardTest
 
         assertFalse( compositeGuard.isAvailable( 10 ) );
 
-        assertThat( counter.getValue(), lessThan( 20L ) );
+        assertThat( counter.getValue() ).isLessThan( 20L );
         assertTrue( defaultGuard.isAvailable() );
         assertFalse( systemGuard.isAvailable() );
     }
@@ -153,7 +152,7 @@ class CompositeDatabaseAvailabilityGuardTest
 
         assertThrows( UnavailableException.class, () -> compositeGuard.await( 10 ) );
 
-        assertThat( counter.getValue(), lessThan( 20L ) );
+        assertThat( counter.getValue() ).isLessThan( 20L );
         assertTrue( defaultGuard.isAvailable() );
         assertFalse( systemGuard.isAvailable() );
     }

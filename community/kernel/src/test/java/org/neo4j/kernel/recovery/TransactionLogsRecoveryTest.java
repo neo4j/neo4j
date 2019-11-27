@@ -72,8 +72,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -81,8 +80,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -480,7 +477,7 @@ class TransactionLogsRecoveryTest
 
         var exception = assertThrows( Exception.class, () -> recover( storeDir, logFiles, monitor, recoveryStartupChecker, logsTruncator ) );
         var rootCause = getRootCause( exception );
-        assertThat( rootCause, instanceOf( DatabaseStartAbortedException.class ) );
+        assertThat( rootCause ).isInstanceOf( DatabaseStartAbortedException.class );
 
         verify( logsTruncator, never() ).truncate( any() );
         verify( monitor, never() ).recoveryCompleted( anyInt(), anyLong() );

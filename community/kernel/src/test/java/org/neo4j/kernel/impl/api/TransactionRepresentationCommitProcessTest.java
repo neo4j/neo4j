@@ -36,8 +36,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,7 +69,7 @@ class TransactionRepresentationCommitProcessTest
         // WHEN
         TransactionFailureException exception =
                 assertThrows( TransactionFailureException.class, () -> commitProcess.commit( mockedTransaction(), commitEvent, INTERNAL ) );
-        assertThat( exception.getMessage(), containsString( "Could not append transaction representation to log" ) );
+        assertThat( exception.getMessage() ).contains( "Could not append transaction representation to log" );
         assertTrue( contains( exception, rootCause.getMessage(), rootCause.getClass() ) );
     }
 
@@ -94,7 +93,7 @@ class TransactionRepresentationCommitProcessTest
         // WHEN
         TransactionFailureException exception =
                 assertThrows( TransactionFailureException.class, () -> commitProcess.commit( transaction, commitEvent, INTERNAL ) );
-        assertThat( exception.getMessage(), containsString( "Could not apply the transaction to the store" ) );
+        assertThat( exception.getMessage() ).contains( "Could not apply the transaction to the store" );
         assertTrue( contains( exception, rootCause.getMessage(), rootCause.getClass() ) );
 
         // THEN

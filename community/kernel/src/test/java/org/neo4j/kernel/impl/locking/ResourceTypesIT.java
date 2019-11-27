@@ -23,8 +23,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
@@ -72,7 +71,7 @@ class ResourceTypesIT
             }
         }
 
-        assertThat( collisions, is( 0 ) );
+        assertThat( collisions ).isEqualTo( 0 );
     }
 
     private static long packValue( int labelId, int propertyKeyId, int objectId )

@@ -52,14 +52,7 @@ import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -110,7 +103,7 @@ class CentralJobSchedulerTest
             // Then assert that the recurring job was stopped (when the scheduler was shut down)
             int actualInvocations = invocations.get();
             sleep( period * 5 );
-            assertThat( invocations.get(), equalTo( actualInvocations ) );
+            assertThat( invocations.get() ).isEqualTo( actualInvocations );
         } );
     }
 
@@ -132,8 +125,7 @@ class CentralJobSchedulerTest
         int recorded = invocations.get();
         sleep( period * 100 );
         // we can have task that is already running during cancellation so lets count it as well
-        assertThat( invocations.get(),
-                both( greaterThanOrEqualTo( recorded ) ).and( lessThanOrEqualTo( recorded + 1 ) ) );
+        assertThat( invocations.get() ).isGreaterThanOrEqualTo( recorded ).isLessThanOrEqualTo( recorded + 1 );
     }
 
     @Test
@@ -285,11 +277,11 @@ class CentralJobSchedulerTest
         var e = assertThrows( Exception.class, handle::waitTermination );
         if ( e instanceof ExecutionException )
         {
-            assertThat( e.getCause(), is( boom ) );
+            assertThat( e.getCause() ).isEqualTo( boom );
         }
         else
         {
-            assertThat( e, instanceOf( CancellationException.class ) );
+            assertThat( e ).isInstanceOf( CancellationException.class );
         }
     }
 
@@ -358,7 +350,7 @@ class CentralJobSchedulerTest
 
         triggerLatch.await();
 
-        assertThat( triggerCounter.get(), greaterThanOrEqualTo( 1 ) );
+        assertThat( triggerCounter.get() ).isGreaterThanOrEqualTo( 1 );
         assertFalse( canceled.get() );
 
         jobHandle.cancel();
@@ -397,7 +389,7 @@ class CentralJobSchedulerTest
         life.start();
         Executor executor = scheduler.executor( Group.CYPHER_WORKER );
         // The CYPHER_WORKER group configures a ForkJoin pool, so that's what we should get.
-        assertThat( executor, instanceOf( ForkJoinPool.class ) );
+        assertThat( executor ).isInstanceOf( ForkJoinPool.class );
     }
 
     @Test
@@ -435,7 +427,7 @@ class CentralJobSchedulerTest
             handle.waitTermination();
         }
 
-        assertThat( max.get(), is( 3 ) );
+        assertThat( max.get() ).isEqualTo( 3 );
     }
 
     @Test
@@ -446,7 +438,7 @@ class CentralJobSchedulerTest
         SchedulerThreadFactory schedulerThreadFactory = mock( SchedulerThreadFactory.class );
 
         scheduler.setThreadFactory( Group.BOLT_WORKER, ( group, parentThreadGroup ) -> schedulerThreadFactory );
-        assertThat( scheduler.threadFactory( Group.BOLT_WORKER ), sameInstance( schedulerThreadFactory ) );
+        assertThat( scheduler.threadFactory( Group.BOLT_WORKER ) ).isSameAs( schedulerThreadFactory );
     }
 
     @Test

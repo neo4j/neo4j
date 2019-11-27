@@ -19,16 +19,10 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -47,9 +41,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasEntry;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -148,10 +140,9 @@ class ExecutingQueryTest
             // then
             QuerySnapshot snapshot = query.snapshot();
             assertEquals( "waiting", snapshot.status() );
-            assertThat( snapshot.resourceInformation(), CoreMatchers.<Map<String,Object>>allOf(
-                    hasEntry( "waitTimeMillis", 5_000L ),
-                    hasEntry( "resourceType", "NODE" ),
-                    hasEntry( equalTo( "resourceIds" ), longArray( 17 ) ) ) );
+            assertThat( snapshot.resourceInformation() ).containsEntry( "waitTimeMillis", 5_000L ).
+                    containsEntry( "resourceType", "NODE" ).
+                    containsEntry( "resourceIds", new long[]{ 17 } );
             assertEquals( 5_000_000, snapshot.waitTimeMicros() );
         }
         {
@@ -169,10 +160,9 @@ class ExecutingQueryTest
             // then
             QuerySnapshot snapshot = query.snapshot();
             assertEquals( "waiting", snapshot.status() );
-            assertThat( snapshot.resourceInformation(), CoreMatchers.<Map<String,Object>>allOf(
-                    hasEntry( "waitTimeMillis", 1_000L ),
-                    hasEntry( "resourceType", "RELATIONSHIP" ),
-                    hasEntry( equalTo( "resourceIds" ), longArray( 612 ) ) ) );
+            assertThat( snapshot.resourceInformation() ).containsEntry( "waitTimeMillis", 1_000L ).
+                    containsEntry( "resourceType", "RELATIONSHIP" ).
+                    containsEntry( "resourceIds", new long[]{612} );
             assertEquals( 6_000_000, snapshot.waitTimeMicros() );
         }
         {
@@ -292,14 +282,14 @@ class ExecutingQueryTest
     {
         var queryPart = "create USER foo SET PaSsWoRd ";
         var exeQuery1 = createExecutingQuery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
-        assertThat( exeQuery1.queryText(), equalTo( queryPart + "'******'" ) );
-        assertThat( exeQuery1.queryParameters().size(), equalTo( 0 ) );
+        assertThat( exeQuery1.queryText() ).isEqualTo( queryPart + "'******'" );
+        assertThat( exeQuery1.queryParameters().size() ).isEqualTo( 0 );
 
         MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
         MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
         var exeQuery2 = createExecutingQuery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
-        assertThat( exeQuery2.queryText(), equalTo( queryPart + "$password" ) );
-        assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams ) );
+        assertThat( exeQuery2.queryText() ).isEqualTo( queryPart + "$password" );
+        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams );
     }
 
     @Test
@@ -307,14 +297,14 @@ class ExecutingQueryTest
     {
         var queryPart = "alter USER foo SET PaSsWoRd ";
         var exeQuery = createExecutingQuery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
-        assertThat( exeQuery.queryText(), equalTo( queryPart + "'******'" ) );
-        assertThat( exeQuery.queryParameters().size(), equalTo( 0 ) );
+        assertThat( exeQuery.queryText() ).isEqualTo( queryPart + "'******'" );
+        assertThat( exeQuery.queryParameters().size() ).isEqualTo( 0 );
 
         MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
         MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
         var exeQuery2 = createExecutingQuery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
-        assertThat( exeQuery2.queryText(), equalTo( queryPart + "$password" ) );
-        assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams ) );
+        assertThat( exeQuery2.queryText() ).isEqualTo( queryPart + "$password" );
+        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams );
     }
 
     @Test
@@ -322,20 +312,20 @@ class ExecutingQueryTest
     {
         var queryPart = "alter CuRRenT USER foo SET PaSsWoRd FROM ";
         var exeQuery = createExecutingQuery( 1, queryPart + "'bar' TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
-        assertThat( exeQuery.queryText(), equalTo( queryPart + "'******' TO '******'" ) );
-        assertThat( exeQuery.queryParameters().size(), equalTo( 0 ) );
+        assertThat( exeQuery.queryText() ).isEqualTo( queryPart + "'******' TO '******'" );
+        assertThat( exeQuery.queryParameters().size() ).isEqualTo( 0 );
 
         MapValue params2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "bar" ), stringValue( "baz" )} );
         MapValue obfuscatedParams2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "******" ), stringValue( "******" )} );
         var exeQuery2 = createExecutingQuery( 1, queryPart + "$old TO $new", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params2 );
-        assertThat( exeQuery2.queryText(), equalTo( queryPart + "$old TO $new" ) );
-        assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams2 ) );
+        assertThat( exeQuery2.queryText() ).isEqualTo( queryPart + "$old TO $new" );
+        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams2 );
 
         MapValue params3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "bar" )} );
         MapValue obfuscatedParams3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "******" )} );
         var exeQuery3 = createExecutingQuery( 1, queryPart + "$old TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params3 );
-        assertThat( exeQuery3.queryText(), equalTo( queryPart + "$old TO '******'" ) );
-        assertThat( exeQuery3.queryParameters(), equalTo( obfuscatedParams3 ) );
+        assertThat( exeQuery3.queryText() ).isEqualTo( queryPart + "$old TO '******'" );
+        assertThat( exeQuery3.queryParameters() ).isEqualTo( obfuscatedParams3 );
 
     }
 
@@ -370,25 +360,6 @@ class ExecutingQueryTest
             public String name()
             {
                 return name;
-            }
-        };
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static Matcher<Object> longArray( long... expected )
-    {
-        return (Matcher) new TypeSafeMatcher<long[]>()
-        {
-            @Override
-            protected boolean matchesSafely( long[] item )
-            {
-                return Arrays.equals( expected, item );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendValue( expected );
             }
         };
     }

@@ -29,8 +29,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.getThresholdByType;
 
@@ -53,7 +52,7 @@ class LogPruneStrategyFactoryTest
     void configuringFilesThreshold()
     {
         Threshold threshold = getThreshold( new ThresholdConfigValue( "files", 25 ) );
-        assertThat( threshold, instanceOf( FileCountThreshold.class ) );
+        assertThat( threshold ).isInstanceOf( FileCountThreshold.class );
         assertEquals( "25 files", threshold.toString() );
     }
 
@@ -61,7 +60,7 @@ class LogPruneStrategyFactoryTest
     void configuringSizeThreshold()
     {
         Threshold threshold = getThreshold( new ThresholdConfigValue( "size", 16000 ) );
-        assertThat( threshold, instanceOf( FileSizeThreshold.class ) );
+        assertThat( threshold ).isInstanceOf( FileSizeThreshold.class );
         assertEquals( "16000 size", threshold.toString() );
     }
 
@@ -69,7 +68,7 @@ class LogPruneStrategyFactoryTest
     void configuringTxsThreshold()
     {
         Threshold threshold = getThreshold( new ThresholdConfigValue( "txs", 4000 ) );
-        assertThat( threshold, instanceOf( EntryCountThreshold.class ) );
+        assertThat( threshold ).isInstanceOf( EntryCountThreshold.class );
         assertEquals( "4000 entries", threshold.toString() );
     }
 
@@ -77,7 +76,7 @@ class LogPruneStrategyFactoryTest
     void configuringEntriesThreshold()
     {
         Threshold threshold = getThreshold( new ThresholdConfigValue( "entries", 4000 ) );
-        assertThat( threshold, instanceOf( EntryCountThreshold.class ) );
+        assertThat( threshold ).isInstanceOf( EntryCountThreshold.class );
         assertEquals( "4000 entries", threshold.toString() );
     }
 
@@ -85,7 +84,7 @@ class LogPruneStrategyFactoryTest
     void configuringHoursThreshold()
     {
         Threshold threshold = getThreshold( new ThresholdConfigValue( "hours", 100 ) );
-        assertThat( threshold, instanceOf( EntryTimespanThreshold.class ) );
+        assertThat( threshold ).isInstanceOf( EntryTimespanThreshold.class );
         assertEquals( "100 hours", threshold.toString() );
     }
 
@@ -93,7 +92,7 @@ class LogPruneStrategyFactoryTest
     void configuringDaysThreshold()
     {
         Threshold threshold = getThreshold( new ThresholdConfigValue( "days", 100_000 ) );
-        assertThat( threshold, instanceOf( EntryTimespanThreshold.class ) );
+        assertThat( threshold ).isInstanceOf( EntryTimespanThreshold.class );
         assertEquals( "100000 days", threshold.toString() );
     }
 

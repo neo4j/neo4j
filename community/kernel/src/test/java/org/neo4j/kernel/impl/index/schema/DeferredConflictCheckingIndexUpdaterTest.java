@@ -35,8 +35,7 @@ import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -109,8 +108,8 @@ class DeferredConflictCheckingIndexUpdaterTest
         // when
         updater.process( add( 0, descriptor, tuple( 10, 11 ) ) );
         var e = assertThrows( IndexEntryConflictException.class, updater::close );
-        assertThat( e.getMessage(), containsString( "101" ) );
-        assertThat( e.getMessage(), containsString( "202" ) );
+        assertThat( e.getMessage() ).contains( "101" );
+        assertThat( e.getMessage() ).contains( "202" );
     }
 
     private static Value[] tuple( Object... values )

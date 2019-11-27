@@ -23,10 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.test.OnDemandJobScheduler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -39,15 +36,15 @@ class IndexPopulationJobControllerTest
     @Test
     void trackPopulationJobs()
     {
-        assertThat( jobController.getPopulationJobs(), is( empty() ) );
+        assertThat( jobController.getPopulationJobs() ).isEmpty();
 
         IndexPopulationJob populationJob = mock( IndexPopulationJob.class );
         jobController.startIndexPopulation( populationJob );
-        assertThat( jobController.getPopulationJobs(), hasSize( 1 ) );
+        assertThat( jobController.getPopulationJobs() ).hasSize( 1 );
 
         IndexPopulationJob populationJob2 = mock( IndexPopulationJob.class );
         jobController.startIndexPopulation( populationJob2 );
-        assertThat( jobController.getPopulationJobs(), hasSize( 2 ) );
+        assertThat( jobController.getPopulationJobs() ).hasSize( 2 );
     }
 
     @Test
@@ -70,11 +67,11 @@ class IndexPopulationJobControllerTest
         IndexPopulationJob populationJob = getIndexPopulationJob();
         jobController.startIndexPopulation( populationJob );
 
-        assertThat( jobController.getPopulationJobs(), hasSize( 1 ) );
+        assertThat( jobController.getPopulationJobs() ).hasSize( 1 );
 
         executer.runJob();
 
-        assertThat( jobController.getPopulationJobs(), hasSize( 0 ) );
+        assertThat( jobController.getPopulationJobs() ).hasSize( 0 );
         verify( populationJob ).run();
     }
 

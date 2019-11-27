@@ -30,8 +30,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
@@ -46,7 +45,7 @@ public class IndexEntryResourceTypesTest
     void shouldProduceBackwardsCompatibleId()
     {
         long id = ResourceIds.indexEntryResourceId( labelId, exact( propertyId, value ) );
-        assertThat( id, equalTo( 6676982443481287192L ) );
+        assertThat( id ).isEqualTo( 6676982443481287192L );
     }
 
     @Test
@@ -68,7 +67,7 @@ public class IndexEntryResourceTypesTest
                 ResourceIds.indexEntryResourceId( 2, array( pred1, pred2, pred3, pred4 ) ) );
 
         Set<Long> uniqueIds = Iterables.asSet( ids );
-        assertThat( ids.size(), equalTo( uniqueIds.size() ) );
+        assertThat( ids.size() ).isEqualTo( uniqueIds.size() );
     }
 
     @Test

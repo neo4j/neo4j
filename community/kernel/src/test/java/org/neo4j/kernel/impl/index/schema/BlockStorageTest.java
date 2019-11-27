@@ -48,9 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparingLong;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -117,7 +115,7 @@ class BlockStorageTest
             assertEquals( 1, monitor.lastKeyCount );
             assertEquals( BlockStorage.BLOCK_HEADER_SIZE + monitor.totalEntrySize, monitor.lastNumberOfBytes );
             assertEquals( blockSize, monitor.lastPositionAfterFlush );
-            assertThat( monitor.lastNumberOfBytes, lessThan( blockSize ) );
+            assertThat( monitor.lastNumberOfBytes ).isLessThan( blockSize );
             assertContents( layout, storage, singletonList( singletonList( new BlockEntry<>( key, value ) ) ) );
         }
     }
@@ -218,7 +216,7 @@ class BlockStorageTest
 
             // then
             assertContents( layout, storage, asOneBigBlock( expectedBlocks ) );
-            assertThat( monitor.totalEntriesToMerge, greaterThanOrEqualTo( monitor.entryAddedCallCount ) );
+            assertThat( monitor.totalEntriesToMerge ).isGreaterThanOrEqualTo( monitor.entryAddedCallCount );
             assertEquals( monitor.totalEntriesToMerge, monitor.entriesMerged );
         }
     }

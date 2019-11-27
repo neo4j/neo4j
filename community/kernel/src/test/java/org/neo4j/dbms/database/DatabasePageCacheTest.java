@@ -38,10 +38,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -102,9 +99,9 @@ class DatabasePageCacheTest
         PagedFile pagedFile2 = databasePageCache.map( mapFile2, PAGE_SIZE );
 
         List<PagedFile> pagedFiles = databasePageCache.listExistingMappings();
-        assertThat( pagedFiles, hasSize( 2 ) );
-        assertThat( pagedFiles, hasItem( pagedFile ) );
-        assertThat( pagedFiles, hasItem( pagedFile2 ) );
+        assertThat( pagedFiles ).hasSize( 2 );
+        assertThat( pagedFiles ).contains( pagedFile );
+        assertThat( pagedFiles ).contains( pagedFile2 );
     }
 
     @Test
@@ -122,12 +119,12 @@ class DatabasePageCacheTest
             PagedFile pagedFile4 = anotherDatabaseCache.map( mapFile4, PAGE_SIZE );
 
             List<PagedFile> pagedFiles = databasePageCache.listExistingMappings();
-            assertThat( pagedFiles, hasSize( 2 ) );
-            assertThat( pagedFiles, hasItems( pagedFile, pagedFile2 ) );
+            assertThat( pagedFiles ).hasSize( 2 );
+            assertThat( pagedFiles ).contains( pagedFile, pagedFile2 );
 
             List<PagedFile> anotherPagedFiles = anotherDatabaseCache.listExistingMappings();
-            assertThat( anotherPagedFiles, hasSize( 2 ) );
-            assertThat( anotherPagedFiles, hasItems( pagedFile3, pagedFile4 ) );
+            assertThat( anotherPagedFiles ).hasSize( 2 );
+            assertThat( anotherPagedFiles ).contains( pagedFile3, pagedFile4 );
         }
     }
 

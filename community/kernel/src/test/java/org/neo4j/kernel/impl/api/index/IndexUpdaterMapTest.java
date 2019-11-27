@@ -25,8 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -95,7 +94,7 @@ class IndexUpdaterMapTest
         IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1 );
 
         // then
-        assertThat( updater, equalTo( indexUpdater1 ) );
+        assertThat( updater ).isEqualTo( indexUpdater1 );
     }
 
     @Test

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.hamcrest.Matcher;
+import org.assertj.core.api.Condition;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -37,10 +37,9 @@ import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.core.AnyOf.anyOf;
+import static org.assertj.core.api.Assertions.anyOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -224,12 +223,12 @@ class FusionIndexTestHelp
         catch ( UncheckedIOException e )
         {
             // then
-            List<Matcher<? super UncheckedIOException>> matchers = new ArrayList<>();
+            List<Condition<Throwable>> conditions = new ArrayList<>();
             for ( UncheckedIOException failure : failures )
             {
-                matchers.add( sameInstance( failure ) );
+                conditions.add( new Condition<>( e1 -> e1 == failure, "Same exception" ));
             }
-            assertThat( e, anyOf( matchers ) );
+            assertThat( e ).is( anyOf( conditions ) );
         }
     }
 

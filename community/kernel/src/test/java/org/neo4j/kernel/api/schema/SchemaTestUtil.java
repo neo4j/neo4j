@@ -22,8 +22,7 @@ package org.neo4j.kernel.api.schema;
 import org.neo4j.common.TokenNameLookup;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 public class SchemaTestUtil
@@ -40,7 +39,7 @@ public class SchemaTestUtil
 
     static void assertArray( int[] values, int... expected )
     {
-        assertThat( values.length, equalTo( expected.length ) );
+        assertThat( values.length ).isEqualTo( expected.length );
         for ( int i = 0; i < values.length; i++ )
         {
             assertEquals( format( "Expected %d, got %d at index %d", expected[i], values[i], i ), values[i], expected[i] );

@@ -22,8 +22,7 @@ package org.neo4j.kernel.api.query;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptyList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class CompilerInfoTest
 {
@@ -34,7 +33,7 @@ class CompilerInfoTest
         CompilerInfo compilerInfo = new CompilerInfo( "PLANNER", "RUNTIME", emptyList() );
 
         // then
-        assertThat( compilerInfo.planner(), is( "planner" ) );
-        assertThat( compilerInfo.runtime(), is( "runtime" ) );
+        assertThat( compilerInfo.planner() ).isEqualTo( "planner" );
+        assertThat( compilerInfo.runtime() ).isEqualTo( "runtime" );
     }
 }

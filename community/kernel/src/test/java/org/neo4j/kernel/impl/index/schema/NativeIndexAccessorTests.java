@@ -64,10 +64,7 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -798,10 +795,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
             var e = assertThrows( UnsupportedOperationException.class, () ->
                 reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery ) );
-            assertThat( e.getMessage(), allOf(
-                containsString( "unsupported order" ),
-                containsString( unsupportedOrder.toString() ),
-                containsString( unsupportedQuery.toString() ) ) );
+            assertThat( e.getMessage() ).contains( "unsupported order" ).contains( unsupportedOrder.toString() ).contains( unsupportedQuery.toString() );
         }
     }
 
@@ -863,7 +857,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                     Value foundValue = client.values[0];
                     assertTrue( expectedValues.remove( foundValue ), "found value that was not expected " + foundValue );
                 }
-            assertThat( "did not find all expected values", expectedValues.size(), is( 0 ) );
+            assertThat( expectedValues.size() ).as( "did not find all expected values" ).isEqualTo( 0 );
         }
     }
 

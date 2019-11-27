@@ -33,10 +33,7 @@ import java.util.Set;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
-import static org.hamcrest.Matchers.arrayWithSize;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.PrimitiveLongCollections.iterator;
@@ -54,7 +51,7 @@ class DiffApplyingPrimitiveLongIteratorTest
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( emptySource, added, removed );
         Set<Long> resultSet = toSet( iterator );
-        assertThat( resultSet, containsInAnyOrder(1L, 2L) );
+        assertThat( resultSet ).contains( 1L, 2L );
     }
 
     @Test
@@ -66,7 +63,7 @@ class DiffApplyingPrimitiveLongIteratorTest
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Set<Long> resultSet = toSet( iterator );
-        assertThat( resultSet, containsInAnyOrder(1L, 2L, 4L, 5L) );
+        assertThat( resultSet ).contains( 1L, 2L, 4L, 5L );
     }
 
     @Test
@@ -78,8 +75,8 @@ class DiffApplyingPrimitiveLongIteratorTest
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Long[] values = ArrayUtils.toObject( asArray( iterator ) );
-        assertThat( values, arrayContainingInAnyOrder( 1L, 4L, 5L ) );
-        assertThat( values, arrayWithSize( 3 ) );
+        assertThat( values ).contains( 1L, 4L, 5L );
+        assertThat( values ).hasSize( 3 );
     }
 
     @Test
@@ -91,7 +88,7 @@ class DiffApplyingPrimitiveLongIteratorTest
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Set<Long> resultSet = toSet( iterator );
-        assertThat( resultSet, containsInAnyOrder(1L, 5L) );
+        assertThat( resultSet ).contains( 1L, 5L );
     }
 
     @Test

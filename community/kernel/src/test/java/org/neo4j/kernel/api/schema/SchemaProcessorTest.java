@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.schema;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -30,7 +29,7 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SchemaProcessorTest
 {
@@ -69,10 +68,8 @@ class SchemaProcessorTest
         disguisedRelType().processWith( processor );
         disguisedRelType().processWith( processor );
 
-        assertThat( callHistory, Matchers.contains(
-                "LabelSchemaDescriptor", "LabelSchemaDescriptor",
-                "RelationTypeSchemaDescriptor", "LabelSchemaDescriptor",
-                "RelationTypeSchemaDescriptor", "RelationTypeSchemaDescriptor" ) );
+        assertThat( callHistory ).containsExactly( "LabelSchemaDescriptor", "LabelSchemaDescriptor", "RelationTypeSchemaDescriptor", "LabelSchemaDescriptor",
+                "RelationTypeSchemaDescriptor", "RelationTypeSchemaDescriptor" );
     }
 
     private SchemaDescriptor disguisedLabel()

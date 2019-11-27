@@ -27,8 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class NotificationDetailTest
 {
@@ -37,9 +36,9 @@ class NotificationDetailTest
     {
         NotificationDetail detail = NotificationDetail.Factory.index( "Person", "name" );
 
-        assertThat( detail.name(), equalTo( "hinted index" ) );
-        assertThat( detail.value(), equalTo( "index on :Person(name)" ) );
-        assertThat( detail.toString(), equalTo( "hinted index is: index on :Person(name)" ) );
+        assertThat( detail.name() ).isEqualTo( "hinted index" );
+        assertThat( detail.value() ).isEqualTo( "index on :Person(name)" );
+        assertThat( detail.toString() ).isEqualTo( "hinted index is: index on :Person(name)" );
     }
 
     @Test
@@ -47,9 +46,9 @@ class NotificationDetailTest
     {
         NotificationDetail detail = NotificationDetail.Factory.suboptimalIndex( "Person", "name" );
 
-        assertThat( detail.name(), equalTo( "index" ) );
-        assertThat( detail.value(), equalTo( "index on :Person(name)" ) );
-        assertThat( detail.toString(), equalTo( "index is: index on :Person(name)" ) );
+        assertThat( detail.name() ).isEqualTo( "index" );
+        assertThat( detail.value() ).isEqualTo( "index on :Person(name)" );
+        assertThat( detail.toString() ).isEqualTo( "index is: index on :Person(name)" );
     }
 
     @Test
@@ -59,9 +58,9 @@ class NotificationDetailTest
         idents.add( "n" );
         NotificationDetail detail = NotificationDetail.Factory.cartesianProduct( idents );
 
-        assertThat( detail.name(), equalTo( "identifier" ) );
-        assertThat( detail.value(), equalTo( "(n)" ) );
-        assertThat( detail.toString(), equalTo( "identifier is: (n)" ) );
+        assertThat( detail.name() ).isEqualTo( "identifier" );
+        assertThat( detail.value() ).isEqualTo( "(n)" );
+        assertThat( detail.toString() ).isEqualTo( "identifier is: (n)" );
     }
 
     @Test
@@ -72,9 +71,9 @@ class NotificationDetailTest
         idents.add( "node2" );
         NotificationDetail detail = NotificationDetail.Factory.cartesianProduct( idents );
 
-        assertThat( detail.name(), equalTo( "identifiers" ) );
-        assertThat( detail.value(), equalTo( "(n, node2)" ) );
-        assertThat( detail.toString(), equalTo( "identifiers are: (n, node2)" ) );
+        assertThat( detail.name() ).isEqualTo( "identifiers" );
+        assertThat( detail.value() ).isEqualTo( "(n, node2)" );
+        assertThat( detail.toString() ).isEqualTo( "identifiers are: (n, node2)" );
     }
 
     @Test
@@ -84,9 +83,9 @@ class NotificationDetailTest
         idents.add( "n" );
         NotificationDetail detail = NotificationDetail.Factory.joinKey( idents );
 
-        assertThat( detail.name(), equalTo( "hinted join key identifier" ) );
-        assertThat( detail.value(), equalTo( "n" ) );
-        assertThat( detail.toString(), equalTo( "hinted join key identifier is: n" ) );
+        assertThat( detail.name() ).isEqualTo( "hinted join key identifier" );
+        assertThat( detail.value() ).isEqualTo( "n" );
+        assertThat( detail.toString() ).isEqualTo( "hinted join key identifier is: n" );
     }
 
     @Test
@@ -97,8 +96,8 @@ class NotificationDetailTest
         idents.add( "node2" );
         NotificationDetail detail = NotificationDetail.Factory.joinKey( idents );
 
-        assertThat( detail.name(), equalTo( "hinted join key identifiers" ) );
-        assertThat( detail.value(), equalTo( "n, node2" ) );
-        assertThat( detail.toString(), equalTo( "hinted join key identifiers are: n, node2" ) );
+        assertThat( detail.name() ).isEqualTo( "hinted join key identifiers" );
+        assertThat( detail.value() ).isEqualTo( "n, node2" );
+        assertThat( detail.toString() ).isEqualTo( "hinted join key identifiers are: n, node2" );
     }
 }

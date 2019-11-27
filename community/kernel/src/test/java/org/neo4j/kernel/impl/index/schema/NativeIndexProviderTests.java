@@ -48,8 +48,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -182,7 +181,7 @@ abstract class NativeIndexProviderTests
 
         // then
         String populationFailure = provider.getPopulationFailure( descriptor() );
-        assertThat( populationFailure, is( failureMessage ) );
+        assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
     @Test
@@ -210,8 +209,8 @@ abstract class NativeIndexProviderTests
         thirdPopulator.close( false );
 
         // then
-        assertThat( provider.getPopulationFailure( descriptor( first ) ), is( firstFailure ) );
-        assertThat( provider.getPopulationFailure( descriptor( third ) ), is( thirdFailure ) );
+        assertThat( provider.getPopulationFailure( descriptor( first ) ) ).isEqualTo( firstFailure );
+        assertThat( provider.getPopulationFailure( descriptor( third ) ) ).isEqualTo( thirdFailure );
         assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor( second ) ) );
     }
 
@@ -231,7 +230,7 @@ abstract class NativeIndexProviderTests
         // then
         provider = newProvider();
         String populationFailure = provider.getPopulationFailure( descriptor() );
-        assertThat( populationFailure, is( failureMessage ) );
+        assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
     /* getInitialState */

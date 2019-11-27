@@ -26,8 +26,7 @@ import java.nio.ByteOrder;
 
 import org.neo4j.util.Bits;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.util.Bits.bits;
 
@@ -126,6 +125,6 @@ class TestBits
     {
         StringBuilder builder = new StringBuilder();
         Bits.numberToString( builder, 0b11111111, 2 );
-        assertThat( builder.toString(), is( "[00000000,11111111]" ) );
+        assertThat( builder.toString() ).isEqualTo( "[00000000,11111111]" );
     }
 }

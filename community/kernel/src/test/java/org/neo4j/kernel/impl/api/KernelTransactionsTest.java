@@ -100,12 +100,7 @@ import org.neo4j.token.TokenHolders;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -168,7 +163,7 @@ class KernelTransactionsTest
         first.close();
 
         // Then
-        assertThat( transactions.activeTransactions(), equalTo( asSet( newHandle( second ), newHandle( third ) ) ) );
+        assertThat( transactions.activeTransactions() ).isEqualTo( asSet( newHandle( second ), newHandle( third ) ) );
     }
 
     @Test
@@ -190,8 +185,8 @@ class KernelTransactionsTest
 
         // Then
         KernelTransaction postDispose = getKernelTransaction( transactions );
-        assertThat( postDispose, not( equalTo( first ) ) );
-        assertThat( postDispose, not( equalTo( second ) ) );
+        assertThat( postDispose ).isNotEqualTo( first );
+        assertThat( postDispose ).isNotEqualTo( second );
 
         assertNotNull( leftOpen.getReasonIfTerminated() );
     }
@@ -369,7 +364,7 @@ class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
         var e = assertThrows( Exception.class,
                 () -> kernelTransactions.newInstance( implicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
-        assertThat( e, instanceOf( IllegalStateException.class ) );
+        assertThat( e ).isInstanceOf( IllegalStateException.class );
     }
 
     @Test
@@ -410,8 +405,8 @@ class KernelTransactionsTest
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( ExecutionException.class ) );
-            assertThat( e.getCause(), instanceOf( IllegalStateException.class ) );
+            assertThat( e ).isInstanceOf( ExecutionException.class );
+            assertThat( e.getCause() ).isInstanceOf( IllegalStateException.class );
         }
         assertNotDone( txOpener );
 
@@ -429,7 +424,7 @@ class KernelTransactionsTest
         assertException( () -> kernelTransactions.newInstance( explicit, loginContext, EMBEDDED_CONNECTION, 0L ),
                 AuthorizationExpiredException.class, "Freeze failed." );
 
-        assertThat("We should not have any transaction", kernelTransactions.activeTransactions(), is(empty()));
+        assertThat( kernelTransactions.activeTransactions() ).as( "We should not have any transaction" ).isEmpty();
     }
 
     @Test

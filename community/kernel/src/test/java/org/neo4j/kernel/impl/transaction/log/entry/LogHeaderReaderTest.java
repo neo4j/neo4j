@@ -43,8 +43,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -202,7 +201,7 @@ class LogHeaderReaderTest
         final File file = testDirectory.file( "ReadLogHeader" );
         fileSystem.write( file ).close();
         IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file ) );
-        assertThat( exception.getMessage(), containsString( file.getName() ) );
+        assertThat( exception.getMessage() ).contains( file.getName() );
     }
 
     @Test

@@ -30,8 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -43,7 +42,7 @@ class FileURLAccessRuleTest
     {
         var error = assertThrows( URLAccessValidationError.class, () ->
             URLAccessRules.fileAccess().validate( Config.defaults(), new URL( "file://foo/bar/baz" ) ) );
-        assertThat( error.getMessage(), equalTo( "file URL may not contain an authority section (i.e. it should be 'file:///')" ) );
+        assertThat( error.getMessage() ).isEqualTo( "file URL may not contain an authority section (i.e. it should be 'file:///')" );
     }
 
     @Test
@@ -51,7 +50,7 @@ class FileURLAccessRuleTest
     {
         var error = assertThrows( URLAccessValidationError.class, () ->
             URLAccessRules.fileAccess().validate( Config.defaults(), new URL( "file:///bar/baz?q=foo" ) ) );
-        assertThat( error.getMessage(), equalTo( "file URL may not contain a query component" ) );
+        assertThat( error.getMessage() ).isEqualTo( "file URL may not contain a query component" );
     }
 
     @Test
@@ -61,7 +60,7 @@ class FileURLAccessRuleTest
         final Config config = Config.defaults( GraphDatabaseSettings.allow_file_urls, false );
         var error = assertThrows( URLAccessValidationError.class, () ->
             URLAccessRules.fileAccess().validate( config, url ) );
-        assertThat( error.getMessage(), equalTo( "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false" ) );
+        assertThat( error.getMessage() ).isEqualTo( "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false" );
     }
 
     @Test
@@ -72,7 +71,7 @@ class FileURLAccessRuleTest
         final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, importDir.toPath() );
         var error = assertThrows( URLAccessValidationError.class, () ->
             URLAccessRules.fileAccess().validate( config, new URL( "file:///../baz.csv" ) ) );
-        assertThat( error.getMessage(), equalTo( "file URL points outside configured import directory" ) );
+        assertThat( error.getMessage() ).isEqualTo( "file URL points outside configured import directory" );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +36,7 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,8 +72,8 @@ class LabelScanViewNodeStoreScanTest
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
         List<Long> visitedNodeIds = PrimitiveLongCollections.asList( idIterator );
 
-        assertThat(visitedNodeIds, Matchers.hasSize( 4 ));
-        assertThat( visitedNodeIds, Matchers.hasItems( 1L, 2L, 4L, 8L ) );
+        assertThat( visitedNodeIds ).hasSize( 4 );
+        assertThat( visitedNodeIds ).contains( 1L, 2L, 4L, 8L );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )

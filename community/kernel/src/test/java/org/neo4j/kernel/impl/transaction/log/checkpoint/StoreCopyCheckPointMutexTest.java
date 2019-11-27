@@ -38,9 +38,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -210,7 +208,7 @@ class StoreCopyCheckPointMutexTest
         // THEN
         // It's hard to make predictions about what should have been seen. Most importantly is that
         // The lock doesn't hang any requests and that number of calls to the action less than number of threads
-        assertThat( action.count(), lessThan( threads ) );
+        assertThat( action.count() ).isLessThan( threads );
     }
 
     @Test
@@ -264,7 +262,7 @@ class StoreCopyCheckPointMutexTest
         catch ( ExecutionException e )
         {
             Throwable cooperativeActionFailure = e.getCause();
-            assertThat( cooperativeActionFailure.getMessage(), containsString( "Co-operative" ) );
+            assertThat( cooperativeActionFailure.getMessage() ).contains( "Co-operative" );
             assertSame( controlledFailure, cooperativeActionFailure.getCause() );
         }
 

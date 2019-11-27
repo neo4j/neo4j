@@ -30,8 +30,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith( RandomExtension.class )
@@ -55,7 +54,7 @@ class CompositeGenericKeyTest
             String[] strings = random.randomValues().nextStringArrayRaw( 0, maxArrayLength, 0, maxStringLength );
             key.initialize( i );
             key.writeValue( 0, Values.of( strings ), NativeIndexKey.Inclusion.NEUTRAL );
-            assertThat( includingEntityId( calculateKeySize( strings ) ), equalTo( key.size() ) );
+            assertThat( includingEntityId( calculateKeySize( strings ) ) ).isEqualTo( key.size() );
         }
     }
 

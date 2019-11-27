@@ -38,9 +38,7 @@ import org.neo4j.time.Clocks;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -177,7 +175,7 @@ class DatabaseAvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertFalse( result );
-        assertThat( waitTime, greaterThanOrEqualTo( timeout ) );
+        assertThat( waitTime ).isGreaterThanOrEqualTo( timeout );
     }
 
     @Test
@@ -198,7 +196,7 @@ class DatabaseAvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertFalse( result );
-        assertThat( waitTime, greaterThanOrEqualTo( timeout ) );
+        assertThat( waitTime ).isGreaterThanOrEqualTo( timeout );
 
     }
 
@@ -238,7 +236,7 @@ class DatabaseAvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertFalse( result );
-        assertThat( waitTime, greaterThanOrEqualTo( timeout ) );
+        assertThat( waitTime ).isGreaterThanOrEqualTo( timeout );
     }
 
     @Test
@@ -330,7 +328,7 @@ class DatabaseAvailabilityGuardTest
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
         // Then
-        assertThat( databaseAvailabilityGuard.describe(), equalTo( "2 reasons for blocking: Requirement 1, Requirement 2." ) );
+        assertThat( databaseAvailabilityGuard.describe() ).isEqualTo( "2 reasons for blocking: Requirement 1, Requirement 2." );
     }
 
     @Test

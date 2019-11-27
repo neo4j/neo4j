@@ -23,8 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
@@ -38,8 +37,8 @@ class NativeIndexHeaderReaderTest
         NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( NO_HEADER_READER );
         nativeIndexHeaderReader.read( emptyBuffer );
         assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
-        assertThat( nativeIndexHeaderReader.failureMessage,
-                containsString( "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:" ) );
+        assertThat( nativeIndexHeaderReader.failureMessage ).contains(
+                "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:" );
     }
 
     @Test
@@ -49,8 +48,8 @@ class NativeIndexHeaderReaderTest
         NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( ByteBuffer::get );
         nativeIndexHeaderReader.read( emptyBuffer );
         assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
-        assertThat( nativeIndexHeaderReader.failureMessage,
-                containsString( "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:" ) );
+        assertThat( nativeIndexHeaderReader.failureMessage ).contains(
+                "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:" );
     }
 
     @Test

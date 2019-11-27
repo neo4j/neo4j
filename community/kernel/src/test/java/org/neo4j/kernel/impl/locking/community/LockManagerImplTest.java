@@ -27,8 +27,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.time.Clocks;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +65,7 @@ class LockManagerImplTest
         LockManagerImpl lockManager = createLockManager();
 
         var e = assertThrows( LockNotFoundException.class, () -> lockManager.releaseReadLock( node1, lockTransaction ) );
-        assertThat( e.getMessage(), startsWith( "Lock not found for: " ) );
+        assertThat( e.getMessage() ).startsWith( "Lock not found for: " );
     }
 
     @Test

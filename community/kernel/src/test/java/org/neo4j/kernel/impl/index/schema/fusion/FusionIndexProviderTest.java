@@ -42,8 +42,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
@@ -220,7 +219,7 @@ abstract class FusionIndexProviderTest
             }
 
             // then
-            assertThat( fusionIndexProvider.getPopulationFailure( AN_INDEX ), containsString( failure ) );
+            assertThat( fusionIndexProvider.getPopulationFailure( AN_INDEX ) ).contains( failure );
         }
     }
 
@@ -240,7 +239,7 @@ abstract class FusionIndexProviderTest
         String populationFailure = fusionIndexProvider.getPopulationFailure( AN_INDEX );
         for ( String failureMessage : failureMessages )
         {
-            assertThat( populationFailure, containsString( failureMessage ) );
+            assertThat( populationFailure ).contains( failureMessage );
         }
     }
 

@@ -44,8 +44,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
@@ -91,16 +90,16 @@ class DiagnosticsReporterTest
 
             reporter.dump( classifiers, destination, progress, true );
 
-            assertThat( baos.toString(), is(String.format(
+            assertThat( baos.toString() ).isEqualTo( String.format(
                     "1/2 fail.txt%n" +
                             "%n" +
                             "Error: Failed to write fail.txt%n" +
-                    "2/2 logs/a.txt%n" +
-                    "....................  20%%%n" +
-                    "....................  40%%%n" +
-                    "....................  60%%%n" +
-                    "....................  80%%%n" +
-                    ".................... 100%%%n%n" ) ) );
+                            "2/2 logs/a.txt%n" +
+                            "....................  20%%%n" +
+                            "....................  40%%%n" +
+                            "....................  60%%%n" +
+                            "....................  80%%%n" +
+                            ".................... 100%%%n%n" ) );
         }
 
         // Verify content

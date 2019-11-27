@@ -21,9 +21,7 @@ package org.neo4j.internal.helpers;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.emptyArray;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -75,7 +73,7 @@ class ExceptionsTest
         var chainedException = Exceptions.chain( exception, null );
 
         assertSame( exception, chainedException );
-        assertThat( chainedException.getSuppressed(), emptyArray() );
+        assertThat( chainedException.getSuppressed() ).isEmpty();
     }
 
     @Test
@@ -87,7 +85,7 @@ class ExceptionsTest
         var chainedException = Exceptions.chain( exception1, exception2 );
 
         assertSame( exception1, chainedException );
-        assertThat( chainedException.getSuppressed(), arrayContaining( exception2 ) );
+        assertThat( chainedException.getSuppressed() ).containsExactly( exception2 );
     }
 
     @Test
@@ -98,7 +96,7 @@ class ExceptionsTest
         var chainedException = Exceptions.chain( exception, exception );
 
         assertSame( exception, chainedException );
-        assertThat( chainedException.getSuppressed(), emptyArray() );
+        assertThat( chainedException.getSuppressed() ).isEmpty();
     }
 
     private static class LevelOneException extends Exception

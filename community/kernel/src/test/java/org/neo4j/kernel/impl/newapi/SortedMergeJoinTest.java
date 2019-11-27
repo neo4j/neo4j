@@ -35,8 +35,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SortedMergeJoinTest
 {
@@ -129,7 +128,7 @@ class SortedMergeJoinTest
         expected.addAll( listB );
         expected.sort( comparator );
 
-        assertThat( result, equalTo( expected ) );
+        assertThat( result ).isEqualTo( expected );
     }
 
     private List<NodeWithPropertyValues> process( SortedMergeJoin sortedMergeJoin,

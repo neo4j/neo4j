@@ -33,9 +33,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -51,12 +49,12 @@ class ValueUtilsTest
         AnyValue of = ValueUtils.of( collection );
 
         // Then
-        assertThat( of, instanceOf( ListValue.class ) );
+        assertThat( of ).isInstanceOf( ListValue.class );
         ListValue listValue = (ListValue) of;
-        assertThat( listValue.value( 0 ), equalTo( intValue( 1 ) ) );
-        assertThat( listValue.value( 1 ), equalTo( intValue( 2 ) ) );
-        assertThat( listValue.value( 2 ), equalTo( intValue( 3 ) ) );
-        assertThat( listValue.size(), equalTo( 3 ) );
+        assertThat( listValue.value( 0 ) ).isEqualTo( intValue( 1 ) );
+        assertThat( listValue.value( 1 ) ).isEqualTo( intValue( 2 ) );
+        assertThat( listValue.value( 2 ) ).isEqualTo( intValue( 3 ) );
+        assertThat( listValue.size() ).isEqualTo( 3 );
     }
 
     @Test
@@ -69,12 +67,12 @@ class ValueUtilsTest
         AnyValue of = ValueUtils.of( iterator );
 
         // Then
-        assertThat( of, instanceOf( ListValue.class ) );
+        assertThat( of ).isInstanceOf( ListValue.class );
         ListValue listValue = (ListValue) of;
-        assertThat( listValue.value( 0 ), equalTo( intValue( 1 ) ) );
-        assertThat( listValue.value( 1 ), equalTo( intValue( 2 ) ) );
-        assertThat( listValue.value( 2 ), equalTo( intValue( 3 ) ) );
-        assertThat( listValue.size(), equalTo( 3 ) );
+        assertThat( listValue.value( 0 ) ).isEqualTo( intValue( 1 ) );
+        assertThat( listValue.value( 1 ) ).isEqualTo( intValue( 2 ) );
+        assertThat( listValue.value( 2 ) ).isEqualTo( intValue( 3 ) );
+        assertThat( listValue.size() ).isEqualTo( 3 );
     }
 
     @Test
@@ -87,10 +85,10 @@ class ValueUtilsTest
         AnyValue anyValue = ValueUtils.of( map );
 
         // Then
-        assertThat( anyValue, instanceOf( MapValue.class ) );
+        assertThat( anyValue ).isInstanceOf( MapValue.class );
         MapValue mapValue = (MapValue) anyValue;
-        assertThat( mapValue.get( "a" ), equalTo( VirtualValues.list( stringValue( "foo" ), intValue( 42 ) ) ) );
-        assertThat( mapValue.size(), equalTo( 1 ) );
+        assertThat( mapValue.get( "a" ) ).isEqualTo( VirtualValues.list( stringValue( "foo" ), intValue( 42 ) ) );
+        assertThat( mapValue.size() ).isEqualTo( 1 );
     }
 
     @Test
@@ -103,11 +101,11 @@ class ValueUtilsTest
         AnyValue of = ValueUtils.of( collection );
 
         // Then
-        assertThat( of, instanceOf( ListValue.class ) );
+        assertThat( of ).isInstanceOf( ListValue.class );
         ListValue listValue = (ListValue) of;
-        assertThat( listValue.value( 0 ), equalTo( intValue( 1 ) ) );
-        assertThat( listValue.value( 1 ), equalTo( intValue( 2 ) ) );
-        assertThat( listValue.value( 2 ), equalTo( intValue( 3 ) ) );
-        assertThat( listValue.size(), equalTo( 3 ) );
+        assertThat( listValue.value( 0 ) ).isEqualTo( intValue( 1 ) );
+        assertThat( listValue.value( 1 ) ).isEqualTo( intValue( 2 ) );
+        assertThat( listValue.value( 2 ) ).isEqualTo( intValue( 3 ) );
+        assertThat( listValue.size() ).isEqualTo( 3 );
     }
 }

@@ -33,8 +33,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
@@ -77,7 +76,7 @@ class GenericIndexKeyValidatorTest
         // when
         var e = assertThrows( IllegalArgumentException.class,
                 () -> validator.validate( new Value[]{intValue( 10 ), epochDate( 100 ), stringValue( "abcdefghijklmnopqrstuvw" )} ) );
-        assertThat( e.getMessage(), containsString( "abcdefghijklmnopqrstuvw" ) );
+        assertThat( e.getMessage() ).contains( "abcdefghijklmnopqrstuvw" );
         verify( layout ).newKey();
     }
 

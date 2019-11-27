@@ -48,8 +48,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -433,12 +432,12 @@ class CheckPointerImplTest
 
         BooleanSupplier predicate = mock( BooleanSupplier.class );
         when( predicate.getAsBoolean() ).thenReturn( false, false, true );
-        assertThat( checkPointer.tryCheckPoint( INFO, predicate ), is( -1L ) ); // We decided to not wait for the on-going check point to finish.
+        assertThat( checkPointer.tryCheckPoint( INFO, predicate ) ).isEqualTo( -1L ); // We decided to not wait for the on-going check point to finish.
 
         finishFlushAndForce.release(); // Let the flushAndForce complete.
         forceCheckPointThread.join();
 
-        assertThat( checkPointer.tryCheckPoint( INFO, predicate ), is( this.transactionId ) );
+        assertThat( checkPointer.tryCheckPoint( INFO, predicate ) ).isEqualTo( this.transactionId );
     }
 
     private void verifyAsyncActionCausesConcurrentFlushingRush(
@@ -499,7 +498,7 @@ class CheckPointerImplTest
         when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true );
         checkPointer.checkPointIfNeeded( INFO );
         forceCheckPointer.get();
-        assertThat( observedRushCount.get(), is( 1L ) );
+        assertThat( observedRushCount.get() ).isEqualTo( 1L );
     }
 
     @Test

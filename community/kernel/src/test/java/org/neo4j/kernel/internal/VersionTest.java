@@ -21,35 +21,34 @@ package org.neo4j.kernel.internal;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class VersionTest
 {
     @Test
     void shouldExposeCleanAndDetailedVersions()
     {
-        assertThat( version( "1.2.3-M01,abcdef012345" ).getReleaseVersion(), equalTo( "1.2.3-M01" ));
-        assertThat( version( "1.2.3-M01,abcdef012345" ).getVersion(),        equalTo( "1.2.3-M01,abcdef012345" ));
-        assertThat( version( "1.2.3-M01,abcdef012345-dirty" ).getVersion(),  equalTo( "1.2.3-M01,abcdef012345-dirty" ));
+        assertThat( version( "1.2.3-M01,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3-M01" );
+        assertThat( version( "1.2.3-M01,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3-M01,abcdef012345" );
+        assertThat( version( "1.2.3-M01,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3-M01,abcdef012345-dirty" );
 
-        assertThat( version( "1.2.3,abcdef012345" ).getReleaseVersion(),     equalTo( "1.2.3" ));
-        assertThat( version( "1.2.3,abcdef012345" ).getVersion(),            equalTo( "1.2.3,abcdef012345" ));
-        assertThat( version( "1.2.3,abcdef012345-dirty" ).getVersion(),      equalTo( "1.2.3,abcdef012345-dirty" ));
+        assertThat( version( "1.2.3,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3" );
+        assertThat( version( "1.2.3,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3,abcdef012345" );
+        assertThat( version( "1.2.3,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3,abcdef012345-dirty" );
 
-        assertThat( version( "1.2.3-GA,abcdef012345" ).getReleaseVersion(),  equalTo( "1.2.3-GA" ));
-        assertThat( version( "1.2.3-GA,abcdef012345" ).getVersion(),         equalTo( "1.2.3-GA,abcdef012345" ));
-        assertThat( version( "1.2.3-GA,abcdef012345-dirty" ).getVersion(),   equalTo( "1.2.3-GA,abcdef012345-dirty" ));
+        assertThat( version( "1.2.3-GA,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3-GA" );
+        assertThat( version( "1.2.3-GA,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3-GA,abcdef012345" );
+        assertThat( version( "1.2.3-GA,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3-GA,abcdef012345-dirty" );
 
-        assertThat( version( "1.2.3M01,abcdef012345" ).getReleaseVersion(),  equalTo( "1.2.3M01" ));
-        assertThat( version( "1.2.3M01,abcdef012345" ).getVersion(),         equalTo( "1.2.3M01,abcdef012345" ));
-        assertThat( version( "1.2.3M01,abcdef012345-dirty" ).getVersion(),   equalTo( "1.2.3M01,abcdef012345-dirty" ));
+        assertThat( version( "1.2.3M01,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3M01" );
+        assertThat( version( "1.2.3M01,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3M01,abcdef012345" );
+        assertThat( version( "1.2.3M01,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3M01,abcdef012345-dirty" );
 
-        assertThat( version( "1.2" ).getReleaseVersion(),  equalTo( "1.2" ));
-        assertThat( version( "1.2" ).getVersion(),         equalTo( "1.2" ));
+        assertThat( version( "1.2" ).getReleaseVersion() ).isEqualTo( "1.2" );
+        assertThat( version( "1.2" ).getVersion() ).isEqualTo( "1.2" );
 
-        assertThat( version( "0" ).getReleaseVersion(),    equalTo( "0" ));
-        assertThat( version( "0" ).getVersion(),           equalTo( "0" ));
+        assertThat( version( "0" ).getReleaseVersion() ).isEqualTo( "0" );
+        assertThat( version( "0" ).getVersion() ).isEqualTo( "0" );
     }
 
     private Version version( String version )

@@ -25,10 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -165,7 +162,7 @@ class SimpleBitSetTest
         }
 
         // Then
-        assertThat( found, equalTo( IntLists.immutable.of( 4, 7, 63, 78 ) ) );
+        assertThat( found ).isEqualTo( IntLists.immutable.of( 4, 7, 63, 78 ) );
     }
 
     @Test
@@ -176,7 +173,7 @@ class SimpleBitSetTest
         set.put( key );
         long checkpoint = 0;
         checkpoint = set.checkPointAndPut( checkpoint, key );
-        assertThat( set.checkPointAndPut( checkpoint, key ), is( checkpoint ) );
+        assertThat( set.checkPointAndPut( checkpoint, key ) ).isEqualTo( checkpoint );
         assertTrue( set.contains( key ) );
     }
 
@@ -188,7 +185,7 @@ class SimpleBitSetTest
         set.put( key );
         long checkpoint = 0;
         checkpoint = set.checkPointAndPut( checkpoint, key );
-        assertThat( set.checkPointAndPut( checkpoint, key + 1 ), is( not( checkpoint ) ) );
+        assertThat( set.checkPointAndPut( checkpoint, key + 1 ) ).isNotEqualTo( checkpoint );
         assertTrue( set.contains( key + 1 ) );
         assertFalse( set.contains( key ) );
     }
@@ -202,7 +199,7 @@ class SimpleBitSetTest
         long checkpoint = 0;
         checkpoint = set.checkPointAndPut( checkpoint, key );
         set.put( key + 1 );
-        assertThat( set.checkPointAndPut( checkpoint, key ), is( not( checkpoint ) ) );
+        assertThat( set.checkPointAndPut( checkpoint, key ) ).isNotEqualTo( checkpoint );
         assertTrue( set.contains( key ) );
         assertFalse( set.contains( key + 1 ) );
     }
@@ -216,7 +213,7 @@ class SimpleBitSetTest
         set.put( key );
         long checkpoint = 0;
         checkpoint = set.checkPointAndPut( checkpoint, key );
-        assertThat( set.checkPointAndPut( checkpoint, key2 ), is( not( checkpoint ) ) );
+        assertThat( set.checkPointAndPut( checkpoint, key2 ) ).isNotEqualTo( checkpoint );
         assertTrue( set.contains( key2 ) );
         assertFalse( set.contains( key ) );
     }

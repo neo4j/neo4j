@@ -80,8 +80,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
@@ -141,8 +140,8 @@ public class BatchingTransactionAppenderConcurrencyTest
 
         appender.forceAfterAppend( logAppendEvent );
 
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
         assertTrue( channelCommandQueue.isEmpty() );
     }
 
@@ -165,11 +164,11 @@ public class BatchingTransactionAppenderConcurrencyTest
         Thread otherThread = fork( runnable );
         awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
 
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.dummy );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
         future.get();
         otherThread.join();
         assertTrue( channelCommandQueue.isEmpty() );
@@ -201,11 +200,11 @@ public class BatchingTransactionAppenderConcurrencyTest
             awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
         }
 
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
-        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.dummy );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
         future.get();
         for ( Thread otherThread : otherThreads )
         {
@@ -343,7 +342,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         // Check number of transactions, should only have one
         LogEntryReader logEntryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
 
-        assertThat( logFiles.getLowestLogVersion(), is( logFiles.getHighestLogVersion() ) );
+        assertThat( logFiles.getLowestLogVersion() ).isEqualTo( logFiles.getHighestLogVersion() );
         long version = logFiles.getHighestLogVersion();
 
         try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
@@ -360,7 +359,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                     numberOfTransactions++;
                 }
             }
-            assertThat( numberOfTransactions, is( 1L ) );
+            assertThat( numberOfTransactions ).isEqualTo( 1L );
         }
     }
 

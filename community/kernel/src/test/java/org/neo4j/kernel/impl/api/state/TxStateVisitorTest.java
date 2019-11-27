@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,8 +41,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TxStateVisitorTest
 {
@@ -62,12 +60,7 @@ class TxStateVisitorTest
 
         // Then
         StorageProperty prop = new PropertyKeyValue( propKey, Values.of( "hello" ) );
-        assertThat( visitor.relPropertyChanges, contains( propChange( relId, noProperty, asList( prop ), IntSets.immutable.empty() ) ) );
-    }
-
-    private Matcher<List<GatheringVisitor.PropertyChange>> contains( GatheringVisitor.PropertyChange ... change )
-    {
-        return equalTo(asList( change ));
+        assertThat( visitor.relPropertyChanges ).containsExactly( propChange( relId, noProperty, asList( prop ), IntSets.immutable.empty() ) );
     }
 
     private GatheringVisitor.PropertyChange propChange( long relId, Collection<StorageProperty> added,

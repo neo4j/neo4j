@@ -30,8 +30,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,8 +49,7 @@ class EntityStateImplTest
         Iterator<StorageProperty> added = state.addedProperties();
 
         // Then
-        assertThat( Iterators.asList( added ),
-                equalTo( asList( new PropertyKeyValue( 2, Values.of( "Hello" ) ) ) ) );
+        assertThat( Iterators.asList( added ) ).isEqualTo( asList( new PropertyKeyValue( 2, Values.of( "Hello" ) ) ) );
     }
 
     @Test
@@ -67,11 +65,8 @@ class EntityStateImplTest
         Iterator<StorageProperty> added = state.addedProperties();
 
         // Then
-        assertThat( Iterators.asList( added ),
-                equalTo( asList(
-                        new PropertyKeyValue( 1, Values.of( "WAT" ) ),
-                        new PropertyKeyValue( 2, Values.of( "Hello" ) ) )
-                ) );
+        assertThat( Iterators.asList( added ) ).isEqualTo(
+                asList( new PropertyKeyValue( 1, Values.of( "WAT" ) ), new PropertyKeyValue( 2, Values.of( "Hello" ) ) ) );
     }
 
     @Test
@@ -85,8 +80,7 @@ class EntityStateImplTest
         state.addProperty( 4, Values.of( "another value" ) );
 
         // Then
-        assertThat( Iterators.asList( state.changedProperties() ),
-                equalTo( asList( new PropertyKeyValue( 4, Values.of( "another value" ) ) ) ) );
+        assertThat( Iterators.asList( state.changedProperties() ) ).isEqualTo( asList( new PropertyKeyValue( 4, Values.of( "another value" ) ) ) );
         assertFalse( state.addedProperties().hasNext() );
         assertTrue( state.removedProperties().isEmpty() );
     }

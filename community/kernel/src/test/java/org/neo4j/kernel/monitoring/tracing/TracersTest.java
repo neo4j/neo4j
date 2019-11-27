@@ -35,9 +35,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 class TracersTest
@@ -59,9 +57,9 @@ class TracersTest
     void mustProduceNullImplementationsWhenRequested()
     {
         Tracers tracers = createTracers( "null" );
-        assertThat( tracers.getPageCacheTracer(), is( PageCacheTracer.NULL ) );
-        assertThat( tracers.getPageCursorTracerSupplier(), is( PageCursorTracerSupplier.NULL ) );
-        assertThat( tracers.getDatabaseTracer(), is( DatabaseTracer.NULL.NULL ) );
+        assertThat( tracers.getPageCacheTracer() ).isEqualTo( PageCacheTracer.NULL );
+        assertThat( tracers.getPageCursorTracerSupplier() ).isEqualTo( PageCursorTracerSupplier.NULL );
+        assertThat( tracers.getDatabaseTracer() ).isEqualTo( DatabaseTracer.NULL.NULL );
         assertNoWarning();
     }
 
@@ -96,9 +94,9 @@ class TracersTest
 
     private void assertDefaultImplementation( Tracers tracers )
     {
-        assertThat( tracers.getPageCacheTracer(), instanceOf( DefaultPageCacheTracer.class ) );
-        assertThat( tracers.getDatabaseTracer(), instanceOf( DefaultTracer.class ) );
-        assertThat( tracers.getPageCursorTracerSupplier(), instanceOf( DefaultPageCursorTracerSupplier.class ) );
+        assertThat( tracers.getPageCacheTracer() ).isInstanceOf( DefaultPageCacheTracer.class );
+        assertThat( tracers.getDatabaseTracer() ).isInstanceOf( DefaultTracer.class );
+        assertThat( tracers.getPageCursorTracerSupplier() ).isInstanceOf( DefaultPageCursorTracerSupplier.class );
     }
 
     private void assertNoWarning()

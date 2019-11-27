@@ -25,8 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntToLongFunction;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,12 +47,12 @@ class ReferencesTest
     @Test
     void shouldPreserveNoId()
     {
-        assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ), equalTo( NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeSelection( NO_ID ), equalTo( NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeDenseSelection( NO_ID ), equalTo( NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeNoIncoming( (int) NO_ID ), equalTo( NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeNoOutgoing( (int) NO_ID ), equalTo( NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeNoLoops( (int) NO_ID ), equalTo( NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeSelection( NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeDenseSelection( NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeNoIncoming( (int) NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeNoOutgoing( (int) NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeNoLoops( (int) NO_ID ) ).isEqualTo( NO_ID );
     }
 
     @Test
@@ -65,12 +64,12 @@ class ReferencesTest
             long reference = random.nextLong( MAX_ID_LIMIT );
             int token = random.nextInt(Integer.MAX_VALUE);
 
-            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDense( reference ) ), equalTo( reference ) );
-            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeSelection( reference ) ), equalTo( reference ) );
-            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDenseSelection( reference ) ), equalTo( reference ) );
-            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoIncoming( token ) ), equalTo( (long) token ) );
-            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoOutgoing( token ) ), equalTo( (long) token ) );
-            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoLoops( token ) ), equalTo( (long) token ) );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDense( reference ) ) ).isEqualTo( reference );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeSelection( reference ) ) ).isEqualTo( reference );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDenseSelection( reference ) ) ).isEqualTo( reference );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoIncoming( token ) ) ).isEqualTo( (long) token );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoOutgoing( token ) ) ).isEqualTo( (long) token );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoLoops( token ) ) ).isEqualTo( (long) token );
         }
     }
 

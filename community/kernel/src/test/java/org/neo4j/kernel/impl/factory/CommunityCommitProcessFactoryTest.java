@@ -29,8 +29,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 class CommunityCommitProcessFactoryTest
@@ -45,7 +44,7 @@ class CommunityCommitProcessFactoryTest
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
                 mock( StorageEngine.class ), config );
 
-        assertThat( commitProcess, instanceOf( ReadOnlyTransactionCommitProcess.class ) );
+        assertThat( commitProcess ).isInstanceOf( ReadOnlyTransactionCommitProcess.class );
     }
 
     @Test
@@ -56,6 +55,6 @@ class CommunityCommitProcessFactoryTest
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
                 mock( StorageEngine.class ), Config.defaults() );
 
-        assertThat( commitProcess, instanceOf( TransactionRepresentationCommitProcess.class ) );
+        assertThat( commitProcess ).isInstanceOf( TransactionRepresentationCommitProcess.class );
     }
 }

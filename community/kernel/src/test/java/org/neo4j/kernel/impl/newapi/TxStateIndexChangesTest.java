@@ -52,10 +52,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.emptyIterable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -876,11 +874,11 @@ class TxStateIndexChangesTest
     {
         if ( expected.length == 0 )
         {
-            assertThat( iterable, emptyIterable() );
+            assertThat( iterable ).isEmpty();
         }
         else
         {
-            assertThat( iterable, contains( expected ) );
+            assertThat( iterable ).containsExactly( expected );
         }
     }
 

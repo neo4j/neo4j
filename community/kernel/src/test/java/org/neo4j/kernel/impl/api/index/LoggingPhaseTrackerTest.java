@@ -30,8 +30,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.time.FakeClock;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -117,7 +116,7 @@ class LoggingPhaseTrackerTest
         PhaseTracker phaseTracker = getPhaseTracker();
         phaseTracker.stop();
         IllegalStateException exception = assertThrows( IllegalStateException.class, () -> phaseTracker.enterPhase( PhaseTracker.Phase.SCAN ) );
-        assertThat( exception.getMessage(), containsString( "Trying to report a new phase after phase tracker has been stopped." ) );
+        assertThat( exception.getMessage() ).contains( "Trying to report a new phase after phase tracker has been stopped." );
     }
 
     @Test

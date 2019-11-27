@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold.DEFAULT_CHECKING_FREQUENCY_MILLIS;
@@ -219,9 +218,9 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     {
         // By default, the transaction count based threshold wants a higher check frequency than the time based
         // default threshold.
-        assertThat( createThreshold().checkFrequencyMillis(), is( DEFAULT_CHECKING_FREQUENCY_MILLIS ) );
+        assertThat( createThreshold().checkFrequencyMillis() ).isEqualTo( DEFAULT_CHECKING_FREQUENCY_MILLIS );
 
         withIntervalTime( "100ms" );
-        assertThat( createThreshold().checkFrequencyMillis(), is( 100L ) );
+        assertThat( createThreshold().checkFrequencyMillis() ).isEqualTo( 100L );
     }
 }

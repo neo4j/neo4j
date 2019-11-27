@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -86,9 +87,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.oneOf;
+import static org.assertj.core.api.Assertions.anyOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -217,7 +218,9 @@ public class DatabaseCompositeIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId ), resultSet( firstReader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
-        assertThat( resultSet( firstReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ), oneOf( asSet(), asSet( nodeId2 )) );
+        assertThat( resultSet( firstReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) ).
+                is( anyOf( new Condition<>( s -> s.equals( asSet() ), "empty set" ),
+                          new Condition<>( s -> s.equals( asSet( nodeId2 ) ), "one element" ) ) );
         assertEquals( asSet( nodeId ), resultSet( secondReader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
         assertEquals( asSet( nodeId2 ), resultSet( secondReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
         firstReader.close();

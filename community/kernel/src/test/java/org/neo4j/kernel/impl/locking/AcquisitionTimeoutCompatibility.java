@@ -36,8 +36,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupport
@@ -142,6 +141,6 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
     private void verifyAcquisitionFailure( Future<Boolean> lockAcquisition )
     {
         ExecutionException exception = assertThrows( ExecutionException.class, lockAcquisition::get );
-        assertThat( getRootCause( exception ), instanceOf( LockAcquisitionTimeoutException.class ) );
+        assertThat( getRootCause( exception ) ).isInstanceOf( LockAcquisitionTimeoutException.class );
     }
 }

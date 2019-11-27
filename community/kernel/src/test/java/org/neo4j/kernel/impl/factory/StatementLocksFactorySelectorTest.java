@@ -34,8 +34,7 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
@@ -57,8 +56,8 @@ class StatementLocksFactorySelectorTest
         StatementLocksFactory factory = loader.select();
         StatementLocks statementLocks = factory.newInstance();
 
-        assertThat( factory, instanceOf( SimpleStatementLocksFactory.class ) );
-        assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
+        assertThat( factory ).isInstanceOf( SimpleStatementLocksFactory.class );
+        assertThat( statementLocks ).isInstanceOf( SimpleStatementLocks.class );
 
         assertSame( locksClient, statementLocks.optimistic() );
         assertSame( locksClient, statementLocks.pessimistic() );
@@ -92,7 +91,7 @@ class StatementLocksFactorySelectorTest
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
+            assertThat( e ).isInstanceOf( IllegalStateException.class );
         }
     }
 

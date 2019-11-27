@@ -27,8 +27,7 @@ import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,7 +48,7 @@ class AccessCapabilityFactoryTest
 
         var accessCapability = factory.newAccessCapability( readWriteConfig );
 
-        assertThat( accessCapability, instanceOf( CanWrite.class ) );
+        assertThat( accessCapability ).isInstanceOf( CanWrite.class );
         assertDoesNotThrow( accessCapability::assertCanWrite );
     }
 
@@ -60,7 +59,7 @@ class AccessCapabilityFactoryTest
 
         var accessCapability = factory.newAccessCapability( readOnlyConfig );
 
-        assertThat( accessCapability, instanceOf( ReadOnly.class ) );
+        assertThat( accessCapability ).isInstanceOf( ReadOnly.class );
         assertThrows( WriteOperationsNotAllowedException.class, accessCapability::assertCanWrite );
     }
 

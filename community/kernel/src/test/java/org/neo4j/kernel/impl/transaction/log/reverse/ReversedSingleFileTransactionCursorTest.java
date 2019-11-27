@@ -56,8 +56,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -170,7 +169,7 @@ class ReversedSingleFileTransactionCursorTest
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "multiple log versions" ) );
+            assertThat( e.getMessage() ).contains( "multiple log versions" );
         }
     }
 

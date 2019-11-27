@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,12 +90,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.containsStringIgnoringCase;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -563,8 +557,8 @@ class OperationsTest
         Iterator<ConstraintDescriptor> result = allStoreHolder.constraintsGetAll( );
 
         // then
-        assertThat( Iterators.count( result ), Matchers.is( 2L ) );
-        assertThat( asList( result ), empty() );
+        assertThat( Iterators.count( result ) ).isEqualTo( 2L );
+        assertThat( asList( result ) ).isEmpty();
         order.verify( storageReader ).constraintsGetAll();
         order.verify( locks, atLeastOnce() ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
         order.verify( locks, atLeastOnce() ).acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
@@ -585,8 +579,8 @@ class OperationsTest
         Iterator<ConstraintDescriptor> result = allStoreHolder.snapshot().constraintsGetAll( );
 
         // then
-        assertThat( Iterators.count( result ), Matchers.is( 2L ) );
-        assertThat( asList( result ), empty() );
+        assertThat( Iterators.count( result ) ).isEqualTo( 2L );
+        assertThat( asList( result ) ).isEmpty();
         verify( storageReaderSnapshot ).constraintsGetAll();
         verifyNoMoreInteractions( locks );
     }
@@ -1000,13 +994,13 @@ class OperationsTest
                 .stream()
                 .sorted( Comparator.comparing( d -> d.schema().getEntityTokenIds()[0] ) )
                 .toArray( IndexDescriptor[]::new );
-        assertThat( Arrays.toString( indexDescriptors ), indexDescriptors.length, is( 3 ) );
-        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getId(), is( 1L ) );
-        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getId(), is( 2L ) );
-        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getId(), is( 3L ) );
-        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "index_5c81a58e" ) );
-        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "index_2813986a" ) );
-        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "index_edb2dfd3" ) );
+        assertThat( indexDescriptors.length ).as( Arrays.toString( indexDescriptors ) ).isEqualTo( 3 );
+        assertThat( indexDescriptors[0].getId() ).as( indexDescriptors[0].toString() ).isEqualTo( 1L );
+        assertThat( indexDescriptors[1].getId() ).as( indexDescriptors[1].toString() ).isEqualTo( 2L );
+        assertThat( indexDescriptors[2].getId() ).as( indexDescriptors[2].toString() ).isEqualTo( 3L );
+        assertThat( indexDescriptors[0].getName() ).as( indexDescriptors[0].toString() ).isEqualTo( "index_5c81a58e" );
+        assertThat( indexDescriptors[1].getName() ).as( indexDescriptors[1].toString() ).isEqualTo( "index_2813986a" );
+        assertThat( indexDescriptors[2].getName() ).as( indexDescriptors[2].toString() ).isEqualTo( "index_edb2dfd3" );
     }
 
     @Test
@@ -1021,12 +1015,12 @@ class OperationsTest
                     IndexPrototype prototype = i.getArgument( 2 );
                     Optional<String> name = prototype.getName();
                     assertTrue( name.isPresent() );
-                    assertThat( name.get(), is( constraintName ) );
+                    assertThat( name.get() ).isEqualTo( constraintName );
                     return prototype.materialise( 2 );
                 } );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( constraintName );
         IndexBackedConstraintDescriptor constraint = operations.uniquePropertyConstraintCreate( prototype ).asIndexBackedConstraint();
-        assertThat( constraint.ownedIndexId(), is( 2L ) );
+        assertThat( constraint.ownedIndexId() ).isEqualTo( 2L );
     }
 
     @Test
@@ -1155,7 +1149,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ), containsString( "FULLTEXT" ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).contains( "FULLTEXT" );
     }
 
     @Test
@@ -1178,7 +1172,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ), containsString( "full-text schema" ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).contains( "full-text schema" );
     }
 
     @Test
@@ -1201,7 +1195,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ), containsString( "relationship type schema" ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).contains( "relationship type schema" );
     }
 
     @Test
@@ -1223,8 +1217,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ),
-                allOf( containsStringIgnoringCase( "index prototype" ), containsStringIgnoringCase( "not unique" ) ) );
+        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).containsIgnoringCase( "index prototype" ).containsIgnoringCase( "not unique" );
     }
 
     private static Iterator<ConstraintDescriptor> asIterator( ConstraintDescriptor constraint )

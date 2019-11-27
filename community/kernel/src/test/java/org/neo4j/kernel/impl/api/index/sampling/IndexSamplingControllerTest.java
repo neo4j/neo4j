@@ -37,8 +37,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -225,7 +224,7 @@ class IndexSamplingControllerTest
 
         IndexSamplingMode mode = foregroundRebuildUpdated( 1 );
         RuntimeException e = assertThrows( RuntimeException.class, () -> controller.sampleIndexes( mode ) );
-        assertThat( e.getMessage(), containsString( "Could not finish index sampling within the given time limit, 1 milliseconds." ) );
+        assertThat( e.getMessage() ).contains( "Could not finish index sampling within the given time limit, 1 milliseconds." );
     }
 
     @Test

@@ -50,9 +50,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -207,7 +205,7 @@ abstract class FusionIndexAccessorTest
         }
 
         var e = assertThrows( UncheckedIOException.class, () -> fusionIndexAccessor.drop() );
-        assertThat( exceptions, hasItem( e ) );
+        assertThat( exceptions ).contains( e );
     }
 
     /* close */
@@ -395,7 +393,7 @@ abstract class FusionIndexAccessorTest
 
             // then
             BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-            assertThat( fusionAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
+            assertThat( fusionAllEntriesReader.maxCount() ).isEqualTo( BoundedIterable.UNKNOWN_MAX_COUNT );
         }
     }
 
@@ -410,7 +408,7 @@ abstract class FusionIndexAccessorTest
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        assertThat( fusionAllEntriesReader.maxCount(), is( lastId ) );
+        assertThat( fusionAllEntriesReader.maxCount() ).isEqualTo( lastId );
     }
 
     @Test

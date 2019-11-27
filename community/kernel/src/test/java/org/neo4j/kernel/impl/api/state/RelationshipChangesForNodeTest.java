@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.collection.PrimitiveLongCollections;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
@@ -50,7 +47,7 @@ class RelationshipChangesForNodeTest
         changes.addRelationship( 6, TYPE, LOOP );
 
         LongIterator rawRelationships = changes.getRelationships();
-        assertThat( PrimitiveLongCollections.asArray( rawRelationships ), ids( 1, 2, 3, 4, 5, 6 ) );
+        assertThat( asArray( rawRelationships ) ).containsExactly( 1, 2, 3, 4, 5, 6 );
     }
 
     @Test
@@ -73,21 +70,13 @@ class RelationshipChangesForNodeTest
         changes.addRelationship( 11, DECOY_TYPE, OUTGOING );
         changes.addRelationship( 12, DECOY_TYPE, LOOP );
 
-        LongIterator rawIncoming =
-                changes.getRelationships( INCOMING, TYPE );
-        assertThat( PrimitiveLongCollections.asArray( rawIncoming ), ids( 1 ) );
+        LongIterator rawIncoming = changes.getRelationships( INCOMING, TYPE );
+        assertThat( asArray( rawIncoming ) ).containsExactly( 1 );
 
-        LongIterator rawOutgoing =
-                changes.getRelationships( OUTGOING, TYPE );
-        assertThat( PrimitiveLongCollections.asArray( rawOutgoing ), ids( 2, 3 ) );
+        LongIterator rawOutgoing = changes.getRelationships( OUTGOING, TYPE );
+        assertThat( asArray( rawOutgoing ) ).containsExactly( 2, 3 );
 
-        LongIterator rawLoops =
-                changes.getRelationships( LOOP, TYPE );
-        assertThat( PrimitiveLongCollections.asArray( rawLoops ), ids( 4, 5, 6 ) );
-    }
-
-    private static Matcher<long[]> ids( long... ids )
-    {
-        return equalTo( ids );
+        LongIterator rawLoops = changes.getRelationships( LOOP, TYPE );
+        assertThat( asArray( rawLoops ) ).containsExactly( 4, 5, 6 );
     }
 }

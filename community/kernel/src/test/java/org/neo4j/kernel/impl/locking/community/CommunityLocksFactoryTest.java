@@ -26,8 +26,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.time.Clocks;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 class CommunityLocksFactoryTest
@@ -40,7 +39,7 @@ class CommunityLocksFactoryTest
         Locks locks1 = factory.newInstance( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
         Locks locks2 = factory.newInstance( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
         assertNotSame( locks1, locks2 );
-        assertThat( locks1, instanceOf( CommunityLockManger.class ) );
-        assertThat( locks2, instanceOf( CommunityLockManger.class ) );
+        assertThat( locks1 ).isInstanceOf( CommunityLockManger.class );
+        assertThat( locks2 ).isInstanceOf( CommunityLockManger.class );
     }
 }

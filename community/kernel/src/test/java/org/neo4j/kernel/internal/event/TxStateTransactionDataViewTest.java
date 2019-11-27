@@ -49,8 +49,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -90,7 +89,7 @@ class TxStateTransactionDataViewTest
         state.nodeDoCreate( 2 );
 
         // When & Then
-        assertThat( idList( snapshot().createdNodes() ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( idList( snapshot().createdNodes() ) ).isEqualTo( asList( 1L, 2L ) );
     }
 
     @Test
@@ -108,9 +107,9 @@ class TxStateTransactionDataViewTest
 
         // When & Then
         TxStateTransactionDataSnapshot snapshot = snapshot();
-        assertThat( idList( snapshot.deletedNodes() ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( single( snapshot.removedLabels() ).label().name(), equalTo( "label" ) );
-        assertThat( single( snapshot.removedNodeProperties() ).key(), equalTo( "key" ) );
+        assertThat( idList( snapshot.deletedNodes() ) ).isEqualTo( asList( 1L, 2L ) );
+        assertThat( single( snapshot.removedLabels() ).label().name() ).isEqualTo( "label" );
+        assertThat( single( snapshot.removedNodeProperties() ).key() ).isEqualTo( "key" );
     }
 
     @Test
@@ -121,7 +120,7 @@ class TxStateTransactionDataViewTest
         state.relationshipDoCreate( 2, 1, 1L, 1L );
 
         // When & Then
-        assertThat( idList( snapshot().createdRelationships() ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( idList( snapshot().createdRelationships() ) ).isEqualTo( asList( 1L, 2L ) );
     }
 
     @Test
@@ -136,8 +135,8 @@ class TxStateTransactionDataViewTest
 
         // When & Then
         TxStateTransactionDataSnapshot snapshot = snapshot();
-        assertThat( idList( snapshot.deletedRelationships() ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( single( snapshot.removedRelationshipProperties() ).key(), equalTo( "key" ) );
+        assertThat( idList( snapshot.deletedRelationships() ) ).isEqualTo( asList( 1L, 2L ) );
+        assertThat( single( snapshot.removedRelationshipProperties() ).key() ).isEqualTo( "key" );
     }
 
     @Test
@@ -150,7 +149,7 @@ class TxStateTransactionDataViewTest
         ops.withNode( 1 );
 
         // When & Then
-        assertThat( snapshot().isDeleted( node ), equalTo( true ) );
+        assertThat( snapshot().isDeleted( node ) ).isEqualTo( true );
     }
 
     @Test
@@ -164,7 +163,7 @@ class TxStateTransactionDataViewTest
         ops.withRelationship( 1L, 1L, 1, 2L );
 
         // When & Then
-        assertThat( snapshot().isDeleted( rel ), equalTo( true ) );
+        assertThat( snapshot().isDeleted( rel ) ).isEqualTo( true );
     }
 
     @Test
@@ -181,10 +180,10 @@ class TxStateTransactionDataViewTest
 
         // Then
         PropertyEntry<Node> entry = single( propertyEntries );
-        assertThat( entry.key(), equalTo( "theKey" ) );
-        assertThat( entry.value(), equalTo( "newValue" ) );
-        assertThat( entry.previouslyCommittedValue(), equalTo( "prevValue" ) );
-        assertThat( entry.entity().getId(), equalTo( 1L ) );
+        assertThat( entry.key() ).isEqualTo( "theKey" );
+        assertThat( entry.value() ).isEqualTo( "newValue" );
+        assertThat( entry.previouslyCommittedValue() ).isEqualTo( "prevValue" );
+        assertThat( entry.entity().getId() ).isEqualTo( 1L );
     }
 
     @Test
@@ -201,9 +200,9 @@ class TxStateTransactionDataViewTest
 
         // Then
         PropertyEntry<Node> entry = single( propertyEntries );
-        assertThat( entry.key(), equalTo( "theKey" ) );
-        assertThat( entry.previouslyCommittedValue(), equalTo( "prevValue" ) );
-        assertThat( entry.entity().getId(), equalTo( 1L ) );
+        assertThat( entry.key() ).isEqualTo( "theKey" );
+        assertThat( entry.previouslyCommittedValue() ).isEqualTo( "prevValue" );
+        assertThat( entry.entity().getId() ).isEqualTo( 1L );
     }
 
     @Test
@@ -220,9 +219,9 @@ class TxStateTransactionDataViewTest
 
         // Then
         PropertyEntry<Relationship> entry = single( propertyEntries );
-        assertThat( entry.key(), equalTo( "theKey" ) );
-        assertThat( entry.previouslyCommittedValue(), equalTo( "prevValue" ) );
-        assertThat( entry.entity().getId(), equalTo( 1L ) );
+        assertThat( entry.key() ).isEqualTo( "theKey" );
+        assertThat( entry.previouslyCommittedValue() ).isEqualTo( "prevValue" );
+        assertThat( entry.entity().getId() ).isEqualTo( 1L );
     }
 
     @Test
@@ -239,10 +238,10 @@ class TxStateTransactionDataViewTest
 
         // Then
         PropertyEntry<Relationship> entry = single( propertyEntries );
-        assertThat( entry.key(), equalTo( "theKey" ) );
-        assertThat( entry.value(), equalTo( "newValue" ) );
-        assertThat( entry.previouslyCommittedValue(), equalTo( "prevValue" ) );
-        assertThat( entry.entity().getId(), equalTo( 1L ) );
+        assertThat( entry.key() ).isEqualTo( "theKey" );
+        assertThat( entry.value() ).isEqualTo( "newValue" );
+        assertThat( entry.previouslyCommittedValue() ).isEqualTo( "prevValue" );
+        assertThat( entry.entity().getId() ).isEqualTo( 1L );
     }
 
     @Test
@@ -258,8 +257,8 @@ class TxStateTransactionDataViewTest
 
         // Then
         LabelEntry entry = single( labelEntries );
-        assertThat( entry.label().name(), equalTo( "theLabel" ) );
-        assertThat( entry.node().getId(), equalTo( 1L ) );
+        assertThat( entry.label().name() ).isEqualTo( "theLabel" );
+        assertThat( entry.node().getId() ).isEqualTo( 1L );
     }
 
     @Test
@@ -275,8 +274,8 @@ class TxStateTransactionDataViewTest
 
         // Then
         LabelEntry entry = single( labelEntries );
-        assertThat( entry.label().name(), equalTo( "theLabel" ) );
-        assertThat( entry.node().getId(), equalTo( 1L ) );
+        assertThat( entry.label().name() ).isEqualTo( "theLabel" );
+        assertThat( entry.node().getId() ).isEqualTo( 1L );
     }
 
     @Test
@@ -327,8 +326,8 @@ class TxStateTransactionDataViewTest
         TxStateTransactionDataSnapshot transactionDataSnapshot =
                 new TxStateTransactionDataSnapshot( state, ops, transaction );
         assertEquals( 1, transactionDataSnapshot.metaData().size() );
-        assertThat( "Expected metadata map to contain defined username", transactionDataSnapshot.metaData(),
-                equalTo( genericMap( "username", "Igor" ) ) );
+        assertThat( transactionDataSnapshot.metaData() ).as( "Expected metadata map to contain defined username" ).isEqualTo(
+                genericMap( "username", "Igor" ) );
     }
 
     private static List<Long> idList( Iterable<? extends Entity> entities )

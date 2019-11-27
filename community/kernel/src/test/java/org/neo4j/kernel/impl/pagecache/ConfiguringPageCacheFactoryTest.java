@@ -37,8 +37,7 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -78,8 +77,8 @@ class ConfiguringPageCacheFactoryTest
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
         {
-            assertThat( cache.pageSize(), equalTo( PageCache.PAGE_SIZE ) );
-            assertThat( cache.maxCachedPages(), equalTo( pageCount ) );
+            assertThat( cache.pageSize() ).isEqualTo( PageCache.PAGE_SIZE );
+            assertThat( cache.maxCachedPages() ).isEqualTo( pageCount );
         }
     }
 }

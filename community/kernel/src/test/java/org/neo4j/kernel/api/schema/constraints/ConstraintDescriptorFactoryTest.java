@@ -26,8 +26,7 @@ import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
 
@@ -42,12 +41,12 @@ class ConstraintDescriptorFactoryTest
         ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.existsForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintType.EXISTS ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.type() ).isEqualTo( ConstraintType.EXISTS );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
 
         desc = ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintType.EXISTS ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) ) );
+        assertThat( desc.type() ).isEqualTo( ConstraintType.EXISTS );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) );
     }
 
     @Test
@@ -56,8 +55,8 @@ class ConstraintDescriptorFactoryTest
         ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.type() ).isEqualTo( ConstraintType.UNIQUE );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
     }
 
     @Test
@@ -66,8 +65,8 @@ class ConstraintDescriptorFactoryTest
         ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE_EXISTS ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.type() ).isEqualTo( ConstraintType.UNIQUE_EXISTS );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
     }
 
     @Test
@@ -76,16 +75,16 @@ class ConstraintDescriptorFactoryTest
         ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.type() ).isEqualTo( ConstraintType.UNIQUE );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
 
         desc = ConstraintDescriptorFactory.nodeKeyForSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE_EXISTS ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.type() ).isEqualTo( ConstraintType.UNIQUE_EXISTS );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
 
         desc = ConstraintDescriptorFactory.existsForSchema( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) );
-        assertThat( desc.type(), equalTo( ConstraintType.EXISTS) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) ) );
+        assertThat( desc.type() ).isEqualTo( ConstraintType.EXISTS );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) );
     }
 
     @Test
@@ -110,11 +109,11 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldGiveNiceUserDescriptions()
     {
-        assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).userDescription( SIMPLE_NAME_LOOKUP ),
-                equalTo( "Constraint( EXISTS, :Label1(property2) )" ) );
-        assertThat( ConstraintDescriptorFactory.existsForRelType( 1, 3 ).userDescription( SIMPLE_NAME_LOOKUP ),
-                equalTo( "Constraint( EXISTS, -[:RelType1(property3)]- )" ) );
-        assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( SIMPLE_NAME_LOOKUP ),
-                equalTo( "Constraint( UNIQUE, :Label2(property4) )" ) );
+        assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
+                "Constraint( EXISTS, :Label1(property2) )" );
+        assertThat( ConstraintDescriptorFactory.existsForRelType( 1, 3 ).userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
+                "Constraint( EXISTS, -[:RelType1(property3)]- )" );
+        assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
+                "Constraint( UNIQUE, :Label2(property4) )" );
     }
 }

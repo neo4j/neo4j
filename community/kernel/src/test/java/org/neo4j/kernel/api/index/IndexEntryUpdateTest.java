@@ -26,9 +26,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IndexEntryUpdateTest
@@ -41,8 +39,8 @@ class IndexEntryUpdateTest
     {
         IndexEntryUpdate<?> a = IndexEntryUpdate.add( 0, SchemaDescriptor.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> b = IndexEntryUpdate.add( 0, SchemaDescriptor.forLabel( 3, 4 ), singleValue );
-        assertThat( a, equalTo( b ) );
-        assertThat( a.hashCode(), equalTo( b.hashCode() ) );
+        assertThat( a ).isEqualTo( b );
+        assertThat( a.hashCode() ).isEqualTo( b.hashCode() );
     }
 
     @Test
@@ -50,9 +48,9 @@ class IndexEntryUpdateTest
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.add( 0, SchemaDescriptor.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> multi = IndexEntryUpdate.add( 0, SchemaDescriptor.forLabel( 3, 4, 5 ), multiValue );
-        assertThat( single, not( equalTo( multi ) ) );
-        assertThat( single.values(), equalTo( new Object[]{singleValue} ) );
-        assertThat( multi.values(), equalTo( multiValue ) );
+        assertThat( single ).isNotEqualTo( multi );
+        assertThat( single.values() ).isEqualTo( new Object[]{singleValue} );
+        assertThat( multi.values() ).isEqualTo( multiValue );
     }
 
     @Test
@@ -61,9 +59,9 @@ class IndexEntryUpdateTest
         IndexEntryUpdate<?> single = IndexEntryUpdate.remove( 0, SchemaDescriptor.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> multi = IndexEntryUpdate
                 .remove( 0, SchemaDescriptor.forLabel( 3, 4, 5 ), multiValue );
-        assertThat( single, not( equalTo( multi ) ) );
-        assertThat( single.values(), equalTo( new Object[]{singleValue} ) );
-        assertThat( multi.values(), equalTo( multiValue ) );
+        assertThat( single ).isNotEqualTo( multi );
+        assertThat( single.values() ).isEqualTo( new Object[]{singleValue} );
+        assertThat( multi.values() ).isEqualTo( multiValue );
     }
 
     @Test
@@ -95,9 +93,9 @@ class IndexEntryUpdateTest
                 .change( 0, SchemaDescriptor.forLabel( 3, 4 ), singleValue, singleValue );
         IndexEntryUpdate<?> multiChange = IndexEntryUpdate
                 .change( 0, SchemaDescriptor.forLabel( 3, 4 ), singleAsArray, singleAsArray );
-        assertThat( singleAdd, equalTo( multiAdd ) );
-        assertThat( singleRemove, equalTo( multiRemove ) );
-        assertThat( singleChange, equalTo( multiChange ) );
+        assertThat( singleAdd ).isEqualTo( multiAdd );
+        assertThat( singleRemove ).isEqualTo( multiRemove );
+        assertThat( singleChange ).isEqualTo( multiChange );
     }
 
     @Test
@@ -109,9 +107,9 @@ class IndexEntryUpdateTest
         Value[] multiAfter = {Values.of( "Hello" ), Values.of( "Hi" )};
         IndexEntryUpdate<?> multiChange = IndexEntryUpdate
                 .change( 0, SchemaDescriptor.forLabel( 3, 4, 5 ), multiValue, multiAfter );
-        assertThat( new Object[]{singleValue}, equalTo( singleChange.beforeValues() ) );
-        assertThat( new Object[]{singleAfter}, equalTo( singleChange.values() ) );
-        assertThat( multiValue, equalTo( multiChange.beforeValues() ) );
-        assertThat( multiAfter, equalTo( multiChange.values() ) );
+        assertThat( new Object[]{singleValue} ).isEqualTo( singleChange.beforeValues() );
+        assertThat( new Object[]{singleAfter} ).isEqualTo( singleChange.values() );
+        assertThat( multiValue ).isEqualTo( multiChange.beforeValues() );
+        assertThat( multiAfter ).isEqualTo( multiChange.values() );
     }
 }

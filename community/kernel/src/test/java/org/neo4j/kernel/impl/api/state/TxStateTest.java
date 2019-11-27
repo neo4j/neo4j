@@ -71,10 +71,8 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singleton;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -331,7 +329,7 @@ abstract class TxStateTest
         state.nodeDoDelete( nodeId );
 
         // Then
-        assertThat( state.addedAndRemovedNodes().getRemoved(), equalTo( newSetWith( nodeId ) ) );
+        assertThat( state.addedAndRemovedNodes().getRemoved() ).isEqualTo( newSetWith( nodeId ) );
     }
 
     @Test
@@ -814,7 +812,7 @@ abstract class TxStateTest
     @Test
     void dataRevisionMustChangeOnDataChange()
     {
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
         LongHashSet observedRevisions = new LongHashSet();
         observedRevisions.add( 0L );
@@ -875,55 +873,55 @@ abstract class TxStateTest
     @Test
     void dataRevisionMustNotChangeOnSchemaChanges()
     {
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.indexDoAdd( indexOn_1_1 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.indexDoDrop( indexOn_1_1 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.indexDoUnRemove( indexOn_1_1 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint1 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.constraintDoDrop( constraint1 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.constraintDoUnRemove( constraint1 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         IndexBackedConstraintDescriptor constraint2 = ConstraintDescriptorFactory.nodeKeyForLabel( 0, 0 );
         state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 ) );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.labelDoCreateForName( "Label", false, 0 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.relationshipTypeDoCreateForName( "REL", false, 0 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         state.propertyKeyDoCreateForName( "prop", false, 0 );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
 
         // This is not strictly a schema-change, but it is a "non-data" change in that these will not transform into store updates.
         // Or schema updates for that matter. We only do these to speed up the transaction state filtering of schema index query results.
         state.indexDoUpdateEntry( indexOn_1_1.schema(), 0, ValueTuple.of( Values.booleanValue( true ) ), ValueTuple.of( Values.booleanValue( false ) ) );
-        assertThat( state.getDataRevision(), is( 0L ) );
+        assertThat( state.getDataRevision() ).isEqualTo( 0L );
         assertFalse( state.hasDataChanges() );
     }
 

@@ -51,8 +51,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -213,7 +212,7 @@ class BatchingTransactionAppenderTest
 
         var e = assertThrows( Exception.class, () -> appender.append( new TransactionToApply( transaction.getTransactionRepresentation(),
             transaction.getCommitEntry().getTxId() ), logAppendEvent ) );
-        assertThat( e.getMessage(), containsString( "to be applied, but appending it ended up generating an" ) );
+        assertThat( e.getMessage() ).contains( "to be applied, but appending it ended up generating an" );
     }
 
     @Test

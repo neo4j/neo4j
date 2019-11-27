@@ -32,8 +32,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -195,7 +194,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/c/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/a/c/f" ) );
     }
 
     @Test
@@ -205,7 +204,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/c/d/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/a/c/d/f" ) );
     }
 
     // DEEPER
@@ -216,7 +215,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/c/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/a/b/c/f" ) );
     }
 
     @Test
@@ -226,7 +225,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/c/d/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/a/b/c/d/f" ) );
     }
 
     @Test
@@ -236,7 +235,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/c/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/c/f" ) );
     }
 
     @Test
@@ -246,7 +245,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/c/d/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/c/d/f" ) );
     }
 
     @Test
@@ -256,7 +255,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/a/b/f" ) );
     }
 
     @Test
@@ -266,7 +265,7 @@ class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/d/f" ) ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath() ).isEqualTo( path( "/a/b/d/f" ) );
     }
 
     @Test
@@ -299,7 +298,7 @@ class FileUtilsTest
         assertTrue( file.createNewFile() );
         assertTrue( subdir.mkdirs() );
 
-        assertThat( FileUtils.countFilesInDirectoryPath( dir.toPath() ), is( 2L ) );
+        assertThat( FileUtils.countFilesInDirectoryPath( dir.toPath() ) ).isEqualTo( 2L );
     }
 
     private File directory( String name )

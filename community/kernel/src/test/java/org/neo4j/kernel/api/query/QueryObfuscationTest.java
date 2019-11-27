@@ -25,8 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class QueryObfuscationTest
 {
@@ -35,15 +34,15 @@ class QueryObfuscationTest
     {
         var params = new HashSet<String>();
         var obfuscated = QueryObfuscation.obfuscateText( "CALL dbms.security.createUser('foo', 'bar')", params );
-        assertThat( params, equalTo( Collections.emptySet() ) );
-        assertThat( obfuscated, equalTo( "CALL dbms.security.createUser('foo', '******')" ) );
+        assertThat( params ).isEqualTo( Collections.emptySet() );
+        assertThat( obfuscated ).isEqualTo( "CALL dbms.security.createUser('foo', '******')" );
 
         obfuscated = QueryObfuscation.obfuscateText( "CALL dbms.security.createUser('foo', $password)", params );
-        assertThat( params, equalTo( Set.of( "password" ) ) );
-        assertThat( obfuscated, equalTo( "CALL dbms.security.createUser('foo', $password)" ) );
+        assertThat( params ).isEqualTo( Set.of( "password" ) );
+        assertThat( obfuscated ).isEqualTo( "CALL dbms.security.createUser('foo', $password)" );
 
         obfuscated = QueryObfuscation.obfuscateText( "CALL dbms.security.createUser('foo', $password, false)", params );
-        assertThat( params, equalTo( Set.of( "password" ) ) );
-        assertThat( obfuscated, equalTo( "CALL dbms.security.createUser('foo', $password, false)" ) );
+        assertThat( params ).isEqualTo( Set.of( "password" ) );
+        assertThat( obfuscated ).isEqualTo( "CALL dbms.security.createUser('foo', $password, false)" );
     }
 }

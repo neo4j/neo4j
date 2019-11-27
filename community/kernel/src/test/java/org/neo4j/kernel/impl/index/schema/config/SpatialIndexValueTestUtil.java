@@ -26,9 +26,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class SpatialIndexValueTestUtil
 {
@@ -42,7 +40,7 @@ public class SpatialIndexValueTestUtil
         double[] centerPointForOriginTile = curve.centerPointFor( spaceFillingCurveMapForOrigin );
         PointValue originValue = Values.pointValue( CoordinateReferenceSystem.WGS84, origin );
         PointValue centerPointValue = Values.pointValue( CoordinateReferenceSystem.WGS84, centerPointForOriginTile );
-        assertThat( "need non equal points for this test", origin, not( equalTo( centerPointValue ) ) );
+        assertThat( origin ).as( "need non equal points for this test" ).isNotEqualTo( centerPointValue );
         return Pair.of( originValue, centerPointValue );
     }
 }

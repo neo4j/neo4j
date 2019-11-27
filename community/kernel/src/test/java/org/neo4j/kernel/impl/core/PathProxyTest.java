@@ -29,8 +29,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,13 +50,13 @@ class PathProxyTest
 
         // then
         assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next(), instanceOf( Node.class ) );
+        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 1, node.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next(), instanceOf( Node.class ) );
+        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 2, node.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next(), instanceOf( Node.class ) );
+        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 3, node.getId() );
         assertFalse( iterator.hasNext() );
     }
@@ -73,13 +72,13 @@ class PathProxyTest
 
         // then
         assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next(), instanceOf( Node.class ) );
+        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 3, node.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next(), instanceOf( Node.class ) );
+        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 2, node.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next(), instanceOf( Node.class ) );
+        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 1, node.getId() );
         assertFalse( iterator.hasNext() );
     }
@@ -95,12 +94,12 @@ class PathProxyTest
 
         // then
         assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next(), instanceOf( Relationship.class ) );
+        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
         assertEquals( 100, relationship.getId() );
         assertEquals( 1, relationship.getStartNodeId() );
         assertEquals( 2, relationship.getEndNodeId() );
         assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next(), instanceOf( Relationship.class ) );
+        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
         assertEquals( 200, relationship.getId() );
         assertEquals( 3, relationship.getStartNodeId() );
         assertEquals( 2, relationship.getEndNodeId() );
@@ -118,12 +117,12 @@ class PathProxyTest
 
         // then
         assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next(), instanceOf( Relationship.class ) );
+        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
         assertEquals( 200, relationship.getId() );
         assertEquals( 3, relationship.getStartNodeId() );
         assertEquals( 2, relationship.getEndNodeId() );
         assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next(), instanceOf( Relationship.class ) );
+        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
         assertEquals( 100, relationship.getId() );
         assertEquals( 1, relationship.getStartNodeId() );
         assertEquals( 2, relationship.getEndNodeId() );
@@ -141,19 +140,19 @@ class PathProxyTest
 
         // then
         assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next(), instanceOf( Node.class ) );
+        assertThat( entity = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 1, entity.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next(), instanceOf( Relationship.class ) );
+        assertThat( entity = iterator.next() ).isInstanceOf( Relationship.class );
         assertEquals( 100, entity.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next(), instanceOf( Node.class ) );
+        assertThat( entity = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 2, entity.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next(), instanceOf( Relationship.class ) );
+        assertThat( entity = iterator.next() ).isInstanceOf( Relationship.class );
         assertEquals( 200, entity.getId() );
         assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next(), instanceOf( Node.class ) );
+        assertThat( entity = iterator.next() ).isInstanceOf( Node.class );
         assertEquals( 3, entity.getId() );
         assertFalse( iterator.hasNext() );
     }

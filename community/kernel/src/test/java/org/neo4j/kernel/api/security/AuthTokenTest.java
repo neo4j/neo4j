@@ -25,9 +25,7 @@ import java.util.Map;
 
 import org.neo4j.string.UTF8;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 class AuthTokenTest
@@ -36,50 +34,50 @@ class AuthTokenTest
     void shouldMakeBasicAuthToken()
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret" );
-        assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
-        assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
-        assertThat("Should have no realm", token.get(AuthToken.REALM_KEY), nullValue());
+        assertThat( token.get( AuthToken.PRINCIPAL ) ).as( "Should have correct username" ).isEqualTo( "me" );
+        assertThat( token.get( AuthToken.CREDENTIALS ) ).as( "Should have correct password" ).isEqualTo( UTF8.encode( "my secret" ) );
+        assertThat( token.get( AuthToken.SCHEME_KEY ) ).as( "Should have correct scheme" ).isEqualTo( AuthToken.BASIC_SCHEME );
+        assertThat( token.get( AuthToken.REALM_KEY ) ).as( "Should have no realm" ).isNull();
     }
 
     @Test
     void shouldMakeBasicAuthTokenWithRealm()
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret", "my realm" );
-        assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
-        assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
-        assertThat("Should have correct realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
+        assertThat( token.get( AuthToken.PRINCIPAL ) ).as( "Should have correct username" ).isEqualTo( "me" );
+        assertThat( token.get( AuthToken.CREDENTIALS ) ).as( "Should have correct password" ).isEqualTo( UTF8.encode( "my secret" ) );
+        assertThat( token.get( AuthToken.SCHEME_KEY ) ).as( "Should have correct scheme" ).isEqualTo( AuthToken.BASIC_SCHEME );
+        assertThat( token.get( AuthToken.REALM_KEY ) ).as( "Should have correct realm" ).isEqualTo( "my realm" );
     }
 
     @Test
     void shouldMakeCustomAuthTokenAndBasicScheme()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "basic" );
-        assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
-        assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
-        assertThat("Should have correctno realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
+        assertThat( token.get( AuthToken.PRINCIPAL ) ).as( "Should have correct username" ).isEqualTo( "me" );
+        assertThat( token.get( AuthToken.CREDENTIALS ) ).as( "Should have correct password" ).isEqualTo( UTF8.encode( "my secret" ) );
+        assertThat( token.get( AuthToken.SCHEME_KEY ) ).as( "Should have correct scheme" ).isEqualTo( AuthToken.BASIC_SCHEME );
+        assertThat( token.get( AuthToken.REALM_KEY ) ).as( "Should have correctno realm" ).isEqualTo( "my realm" );
     }
 
     @Test
     void shouldMakeCustomAuthTokenAndCustomcScheme()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme" );
-        assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
-        assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo("my scheme"));
-        assertThat("Should have correct realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
+        assertThat( token.get( AuthToken.PRINCIPAL ) ).as( "Should have correct username" ).isEqualTo( "me" );
+        assertThat( token.get( AuthToken.CREDENTIALS ) ).as( "Should have correct password" ).isEqualTo( UTF8.encode( "my secret" ) );
+        assertThat( token.get( AuthToken.SCHEME_KEY ) ).as( "Should have correct scheme" ).isEqualTo( "my scheme" );
+        assertThat( token.get( AuthToken.REALM_KEY ) ).as( "Should have correct realm" ).isEqualTo( "my realm" );
     }
 
     @Test
     void shouldMakeCustomAuthTokenAndCustomcSchemeWithParameters()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme", map("a", "A", "b", "B") );
-        assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
-        assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo("my scheme"));
-        assertThat("Should have correct realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
-        assertThat("Should have correct parameters", token.get(AuthToken.PARAMETERS), equalTo( map("a", "A", "b", "B") ));
+        assertThat( token.get( AuthToken.PRINCIPAL ) ).as( "Should have correct username" ).isEqualTo( "me" );
+        assertThat( token.get( AuthToken.CREDENTIALS ) ).as( "Should have correct password" ).isEqualTo( UTF8.encode( "my secret" ) );
+        assertThat( token.get( AuthToken.SCHEME_KEY ) ).as( "Should have correct scheme" ).isEqualTo( "my scheme" );
+        assertThat( token.get( AuthToken.REALM_KEY ) ).as( "Should have correct realm" ).isEqualTo( "my realm" );
+        assertThat( token.get( AuthToken.PARAMETERS ) ).as( "Should have correct parameters" ).isEqualTo( map( "a", "A", "b", "B" ) );
     }
 }

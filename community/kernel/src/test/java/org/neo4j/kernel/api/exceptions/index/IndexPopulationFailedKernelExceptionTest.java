@@ -25,8 +25,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 class IndexPopulationFailedKernelExceptionTest
@@ -44,8 +43,7 @@ class IndexPopulationFailedKernelExceptionTest
                 descriptor.userDescription( TOKEN_NAME_LOOKUP ), new RuntimeException() );
 
         // Then
-        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ), equalTo(
-                "Failed to populate index :label[0](property[42], property[43], property[44])"));
+        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo( "Failed to populate index :label[0](property[42], property[43], property[44])" );
     }
 
     @Test
@@ -59,7 +57,7 @@ class IndexPopulationFailedKernelExceptionTest
                 descriptor.userDescription( TOKEN_NAME_LOOKUP ), "an act of pure evil occurred" );
 
         // Then
-        assertThat(index.getUserMessage( TOKEN_NAME_LOOKUP ), equalTo(
-                "Failed to populate index :label[0](property[42], property[43], property[44]), due to an act of pure evil occurred"));
+        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo(
+                "Failed to populate index :label[0](property[42], property[43], property[44]), due to an act of pure evil occurred" );
     }
 }

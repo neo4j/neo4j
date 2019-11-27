@@ -29,8 +29,7 @@ import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsIterableContaining.hasItems;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -186,6 +185,6 @@ class MutableDiffSetsImplTest
         // THEN
         Collection<Long> collectedResult = asCollection( result );
         assertEquals( 3, collectedResult.size() );
-        assertThat( collectedResult, hasItems( 43L, 42L, 44L ) );
+        assertThat( collectedResult ).contains( 43L, 42L, 44L );
     }
 }
