@@ -276,13 +276,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     @Override
     public int hashCode()
     {
-        int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + name.hashCode();
-        result = 31 * result + schema.hashCode();
-        result = 31 * result + Boolean.hashCode( isUnique );
-        result = 31 * result + indexType.hashCode();
-        result = 31 * result + indexProvider.hashCode();
-        return result;
+        return Long.hashCode( id );
     }
 
     /**

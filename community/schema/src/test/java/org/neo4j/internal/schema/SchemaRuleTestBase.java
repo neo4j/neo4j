@@ -45,25 +45,19 @@ abstract class SchemaRuleTestBase
     {
         assertThat( o1 ).isNotEqualTo( o2 );
         assertThat( o2 ).isNotEqualTo( o1 );
-        assertThat( o1.hashCode() ).isNotEqualTo( o2.hashCode() );
     }
 
-    public static IndexPrototype forLabel( int labelId, int... propertyIds )
+    static IndexPrototype forLabel( int labelId, int... propertyIds )
     {
         return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER );
     }
 
-    public static IndexPrototype namedForLabel( String name, int labelId, int... propertyIds )
-    {
-        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER ).withName( name );
-    }
-
-    public static IndexPrototype uniqueForLabel( int labelId, int... propertyIds )
+    static IndexPrototype uniqueForLabel( int labelId, int... propertyIds )
     {
         return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER );
     }
 
-    public static IndexPrototype namedUniqueForLabel( String name, int labelId, int... propertyIds )
+    static IndexPrototype namedUniqueForLabel( String name, int labelId, int... propertyIds )
     {
         return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER ).withName( name );
     }
