@@ -20,7 +20,7 @@
     <version>4.1.0-SNAPSHOT</version>
 
     <packaging>jar</packaging>
-    <name>Neo4j - Common</name>
+    <name>Neo4j - Import Utilities</name>
     <description>Utilities for implementing import functionality.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
