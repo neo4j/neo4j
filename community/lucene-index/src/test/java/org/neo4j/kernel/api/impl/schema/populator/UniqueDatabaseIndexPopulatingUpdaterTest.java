@@ -34,8 +34,7 @@ import org.neo4j.kernel.api.index.UniqueIndexSampler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -248,6 +247,6 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         verify( index ).verifyUniqueness(
                 any(), eq( descriptor.getPropertyIds() ), captor.capture() );
 
-        assertThat( captor.getValue(), containsInAnyOrder( valueTupleList( values ).toArray() ) );
+        assertThat( captor.getValue() ).containsAll( valueTupleList( values ) );
     }
 }

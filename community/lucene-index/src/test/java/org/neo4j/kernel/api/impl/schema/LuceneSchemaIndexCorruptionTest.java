@@ -47,9 +47,8 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -83,7 +82,7 @@ class LuceneSchemaIndexCorruptionTest
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
-        assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
+        assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );
         logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
@@ -102,7 +101,7 @@ class LuceneSchemaIndexCorruptionTest
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
-        assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
+        assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );
         logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
@@ -121,7 +120,7 @@ class LuceneSchemaIndexCorruptionTest
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
-        assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
+        assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );
         logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 

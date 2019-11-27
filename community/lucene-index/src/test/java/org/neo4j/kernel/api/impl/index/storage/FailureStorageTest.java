@@ -31,8 +31,7 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -119,7 +118,7 @@ class FailureStorageTest
 
         // THEN
         String allFailures = storage.loadIndexFailure();
-        assertThat( allFailures, containsString( failure1 ) );
-        assertThat( allFailures, containsString( failure2 ) );
+        assertThat( allFailures ).contains( failure1 );
+        assertThat( allFailures ).contains( failure2 );
     }
 }

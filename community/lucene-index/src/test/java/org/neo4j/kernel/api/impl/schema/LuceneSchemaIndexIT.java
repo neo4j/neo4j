@@ -53,8 +53,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -120,7 +119,7 @@ class LuceneSchemaIndexIT
         try ( LuceneIndexAccessor indexAccessor = createDefaultIndexAccessor();
               ResourceIterator<File> snapshotIterator = indexAccessor.snapshotFiles() )
         {
-            assertThat( asUniqueSetOfNames( snapshotIterator ), equalTo( emptySet() ) );
+            assertThat( asUniqueSetOfNames( snapshotIterator ) ).isEqualTo( emptySet() );
         }
     }
 

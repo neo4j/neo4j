@@ -30,9 +30,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -73,8 +71,8 @@ class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertThat( document.get( String.key( 0 ) ), equalTo( values[0] ) );
-        assertThat( document.get( String.key( 1 ) ), equalTo( values[1] ) );
+        assertThat( document.get( String.key( 0 ) ) ).isEqualTo( values[0] );
+        assertThat( document.get( String.key( 1 ) ) ).isEqualTo( values[1] );
     }
 
     @Test
@@ -137,7 +135,7 @@ class LuceneDocumentStructureTest
         MultiTermQuery prefixQuery = (MultiTermQuery) LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
 
         // then
-        assertThat( "Should contain term value", prefixQuery.toString(), containsString( "Prefix" ) );
+        assertThat( prefixQuery.toString() ).as( "Should contain term value" ).contains( "Prefix" );
     }
 
     @Test

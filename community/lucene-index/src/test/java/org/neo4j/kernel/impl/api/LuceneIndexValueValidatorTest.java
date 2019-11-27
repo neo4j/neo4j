@@ -26,8 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.Validator;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.INSTANCE;
@@ -40,8 +39,8 @@ class LuceneIndexValueValidatorTest
     {
         int length = MAX_TERM_LENGTH + 1;
         IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> getValidator().validate( RandomUtils.nextBytes( length ) ) );
-        assertThat( iae.getMessage(),
-                containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
+        assertThat( iae.getMessage() ).contains(
+                "Property value is too large to index into this particular index. Please see index documentation for limitations." );
     }
 
     @Test
@@ -50,8 +49,8 @@ class LuceneIndexValueValidatorTest
         int length = MAX_TERM_LENGTH * 2;
         IllegalArgumentException iae =
                 assertThrows( IllegalArgumentException.class, () -> getValidator().validate( RandomStringUtils.randomAlphabetic( length ) ) );
-        assertThat( iae.getMessage(),
-                containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
+        assertThat( iae.getMessage() ).contains(
+                "Property value is too large to index into this particular index. Please see index documentation for limitations." );
     }
 
     @Test

@@ -32,10 +32,10 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -48,8 +48,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -145,14 +144,14 @@ class SimpleIndexReaderTest
     void uniqueIndexSamplerForUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getUniqueSimpleReader();
-        assertThat( uniqueSimpleReader.createSampler(), instanceOf( UniqueLuceneIndexSampler.class ) );
+        assertThat( uniqueSimpleReader.createSampler() ).isInstanceOf( UniqueLuceneIndexSampler.class );
     }
 
     @Test
     void nonUniqueIndexSamplerForNonUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getNonUniqueSimpleReader();
-        assertThat( uniqueSimpleReader.createSampler(), instanceOf( NonUniqueLuceneIndexSampler.class ) );
+        assertThat( uniqueSimpleReader.createSampler() ).isInstanceOf( NonUniqueLuceneIndexSampler.class );
     }
 
     private void doQuery( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException

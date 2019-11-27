@@ -60,8 +60,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -174,28 +174,28 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         long[] rangeFromBInclusive = resultsArray( reader, range( PROP_ID, "B", true, null, false ) );
-        assertThat( rangeFromBInclusive, LongArrayMatcher.of( 2, 3 ) );
+        assertThat( rangeFromBInclusive ).contains( 2, 3 );
 
         long[] rangeFromANonInclusive = resultsArray( reader, range( PROP_ID, "A", false, null, false ) );
-        assertThat( rangeFromANonInclusive, LongArrayMatcher.of( 2, 3 ) );
+        assertThat( rangeFromANonInclusive ).contains( 2, 3 );
 
         long[] emptyLowInclusive = resultsArray( reader, range( PROP_ID, "", true, null, false ) );
-        assertThat( emptyLowInclusive, LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
+        assertThat( emptyLowInclusive ).contains( PROP_ID, 2, 3, 4 );
 
         long[] emptyUpperNonInclusive = resultsArray( reader, range( PROP_ID, "B", true, "", false ) );
-        assertThat( emptyUpperNonInclusive, LongArrayMatcher.emptyArrayMatcher() );
+        assertThat( emptyUpperNonInclusive ).isEmpty();
 
         long[] emptyInterval = resultsArray( reader, range( PROP_ID, "", true, "", true ) );
-        assertThat( emptyInterval, LongArrayMatcher.of( 4 ) );
+        assertThat( emptyInterval ).contains( 4 );
 
         long[] emptyAllNonInclusive = resultsArray( reader, range( PROP_ID, "", false, null, false ) );
-        assertThat( emptyAllNonInclusive, LongArrayMatcher.of( PROP_ID, 2, 3 ) );
+        assertThat( emptyAllNonInclusive ).contains( PROP_ID, 2, 3 );
 
         long[] nullNonInclusive = resultsArray( reader, range( PROP_ID, (String) null, false, null, false ) );
-        assertThat( nullNonInclusive, LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
+        assertThat( nullNonInclusive ).contains( PROP_ID, 2, 3, 4 );
 
         long[] nullInclusive = resultsArray( reader, range( PROP_ID, (String) null, false, null, false ) );
-        assertThat( nullInclusive, LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
+        assertThat( nullInclusive ).contains( PROP_ID, 2, 3, 4 );
     }
 
     @Test
