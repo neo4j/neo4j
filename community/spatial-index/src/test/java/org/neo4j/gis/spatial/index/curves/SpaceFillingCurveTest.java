@@ -32,13 +32,7 @@ import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Level;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointLeft;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointRight;
 
@@ -282,7 +276,7 @@ public class SpaceFillingCurveTest
     void shouldCreate2DHilbertCurveOfThreeLevelsFromExampleInThePaper()
     {
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( new Envelope( 0, 8, 0, 8 ), 3 );
-        assertThat( "Example should evaluate to 101110", curve.derivedValueFor( new double[]{6, 4} ), equalTo( 46L ) );
+        assertThat( curve.derivedValueFor( new double[]{6, 4} ) ).as( "Example should evaluate to 101110" ).isEqualTo( 46L );
     }
 
     @Test
@@ -464,9 +458,10 @@ public class SpaceFillingCurveTest
                                         maxDepthStats.add( monitor.getHighestDepth() );
                                     }
 
-                                    assertThat( ranges, not( empty() ) );
-                                    assertThat( String.format( "Search size was bigger than covered size for level %d, with x=[%a,%a] y=[%a,%a]", level,
-                                            xStart, xEnd, yStart, yEnd ), monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
+                                    assertThat( ranges ).isNotEmpty();
+                                    assertThat( monitor.getSearchArea() ).as(
+                                            String.format( "Search size was bigger than covered size for level %d, with x=[%a,%a] y=[%a,%a]", level, xStart,
+                                                    xEnd, yStart, yEnd ) ).isLessThanOrEqualTo( monitor.getCoveredArea() );
                                 }
                             }
                         }
@@ -571,9 +566,10 @@ public class SpaceFillingCurveTest
                                                 maxDepthStats.add( monitor.getHighestDepth() );
                                             }
 
-                                            assertThat( ranges, not( empty() ) );
-                                            assertThat( String.format( "Search size was bigger than covered size for level %d, with search %s", level,
-                                                    searchEnvelope.toString() ), monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
+                                            assertThat( ranges ).isNotEmpty();
+                                            assertThat( monitor.getSearchArea() ).as(
+                                                    String.format( "Search size was bigger than covered size for level %d, with search %s", level,
+                                                            searchEnvelope.toString() ) ).isLessThanOrEqualTo( monitor.getCoveredArea() );
                                         }
                                     }
                                 }
@@ -653,9 +649,9 @@ public class SpaceFillingCurveTest
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope );
         List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope );
-        assertThat( ranges.size(), equalTo( 1 ) );
-        assertThat( ranges.get( 0 ).max, lessThan( Long.MAX_VALUE ) );
-        assertThat( ranges.get( 0 ).min, greaterThan( Long.MIN_VALUE ) );
+        assertThat( ranges.size() ).isEqualTo( 1 );
+        assertThat( ranges.get( 0 ).max ).isLessThan( Long.MAX_VALUE );
+        assertThat( ranges.get( 0 ).min ).isGreaterThan( Long.MIN_VALUE );
     }
 
     //
@@ -665,27 +661,27 @@ public class SpaceFillingCurveTest
     @Test
     void shouldRotate3DNPointsLeft()
     {
-        assertThat( rotateNPointLeft( 0b000 ), equalTo( 0b000 ) );
-        assertThat( rotateNPointLeft( 0b001 ), equalTo( 0b010 ) );
-        assertThat( rotateNPointLeft( 0b010 ), equalTo( 0b100 ) );
-        assertThat( rotateNPointLeft( 0b100 ), equalTo( 0b001 ) );
-        assertThat( rotateNPointLeft( 0b011 ), equalTo( 0b110 ) );
-        assertThat( rotateNPointLeft( 0b110 ), equalTo( 0b101 ) );
-        assertThat( rotateNPointLeft( 0b101 ), equalTo( 0b011 ) );
-        assertThat( rotateNPointLeft( 0b111 ), equalTo( 0b111 ) );
+        assertThat( rotateNPointLeft( 0b000 ) ).isEqualTo( 0b000 );
+        assertThat( rotateNPointLeft( 0b001 ) ).isEqualTo( 0b010 );
+        assertThat( rotateNPointLeft( 0b010 ) ).isEqualTo( 0b100 );
+        assertThat( rotateNPointLeft( 0b100 ) ).isEqualTo( 0b001 );
+        assertThat( rotateNPointLeft( 0b011 ) ).isEqualTo( 0b110 );
+        assertThat( rotateNPointLeft( 0b110 ) ).isEqualTo( 0b101 );
+        assertThat( rotateNPointLeft( 0b101 ) ).isEqualTo( 0b011 );
+        assertThat( rotateNPointLeft( 0b111 ) ).isEqualTo( 0b111 );
     }
 
     @Test
     void shouldRotate3DNPointsRight()
     {
-        assertThat( rotateNPointRight( 0b000 ), equalTo( 0b000 ) );
-        assertThat( rotateNPointRight( 0b001 ), equalTo( 0b100 ) );
-        assertThat( rotateNPointRight( 0b100 ), equalTo( 0b010 ) );
-        assertThat( rotateNPointRight( 0b010 ), equalTo( 0b001 ) );
-        assertThat( rotateNPointRight( 0b011 ), equalTo( 0b101 ) );
-        assertThat( rotateNPointRight( 0b101 ), equalTo( 0b110 ) );
-        assertThat( rotateNPointRight( 0b110 ), equalTo( 0b011 ) );
-        assertThat( rotateNPointRight( 0b111 ), equalTo( 0b111 ) );
+        assertThat( rotateNPointRight( 0b000 ) ).isEqualTo( 0b000 );
+        assertThat( rotateNPointRight( 0b001 ) ).isEqualTo( 0b100 );
+        assertThat( rotateNPointRight( 0b100 ) ).isEqualTo( 0b010 );
+        assertThat( rotateNPointRight( 0b010 ) ).isEqualTo( 0b001 );
+        assertThat( rotateNPointRight( 0b011 ) ).isEqualTo( 0b101 );
+        assertThat( rotateNPointRight( 0b101 ) ).isEqualTo( 0b110 );
+        assertThat( rotateNPointRight( 0b110 ) ).isEqualTo( 0b011 );
+        assertThat( rotateNPointRight( 0b111 ) ).isEqualTo( 0b111 );
     }
 
     @Test
@@ -957,8 +953,8 @@ public class SpaceFillingCurveTest
             previous = point;
         }
         int badness = (int) (100 * badCount / (curve.getValueWidth() - 1));
-        assertThat( "Bad distance percentage should never be greater than " + badnessThresholdPercentage + "%", badness,
-                lessThanOrEqualTo( badnessThresholdPercentage ) );
+        assertThat( badness ).as( "Bad distance percentage should never be greater than " + badnessThresholdPercentage + "%" ).isLessThanOrEqualTo(
+                badnessThresholdPercentage );
         logger.debug( String.format( "Bad distance count for level: %d (%d/%d = %d%%)", level, badCount, curve.getValueWidth() - 1, badness ) );
     }
 
@@ -1002,10 +998,10 @@ public class SpaceFillingCurveTest
 
     private static void assertTiles( List<SpaceFillingCurve.LongRange> results, SpaceFillingCurve.LongRange... expected )
     {
-        assertThat( "Result differ: " + results + " != " + Arrays.toString( expected ), results.size(), equalTo( expected.length ) );
+        assertThat( results.size() ).as( "Result differ: " + results + " != " + Arrays.toString( expected ) ).isEqualTo( expected.length );
         for ( int i = 0; i < results.size(); i++ )
         {
-            assertThat( "Result at " + i + " should be the same", results.get( i ), equalTo( expected[i] ) );
+            assertThat( results.get( i ) ).as( "Result at " + i + " should be the same" ).isEqualTo( expected[i] );
         }
     }
 
@@ -1088,10 +1084,10 @@ public class SpaceFillingCurveTest
         }
         long result = curve.derivedValueFor( coord );
         double[] coordinate = curve.centerPointFor( result );
-        assertThat( message + ": " + Arrays.toString( coord ), result, equalTo( value ) );
+        assertThat( result ).as( message + ": " + Arrays.toString( coord ) ).isEqualTo( value );
         for ( int i = 0; i < coord.length; i++ )
         {
-            assertThat( message + ": " + Arrays.toString( coord ), Math.abs( coordinate[i] - coord[i] ), lessThanOrEqualTo( halfTileWidths[i] ) );
+            assertThat( Math.abs( coordinate[i] - coord[i] ) ).as( message + ": " + Arrays.toString( coord ) ).isLessThanOrEqualTo( halfTileWidths[i] );
         }
     }
 
@@ -1122,8 +1118,8 @@ public class SpaceFillingCurveTest
             topRightFactor *= 4;
         }
 
-        assertThat( "Level " + level + " should have width of " + width, curve.getWidth(), equalTo( width ) );
-        assertThat( "Level " + level + " should have max value of " + valueWidth, curve.getValueWidth(), equalTo( valueWidth ) );
+        assertThat( curve.getWidth() ).as( "Level " + level + " should have width of " + width ).isEqualTo( width );
+        assertThat( curve.getValueWidth() ).as( "Level " + level + " should have max value of " + valueWidth ).isEqualTo( valueWidth );
 
         assertCurveAt( "Top-left should evaluate to zero", curve, 0, envelope.getMinX(), envelope.getMaxY() );
         assertCurveAt( "Just inside right edge on the bottom should evaluate to max-value", curve, curve.getValueWidth() - 1, justInsideMaxX,
@@ -1161,8 +1157,8 @@ public class SpaceFillingCurveTest
             topRightFactor *= 4;
         }
 
-        assertThat( "Level " + level + " should have width of " + width, curve.getWidth(), equalTo( width ) );
-        assertThat( "Level " + level + " should have max value of " + valueWidth, curve.getValueWidth(), equalTo( valueWidth ) );
+        assertThat( curve.getWidth() ).as( "Level " + level + " should have width of " + width ).isEqualTo( width );
+        assertThat( curve.getValueWidth() ).as( "Level " + level + " should have max value of " + valueWidth ).isEqualTo( valueWidth );
 
         assertCurveAt( "Bottom-left should evaluate to zero", curve, 0, envelope.getMinX(), envelope.getMinY() );
         assertCurveAt( "Just inside right edge on the bottom should evaluate to max-value", curve, curve.getValueWidth() - 1, justInsideMaxX,
@@ -1205,8 +1201,8 @@ public class SpaceFillingCurveTest
         long frontRightMid = valueWidth / 2 + valueWidth / 8 + valueWidth / 256;
         String fromRightMidDescription = valueWidth + "/2 + " + valueWidth + "/8";
 
-        assertThat( "Level " + level + " should have width of " + width, curve.getWidth(), equalTo( width ) );
-        assertThat( "Level " + level + " should have max value of " + valueWidth, curve.getValueWidth(), equalTo( valueWidth ) );
+        assertThat( curve.getWidth() ).as( "Level " + level + " should have width of " + width ).isEqualTo( width );
+        assertThat( curve.getValueWidth() ).as( "Level " + level + " should have max value of " + valueWidth ).isEqualTo( valueWidth );
 
         assertCurveAt( "Bottom-left should evaluate to zero", curve, 0, envelope.getMin() );
         assertCurveAt( "Just inside right edge on the bottom back should evaluate to max-value", curve, curve.getValueWidth() - 1,

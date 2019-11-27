@@ -23,9 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SpaceFillingCurveConfigurationTest
 {
@@ -40,8 +38,8 @@ class SpaceFillingCurveConfigurationTest
         // We pad the line to a small area, but we don't expect to go deeper than level 20
         // which would take too long
         int maxLevel = 20;
-        assertThat( partialOverlapConf.maxDepth( search, range, 2, 30 ), lessThan( maxLevel ) );
-        assertThat( standardConfiguration.maxDepth( search, range, 2, 30 ), lessThan( maxLevel ) );
+        assertThat( partialOverlapConf.maxDepth( search, range, 2, 30 ) ).isLessThan( maxLevel );
+        assertThat( standardConfiguration.maxDepth( search, range, 2, 30 ) ).isLessThan( maxLevel );
     }
 
     @Test
@@ -51,8 +49,8 @@ class SpaceFillingCurveConfigurationTest
         SpaceFillingCurveConfiguration partialOverlapConf = new PartialOverlapConfiguration();
         // search area is a line, thus having a search area = 0
         Envelope range = new Envelope( -180, 180, -90, 90 );
-        assertThat( partialOverlapConf.maxDepth( range, range, 2, 30 ), equalTo( 1 ) );
-        assertThat( standardConfiguration.maxDepth( range, range, 2, 30 ), equalTo( 1 ) );
+        assertThat( partialOverlapConf.maxDepth( range, range, 2, 30 ) ).isEqualTo( 1 );
+        assertThat( standardConfiguration.maxDepth( range, range, 2, 30 ) ).isEqualTo( 1 );
     }
 
     @Test
@@ -63,8 +61,8 @@ class SpaceFillingCurveConfigurationTest
         // search area is a line, thus having a search area = 0
         Envelope range = new Envelope( -180, 180, -90, 90 );
         Envelope search = new Envelope( 0, 180, 0, 90 );
-        assertThat( partialOverlapConf.maxDepth( search, range, 2, 30 ), equalTo( 2 ) );
-        assertThat( standardConfiguration.maxDepth( search, range, 2, 30 ), equalTo( 2 ) );
+        assertThat( partialOverlapConf.maxDepth( search, range, 2, 30 ) ).isEqualTo( 2 );
+        assertThat( standardConfiguration.maxDepth( search, range, 2, 30 ) ).isEqualTo( 2 );
     }
 
     @Test
@@ -78,8 +76,8 @@ class SpaceFillingCurveConfigurationTest
             // search area is a line, thus having a search area = 0
             Envelope range = new Envelope( 0, 1, 0, 1 );
             Envelope search = new Envelope( 0, Math.pow( 2, -i ), 0, Math.pow( 2, -i ) );
-            assertThat( partialOverlapConf.maxDepth( search, range, 2, maxLevel ), equalTo( i + 1 ) );
-            assertThat( standardConfiguration.maxDepth( search, range, 2, maxLevel ), equalTo( i + 1 ) );
+            assertThat( partialOverlapConf.maxDepth( search, range, 2, maxLevel ) ).isEqualTo( i + 1 );
+            assertThat( standardConfiguration.maxDepth( search, range, 2, maxLevel ) ).isEqualTo( i + 1 );
         }
     }
 }
