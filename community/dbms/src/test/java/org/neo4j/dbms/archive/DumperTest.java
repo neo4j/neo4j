@@ -40,6 +40,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
 
 @TestDirectoryExtension
@@ -99,6 +100,7 @@ class DumperTest
         Files.createDirectories( archive.getParent() );
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {
+            assumeFalse( archive.getParent().toFile().canWrite() );
             AccessDeniedException exception =
                     assertThrows( AccessDeniedException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
             assertEquals( archive.getParent().toString(), exception.getMessage() );

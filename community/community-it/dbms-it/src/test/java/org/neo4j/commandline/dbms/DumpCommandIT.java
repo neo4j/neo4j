@@ -73,6 +73,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -267,8 +268,10 @@ class DumpCommandIT
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            try ( Closeable ignored = withPermissions( databaseLayout.databaseLockFile().toPath(), emptySet() ) )
+            Path file = databaseLayout.databaseLockFile().toPath();
+            try ( Closeable ignored = withPermissions( file, emptySet() ) )
             {
+                assumeFalse( file.toFile().canWrite() );
                 CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
                 assertEquals( "You do not have permission to dump the database.", commandFailed.getMessage() );
             }
