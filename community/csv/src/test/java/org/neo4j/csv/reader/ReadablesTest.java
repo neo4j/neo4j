@@ -19,7 +19,6 @@
  */
 package org.neo4j.csv.reader;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,7 +43,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.copyOfRange;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -127,7 +126,7 @@ class ReadablesTest
 
         // WHEN
         IOException exception = assertThrows( IOException.class, () -> Readables.files( Charset.defaultCharset(), compressed ) );
-        MatcherAssert.assertThat( exception.getMessage(), containsString( "Multiple" ) );
+        assertThat( exception.getMessage() ).contains( "Multiple" );
     }
 
     @ParameterizedTest( name = "read method {index}" )
