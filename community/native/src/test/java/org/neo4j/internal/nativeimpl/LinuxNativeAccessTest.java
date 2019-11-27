@@ -34,9 +34,7 @@ import java.io.RandomAccessFile;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -74,7 +72,7 @@ class LinuxNativeAccessTest
             int descriptor = getClosedDescriptor( file );
             var nativeCallResult = nativeAccess.tryPreallocateSpace( descriptor, 1024 );
             assertNotEquals( 0, nativeCallResult.getErrorCode() );
-            assertThat( nativeCallResult.getErrorMessage(), not( emptyString() ) );
+            assertThat( nativeCallResult.getErrorMessage() ).isNotEmpty();
         }
 
         @Test

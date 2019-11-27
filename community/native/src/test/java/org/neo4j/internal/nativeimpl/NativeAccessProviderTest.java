@@ -24,8 +24,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,7 +35,7 @@ class NativeAccessProviderTest
     void linuxNativeAccessSelectedOnLinux()
     {
         NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
-        assertThat( nativeAccess, instanceOf( LinuxNativeAccess.class ) );
+        assertThat( nativeAccess ).isInstanceOf( LinuxNativeAccess.class );
         assertTrue( nativeAccess.isAvailable() );
     }
 
@@ -45,7 +44,7 @@ class NativeAccessProviderTest
     void absentNativeAccessSelectedOnNonLinux()
     {
         NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
-        assertThat( nativeAccess, instanceOf( AbsentNativeAccess.class ) );
+        assertThat( nativeAccess ).isInstanceOf( AbsentNativeAccess.class );
         assertFalse( nativeAccess.isAvailable() );
     }
 }
