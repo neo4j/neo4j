@@ -34,8 +34,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 
 @ExtendWith( RandomExtension.class )
@@ -96,6 +95,6 @@ class SizeEstimationTest
         // then
         int diff = abs( actualCount - estimate );
         double diffRatio = (double) diff / actualCount;
-        assertThat( diffRatio, lessThan( EXPECTED_MARGIN_OF_ERROR ) );
+        assertThat( diffRatio ).isLessThan( EXPECTED_MARGIN_OF_ERROR );
     }
 }

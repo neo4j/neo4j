@@ -28,8 +28,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -164,13 +163,13 @@ class GenerationSafePointerPairTest
 
         // Failure description
         String failureDescription = failureDescription( result );
-        assertThat( failureDescription, containsString( isRead( result ) ? "READ" : "WRITE" ) );
+        assertThat( failureDescription ).contains( isRead( result ) ? "READ" : "WRITE" );
         if ( generationComparison != EXPECTED_GENERATION_DISREGARD )
         {
-            assertThat( failureDescription, containsString( generationComparisonName( generationComparison ) ) );
+            assertThat( failureDescription ).contains( generationComparisonName( generationComparison ) );
         }
-        assertThat( failureDescription, containsString( pointerStateName( pointerStateA ) ) );
-        assertThat( failureDescription, containsString( pointerStateName( pointerStateB ) ) );
+        assertThat( failureDescription ).contains( pointerStateName( pointerStateA ) );
+        assertThat( failureDescription ).contains( pointerStateName( pointerStateB ) );
     }
 
     private static String generationComparisonName( int generationComparison )

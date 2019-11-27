@@ -47,8 +47,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.rule.PageCacheConfig.config;
@@ -1087,7 +1086,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                assertThat( message, containsString( "Overlap between allocSpace and active keys" ) );
+                assertThat( message ).contains( "Overlap between allocSpace and active keys" );
             }
         } );
         assertCalled( called );
@@ -1103,7 +1102,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                assertThat( message, containsString( "Overlap between offsetArray and allocSpace" ) );
+                assertThat( message ).contains( "Overlap between offsetArray and allocSpace" );
             }
         } );
         assertCalled( called );
@@ -1119,7 +1118,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                assertThat( message, containsString( "Space areas did not sum to total space" ) );
+                assertThat( message ).contains( "Space areas did not sum to total space" );
             }
         } );
         assertCalled( called );
@@ -1135,7 +1134,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                assertThat( message, containsString( "Pointer to allocSpace is misplaced, it should point to start of key" ) );
+                assertThat( message ).contains( "Pointer to allocSpace is misplaced, it should point to start of key" );
             }
         } );
         assertCalled( called );

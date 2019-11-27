@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,10 +89,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Math.toIntExact;
 import static java.time.Duration.ofSeconds;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.AllOf.allOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -248,7 +244,7 @@ class GBPTreeTest
         catch ( MetadataMismatchException e )
         {
             // THEN good
-            assertThat( e.getMessage(), containsString( "page size" ) );
+            assertThat( e.getMessage() ).contains( "page size" );
         }
     }
 
@@ -266,7 +262,7 @@ class GBPTreeTest
         catch ( MetadataMismatchException e )
         {
             // THEN good
-            assertThat( e.getMessage(), containsString( "page size" ) );
+            assertThat( e.getMessage() ).contains( "page size" );
         }
     }
 
@@ -294,7 +290,7 @@ class GBPTreeTest
         catch ( MetadataMismatchException e )
         {
             // THEN Good
-            assertThat( e.getMessage(), containsString( "page size" ) );
+            assertThat( e.getMessage() ).contains( "page size" );
         }
     }
 
@@ -441,7 +437,7 @@ class GBPTreeTest
             catch ( IllegalStateException e )
             {
                 // THEN
-                assertThat( e.getMessage(), containsString( "already closed" ) );
+                assertThat( e.getMessage() ).contains( "already closed" );
             }
         }
     }
@@ -1225,7 +1221,7 @@ class GBPTreeTest
             }
             catch ( ExecutionException e )
             {
-                assertThat( e.getMessage(), allOf( containsString( "cleaning" ), containsString( "failed" ) ) );
+                assertThat( e.getMessage() ).contains( "cleaning" ).contains( "failed" );
             }
         }
     }
@@ -1529,7 +1525,7 @@ class GBPTreeTest
             }
             catch ( TreeInconsistencyException e )
             {
-                assertThat( e.getMessage(), containsString( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE ) );
+                assertThat( e.getMessage() ).contains( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE );
             }
         }
     }
@@ -1588,7 +1584,7 @@ class GBPTreeTest
               GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
         {
             List<PagedFile> pagedFiles = pageCache.listExistingMappings();
-            assertThat( pagedFiles, hasSize( 1 ) );
+            assertThat( pagedFiles ).hasSize( 1 );
 
             long flushesBefore = defaultPageCacheTracer.flushes();
 
@@ -1639,9 +1635,9 @@ class GBPTreeTest
                         seek.next();
                     }
                 } );
-                assertThat( e.getMessage(), CoreMatchers.containsString(
+                assertThat( e.getMessage() ).contains(
                         "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
-                                "Loop occurred when restarting search from root from page " + corruptChild + "." ) );
+                                "Loop occurred when restarting search from root from page " + corruptChild + "." );
             } );
         }
     }
@@ -1739,7 +1735,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).withReadOnly( true ).build() )
         {
             UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, tree::writer );
-            assertThat( e.getMessage(), containsString( "GBPTree was opened in read only mode and can not finish operation: " ) );
+            assertThat( e.getMessage() ).contains( "GBPTree was opened in read only mode and can not finish operation: " );
 
             MutableBoolean ioLimitChecked = new MutableBoolean();
             tree.checkpoint( ( previousStamp, recentlyCompletedIOs, flushable ) -> {
@@ -1758,8 +1754,8 @@ class GBPTreeTest
         // given
         PageCache pageCache = createPageCache( defaultPageSize );
         TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).withReadOnly( true ).build() );
-        assertThat( e.getMessage(), containsString( "Can not create new tree file in read only mode" ) );
-        assertThat( e.getMessage(), containsString( indexFile.getAbsolutePath() ) );
+        assertThat( e.getMessage() ).contains( "Can not create new tree file in read only mode" );
+        assertThat( e.getMessage() ).contains( indexFile.getAbsolutePath() );
     }
 
     private byte[] fileContent( File indexFile ) throws IOException
@@ -2079,8 +2075,7 @@ class GBPTreeTest
         for ( CleanupJob job : cleanJob.get() )
         {
             assertTrue( job.hasFailed() );
-            assertThat( job.getCause().getMessage(),
-                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
+            assertThat( job.getCause().getMessage() ).contains( "File" ).contains( "unmapped" );
         }
     }
 

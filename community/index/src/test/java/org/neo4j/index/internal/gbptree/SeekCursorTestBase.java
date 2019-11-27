@@ -44,9 +44,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1528,7 +1526,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         seekCursor.next();
         try ( SeekCursor<KEY,VALUE> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            assertThat( seekCursor.getCurrentPageId(), is( leftChild ) );
+            assertThat( seekCursor.getCurrentPageId() ).isEqualTo( leftChild );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
             readCursor.next( rootId );
             assertTrue( TreeNode.isLeaf( readCursor ) );
@@ -1562,7 +1560,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         seekCursor.next();
         try ( SeekCursor<KEY,VALUE> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            assertThat( seekCursor.getCurrentPageId(), is( rightChild ) );
+            assertThat( seekCursor.getCurrentPageId() ).isEqualTo( rightChild );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, leftChild );
             readCursor.next( rootId );
             assertTrue( TreeNode.isLeaf( readCursor ) );
@@ -1596,7 +1594,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         seekCursor.next();
         try ( SeekCursor<KEY,VALUE> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            assertThat( seekCursor.getCurrentPageId(), is( rightChild ) );
+            assertThat( seekCursor.getCurrentPageId() ).isEqualTo( rightChild );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, leftChild );
             readCursor.next( rootId );
             assertTrue( TreeNode.isLeaf( readCursor ) );
@@ -1631,7 +1629,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         seekCursor.next();
         try ( SeekCursor<KEY,VALUE> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            assertThat( seekCursor.getCurrentPageId(), is( leftChild ) );
+            assertThat( seekCursor.getCurrentPageId() ).isEqualTo( leftChild );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
             readCursor.next( rootId );
             assertTrue( TreeNode.isLeaf( readCursor ) );
@@ -2096,7 +2094,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         }
         catch ( TreeInconsistencyException e )
         {
-            assertThat( e.getMessage(), containsString( "keyCount:" + keyCount ) );
+            assertThat( e.getMessage() ).contains( "keyCount:" + keyCount );
         }
     }
 
@@ -2132,7 +2130,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         }
         catch ( TreeInconsistencyException e )
         {
-            assertThat( e.getMessage(), containsString( "keyCount:" + keyCount ) );
+            assertThat( e.getMessage() ).contains( "keyCount:" + keyCount );
         }
     }
 
@@ -2149,7 +2147,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     {
         // ... seeker has started seeking in range
         assertTrue( seeker.next() );
-        assertThat( getSeed( seeker.key() ), is( fromInclusive ) );
+        assertThat( getSeed( seeker.key() ) ).isEqualTo( fromInclusive );
 
         int stride = fromInclusive <= toExclusive ? 1 : -1;
         triggerUnderflowAndSeekRange( seeker, seekCursor, fromInclusive + stride, toExclusive, underflowNode, stride );
@@ -2165,7 +2163,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         for ( long expected = fromInclusive; Long.compare( expected, toExclusive ) * stride < 0; expected += stride )
         {
             assertTrue( seeker.next() );
-            assertThat( getSeed( seeker.key() ), is( expected ) );
+            assertThat( getSeed( seeker.key() ) ).isEqualTo( expected );
         }
         assertFalse( seeker.next() );
     }

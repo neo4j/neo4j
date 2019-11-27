@@ -23,8 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -93,7 +92,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     {
         initialize();
         var e = assertThrows( IllegalArgumentException.class, () -> insert( key, value ) );
-        assertThat( e.getMessage(), containsString( "Index key-value size it to large. Please see index documentation for limitations." ) );
+        assertThat( e.getMessage() ).contains( "Index key-value size it to large. Please see index documentation for limitations." );
     }
 
     @Test
