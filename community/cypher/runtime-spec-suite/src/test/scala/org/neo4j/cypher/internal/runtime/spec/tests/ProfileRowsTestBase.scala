@@ -230,6 +230,31 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * 2L) // all node scan
   }
 
+  test("should profile rows with pruning var-expand") {
+    // given
+    val nodesPerLabel = 100
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .pruningVarExpand("(x)-[*1..1]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodesPerLabel // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodesPerLabel // distinct
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // pruning var expand (but nothing can be pruned)
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * 2L) // all node scan
+  }
+
   test("should profile rows with label scan and expand") {
     // given
     val nodesPerLabel = 100
