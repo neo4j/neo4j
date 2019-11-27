@@ -77,7 +77,7 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
         }
 
         boolean allowed = true;
-        long[] labels = node.labels().all();
+        long[] labels = node.labelsIgnoringTxStateSetRemove().all();
         for ( int prop : properties )
         {
             allowed &= accessMode.allowsReadNodeProperty( () -> Labels.from( labels ), prop );

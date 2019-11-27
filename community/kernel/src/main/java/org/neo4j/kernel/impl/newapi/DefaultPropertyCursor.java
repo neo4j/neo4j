@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
-import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -36,7 +35,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor, Supplier<LabelSet>
+public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor
 {
     private static final long NO_NODE = -1L;
     private static final long NO_RELATIONSHIP = -1L;
@@ -116,7 +115,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         int propertyKey = propertyKey();
         if ( isNode() )
         {
-            return accessMode.allowsReadNodeProperty( this, propertyKey );
+            return accessMode.allowsReadNodeProperty( this::labelsIgnoringTxStateSetRemove, propertyKey );
         }
         if ( isRelationship() )
         {
@@ -231,8 +230,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         }
     }
 
-    @Override
-    public LabelSet get()
+    public LabelSet labelsIgnoringTxStateSetRemove()
     {
         assert isNode();
 
@@ -242,7 +240,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
             {
                 read.singleNode( nodeReference, nodeCursor );
                 nodeCursor.next();
-                labels = nodeCursor.labels();
+                labels = nodeCursor.labelsIgnoringTxStateSetRemove();
             }
         }
         return labels;
