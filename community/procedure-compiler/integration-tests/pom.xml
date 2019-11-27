@@ -2,7 +2,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>procedure-compiler-parent</artifactId>
-        <version>3.5.13-SNAPSHOT</version>
+        <version>3.5.14-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
