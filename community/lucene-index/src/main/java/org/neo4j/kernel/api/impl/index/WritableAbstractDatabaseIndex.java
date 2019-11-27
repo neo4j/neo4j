@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> extends AbstractDatabaseIndex<INDEX, READER>
 {
     // lock used to guard commits and close of lucene indexes from separate threads
-    private final ReentrantLock commitCloseLock = new ReentrantLock();
+    protected final ReentrantLock commitCloseLock = new ReentrantLock();
 
     public WritableAbstractDatabaseIndex( INDEX luceneIndex )
     {
@@ -71,17 +71,12 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
         commitCloseLock.lock();
         try
         {
-            commitLockedDrop();
+            luceneIndex.drop();
         }
         finally
         {
             commitCloseLock.unlock();
         }
-    }
-
-    protected void commitLockedDrop()
-    {
-        luceneIndex.drop();
     }
 
     /**
