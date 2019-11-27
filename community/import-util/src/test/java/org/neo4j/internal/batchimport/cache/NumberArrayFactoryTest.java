@@ -23,9 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -166,7 +164,7 @@ class NumberArrayFactoryTest
         assertEquals( KILO * itemSize, monitor.memory );
         assertEquals( NumberArrayFactory.HEAP, monitor.successfulFactory );
         assertEquals( throwingMemoryFactory, single( monitor.attemptedAllocationFailures ).getFactory() );
-        assertThat( single( monitor.attemptedAllocationFailures ).getFailure().getMessage(), containsString( failure.getMessage() ) );
+        assertThat( single( monitor.attemptedAllocationFailures ).getFailure().getMessage() ).contains( failure.getMessage() );
     }
 
     @Test
@@ -189,9 +187,9 @@ class NumberArrayFactoryTest
         byte[] into = new byte[1];
         into[0] = 1;
         factory.newByteArray( 10, new byte[1], base ).get( base + 1, into );
-        assertThat( into[0], is( (byte) 0 ) );
-        assertThat( factory.newIntArray( 10, 1, base ).get( base + 1 ), is( 1 ) );
-        assertThat( factory.newLongArray( 10, 1, base ).get( base + 1 ), is( 1L ) );
+        assertThat( into[0] ).isEqualTo( (byte) 0 );
+        assertThat( factory.newIntArray( 10, 1, base ).get( base + 1 ) ).isEqualTo( 1 );
+        assertThat( factory.newLongArray( 10, 1, base ).get( base + 1 ) ).isEqualTo( 1L );
     }
 
     private static class FailureMonitor implements NumberArrayFactory.Monitor

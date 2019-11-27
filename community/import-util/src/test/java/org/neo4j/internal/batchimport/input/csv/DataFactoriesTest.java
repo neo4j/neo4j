@@ -36,9 +36,8 @@ import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputException;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
@@ -238,7 +237,7 @@ public class DataFactoriesTest
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( "START_ID" ) );
+            assertThat( e.getMessage() ).contains( "START_ID" );
         }
     }
 
@@ -258,7 +257,7 @@ public class DataFactoriesTest
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( "LABEL" ) );
+            assertThat( e.getMessage() ).contains( "LABEL" );
         }
     }
 

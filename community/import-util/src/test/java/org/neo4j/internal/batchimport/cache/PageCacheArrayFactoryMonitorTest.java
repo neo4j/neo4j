@@ -26,8 +26,7 @@ import java.io.File;
 import org.neo4j.io.pagecache.PageCache;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
@@ -49,8 +48,8 @@ class PageCacheArrayFactoryMonitorTest
         String failure = monitor.pageCacheAllocationOrNull();
 
         // then
-        assertThat( failure, containsString( "OOM1" ) );
-        assertThat( failure, containsString( "OOM2" ) );
+        assertThat( failure ).contains( "OOM1" );
+        assertThat( failure ).contains( "OOM2" );
     }
 
     @Test
