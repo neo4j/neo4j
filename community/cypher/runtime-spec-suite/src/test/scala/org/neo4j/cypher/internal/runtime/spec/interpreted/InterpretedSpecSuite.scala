@@ -45,6 +45,7 @@ class InterpretedExpandIntoTest extends ExpandIntoTestBase(COMMUNITY.EDITION, In
 class InterpretedOptionalExpandAllTest extends OptionalExpandAllTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOptionalExpandIntoTest extends OptionalExpandIntoTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedVarExpandAllTest extends VarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedPruningVarExpandTest extends PruningVarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedProjectEndpointsTest extends ProjectEndpointsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

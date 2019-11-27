@@ -161,6 +161,30 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def pruningVarExpand(pattern: String,
+                       nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
+                       relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
+    val p = patternParser.parse(pattern)
+    newRelationship(varFor(p.relName))
+    newNode(varFor(p.to))
+    p.length match {
+      case VarPatternLength(min, Some(max)) =>
+        appendAtCurrentIndent(UnaryOperator(lp => PruningVarExpand(lp,
+          p.from,
+          p.dir,
+          p.relTypes,
+          p.to,
+          min,
+          max,
+          nodePredicate.asVariablePredicate,
+          relationshipPredicate.asVariablePredicate
+        )(_)))
+      case _ =>
+        throw new IllegalArgumentException("This pattern is not compatible with pruning var expand")
+    }
+    self
+  }
+
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
   def optionalExpandAll(pattern: String, predicate: Option[String] = None): IMPL = {
