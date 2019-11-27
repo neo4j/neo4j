@@ -19,10 +19,6 @@
  */
 package org.neo4j.consistency.report;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -50,12 +46,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public interface ConsistencyReport
 {
-    @Retention( RetentionPolicy.RUNTIME )
-    @Target( ElementType.METHOD )
-    @interface Warning
-    {
-    }
-
     interface Reporter
     {
         void forSchema( SchemaRecord schema,

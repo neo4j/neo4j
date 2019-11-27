@@ -225,7 +225,7 @@ public class ConsistencyReporterTest
             reportMethod.invoke( reporter, parameters( reportMethod ) );
 
             // then
-            if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
+            if ( method.getAnnotation( Warning.class ) == null )
             {
                 if ( reportMethod.getName().endsWith( "Change" ) )
                 {

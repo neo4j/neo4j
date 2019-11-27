@@ -188,7 +188,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         public Object invoke( Object proxy, Method method, Object[] args )
         {
             String message = DocumentedUtils.extractFormattedMessage( method, args );
-            if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
+            if ( method.getAnnotation( Warning.class ) == null )
             {
                 errors++;
                 report.error( message );
@@ -278,7 +278,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         public Object invoke( Object proxy, Method method, Object[] args )
         {
             String message = DocumentedUtils.extractMessage( method );
-            if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
+            if ( method.getAnnotation( Warning.class ) == null )
             {
                 args = getRealRecords( args );
                 logError( message, args );
