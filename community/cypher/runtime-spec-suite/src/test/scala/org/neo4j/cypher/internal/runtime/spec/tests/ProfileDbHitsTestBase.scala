@@ -322,8 +322,28 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val matchesPerVarExpand = 3
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel) * matchesPerVarExpand) or be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel + 1) * matchesPerVarExpand)) // expand
+    queryProfile.operatorProfile(1).dbHits() should (be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel) * matchesPerVarExpand) or be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel + 1) * matchesPerVarExpand)) // var expand
     queryProfile.operatorProfile(2).dbHits() should (be (SIZE) or be (SIZE + 1)) // all node scan
+  }
+
+  test("should profile dbHits with pruning var-expand") {
+    // given
+    val SIZE = sizeHint / 4
+    given { circleGraph(SIZE) }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .pruningVarExpand("(x)-[*1..3]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val matchesPerVarExpand = 3
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should be > 0L
   }
 
   test("should profile dbhits with expand all") {
