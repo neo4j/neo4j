@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -33,7 +32,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -67,7 +66,7 @@ class PhysicalLogCommandReadersTest
 
     private static void assertValidRelGroupCommand( StorageCommand command )
     {
-        MatcherAssert.assertThat( command, instanceOf( RelationshipGroupCommand.class ) );
+        assertThat( command ).isInstanceOf( RelationshipGroupCommand.class );
         RelationshipGroupCommand relGroupCommand = (RelationshipGroupCommand) command;
         RelationshipGroupRecord record = relGroupCommand.getAfter();
 

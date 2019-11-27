@@ -21,12 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
 import org.neo4j.io.layout.DatabaseFile;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class StoreTypeTest
@@ -48,6 +45,6 @@ class StoreTypeTest
     @Test
     void storeTypeofSomeInvalidFile()
     {
-        assertThat( StoreType.typeOf( DatabaseFile.LABEL_SCAN_STORE ), is( Optional.empty() ) );
+        assertThat( StoreType.typeOf( DatabaseFile.LABEL_SCAN_STORE ) ).isEmpty();
     }
 }

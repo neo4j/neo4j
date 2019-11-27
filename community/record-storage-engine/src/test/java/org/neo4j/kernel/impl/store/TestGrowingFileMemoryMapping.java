@@ -34,8 +34,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -85,8 +84,7 @@ class TestGrowingFileMemoryMapping
             record.setId( startingId + i );
             nodeStore.getRecord( i, record, NORMAL );
             assertTrue( record.inUse(), "record[" + i + "] should be in use" );
-            assertThat( "record[" + i + "] should have nextRelId of " + i,
-                    record.getNextRel(), is( (long) i ) );
+            assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( (long) i );
         }
 
         neoStores.close();

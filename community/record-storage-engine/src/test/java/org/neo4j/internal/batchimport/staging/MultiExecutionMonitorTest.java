@@ -29,8 +29,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class MultiExecutionMonitorTest
@@ -60,7 +59,7 @@ class MultiExecutionMonitorTest
         {
             TestableMonitor monitor = (TestableMonitor) alternatingMonitorAndCount[i++];
             int count = (Integer) alternatingMonitorAndCount[i];
-            assertThat( monitor.timesPolled, lessThanOrEqualTo( count ) );
+            assertThat( monitor.timesPolled ).isLessThanOrEqualTo( count );
             if ( monitor.timesPolled < count )
             {
                 fail( "Polls didn't occur, expected " + Arrays.toString( alternatingMonitorAndCount ) );

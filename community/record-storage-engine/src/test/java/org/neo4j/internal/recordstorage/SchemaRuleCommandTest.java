@@ -51,9 +51,7 @@ import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -206,7 +204,7 @@ class SchemaRuleCommandTest
         Command readCommand = reader.read( buffer );
 
         // THEN
-        assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
+        assertThat( readCommand ).isInstanceOf( SchemaRuleCommand.class );
 
         assertSchemaRule( (SchemaRuleCommand)readCommand );
     }
@@ -228,7 +226,7 @@ class SchemaRuleCommandTest
         Command readCommand = reader.read( buffer );
 
         // THEN
-        assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
+        assertThat( readCommand ).isInstanceOf( SchemaRuleCommand.class );
 
         assertSchemaRule( (SchemaRuleCommand) readCommand );
     }
@@ -255,7 +253,7 @@ class SchemaRuleCommandTest
 
         // THEN
         assertEquals( ruleId, readCommand.getKey() );
-        assertThat( readCommand.getSchemaRule(), equalTo( rule ) );
+        assertThat( readCommand.getSchemaRule() ).isEqualTo( rule );
     }
 
     /**

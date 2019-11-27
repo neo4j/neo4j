@@ -26,8 +26,7 @@ import org.neo4j.io.os.OsBeanUtil;
 
 import static java.lang.Math.abs;
 import static java.lang.String.valueOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -88,6 +87,6 @@ class ConfigurationTest
         // then
         long expected = (long) ((totalMachineMemory - Runtime.getRuntime().maxMemory()) * (percent / 100D));
         long diff = abs( expected - memory );
-        assertThat( diff, lessThan( (long)(expected / 10D) ) );
+        assertThat( diff ).isLessThan( (long) (expected / 10D) );
     }
 }

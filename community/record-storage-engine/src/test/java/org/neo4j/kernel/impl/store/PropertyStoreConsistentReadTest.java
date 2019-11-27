@@ -31,8 +31,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<PropertyRecord, PropertyStore>
@@ -99,17 +98,17 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     {
         assertNotNull( actualRecord, "actualRecord" );
         assertNotNull( expectedRecord, "expectedRecord" );
-        assertThat( "getDeletedRecords", actualRecord.getDeletedRecords(), is( expectedRecord.getDeletedRecords() ) );
-        assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
-        assertThat( "getEntityId", actualRecord.getNodeId(), is( expectedRecord.getNodeId() ) );
-        assertThat( "getPrevProp", actualRecord.getPrevProp(), is( expectedRecord.getPrevProp() ) );
-        assertThat( "getRelId", actualRecord.getRelId(), is( expectedRecord.getRelId() ) );
-        assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
+        assertThat( actualRecord.getDeletedRecords() ).as( "getDeletedRecords" ).isEqualTo( expectedRecord.getDeletedRecords() );
+        assertThat( actualRecord.getNextProp() ).as( "getNextProp" ).isEqualTo( expectedRecord.getNextProp() );
+        assertThat( actualRecord.getNodeId() ).as( "getEntityId" ).isEqualTo( expectedRecord.getNodeId() );
+        assertThat( actualRecord.getPrevProp() ).as( "getPrevProp" ).isEqualTo( expectedRecord.getPrevProp() );
+        assertThat( actualRecord.getRelId() ).as( "getRelId" ).isEqualTo( expectedRecord.getRelId() );
+        assertThat( actualRecord.getId() ).as( "getId" ).isEqualTo( expectedRecord.getId() );
+        assertThat( actualRecord.getId() ).as( "getLongId" ).isEqualTo( expectedRecord.getId() );
 
         List<PropertyBlock> actualBlocks = Iterables.asList( actualRecord );
         List<PropertyBlock> expectedBlocks = Iterables.asList( expectedRecord );
-        assertThat( "getPropertyBlocks().size", actualBlocks.size(), is( expectedBlocks.size() ) );
+        assertThat( actualBlocks.size() ).as( "getPropertyBlocks().size" ).isEqualTo( expectedBlocks.size() );
         for ( int i = 0; i < actualBlocks.size(); i++ )
         {
             PropertyBlock actualBlock = actualBlocks.get( i );
@@ -120,47 +119,34 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
 
     private static void assertPropertyBlocksEqual( int index, PropertyBlock actualBlock, PropertyBlock expectedBlock )
     {
-        assertThat( "[" + index + "]getKeyIndexId", actualBlock.getKeyIndexId(),
-                is( expectedBlock.getKeyIndexId() ) );
-        assertThat( "[" + index + "]getSingleValueBlock", actualBlock.getSingleValueBlock(),
-                is( expectedBlock.getSingleValueBlock() ) );
-        assertThat( "[" + index + "]getSingleValueByte", actualBlock.getSingleValueByte(),
-                is( expectedBlock.getSingleValueByte() ) );
-        assertThat( "[" + index + "]getSingleValueInt", actualBlock.getSingleValueInt(),
-                is( expectedBlock.getSingleValueInt() ) );
-        assertThat( "[" + index + "]getSingleValueLong", actualBlock.getSingleValueLong(),
-                is( expectedBlock.getSingleValueLong() ) );
-        assertThat( "[" + index + "]getSingleValueShort", actualBlock.getSingleValueShort(),
-                is( expectedBlock.getSingleValueShort() ) );
-        assertThat( "[" + index + "]getSize", actualBlock.getSize(), is( expectedBlock.getSize() ) );
-        assertThat( "[" + index + "]getType", actualBlock.getType(), is( expectedBlock.getType() ) );
-        assertThat( "[" + index + "]isLight", actualBlock.isLight(), is( expectedBlock.isLight() ) );
+        assertThat( actualBlock.getKeyIndexId() ).as( "[" + index + "]getKeyIndexId" ).isEqualTo( expectedBlock.getKeyIndexId() );
+        assertThat( actualBlock.getSingleValueBlock() ).as( "[" + index + "]getSingleValueBlock" ).isEqualTo( expectedBlock.getSingleValueBlock() );
+        assertThat( actualBlock.getSingleValueByte() ).as( "[" + index + "]getSingleValueByte" ).isEqualTo( expectedBlock.getSingleValueByte() );
+        assertThat( actualBlock.getSingleValueInt() ).as( "[" + index + "]getSingleValueInt" ).isEqualTo( expectedBlock.getSingleValueInt() );
+        assertThat( actualBlock.getSingleValueLong() ).as( "[" + index + "]getSingleValueLong" ).isEqualTo( expectedBlock.getSingleValueLong() );
+        assertThat( actualBlock.getSingleValueShort() ).as( "[" + index + "]getSingleValueShort" ).isEqualTo( expectedBlock.getSingleValueShort() );
+        assertThat( actualBlock.getSize() ).as( "[" + index + "]getSize" ).isEqualTo( expectedBlock.getSize() );
+        assertThat( actualBlock.getType() ).as( "[" + index + "]getType" ).isEqualTo( expectedBlock.getType() );
+        assertThat( actualBlock.isLight() ).as( "[" + index + "]isLight" ).isEqualTo( expectedBlock.isLight() );
 
         List<DynamicRecord> actualValueRecords = actualBlock.getValueRecords();
         List<DynamicRecord> expectedValueRecords = expectedBlock.getValueRecords();
-        assertThat( "[" + index + "]getValueRecords.size",
-                actualValueRecords.size(), is( expectedValueRecords.size() ) );
+        assertThat( actualValueRecords.size() ).as( "[" + index + "]getValueRecords.size" ).isEqualTo( expectedValueRecords.size() );
 
         for ( int i = 0; i < actualValueRecords.size(); i++ )
         {
             DynamicRecord actualValueRecord = actualValueRecords.get( i );
             DynamicRecord expectedValueRecord = expectedValueRecords.get( i );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]getData", actualValueRecord.getData(),
-                    is( expectedValueRecord.getData() ) );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]getLength", actualValueRecord.getLength(),
-                    is( expectedValueRecord.getLength() ) );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]getNextBlock", actualValueRecord.getNextBlock(),
-                    is( expectedValueRecord.getNextBlock() ) );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]getType", actualValueRecord.getType(),
-                    is( expectedValueRecord.getType() ) );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]getId", actualValueRecord.getId(),
-                    is( expectedValueRecord.getId() ) );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getId(),
-                    is( expectedValueRecord.getId() ) );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]isStartRecord", actualValueRecord.isStartRecord(),
-                    is( expectedValueRecord.isStartRecord() ) );
-            assertThat( "[" + index + "]getValueRecords[" + i + "]inUse", actualValueRecord.inUse(),
-                    is( expectedValueRecord.inUse() ) );
+            assertThat( actualValueRecord.getData() ).as( "[" + index + "]getValueRecords[" + i + "]getData" ).isEqualTo( expectedValueRecord.getData() );
+            assertThat( actualValueRecord.getLength() ).as( "[" + index + "]getValueRecords[" + i + "]getLength" ).isEqualTo( expectedValueRecord.getLength() );
+            assertThat( actualValueRecord.getNextBlock() ).as( "[" + index + "]getValueRecords[" + i + "]getNextBlock" ).isEqualTo(
+                    expectedValueRecord.getNextBlock() );
+            assertThat( actualValueRecord.getType() ).as( "[" + index + "]getValueRecords[" + i + "]getType" ).isEqualTo( expectedValueRecord.getType() );
+            assertThat( actualValueRecord.getId() ).as( "[" + index + "]getValueRecords[" + i + "]getId" ).isEqualTo( expectedValueRecord.getId() );
+            assertThat( actualValueRecord.getId() ).as( "[" + index + "]getValueRecords[" + i + "]getLongId" ).isEqualTo( expectedValueRecord.getId() );
+            assertThat( actualValueRecord.isStartRecord() ).as( "[" + index + "]getValueRecords[" + i + "]isStartRecord" ).isEqualTo(
+                    expectedValueRecord.isStartRecord() );
+            assertThat( actualValueRecord.inUse() ).as( "[" + index + "]getValueRecords[" + i + "]inUse" ).isEqualTo( expectedValueRecord.inUse() );
         }
     }
 }

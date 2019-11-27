@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -383,7 +382,7 @@ class PropertyCreatorTest
             {
                 if ( expectedProperty.assertHasDynamicRecords )
                 {
-                    assertThat( block.getValueRecords().size(), Matchers.greaterThan( 0 ) );
+                    assertThat( block.getValueRecords().size() ).isGreaterThan( 0 );
                 }
                 else
                 {

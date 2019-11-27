@@ -28,8 +28,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.string.UTF8;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<LabelTokenRecord, LabelTokenStore>
@@ -91,14 +90,14 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
     {
         assertNotNull( actualRecord, "actualRecord" );
         assertNotNull( expectedRecord, "expectedRecord" );
-        assertThat( "getNameId", actualRecord.getNameId(), is( expectedRecord.getNameId() ) );
-        assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( "isLight", actualRecord.isLight(), is( expectedRecord.isLight() ) );
+        assertThat( actualRecord.getNameId() ).as( "getNameId" ).isEqualTo( expectedRecord.getNameId() );
+        assertThat( actualRecord.getId() ).as( "getId" ).isEqualTo( expectedRecord.getId() );
+        assertThat( actualRecord.getId() ).as( "getLongId" ).isEqualTo( expectedRecord.getId() );
+        assertThat( actualRecord.isLight() ).as( "isLight" ).isEqualTo( expectedRecord.isLight() );
 
         Collection<DynamicRecord> actualNameRecords = actualRecord.getNameRecords();
         Collection<DynamicRecord> expectedNameRecords = expectedRecord.getNameRecords();
-        assertThat( "getNameRecords.size", actualNameRecords.size(), is( expectedNameRecords.size() ) );
+        assertThat( actualNameRecords.size() ).as( "getNameRecords.size" ).isEqualTo( expectedNameRecords.size() );
         Iterator<DynamicRecord> actualNRs = actualNameRecords.iterator();
         Iterator<DynamicRecord> expectedNRs = expectedNameRecords.iterator();
         int i = 0;
@@ -107,14 +106,14 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
             DynamicRecord actualNameRecord = actualNRs.next();
             DynamicRecord expectedNameRecord = expectedNRs.next();
 
-            assertThat( "[" + i + "]getData", actualNameRecord.getData(), is( expectedNameRecord.getData() ) );
-            assertThat( "[" + i + "]getLength", actualNameRecord.getLength(), is( expectedNameRecord.getLength() ) );
-            assertThat( "[" + i + "]getNextBlock", actualNameRecord.getNextBlock(), is( expectedNameRecord.getNextBlock() ) );
-            assertThat( "[" + i + "]getType", actualNameRecord.getType(), is( expectedNameRecord.getType() ) );
-            assertThat( "[" + i + "]getId", actualNameRecord.getId(), is( expectedNameRecord.getId() ) );
-            assertThat( "[" + i + "]getLongId", actualNameRecord.getId(), is( expectedNameRecord.getId() ) );
-            assertThat( "[" + i + "]isStartRecord", actualNameRecord.isStartRecord(), is( expectedNameRecord.isStartRecord() ) );
-            assertThat( "[" + i + "]inUse", actualNameRecord.inUse(), is( expectedNameRecord.inUse() ) );
+            assertThat( actualNameRecord.getData() ).as( "[" + i + "]getData" ).isEqualTo( expectedNameRecord.getData() );
+            assertThat( actualNameRecord.getLength() ).as( "[" + i + "]getLength" ).isEqualTo( expectedNameRecord.getLength() );
+            assertThat( actualNameRecord.getNextBlock() ).as( "[" + i + "]getNextBlock" ).isEqualTo( expectedNameRecord.getNextBlock() );
+            assertThat( actualNameRecord.getType() ).as( "[" + i + "]getType" ).isEqualTo( expectedNameRecord.getType() );
+            assertThat( actualNameRecord.getId() ).as( "[" + i + "]getId" ).isEqualTo( expectedNameRecord.getId() );
+            assertThat( actualNameRecord.getId() ).as( "[" + i + "]getLongId" ).isEqualTo( expectedNameRecord.getId() );
+            assertThat( actualNameRecord.isStartRecord() ).as( "[" + i + "]isStartRecord" ).isEqualTo( expectedNameRecord.isStartRecord() );
+            assertThat( actualNameRecord.inUse() ).as( "[" + i + "]inUse" ).isEqualTo( expectedNameRecord.inUse() );
             i++;
         }
     }

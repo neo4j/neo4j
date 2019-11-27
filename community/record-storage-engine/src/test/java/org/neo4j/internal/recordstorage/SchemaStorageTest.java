@@ -44,15 +44,13 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.test.mockito.matcher.KernelExceptionUserMessageAssert.assertThat;
 
-@SuppressWarnings( "unchecked" )
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
 class SchemaStorageTest
@@ -98,8 +96,7 @@ class SchemaStorageTest
         var e = assertThrows( SchemaRuleNotFoundException.class, () ->
             storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ) ) );
 
-        assertThat( e, new KernelExceptionUserMessageMatcher( tokenNameLookup,
-            "No label property existence constraint was found for :Label1(prop1)." ) );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "No label property existence constraint was found for :Label1(prop1)." );
     }
 
     @Test
@@ -116,8 +113,7 @@ class SchemaStorageTest
         var e = assertThrows( DuplicateSchemaRuleException.class, () ->
             schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ) ) );
 
-        assertThat( e, new KernelExceptionUserMessageMatcher( tokenNameLookup,
-            "Multiple label uniqueness constraints found for :Label1(prop1)." ) );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple label uniqueness constraints found for :Label1(prop1)." );
     }
 
     @Test
@@ -127,9 +123,7 @@ class SchemaStorageTest
 
         var e = assertThrows( SchemaRuleNotFoundException.class, () ->
             storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
-        assertThat( e,
-            new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "No relationship type property existence constraint was found for -[:Type1(prop1)]-." ) );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "No relationship type property existence constraint was found for -[:Type1(prop1)]-." );
     }
 
     @Test
@@ -146,9 +140,7 @@ class SchemaStorageTest
         var e = assertThrows( DuplicateSchemaRuleException.class, () ->
             schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
 
-        assertThat( e,
-            new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple relationship type property existence constraints found for -[:Type1(prop1)]-." ) );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for -[:Type1(prop1)]-." );
     }
 
     private static TokenNameLookup getDefaultTokenNameLookup()

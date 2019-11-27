@@ -41,8 +41,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.contains;
@@ -139,7 +138,7 @@ class ImportLogicTest
                         cache.getNumberOfDenseNodes() );
             }
             assertEquals( types.size(), startingFromType );
-            assertThat( rounds, greaterThan( 1 ) );
+            assertThat( rounds ).isGreaterThan( 1 );
         }
     }
 

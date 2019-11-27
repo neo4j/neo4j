@@ -45,8 +45,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -258,7 +257,7 @@ class TestDynamicStore
 
         var e = assertThrows( RecordChainCycleDetectedException.class, () -> store.getRecords( firstId, NORMAL, true ) );
         String message = e.getMessage();
-        assertThat( message, containsString( "" + firstId ) );
-        assertThat( message, containsString( "" + secondLastRecord.getId() ) );
+        assertThat( message ).contains( "" + firstId );
+        assertThat( message ).contains( "" + secondLastRecord.getId() );
     }
 }

@@ -60,10 +60,7 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -257,7 +254,7 @@ class MetaDataStoreTest
         assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
         assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
         MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE );
-        assertThat( record.getValue(), greaterThan( 0L ) );
+        assertThat( record.getValue() ).isGreaterThan( 0L );
     }
 
     @Test
@@ -393,7 +390,7 @@ class MetaDataStoreTest
                 }
             } );
             race.go();
-            assertThat( store.incrementAndGetVersion(), is( initialVersion + (threads * iterations) + 1 ) );
+            assertThat( store.incrementAndGetVersion() ).isEqualTo( initialVersion + (threads * iterations) + 1 );
         }
     }
 
@@ -552,7 +549,7 @@ class MetaDataStoreTest
             }
         } ).collect( Collectors.toList() );
 
-        assertThat( actualValues, is( expectedValues ) );
+        assertThat( actualValues ).isEqualTo( expectedValues );
     }
 
     private File createMetaDataFile() throws IOException
@@ -602,7 +599,7 @@ class MetaDataStoreTest
             }
         } ).collect( Collectors.toList() );
 
-        assertThat( actualValues, is( expectedValues ) );
+        assertThat( actualValues ).isEqualTo( expectedValues );
     }
 
     private void writeCorrectMetaDataRecord( MetaDataStore store, MetaDataStore.Position[] positions, long storeVersion )
@@ -660,7 +657,7 @@ class MetaDataStoreTest
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
             long timestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
-            assertThat( timestamp, equalTo( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP ) );
+            assertThat( timestamp ).isEqualTo( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP );
         }
     }
 

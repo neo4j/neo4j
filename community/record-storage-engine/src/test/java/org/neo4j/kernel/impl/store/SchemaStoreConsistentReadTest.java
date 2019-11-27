@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<SchemaRecord, SchemaStore>
@@ -58,9 +57,9 @@ class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<Schema
     {
         assertNotNull( actualRecord, "actualRecord" );
         assertNotNull( expectedRecord, "expectedRecord" );
-        assertThat( "isConstraint", actualRecord.isConstraint(), is( expectedRecord.isConstraint() ) );
-        assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
-        assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
+        assertThat( actualRecord.isConstraint() ).as( "isConstraint" ).isEqualTo( expectedRecord.isConstraint() );
+        assertThat( actualRecord.getNextProp() ).as( "getNextProp" ).isEqualTo( expectedRecord.getNextProp() );
+        assertThat( actualRecord.getId() ).as( "getId" ).isEqualTo( expectedRecord.getId() );
+        assertThat( actualRecord.getId() ).as( "getLongId" ).isEqualTo( expectedRecord.getId() );
     }
 }

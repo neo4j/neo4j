@@ -42,8 +42,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -113,7 +112,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage(), containsString( "prev refers to unused" ) );
+        assertThat( error.getMessage() ).contains( "prev refers to unused" );
     }
 
     @Test
@@ -125,7 +124,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage(), containsString( "prev refers to unused" ) );
+        assertThat( error.getMessage() ).contains( "prev refers to unused" );
     }
 
     @Test
@@ -142,7 +141,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "that doesn't refer back" ) );
+        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
     }
 
     @Test
@@ -159,7 +158,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "that doesn't refer back" ) );
+        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
     }
 
     @Test
@@ -175,7 +174,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "which is a relationship between other nodes" ) );
+        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
     }
 
     @Test
@@ -191,7 +190,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "which is a relationship between other nodes" ) );
+        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
     }
 
     // ===== NEXT =====
@@ -205,7 +204,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage(), containsString( "next refers to unused" ) );
+        assertThat( error.getMessage() ).contains( "next refers to unused" );
     }
 
     @Test
@@ -217,7 +216,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage(), containsString( "next refers to unused" ) );
+        assertThat( error.getMessage() ).contains( "next refers to unused" );
     }
 
     @Test
@@ -234,7 +233,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "that doesn't refer back" ) );
+        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
     }
 
     @Test
@@ -251,7 +250,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "that doesn't refer back" ) );
+        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
     }
 
     @Test
@@ -267,7 +266,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "which is a relationship between other nodes" ) );
+        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
     }
 
     @Test
@@ -283,7 +282,7 @@ class ConsistencyCheckingApplierTest
 
         // when/then
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage(), containsString( "which is a relationship between other nodes" ) );
+        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
     }
 
     private void apply( Command.RelationshipCommand... commands ) throws Exception

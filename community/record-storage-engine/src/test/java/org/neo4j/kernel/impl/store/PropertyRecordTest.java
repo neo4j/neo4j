@@ -31,9 +31,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,8 +57,8 @@ class PropertyRecordTest
 
         // Then the record should only contain a single block, because blockB overwrote blockA
         List<PropertyBlock> propertyBlocks = Iterables.asList( record );
-        assertThat( propertyBlocks, hasItem( blockB ) );
-        assertThat( propertyBlocks, hasSize( 1 ) );
+        assertThat( propertyBlocks ).contains( blockB );
+        assertThat( propertyBlocks ).hasSize( 1 );
     }
 
     @Test

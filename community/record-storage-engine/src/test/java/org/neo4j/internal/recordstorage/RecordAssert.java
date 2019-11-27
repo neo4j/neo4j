@@ -19,14 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.impl.block.factory.Functions;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
+import org.assertj.core.api.AbstractAssert;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -34,25 +31,33 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.eclipse.collections.impl.block.factory.Functions.identity;
 import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
 import static org.neo4j.internal.recordstorage.RecordBuilders.records;
 
-// Hamcrest matchers for store records
-public class RecordMatchers
+public class RecordAssert extends AbstractAssert<RecordAssert,RecordChangeSet>
 {
-    /** Match a RecordChangeSet */
-    public static DiffMatcher<RecordChangeSet> containsChanges( AbstractBaseRecord... expectedChanges )
+    public RecordAssert( RecordChangeSet recordChangeSet )
     {
-        DiffMatcher<Iterable<? extends AbstractBaseRecord>> nodes =
-                containsRecords( "nodes", filterType( expectedChanges, NodeRecord.class ) );
-        DiffMatcher<Iterable<? extends AbstractBaseRecord>> rels =
-                containsRecords( "relationships",
-                        filterType( expectedChanges, RelationshipRecord.class ) );
-        DiffMatcher<Iterable<? extends AbstractBaseRecord>> groups =
-                containsRecords( "relationship groups",
-                        filterType( expectedChanges, RelationshipGroupRecord.class ) );
+        super( recordChangeSet, RecordAssert.class );
+    }
 
-        return new DiffMatcher<RecordChangeSet>()
+    public static RecordAssert assertThat( RecordChangeSet changeSet )
+    {
+        return new RecordAssert( changeSet );
+    }
+
+    /** Match a RecordChangeSet */
+    public DiffAssert<RecordChangeSet> containsChanges( AbstractBaseRecord... expectedChanges )
+    {
+        DiffAssert<Iterable<? extends AbstractBaseRecord>> nodes = containsRecords( "nodes", filterType( expectedChanges, NodeRecord.class ) );
+        DiffAssert<Iterable<? extends AbstractBaseRecord>> rels = containsRecords( "relationships", filterType( expectedChanges, RelationshipRecord.class ) );
+        DiffAssert<Iterable<? extends AbstractBaseRecord>> groups =
+                containsRecords( "relationship groups", filterType( expectedChanges, RelationshipGroupRecord.class ) );
+
+        return new DiffAssert<>()
         {
             @Override
             String diff( RecordChangeSet actual )
@@ -65,25 +70,14 @@ public class RecordMatchers
                     return diff;
                 }
 
-                diff = rels.diff( records( actual.getRelRecords().changes() )  );
+                diff = rels.diff( records( actual.getRelRecords().changes() ) );
                 if ( diff != null )
                 {
                     return diff;
                 }
 
-                diff = groups.diff( records( actual.getRelGroupRecords().changes() )  );
-                if ( diff != null )
-                {
-                    return diff;
-                }
-
-                return null;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendValueList( "[", ",", "]", expectedChanges );
+                diff = groups.diff( records( actual.getRelGroupRecords().changes() ) );
+                return diff;
             }
         };
     }
@@ -95,12 +89,11 @@ public class RecordMatchers
     // NOTE: This nests diff functions for individual records; if you want a matcher for
     // a single record, just refactor those out and have this delegate to them, see how
     // the containsChanges delegates here for an example.
-    public static DiffMatcher<Iterable<? extends AbstractBaseRecord>> containsRecords(
+    public DiffAssert<Iterable<? extends AbstractBaseRecord>> containsRecords(
             String recordPlural, Stream<? extends AbstractBaseRecord> expected )
     {
-        Map<Long,AbstractBaseRecord> expectedById = expected.collect(
-                Collectors.toMap( AbstractBaseRecord::getId, Functions.identity() ) );
-        return new DiffMatcher<Iterable<? extends AbstractBaseRecord>>()
+        Map<Long,AbstractBaseRecord> expectedById = expected.collect( toMap( AbstractBaseRecord::getId, identity() ) );
+        return new DiffAssert<>()
         {
             @Override
             String diff( Iterable<? extends AbstractBaseRecord> actual )
@@ -111,8 +104,7 @@ public class RecordMatchers
                     seen.remove( record.getId() );
                     if ( !expectedById.containsKey( record.getId() ) )
                     {
-                        return String.format( "This record was not expected: %s",
-                                record );
+                        return String.format( "This record was not expected: %s", record );
                     }
 
                     String diff = diff( expectedById.get( record.getId() ), record );
@@ -133,27 +125,19 @@ public class RecordMatchers
                 }
                 if ( expected instanceof RelationshipRecord )
                 {
-                    return diff( (RelationshipRecord) expected,
-                            (RelationshipRecord) actual );
+                    return diff( (RelationshipRecord) expected, (RelationshipRecord) actual );
                 }
                 if ( expected instanceof RelationshipGroupRecord )
                 {
-                    return diff( (RelationshipGroupRecord) expected,
-                            (RelationshipGroupRecord) actual );
+                    return diff( (RelationshipGroupRecord) expected, (RelationshipGroupRecord) actual );
                 }
-                throw new UnsupportedOperationException(
-                        String.format( "No diff implementation (just add one, its easy) for: %s",
-                                expected ) );
+                throw new UnsupportedOperationException( String.format( "No diff implementation (just add one, its easy) for: %s", expected ) );
             }
 
             private String diff( NodeRecord expected, NodeRecord actual )
             {
-                if ( actual.getId() == expected.getId() &&
-                        actual.getNextRel() == expected.getNextRel() &&
-                        actual.getLabelField() == expected.getLabelField() &&
-                        actual.getNextProp() == expected.getNextProp() &&
-                        actual.isDense() == expected.isDense() &&
-                        actual.isLight() == expected.isLight() )
+                if ( actual.getId() == expected.getId() && actual.getNextRel() == expected.getNextRel() && actual.getLabelField() == expected.getLabelField() &&
+                        actual.getNextProp() == expected.getNextProp() && actual.isDense() == expected.isDense() && actual.isLight() == expected.isLight() )
                 {
                     return null;
                 }
@@ -162,13 +146,9 @@ public class RecordMatchers
 
             private String diff( RelationshipGroupRecord expected, RelationshipGroupRecord actual )
             {
-                if ( actual.getId() == expected.getId() &&
-                        actual.getType() == expected.getType() &&
-                        actual.getNext() == expected.getNext() &&
-                        actual.getFirstOut() == expected.getFirstOut() &&
-                        actual.getFirstIn() == expected.getFirstIn() &&
-                        actual.getFirstLoop() == expected.getFirstLoop() &&
-                        actual.getOwningNode() == expected.getOwningNode() )
+                if ( actual.getId() == expected.getId() && actual.getType() == expected.getType() && actual.getNext() == expected.getNext() &&
+                        actual.getFirstOut() == expected.getFirstOut() && actual.getFirstIn() == expected.getFirstIn() &&
+                        actual.getFirstLoop() == expected.getFirstLoop() && actual.getOwningNode() == expected.getOwningNode() )
                 {
                     return null;
                 }
@@ -177,16 +157,11 @@ public class RecordMatchers
 
             private String diff( RelationshipRecord expected, RelationshipRecord actual )
             {
-                if ( actual.getId() == expected.getId() &&
-                        actual.getFirstNode() == expected.getFirstNode() &&
-                        actual.getSecondNode() == expected.getSecondNode() &&
-                        actual.getType() == expected.getType() &&
-                        actual.getFirstPrevRel() == expected.getFirstPrevRel() &&
-                        actual.getFirstNextRel() == expected.getFirstNextRel() &&
-                        actual.getSecondPrevRel() == expected.getSecondPrevRel() &&
-                        actual.getSecondNextRel() == expected.getSecondNextRel() &&
-                        actual.isFirstInFirstChain() == expected.isFirstInFirstChain() &&
-                        actual.isFirstInSecondChain() == expected.isFirstInSecondChain() )
+                if ( actual.getId() == expected.getId() && actual.getFirstNode() == expected.getFirstNode() &&
+                        actual.getSecondNode() == expected.getSecondNode() && actual.getType() == expected.getType() &&
+                        actual.getFirstPrevRel() == expected.getFirstPrevRel() && actual.getFirstNextRel() == expected.getFirstNextRel() &&
+                        actual.getSecondPrevRel() == expected.getSecondPrevRel() && actual.getSecondNextRel() == expected.getSecondNextRel() &&
+                        actual.isFirstInFirstChain() == expected.isFirstInFirstChain() && actual.isFirstInSecondChain() == expected.isFirstInSecondChain() )
                 {
                     return null;
                 }
@@ -198,8 +173,7 @@ public class RecordMatchers
                 StringBuilder arrow = new StringBuilder();
                 char[] expectedChars = expected.toCharArray();
                 char[] actualChars = actual.toCharArray();
-                for ( int i = 0; i < Math.min( expectedChars.length, actualChars.length );
-                        i++ )
+                for ( int i = 0; i < Math.min( expectedChars.length, actualChars.length ); i++ )
                 {
                     if ( expectedChars[i] != actualChars[i] )
                     {
@@ -207,17 +181,8 @@ public class RecordMatchers
                     }
                     arrow.append( "-" );
                 }
-                return String.format( "Record fields don't match.\n" + "Expected: %s\n" +
-                                "Actual:   %s\n" + "          %s", expected, actual,
+                return String.format( "Record fields don't match.\n" + "Expected: %s\n" + "Actual:   %s\n" + "          %s", expected, actual,
                         arrow.append( "^" ).toString() );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendValueList(
-                        String.format( "%s matching:\n  ", recordPlural ), "\n  ", "",
-                        expectedById.values() );
             }
         };
     }
@@ -226,20 +191,17 @@ public class RecordMatchers
     // diff is non-null. Benefit here being that you don't have to duplicate the
     // match logic in the mismatch description; you write one function to find difference
     // and get both match and describeMismatch implemented for you.
-    public abstract static class DiffMatcher<T> extends TypeSafeMatcher<T>
+    public abstract class DiffAssert<T>
     {
         abstract String diff( T item );
 
-        @Override
-        protected boolean matchesSafely( T item )
+        protected void hasDiff( T item )
         {
-            return diff( item ) == null;
-        }
-
-        @Override
-        protected void describeMismatchSafely( T item, Description mismatchDescription )
-        {
-            mismatchDescription.appendText( diff( item ) );
+            var itemDifference = diff( item );
+            if ( isNotBlank( itemDifference ) )
+            {
+                failWithMessage( "Element difference found: " + itemDifference );
+            }
         }
     }
 }

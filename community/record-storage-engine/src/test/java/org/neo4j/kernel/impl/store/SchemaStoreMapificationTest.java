@@ -38,9 +38,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -104,7 +102,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "NON_UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( labelIndex ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( labelIndex );
     }
 
     @Test
@@ -123,7 +121,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( labelUniqueIndex ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( labelUniqueIndex );
     }
 
     @Test
@@ -142,7 +140,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "NON_UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( relTypeIndex ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( relTypeIndex );
     }
 
     @Test
@@ -161,7 +159,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( relTypeUniqueIndex ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( relTypeUniqueIndex );
     }
 
     @Test
@@ -180,7 +178,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "NON_UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1,2} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( nodeFtsIndex ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( nodeFtsIndex );
     }
 
     @Test
@@ -199,7 +197,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "NON_UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1,2} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( relFtsIndex ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( relFtsIndex );
     }
 
     @Test
@@ -215,7 +213,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue( "UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( uniqueLabelConstraint ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( uniqueLabelConstraint );
     }
 
     @Test
@@ -231,7 +229,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue( "EXISTS" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( existsLabelConstraint ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( existsLabelConstraint );
     }
 
     @Test
@@ -247,7 +245,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue( "UNIQUE_EXISTS" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( nodeKeyConstraint ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( nodeKeyConstraint );
     }
 
     @Test
@@ -263,6 +261,6 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue( "EXISTS" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ), is( equalTo( existsRelTypeConstraint ) ) );
+        assertThat( SchemaStore.unmapifySchemaRule( 1, mapified ) ).isEqualTo( existsRelTypeConstraint );
     }
 }

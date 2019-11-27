@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ResourceLocker;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.internal.recordstorage.RecordAssert.assertThat;
 import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
 import static org.neo4j.internal.recordstorage.RecordBuilders.firstIn;
 import static org.neo4j.internal.recordstorage.RecordBuilders.firstLoop;
@@ -46,7 +46,6 @@ import static org.neo4j.internal.recordstorage.RecordBuilders.tCount;
 import static org.neo4j.internal.recordstorage.RecordBuilders.tNext;
 import static org.neo4j.internal.recordstorage.RecordBuilders.tPrev;
 import static org.neo4j.internal.recordstorage.RecordBuilders.to;
-import static org.neo4j.internal.recordstorage.RecordMatchers.containsChanges;
 
 class RelationshipCreatorTest
 {
@@ -64,11 +63,7 @@ class RelationshipCreatorTest
 
         createRelationshipBetween( 0, 1 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, nextRel( 0 ) ),
-                node( 1, nextRel( 0 ) ),
-                rel( 0, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, nextRel( 0 ) ), node( 1, nextRel( 0 ) ), rel( 0, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) ) );
     }
 
     @Test
@@ -80,10 +75,7 @@ class RelationshipCreatorTest
 
         createRelationshipBetween( 0, 0 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, nextRel( 0 ) ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, nextRel( 0 ) ), rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ) );
     }
 
     @Test
@@ -98,12 +90,8 @@ class RelationshipCreatorTest
 
         createRelationshipBetween( 0, 2 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, nextRel( 1 ) ),
-                node( 2, nextRel( 1 ) ),
-                rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tCount( 1 ) ),
-                rel( 1, from( 0 ), to( 2 ), sCount( 2 ), sNext( 0 ), tCount( 1 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), node( 2, nextRel( 1 ) ), rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tCount( 1 ) ),
+                rel( 1, from( 0 ), to( 2 ), sCount( 2 ), sNext( 0 ), tCount( 1 ) ) );
     }
 
     @Test
@@ -118,12 +106,8 @@ class RelationshipCreatorTest
 
         createRelationshipBetween( 2, 0 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, nextRel( 1 ) ),
-                node( 2, nextRel( 1 ) ),
-                rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tCount( 1 ) ),
-                rel( 1, from( 2 ), to( 0 ), sCount( 1 ), tNext( 0 ), tCount( 2 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), node( 2, nextRel( 1 ) ), rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tCount( 1 ) ),
+                rel( 1, from( 2 ), to( 0 ), sCount( 1 ), tNext( 0 ), tCount( 2 ) ) );
     }
 
     @Test
@@ -137,13 +121,8 @@ class RelationshipCreatorTest
 
         createRelationshipBetween( 0, 1 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, nextRel( 1 ) ),
-                node( 1, nextRel( 1 ) ),
-                rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tPrev( 1 ) ),
-                rel( 1, from( 0 ), to( 1 ), sCount( 2 ), sNext( 0 ), tCount( 2 ),
-                        tNext( 0 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), node( 1, nextRel( 1 ) ), rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tPrev( 1 ) ),
+                rel( 1, from( 0 ), to( 1 ), sCount( 2 ), sNext( 0 ), tCount( 2 ), tNext( 0 ) ) );
     }
 
     @Test
@@ -156,12 +135,8 @@ class RelationshipCreatorTest
 
         createRelationshipBetween( 0, 0 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, nextRel( 1 ) ),
-                rel( 0, from( 0 ), to( 0 ), sPrev( 1 ), tPrev( 1 ) ),
-                rel( 1, from( 0 ), to( 0 ), sCount( 2 ), sNext( 0 ), tCount( 2 ),
-                        tNext( 0 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), rel( 0, from( 0 ), to( 0 ), sPrev( 1 ), tPrev( 1 ) ),
+                rel( 1, from( 0 ), to( 0 ), sCount( 2 ), sNext( 0 ), tCount( 2 ), tNext( 0 ) ) );
     }
 
     @Test
@@ -175,12 +150,8 @@ class RelationshipCreatorTest
         denseNodeThreshold = 1;
         createRelationshipBetween( 0, 0 );
 
-        assertThat( changeset, containsChanges(
-            node( 0, group( 0 ) ),
-            relGroup( 0, owningNode( 0 ), firstLoop( 1 ) ),
-            rel( 0, from( 0 ), to( 0 ), sPrev( 1 ), tPrev( 1 ) ),
-            rel( 1, from( 0 ), to( 0 ), sCount( 2 ), sNext( 0 ), tCount( 2 ), tNext( 0 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, group( 0 ) ), relGroup( 0, owningNode( 0 ), firstLoop( 1 ) ),
+                rel( 0, from( 0 ), to( 0 ), sPrev( 1 ), tPrev( 1 ) ), rel( 1, from( 0 ), to( 0 ), sCount( 2 ), sNext( 0 ), tCount( 2 ), tNext( 0 ) ) );
     }
 
     @Test
@@ -195,13 +166,8 @@ class RelationshipCreatorTest
         denseNodeThreshold = 1;
         createRelationshipBetween( 0, 1 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, group( 0 ) ),
-                node( 1, nextRel( 1 ) ),
-                relGroup( 0, owningNode( 0 ), firstLoop( 0 ), firstOut( 1 ) ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ),
-                rel( 1, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, group( 0 ) ), node( 1, nextRel( 1 ) ), relGroup( 0, owningNode( 0 ), firstLoop( 0 ), firstOut( 1 ) ),
+                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ), rel( 1, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) ) );
     }
 
     @Test
@@ -216,13 +182,8 @@ class RelationshipCreatorTest
         denseNodeThreshold = 1;
         createRelationshipBetween( 1, 0 );
 
-        assertThat( changeset, containsChanges(
-                node( 0, group( 0 ) ),
-                node( 1, nextRel( 1 ) ),
-                relGroup( 0, owningNode( 0 ), firstLoop( 0 ), firstIn( 1 ) ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ),
-                rel( 1, from( 1 ), to( 0 ), sCount( 1 ), tCount( 1 ) )
-        ) );
+        assertThat( changeset ).containsChanges( node( 0, group( 0 ) ), node( 1, nextRel( 1 ) ), relGroup( 0, owningNode( 0 ), firstLoop( 0 ), firstIn( 1 ) ),
+                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ), rel( 1, from( 1 ), to( 0 ), sCount( 1 ), tCount( 1 ) ) );
     }
 
     private void givenState( AbstractBaseRecord... records )

@@ -29,9 +29,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -63,7 +61,7 @@ class NodeRecordTest
         assertEquals( node.getNextProp(), clone.getNextProp() );
         assertEquals( node.getNextRel(), clone.getNextRel() );
 
-        assertThat( clone.getDynamicLabelRecords(), equalTo( node.getDynamicLabelRecords() ) );
+        assertThat( clone.getDynamicLabelRecords() ).isEqualTo( node.getDynamicLabelRecords() );
     }
 
     @Test
@@ -84,7 +82,7 @@ class NodeRecordTest
         Iterable<DynamicRecord> usedRecords = node.getUsedDynamicLabelRecords();
 
         // Then
-        assertThat( asList( usedRecords ), equalTo( asList( dynamic1, dynamic2 ) ) );
+        assertThat( asList( usedRecords ) ).isEqualTo( asList( dynamic1, dynamic2 ) );
     }
 
     @Test
@@ -110,8 +108,8 @@ class NodeRecordTest
         String toString = node.toString();
 
         // THEN
-        assertThat( toString, containsString( String.valueOf( labelId ) ) );
-        assertThat( toString, containsString( unused.toString() ) );
+        assertThat( toString ).contains( String.valueOf( labelId ) );
+        assertThat( toString ).contains( unused.toString() );
     }
 
     private static DynamicRecord newDeletedDynamicRecord( long id )

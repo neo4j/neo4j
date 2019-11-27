@@ -33,8 +33,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -65,7 +64,7 @@ class UpdateRecordsStepTest
 
         Stat stat = step.stat( Keys.io_throughput );
 
-        assertThat( stat.asLong(), greaterThan( 0L ) );
+        assertThat( stat.asLong() ).isGreaterThan( 0L );
     }
 
     @Test

@@ -70,8 +70,7 @@ import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -663,7 +662,7 @@ class NeoStoreTransactionApplierTest
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         var e = assertThrows( Exception.class, () -> apply( applier, command::handle, transactionToApply ) );
-        assertThat( e.getCause(), instanceOf( IndexNotFoundKernelException.class ) );
+        assertThat( e.getCause() ).isInstanceOf( IndexNotFoundKernelException.class );
     }
 
     @Test

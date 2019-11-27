@@ -87,8 +87,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.TokenHolders;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -378,7 +377,7 @@ class RecordStorageMigratorIT
             migratedRules = migratedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
             generatedRules = generatedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
 
-            assertThat( migratedRules, equalTo( generatedRules ) );
+            assertThat( migratedRules ).isEqualTo( generatedRules );
         }
     }
 

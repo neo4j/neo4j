@@ -57,9 +57,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -205,7 +203,7 @@ class GBPTreeCountsStoreTest
             // and we know the last committed tx id as well as the (pessimistic) last check-pointed tx id.
             crashAndRestartCountsStore();
             recover( lastCheckPointedTxId.get(), nextTxId.get() );
-            assertThat( nextTxId.get(), greaterThan( lastRoundClosedAt ) );
+            assertThat( nextTxId.get() ).isGreaterThan( lastRoundClosedAt );
             lastRoundClosedAt = nextTxId.get();
 
             // then
@@ -454,10 +452,10 @@ class GBPTreeCountsStoreTest
 
         // then
         String dump = out.toString();
-        assertThat( dump, containsString( nodeKey( LABEL_ID_1 ) + " = 10" ) );
-        assertThat( dump, containsString( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) + " = 3" ) );
-        assertThat( dump, containsString( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) + " = 7" ) );
-        assertThat( dump, containsString( "Highest gap-free txId: " + txId ) );
+        assertThat( dump ).contains( nodeKey( LABEL_ID_1 ) + " = 10" );
+        assertThat( dump ).contains( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) + " = 3" );
+        assertThat( dump ).contains( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) + " = 7" );
+        assertThat( dump ).contains( "Highest gap-free txId: " + txId );
     }
 
     @Test

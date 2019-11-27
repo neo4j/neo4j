@@ -48,10 +48,7 @@ import org.neo4j.values.storable.ValueCategory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,12 +74,12 @@ class SchemaCacheTest
     private static final long[] noEntityToken = {};
 
     // For "related to" tests
-    private SchemaRule schema3_4 = newIndexRule( 10, 3, 4 );
-    private SchemaRule schema5_6_7 = newIndexRule( 11, 5, 6, 7 );
-    private SchemaRule schema5_8 = newIndexRule( 12, 5, 8 );
-    private SchemaRule node35_8 = IndexPrototype.forSchema( fulltext( NODE, new int[]{3, 5}, new int[]{8} ) )
+    private IndexDescriptor schema3_4 = newIndexRule( 10, 3, 4 );
+    private IndexDescriptor schema5_6_7 = newIndexRule( 11, 5, 6, 7 );
+    private IndexDescriptor schema5_8 = newIndexRule( 12, 5, 8 );
+    private IndexDescriptor node35_8 = IndexPrototype.forSchema( fulltext( NODE, new int[]{3, 5}, new int[]{8} ) )
             .withName( "index_13" ).materialise( 13 );
-    private SchemaRule rel35_8 = IndexPrototype.forSchema( fulltext( RELATIONSHIP, new int[]{3, 5}, new int[]{8} ) )
+    private IndexDescriptor rel35_8 = IndexPrototype.forSchema( fulltext( RELATIONSHIP, new int[]{3, 5}, new int[]{8} ) )
             .withName( "index_14" ).materialise( 14 );
 
     @Test
@@ -228,7 +225,7 @@ class SchemaCacheTest
         IndexDescriptor actual = single( cache.indexesForSchema( forLabel( 1, 3 ) ) );
 
         // Then
-        assertThat( actual, equalTo( expected ) );
+        assertThat( actual ).isEqualTo( expected );
     }
 
     @Test
@@ -404,61 +401,50 @@ class SchemaCacheTest
     void shouldGetRelatedIndexForLabel()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema3_4, node35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ) ).contains( schema3_4, node35_8 );
     }
 
     @Test
     void shouldGetRelatedIndexForProperty()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat(
-                cache.getIndexesRelatedTo( noEntityToken, entityTokens( 3, 4, 5 ), properties( 4 ), false, NODE ),
-                containsInAnyOrder( schema3_4 ) );
+        assertThat( cache.getIndexesRelatedTo( noEntityToken, entityTokens( 3, 4, 5 ), properties( 4 ), false, NODE ) ).contains( schema3_4 );
     }
 
     @Test
     void shouldGetRelatedIndexesForLabel()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), entityTokens( 3, 4 ), properties(), false, NODE ),
-                containsInAnyOrder( schema5_6_7, schema5_8, node35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), entityTokens( 3, 4 ), properties(), false, NODE ) ).contains( schema5_6_7, schema5_8,
+                node35_8 );
     }
 
     @Test
     void shouldGetRelatedIndexes()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat(
-                cache.getIndexesRelatedTo( entityTokens( 3 ), entityTokens( 4, 5 ), properties( 7 ), false, NODE ),
-                containsInAnyOrder( schema3_4, schema5_6_7, node35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), entityTokens( 4, 5 ), properties( 7 ), false, NODE ) ).contains( schema3_4, schema5_6_7,
+                node35_8 );
     }
 
     @Test
     void shouldGetRelatedIndexOnce()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat(
-                cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties( 4 ), false, NODE ),
-                containsInAnyOrder( schema3_4, node35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties( 4 ), false, NODE ) ).contains( schema3_4, node35_8 );
 
-        assertThat(
-                cache.getIndexesRelatedTo( noEntityToken, entityTokens( 5 ), properties( 6, 7 ), false, NODE ),
-                containsInAnyOrder( schema5_6_7 ) );
+        assertThat( cache.getIndexesRelatedTo( noEntityToken, entityTokens( 5 ), properties( 6, 7 ), false, NODE ) ).contains( schema5_6_7 );
     }
 
     @Test
     void shouldHandleUnrelated()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat( cache.getIndexesRelatedTo( noEntityToken, noEntityToken, properties(), false, NODE ),
-                emptyIterableOf( IndexDescriptor.class ) );
+        assertThat( cache.getIndexesRelatedTo( noEntityToken, noEntityToken, properties(), false, NODE ) ).isEmpty();
 
         assertTrue( cache.getIndexesRelatedTo( entityTokens( 2 ), noEntityToken, properties(), false, NODE ).isEmpty() );
 
-        assertThat(
-                cache.getIndexesRelatedTo( noEntityToken, entityTokens( 2 ), properties( 1 ), false, NODE ),
-                emptyIterableOf( IndexDescriptor.class ) );
+        assertThat( cache.getIndexesRelatedTo( noEntityToken, entityTokens( 2 ), properties( 1 ), false, NODE ) ).isEmpty();
 
         assertTrue( cache.getIndexesRelatedTo( entityTokens( 2 ), entityTokens( 2 ), properties( 1 ), false, NODE ).isEmpty() );
     }
@@ -467,22 +453,18 @@ class SchemaCacheTest
     void shouldGetMultiLabelForAnyOfTheLabels()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema3_4, node35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ) ).contains( schema3_4, node35_8 );
 
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema5_8, schema5_6_7, node35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, NODE ) ).contains( schema5_8, schema5_6_7, node35_8 );
     }
 
     @Test
     void shouldOnlyGetRelIndexesForRelUpdates()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, RELATIONSHIP ) ).contains( rel35_8 );
 
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, RELATIONSHIP ) ).contains( rel35_8 );
     }
 
     @Test
@@ -490,16 +472,12 @@ class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         cache.removeSchemaRule( node35_8.getId() );
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema3_4 ) );
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ) ).contains( schema3_4 );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, RELATIONSHIP ) ).contains( rel35_8 );
 
         cache.removeSchemaRule( 7 );
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema5_8, schema5_6_7 ) );
-        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, NODE ) ).contains( schema5_8, schema5_6_7 );
+        assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, RELATIONSHIP ) ).contains( rel35_8 );
 
     }
 

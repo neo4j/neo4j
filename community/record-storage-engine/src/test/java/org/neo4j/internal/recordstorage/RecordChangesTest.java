@@ -22,8 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class RecordChangesTest
 {
@@ -67,6 +66,6 @@ class RecordChangesTest
         change.getOrLoad( 3, null ).forReadingData();
 
         // Then
-        assertThat( change.changeSize(), equalTo( 2 ) );
+        assertThat( change.changeSize() ).isEqualTo( 2 );
     }
 }

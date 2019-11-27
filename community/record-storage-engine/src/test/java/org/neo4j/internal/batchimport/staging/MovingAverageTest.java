@@ -21,8 +21,7 @@ package org.neo4j.internal.batchimport.staging;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MovingAverageTest
@@ -47,7 +46,7 @@ class MovingAverageTest
         for ( int i = 0; i < 5; i++ )
         {
             average.add( 100 );
-            assertThat( average.average(), greaterThan( avg ) );
+            assertThat( average.average() ).isGreaterThan( avg );
             avg = average.average();
         }
         assertEquals( 100L, average.average() );

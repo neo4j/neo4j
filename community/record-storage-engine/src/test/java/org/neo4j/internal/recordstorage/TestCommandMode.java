@@ -21,8 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.recordstorage.Command.Mode.fromRecordState;
 
 class TestCommandMode
@@ -30,10 +29,10 @@ class TestCommandMode
     @Test
     void shouldInferCorrectModes()
     {
-        assertThat( fromRecordState( true, true ), equalTo( Command.Mode.CREATE ) );
-        assertThat( fromRecordState( false, true ), equalTo( Command.Mode.UPDATE ) );
+        assertThat( fromRecordState( true, true ) ).isEqualTo( Command.Mode.CREATE );
+        assertThat( fromRecordState( false, true ) ).isEqualTo( Command.Mode.UPDATE );
 
-        assertThat( fromRecordState( false, false ), equalTo( Command.Mode.DELETE ) );
-        assertThat( fromRecordState( true, false ), equalTo( Command.Mode.DELETE ) );
+        assertThat( fromRecordState( false, false ) ).isEqualTo( Command.Mode.DELETE );
+        assertThat( fromRecordState( true, false ) ).isEqualTo( Command.Mode.DELETE );
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,8 +42,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -94,9 +92,7 @@ class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        MatcherAssert.assertThat(
-                convert( none, none, change( before, after ) ),
-                equalTo( EntityUpdates.forEntity( 0, false ).added( key, value ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ) ).isEqualTo( EntityUpdates.forEntity( 0, false ).added( key, value ).build() );
     }
 
     @Test
@@ -127,7 +123,7 @@ class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0, false ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ) ).isEqualTo( EntityUpdates.forEntity( 0, false ).build() );
     }
 
     @Test
@@ -156,7 +152,7 @@ class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // THEN
-        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0, false ).added( key, longString ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ) ).isEqualTo( EntityUpdates.forEntity( 0, false ).added( key, longString ).build() );
     }
 
     @Test

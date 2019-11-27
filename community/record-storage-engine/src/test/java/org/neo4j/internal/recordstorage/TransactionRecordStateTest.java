@@ -94,8 +94,7 @@ import org.neo4j.util.concurrent.WorkSync;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1226,16 +1225,16 @@ class TransactionRecordStateTest
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
 
-        assertThat( commands.size(), is( 1 ) );
+        assertThat( commands.size() ).isEqualTo( 1 );
         SchemaRuleCommand command = (SchemaRuleCommand) commands.get( 0 );
-        assertThat( command.getMode(), is( Command.Mode.CREATE ) );
-        assertThat( command.getSchemaRule(), is( rule ) );
-        assertThat( command.getKey(), is( ruleId ) );
-        assertThat( command.getBefore().inUse(), is( false ) );
-        assertThat( command.getAfter().inUse(), is( true ) );
-        assertThat( command.getAfter().isConstraint(), is( false ) );
-        assertThat( command.getAfter().isCreated(), is( true ) );
-        assertThat( command.getAfter().getNextProp(), is( Record.NO_NEXT_PROPERTY.longValue() ) );
+        assertThat( command.getMode() ).isEqualTo( Command.Mode.CREATE );
+        assertThat( command.getSchemaRule() ).isEqualTo( rule );
+        assertThat( command.getKey() ).isEqualTo( ruleId );
+        assertThat( command.getBefore().inUse() ).isEqualTo( false );
+        assertThat( command.getAfter().inUse() ).isEqualTo( true );
+        assertThat( command.getAfter().isConstraint() ).isEqualTo( false );
+        assertThat( command.getAfter().isCreated() ).isEqualTo( true );
+        assertThat( command.getAfter().getNextProp() ).isEqualTo( Record.NO_NEXT_PROPERTY.longValue() );
     }
 
     @Test
@@ -1250,16 +1249,16 @@ class TransactionRecordStateTest
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
 
-        assertThat( commands.size(), is( 1 ) );
+        assertThat( commands.size() ).isEqualTo( 1 );
         SchemaRuleCommand command = (SchemaRuleCommand) commands.get( 0 );
-        assertThat( command.getMode(), is( Command.Mode.CREATE ) );
-        assertThat( command.getSchemaRule(), is( rule ) );
-        assertThat( command.getKey(), is( ruleId ) );
-        assertThat( command.getBefore().inUse(), is( false ) );
-        assertThat( command.getAfter().inUse(), is( true ) );
-        assertThat( command.getAfter().isConstraint(), is( true ) );
-        assertThat( command.getAfter().isCreated(), is( true ) );
-        assertThat( command.getAfter().getNextProp(), is( Record.NO_NEXT_PROPERTY.longValue() ) );
+        assertThat( command.getMode() ).isEqualTo( Command.Mode.CREATE );
+        assertThat( command.getSchemaRule() ).isEqualTo( rule );
+        assertThat( command.getKey() ).isEqualTo( ruleId );
+        assertThat( command.getBefore().inUse() ).isEqualTo( false );
+        assertThat( command.getAfter().inUse() ).isEqualTo( true );
+        assertThat( command.getAfter().isConstraint() ).isEqualTo( true );
+        assertThat( command.getAfter().isCreated() ).isEqualTo( true );
+        assertThat( command.getAfter().getNextProp() ).isEqualTo( Record.NO_NEXT_PROPERTY.longValue() );
     }
 
     @Test
@@ -1278,22 +1277,22 @@ class TransactionRecordStateTest
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
 
-        assertThat( commands.size(), is( 2 ) );
+        assertThat( commands.size() ).isEqualTo( 2 );
 
         PropertyCommand propCmd = (PropertyCommand) commands.get( 0 ); // Order matters. Props added before schema.
-        assertThat( propCmd.getSchemaRuleId(), is( ruleId ) );
-        assertThat( propCmd.getBefore().inUse(), is( false ) );
-        assertThat( propCmd.getAfter().inUse(), is( true ) );
-        assertThat( propCmd.getAfter().isCreated(), is( true ) );
-        assertThat( propCmd.getAfter().getSchemaRuleId(), is( ruleId ) );
+        assertThat( propCmd.getSchemaRuleId() ).isEqualTo( ruleId );
+        assertThat( propCmd.getBefore().inUse() ).isEqualTo( false );
+        assertThat( propCmd.getAfter().inUse() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().isCreated() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().getSchemaRuleId() ).isEqualTo( ruleId );
 
         SchemaRuleCommand schemaCmd = (SchemaRuleCommand) commands.get( 1 );
-        assertThat( schemaCmd.getSchemaRule(), is( rule ) );
-        assertThat( schemaCmd.getBefore().inUse(), is( true ) );
-        assertThat( schemaCmd.getBefore().getNextProp(), is( Record.NO_NEXT_PROPERTY.longValue() ) );
-        assertThat( schemaCmd.getAfter().inUse(), is( true ) );
-        assertThat( schemaCmd.getAfter().isCreated(), is( false ) );
-        assertThat( schemaCmd.getAfter().getNextProp(), is( propCmd.getKey() ) );
+        assertThat( schemaCmd.getSchemaRule() ).isEqualTo( rule );
+        assertThat( schemaCmd.getBefore().inUse() ).isEqualTo( true );
+        assertThat( schemaCmd.getBefore().getNextProp() ).isEqualTo( Record.NO_NEXT_PROPERTY.longValue() );
+        assertThat( schemaCmd.getAfter().inUse() ).isEqualTo( true );
+        assertThat( schemaCmd.getAfter().isCreated() ).isEqualTo( false );
+        assertThat( schemaCmd.getAfter().getNextProp() ).isEqualTo( propCmd.getKey() );
 
         apply( transaction( commands ) );
 
@@ -1302,13 +1301,13 @@ class TransactionRecordStateTest
         commands.clear();
         state.extractCommands( commands );
 
-        assertThat( commands.size(), is( 1 ) );
+        assertThat( commands.size() ).isEqualTo( 1 );
 
         propCmd = (PropertyCommand) commands.get( 0 );
-        assertThat( propCmd.getSchemaRuleId(), is( ruleId ) );
-        assertThat( propCmd.getBefore().inUse(), is( true ) );
-        assertThat( propCmd.getAfter().inUse(), is( true ) );
-        assertThat( propCmd.getAfter().isCreated(), is( false ) );
+        assertThat( propCmd.getSchemaRuleId() ).isEqualTo( ruleId );
+        assertThat( propCmd.getBefore().inUse() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().inUse() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().isCreated() ).isEqualTo( false );
     }
 
     @Test
@@ -1329,16 +1328,16 @@ class TransactionRecordStateTest
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
 
-        assertThat( commands.size(), is( 2 ) );
+        assertThat( commands.size() ).isEqualTo( 2 );
         SchemaRuleCommand schemaCmd = (SchemaRuleCommand) commands.get( 0 ); // Order matters. Rule deletes before property deletes.
-        assertThat( schemaCmd.getKey(), is( ruleId ) );
-        assertThat( schemaCmd.getBefore().inUse(), is( true ) );
-        assertThat( schemaCmd.getAfter().inUse(), is( false ) );
+        assertThat( schemaCmd.getKey() ).isEqualTo( ruleId );
+        assertThat( schemaCmd.getBefore().inUse() ).isEqualTo( true );
+        assertThat( schemaCmd.getAfter().inUse() ).isEqualTo( false );
 
         PropertyCommand propCmd = (PropertyCommand) commands.get( 1 );
-        assertThat( propCmd.getKey(), is( schemaCmd.getBefore().getNextProp() ) );
-        assertThat( propCmd.getBefore().inUse(), is( true ) );
-        assertThat( propCmd.getAfter().inUse(), is( false ) );
+        assertThat( propCmd.getKey() ).isEqualTo( schemaCmd.getBefore().getNextProp() );
+        assertThat( propCmd.getBefore().inUse() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().inUse() ).isEqualTo( false );
     }
 
     @Test
@@ -1357,22 +1356,22 @@ class TransactionRecordStateTest
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
 
-        assertThat( commands.size(), is( 2 ) );
+        assertThat( commands.size() ).isEqualTo( 2 );
 
         PropertyCommand propCmd = (PropertyCommand) commands.get( 0 ); // Order matters. Props added before schema.
-        assertThat( propCmd.getSchemaRuleId(), is( ruleId ) );
-        assertThat( propCmd.getBefore().inUse(), is( false ) );
-        assertThat( propCmd.getAfter().inUse(), is( true ) );
-        assertThat( propCmd.getAfter().isCreated(), is( true ) );
-        assertThat( propCmd.getAfter().getSchemaRuleId(), is( ruleId ) );
+        assertThat( propCmd.getSchemaRuleId() ).isEqualTo( ruleId );
+        assertThat( propCmd.getBefore().inUse() ).isEqualTo( false );
+        assertThat( propCmd.getAfter().inUse() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().isCreated() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().getSchemaRuleId() ).isEqualTo( ruleId );
 
         SchemaRuleCommand schemaCmd = (SchemaRuleCommand) commands.get( 1 );
-        assertThat( schemaCmd.getSchemaRule(), is( rule ) );
-        assertThat( schemaCmd.getBefore().inUse(), is( true ) );
-        assertThat( schemaCmd.getBefore().getNextProp(), is( Record.NO_NEXT_PROPERTY.longValue() ) );
-        assertThat( schemaCmd.getAfter().inUse(), is( true ) );
-        assertThat( schemaCmd.getAfter().isCreated(), is( false ) );
-        assertThat( schemaCmd.getAfter().getNextProp(), is( propCmd.getKey() ) );
+        assertThat( schemaCmd.getSchemaRule() ).isEqualTo( rule );
+        assertThat( schemaCmd.getBefore().inUse() ).isEqualTo( true );
+        assertThat( schemaCmd.getBefore().getNextProp() ).isEqualTo( Record.NO_NEXT_PROPERTY.longValue() );
+        assertThat( schemaCmd.getAfter().inUse() ).isEqualTo( true );
+        assertThat( schemaCmd.getAfter().isCreated() ).isEqualTo( false );
+        assertThat( schemaCmd.getAfter().getNextProp() ).isEqualTo( propCmd.getKey() );
     }
 
     /**
@@ -1397,22 +1396,22 @@ class TransactionRecordStateTest
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
 
-        assertThat( commands.size(), is( 2 ) );
+        assertThat( commands.size() ).isEqualTo( 2 );
 
         PropertyCommand propCmd = (PropertyCommand) commands.get( 0 ); // Order matters. Props added before schema.
-        assertThat( propCmd.getSchemaRuleId(), is( ruleId ) );
-        assertThat( propCmd.getBefore().inUse(), is( true ) );
-        assertThat( propCmd.getAfter().inUse(), is( true ) );
-        assertThat( propCmd.getAfter().isCreated(), is( false ) );
-        assertThat( propCmd.getAfter().getSchemaRuleId(), is( ruleId ) );
+        assertThat( propCmd.getSchemaRuleId() ).isEqualTo( ruleId );
+        assertThat( propCmd.getBefore().inUse() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().inUse() ).isEqualTo( true );
+        assertThat( propCmd.getAfter().isCreated() ).isEqualTo( false );
+        assertThat( propCmd.getAfter().getSchemaRuleId() ).isEqualTo( ruleId );
 
         SchemaRuleCommand schemaCmd = (SchemaRuleCommand) commands.get( 1 );
-        assertThat( schemaCmd.getSchemaRule(), is( rule ) );
-        assertThat( schemaCmd.getBefore().inUse(), is( true ) );
-        assertThat( schemaCmd.getBefore().getNextProp(), is( propCmd.getKey() ) );
-        assertThat( schemaCmd.getAfter().inUse(), is( true ) );
-        assertThat( schemaCmd.getAfter().isCreated(), is( false ) );
-        assertThat( schemaCmd.getAfter().getNextProp(), is( propCmd.getKey() ) );
+        assertThat( schemaCmd.getSchemaRule() ).isEqualTo( rule );
+        assertThat( schemaCmd.getBefore().inUse() ).isEqualTo( true );
+        assertThat( schemaCmd.getBefore().getNextProp() ).isEqualTo( propCmd.getKey() );
+        assertThat( schemaCmd.getAfter().inUse() ).isEqualTo( true );
+        assertThat( schemaCmd.getAfter().isCreated() ).isEqualTo( false );
+        assertThat( schemaCmd.getAfter().getNextProp() ).isEqualTo( propCmd.getKey() );
     }
 
     private static void addLabelsToNode( TransactionRecordState recordState, long nodeId, long[] labelIds )

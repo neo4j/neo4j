@@ -60,9 +60,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -142,10 +140,10 @@ class RecordStorageEngineTest
         Throwable exception = captor.getValue();
         if ( exception instanceof KernelException )
         {
-            assertThat( ((KernelException) exception).status(), is( Status.General.UnknownError ) );
+            assertThat( ((KernelException) exception).status() ).isEqualTo( Status.General.UnknownError );
             exception = exception.getCause();
         }
-        assertThat( exception, is( applicationError ) );
+        assertThat( exception ).isEqualTo( applicationError );
     }
 
     @Test
@@ -166,7 +164,7 @@ class RecordStorageEngineTest
         RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache2, databaseLayout ).build();
         engine.flushAndForce( limiter );
 
-        assertThat( observedLimiter.get(), sameInstance( limiter ) );
+        assertThat( observedLimiter.get() ).isSameAs( limiter );
     }
 
     @Test

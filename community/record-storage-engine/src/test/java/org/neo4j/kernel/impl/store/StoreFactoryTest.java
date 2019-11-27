@@ -40,8 +40,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,7 +91,7 @@ class StoreFactoryTest
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
-        assertThat( metaDataStore.getUpgradeTime(), equalTo( metaDataStore.getCreationTime() ) );
+        assertThat( metaDataStore.getUpgradeTime() ).isEqualTo( metaDataStore.getCreationTime() );
     }
 
     @Test

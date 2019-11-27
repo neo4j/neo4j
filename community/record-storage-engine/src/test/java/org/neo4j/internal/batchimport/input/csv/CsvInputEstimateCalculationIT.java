@@ -79,8 +79,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
@@ -226,7 +225,7 @@ class CsvInputEstimateCalculationIT
     private static void assertRoughlyEqual( long expected, long actual )
     {
         long diff = abs( expected - actual );
-        assertThat( expected / 10, greaterThan( diff ) );
+        assertThat( expected / 10 ).isGreaterThan( diff );
     }
 
     private DataFactory generateData( Header.Factory factory, MutableLong start, long count,

@@ -38,9 +38,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -172,33 +170,33 @@ class SchemaRuleSerialization35Test
     @Test
     void rulesCreatedWithoutNameMustHaveComputedName()
     {
-        assertThat( indexRegular.getName(), is( "index_1" ) );
-        assertThat( indexUnique.getName(), is( "index_2" ) );
-        assertThat( indexCompositeRegular.getName(), is( "index_1" ) );
-        assertThat( indexCompositeUnique.getName(), is( "index_2" ) );
-        assertThat( indexBigComposite.getName(), is( "index_1" ) );
-        assertThat( constraintExistsLabel.getName(), is( "constraint_1" ) );
-        assertThat( constraintUniqueLabel.getName(), is( "constraint_2" ) );
-        assertThat( constraintNodeKeyLabel.getName(), is( "constraint_2" ) );
-        assertThat( constraintExistsRelType.getName(), is( "constraint_2" ) );
-        assertThat( constraintCompositeLabel.getName(), is( "constraint_1" ) );
-        assertThat( constraintCompositeRelType.getName(), is( "constraint_2" ) );
+        assertThat( indexRegular.getName() ).isEqualTo( "index_1" );
+        assertThat( indexUnique.getName() ).isEqualTo( "index_2" );
+        assertThat( indexCompositeRegular.getName() ).isEqualTo( "index_1" );
+        assertThat( indexCompositeUnique.getName() ).isEqualTo( "index_2" );
+        assertThat( indexBigComposite.getName() ).isEqualTo( "index_1" );
+        assertThat( constraintExistsLabel.getName() ).isEqualTo( "constraint_1" );
+        assertThat( constraintUniqueLabel.getName() ).isEqualTo( "constraint_2" );
+        assertThat( constraintNodeKeyLabel.getName() ).isEqualTo( "constraint_2" );
+        assertThat( constraintExistsRelType.getName() ).isEqualTo( "constraint_2" );
+        assertThat( constraintCompositeLabel.getName() ).isEqualTo( "constraint_1" );
+        assertThat( constraintCompositeRelType.getName() ).isEqualTo( "constraint_2" );
     }
 
     @Test
     void rulesCreatedWithoutNameMustRetainComputedNameAfterDeserialisation() throws Exception
     {
-        assertThat( serialiseAndDeserialise( indexRegular ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( indexUnique ).getName(), is( "index_2" ) );
-        assertThat( serialiseAndDeserialise( indexCompositeRegular ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( indexCompositeUnique ).getName(), is( "index_2" ) );
-        assertThat( serialiseAndDeserialise( indexBigComposite ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( constraintExistsLabel ).getName(), is( "constraint_1" ) );
-        assertThat( serialiseAndDeserialise( constraintUniqueLabel ).getName(), is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise( constraintNodeKeyLabel ).getName(), is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise( constraintExistsRelType ).getName(), is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise( constraintCompositeLabel ).getName(), is( "constraint_1" ) );
-        assertThat( serialiseAndDeserialise( constraintCompositeRelType ).getName(), is( "constraint_2" ) );
+        assertThat( serialiseAndDeserialise( indexRegular ).getName() ).isEqualTo( "index_1" );
+        assertThat( serialiseAndDeserialise( indexUnique ).getName() ).isEqualTo( "index_2" );
+        assertThat( serialiseAndDeserialise( indexCompositeRegular ).getName() ).isEqualTo( "index_1" );
+        assertThat( serialiseAndDeserialise( indexCompositeUnique ).getName() ).isEqualTo( "index_2" );
+        assertThat( serialiseAndDeserialise( indexBigComposite ).getName() ).isEqualTo( "index_1" );
+        assertThat( serialiseAndDeserialise( constraintExistsLabel ).getName() ).isEqualTo( "constraint_1" );
+        assertThat( serialiseAndDeserialise( constraintUniqueLabel ).getName() ).isEqualTo( "constraint_2" );
+        assertThat( serialiseAndDeserialise( constraintNodeKeyLabel ).getName() ).isEqualTo( "constraint_2" );
+        assertThat( serialiseAndDeserialise( constraintExistsRelType ).getName() ).isEqualTo( "constraint_2" );
+        assertThat( serialiseAndDeserialise( constraintCompositeLabel ).getName() ).isEqualTo( "constraint_1" );
+        assertThat( serialiseAndDeserialise( constraintCompositeRelType ).getName() ).isEqualTo( "constraint_2" );
     }
 
     @Test
@@ -206,54 +204,50 @@ class SchemaRuleSerialization35Test
     {
         String name = "custom_rule";
 
-        assertThat( serialiseAndDeserialise( withId( namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, RULE_ID ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( withId( namedForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID ) ).getName(),
-                is( name ) );
-        assertThat( serialiseAndDeserialise( withId( namedForLabel( name, LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( withId( namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) ).getName() ).isEqualTo( name );
+        assertThat( serialiseAndDeserialise( withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, RULE_ID ) ).getName() ).isEqualTo(
+                name );
+        assertThat( serialiseAndDeserialise( withId( namedForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID ) ).getName() ).isEqualTo( name );
         assertThat( serialiseAndDeserialise(
-                existsForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withName( name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 )
-                .withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ).withName( name ) ).getName(), is( name ) );
+                withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID ) ).getName() ).isEqualTo( name );
+        assertThat( serialiseAndDeserialise( withId( namedForLabel( name, LABEL_ID, IntStream.range( 1, 200 ).toArray() ), RULE_ID ) ).getName() ).isEqualTo(
+                name );
+        assertThat( serialiseAndDeserialise( existsForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withName( name ) ).getName() ).isEqualTo( name );
         assertThat( serialiseAndDeserialise(
-                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ).withName( name ) ).getName(), is( name ) );
+                uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ).withName( name ) ).getName() ).isEqualTo( name );
         assertThat( serialiseAndDeserialise(
-                existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withName( name ) ).getName(), is( name ) );
+                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ).withName( name ) ).getName() ).isEqualTo( name );
+        assertThat( serialiseAndDeserialise( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withName( name ) ).getName() ).isEqualTo(
+                name );
+        assertThat(
+                serialiseAndDeserialise( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID ).withName( name ) ).getName() ).isEqualTo(
+                name );
         assertThat( serialiseAndDeserialise(
-                existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID ).withName( name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 )
-                .withId( RULE_ID_2 ).withName( name ) ).getName(), is( name ) );
+                existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID_2 ).withName( name ) ).getName() ).isEqualTo( name );
     }
 
     @Test
     void rulesCreatedWithNullNameMustRetainComputedNameAfterDeserialisation() throws Exception
     {
-        assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( withIds( uniqueForLabelProto( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, RULE_ID ) ).getName(), is( "index_2" ) );
-        assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID ) ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( withIds( uniqueForLabelProto( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID ) ).getName(),
-                is( "index_2" ) );
-        assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID ) ).getName(), is( "index_1" ) );
+        assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) ).getName() ).isEqualTo( "index_1" );
+        assertThat( serialiseAndDeserialise( withIds( uniqueForLabelProto( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, RULE_ID ) ).getName() ).isEqualTo( "index_2" );
+        assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID ) ).getName() ).isEqualTo( "index_1" );
+        assertThat(
+                serialiseAndDeserialise( withIds( uniqueForLabelProto( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID ) ).getName() ).isEqualTo(
+                "index_2" );
+        assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, IntStream.range( 1, 200 ).toArray() ), RULE_ID ) ).getName() ).isEqualTo( "index_1" );
 
-        assertThat( serialiseAndDeserialise(
-                withId( existsForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) ).getName(),
-                is( "constraint_1" ) );
-        assertThat( serialiseAndDeserialise(
-                withId( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
-                is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise(
-                withId( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
-                is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise(
-                withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), RULE_ID_2 ) ).getName(),
-                is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise(
-                withId( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID ) ).getName(),
-                is( "constraint_1" ) );
-        assertThat( serialiseAndDeserialise(
-                withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2 ) ).getName(),
-                is( "constraint_2" ) );
+        assertThat( serialiseAndDeserialise( withId( existsForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) ).getName() ).isEqualTo( "constraint_1" );
+        assertThat( serialiseAndDeserialise( withId( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName() ).isEqualTo(
+                "constraint_2" );
+        assertThat(
+                serialiseAndDeserialise( withId( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName() ).isEqualTo(
+                "constraint_2" );
+        assertThat( serialiseAndDeserialise( withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), RULE_ID_2 ) ).getName() ).isEqualTo( "constraint_2" );
+        assertThat( serialiseAndDeserialise( withId( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID ) ).getName() ).isEqualTo(
+                "constraint_1" );
+        assertThat( serialiseAndDeserialise( withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2 ) ).getName() ).isEqualTo(
+                "constraint_2" );
     }
 
     @Test
@@ -477,12 +471,12 @@ class SchemaRuleSerialization35Test
         IndexDescriptor deserialized = assertIndexRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
-        assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( prototype.withName( name ).materialise( ruleId ) ) );
-        assertThat( deserialized.schema(), equalTo( prototype.schema() ) );
-        assertThat( deserialized.getIndexProvider().getKey(), equalTo( PROVIDER_KEY ) );
-        assertThat( deserialized.getIndexProvider().getVersion(), equalTo( PROVIDER_VERSION_25 ) );
-        assertThat( deserialized.getName(), is( name ) );
+        assertThat( deserialized.getId() ).isEqualTo( ruleId );
+        assertThat( deserialized ).isEqualTo( prototype.withName( name ).materialise( ruleId ) );
+        assertThat( deserialized.schema() ).isEqualTo( prototype.schema() );
+        assertThat( deserialized.getIndexProvider().getKey() ).isEqualTo( PROVIDER_KEY );
+        assertThat( deserialized.getIndexProvider().getVersion() ).isEqualTo( PROVIDER_VERSION_25 );
+        assertThat( deserialized.getName() ).isEqualTo( name );
         assertTrue( deserialized.getOwningConstraintId().isEmpty() );
     }
 
@@ -498,14 +492,14 @@ class SchemaRuleSerialization35Test
         IndexDescriptor deserialized = assertIndexRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
-        assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( prototype.withName( name ).materialise( ruleId ) ) );
-        assertThat( deserialized.schema(), equalTo( prototype.schema() ) );
-        assertThat( deserialized.getIndexProvider().getKey(), equalTo( PROVIDER_KEY ) );
-        assertThat( deserialized.getIndexProvider().getVersion(), equalTo( PROVIDER_VERSION_25 ) );
-        assertThat( deserialized.getOwningConstraintId().isPresent(), equalTo( true ) );
-        assertThat( deserialized.getOwningConstraintId().getAsLong(), equalTo( constraintId ) );
-        assertThat( deserialized.getName(), is( name ) );
+        assertThat( deserialized.getId() ).isEqualTo( ruleId );
+        assertThat( deserialized ).isEqualTo( prototype.withName( name ).materialise( ruleId ) );
+        assertThat( deserialized.schema() ).isEqualTo( prototype.schema() );
+        assertThat( deserialized.getIndexProvider().getKey() ).isEqualTo( PROVIDER_KEY );
+        assertThat( deserialized.getIndexProvider().getVersion() ).isEqualTo( PROVIDER_VERSION_25 );
+        assertThat( deserialized.getOwningConstraintId().isPresent() ).isEqualTo( true );
+        assertThat( deserialized.getOwningConstraintId().getAsLong() ).isEqualTo( constraintId );
+        assertThat( deserialized.getName() ).isEqualTo( name );
     }
 
     private static void assertParseUniqueConstraintRule( String serialized, String name ) throws MalformedSchemaRuleException
@@ -522,11 +516,11 @@ class SchemaRuleSerialization35Test
         ConstraintDescriptor deserialized = assertConstraintRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
-        assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
-        assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
-        assertThat( deserialized.asIndexBackedConstraint().ownedIndexId(), equalTo( ownedIndexId ) );
-        assertThat( deserialized.getName(), is( name ) );
+        assertThat( deserialized.getId() ).isEqualTo( ruleId );
+        assertThat( deserialized ).isEqualTo( constraint );
+        assertThat( deserialized.schema() ).isEqualTo( constraint.schema() );
+        assertThat( deserialized.asIndexBackedConstraint().ownedIndexId() ).isEqualTo( ownedIndexId );
+        assertThat( deserialized.getName() ).isEqualTo( name );
     }
 
     private static void assertParseNodeKeyConstraintRule( String serialized, String name ) throws MalformedSchemaRuleException
@@ -543,11 +537,11 @@ class SchemaRuleSerialization35Test
         ConstraintDescriptor deserialized = assertConstraintRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
-        assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
-        assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
-        assertThat( deserialized.asIndexBackedConstraint().ownedIndexId(), equalTo( ownedIndexId ) );
-        assertThat( deserialized.getName(), is( name ) );
+        assertThat( deserialized.getId() ).isEqualTo( ruleId );
+        assertThat( deserialized ).isEqualTo( constraint );
+        assertThat( deserialized.schema() ).isEqualTo( constraint.schema() );
+        assertThat( deserialized.asIndexBackedConstraint().ownedIndexId() ).isEqualTo( ownedIndexId );
+        assertThat( deserialized.getName() ).isEqualTo( name );
     }
 
     private static void assertParseNodePropertyExistsRule( String serialized, String name ) throws Exception
@@ -563,11 +557,11 @@ class SchemaRuleSerialization35Test
         ConstraintDescriptor deserialized = assertConstraintRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
-        assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
-        assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
+        assertThat( deserialized.getId() ).isEqualTo( ruleId );
+        assertThat( deserialized ).isEqualTo( constraint );
+        assertThat( deserialized.schema() ).isEqualTo( constraint.schema() );
         assertException( () -> deserialized.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
-        assertThat( deserialized.getName(), is( name ) );
+        assertThat( deserialized.getName() ).isEqualTo( name );
     }
 
     private static void assertParseRelationshipPropertyExistsRule( String serialized, String name ) throws Exception
@@ -583,11 +577,11 @@ class SchemaRuleSerialization35Test
         ConstraintDescriptor deserialized = assertConstraintRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
-        assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
-        assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
+        assertThat( deserialized.getId() ).isEqualTo( ruleId );
+        assertThat( deserialized ).isEqualTo( constraint );
+        assertThat( deserialized.schema() ).isEqualTo( constraint.schema() );
         assertException( () -> deserialized.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
-        assertThat( deserialized.getName(), is( name ) );
+        assertThat( deserialized.getName() ).isEqualTo( name );
     }
 
     // HELPERS
@@ -597,10 +591,10 @@ class SchemaRuleSerialization35Test
     {
         IndexDescriptor deserialized = assertIndexRule( serialiseAndDeserialise( indexRule ) );
 
-        assertThat( deserialized.getId(), equalTo( indexRule.getId() ) );
-        assertThat( deserialized, equalTo( indexRule ) );
-        assertThat( deserialized.schema(), equalTo( indexRule.schema() ) );
-        assertThat( deserialized.getIndexProvider(), equalTo( indexRule.getIndexProvider() ) );
+        assertThat( deserialized.getId() ).isEqualTo( indexRule.getId() );
+        assertThat( deserialized ).isEqualTo( indexRule );
+        assertThat( deserialized.schema() ).isEqualTo( indexRule.schema() );
+        assertThat( deserialized.getIndexProvider() ).isEqualTo( indexRule.getIndexProvider() );
     }
 
     private static IndexDescriptor assertIndexRule( SchemaRule schemaRule )
@@ -617,9 +611,9 @@ class SchemaRuleSerialization35Test
     {
         ConstraintDescriptor deserialized = assertConstraintRule( serialiseAndDeserialise( constraintRule ) );
 
-        assertThat( deserialized.getId(), equalTo( constraintRule.getId() ) );
-        assertThat( deserialized, equalTo( constraintRule ) );
-        assertThat( deserialized.schema(), equalTo( constraintRule.schema() ) );
+        assertThat( deserialized.getId() ).isEqualTo( constraintRule.getId() );
+        assertThat( deserialized ).isEqualTo( constraintRule );
+        assertThat( deserialized.schema() ).isEqualTo( constraintRule.schema() );
     }
 
     private static SchemaRule serialiseAndDeserialise( ConstraintDescriptor constraintRule ) throws MalformedSchemaRuleException
@@ -649,7 +643,7 @@ class SchemaRuleSerialization35Test
         ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( indexRule ) );
 
         // THEN
-        assertThat( SchemaRuleSerialization35.lengthOf( indexRule ), equalTo( buffer.capacity() ) );
+        assertThat( SchemaRuleSerialization35.lengthOf( indexRule ) ).isEqualTo( buffer.capacity() );
     }
 
     private static void assertCorrectLength( ConstraintDescriptor constraintRule )
@@ -658,7 +652,7 @@ class SchemaRuleSerialization35Test
         ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( constraintRule ) );
 
         // THEN
-        assertThat( SchemaRuleSerialization35.lengthOf( constraintRule ), equalTo( buffer.capacity() ) );
+        assertThat( SchemaRuleSerialization35.lengthOf( constraintRule ) ).isEqualTo( buffer.capacity() );
     }
 
     private static byte[] decodeBase64( String serialized )

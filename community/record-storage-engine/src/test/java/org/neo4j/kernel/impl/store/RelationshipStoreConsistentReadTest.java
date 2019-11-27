@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -64,19 +63,19 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
     {
         assertNotNull( actualRecord, "actualRecord" );
         assertNotNull( expectedRecord, "expectedRecord" );
-        assertThat( "getFirstNextRel", actualRecord.getFirstNextRel(), is( expectedRecord.getFirstNextRel() ) );
-        assertThat( "getFirstNode", actualRecord.getFirstNode(), is( expectedRecord.getFirstNode() ) );
-        assertThat( "getFirstPrevRel", actualRecord.getFirstPrevRel(), is( expectedRecord.getFirstPrevRel() ) );
-        assertThat( "getSecondNextRel", actualRecord.getSecondNextRel(), is( expectedRecord.getSecondNextRel() ) );
-        assertThat( "getSecondNode", actualRecord.getSecondNode(), is( expectedRecord.getSecondNode() ) );
-        assertThat( "getSecondPrevRel", actualRecord.getSecondPrevRel(), is( expectedRecord.getSecondPrevRel() ) );
-        assertThat( "getType", actualRecord.getType(), is( expectedRecord.getType() ) );
-        assertThat( "isFirstInFirstChain", actualRecord.isFirstInFirstChain(), is( expectedRecord.isFirstInFirstChain() ) );
-        assertThat( "isFirstInSecondChain", actualRecord.isFirstInSecondChain(), is( expectedRecord.isFirstInSecondChain() ) );
-        assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
-        assertThat( "inUse", actualRecord.inUse(), is( expectedRecord.inUse() ) );
+        assertThat( actualRecord.getFirstNextRel() ).as( "getFirstNextRel" ).isEqualTo( expectedRecord.getFirstNextRel() );
+        assertThat( actualRecord.getFirstNode() ).as( "getFirstNode" ).isEqualTo( expectedRecord.getFirstNode() );
+        assertThat( actualRecord.getFirstPrevRel() ).as( "getFirstPrevRel" ).isEqualTo( expectedRecord.getFirstPrevRel() );
+        assertThat( actualRecord.getSecondNextRel() ).as( "getSecondNextRel" ).isEqualTo( expectedRecord.getSecondNextRel() );
+        assertThat( actualRecord.getSecondNode() ).as( "getSecondNode" ).isEqualTo( expectedRecord.getSecondNode() );
+        assertThat( actualRecord.getSecondPrevRel() ).as( "getSecondPrevRel" ).isEqualTo( expectedRecord.getSecondPrevRel() );
+        assertThat( actualRecord.getType() ).as( "getType" ).isEqualTo( expectedRecord.getType() );
+        assertThat( actualRecord.isFirstInFirstChain() ).as( "isFirstInFirstChain" ).isEqualTo( expectedRecord.isFirstInFirstChain() );
+        assertThat( actualRecord.isFirstInSecondChain() ).as( "isFirstInSecondChain" ).isEqualTo( expectedRecord.isFirstInSecondChain() );
+        assertThat( actualRecord.getId() ).as( "getId" ).isEqualTo( expectedRecord.getId() );
+        assertThat( actualRecord.getId() ).as( "getLongId" ).isEqualTo( expectedRecord.getId() );
+        assertThat( actualRecord.getNextProp() ).as( "getNextProp" ).isEqualTo( expectedRecord.getNextProp() );
+        assertThat( actualRecord.inUse() ).as( "inUse" ).isEqualTo( expectedRecord.inUse() );
     }
 
     @Override

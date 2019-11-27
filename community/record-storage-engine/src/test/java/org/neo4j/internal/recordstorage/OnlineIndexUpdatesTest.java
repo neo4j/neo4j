@@ -62,9 +62,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -232,9 +230,8 @@ class OnlineIndexUpdatesTest
 
         onlineIndexUpdates.feed( nodeGroup( nodeCommand, nodePropertyCommand ), relationshipGroup( relationshipCommand, relationshipPropertyCommand ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
-        assertThat( onlineIndexUpdates,
-                containsInAnyOrder( IndexEntryUpdate.remove( relId, relationshipIndexDescriptor, relationshipPropertyValue, null, null ),
-                        IndexEntryUpdate.remove( nodeId, nodeIndexDescriptor, nodePropertyValue, null, null ) ) );
+        assertThat( onlineIndexUpdates ).contains( IndexEntryUpdate.remove( relId, relationshipIndexDescriptor, relationshipPropertyValue, null, null ),
+                IndexEntryUpdate.remove( nodeId, nodeIndexDescriptor, nodePropertyValue, null, null ) );
     }
 
     @Test
@@ -268,16 +265,13 @@ class OnlineIndexUpdatesTest
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
                 fulltext( RELATIONSHIP, new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, new int[]{1} ) )
                 .withName( "index_2" ).materialise( 2 );
-        IndexDescriptor indexDescriptor3 = IndexPrototype.forSchema(
-                fulltext( RELATIONSHIP, new int[]{OTHER_ENTITY_TOKEN}, new int[]{1} ) ).withName( "index_3" ).materialise( 3 );
         createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand, propertyCommand2 ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
-        assertThat( onlineIndexUpdates, containsInAnyOrder( IndexEntryUpdate.remove( relId, indexDescriptor0, propertyValue, propertyValue2, null ),
+        assertThat( onlineIndexUpdates ).contains( IndexEntryUpdate.remove( relId, indexDescriptor0, propertyValue, propertyValue2, null ),
                 IndexEntryUpdate.remove( relId, indexDescriptor1, null, propertyValue2, null ),
-                IndexEntryUpdate.remove( relId, indexDescriptor, propertyValue ) ) );
-        assertThat( onlineIndexUpdates, not( containsInAnyOrder( indexDescriptor3 ) ) ); // This index is only for a different relationship type.
+                IndexEntryUpdate.remove( relId, indexDescriptor, propertyValue ) );
     }
 
     private void createIndexes( IndexDescriptor... indexDescriptors )
