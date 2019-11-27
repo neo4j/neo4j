@@ -115,7 +115,7 @@ public class FulltextIndexProviderTest
     private static final String NAME = "fulltext";
 
     @Rule
-    public Timeout timeout = VerboseTimeout.builder().withTimeout( 1, TimeUnit.MINUTES ).build();
+    public Timeout timeout = VerboseTimeout.builder().withTimeout( 10, TimeUnit.MINUTES ).build();
 
     @Rule
     public DbmsRule db = new EmbeddedDbmsRule();
