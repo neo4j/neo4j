@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.logical.plans.{Apply, Argument}
+import org.neo4j.cypher.internal.logical.plans.{Apply, Argument, CartesianProduct, Eager}
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
@@ -49,5 +49,28 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
     val metaApply = Apply(apply1, apply2)
 
     metaApply.leaves should equal(Seq(argument1, argument2, argument3, argument4))
+  }
+
+  test("equals with similar and equal plans") {
+    val p1 = Apply(Argument(), Argument())
+    val p2 = Apply(Argument(), Argument())
+    val p3 = CartesianProduct(Argument(), Argument())
+
+    val p4 = Eager(p1)
+    val p5 = Eager(p2)
+    val p6 = Eager(p3)
+
+    p1 should equal(p1)
+    p1 should equal(p2)
+    p1 should not equal(p3)
+    p2 should equal(p1)
+    p2 should equal(p2)
+    p2 should not equal(p3)
+    p3 should not equal(p1)
+    p3 should not equal(p2)
+    p3 should equal(p3)
+
+    p4 should equal(p5)
+    p4 should not equal(p6)
   }
 }
