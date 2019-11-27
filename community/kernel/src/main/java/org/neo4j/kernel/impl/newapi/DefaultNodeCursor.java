@@ -137,6 +137,26 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         }
     }
 
+    /**
+     * The normal labels() method takes into account TxState for both created nodes and set/remove labels.
+     * Some code paths need to consider created, but not changed labels.
+     */
+    @Override
+    public LabelSet labelsIgnoringTxStateSetRemove()
+    {
+        if ( currentAddedInTx != NO_ID )
+        {
+            //Node added in tx-state, no reason to go down to store and check
+            TransactionState txState = read.txState();
+            return Labels.from( txState.nodeStateLabelDiffSets( currentAddedInTx ).getAdded() );
+        }
+        else
+        {
+            //Nothing in tx state, just read the data.
+            return Labels.from( storeCursor.labels() );
+        }
+    }
+
     @Override
     public boolean hasLabel( int label )
     {

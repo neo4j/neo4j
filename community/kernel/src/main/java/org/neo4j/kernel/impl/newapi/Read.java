@@ -331,6 +331,7 @@ abstract class Read implements TxStateHolder,
             LabelScan labelScan = labelScanReader().nodeLabelScan( label );
             indexProgressor = labelScan.initialize( filteringNodeLabelClient( indexCursor.nodeLabelClient(), accessMode ) );
         }
+        // TODO: When we have a blacklisted label, perhaps we should not consider labels added within the current transaction
         indexCursor.scan( indexProgressor, label );
     }
 
@@ -362,7 +363,7 @@ abstract class Read implements TxStateHolder,
                 {
                     return false;
                 }
-                labels = node.labels();
+                labels = node.labelsIgnoringTxStateSetRemove();
             }
             return inner.acceptNode( reference, labels ) && accessMode.allowsTraverseNode( labels.all() );
         }

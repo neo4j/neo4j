@@ -97,6 +97,12 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
+    public LabelSet labelsIgnoringTxStateSetRemove()
+    {
+        return labels();
+    }
+
+    @Override
     public boolean hasLabel( int label )
     {
         return labels().contains( label );

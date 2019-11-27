@@ -21,6 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.StorageNodeCursor;
 
+/**
+ * Several security related code paths need to stream nodes from the store without underlying security
+ * checks because they are used in cases where the security checks are handled above this cursor in the
+ * form of specific filters.
+ */
 class FullAccessNodeCursor extends DefaultNodeCursor
 {
     FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
