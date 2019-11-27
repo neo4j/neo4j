@@ -481,6 +481,25 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    void dirtyOnStartup() throws Exception
+    {
+        File[] indexFiles = schemaIndexFiles();
+        corruptIndexes( true, ( tree, inspection ) -> {
+            tree.unsafe( GBPTreeCorruption.makeDirty() );
+        }, indexFiles );
+
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+
+        assertTrue( result.isSuccessful(), "Expected store to be considered inconsistent." );
+        try ( BufferedReader reader = new BufferedReader( fs.openAsReader( result.reportFile(), Charset.defaultCharset() ) ) )
+        {
+            reader.lines().forEach( System.out::println );
+        }
+        assertResultContainsMessage( result,
+                "Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
+    }
+
+    @Test
     void shouldIncludeIndexFileInConsistencyReport() throws Exception
     {
         File[] indexFiles = schemaIndexFiles();

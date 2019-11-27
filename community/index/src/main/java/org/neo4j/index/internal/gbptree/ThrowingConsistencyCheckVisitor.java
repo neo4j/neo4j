@@ -156,6 +156,12 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
         throwUnexpectedExceptionInconsistency( "%s", Exceptions.stringify( e ) );
     }
 
+    @Override
+    public void dirtyOnStartup( File file )
+    {
+        throwTreeMetaInconsistency( "Tree was dirty on startup." );
+    }
+
     private static String stateToString( long generation, long readPointer, long pointer, byte stateA )
     {
         return format( "generation=%d, readPointer=%d, pointer=%d, state=%s",

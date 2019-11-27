@@ -162,4 +162,11 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
         clean.setFalse();
         delegate.exception( e );
     }
+
+    @Override
+    public void dirtyOnStartup( File file )
+    {
+        clean.setFalse();
+        delegate.dirtyOnStartup( file );
+    }
 }

@@ -26,14 +26,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.newchecker.ParallelExecution.ThrowingRunnable;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.consistency.store.synthetic.IndexRecord;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
@@ -91,19 +89,6 @@ public class IndexChecker implements Checker
     @Override
     public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
-        if ( firstRange )
-        {
-            // Report dirty indexes
-            for ( IndexDescriptor indexDescriptor : context.indexAccessors.onlineRules() )
-            {
-                IndexAccessor accessor = context.indexAccessors.accessorFor( indexDescriptor );
-                if ( accessor.isDirty() )
-                {
-                    reporter.report( new IndexRecord( indexDescriptor ), ConsistencyReport.IndexConsistencyReport.class, RecordType.INDEX ).dirtyIndex();
-                }
-            }
-        }
-
         // While more indexes
         //   Scan through one or more indexes (as sequentially as possible) and cache the node ids + hash of the indexed value in one bit-set for each index
         //   Then scan through node store, its labels and relevant properties and hash that value too --> match with the bit-set + hash.

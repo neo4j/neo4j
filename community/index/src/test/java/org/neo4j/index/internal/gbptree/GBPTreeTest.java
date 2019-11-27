@@ -380,7 +380,7 @@ class GBPTreeTest
     void shouldPickUpOpenOptions() throws IOException
     {
         // given
-        try ( GBPTree<MutableLong,MutableLong> index = index().with( StandardOpenOption.DELETE_ON_CLOSE ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( StandardOpenOption.DELETE_ON_CLOSE ).build() )
         {
             // when just closing it with the deletion flag
             assertTrue( fileSystem.fileExists( indexFile ) );
@@ -974,10 +974,7 @@ class GBPTreeTest
     {
         makeDirty();
 
-        try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.ignore() ).build() )
-        {
-            assertTrue( index.wasDirtyOnStartup() );
-        }
+        assertCleanOnStartup( false );
     }
 
     @Test
@@ -991,9 +988,23 @@ class GBPTreeTest
             }
             index.checkpoint( UNLIMITED );
         }
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        assertCleanOnStartup( true );
+    }
+
+    private void assertCleanOnStartup( boolean expected ) throws IOException
+    {
+        MutableBoolean cleanOnStartup = new MutableBoolean( true );
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.ignore() ).build() )
         {
-            assertFalse( index.wasDirtyOnStartup() );
+            index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<>()
+            {
+                @Override
+                public void dirtyOnStartup( File file )
+                {
+                    cleanOnStartup.setFalse();
+                }
+            } );
+            assertEquals( expected, cleanOnStartup.booleanValue() );
         }
     }
 
@@ -1643,7 +1654,7 @@ class GBPTreeTest
     }
 
     @Test
-    void mustThrowIfStuckInInfiniteRootCatchupMultipleConcurrentSeekers() throws IOException, InterruptedException
+    void mustThrowIfStuckInInfiniteRootCatchupMultipleConcurrentSeekers() throws IOException
     {
         List<Long> trace = new ArrayList<>();
         MutableBoolean onOffSwitch = new MutableBoolean( true );
@@ -1749,7 +1760,7 @@ class GBPTreeTest
     }
 
     @Test
-    void mustFailGracefullyIfFileNotExistInReadOnlyMode() throws IOException
+    void mustFailGracefullyIfFileNotExistInReadOnlyMode()
     {
         // given
         PageCache pageCache = createPageCache( defaultPageSize );

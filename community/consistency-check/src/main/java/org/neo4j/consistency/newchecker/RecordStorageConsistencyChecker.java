@@ -27,18 +27,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.index.IndexAccessors;
-import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.store.DirectRecordAccess;
-import org.neo4j.consistency.store.synthetic.LabelScanIndex;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -71,7 +68,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final NeoStores neoStores;
     private final TokenHolders tokenHolders;
     private final CountsStore counts;
-    private final LabelScanStore labelScanStore;
     private final CacheAccess cacheAccess;
     private final ConsistencyReporter reporter;
     private final CountsState observedCounts;
@@ -86,7 +82,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.pageCache = pageCache;
         this.neoStores = neoStores;
         this.counts = counts;
-        this.labelScanStore = labelScanStore;
         int stopCountThreshold = config.get( experimental_consistency_checker_stop_threshold );
         AtomicInteger stopCount = new AtomicInteger( 0 );
         ConsistencyReporter.Monitor monitor = ConsistencyReporter.NO_MONITOR;
@@ -178,7 +173,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             {
                 // All counts we've observed while doing other checking along the way we compare against the counts store here
                 checkCounts();
-                checkDirtyLabelIndex();
             }
             progressCompleter.close();
         }
@@ -225,15 +219,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         tokenHolders.relationshipTypeTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getRelationshipTypeTokenStore() ) );
         tokenHolders.labelTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getLabelTokenStore() ) );
         tokenHolders.propertyKeyTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getPropertyKeyTokenStore() ) );
-    }
-
-    private void checkDirtyLabelIndex()
-    {
-        if ( labelScanStore.isDirty() )
-        {
-            reporter.report( new LabelScanIndex( labelScanStore.getLabelScanStoreFile() ), ConsistencyReport.LabelScanConsistencyReport.class,
-                    RecordType.LABEL_SCAN_DOCUMENT ).dirtyIndex();
-        }
     }
 
     private void cancel( String message )

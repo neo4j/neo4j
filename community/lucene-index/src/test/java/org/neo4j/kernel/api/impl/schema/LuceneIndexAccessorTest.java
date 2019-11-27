@@ -48,20 +48,6 @@ class LuceneIndexAccessorTest
     }
 
     @Test
-    void indexIsDirtyWhenLuceneIndexIsNotValid()
-    {
-        when( schemaIndex.isValid() ).thenReturn( false );
-        assertTrue( accessor.isDirty() );
-    }
-
-    @Test
-    void indexIsCleanWhenLuceneIndexIsValid()
-    {
-        when( schemaIndex.isValid() ).thenReturn( true );
-        assertFalse( accessor.isDirty() );
-    }
-
-    @Test
     void indexIsNotConsistentWhenIndexIsNotValid()
     {
         when( schemaIndex.isValid() ).thenReturn( false );

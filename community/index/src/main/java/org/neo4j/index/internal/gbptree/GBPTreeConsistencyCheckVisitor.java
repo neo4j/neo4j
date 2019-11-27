@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.io.File;
 
 import org.neo4j.annotations.documented.Documented;
+import org.neo4j.annotations.documented.Warning;
 
 /**
  * The @Documented annotations are used for error messages in consistency checker.
@@ -129,6 +130,12 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
             "Caught exception during consistency check: %s" )
     void exception( Exception e );
 
+    @Warning
+    @Documented( "Index inconsistency: " +
+            "Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery.%n" +
+            indexInconsistent )
+    void dirtyOnStartup( File file );
+
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
         @Override
@@ -217,6 +224,11 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void exception( Exception e )
+        {
+        }
+
+        @Override
+        public void dirtyOnStartup( File file )
         {
         }
     }

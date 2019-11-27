@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.NodeRecordCheck;
 import org.neo4j.consistency.checking.PropertyChain;
 import org.neo4j.consistency.checking.RelationshipRecordCheck;
@@ -37,16 +36,12 @@ import org.neo4j.consistency.checking.index.IndexEntryProcessor;
 import org.neo4j.consistency.checking.index.IndexIterator;
 import org.neo4j.consistency.checking.labelscan.LabelScanCheck;
 import org.neo4j.consistency.checking.labelscan.LabelScanDocumentProcessor;
-import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.consistency.store.synthetic.IndexRecord;
-import org.neo4j.consistency.store.synthetic.LabelScanIndex;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -67,7 +62,7 @@ import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIP_GR
 import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
 import static org.neo4j.consistency.checking.full.QueueDistribution.ROUND_ROBIN;
 
-public class ConsistencyCheckTasks
+class ConsistencyCheckTasks
 {
     private final ProgressMonitorFactory.MultiPartBuilder multiPartBuilder;
     private final StoreProcessor defaultProcessor;
@@ -97,7 +92,7 @@ public class ConsistencyCheckTasks
         this.numberOfThreads = numberOfThreads;
     }
 
-    public List<ConsistencyCheckerTask> createTasksForFullCheck( boolean checkLabelScanStore, boolean checkIndexes,
+    List<ConsistencyCheckerTask> createTasksForFullCheck( boolean checkLabelScanStore, boolean checkIndexes,
             boolean checkGraph )
     {
         List<ConsistencyCheckerTask> tasks = new ArrayList<>();
@@ -203,7 +198,6 @@ public class ConsistencyCheckTasks
         if ( checkLabelScanStore )
         {
             long highId = nativeStores.getNodeStore().getHighId();
-            tasks.add( new LabelIndexDirtyCheckTask() );
             tasks.add( recordScanner( "LabelScanStore",
                     new GapFreeAllEntriesLabelScanReader( labelScanStore.allNodeLabelRanges(), highId ),
                     new LabelScanDocumentProcessor( filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
@@ -211,7 +205,6 @@ public class ConsistencyCheckTasks
         }
         if ( checkIndexes )
         {
-            tasks.add( new IndexDirtyCheckTask() );
             TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders, true /*include token ids too*/ );
             for ( IndexDescriptor indexRule : indexes.onlineRules() )
             {
@@ -248,47 +241,5 @@ public class ConsistencyCheckTasks
     {
         return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, multiPartBuilder,
                 cacheAccess, processor, distribution );
-    }
-
-    private class LabelIndexDirtyCheckTask extends ConsistencyCheckerTask
-    {
-        LabelIndexDirtyCheckTask()
-        {
-            super( "Label index dirty check", Statistics.NONE, 1 );
-        }
-
-        @Override
-        public void run()
-        {
-            if ( labelScanStore instanceof NativeLabelScanStore )
-            {
-                if ( labelScanStore.isDirty() )
-                {
-                    reporter.report( new LabelScanIndex( labelScanStore.getLabelScanStoreFile() ), ConsistencyReport.LabelScanConsistencyReport.class,
-                            RecordType.LABEL_SCAN_DOCUMENT ).dirtyIndex();
-                }
-            }
-        }
-    }
-
-    private class IndexDirtyCheckTask extends ConsistencyCheckerTask
-    {
-        IndexDirtyCheckTask()
-        {
-            super( "Indexes dirty check", Statistics.NONE, 1 );
-        }
-
-        @Override
-        public void run()
-        {
-            for ( IndexDescriptor indexRule : indexes.onlineRules() )
-            {
-                if ( indexes.accessorFor( indexRule ).isDirty() )
-                {
-                    reporter.report( new IndexRecord( indexRule ), ConsistencyReport.IndexConsistencyReport.class,
-                            RecordType.INDEX ).dirtyIndex();
-                }
-            }
-        }
     }
 }

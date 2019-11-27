@@ -187,8 +187,6 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
      */
     boolean isReadOnly();
 
-    boolean isDirty();
-
     /**
      * @return whether or not there's an existing store present for this label scan store.
      * @throws IOException on I/O error checking the presence of a store.

@@ -161,12 +161,6 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public boolean isDirty()
-    {
-        return Iterables.stream( instanceSelector.transform( IndexAccessor::isDirty ) ).anyMatch( Boolean::booleanValue );
-    }
-
-    @Override
     public void validateBeforeCommit( Value[] tuple )
     {
         instanceSelector.select( slotSelector.selectSlot( tuple, CATEGORY_OF ) ).validateBeforeCommit( tuple );

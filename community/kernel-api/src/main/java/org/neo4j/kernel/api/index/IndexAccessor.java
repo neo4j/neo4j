@@ -175,11 +175,6 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
     void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException;
 
     /**
-     * @return true if index was not shutdown properly and its internal state is dirty, false otherwise
-     */
-    boolean isDirty();
-
-    /**
      * Validates the {@link Value value tuple} before transaction determines that it can commit.
      */
     default void validateBeforeCommit( Value[] tuple )
@@ -260,12 +255,6 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         @Override
         public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
         {
-        }
-
-        @Override
-        public boolean isDirty()
-        {
-            return false;
         }
 
         @Override
@@ -360,12 +349,6 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
         {
             delegate.verifyDeferredConstraints( nodePropertyAccessor );
-        }
-
-        @Override
-        public boolean isDirty()
-        {
-            return delegate.isDirty();
         }
 
         @Override

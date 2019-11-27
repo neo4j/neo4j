@@ -803,6 +803,21 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         }
     }
 
+    @Test
+    void shouldDetectDirtyOnStartup() throws IOException
+    {
+        try ( GBPTree<KEY,VALUE> index = index().build() )
+        {
+            index.writer().close();
+            // No checkpoint
+        }
+
+        try ( GBPTree<KEY,VALUE> index = index().build() )
+        {
+            assertReportDirtyOnStartup( index );
+        }
+    }
+
     private static <KEY, VALUE> GBPTreeCorruption.IndexCorruption<KEY,VALUE> page( long targetNode, GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption )
     {
         return GBPTreeCorruption.pageSpecificCorruption( targetNode, corruption );
@@ -1300,6 +1315,20 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         {
             @Override
             public void exception( Exception e )
+            {
+                called.setTrue();
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static <KEY,VALUE> void assertReportDirtyOnStartup( GBPTree<KEY,VALUE> index ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<>()
+        {
+            @Override
+            public void dirtyOnStartup( File file )
             {
                 called.setTrue();
             }

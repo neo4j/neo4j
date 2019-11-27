@@ -97,12 +97,6 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public boolean isDirty()
-    {
-        return tree.wasDirtyOnStartup();
-    }
-
-    @Override
     public abstract IndexReader newReader();
 
     @Override

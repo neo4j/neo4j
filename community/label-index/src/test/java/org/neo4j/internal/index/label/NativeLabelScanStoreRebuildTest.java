@@ -103,24 +103,6 @@ class NativeLabelScanStoreRebuildTest
     }
 
     @Test
-    void labelScanStoreIsDirtyWhenIndexIsNotClean() throws IOException
-    {
-        createDirtyIndex( pageCache );
-
-        Monitors monitors = new Monitors();
-        RecordingMonitor monitor = new RecordingMonitor();
-        monitors.addMonitorListener( monitor );
-
-        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem,
-                EMPTY, true, monitors, ignore() );
-        nativeLabelScanStore.init();
-        nativeLabelScanStore.start();
-
-        assertTrue( nativeLabelScanStore.isDirty() );
-        nativeLabelScanStore.shutdown();
-    }
-
-    @Test
     void shouldFailOnUnsortedLabelsFromFullStoreChangeStream() throws Exception
     {
         // given

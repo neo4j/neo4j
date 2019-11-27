@@ -1243,7 +1243,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private void doClose() throws IOException
+    private void doClose()
     {
         if ( pagedFile != null )
         {
@@ -1412,10 +1412,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return consistencyCheck( true );
     }
 
-    public boolean consistencyCheck( boolean reportCrashPointers ) throws IOException
+    public boolean consistencyCheck( boolean reportDirty ) throws IOException
     {
         ThrowingConsistencyCheckVisitor<KEY> reporter = new ThrowingConsistencyCheckVisitor<>();
-        return consistencyCheck( reporter, reportCrashPointers );
+        return consistencyCheck( reporter, reportDirty );
     }
 
     public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
@@ -1424,15 +1424,19 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     // Utility method
-    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportCrashPointers ) throws IOException
+    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportDirty ) throws IOException
     {
         CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             long unstableGeneration = unstableGeneration( generation );
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
-                    stableGeneration( generation ), unstableGeneration, reportCrashPointers );
+                    stableGeneration( generation ), unstableGeneration, reportDirty );
 
+            if ( dirtyOnStartup && reportDirty )
+            {
+                cleanTrackingVisitor.dirtyOnStartup( indexFile );
+            }
             consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor );
         }
         catch ( TreeInconsistencyException | MetadataMismatchException | CursorException e )
@@ -1666,11 +1670,6 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 cursor = null;
             }
         }
-    }
-
-    public boolean wasDirtyOnStartup()
-    {
-        return dirtyOnStartup;
     }
 
     /**

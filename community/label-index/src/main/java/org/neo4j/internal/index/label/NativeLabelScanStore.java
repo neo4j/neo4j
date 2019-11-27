@@ -507,12 +507,6 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     }
 
     @Override
-    public boolean isDirty()
-    {
-        return index == null || index.wasDirtyOnStartup();
-    }
-
-    @Override
     public boolean consistencyCheck( ReporterFactory reporterFactory )
     {
         return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );

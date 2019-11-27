@@ -166,22 +166,6 @@ abstract class FusionIndexAccessorTest
         }
     }
 
-    @Test
-    void fusionIndexIsDirtyWhenAnyIsDirty()
-    {
-        for ( IndexAccessor dirtyAccessor : aliveAccessors )
-        {
-            // when
-            for ( IndexAccessor aliveAccessor : aliveAccessors )
-            {
-                when( aliveAccessor.isDirty() ).thenReturn( aliveAccessor == dirtyAccessor );
-            }
-
-            // then
-            assertTrue( fusionIndexAccessor.isDirty() );
-        }
-    }
-
     private static void verifyFailOnSingleDropFailure( IndexAccessor failingAccessor, FusionIndexAccessor fusionIndexAccessor )
     {
         UncheckedIOException expectedFailure = new UncheckedIOException( new IOException( "fail" ) );

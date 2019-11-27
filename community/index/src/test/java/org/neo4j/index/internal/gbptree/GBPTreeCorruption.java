@@ -352,6 +352,20 @@ public final class GBPTreeCorruption
         };
     }
 
+    public static <KEY,VALUE> IndexCorruption<KEY,VALUE> makeDirty()
+    {
+        return ( pagedFile, layout, node, treeState ) -> {
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                goTo( cursor, "", treeState.pageId() );
+                // Need to also bump generations here otherwise both tree states will be identical which is an illegal state to be in.
+                TreeState.write( cursor, treeState.stableGeneration() + 1, treeState.unstableGeneration() + 1, treeState.rootId(), treeState.rootGeneration(),
+                        treeState.lastId(), treeState.freeListWritePageId(), treeState.freeListReadPageId(), treeState.freeListWritePos(),
+                        treeState.freeListReadPos(), false );
+            }
+        };
+    }
+
     private static FreeListIdProvider getFreelist( PagedFile pagedFile, TreeState treeState )
     {
         FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, pagedFile.pageSize(), treeState.lastId(), FreeListIdProvider.NO_MONITOR );

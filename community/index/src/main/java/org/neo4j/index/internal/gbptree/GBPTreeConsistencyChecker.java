@@ -61,12 +61,12 @@ class GBPTreeConsistencyChecker<KEY>
     private final long lastId;
     private final long stableGeneration;
     private final long unstableGeneration;
-    private final boolean reportCrashPointers;
+    private final boolean reportDirty;
     private final GenerationKeeper generationTarget = new GenerationKeeper();
     private final MutableLongList offloadIds = new LongArrayList();
 
     GBPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, IdProvider idProvider, long stableGeneration,
-            long unstableGeneration, boolean reportCrashPointers )
+            long unstableGeneration, boolean reportDirty )
     {
         this.node = node;
         this.comparator = node.keyComparator();
@@ -75,7 +75,7 @@ class GBPTreeConsistencyChecker<KEY>
         this.lastId = idProvider.lastId();
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
-        this.reportCrashPointers = reportCrashPointers;
+        this.reportDirty = reportDirty;
     }
 
     /**
@@ -84,7 +84,7 @@ class GBPTreeConsistencyChecker<KEY>
      *
      * @param file The file containing the gbptree
      * @param cursor {@link PageCursor} to use for reading.
-     * @param root {@lin Root} the root of the gbptree.
+     * @param root {@link Root} the root of the gbptree.
      * @param visitor {@link GBPTreeConsistencyCheckVisitor} visitor to report inconsistencies to.
      * @throws IOException on {@link PageCursor} error.
      */
@@ -199,11 +199,11 @@ class GBPTreeConsistencyChecker<KEY>
 
         // check header pointers
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.leftSibling(), TreeNode.BYTE_POS_LEFTSIBLING, visitor, reportCrashPointers );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.leftSibling(), TreeNode.BYTE_POS_LEFTSIBLING, visitor, reportDirty );
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.rightSibling(), TreeNode.BYTE_POS_RIGHTSIBLING, visitor, reportCrashPointers );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.rightSibling(), TreeNode.BYTE_POS_RIGHTSIBLING, visitor, reportDirty );
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, visitor, reportCrashPointers );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, visitor, reportDirty );
 
         boolean reasonableKeyCount = node.reasonableKeyCount( keyCount );
         if ( !reasonableKeyCount )
@@ -291,7 +291,7 @@ class GBPTreeConsistencyChecker<KEY>
             long child;
             long childGeneration;
             assertNoCrashOrBrokenPointerInGSPP( file,
-                    cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor, reportCrashPointers );
+                    cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor, reportDirty );
             do
             {
                 child = childAt( cursor, pos, generationTarget );
@@ -324,7 +324,7 @@ class GBPTreeConsistencyChecker<KEY>
         long child;
         long childGeneration;
         assertNoCrashOrBrokenPointerInGSPP( file,
-                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor, reportCrashPointers );
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor, reportDirty );
         do
         {
             child = childAt( cursor, pos, generationTarget );
@@ -395,7 +395,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     static <KEY> void assertNoCrashOrBrokenPointerInGSPP( File file, PageCursor cursor, long stableGeneration, long unstableGeneration,
-            GBPTreePointerType pointerType, int offset, GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportCrashPointers ) throws IOException
+            GBPTreePointerType pointerType, int offset, GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportDirty ) throws IOException
     {
         long currentNodeId = cursor.getCurrentPageId();
 
@@ -435,7 +435,7 @@ class GBPTreeConsistencyChecker<KEY>
         }
         while ( cursor.shouldRetry() );
 
-        if ( reportCrashPointers )
+        if ( reportDirty )
         {
             if ( stateA == GenerationSafePointerPair.CRASH || stateB == GenerationSafePointerPair.CRASH )
             {
