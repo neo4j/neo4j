@@ -35,6 +35,7 @@ object AdminActionMapper {
     case CreateIndexAction => KernelPrivilegeAction.CREATE_INDEX
     case DropIndexAction => KernelPrivilegeAction.DROP_INDEX
     case ConstraintManagementAction => KernelPrivilegeAction.CONSTRAINT
+    case SchemaManagementAction => KernelPrivilegeAction.SCHEMA
     case CreateConstraintAction => KernelPrivilegeAction.CREATE_CONSTRAINT
     case DropConstraintAction => KernelPrivilegeAction.DROP_CONSTRAINT
 
@@ -73,6 +74,7 @@ object AdminActionMapper {
     case KernelPrivilegeAction.CREATE_INDEX => CreateIndexAction
     case KernelPrivilegeAction.DROP_INDEX => DropIndexAction
     case KernelPrivilegeAction.CONSTRAINT => ConstraintManagementAction
+    case KernelPrivilegeAction.SCHEMA => SchemaManagementAction
     case KernelPrivilegeAction.CREATE_CONSTRAINT => CreateConstraintAction
     case KernelPrivilegeAction.DROP_CONSTRAINT => DropConstraintAction
 

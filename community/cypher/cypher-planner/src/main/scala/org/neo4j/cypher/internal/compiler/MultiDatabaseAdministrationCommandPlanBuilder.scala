@@ -73,17 +73,20 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
             planActions(source, action, roleName, CreateIndexAction, DropIndexAction)
           case ConstraintManagementAction =>
             planActions(source, action, roleName, CreateConstraintAction, DropConstraintAction)
+          case SchemaManagementAction =>
+            val constraints = planActions(source, ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction)
+            val indexes = planActions(constraints, IndexManagementAction, roleName, CreateIndexAction, DropIndexAction)
+            val schema = planActions(indexes, SchemaManagementAction, roleName)
+            schema
           case TokenManagementAction =>
             planActions(source, action, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
           case AllDatabaseAction =>
-            planActions(
-              planActions(
-                planActions(
-                  planActions(source, AllDatabaseAction, roleName, AccessDatabaseAction, StartDatabaseAction, StopDatabaseAction),
-                  IndexManagementAction, roleName, CreateIndexAction, DropIndexAction
-                ),
-                ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction),
-              TokenManagementAction, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
+            val dbx = planActions(source, AllDatabaseAction, roleName, AccessDatabaseAction, StartDatabaseAction, StopDatabaseAction)
+            val constraints = planActions(dbx, ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction)
+            val indexes = planActions(constraints, IndexManagementAction, roleName, CreateIndexAction, DropIndexAction)
+            val schema = planActions(indexes, SchemaManagementAction, roleName)
+            val tokens = planActions(schema, TokenManagementAction, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
+            tokens
           case _ => planAction(source, roleName, action)
         }
       }
@@ -241,21 +244,21 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, act, role, r)))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // GRANT ACCESS/START/STOP ON DATABASE foo TO role
+      // GRANT ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
         planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => Some(plans.GrantDatabaseAction(plan, act, database, role))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // DENY ACCESS/START/STOP ON DATABASE foo TO role
+      // DENY ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
         planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, database, role))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE ACCESS/START/STOP ON DATABASE foo FROM role
+      // REVOKE ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
         planRevokeDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
