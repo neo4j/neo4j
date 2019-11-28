@@ -154,9 +154,13 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<LabelTokenRecord> labelToken()
     {
-        return ( recordSize, format, recordId ) -> new LabelTokenRecord( toIntExact( recordId ) ).initialize(
-                random.nextBoolean(),
-                random.nextInt( tokenBits ) );
+        return ( recordSize, format, recordId ) ->
+        {
+            assert recordId < 0xffffffffL : "Record id too big: " + recordId;
+            return new LabelTokenRecord( recordId ).initialize(
+                    random.nextBoolean(),
+                    random.nextInt( tokenBits ) );
+        };
     }
 
     @Override
