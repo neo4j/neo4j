@@ -62,6 +62,8 @@ object AdminActionMapper {
     case DenyPrivilegeAction => KernelPrivilegeAction.DENY_PRIVILEGE
 
     case AllDatabaseAction => KernelPrivilegeAction.DATABASE_ACTIONS
+
+    case AllAdminAction => KernelPrivilegeAction.ADMIN
   }
 
   def asCypherAdminAction(action: KernelPrivilegeAction): AdminAction = action match {
@@ -101,5 +103,7 @@ object AdminActionMapper {
     case KernelPrivilegeAction.DENY_PRIVILEGE => DenyPrivilegeAction
 
     case KernelPrivilegeAction.DATABASE_ACTIONS => AllDatabaseAction
+
+    case KernelPrivilegeAction.ADMIN => AllAdminAction
   }
 }

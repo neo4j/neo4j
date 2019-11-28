@@ -239,8 +239,10 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // REVOKE CREATE ROLE ON DBMS FROM role
       case c@RevokePrivilege(DbmsPrivilege(action), _, _, _, roleNames, revokeType) =>
-        planDbmsRevokePrivileges(
-          Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+        val source = roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+          case (previous, roleName) => Some(plans.AssertValidRevoke(previous, action, AllGraphsScope()(InputPosition.NONE), roleName))
+        }
+        planDbmsRevokePrivileges(source, roleNames, action,
           (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, act, role, r)))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -260,8 +262,10 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // REVOKE ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
-        planRevokeDatabasePrivileges(
-          Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+        val source = roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+          case (previous, roleName) => Some(plans.AssertValidRevoke(previous, action, database, roleName))
+        }
+        planRevokeDatabasePrivileges(source, roleNames, action,
           (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, act, database, role, r)))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
