@@ -20,7 +20,6 @@
 package org.neo4j.test.impl;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
@@ -36,7 +35,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-public class EphemeralPageSwapperFactory implements PageSwapperFactory
+public class EphemeralPageSwapperFactory implements PageSwapperFactory, AutoCloseable
 {
     private final ConcurrentHashMap<File,EphemeralSwapper> swappers = new ConcurrentHashMap<>();
 
