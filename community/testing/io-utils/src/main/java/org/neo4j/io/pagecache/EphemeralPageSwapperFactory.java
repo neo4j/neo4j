@@ -31,7 +31,7 @@ import java.util.function.Function;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public class EphemeralPageSwapperFactory implements PageSwapperFactory
+public class EphemeralPageSwapperFactory implements PageSwapperFactory, AutoCloseable
 {
     private final ConcurrentHashMap<File,EphemeralSwapper> swappers = new ConcurrentHashMap<>();
 
