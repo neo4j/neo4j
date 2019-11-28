@@ -101,6 +101,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       roleNames.foldLeft(source) {
         case (source, roleName) => action match {
           case AllRoleActions => planActions(source, roleName, AllRoleActions, CreateRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction, ShowRoleAction)
+          case AllUserActions => planActions(source, roleName, AllUserActions, CreateUserAction, DropUserAction, AlterUserAction, ShowUserAction)
           case _ => planAction(source, roleName, action)
         }
       }

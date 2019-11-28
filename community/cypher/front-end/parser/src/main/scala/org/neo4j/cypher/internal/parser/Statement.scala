@@ -450,7 +450,12 @@ trait Statement extends Parser
     keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
     keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
     keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
-    keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction)
+    keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction) |
+    keyword("CREATE USER") ~~~> (_ => ast.CreateUserAction) |
+    keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
+    keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
+    keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
+    keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions)
   }
 
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")

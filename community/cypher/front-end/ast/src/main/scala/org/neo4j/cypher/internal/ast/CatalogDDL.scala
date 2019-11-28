@@ -277,7 +277,8 @@ case object AllDatabaseAction extends DatabaseAction("ALL DATABASE PRIVILEGES")
 
 abstract class UserManagementAction(override val name: String = "<unknown>") extends AdminAction
 
-case object ShowUserAction extends UserManagementAction("SHOW USERS")
+case object AllUserActions extends UserManagementAction("USER MANAGEMENT")
+case object ShowUserAction extends UserManagementAction("SHOW USER")
 case object CreateUserAction extends UserManagementAction("CREATE USER")
 case object AlterUserAction extends UserManagementAction("ALTER USER")
 case object DropUserAction extends UserManagementAction("DROP USER")

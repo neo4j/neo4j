@@ -56,6 +56,7 @@ object AdminActionMapper {
     case AssignRoleAction => KernelPrivilegeAction.ASSIGN_ROLE
     case RemoveRoleAction => KernelPrivilegeAction.REMOVE_ROLE
 
+    case AllUserActions => KernelPrivilegeAction.USER_MANAGEMENT
     case ShowPrivilegeAction => KernelPrivilegeAction.SHOW_PRIVILEGE
     case GrantPrivilegeAction => KernelPrivilegeAction.GRANT_PRIVILEGE
     case RevokePrivilegeAction => KernelPrivilegeAction.REVOKE_PRIVILEGE
@@ -97,6 +98,7 @@ object AdminActionMapper {
     case KernelPrivilegeAction.ASSIGN_ROLE => AssignRoleAction
     case KernelPrivilegeAction.REMOVE_ROLE => RemoveRoleAction
 
+    case KernelPrivilegeAction.USER_MANAGEMENT => AllUserActions
     case KernelPrivilegeAction.SHOW_PRIVILEGE => ShowPrivilegeAction
     case KernelPrivilegeAction.GRANT_PRIVILEGE => GrantPrivilegeAction
     case KernelPrivilegeAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
