@@ -206,25 +206,6 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
         freeIdsNotifier.set( true );
     }
 
-    @Override
-    public void markDeletedAndFree( long id )
-    {
-        bridgeGapBetweenHighestWrittenIdAndThisId( id );
-        if ( !isReservedId( id ) )
-        {
-            key.setIdRangeIdx( idRangeIndex( id ) );
-            value.clear( generation, true, true, false );
-            int offset = idOffset( id );
-            value.setBit( BITSET_COMMIT, offset );   // set this
-            value.setBit( BITSET_REUSE, offset );    // set this
-            value.setBit( BITSET_RESERVED, offset ); // clear this
-            writer.merge( key, value, merger );
-            monitor.markedAsDeletedAndFree( id );
-        }
-
-        freeIdsNotifier.set( true );
-    }
-
     private void prepareRange( long id, boolean addition )
     {
         key.setIdRangeIdx( idRangeIndex( id ) );

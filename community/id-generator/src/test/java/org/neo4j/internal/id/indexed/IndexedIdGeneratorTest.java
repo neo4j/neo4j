@@ -350,7 +350,7 @@ class IndexedIdGeneratorTest
         markUsed( id );
         markDeleted( id );
         markFree( id );
-        try ( IdRangeMarker marker = freelist.lockAndInstantiateMarker( true, true ) )
+        try ( IdRangeMarker marker = freelist.lockAndInstantiateMarker( true ) )
         {
             marker.markReserved( id );
         }
@@ -557,12 +557,6 @@ class IndexedIdGeneratorTest
 
         long reusedId = freelist.nextId();
         verify( monitor ).allocatedFromReused( reusedId );
-        try ( Marker marker = freelist.marker() )
-        {
-            marker.markUsed( reusedId );
-            marker.markDeletedAndFree( reusedId );
-            verify( monitor ).markedAsDeletedAndFree( reusedId );
-        }
         freelist.checkpoint( IOLimiter.UNLIMITED );
         // two times, one in start and one now in checkpoint
         verify( monitor, times( 2 ) ).checkpoint( anyLong(), anyLong() );

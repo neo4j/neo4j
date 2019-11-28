@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -58,7 +57,6 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.DoubleLatch;
 
@@ -732,30 +730,10 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
             }
         } );
-        KernelTransactionImplementation transaction = newNotInitializedTransaction( leaseClient, () -> false );
+        KernelTransactionImplementation transaction = newNotInitializedTransaction( leaseClient );
         transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.implicit,
                 mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
         assertEquals( "KernelTransaction[lease:" + leaseId + "]", transaction.toString() );
-    }
-
-    @Test
-    void shouldNotReleaseAcquiredIdsOnShutdownRollback() throws TransactionFailureException
-    {
-        // given
-        MutableBoolean stopped = new MutableBoolean();
-        KernelTransactionImplementation tx = newNotInitializedTransaction( LeaseService.NO_LEASES, stopped::booleanValue );
-        tx.initialize( TransactionIdStore.BASE_TX_ID, 0, new SimpleStatementLocks( new NoOpClient() ), KernelTransaction.Type.explicit,
-                SecurityContext.AUTH_DISABLED, 0, 0, EMBEDDED_CONNECTION );
-        long nodeId = 101;
-        tx.txState().nodeDoCreate( nodeId );
-
-        // when
-        stopped.setTrue();
-        tx.markForTermination( Status.Database.DatabaseUnavailable );
-        tx.close(); // effectively rollback
-
-        // then
-        verify( commandCreationContext, never() ).releaseNodes( any() );
     }
 
     private LoginContext loginContext( boolean isWriteTx )

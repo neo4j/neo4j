@@ -370,7 +370,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
         this.scanner = readOnly ? null : new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
-                () -> lockAndInstantiateMarker( true, true ), generation, strictlyPrioritizeFreelist );
+                () -> lockAndInstantiateMarker( true ), generation, strictlyPrioritizeFreelist );
     }
 
     private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
@@ -466,34 +466,23 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public Marker marker()
     {
-        return internalMarker( true );
-    }
-
-    @Override
-    public Marker idempotentMarker()
-    {
-        return internalMarker( false );
-    }
-
-    private Marker internalMarker( boolean strict )
-    {
         if ( !started && needsRebuild )
         {
             // If we're in recovery and know that we're building the id generator from scratch after recovery has completed then don't make any updates
             return NOOP_MARKER;
         }
 
-        return lockAndInstantiateMarker( true, strict );
+        return lockAndInstantiateMarker( true );
     }
 
-    IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps, boolean strict )
+    IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps )
     {
         assertNotReadOnly();
         commitAndReuseLock.lock();
         try
         {
             return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock,
-                    started && strict ? defaultMerger : recoveryMerger,
+                    started ? defaultMerger : recoveryMerger,
                     started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps, monitor );
         }
         catch ( Exception e )
@@ -537,7 +526,7 @@ public class IndexedIdGenerator implements IdGenerator
         {
             assertNotReadOnly();
             // This id generator was created right now, it needs to be populated with all free ids from its owning store so that it's in sync
-            try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker( false, true ) )
+            try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker( false ) )
             {
                 // We can mark the ids as free right away since this is before started which means we get the very liberal merger
                 long highestFreeId = freeIdsForRebuild.accept( id ->

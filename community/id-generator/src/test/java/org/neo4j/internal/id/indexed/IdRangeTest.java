@@ -34,9 +34,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
@@ -163,38 +161,6 @@ class IdRangeTest
         assertEquals( FREE, idStateGetsNormalizedAs( 1, 0, 1 ) );
         assertEquals( FREE, idStateGetsNormalizedAs( 1, 1, 0 ) );
         assertEquals( FREE, idStateGetsNormalizedAs( 1, 1, 1 ) );
-    }
-
-    @Test
-    void shouldAddBitsFromOneSetAndRemoveFromAnotherInSameMerge()
-    {
-        // given
-        IdRange idRange = new IdRange( 3 );
-        idRange.setBit( BITSET_RESERVED, 0 );
-        idRange.setBit( BITSET_RESERVED, Long.SIZE + 4 );
-        idRange.setBit( BITSET_RESERVED, Long.SIZE * 3 - 1 );
-
-        IdRange from = new IdRange( 3 );
-        // Add to COMMIT and REUSE, but remove from RESERVED bit set
-        from.clear( 1, true, true, false );
-        from.setBit( BITSET_COMMIT, 10 );
-        from.setBit( BITSET_COMMIT, Long.SIZE + 34 );
-        from.setBit( BITSET_REUSE, Long.SIZE + 34 );
-        from.setBit( BITSET_REUSE, Long.SIZE + 35 );
-        from.setBit( BITSET_RESERVED, 0 );
-        from.setBit( BITSET_RESERVED, Long.SIZE + 4 );
-
-        // when
-        idRange.mergeFrom( from, false );
-
-        // then
-        assertTrue( idRange.getBit( BITSET_COMMIT, 10 ) );
-        assertTrue( idRange.getBit( BITSET_COMMIT, Long.SIZE + 34 ) );
-        assertTrue( idRange.getBit( BITSET_REUSE, Long.SIZE + 34 ) );
-        assertTrue( idRange.getBit( BITSET_REUSE, Long.SIZE + 35 ) );
-        assertFalse( idRange.getBit( BITSET_RESERVED, 0 ) );
-        assertFalse( idRange.getBit( BITSET_RESERVED, Long.SIZE + 4 ) );
-        assertTrue( idRange.getBit( BITSET_RESERVED, Long.SIZE * 3 - 1 ) );
     }
 
     private IdState idStateGetsNormalizedAs( int commitBit, int reuseBit, int reservedBit )

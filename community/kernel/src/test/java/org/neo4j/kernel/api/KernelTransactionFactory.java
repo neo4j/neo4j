@@ -94,7 +94,7 @@ public class KernelTransactionFactory
                         new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                         new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                         mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                        new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, () -> false );
+                        new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

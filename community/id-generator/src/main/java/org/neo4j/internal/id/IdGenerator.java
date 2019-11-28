@@ -36,7 +36,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     long getHighId();
     long getHighestPossibleIdInUse();
     Marker marker();
-    Marker idempotentMarker();
 
     @Override
     void close();
@@ -70,7 +69,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         void markUsed( long id );
         void markDeleted( long id );
         void markFree( long id );
-        void markDeletedAndFree( long id );
         @Override
         void close();
     }
@@ -124,12 +122,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         public Marker marker()
         {
             return delegate.marker();
-        }
-
-        @Override
-        public Marker idempotentMarker()
-        {
-            return delegate.idempotentMarker();
         }
 
         @Override
@@ -195,11 +187,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         @Override
         public void markDeleted( long id )
-        {   // no-op
-        }
-
-        @Override
-        public void markDeletedAndFree( long id )
         {   // no-op
         }
 

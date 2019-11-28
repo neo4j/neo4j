@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
@@ -153,7 +152,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final NamedDatabaseId namedDatabaseId;
-    private final BooleanSupplier stoppedCheck;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
     private final ConstraintSemantics constraintSemantics;
@@ -161,7 +159,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TxState txState;
-    private final SchemaReleaseVisitor schemaReleaseVisitor;
     private volatile TransactionWriteState writeState;
     private final KernelStatement currentStatement;
     private SecurityContext securityContext;
@@ -211,7 +208,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            NamedDatabaseId namedDatabaseId, LeaseService leaseService, BooleanSupplier stoppedCheck )
+            NamedDatabaseId namedDatabaseId, LeaseService leaseService )
     {
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -220,8 +217,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageReader = storageEngine.newReader();
         this.commandCreationContext = storageEngine.newCommandCreationContext();
         this.namedDatabaseId = namedDatabaseId;
-        this.stoppedCheck = stoppedCheck;
-        this.schemaReleaseVisitor = new SchemaReleaseVisitor( commandCreationContext );
         this.storageEngine = storageEngine;
         this.pool = pool;
         this.clocks = new ClockContext( clock );
@@ -767,31 +762,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new TransactionFailureException( Status.Transaction.TransactionRollbackFailed, e,
                         "Could not drop created constraint indexes" );
             }
-
-            // Free any acquired id's, but only if the db that we're running on isn't stopped (i.e. shutting down)
-            if ( txState != null && !stoppedCheck.getAsBoolean() )
-            {
-                try
-                {
-                    // When rolling back we may have allocated some ids already, ids which are exposed to user e.g. node/relationship ids.
-                    // Rollback may also occur after a failure in the middle of creating commands (for example on deleting a node
-                    // that still has relationships or something like that), where ids of other more internal types have been allocated.
-                    // However these other allocations are harder to track since we don't have the commands so the command extractor
-                    // would have to keep track of allocated ids and have them accessible here just for the event of failure creating all commands.
-                    // Would that added overhead be worth it? What happens if we don't release these ids here in rollback is that
-                    // those ids won't be marked as reusable, which is bad for this session. However a restart will see those ids as
-                    // reusable again so they aren't entirely lost, just for this session.
-                    // So what we currently do is to release the readily available lists of created nodes/relationships.
-                    commandCreationContext.releaseNodes( txState.addedAndRemovedNodes().getAdded().longIterator() );
-                    commandCreationContext.releaseRelationships( txState.addedAndRemovedRelationships().getAdded().longIterator() );
-                    txState.accept( schemaReleaseVisitor );
-                }
-                catch ( ConstraintValidationException | CreateConstraintFailureException e )
-                {
-                    throw new IllegalStateException(
-                            "Releasing locks during rollback should perform no constraints checking.", e );
-                }
-            }
         }
         finally
         {
@@ -1336,22 +1306,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
         {
             return SCHEMA;
-        }
-    }
-
-    private static class SchemaReleaseVisitor extends TxStateVisitor.Adapter
-    {
-        private final CommandCreationContext creationContext;
-
-        private SchemaReleaseVisitor( CommandCreationContext creationContext )
-        {
-            this.creationContext = creationContext;
-        }
-
-        @Override
-        public void visitAddedIndex( IndexDescriptor index )
-        {
-            creationContext.releaseSchema( index.getId() );
         }
     }
 }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -33,7 +30,6 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 
 /**
  * Holds commit data structures for creating records in a {@link NeoStores}.
@@ -72,29 +68,6 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private long nextId( StoreType storeType )
     {
         return neoStores.getRecordStore( storeType ).nextId();
-    }
-
-    @Override
-    public void releaseNodes( LongIterator ids )
-    {
-        deleteIds( ids, nodeStore );
-    }
-
-    @Override
-    public void releaseRelationships( LongIterator ids )
-    {
-        deleteIds( ids, relationshipStore );
-    }
-
-    private void deleteIds( LongIterator ids, CommonAbstractStore<?,?> store )
-    {
-        store.freeIdsOnRollback( ids );
-    }
-
-    @Override
-    public void releaseSchema( long id )
-    {
-        deleteIds( iterator( id ), schemaStore );
     }
 
     @Override

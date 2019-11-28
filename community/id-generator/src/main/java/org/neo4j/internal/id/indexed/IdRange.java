@@ -23,8 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 
-import org.neo4j.util.VisibleForTesting;
-
 import static java.lang.Long.toBinaryString;
 import static java.lang.String.format;
 import static java.util.Arrays.fill;
@@ -55,14 +53,13 @@ class IdRange
     static final int BITSET_SIZE = Long.SIZE;
 
     private long generation;
-    private transient boolean[] addition;
+    private transient boolean addition;
     private final long[][] bitSets;
     private final int numOfLongs;
 
     IdRange( int numOfLongs )
     {
         this.bitSets = new long[BITSET_COUNT][numOfLongs];
-        this.addition = new boolean[BITSET_COUNT];
         this.numOfLongs = numOfLongs;
     }
 
@@ -101,23 +98,10 @@ class IdRange
         bitSets[BITSET_RESERVED][longIndex] |= bitMask( bitIndex );
     }
 
-    @VisibleForTesting
-    boolean getBit( int type, int n )
-    {
-        int longIndex = n / BITSET_SIZE;
-        int bitIndex = n % BITSET_SIZE;
-        return (bitSets[type][longIndex] & bitMask( bitIndex )) != 0;
-    }
-
     void clear( long generation, boolean addition )
     {
-        clear( generation, addition, addition, addition );
-    }
-
-    void clear( long generation, boolean... addition )
-    {
         this.generation = generation;
-        System.arraycopy( addition, 0, this.addition, 0, addition.length );
+        this.addition = addition;
         fill( bitSets[BITSET_COMMIT], 0 );
         fill( bitSets[BITSET_REUSE], 0 );
         fill( bitSets[BITSET_RESERVED], 0 );
@@ -157,7 +141,7 @@ class IdRange
 
         for ( int bitSetIndex = 0; bitSetIndex < BITSET_COUNT; bitSetIndex++ )
         {
-            mergeBitSet( bitSets[bitSetIndex], other.bitSets[bitSetIndex], other.addition[bitSetIndex] );
+            mergeBitSet( bitSets[bitSetIndex], other.bitSets[bitSetIndex], other.addition );
         }
 
         return true;
@@ -174,7 +158,7 @@ class IdRange
 
     private void verifyMerge( IdRange other )
     {
-        boolean addition = other.addition[BITSET_COMMIT];
+        boolean addition = other.addition;
         long[] intoBitSet = bitSets[BITSET_COMMIT];
         long[] fromBitSet = other.bitSets[BITSET_COMMIT];
         for ( int i = 0; i < intoBitSet.length; i++ )
