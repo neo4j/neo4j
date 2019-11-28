@@ -670,7 +670,7 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    void positionedVectoredReadWhereLastPageExtendBeyondEndOfFileMustHaveRemainderZeroFilled() throws Exception
+    protected void positionedVectoredReadWhereLastPageExtendBeyondEndOfFileMustHaveRemainderZeroFilled() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory();
@@ -701,7 +701,7 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    void positionedVectoredReadWhereSecondLastPageExtendBeyondEndOfFileMustHaveRestZeroFilled() throws Exception
+    protected void positionedVectoredReadWhereSecondLastPageExtendBeyondEndOfFileMustHaveRestZeroFilled() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory();
