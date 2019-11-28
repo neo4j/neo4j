@@ -258,8 +258,8 @@ abstract class DatabaseAction(override val name: String = "<unknown>") extends A
 case object AccessDatabaseAction extends DatabaseAction("ACCESS")
 case object StartDatabaseAction extends DatabaseAction("START")
 case object StopDatabaseAction extends DatabaseAction("STOP")
-case object CreateDatabaseAction extends DatabaseAction
-case object DropDatabaseAction extends DatabaseAction
+case object CreateDatabaseAction extends DatabaseAction("CREATE DATABASE")
+case object DropDatabaseAction extends DatabaseAction("DROP DATABASE")
 case object CreateIndexAction extends DatabaseAction("CREATE INDEX")
 case object DropIndexAction extends DatabaseAction("DROP INDEX")
 case object IndexManagementAction extends DatabaseAction("INDEX MANAGEMENT")
@@ -273,12 +273,12 @@ case object CreatePropertyKeyAction extends DatabaseAction("CREATE NEW PROPERTY 
 case object TokenManagementAction extends DatabaseAction("NAME MANAGEMENT")
 case object AllDatabaseAction extends DatabaseAction("ALL DATABASE PRIVILEGES")
 
-sealed trait UserManagementAction extends AdminAction
+abstract class UserManagementAction(override val name: String = "<unknown>") extends AdminAction
 
-case object ShowUserAction extends UserManagementAction
-case object CreateUserAction extends UserManagementAction
-case object AlterUserAction extends UserManagementAction
-case object DropUserAction extends UserManagementAction
+case object ShowUserAction extends UserManagementAction("SHOW USERS")
+case object CreateUserAction extends UserManagementAction("CREATE USER")
+case object AlterUserAction extends UserManagementAction("ALTER USER")
+case object DropUserAction extends UserManagementAction("DROP USER")
 
 abstract class RoleManagementAction(override val name: String = "<unknown>") extends AdminAction
 
@@ -289,12 +289,16 @@ case object DropRoleAction extends RoleManagementAction("DROP ROLE")
 case object AssignRoleAction extends RoleManagementAction("ASSIGN ROLE")
 case object RemoveRoleAction extends RoleManagementAction("REMOVE ROLE")
 
-sealed trait PrivilegeManagementAction extends AdminAction
+abstract class PrivilegeManagementAction(override val name: String = "<unknown>") extends AdminAction
 
-case object ShowPrivilegeAction extends PrivilegeManagementAction
-case object GrantPrivilegeAction extends PrivilegeManagementAction
-case object RevokePrivilegeAction extends PrivilegeManagementAction
-case object DenyPrivilegeAction extends PrivilegeManagementAction
+case object ShowPrivilegeAction extends PrivilegeManagementAction("SHOW PRIVILEGES")
+case object GrantPrivilegeAction extends PrivilegeManagementAction("GRANT PRIVILEGE")
+case object RevokePrivilegeAction extends PrivilegeManagementAction("REVOKE PRIVILEGE")
+case object DenyPrivilegeAction extends PrivilegeManagementAction("DENY PRIVILEGE")
+
+abstract class DbmsAdminAction(override val name: String = "<unknown>") extends AdminAction
+
+case object AllAdminAction extends DbmsAdminAction("ALL ADMIN PRIVILEGES")
 
 object GrantPrivilege {
   def dbmsAction(action: AdminAction, roleNames: Seq[String]): InputPosition => GrantPrivilege =

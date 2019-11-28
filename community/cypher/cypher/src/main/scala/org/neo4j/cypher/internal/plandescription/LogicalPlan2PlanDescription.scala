@@ -227,6 +227,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
+      case AssertValidRevoke(_, action, scope, roleName) =>
+        val args = action match {
+          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)))
+          case _ => Seq(DbmsAction(action.name))
+        }
+        PlanDescriptionImpl(id, "AssertValidRevoke", NoChildren, args :+ Role(Prettifier.escapeName(roleName)), variables)
+
       case GrantDbmsAction(_, action, roleName) =>
         PlanDescriptionImpl(id, "GrantDbmsAction", NoChildren, Seq(DbmsAction(action.name), Role(roleName)), variables)
 
@@ -559,6 +566,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
+
+      case AssertValidRevoke(_, action, scope, roleName) =>
+        val args = action match {
+          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)))
+          case _ => Seq(DbmsAction(action.name))
+        }
+        PlanDescriptionImpl(id, "AssertValidRevoke", children, args :+ Role(Prettifier.escapeName(roleName)), variables)
 
       case GrantDbmsAction(_, action, roleName) =>
         PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(DbmsAction(action.name), Role(roleName)), variables)
