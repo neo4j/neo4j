@@ -49,7 +49,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
  *
- * @param <KEY> type of {@link NativeIndexSingleValueKey}.
+ * @param <KEY> type of {@link NativeIndexKey}.
  * @param <VALUE> type of {@link NativeIndexValue}.
  */
 public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>

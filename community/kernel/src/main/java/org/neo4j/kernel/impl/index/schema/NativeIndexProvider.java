@@ -47,7 +47,7 @@ import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 /**
  * Base class for native indexes on top of {@link GBPTree}.
  *
- * @param <KEY> type of {@link NativeIndexSingleValueKey}
+ * @param <KEY> type of {@link NativeIndexKey}
  * @param <VALUE> type of {@link NativeIndexValue}
  * @param <LAYOUT> type of {@link IndexLayout}
  */
