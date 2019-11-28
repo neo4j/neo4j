@@ -65,12 +65,6 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public Marker idempotentMarker()
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
-    }
-
-    @Override
     public void close()
     {
         // It's fine, there's nothing to close

@@ -75,12 +75,6 @@ class BufferingIdGenerator extends IdGenerator.Delegate
             }
 
             @Override
-            public void markDeletedAndFree( long id )
-            {
-                actual.markDeletedAndFree( id );
-            }
-
-            @Override
             public void close()
             {
                 actual.close();

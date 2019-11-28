@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 /**
  * A context which {@link StorageEngine} hands out to clients and which gets passed back in
  * to calls about creating commands. One of its purposes is to reserve and release ids. E.g. internal nodes and relationship references
@@ -53,30 +51,6 @@ public interface CommandCreationContext extends AutoCloseable
      * @return a reserved schema record id for future use.
      */
     long reserveSchema();
-
-    /**
-     * Releases previously {@link #reserveNode() reserved} node ids if it turns out to not actually being used,
-     * for example in the event of a transaction rolling back.
-     *
-     * @param ids reserved node ids to release.
-     */
-    void releaseNodes( LongIterator ids );
-
-    /**
-     * Releases previously {@link #reserveRelationship() reserved} relationship ids if it turns out to not
-     * actually being used, for example in the event of a transaction rolling back.
-     *
-     * @param ids reserved relationship id to release.
-     */
-    void releaseRelationships( LongIterator ids );
-
-    /**
-     * Releases a previously {@link #reserveSchema() reserved} schema record id if it turns out to not actaually be needed.
-     * For example, in the even of a transaction rollback.
-     *
-     * @param id reserved schema record id to release.
-     */
-    void releaseSchema( long id );
 
     /**
      * Reserves a label token id.
