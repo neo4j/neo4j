@@ -66,7 +66,7 @@ public class NamedDatabaseId implements Comparable<NamedDatabaseId>
     @Override
     public String toString()
     {
-        return "DatabaseId{" + "name='" + name + '\'' + ", databaseId=" + databaseId + '}';
+        return "DatabaseId{" + databaseId.id() + "[" + name + "] }";
     }
 
     @Override

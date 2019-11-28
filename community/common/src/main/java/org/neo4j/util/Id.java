@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2020 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -17,36 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.database;
+package org.neo4j.util;
 
 import java.util.Objects;
 import java.util.UUID;
 
-import org.neo4j.util.Id;
+import static java.util.Objects.requireNonNull;
 
-public class DatabaseId
+public class Id
 {
-    private final Id id;
+    private final UUID uuid;
+    private String shortName;
 
-    DatabaseId( UUID uuid )
+    public Id( UUID uuid )
     {
-        Objects.requireNonNull( uuid, "Database UUID should be not null." );
-        id = new Id( uuid );
+        requireNonNull( uuid, "UUID should be not null." );
+        this.uuid = uuid;
     }
 
     public UUID uuid()
     {
-        return id.uuid();
+        return uuid;
     }
 
-    Id id()
+    private String shortName()
     {
-        return id;
+        if ( shortName == null )
+        {
+            shortName = uuid.toString().substring( 0, 8 );
+        }
+        return shortName;
     }
 
-    public boolean isSystemDatabase()
+    @Override
+    public String toString()
     {
-        return DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID.databaseId().equals( this );
+        return shortName();
     }
 
     @Override
@@ -60,19 +66,13 @@ public class DatabaseId
         {
             return false;
         }
-        DatabaseId that = (DatabaseId) o;
-        return Objects.equals( id, that.id );
+        Id id = (Id) o;
+        return Objects.equals( uuid, id.uuid );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( id );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "DatabaseId{" + id + '}';
+        return Objects.hash( uuid );
     }
 }
