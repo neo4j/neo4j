@@ -36,12 +36,14 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
+import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -63,6 +65,7 @@ class DbmsDiagnosticsManagerTest
     private StorageEngineFactory storageEngineFactory;
     private Database defaultDatabase;
     private StandaloneDatabaseContext defaultContext;
+    private Dependencies dependencies;
 
     @BeforeEach
     @SuppressWarnings( "unchecked" )
@@ -77,7 +80,7 @@ class DbmsDiagnosticsManagerTest
         defaultDatabase = prepareDatabase();
         when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Collections.emptyList() );
 
-        Dependencies dependencies = new Dependencies();
+        dependencies = new Dependencies();
         dependencies.satisfyDependency( Config.defaults() );
         dependencies.satisfyDependency( databaseManager );
 
@@ -168,6 +171,33 @@ class DbmsDiagnosticsManagerTest
         assertContainsDatabaseDiagnostics();
     }
 
+    @Test
+    void dumpAdditionalDiagnosticsIfPresent()
+    {
+        diagnosticsManager.dumpAll();
+
+        assertNoAdditionalDiagnostics();
+
+        DiagnosticsProvider diagnosticsProvider = new DiagnosticsProvider()
+        {
+            @Override
+            public String getDiagnosticsName()
+            {
+                return "foo";
+            }
+
+            @Override
+            public void dump( Logger logger )
+            {
+            }
+        };
+        dependencies.satisfyDependency( diagnosticsProvider );
+
+        logProvider.clear();
+        diagnosticsManager.dumpAll();
+        assertContainingAdditionalDiagnostics( diagnosticsProvider );
+    }
+
     private void assertContainsSystemDiagnostics()
     {
         logProvider.rawMessageMatcher().assertContains( "System diagnostics" );
@@ -181,6 +211,16 @@ class DbmsDiagnosticsManagerTest
         logProvider.rawMessageMatcher().assertContains( "Library path" );
         logProvider.rawMessageMatcher().assertContains( "Network information" );
         logProvider.rawMessageMatcher().assertContains( "DBMS config" );
+    }
+
+    private void assertContainingAdditionalDiagnostics( DiagnosticsProvider diagnosticsProvider )
+    {
+        logProvider.rawMessageMatcher().assertContains( diagnosticsProvider.getDiagnosticsName() );
+    }
+
+    private void assertNoAdditionalDiagnostics()
+    {
+        logProvider.rawMessageMatcher().assertNotContains( "Additional diagnostics" );
     }
 
     private void assertContainsDatabaseDiagnostics()
