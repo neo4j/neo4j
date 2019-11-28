@@ -232,6 +232,7 @@ public class LoaderTest
         Files.createDirectories( destination.getParent() );
         try ( Closeable ignored = withPermissions( destination.getParent(), emptySet() ) )
         {
+            assumeFalse( destination.getParent().toFile().canWrite() );
             new Loader().load( archive, destination, destination );
             fail( "Expected an exception" );
         }
@@ -253,6 +254,7 @@ public class LoaderTest
         Files.createDirectories( txLogsDrectory.getParent() );
         try ( Closeable ignored = withPermissions( txLogsDrectory.getParent(), emptySet() ) )
         {
+            assumeFalse( txLogsDrectory.getParent().toFile().canWrite() );
             new Loader().load( archive, destination, txLogsDrectory );
             fail( "Expected an exception" );
         }

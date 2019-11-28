@@ -30,7 +30,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -247,9 +246,10 @@ public class DumpCommandTest
         {
             storeLocker.checkLock();
 
-            try ( Closeable ignored = withPermissions( databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME ),
-                    emptySet() ) )
+            Path lockFilename = databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME );
+            try ( Closeable ignored = withPermissions( lockFilename, emptySet() ) )
             {
+                assumeFalse( lockFilename.toFile().canWrite() );
                 execute( "foo.db" );
                 fail( "expected exception" );
             }

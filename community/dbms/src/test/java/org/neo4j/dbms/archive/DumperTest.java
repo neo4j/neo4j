@@ -121,6 +121,7 @@ public class DumperTest
         Files.createDirectories( archive.getParent() );
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {
+            assumeFalse( archive.getParent().toFile().canWrite() );
             new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
