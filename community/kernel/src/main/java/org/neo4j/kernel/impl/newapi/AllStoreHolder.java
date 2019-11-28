@@ -887,11 +887,6 @@ public class AllStoreHolder extends Read
     public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsWrites() )
-        {
-            throw accessMode.onViolation( format( "Write operations are not allowed for %s.", ktx.securityContext().description() ) );
-        }
         return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ), context );
     }
 
