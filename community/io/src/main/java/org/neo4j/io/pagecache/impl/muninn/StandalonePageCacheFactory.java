@@ -49,7 +49,7 @@ public final class StandalonePageCacheFactory
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );return createPageCache( factory, jobScheduler );
     }
 
-    private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler )
+    public static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler )
     {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
