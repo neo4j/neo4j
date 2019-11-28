@@ -87,7 +87,7 @@ public class CheckPointThresholdTestSupport
         return CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
     }
 
-    protected void verifyTriggered( String reason )
+    protected void verifyTriggered( String... reason )
     {
         assertThat( triggerConsumer.poll() ).contains( reason );
     }
