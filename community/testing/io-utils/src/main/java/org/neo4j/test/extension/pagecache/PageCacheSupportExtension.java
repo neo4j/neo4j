@@ -28,6 +28,7 @@ import java.util.Optional;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.test.extension.FileSystemExtension;
 import org.neo4j.test.extension.StatefullFieldExtension;
 import org.neo4j.test.rule.PageCacheConfig;
@@ -82,6 +83,11 @@ public class PageCacheSupportExtension extends StatefullFieldExtension<PageCache
     public PageCache getPageCache( FileSystemAbstraction fs )
     {
         return new PageCacheRule().getPageCache( fs, config() );
+    }
+
+    public PageCache getPageCache( PageSwapperFactory factory )
+    {
+        return new PageCacheRule().getPageCache( factory, config() );
     }
 
     @Override
