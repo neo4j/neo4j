@@ -23,6 +23,7 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
@@ -49,6 +50,11 @@ public final class StandalonePageCacheFactory
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
 
+        return createPageCache( factory, jobScheduler );
+    }
+
+    private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler )
+    {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
