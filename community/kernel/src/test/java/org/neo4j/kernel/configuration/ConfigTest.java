@@ -27,7 +27,6 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,6 +59,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -274,6 +274,7 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
+        assumeFalse( confFile.canRead() );
 
         Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
 
@@ -296,6 +297,7 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
+        assumeFalse( confFile.canRead() );
         Config.fromFile( confFile ).build();
     }
 

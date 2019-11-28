@@ -243,13 +243,6 @@ public class FileUtilsTest
     }
 
     @Test
-    public void onLinuxDevShmHasHighIO()
-    {
-        assumeTrue( SystemUtils.IS_OS_LINUX );
-        assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
-    }
-
-    @Test
     public void sizeOfFile() throws Exception
     {
         File file = touchFile( "a" );

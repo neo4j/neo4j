@@ -50,6 +50,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -174,6 +175,7 @@ class LoaderTest
         Files.createDirectories( destination.getParent() );
         try ( Closeable ignored = withPermissions( destination.getParent(), emptySet() ) )
         {
+            assumeFalse( destination.getParent().toFile().canWrite() );
             AccessDeniedException exception = assertThrows( AccessDeniedException.class, () -> new Loader().load( archive, destination, destination ) );
             assertEquals( destination.getParent().toString(), exception.getMessage() );
         }
@@ -190,6 +192,7 @@ class LoaderTest
         Files.createDirectories( txLogsDirectory.getParent() );
         try ( Closeable ignored = withPermissions( txLogsDirectory.getParent(), emptySet() ) )
         {
+            assumeFalse( txLogsDirectory.getParent().toFile().canWrite() );
             AccessDeniedException exception = assertThrows( AccessDeniedException.class, () -> new Loader().load( archive, destination, txLogsDirectory ) );
             assertEquals( txLogsDirectory.getParent().toString(), exception.getMessage() );
         }
