@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
+import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -107,6 +108,8 @@ public class DbmsDiagnosticsManager
         diagnosticsManager.section( log, "System diagnostics" );
         diagnosticsManager.dump( SystemDiagnostics.class, log );
         diagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log );
+        // dump any custom additional diagnostics that can be registered by specific edition
+        dependencies.resolveTypeDependencies( DiagnosticsProvider.class ).forEach( provider -> diagnosticsManager.dump( provider, log ) );
     }
 
     private void dumpDatabaseDiagnostics( Database database, Log log, boolean checkStatus )
