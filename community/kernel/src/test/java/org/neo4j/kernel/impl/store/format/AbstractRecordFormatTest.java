@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,22 +39,21 @@ import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.id.BatchingIdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.test.impl.EphemeralPageSwapperFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public abstract class AbstractRecordFormatTest
 {
-    private static final int PAGE_SIZE = (int) kibiBytes( 1 );
+    private static final int PAGE_SIZE = 128;
 
     // Whoever is hit first
     private static final long TEST_ITERATIONS = 100_000;
@@ -61,16 +61,16 @@ public abstract class AbstractRecordFormatTest
     private static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
-    private final RandomRule random = new RandomRule();
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final RandomRule random = new RandomRule().withSeedForAllTests( 1574763578997L );
+    private final EphemeralPageSwapperFactory swapperFactory = new EphemeralPageSwapperFactory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule( PageCacheRule.config().withPageSize( PAGE_SIZE ) );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public final TestName name = new TestName();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( random );
+    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( random );
     private PageCache pageCache;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
@@ -90,7 +90,13 @@ public abstract class AbstractRecordFormatTest
     @Before
     public void setupPageCache()
     {
-        pageCache = pageCacheRule.getPageCache( fsRule.get() );
+        pageCache = pageCacheRule.getPageCache( swapperFactory );
+    }
+
+    @After
+    public void clearSwappers()
+    {
+        swapperFactory.close();
     }
 
     @Before
@@ -155,36 +161,48 @@ public abstract class AbstractRecordFormatTest
             boolean assertPostReadOffset ) throws IOException
     {
         // GIVEN
-        try ( PagedFile storeFile = pageCache.map( new File( "store-" + name.getMethodName() ), PAGE_SIZE, CREATE ) )
+        RecordFormat<R> format = formatSupplier.get();
+        RecordKey<R> key = keySupplier.get();
+        Generator<R> generator = generatorSupplier.get();
+        int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
+        BatchingIdSequence idSequence = new BatchingIdSequence( 1 );
+        try ( PagedFile storeFile = pageCache.map( new File( "store-" + name.getMethodName() ), Math.max( recordSize, Long.SIZE ), CREATE ) )
         {
-            RecordFormat<R> format = formatSupplier.get();
-            RecordKey<R> key = keySupplier.get();
-            Generator<R> generator = generatorSupplier.get();
-            int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
-            BatchingIdSequence idSequence = new BatchingIdSequence( random.nextBoolean() ?
-                    idSureToBeOnTheNextPage( PAGE_SIZE, recordSize ) : 10 );
-
             // WHEN
             long time = currentTimeMillis();
             long endTime = time + TEST_TIME;
             long i = 0;
             for ( ; i < TEST_ITERATIONS && currentTimeMillis() < endTime; i++ )
             {
-                R written = generator.get( recordSize, format, i % 5 );
-                R read = format.newRecord();
-                try
-                {
-                    writeRecord( written, format, storeFile, recordSize, idSequence );
-                    readAndVerifyRecord( written, read, format, key, storeFile, recordSize, assertPostReadOffset );
-                    idSequence.reset();
-                }
-                catch ( Throwable t )
-                {
-                    Exceptions.setMessage( t, t.getMessage() + " : written:" + written + ", read:" + read +
-                            ", seed:" + random.seed() + ", iteration:" + i );
-                    throw t;
-                }
+                R written = generator.get( recordSize, format, random.nextLong( 1, format.getMaxId() ) );
+                verifyWriteAndReadRecord( assertPostReadOffset, format, key, recordSize, idSequence, storeFile, i, written );
             }
+        }
+    }
+
+    private <R extends AbstractBaseRecord> void verifyWriteAndReadRecord( boolean assertPostReadOffset, RecordFormat<R> format, RecordKey<R> key,
+            int recordSize, BatchingIdSequence idSequence, PagedFile storeFile, long i, R written ) throws IOException
+    {
+        R read = format.newRecord();
+        R read2 = format.newRecord();
+        try
+        {
+            writeRecord( written, format, storeFile, recordSize, idSequence, true );
+            readAndVerifyRecord( written, read, format, key, storeFile, recordSize, assertPostReadOffset );
+            writeRecord( read, format, storeFile, recordSize, idSequence, false );
+            readAndVerifyRecord( read, read2, format, key, storeFile, recordSize, assertPostReadOffset );
+            idSequence.reset();
+        }
+        catch ( Throwable t )
+        {
+            StringBuilder sb = new StringBuilder( t.getMessage() ).append( System.lineSeparator() );
+            sb.append( "Initially written:         " ).append( written ).append( System.lineSeparator() );
+            sb.append( "Read back:                 " ).append( read ).append( System.lineSeparator() );
+            sb.append( "Wrote and read back again: " ).append( read2 ).append( System.lineSeparator() );
+            sb.append( "Seed:                      " ).append( random.seed() ).append( System.lineSeparator() );
+            sb.append( "Iteration:                 " ).append( i ).append( System.lineSeparator() );
+            Exceptions.setMessage( t, sb.toString() );
+            throw t;
         }
     }
 
@@ -200,10 +218,9 @@ public abstract class AbstractRecordFormatTest
              Retry loop is needed here because format does not handle retries on the primary cursor.
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
-            int offset = Math.toIntExact( written.getId() * recordSize );
             do
             {
-                cursor.setOffset( offset );
+                cursor.setOffset( 0 );
                 format.read( read, cursor, NORMAL, recordSize );
             }
             while ( cursor.shouldRetry() );
@@ -211,38 +228,33 @@ public abstract class AbstractRecordFormatTest
             if ( assertPostReadOffset )
             {
                 assertEquals( "Cursor is positioned on first byte of next record after a read",
-                              offset + recordSize, cursor.getOffset() );
+                              recordSize, cursor.getOffset() );
             }
             cursor.checkAndClearCursorException();
 
             // THEN
+            assertEquals( written.inUse(), read.inUse() );
             if ( written.inUse() )
             {
-                assertEquals( written.inUse(), read.inUse() );
                 assertEquals( written.getId(), read.getId() );
                 assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
                 key.assertRecordsEquals( written, read );
-            }
-            else
-            {
-                assertEquals( written.inUse(), read.inUse() );
             }
         }
     }
 
     private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
-            int recordSize, BatchingIdSequence idSequence ) throws IOException
+            int recordSize, BatchingIdSequence idSequence, boolean prepare ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             assertedNext( cursor );
-            if ( record.inUse() )
+            if ( prepare && record.inUse() )
             {
                 format.prepare( record, recordSize, idSequence );
             }
 
-            int offset = Math.toIntExact( record.getId() * recordSize );
-            cursor.setOffset( offset );
+            cursor.setOffset( 0 );
             format.write( record, cursor, recordSize );
             assertWithinBounds( record, cursor, "writing" );
         }
@@ -259,10 +271,5 @@ public abstract class AbstractRecordFormatTest
     private void assertedNext( PageCursor cursor ) throws IOException
     {
         assertTrue( cursor.next() );
-    }
-
-    private long idSureToBeOnTheNextPage( int pageSize, int recordSize )
-    {
-        return (pageSize + 100) / recordSize;
     }
 }
