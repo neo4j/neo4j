@@ -25,11 +25,8 @@ import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.TimeValue;
-import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-
-import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class ZonedTimeType extends Type
 {
@@ -84,17 +81,12 @@ class ZonedTimeType extends Type
     static Value asValue( long long0, long long1 )
     {
         OffsetTime time = asValueRaw( long0, long1 );
-        return time != null ? TimeValue.time( time ) : NO_VALUE;
+        return TimeValue.time( time );
     }
 
     static OffsetTime asValueRaw( long long0, long long1 )
     {
-        if ( TimeZones.validZoneOffset( (int) long1 ) )
-        {
-            return TimeValue.timeRaw( long0, ZoneOffset.ofTotalSeconds( (int) long1 ) );
-        }
-        // TODO Getting here means that after a proper read this value is plain wrong... shouldn't something be thrown instead? Yes and same for TimeZones
-        return null;
+        return TimeValue.timeRaw( long0, ZoneOffset.ofTotalSeconds( Math.toIntExact( long1 ) ) );
     }
 
     static void put( PageCursor cursor, long long0, long long1 )
