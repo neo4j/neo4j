@@ -1099,8 +1099,8 @@ public class FullCheckIntegrationTest
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
                 DynamicRecord record2 = new DynamicRecord( ruleId2 );
-                DynamicRecord record1Before = record1.clone();
-                DynamicRecord record2Before = record2.clone();
+                DynamicRecord record1Before = cloneRecord( record1 );
+                DynamicRecord record2Before = cloneRecord( record2 );
 
                 StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
                 ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
