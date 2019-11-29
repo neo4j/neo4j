@@ -39,10 +39,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -88,10 +85,8 @@ class ConstraintIndexFailureIT
         try ( Transaction tx = db.beginTx() )
         {
             var e = assertThrows( ConstraintViolationException.class, () -> tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" ) );
-            assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
-            assertThat( e.getCause().getCause().getMessage(), allOf(
-                    containsString( "The index is in a failed state:" ),
-                    containsString( INITIAL_STATE_FAILURE_MESSAGE ) ) );
+            assertThat( e.getCause() ).isInstanceOf( UnableToValidateConstraintException.class );
+            assertThat( e.getCause().getCause().getMessage() ).contains( "The index is in a failed state:" ).contains( INITIAL_STATE_FAILURE_MESSAGE );
         }
         finally
         {

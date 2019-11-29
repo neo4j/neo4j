@@ -28,8 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 public class SabotageNativeIndex extends NativeIndexRestartAction
@@ -46,7 +45,7 @@ public class SabotageNativeIndex extends NativeIndexRestartAction
     protected void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure ) throws IOException
     {
         int files = scrambleIndexFiles( fs, indexDirectoryStructure.rootDirectory() );
-        assertThat( "there is no index to sabotage", files, greaterThanOrEqualTo( 1 ) );
+        assertThat( files ).as( "there is no index to sabotage" ).isGreaterThanOrEqualTo( 1 );
     }
 
     private int scrambleIndexFiles( FileSystemAbstraction fs, File fileOrDir ) throws IOException

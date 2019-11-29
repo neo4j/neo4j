@@ -19,7 +19,6 @@
  */
 package org.neo4j.index;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -44,9 +43,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -127,7 +124,7 @@ class IndexSamplingIntegrationTest
         // lucene will consider also the delete nodes, native won't
         DoubleLongRegister register = fetchIndexSamplingValues();
         assertEquals( names.length, register.readFirst() );
-        MatcherAssert.assertThat( register.readSecond(), allOf( greaterThanOrEqualTo( nodes - deletedNodes ), lessThanOrEqualTo( nodes ) ) );
+        assertThat( register.readSecond() ).isGreaterThanOrEqualTo( nodes - deletedNodes ).isLessThanOrEqualTo( nodes );
 
         // but regardless, the deleted nodes should not be considered in the index size value
         DoubleLongRegister indexSizeRegister = fetchIndexSizeValues();

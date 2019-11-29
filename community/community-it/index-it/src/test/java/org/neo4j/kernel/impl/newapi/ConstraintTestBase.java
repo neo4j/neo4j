@@ -34,9 +34,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -82,8 +80,8 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
                     asList( tx.schemaRead().constraintsGetForSchema( descriptor ) );
 
             // THEN
-            assertThat( constraints, hasSize( 1 ) );
-            assertThat( constraints.get( 0 ).schema().getPropertyId(), equalTo( prop ) );
+            assertThat( constraints ).hasSize( 1 );
+            assertThat( constraints.get( 0 ).schema().getPropertyId() ).isEqualTo( prop );
         }
     }
 
@@ -102,7 +100,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
                     tx.schemaRead().constraintsGetForLabel( label ) );
 
             // THEN
-            assertThat( constraints, hasSize( 2 ) );
+            assertThat( constraints ).hasSize( 2 );
         }
     }
 
@@ -144,7 +142,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             List<ConstraintDescriptor> constraints = asList( tx.schemaRead().constraintsGetAll() );
 
             // THEN
-            assertThat( constraints, hasSize( 3 ) );
+            assertThat( constraints ).hasSize( 3 );
         }
     }
 

@@ -56,10 +56,8 @@ import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RepeatRule;
 
 import static java.lang.String.format;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -143,7 +141,7 @@ public class LuceneFulltextTestSupport
 
     static KernelTransaction kernelTransaction( Transaction tx )
     {
-        assertThat( tx, instanceOf( TransactionImpl.class ) );
+        assertThat( tx ).isInstanceOf( TransactionImpl.class );
         return ((InternalTransaction)tx).kernelTransaction();
     }
 
@@ -204,7 +202,7 @@ public class LuceneFulltextTestSupport
             {
                 long nextId = cursor.nodeReference();
                 float nextScore = cursor.score();
-                assertThat( nextScore, lessThanOrEqualTo( score ) );
+                assertThat( nextScore ).isLessThanOrEqualTo( score );
                 score = nextScore;
                 assertEquals( format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );
                 num++;

@@ -34,8 +34,7 @@ import org.neo4j.internal.id.ReservedIdException;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
@@ -65,8 +64,8 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( tx.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1L) );
-            assertThat( count( tx.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1L) );
+            assertThat( count( tx.findNodes( label( "User" ), "name", "Bob" ) ) ).isEqualTo( 1L );
+            assertThat( count( tx.findNodes( label( "Admin" ), "name", "Bob" ) ) ).isEqualTo( 1L );
         }
     }
 
@@ -87,7 +86,7 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( tx.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo( 0L ) );
+            assertThat( count( tx.findNodes( label( "Banana" ), "name", "Bob" ) ) ).isEqualTo( 0L );
         }
 
     }
@@ -109,7 +108,7 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( tx.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue ) );
+            assertThat( tx.getNodeById( nodeId ).getProperty( "a" ) ).isEqualTo( finalValue );
         }
     }
 
@@ -132,8 +131,8 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( tx.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue1 ) );
-            assertThat( tx.getNodeById( nodeId ).getProperty( "b" ), equalTo( finalValue2 ) );
+            assertThat( tx.getNodeById( nodeId ).getProperty( "a" ) ).isEqualTo( finalValue1 );
+            assertThat( tx.getNodeById( nodeId ).getProperty( "b" ) ).isEqualTo( finalValue2 );
         }
     }
 

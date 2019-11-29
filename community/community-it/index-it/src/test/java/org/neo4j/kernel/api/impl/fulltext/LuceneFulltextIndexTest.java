@@ -39,17 +39,16 @@ import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
@@ -608,9 +607,9 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).withIndexConfig( indexConfig ).materialise( 1 ) );
 
-        assertThat( descriptor.getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard-no-stop-words" ) ) );
-        assertThat( descriptor.getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( true ) ) );
-        assertThat( asList( descriptor.getCapability().limitations() ), contains( IndexLimitation.EVENTUALLY_CONSISTENT ) );
+        assertThat( (Value) descriptor.getIndexConfig().get( ANALYZER ) ).isEqualTo( Values.stringValue( "standard-no-stop-words" ) );
+        assertThat( (Value) descriptor.getIndexConfig().get( EVENTUALLY_CONSISTENT ) ).isEqualTo( Values.booleanValue( true ) );
+        assertThat( asList( descriptor.getCapability().limitations() ) ).containsExactly( IndexLimitation.EVENTUALLY_CONSISTENT );
     }
 
     @Test
@@ -695,7 +694,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.findNode( LABEL, PROP, 1 );
-            assertThat( node.getId(), is( nodeId ) );
+            assertThat( node.getId() ).isEqualTo( nodeId );
         }
     }
 
@@ -727,7 +726,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             {
                 assertTrue( nodes.hasNext() );
                 Node node = nodes.next();
-                assertThat( node.getId(), is( nodeId ) );
+                assertThat( node.getId() ).isEqualTo( nodeId );
                 assertFalse( nodes.hasNext() );
             }
 
@@ -735,7 +734,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             {
                 assertTrue( nodes.hasNext() );
                 Node node = nodes.next();
-                assertThat( node.getId(), is( nodeId ) );
+                assertThat( node.getId() ).isEqualTo( nodeId );
                 assertFalse( nodes.hasNext() );
             }
 
@@ -743,7 +742,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             {
                 assertTrue( nodes.hasNext() );
                 Node node = nodes.next();
-                assertThat( node.getId(), is( nodeId ) );
+                assertThat( node.getId() ).isEqualTo( nodeId );
                 assertFalse( nodes.hasNext() );
             }
 
@@ -751,7 +750,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             {
                 assertTrue( nodes.hasNext() );
                 Node node = nodes.next();
-                assertThat( node.getId(), is( nodeId ) );
+                assertThat( node.getId() ).isEqualTo( nodeId );
                 assertFalse( nodes.hasNext() );
             }
         }

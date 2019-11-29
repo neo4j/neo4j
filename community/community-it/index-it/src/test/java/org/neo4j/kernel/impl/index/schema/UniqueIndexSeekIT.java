@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.core.CombinableMatcher;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -40,8 +39,8 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingIndexExtensionFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -50,11 +49,8 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Offset.offset;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
@@ -90,13 +86,13 @@ class UniqueIndexSeekIT
             generateRandomData( database, label, nameProperty );
 
             assertNotNull( indexExtensionFactory.getIndexProvider( config.get( default_database ) ) );
-            assertThat( numberOfClosedReaders(), greaterThan( 0L ) );
-            assertThat( numberOfOpenReaders(), greaterThan( 0L ) );
-            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
+            assertThat( numberOfClosedReaders() ).isGreaterThan( 0L );
+            assertThat( numberOfOpenReaders() ).isGreaterThan( 0L );
+            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), offset( 1L ) );
 
             lockNodeUsingUniqueIndexSeek( database, nameProperty );
 
-            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
+            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), offset( 1L ) );
         }
         finally
         {
@@ -109,11 +105,6 @@ class UniqueIndexSeekIT
         return Stream.of(
                 new NativeLuceneFusionIndexProviderFactory30(),
                 new GenericNativeIndexProviderFactory() );
-    }
-
-    private static CombinableMatcher<Long> closeTo( long from, long delta )
-    {
-        return both( greaterThanOrEqualTo( from - delta ) ).and( lessThanOrEqualTo( from + delta ) );
     }
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory, IndexProviderDescriptor descriptor )

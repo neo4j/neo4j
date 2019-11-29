@@ -43,8 +43,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -120,8 +119,8 @@ public abstract class StringLengthIndexValidationIT
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(), containsString(
-                    "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
+            assertThat( e.getMessage() ).contains(
+                    "Property value is too large to index into this particular index. Please see index documentation for limitations." );
         }
     }
 
@@ -148,11 +147,9 @@ public abstract class StringLengthIndexValidationIT
         catch ( IllegalStateException e )
         {
             GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
-            assertThat( e.getMessage(), containsString(
-                    String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
-                                    "(Index( 1, 'index_71616483', GENERAL BTREE, :label[0](property[0]), %s )) " +
-                                    "entered a FAILED state.",
-                            schemaIndex.providerName() ) ) );
+            assertThat( e.getMessage() ).contains( String.format(
+                    "Index IndexDefinition[label:LABEL_ONE on:largeString] " + "(Index( 1, 'index_71616483', GENERAL BTREE, :label[0](property[0]), %s )) " +
+                            "entered a FAILED state.", schemaIndex.providerName() ) );
         }
 
         // Index should be in failed state
@@ -162,8 +159,7 @@ public abstract class StringLengthIndexValidationIT
             assertTrue( iterator.hasNext() );
             IndexDefinition next = iterator.next();
             assertEquals( Schema.IndexState.FAILED, tx.schema().getIndexState( next ), "state is FAILED" );
-            assertThat( tx.schema().getIndexFailure( next ),
-            containsString( expectedPopulationFailureMessage() ) );
+            assertThat( tx.schema().getIndexFailure( next ) ).contains( expectedPopulationFailureMessage() );
             tx.commit();
         }
     }

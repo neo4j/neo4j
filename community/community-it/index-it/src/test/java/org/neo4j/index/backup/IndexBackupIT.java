@@ -46,9 +46,8 @@ import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class IndexBackupIT
@@ -138,9 +137,9 @@ public class IndexBackupIT
     private void compareSnapshotFiles( Set<String> firstSnapshotFileNames, Set<String> secondSnapshotFileNames,
             FileSystemAbstraction fileSystem )
     {
-        assertThat( format( "Should have %d modified index segment files. Snapshot segment files are: %s",
-                        NUMBER_OF_INDEXES, firstSnapshotFileNames ), firstSnapshotFileNames,
-                hasSize( NUMBER_OF_INDEXES ) );
+        assertThat( firstSnapshotFileNames ).as(
+                format( "Should have %d modified index segment files. Snapshot segment files are: %s", NUMBER_OF_INDEXES, firstSnapshotFileNames ) ).hasSize(
+                NUMBER_OF_INDEXES );
         for ( String fileName : firstSnapshotFileNames )
         {
             assertFalse( "Snapshot segments fileset should not have files from another snapshot set." +

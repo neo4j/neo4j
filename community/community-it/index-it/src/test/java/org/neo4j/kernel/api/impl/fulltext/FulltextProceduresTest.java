@@ -93,18 +93,12 @@ import org.neo4j.values.storable.ValueGroup;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -863,13 +857,13 @@ public class FulltextProceduresTest
                     analyzers.add( iterator.next() );
                 }
             }
-            assertThat( analyzers, hasItem( "english" ) );
-            assertThat( analyzers, hasItem( "swedish" ) );
-            assertThat( analyzers, hasItem( "standard" ) );
-            assertThat( analyzers, hasItem( "galician" ) );
-            assertThat( analyzers, hasItem( "irish" ) );
-            assertThat( analyzers, hasItem( "latvian" ) );
-            assertThat( analyzers, hasItem( "sorani" ) );
+            assertThat( analyzers ).contains( "english" );
+            assertThat( analyzers ).contains( "swedish" );
+            assertThat( analyzers ).contains( "standard" );
+            assertThat( analyzers ).contains( "galician" );
+            assertThat( analyzers ).contains( "irish" );
+            assertThat( analyzers ).contains( "latvian" );
+            assertThat( analyzers ).contains( "sorani" );
             tx.commit();
         }
 
@@ -916,7 +910,7 @@ public class FulltextProceduresTest
                     String analyzerName = (String) row.get( "analyzer" );
                     if ( analyzerName.equals( "english" ) || analyzerName.equals( "standard" ) )
                     {
-                        assertThat( words, hasItem( "and" ) );
+                        assertThat( words ).contains( "and" );
                     }
                     else if ( analyzerName.equals( "standard-no-stop-words" ) )
                     {
@@ -1392,7 +1386,7 @@ public class FulltextProceduresTest
             try ( Result result = tx.execute( format( QUERY_NODES, "nodes", "value" ) );
                   Stream<Map<String,Object>> stream = result.stream() )
             {
-                assertThat( stream.count(), is( nodeCount ) );
+                assertThat( stream.count() ).isEqualTo( nodeCount );
             }
             tx.commit();
         }
@@ -1423,7 +1417,7 @@ public class FulltextProceduresTest
             try ( Result result = tx.execute( format( QUERY_NODES, "nodes", "value" ) );
                   Stream<Map<String,Object>> stream = result.stream() )
             {
-                assertThat( stream.count(), is( nodeCount + 1 ) );
+                assertThat( stream.count() ).isEqualTo( nodeCount + 1 );
             }
             tx.commit();
         }
@@ -1477,7 +1471,7 @@ public class FulltextProceduresTest
                     }
                     return null;
                 } ).get();
-                assertThat( result.stream().count(), is( 0L ) );
+                assertThat( result.stream().count() ).isEqualTo( 0L );
             }
             tx.commit();
         }
@@ -1520,7 +1514,7 @@ public class FulltextProceduresTest
                     }
                     return null;
                 } ).get();
-                assertThat( result.stream().count(), is( 0L ) );
+                assertThat( result.stream().count() ).isEqualTo( 0L );
             }
             tx.commit();
         }
@@ -1554,7 +1548,7 @@ public class FulltextProceduresTest
             tx.getNodeById( nodeIdB ).delete();
             try ( Result result = tx.execute( format( QUERY_NODES, "nodes", "value" ) ) )
             {
-                assertThat( result.stream().count(), is( 0L ) );
+                assertThat( result.stream().count() ).isEqualTo( 0L );
             }
             tx.commit();
         }
@@ -1589,7 +1583,7 @@ public class FulltextProceduresTest
             tx.getRelationshipById( relIdB ).delete();
             try ( Result result = tx.execute( format( QUERY_RELS, "rels", "value" ) ) )
             {
-                assertThat( result.stream().count(), is( 0L ) );
+                assertThat( result.stream().count() ).isEqualTo( 0L );
             }
             tx.commit();
         }
@@ -2211,7 +2205,7 @@ public class FulltextProceduresTest
                 Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
-                assertThat( eventuallyConsistentObj, instanceOf( Boolean.class ) );
+                assertThat( eventuallyConsistentObj ).isInstanceOf( Boolean.class );
                 assertEquals( true, eventuallyConsistentObj );
             }
             tx.commit();
@@ -2242,11 +2236,11 @@ public class FulltextProceduresTest
                 Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
-                assertThat( eventuallyConsistentObj, instanceOf( Boolean.class ) );
+                assertThat( eventuallyConsistentObj ).isInstanceOf( Boolean.class );
                 assertEquals( true, eventuallyConsistentObj );
                 Object analyzerObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_ANALYZER );
                 assertNotNull( analyzerObj );
-                assertThat( analyzerObj, instanceOf( String.class ) );
+                assertThat( analyzerObj ).isInstanceOf( String.class );
                 assertEquals( "english", analyzerObj );
             }
             tx.commit();
@@ -2266,9 +2260,9 @@ public class FulltextProceduresTest
         }
         catch ( QueryExecutionException e )
         {
-            assertThat( e.getMessage(), containsString( "Config setting was specified more than once, 'analyzer'." ) );
+            assertThat( e.getMessage() ).contains( "Config setting was specified more than once, 'analyzer'." );
             Throwable rootCause = getRootCause( e );
-            assertThat( rootCause, instanceOf( IllegalArgumentException.class ) );
+            assertThat( rootCause ).isInstanceOf( IllegalArgumentException.class );
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -2278,9 +2272,9 @@ public class FulltextProceduresTest
         }
         catch ( QueryExecutionException e )
         {
-            assertThat( e.getMessage(), containsString( "Config setting was specified more than once, 'analyzer'." ) );
+            assertThat( e.getMessage() ).contains( "Config setting was specified more than once, 'analyzer'." );
             Throwable rootCause = getRootCause( e );
-            assertThat( rootCause, instanceOf( IllegalArgumentException.class ) );
+            assertThat( rootCause ).isInstanceOf( IllegalArgumentException.class );
         }
     }
 
@@ -2523,7 +2517,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( single( tx.schema().getIndexes() ).getName(), is( not( "nameIndex" ) ) );
+            assertThat( single( tx.schema().getIndexes() ).getName() ).isNotEqualTo( "nameIndex" );
             tx.commit();
         }
     }
@@ -2551,7 +2545,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( single( tx.schema().getIndexes() ).getName(), is( "nameIndex" ) );
+            assertThat( single( tx.schema().getIndexes() ).getName() ).isEqualTo( "nameIndex" );
             tx.commit();
         }
     }
@@ -2560,7 +2554,7 @@ public class FulltextProceduresTest
     public void creatingNormalIndexWithFulltextProviderMustThrow()
     {
         db = createDatabase();
-        assertThat( FulltextIndexProviderFactory.DESCRIPTOR.name(), is( "fulltext-1.0" ) ); // Sanity check that this test is up to date.
+        assertThat( FulltextIndexProviderFactory.DESCRIPTOR.name() ).isEqualTo( "fulltext-1.0" ); // Sanity check that this test is up to date.
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -2570,15 +2564,15 @@ public class FulltextProceduresTest
         }
         catch ( QueryExecutionException e )
         {
-            assertThat( e.getMessage(), containsString(
+            assertThat( e.getMessage() ).contains(
                     "Could not create index with specified index provider 'fulltext-1.0'. To create fulltext index, please use 'db.index.fulltext" +
-                            ".createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'." ) );
+                            ".createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'." );
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             long indexCount = tx.execute( DB_INDEXES ).stream().count();
-            assertThat( indexCount, is( 0L ) );
+            assertThat( indexCount ).isEqualTo( 0L );
             tx.commit();
         }
     }
@@ -2688,15 +2682,15 @@ public class FulltextProceduresTest
         {
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "A" ) ) )
             {
-                assertThat( result.stream().count(), is( 0L ) ); // The letter 'A' is a stop-word in English, so it is not indexed.
+                assertThat( result.stream().count() ).isEqualTo( 0L ); // The letter 'A' is a stop-word in English, so it is not indexed.
             }
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "B" ) ) )
             {
-                assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 2000L ); // Both upper- and lower-case 'B' nodes.
             }
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "C" ) ) )
             {
-                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 1000L ); // We only have upper-case 'C' nodes.
             }
             tx.commit();
         }
@@ -2726,15 +2720,15 @@ public class FulltextProceduresTest
         {
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "A" ) ) )
             {
-                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'A' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 1000L ); // We only have upper-case 'A' nodes.
             }
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "B" ) ) )
             {
-                assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 2000L ); // Both upper- and lower-case 'B' nodes.
             }
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "C" ) ) )
             {
-                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 1000L ); // We only have upper-case 'C' nodes.
             }
             tx.commit();
         }
@@ -2764,15 +2758,15 @@ public class FulltextProceduresTest
         {
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "A" ) ) )
             {
-                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'A' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 1000L ); // We only have upper-case 'A' nodes.
             }
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "B" ) ) )
             {
-                assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 2000L ); // Both upper- and lower-case 'B' nodes.
             }
             try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "C" ) ) )
             {
-                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
+                assertThat( result.stream().count() ).isEqualTo( 1000L ); // We only have upper-case 'C' nodes.
             }
             tx.commit();
         }
@@ -2859,7 +2853,7 @@ public class FulltextProceduresTest
             }
         } );
         final Throwable cause = getRootCause( e );
-        assertThat( cause, instanceOf( RepeatedPropertyInSchemaException.class ) );
+        assertThat( cause ).isInstanceOf( RepeatedPropertyInSchemaException.class );
     }
 
     @Test
@@ -2875,7 +2869,7 @@ public class FulltextProceduresTest
             }
         } );
         final Throwable cause = getRootCause( e );
-        assertThat( cause, instanceOf( RepeatedLabelInSchemaException.class ) );
+        assertThat( cause ).isInstanceOf( RepeatedLabelInSchemaException.class );
     }
 
     @Test
@@ -2891,7 +2885,7 @@ public class FulltextProceduresTest
             }
         } );
         final Throwable cause = getRootCause( e );
-        assertThat( cause, instanceOf( RepeatedRelationshipTypeInSchemaException.class ) );
+        assertThat( cause ).isInstanceOf( RepeatedRelationshipTypeInSchemaException.class );
     }
 
     @Test
@@ -2910,15 +2904,15 @@ public class FulltextProceduresTest
                 tx.commit();
             }
         });
-        assertThat( e.getMessage(), containsString( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) );
+        assertThat( e.getMessage() ).contains( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
     }
 
     private void assertNoIndexSeeks( Result result )
     {
-        assertThat( result.stream().count(), is( 1L ) );
+        assertThat( result.stream().count() ).isEqualTo( 1L );
         String planDescription = result.getExecutionPlanDescription().toString();
-        assertThat( planDescription, containsString( "NodeByLabel" ) );
-        assertThat( planDescription, not( containsString( "IndexSeek" ) ) );
+        assertThat( planDescription ).contains( "NodeByLabel" );
+        assertThat( planDescription ).doesNotContain( "IndexSeek" );
     }
 
     private GraphDatabaseAPI createDatabase()
@@ -2950,7 +2944,7 @@ public class FulltextProceduresTest
                 Map entry = result.next();
                 Long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
                 Double nextScore = (Double) entry.get( SCORE );
-                assertThat( nextScore, lessThanOrEqualTo( score ) );
+                assertThat( nextScore ).isLessThanOrEqualTo( score );
                 score = nextScore;
                 if ( num < ids.length )
                 {
@@ -2983,7 +2977,7 @@ public class FulltextProceduresTest
                 Map entry = result.next();
                 long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
                 Double nextScore = (Double) entry.get( SCORE );
-                assertThat( nextScore, lessThanOrEqualTo( score ) );
+                assertThat( nextScore ).isLessThanOrEqualTo( score );
                 score = nextScore;
                 actualIds.add( nextId );
                 if ( !ids.remove( nextId ) )

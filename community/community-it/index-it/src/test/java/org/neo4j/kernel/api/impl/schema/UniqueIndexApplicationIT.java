@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,7 +39,7 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.awaitIndexesOnline;
@@ -69,9 +66,8 @@ public class UniqueIndexApplicationIT
     {
         try ( var transaction = db.beginTx() )
         {
-            assertThat( "Matching nodes from index lookup",
-                    listNodeIdsFromIndexLookup( transaction, label( "Label1" ), "key1", "value1" ).apply( db ),
-                    hasSize( 1 ) );
+            assertThat( listNodeIdsFromIndexLookup( transaction, label( "Label1" ), "key1", "value1" ).apply( db ) ).as(
+                    "Matching nodes from index lookup" ).hasSize( 1 );
         }
     }
 
@@ -176,24 +172,6 @@ public class UniqueIndexApplicationIT
             node.addLabel( label( "Label1" ) );
             transaction.commit();
         }
-    }
-
-    private static Matcher<List<?>> hasSize( final int size )
-    {
-        return new TypeSafeMatcher<>()
-        {
-            @Override
-            protected boolean matchesSafely( List<?> item )
-            {
-                return item.size() == size;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "List with size=" ).appendValue( size );
-            }
-        };
     }
 
     private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup( Transaction tx,

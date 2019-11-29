@@ -50,8 +50,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -150,8 +149,8 @@ class CompositeStringLengthValidationIT
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage(),
-                    containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations. " ) );
+            assertThat( e.getMessage() ).contains(
+                    "Property value is too large to index into this particular index. Please see index documentation for limitations. " );
         }
     }
 

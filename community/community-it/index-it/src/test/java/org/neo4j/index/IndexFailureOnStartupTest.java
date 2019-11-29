@@ -19,7 +19,6 @@
  */
 package org.neo4j.index;
 
-import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,12 +38,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.index.SabotageNativeIndex.nativeIndexDirectoryStructure;
 
@@ -73,7 +69,7 @@ public class IndexFailureOnStartupTest
         // then - the database should still be operational
         createNamed( PERSON, "Lars" );
         awaitIndexesOnline( 5, SECONDS );
-        indexStateShouldBe( equalTo( ONLINE ) );
+        indexStateShouldBe( ONLINE );
         assertFindsNamed( PERSON, "Lars" );
     }
 
@@ -102,7 +98,7 @@ public class IndexFailureOnStartupTest
             failure = e;
         }
         assertNotNull( failure );
-        indexStateShouldBe( equalTo( ONLINE ) );
+        indexStateShouldBe( ONLINE );
     }
 
     @Test
@@ -128,14 +124,14 @@ public class IndexFailureOnStartupTest
             tx.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
             tx.commit();
         }
-        assertThat( archiveFile(), nullValue() );
+        assertThat( archiveFile() ).isNull();
 
         // when
         db.restartDatabase( new SabotageNativeIndex( random.random() ) );
 
         // then
-        indexStateShouldBe( equalTo( ONLINE ) );
-        assertThat( archiveFile(), notNullValue() );
+        indexStateShouldBe( ONLINE );
+        assertThat( archiveFile() ).isNotNull();
     }
 
     private File archiveFile()
@@ -169,13 +165,13 @@ public class IndexFailureOnStartupTest
         }
     }
 
-    private void indexStateShouldBe( Matcher<Schema.IndexState> matchesExpectation )
+    private void indexStateShouldBe( Schema.IndexState value )
     {
         try ( Transaction tx = db.beginTx() )
         {
             for ( IndexDefinition index : tx.schema().getIndexes() )
             {
-                assertThat( tx.schema().getIndexState( index ), matchesExpectation );
+                assertThat( tx.schema().getIndexState( index ) ).isEqualTo( value );
             }
             tx.commit();
         }

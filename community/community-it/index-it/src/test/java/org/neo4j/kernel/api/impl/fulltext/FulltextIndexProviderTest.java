@@ -91,13 +91,9 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -293,7 +289,7 @@ public class FulltextIndexProviderTest
                 if ( index.isNodeIndex() )
                 {
                     assertFalse( index.isRelationshipIndex() );
-                    assertThat( index.getLabels(), containsInAnyOrder( Label.label( "Label1" ), Label.label( "Label2" ) ) );
+                    assertThat( index.getLabels() ).contains( Label.label( "Label1" ), Label.label( "Label2" ) );
                     try
                     {
                         index.getRelationshipTypes();
@@ -306,8 +302,7 @@ public class FulltextIndexProviderTest
                 else
                 {
                     assertTrue( index.isRelationshipIndex() );
-                    assertThat( index.getRelationshipTypes(),
-                            containsInAnyOrder( RelationshipType.withName( "RelType1" ), RelationshipType.withName( "RelType2" ) ) );
+                    assertThat( index.getRelationshipTypes() ).contains( RelationshipType.withName( "RelType1" ), RelationshipType.withName( "RelType2" ) );
                     try
                     {
                         index.getLabels();
@@ -452,7 +447,7 @@ public class FulltextIndexProviderTest
                 {
                     this.nodeReference = reference;
                     assertFalse( "score should not be NaN", Float.isNaN( score ) );
-                    assertThat( "score must be positive", score, greaterThan( 0.0f ) );
+                    assertThat( score ).as( "score must be positive" ).isGreaterThan( 0.0f );
                     acceptedEntities.add( "reference = " + reference + ", score = " + score + ", " + Arrays.toString( values ) );
                     return true;
                 }
@@ -463,11 +458,11 @@ public class FulltextIndexProviderTest
             int counter = 0;
             while ( cursor.next() )
             {
-                assertThat( cursor.nodeReference(), is( nodeId ) );
+                assertThat( cursor.nodeReference() ).isEqualTo( nodeId );
                 counter++;
             }
-            assertThat( counter, is( 1 ) );
-            assertThat( acceptedEntities.size(), is( 1 ) );
+            assertThat( counter ).isEqualTo( 1 );
+            assertThat( acceptedEntities.size() ).isEqualTo( 1 );
             acceptedEntities.clear();
         }
     }
@@ -482,7 +477,7 @@ public class FulltextIndexProviderTest
             IndexPrototype prototype = IndexPrototype.forSchema( schema ).withIndexType( FULLTEXT ).withName( NAME );
             SchemaWrite schemaWrite = transaction.schemaWrite();
             var e = assertThrows( IllegalArgumentException.class, () -> schemaWrite.indexCreate( prototype ) );
-            assertThat( e.getMessage(), containsString( "schema is not a full-text index schema" ) );
+            assertThat( e.getMessage() ).contains( "schema is not a full-text index schema" );
             transaction.success();
         }
     }
@@ -543,10 +538,10 @@ public class FulltextIndexProviderTest
             IndexDefinition index = tx.schema().getIndexByName( NAME );
 
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.FAILED ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.FAILED );
 
             String indexFailure = tx.schema().getIndexFailure( index );
-            assertThat( indexFailure, containsString( "bla-bla-lyzer" ) );
+            assertThat( indexFailure ).contains( "bla-bla-lyzer" );
         }
 
         // Verify that the failed index can be dropped.
@@ -583,7 +578,7 @@ public class FulltextIndexProviderTest
 
             // Validation must initially prevent this index from being created.
             var e = assertThrows( RuntimeException.class, creator::create );
-            assertThat( e.getMessage(), containsString( "boom" ) );
+            assertThat( e.getMessage() ).contains( "boom" );
 
             // Create the index anyway.
             BrokenAnalyzerProvider.shouldThrow = false;
@@ -596,9 +591,9 @@ public class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             var e = assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS ) );
-            assertThat( e.getMessage(), containsString( "FAILED" ) );
+            assertThat( e.getMessage() ).contains( "FAILED" );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
-            assertThat( tx.schema().getIndexState( index ), is( Schema.IndexState.FAILED ) );
+            assertThat( tx.schema().getIndexState( index ) ).isEqualTo( Schema.IndexState.FAILED );
             index.drop();
             tx.commit();
         }
@@ -621,14 +616,14 @@ public class FulltextIndexProviderTest
             tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
         }
         db.restartDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
         }
     }
 
@@ -648,7 +643,7 @@ public class FulltextIndexProviderTest
 
             // Validation must initially prevent this index from being created.
             var e = assertThrows( RuntimeException.class, creator::create );
-            assertThat( e.getMessage(), containsString( "null" ) );
+            assertThat( e.getMessage() ).contains( "null" );
 
             // Create the index anyway.
             BrokenAnalyzerProvider.shouldReturnNull = false;
@@ -661,9 +656,9 @@ public class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             var e = assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS ) );
-            assertThat( e.getMessage(), containsString( "FAILED" ) );
+            assertThat( e.getMessage() ).contains( "FAILED" );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
-            assertThat( tx.schema().getIndexState( index ), is( Schema.IndexState.FAILED ) );
+            assertThat( tx.schema().getIndexState( index ) ).isEqualTo( Schema.IndexState.FAILED );
             index.drop();
             tx.commit();
         }
@@ -686,14 +681,14 @@ public class FulltextIndexProviderTest
             tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
         }
         db.restartDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
         }
     }
 
@@ -720,7 +715,7 @@ public class FulltextIndexProviderTest
             tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
         }
 
         BrokenAnalyzerProvider.shouldThrow = true;
@@ -729,9 +724,9 @@ public class FulltextIndexProviderTest
         {
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.FAILED ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.FAILED );
             String indexFailure = tx.schema().getIndexFailure( index );
-            assertThat( indexFailure, containsString( "boom" ) );
+            assertThat( indexFailure ).contains( "boom" );
             index.drop();
             tx.commit();
         }
@@ -765,7 +760,7 @@ public class FulltextIndexProviderTest
             tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.ONLINE ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
         }
 
         BrokenAnalyzerProvider.shouldReturnNull = true;
@@ -774,9 +769,9 @@ public class FulltextIndexProviderTest
         {
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
-            assertThat( indexState, is( Schema.IndexState.FAILED ) );
+            assertThat( indexState ).isEqualTo( Schema.IndexState.FAILED );
             String indexFailure = tx.schema().getIndexFailure( index );
-            assertThat( indexFailure, containsString( "null" ) );
+            assertThat( indexFailure ).contains( "null" );
             index.drop();
             tx.commit();
         }
