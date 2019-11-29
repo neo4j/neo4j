@@ -29,9 +29,7 @@ import java.util.ArrayList;
 
 import org.neo4j.logging.Log;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class Slf4jLogProviderTest
 {
@@ -86,11 +84,11 @@ class Slf4jLogProviderTest
     private void assertLogOccurred( Level level, String message )
     {
         ArrayList<LoggingEvent> events = getLoggingEvents();
-        assertThat( events, hasSize( 1 ) );
+        assertThat( events ).hasSize( 1 );
         LoggingEvent event = events.get( 0 );
-        assertThat( event.getLoggerName(), is( getClass().getName() ) );
-        assertThat( event.getLevel(), is( level ) );
-        assertThat( event.getMessage(), is( message ) );
+        assertThat( event.getLoggerName() ).isEqualTo( getClass().getName() );
+        assertThat( event.getLevel() ).isEqualTo( level );
+        assertThat( event.getMessage() ).isEqualTo( message );
     }
 
     private static ArrayList<LoggingEvent> getLoggingEvents()
