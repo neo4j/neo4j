@@ -20,6 +20,7 @@
 package org.neo4j.bolt;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,7 +29,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
@@ -44,7 +44,7 @@ import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.MapUtil;
@@ -59,9 +59,13 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.Stopwatch;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -75,19 +79,20 @@ import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.procedure.Mode.READ;
-import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class ShutdownSequenceIT
 {
     private static final String PREFIX = RandomStringUtils.randomAlphabetic( 1000 );
+    private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofSeconds( 10 );
 
-    private AssertableLogProvider internalLogProvider = new AssertableLogProvider();
-    private AssertableLogProvider userLogProvider = new AssertableLogProvider();
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
-    private TransportTestUtil util = new TransportTestUtil();
+    private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
+    private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
+    private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
+    private Semaphore procedureLatch;
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fsRule ).around( server );
@@ -99,13 +104,15 @@ public class ShutdownSequenceIT
     public void setup() throws Exception
     {
         address = server.lookupDefaultConnector();
+        procedureLatch = new Semaphore( 0 );
 
         var procedures = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        procedures.registerComponent( Semaphore.class, context -> procedureLatch, true );
         procedures.registerProcedure( TestProcedures.class );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         userLogProvider.print( System.out );
         internalLogProvider.print( System.out );
@@ -116,16 +123,21 @@ public class ShutdownSequenceIT
     {
         var connection = connectAndAuthenticate();
 
-        // This calls a procedure that creates 1000 nodes with 50ms pauses between each node
         // Ask for streaming to start
-        connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.nodes(1000, 50)" ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.nodes()" ) );
+
+        // Wait for the procedure to get stuck
+        if ( !procedureLatch.tryAcquire( 1, 1, MINUTES ) )
+        {
+            fail( "Unable to acquire semaphore in a reasonable duration" );
+        }
 
         // Shutdown the server
         server.getManagementService().shutdown();
 
-        // Expect the connection to be delivered a FAILURE message, we don't place a defined status & message expectation
-        // for the failure as it could be different
+        // Expect the connection to have the following interactions
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgRecord( eqRecord( equalTo( stringValue( "0" ) ) ) ) ) );
         assertThat( connection, util.eventuallyReceives( msgFailure() ) );
         assertThat( connection, eventuallyDisconnects() );
         internalLogProvider.assertAtLeastOnce( inLog( ExecutorBoltScheduler.class ).debug( "Thread pool shut down" ) );
@@ -191,7 +203,7 @@ public class ShutdownSequenceIT
         assertThat( connection, eventuallyDisconnects() );
         internalLogProvider.assertAtLeastOnce( inLog( ExecutorBoltScheduler.class ).warn(
                 "Waited %s for the thread pool to shutdown cleanly, but timed out waiting for existing work to finish cleanly",
-                Duration.ofSeconds( 10 ) ) );
+                THREAD_POOL_SHUTDOWN_WAIT_TIME ) );
 
         // Also the streaming thread should have been failed
         try
@@ -226,7 +238,7 @@ public class ShutdownSequenceIT
         return factory;
     }
 
-    private Consumer<Map<Setting<?>,Object>> getSettingsFunction()
+    private static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings ->
         {
@@ -234,7 +246,7 @@ public class ShutdownSequenceIT
             settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
             settings.put( BoltConnector.thread_pool_min_size, 0 );
             settings.put( BoltConnector.thread_pool_max_size, 2 );
-            settings.put( BoltConnector.thread_pool_shutdown_wait_time, Duration.ofSeconds( 10 ) );
+            settings.put( BoltConnector.thread_pool_shutdown_wait_time, THREAD_POOL_SHUTDOWN_WAIT_TIME );
         };
     }
 
@@ -242,6 +254,9 @@ public class ShutdownSequenceIT
     {
         @Context
         public GraphDatabaseService db;
+
+        @Context
+        public Semaphore procedureLatch;
 
         @Procedure( name = "test.stream.strings", mode = READ )
         public Stream<Output> streamStrings( @Name( value = "limit", defaultValue = "0" ) long limit,
@@ -273,39 +288,39 @@ public class ShutdownSequenceIT
             return stream.map( i -> new Output( String.format( "%s-%d", PREFIX, i ) ) );
         }
 
-        @Procedure( name = "test.stream.nodes", mode = WRITE )
-        public Stream<Output> streamNodes( @Name( value = "limit", defaultValue = "5000" ) long limit,
-                @Name( value = "delay", defaultValue = "50" ) long delay )
+        @Procedure( name = "test.stream.nodes", mode = READ )
+        public Stream<Output> streamNodes()
         {
-            AtomicLong counter = new AtomicLong( 0 );
-            Output[] props = new Output[(int) limit];
+            final var value = new MutableInt( 0 );
 
-            try ( var txc = db.beginTx() )
+            return Stream.generate( () ->
             {
-                for ( int i = 0; i < limit; i++ )
-                {
-                    var id = String.format( "%s:%d", PREFIX, counter.getAndAdd( 2 ) );
-                    var node = txc.createNode( Label.label( "StreamedNode" ) );
-                    node.setProperty( "id", id );
-                    props[i] = new Output( id );
+                int i = value.getAndIncrement();
 
-                    if ( delay > 0 )
+                if ( i == 1 )
+                {
+                    try ( var tx = db.beginTx() )
                     {
-                        try
+                        procedureLatch.release();
+                        Stopwatch stopwatch = Clocks.nanoClock().startStopWatch();
+                        while ( !stopwatch.hasTimedOut( 1, MINUTES ) )
                         {
-                            Thread.sleep( delay );
+                            try
+                            {
+                                tx.getNodeById( 0 );
+                            }
+                            catch ( NotFoundException ignore )
+                            {
+                                // We don't expect there to be any
+                            }
+                            parkNanos( MILLISECONDS.toNanos( 10 ) );
                         }
-                        catch ( InterruptedException exc )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
+                        fail( "Transaction was never terminated" );
                     }
                 }
 
-                txc.commit();
-            }
-
-            return Arrays.stream( props );
+                return new Output( String.valueOf( i ) );
+            } );
         }
 
         public static class Output
