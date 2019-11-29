@@ -33,8 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,8 +72,8 @@ class NodeTest
                 transaction.commit();
             }
         } );
-        assertThat( exception.getMessage(), containsString( "Cannot delete node<" + nodeId + ">, because it still has relationships. " +
-                "To delete this node, you must first delete its relationships." ) );
+        assertThat( exception.getMessage() ).contains(
+                "Cannot delete node<" + nodeId + ">, because it still has relationships. " + "To delete this node, you must first delete its relationships." );
     }
 
     @Test

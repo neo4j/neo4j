@@ -48,8 +48,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -204,8 +203,8 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         for ( int i = 0; i < length; i++ )
         {
             int compare = Values.COMPARATOR.compare( o1[i], o2[i] );
-            assertThat( "expected less than or equal to but was " + Arrays.toString( o1 ) + " and " + Arrays.toString( o2 ),
-                    compare, lessThanOrEqualTo( 0 ) );
+            assertThat( compare ).as( "expected less than or equal to but was " + Arrays.toString( o1 ) + " and " + Arrays.toString( o2 ) ).isLessThanOrEqualTo(
+                    0 );
             if ( compare != 0 )
             {
                 return;

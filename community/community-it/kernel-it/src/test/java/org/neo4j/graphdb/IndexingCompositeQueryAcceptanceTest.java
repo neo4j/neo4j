@@ -41,8 +41,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
 @RunWith( Parameterized.class )
@@ -128,7 +127,7 @@ public class IndexingCompositeQueryAcceptanceTest
         }
 
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     @Test
@@ -153,7 +152,7 @@ public class IndexingCompositeQueryAcceptanceTest
         }
 
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     @Test
@@ -172,7 +171,7 @@ public class IndexingCompositeQueryAcceptanceTest
             collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
         }
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     @Test
@@ -197,7 +196,7 @@ public class IndexingCompositeQueryAcceptanceTest
             collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
         }
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     @Test
@@ -230,7 +229,7 @@ public class IndexingCompositeQueryAcceptanceTest
             collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
         }
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     private MutableLongSet createNodes( GraphDatabaseService db, Label label, Object[]... propertyValueTuples )

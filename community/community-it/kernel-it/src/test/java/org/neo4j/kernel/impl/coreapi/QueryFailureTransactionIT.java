@@ -38,8 +38,7 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
@@ -110,7 +109,7 @@ class QueryFailureTransactionIT
     private void checkFailToCommit( Transaction transaction )
     {
         var e = assertThrows( TransactionFailureException.class, transaction::commit );
-        assertThat( getRootCause( e ), instanceOf( NotInTransactionException.class ) );
+        assertThat( getRootCause( e ) ).isInstanceOf( NotInTransactionException.class );
     }
 
     private static class CustomProcedureExtension extends ExtensionFactory<CustomProcedureExtension.Dependencies>

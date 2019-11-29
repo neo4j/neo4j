@@ -37,9 +37,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -61,8 +59,8 @@ class GraphDatabaseInternalLogIT
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
-        assertThat( internalLog.isFile(), is( true ) );
-        assertThat( internalLog.length(), greaterThan( 0L ) );
+        assertThat( internalLog.isFile() ).isEqualTo( true );
+        assertThat( internalLog.length() ).isGreaterThan( 0L );
 
         assertEquals( 1, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is ready." ) );
         assertEquals( 2, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is unavailable." ) );
@@ -85,8 +83,8 @@ class GraphDatabaseInternalLogIT
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
-        assertThat( internalLog.isFile(), is( true ) );
-        assertThat( internalLog.length(), greaterThan( 0L ) );
+        assertThat( internalLog.isFile() ).isEqualTo( true );
+        assertThat( internalLog.length() ).isGreaterThan( 0L );
 
         assertEquals( 0, countOccurrences( internalLog, "A debug entry" ) );
     }
@@ -111,8 +109,8 @@ class GraphDatabaseInternalLogIT
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
-        assertThat( internalLog.isFile(), is( true ) );
-        assertThat( internalLog.length(), greaterThan( 0L ) );
+        assertThat( internalLog.isFile() ).isEqualTo( true );
+        assertThat( internalLog.length() ).isGreaterThan( 0L );
 
         assertEquals( 1, countOccurrences( internalLog, "A debug entry" ) );
         assertEquals( 0, countOccurrences( internalLog, "A GDS debug entry" ) );

@@ -59,8 +59,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -106,8 +105,7 @@ class IndexCRUDIT
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
-            assertThat( writer.updatesCommitted, equalTo( asSet(
-                    IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) ) );
+            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) );
             tx.commit();
         }
         // We get two updates because we both add a label and a property to be indexed
@@ -130,7 +128,7 @@ class IndexCRUDIT
         Node node = createNode( map( indexProperty, value, otherProperty, otherValue ) );
 
         // THEN
-        assertThat( writer.updatesCommitted.size(), equalTo( 0 ) );
+        assertThat( writer.updatesCommitted.size() ).isEqualTo( 0 );
 
         // AND WHEN
         try ( Transaction tx = db.beginTx() )
@@ -148,8 +146,7 @@ class IndexCRUDIT
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
-            assertThat( writer.updatesCommitted, equalTo( asSet(
-                    IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) ) );
+            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) );
             tx.commit();
         }
     }

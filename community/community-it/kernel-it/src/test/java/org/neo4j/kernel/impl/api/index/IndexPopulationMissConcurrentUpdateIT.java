@@ -59,9 +59,8 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -138,12 +137,12 @@ public class IndexPopulationMissConcurrentUpdateIT
             while ( node.getId() < INITIAL_CREATION_NODE_ID_THRESHOLD );
             tx.commit();
         }
-        assertThat( "At least one node below the scan barrier threshold must have been created, otherwise test assumptions are invalid or outdated",
-                count( filter( n -> n.getId() <= SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ), greaterThan( 0L ) );
-        assertThat( "At least two nodes above the scan barrier threshold and below initial creation threshold must have been created, " +
-                        "otherwise test assumptions are invalid or outdated",
-                // There has to be at least 2 nodes: one which will trigger the barrier and one which will be added to the index afterwards
-                count( filter( n -> n.getId() > SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ), greaterThan( 1L ) );
+        assertThat( count( filter( n -> n.getId() <= SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ) ).as(
+                "At least one node below the scan barrier threshold must have been created, otherwise test assumptions are invalid or outdated" ).isGreaterThan(
+                0L );
+        assertThat( count( filter( n -> n.getId() > SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ) ).as(
+                "At least two nodes above the scan barrier threshold and below initial creation threshold must have been created, " +
+                        "otherwise test assumptions are invalid or outdated" ).isGreaterThan( 1L );
         db.getDependencyResolver().resolveDependency( IdController.class ).maintenance();
 
         // when

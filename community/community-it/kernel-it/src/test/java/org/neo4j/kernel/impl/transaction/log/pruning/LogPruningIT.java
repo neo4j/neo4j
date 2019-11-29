@@ -38,8 +38,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
@@ -70,7 +69,7 @@ class LogPruningIT
         checkPointer.forceCheckPoint( triggerInfo );
 
         // Make sure file is still there since we have disable pruning
-        assertThat( countTransactionLogs( logFiles ), is( 3 ) );
+        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 3 );
 
         // Change pruning to true
         config.setDynamic( keep_logical_logs, FALSE, "LogPruningIT" );
@@ -79,7 +78,7 @@ class LogPruningIT
         checkPointer.forceCheckPoint( triggerInfo );
 
         // Make sure file is removed
-        assertThat( countTransactionLogs( logFiles ), is( 2 ) );
+        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 2 );
     }
 
     private void writeTransactionsAndRotateTwice() throws IOException

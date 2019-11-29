@@ -27,8 +27,7 @@ import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoing;
@@ -53,7 +52,7 @@ class NodesTest
         int count = countOutgoing( new StubNodeCursor( true ), cursors );
 
         // Then
-        assertThat( count, equalTo( 24 ) );
+        assertThat( count ).isEqualTo( 24 );
     }
 
     @Test
@@ -74,7 +73,7 @@ class NodesTest
         int count = countOutgoing( nodeCursor, cursors );
 
         // Then
-        assertThat( count, equalTo( 3 ) );
+        assertThat( count ).isEqualTo( 3 );
     }
 
     @Test
@@ -94,7 +93,7 @@ class NodesTest
         int count = countIncoming( new StubNodeCursor( true ), cursors );
 
         // Then
-        assertThat( count, equalTo( 17 ) );
+        assertThat( count ).isEqualTo( 17 );
     }
 
     @Test
@@ -116,7 +115,7 @@ class NodesTest
         int count = countIncoming( nodeCursor, cursors );
 
         // Then
-        assertThat( count, equalTo( 2 ) );
+        assertThat( count ).isEqualTo( 2 );
     }
 
     @Test
@@ -136,7 +135,7 @@ class NodesTest
         int count = countAll( new StubNodeCursor( true ), cursors );
 
         // Then
-        assertThat( count, equalTo( 29 ) );
+        assertThat( count ).isEqualTo( 29 );
     }
 
     @Test
@@ -158,7 +157,7 @@ class NodesTest
         int count = countAll( nodeCursor, cursors );
 
         // Then
-        assertThat( count, equalTo( 4 ) );
+        assertThat( count ).isEqualTo( 4 );
     }
 
     @Test
@@ -172,8 +171,8 @@ class NodesTest
         StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor, groupCursor );
 
         // Then
-        assertThat( countOutgoing( new StubNodeCursor( true ), cursors, 1 ), equalTo( 6 ) );
-        assertThat( countOutgoing( new StubNodeCursor( true ), cursors, 2 ), equalTo( 4 ) );
+        assertThat( countOutgoing( new StubNodeCursor( true ), cursors, 1 ) ).isEqualTo( 6 );
+        assertThat( countOutgoing( new StubNodeCursor( true ), cursors, 2 ) ).isEqualTo( 4 );
     }
 
     @Test
@@ -192,10 +191,10 @@ class NodesTest
         // Then
         StubNodeCursor nodeCursor = new StubNodeCursor( false ).withNode( 11 );
         nodeCursor.next();
-        assertThat( countOutgoing( nodeCursor, cursors, 1 ), equalTo( 2 ) );
+        assertThat( countOutgoing( nodeCursor, cursors, 1 ) ).isEqualTo( 2 );
         nodeCursor = new StubNodeCursor( false ).withNode( 11 );
         nodeCursor.next();
-        assertThat( countOutgoing( nodeCursor, cursors, 2 ), equalTo( 1 ) );
+        assertThat( countOutgoing( nodeCursor, cursors, 2 ) ).isEqualTo( 1 );
     }
 
     @Test
@@ -209,8 +208,8 @@ class NodesTest
         StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor, groupCursor );
 
         // Then
-        assertThat( countIncoming( new StubNodeCursor( true ), cursors, 1 ), equalTo( 6 ) );
-        assertThat( countIncoming( new StubNodeCursor( true ), cursors, 2 ), equalTo( 4 ) );
+        assertThat( countIncoming( new StubNodeCursor( true ), cursors, 1 ) ).isEqualTo( 6 );
+        assertThat( countIncoming( new StubNodeCursor( true ), cursors, 2 ) ).isEqualTo( 4 );
     }
     @Test
     void shouldCountIncomingWithTypeSparse()
@@ -228,10 +227,10 @@ class NodesTest
         // Then
         StubNodeCursor nodeCursor = new StubNodeCursor( false ).withNode( 11 );
         nodeCursor.next();
-        assertThat( countIncoming( nodeCursor, cursors, 1 ), equalTo( 1 ) );
+        assertThat( countIncoming( nodeCursor, cursors, 1 ) ).isEqualTo( 1 );
         nodeCursor = new StubNodeCursor( false ).withNode( 11 );
         nodeCursor.next();
-        assertThat( countIncoming( nodeCursor, cursors, 2 ), equalTo( 1 ) );
+        assertThat( countIncoming( nodeCursor, cursors, 2 ) ).isEqualTo( 1 );
     }
 
     @Test
@@ -245,8 +244,8 @@ class NodesTest
         StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor, groupCursor );
 
         // Then
-        assertThat( countAll( new StubNodeCursor( true ), cursors, 1 ), equalTo( 7 ) );
-        assertThat( countAll( new StubNodeCursor( true ), cursors, 2 ), equalTo( 5 ) );
+        assertThat( countAll( new StubNodeCursor( true ), cursors, 1 ) ).isEqualTo( 7 );
+        assertThat( countAll( new StubNodeCursor( true ), cursors, 2 ) ).isEqualTo( 5 );
     }
 
     @Test
@@ -265,8 +264,8 @@ class NodesTest
         // Then
         StubNodeCursor nodeCursor = new StubNodeCursor( false ).withNode( 11 );
         nodeCursor.next();
-        assertThat( countAll( nodeCursor, cursors, 1 ), equalTo( 3 ) );
-        assertThat( countAll( nodeCursor, cursors, 2 ), equalTo( 1) );
+        assertThat( countAll( nodeCursor, cursors, 1 ) ).isEqualTo( 3 );
+        assertThat( countAll( nodeCursor, cursors, 2 ) ).isEqualTo( 1 );
     }
 
     private StubGroupCursor.GroupData group()

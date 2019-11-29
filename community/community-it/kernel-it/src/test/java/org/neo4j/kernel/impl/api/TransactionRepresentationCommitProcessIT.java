@@ -41,8 +41,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
@@ -110,7 +109,7 @@ class TransactionRepresentationCommitProcessIT
         workers.awaitAndThrowOnError();
 
         GBPTreeCountsStore counts = getDependency( GBPTreeCountsStore.class );
-        assertThat( "Count store should be rotated once at least", counts.txId(), greaterThan( 0L ) );
+        assertThat( counts.txId() ).as( "Count store should be rotated once at least" ).isGreaterThan( 0L );
 
         long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
         TransactionIdStore txIdStore = getDependency( TransactionIdStore.class );

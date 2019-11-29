@@ -32,9 +32,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -223,7 +221,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ) ).isEqualTo( NO_VALUE );
             tx.commit();
         }
 
@@ -241,7 +239,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ) ).isEqualTo( NO_VALUE );
             tx.rollback();
         }
 
@@ -279,8 +277,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ),
-                    equalTo( intValue( 42 ) ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ) ).isEqualTo( intValue( 42 ) );
             tx.commit();
         }
 
@@ -298,8 +295,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
-                    equalTo( intValue( 42 ) ) );
+            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ) ).isEqualTo( intValue( 42 ) );
             tx.commit();
         }
 
@@ -317,7 +313,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ), equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ) ).isEqualTo( NO_VALUE );
             tx.commit();
         }
 
@@ -335,10 +331,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
-                    equalTo( intValue( 42 ) ) );
-            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
-                    equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ) ).isEqualTo( intValue( 42 ) );
+            assertThat( tx.dataWrite().nodeRemoveProperty( node, token ) ).isEqualTo( NO_VALUE );
             tx.commit();
         }
 
@@ -356,9 +350,9 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
-            assertThat( tx.dataWrite().nodeSetProperty( node, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ) ).isEqualTo( NO_VALUE );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "world" ) ) ).isEqualTo( stringValue( "hello" ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, intValue( 1337 ) ) ).isEqualTo( stringValue( "world" ) );
             tx.commit();
         }
 
@@ -398,9 +392,9 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         KernelTransaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-        assertThat( tx.dataWrite().nodeSetProperty( nodeId, property, theValue ), equalTo( theValue ) );
+        assertThat( tx.dataWrite().nodeSetProperty( nodeId, property, theValue ) ).isEqualTo( theValue );
 
-        assertThat( tx.commit(), equalTo( KernelTransaction.READ_ONLY ) );
+        assertThat( tx.commit() ).isEqualTo( KernelTransaction.READ_ONLY );
     }
 
     @Test
@@ -415,7 +409,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( KernelTransaction tx = beginTransaction() )
         {
             prop = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().nodeSetProperty( node, prop, largeByteArray ), equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, prop, largeByteArray ) ).isEqualTo( NO_VALUE );
             tx.commit();
         }
 
@@ -429,7 +423,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             nodeCursor.properties( propertyCursor );
             assertTrue( propertyCursor.next() );
             assertEquals( propertyCursor.propertyKey(), prop );
-            assertThat( propertyCursor.propertyValue(), equalTo( largeByteArray ) );
+            assertThat( propertyCursor.propertyValue() ).isEqualTo( largeByteArray );
         }
     }
 
@@ -482,7 +476,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat( tx.getNodeById( nodeId ).getLabels(), equalTo( Iterables.empty() ) );
+            assertThat( tx.getNodeById( nodeId ).getLabels() ).isEqualTo( Iterables.empty() );
         }
     }
 
@@ -490,7 +484,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat( tx.getNodeById( nodeId ).getLabels(), containsInAnyOrder( label( label ) ) );
+            assertThat( tx.getNodeById( nodeId ).getLabels() ).contains( label( label ) );
         }
     }
 
@@ -506,7 +500,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat( tx.getNodeById( node ).getProperty( propertyKey ), equalTo( value ) );
+            assertThat( tx.getNodeById( node ).getProperty( propertyKey ) ).isEqualTo( value );
         }
     }
 }

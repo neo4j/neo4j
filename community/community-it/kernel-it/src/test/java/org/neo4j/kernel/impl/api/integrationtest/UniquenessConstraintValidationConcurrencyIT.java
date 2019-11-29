@@ -32,11 +32,11 @@ import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.OtherThreadRule;
 
+import static java.lang.Thread.State.WAITING;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.rule.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationConcurrencyIT
 {
@@ -78,7 +78,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread, isWaiting() );
+                assertThat( otherThread.get().state() ).isSameAs( WAITING );
             }
         } );
 
@@ -102,7 +102,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread, isWaiting() );
+                assertThat( otherThread.get().state() ).isSameAs( WAITING );
             }
         } );
 
@@ -110,8 +110,7 @@ public class UniquenessConstraintValidationConcurrencyIT
         assertTrue( "Node creation should succeed", created.get() );
     }
 
-    private Function<Transaction, Void> createUniquenessConstraint(
-            final String label, final String propertyKey )
+    private Function<Transaction, Void> createUniquenessConstraint( final String label, final String propertyKey )
     {
         return transaction ->
         {

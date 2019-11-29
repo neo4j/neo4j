@@ -49,10 +49,9 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -85,7 +84,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // WHEN (this will attempt to call close)
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.markAsFailed( failure ), false );
         // THEN
-        assertThat( indexProvider.getPopulationFailure( descriptor ), containsString( failure ) );
+        assertThat( indexProvider.getPopulationFailure( descriptor ) ).contains( failure );
     }
 
     @Test

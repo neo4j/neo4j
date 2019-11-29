@@ -39,9 +39,7 @@ import org.neo4j.token.TokenHolders;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.RandomStringUtils.random;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -229,12 +227,12 @@ class TruncateDatabaseIT
         LogFiles logFiles = getLogFiles();
         long lastEntryId = logFiles.getLogFileInformation().getLastEntryId();
         // at least 10 transactions made it to the logs
-        assertThat( lastEntryId, greaterThanOrEqualTo( 10L ) );
+        assertThat( lastEntryId ).isGreaterThanOrEqualTo( 10L );
 
         truncator.truncate( database );
 
         long truncatedLastEntryId = getLogFiles().getLogFileInformation().getLastEntryId();
-        assertThat( truncatedLastEntryId, equalTo( 1L ) );
+        assertThat( truncatedLastEntryId ).isEqualTo( 1L );
     }
 
     @ParameterizedTest

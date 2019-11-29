@@ -30,9 +30,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsIterableContaining.hasItems;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
@@ -52,8 +50,7 @@ class PropertyIT extends KernelIntegrationTest
         Iterator<NamedToken> propIdsBeforeCommit = transaction.tokenRead().propertyKeyGetAllTokens();
 
         // then
-        assertThat( asCollection( propIdsBeforeCommit ),
-                hasItems( new NamedToken( "prop1", prop1 ), new NamedToken( "prop2", prop2 ) ) );
+        assertThat( asCollection( propIdsBeforeCommit ) ).contains( new NamedToken( "prop1", prop1 ), new NamedToken( "prop2", prop2 ) );
 
         // when
         commit();
@@ -61,8 +58,7 @@ class PropertyIT extends KernelIntegrationTest
         Iterator<NamedToken> propIdsAfterCommit = transaction.tokenRead().propertyKeyGetAllTokens();
 
         // then
-        assertThat( asCollection( propIdsAfterCommit ),
-                hasItems( new NamedToken( "prop1", prop1 ), new NamedToken( "prop2", prop2 ) ) );
+        assertThat( asCollection( propIdsAfterCommit ) ).contains( new NamedToken( "prop1", prop1 ), new NamedToken( "prop2", prop2 ) );
         commit();
     }
 
@@ -82,7 +78,7 @@ class PropertyIT extends KernelIntegrationTest
 
         // When
         var e = assertThrows( EntityNotFoundException.class, () -> transaction.dataWrite().relationshipRemoveProperty( rel, prop1 ) );
-        assertThat( e.getMessage(), equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
+        assertThat( e.getMessage() ).isEqualTo( "Unable to load RELATIONSHIP with id " + rel + "." );
         commit();
     }
 
@@ -112,7 +108,7 @@ class PropertyIT extends KernelIntegrationTest
 
         // then
         transaction = newTransaction();
-        assertThat( relationshipGetProperty(transaction, rel, prop ), equalTo( Values.NO_VALUE ) );
+        assertThat( relationshipGetProperty( transaction, rel, prop ) ).isEqualTo( Values.NO_VALUE );
         commit();
     }
 }

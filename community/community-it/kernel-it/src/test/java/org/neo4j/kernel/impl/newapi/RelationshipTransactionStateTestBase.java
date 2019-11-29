@@ -41,8 +41,7 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -427,7 +426,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "hello" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ) ).isEqualTo( "hello" );
         }
     }
 
@@ -491,8 +490,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
             Relationship relationship = transaction.getRelationshipById( relationshipId );
-            assertThat( relationship.getProperty( propKey1 ), equalTo( "hello" ) );
-            assertThat( relationship.getProperty( propKey2 ), equalTo( "world" ) );
+            assertThat( relationship.getProperty( propKey1 ) ).isEqualTo( "hello" );
+            assertThat( relationship.getProperty( propKey2 ) ).isEqualTo( "world" );
         }
     }
 
@@ -540,7 +539,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ) ).isEqualTo( "world" );
         }
     }
 
@@ -632,7 +631,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ) ).isEqualTo( "world" );
         }
     }
 
@@ -1393,7 +1392,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 relationships.properties( properties );
 
                 assertTrue( properties.next() );
-                assertThat( properties.propertyType(), equalTo( ValueGroup.TEXT ) );
+                assertThat( properties.propertyType() ).isEqualTo( ValueGroup.TEXT );
             }
         }
     }

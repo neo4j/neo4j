@@ -65,9 +65,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -222,7 +220,7 @@ class NeoStoreIndexStoreViewTest
         storeScan.run();
 
         // then
-        assertThat( "allocated locks: " + lockMocks.keySet(), lockMocks.size(), greaterThanOrEqualTo( 2 ) );
+        assertThat( lockMocks.size() ).as( "allocated locks: " + lockMocks.keySet() ).isGreaterThanOrEqualTo( 2 );
         Lock lock0 = lockMocks.get( 0L );
         Lock lock1 = lockMocks.get( 1L );
         assertNotNull( lock0, "Lock[node=0] never acquired" );
@@ -246,7 +244,7 @@ class NeoStoreIndexStoreViewTest
         storeScan.run();
 
         // then
-        assertThat( "allocated locks: " + lockMocks.keySet(), lockMocks.size(), greaterThanOrEqualTo( 2 ) );
+        assertThat( lockMocks.size() ).as( "allocated locks: " + lockMocks.keySet() ).isGreaterThanOrEqualTo( 2 );
         Lock lock0 = lockMocks.get( 0L );
         Lock lock1 = lockMocks.get( 1L );
         assertNotNull( lock0, "Lock[relationship=0] never acquired" );
@@ -291,11 +289,7 @@ class NeoStoreIndexStoreViewTest
         LabelSchemaDescriptor index4 = SchemaDescriptor.forLabel( 1, 1 );
         List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
 
-        assertThat(
-                Iterables.map(
-                        IndexEntryUpdate::indexKey,
-                        propertyUpdates.forIndexKeys( indexes ) ),
-                containsInAnyOrder( index1, index2, index3 ) );
+        assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ) ).contains( index1, index2, index3 );
     }
 
     @Test
@@ -324,7 +318,7 @@ class NeoStoreIndexStoreViewTest
         RelationTypeSchemaDescriptor index4 = SchemaDescriptor.forRelType( 1, 3 );
         List<RelationTypeSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
 
-        assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ), containsInAnyOrder( index1, index2, index3 ) );
+        assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ) ).contains( index1, index2, index3 );
     }
 
     private EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )

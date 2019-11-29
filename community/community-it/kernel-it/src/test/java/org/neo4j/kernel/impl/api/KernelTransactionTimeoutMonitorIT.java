@@ -46,9 +46,7 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.BinaryLatch;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -151,14 +149,14 @@ public class KernelTransactionTimeoutMonitorIT
                 executor.submit( startAnotherTransaction() ).get();
             }
         } );
-        assertThat( exception.getMessage(), containsString( "The transaction has been terminated." ) );
+        assertThat( exception.getMessage() ).contains( "The transaction has been terminated." );
     }
 
     private void terminateOngoingTransaction()
     {
         Set<KernelTransactionHandle> kernelTransactionHandles =
                 database.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
-        assertThat( kernelTransactionHandles, hasSize( 1 ) );
+        assertThat( kernelTransactionHandles ).hasSize( 1 );
         for ( KernelTransactionHandle kernelTransactionHandle : kernelTransactionHandles )
         {
             kernelTransactionHandle.markForTermination( Status.Transaction.Terminated );

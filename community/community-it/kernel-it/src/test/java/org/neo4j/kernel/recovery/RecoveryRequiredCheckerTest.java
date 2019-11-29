@@ -42,8 +42,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -79,7 +78,7 @@ class RecoveryRequiredCheckerTest
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
         RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
 
-        assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
+        assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ) ).isEqualTo( false );
     }
 
     @Test
@@ -90,7 +89,7 @@ class RecoveryRequiredCheckerTest
             PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( ephemeralFs, pageCache, storageEngineFactory );
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ) ).isEqualTo( true );
         }
     }
 
@@ -103,11 +102,11 @@ class RecoveryRequiredCheckerTest
 
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( ephemeralFs, pageCache, storageEngineFactory );
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ) ).isEqualTo( true );
 
             startStopDatabase( ephemeralFs, storeDir );
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ) ).isEqualTo( false );
         }
     }
 
@@ -240,7 +239,7 @@ class RecoveryRequiredCheckerTest
 
             RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( ephemeralFs, pageCache, storageEngineFactory, config );
 
-            assertThat( recoveryChecker.isRecoveryRequiredAt( DatabaseLayout.of( config ) ), is( true ) );
+            assertThat( recoveryChecker.isRecoveryRequiredAt( DatabaseLayout.of( config ) ) ).isEqualTo( true );
 
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                         .setFileSystem( ephemeralFs )
@@ -248,7 +247,7 @@ class RecoveryRequiredCheckerTest
                     .build();
             managementService.shutdown();
 
-            assertThat( recoveryChecker.isRecoveryRequiredAt( databaseLayout ), is( false ) );
+            assertThat( recoveryChecker.isRecoveryRequiredAt( databaseLayout ) ).isEqualTo( false );
         }
     }
 

@@ -34,8 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 
@@ -85,7 +84,7 @@ class NodeManagerTest
             thread.join();
 
             // THEN the new node is picked up by the iterator
-            assertThat( addToCollection( allNodes, new ArrayList<>() ).size(), is( 2 ) );
+            assertThat( addToCollection( allNodes, new ArrayList<>() ).size() ).isEqualTo( 2 );
         }
     }
 
@@ -112,7 +111,7 @@ class NodeManagerTest
         thread.join();
 
         // THEN
-        assertThat( addToCollection( allRelationships, new ArrayList<>() ).size(), is(3) );
+        assertThat( addToCollection( allRelationships, new ArrayList<>() ).size() ).isEqualTo( 3 );
         tx.commit();
     }
 

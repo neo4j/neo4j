@@ -37,8 +37,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -95,7 +94,7 @@ class TransactionLogsInSeparateLocationIT
         assertTrue( txDirectoryLogs.versionExists( 0 ) );
         try ( PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel = txDirectoryLogs.openForVersion( 0 ) )
         {
-            assertThat( physicalLogVersionedStoreChannel.size(), greaterThan( 0L ) );
+            assertThat( physicalLogVersionedStoreChannel.size() ).isGreaterThan( 0L );
         }
     }
 

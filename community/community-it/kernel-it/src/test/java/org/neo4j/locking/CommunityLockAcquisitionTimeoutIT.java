@@ -47,12 +47,11 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -127,11 +126,10 @@ public class CommunityLockAcquisitionTimeoutIT
                 propertySetFuture.get();
             }
         } );
-        assertThat( e, new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
-            "The transaction has been terminated. " +
-                "Retry your operation in a new transaction, and you should see a successful result. " +
-                "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
-                "Unable to acquire lock for resource: NODE with id: 0 within 2000 millis." ) );
+        assertThat( e ).hasRootCauseInstanceOf( LockAcquisitionTimeoutException.class ).hasMessageContaining(
+                "The transaction has been terminated. " + "Retry your operation in a new transaction, and you should see a successful result. " +
+                        "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
+                        "Unable to acquire lock for resource: NODE with id: 0 within 2000 millis." );
     }
 
     @Test
@@ -165,11 +163,10 @@ public class CommunityLockAcquisitionTimeoutIT
                 propertySetFuture.get();
             }
         } );
-        assertThat( e, new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
-            "The transaction has been terminated. " +
-                "Retry your operation in a new transaction, and you should see a successful result. " +
-                "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
-                "Unable to acquire lock for resource: LABEL with id: 1 within 2000 millis." ) );
+        assertThat( e ).hasRootCauseInstanceOf( LockAcquisitionTimeoutException.class ).hasMessageContaining(
+                "The transaction has been terminated. " + "Retry your operation in a new transaction, and you should see a successful result. " +
+                        "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
+                        "Unable to acquire lock for resource: LABEL with id: 1 within 2000 millis." );
     }
 
     protected Locks getLockManager()

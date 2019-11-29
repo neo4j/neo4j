@@ -56,9 +56,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -353,7 +351,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 IndexQuery.exact( surname, "Dalton" ) );
 
             // then
-            assertThat( node.numberOfProperties(), equalTo( 2 ) );
+            assertThat( node.numberOfProperties() ).isEqualTo( 2 );
             assertFoundNodesAndNoValue( node, 1, uniqueIds );
         }
     }
@@ -374,7 +372,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "t" ) ) );
 
             // then
-            assertThat( node.numberOfProperties(), equalTo( 1 ) );
+            assertThat( node.numberOfProperties() ).isEqualTo( 1 );
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strTwo1, strTwo2, strThree1, strThree2,
                     strThree3 );
         }
@@ -396,7 +394,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringSuffix( prop, stringValue( "e" ) ) );
 
             // then
-            assertThat( node.numberOfProperties(), equalTo( 1 ) );
+            assertThat( node.numberOfProperties() ).isEqualTo( 1 );
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strOne, strThree1, strThree2, strThree3 );
         }
     }
@@ -417,7 +415,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringContains( prop, stringValue( "o" ) ) );
 
             // then
-            assertThat( node.numberOfProperties(), equalTo( 1 ) );
+            assertThat( node.numberOfProperties() ).isEqualTo( 1 );
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strOne, strTwo1, strTwo2 );
         }
     }
@@ -652,7 +650,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexScan( index, node, IndexOrder.NONE, indexProvidesAllValues() );
 
             // then
-            assertThat( node.numberOfProperties(), equalTo( 1 ) );
+            assertThat( node.numberOfProperties() ).isEqualTo( 1 );
             assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, indexProvidesAllValues() );
         }
     }
@@ -888,7 +886,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             {
                 assertTrue( node.hasValue(), "Index did not provide values" );
                 Value storedValue = getPropertyValueFromStore( nodeReference );
-                assertThat( "has correct value", node.propertyValue( 0 ), is( storedValue ) );
+                assertThat( node.propertyValue( 0 ) ).as( "has correct value" ).isEqualTo( storedValue );
             }
         }
 
@@ -998,7 +996,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
             // when
             tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, needsValues );
-            assertThat( node.numberOfProperties(), equalTo( 1 ) );
+            assertThat( node.numberOfProperties() ).isEqualTo( 1 );
             assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, needsValues );
 
             // then

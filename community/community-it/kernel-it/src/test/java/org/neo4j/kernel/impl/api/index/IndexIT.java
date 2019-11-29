@@ -61,8 +61,7 @@ import org.neo4j.logging.AssertableLogProvider;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -420,7 +419,7 @@ class IndexIT extends KernelIntegrationTest
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
             assertThrows( IllegalStateException.class, index::getRelationshipTypes );
-            assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ), label( LABEL2 ) ) );
+            assertThat( index.getLabels() ).contains( label( LABEL ), label( LABEL2 ) );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
             assertFalse( index.isCompositeIndex(), "should not be a composite index" );
@@ -446,7 +445,7 @@ class IndexIT extends KernelIntegrationTest
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
             assertEquals( LABEL, single( index.getLabels() ).name() );
-            assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ) ) );
+            assertThat( index.getLabels() ).contains( label( LABEL ) );
             assertThrows( IllegalStateException.class, index::getRelationshipTypes );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
@@ -503,7 +502,7 @@ class IndexIT extends KernelIntegrationTest
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
             assertThrows( IllegalStateException.class, index::getLabels );
-            assertThat( index.getRelationshipTypes(), containsInAnyOrder( withName( REL_TYPE ), withName( REL_TYPE2 ) ) );
+            assertThat( index.getRelationshipTypes() ).contains( withName( REL_TYPE ), withName( REL_TYPE2 ) );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
             assertTrue( index.isCompositeIndex(), "should be a composite index" );
@@ -527,7 +526,7 @@ class IndexIT extends KernelIntegrationTest
         SchemaRead schemaRead = newTransaction().schemaRead();
         IndexDescriptor index2 = Iterators.single( schemaRead.index( constraint.schema() ) );
         List<IndexDescriptor> indexes = Iterators.asList( schemaRead.indexesGetAll() );
-        assertThat( indexes, containsInAnyOrder( index1, index2 ) );
+        assertThat( indexes ).contains( index1, index2 );
         commit();
     }
 

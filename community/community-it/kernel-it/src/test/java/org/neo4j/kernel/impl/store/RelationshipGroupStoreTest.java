@@ -51,8 +51,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -323,7 +322,7 @@ class RelationshipGroupStoreTest
             nextReadIsInconsistent.set( true );
             // Now the following should not throw any RecordNotInUse exceptions
             RelationshipGroupRecord readBack = relationshipGroupStore.getRecord( 1, relationshipGroupStore.newRecord(), NORMAL );
-            assertThat( readBack.toString(), equalTo( record.toString() ) );
+            assertThat( readBack.toString() ).isEqualTo( record.toString() );
         }
     }
 

@@ -76,11 +76,10 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -350,7 +349,7 @@ class IndexPopulationJobTest
         job.run();
 
         // THEN
-        assertThat( index.getState(), equalTo( InternalIndexState.FAILED ) );
+        assertThat( index.getState() ).isEqualTo( InternalIndexState.FAILED );
     }
 
     @Test

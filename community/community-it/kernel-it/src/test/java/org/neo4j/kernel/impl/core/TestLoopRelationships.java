@@ -37,8 +37,7 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -245,8 +244,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
             transaction.getNodeById( node.getId() ).delete();
 
             var e = assertThrows( ConstraintViolationException.class, transaction::commit );
-            assertThat( e.getMessage(), equalTo( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
-                    "To delete this node, you must first delete its relationships." ) );
+            assertThat( e.getMessage() ).isEqualTo( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+                    "To delete this node, you must first delete its relationships." );
         }
     }
 

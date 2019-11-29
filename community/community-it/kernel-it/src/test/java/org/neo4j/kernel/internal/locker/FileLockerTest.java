@@ -42,9 +42,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -191,7 +189,7 @@ class FileLockerTest
                 storeLocker.checkLock();
             }
         } );
-        assertThat( fileLockException.getMessage(), startsWith( "Unable to create path for dir: " ) );
+        assertThat( fileLockException.getMessage() ).startsWith( "Unable to create path for dir: " );
     }
 
     @ParameterizedTest
@@ -220,7 +218,7 @@ class FileLockerTest
                 storeLocker.checkLock();
             }
         } );
-        assertThat( fileLockException.getMessage(), startsWith( "Unable to obtain lock on file:" ) );
+        assertThat( fileLockException.getMessage() ).startsWith( "Unable to obtain lock on file:" );
     }
 
     @ParameterizedTest
@@ -256,7 +254,7 @@ class FileLockerTest
                 storeLocker.checkLock();
             }
         } );
-        assertThat( fileLockException.getMessage(), containsString( "Lock file has been locked by another process" ) );
+        assertThat( fileLockException.getMessage() ).contains( "Lock file has been locked by another process" );
     }
 
     @Test

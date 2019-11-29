@@ -49,10 +49,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -170,7 +167,7 @@ class CompositeIndexingIT
             try ( NodeValueIndexCursor cursor = seek( ktx ) )
             {
                 assertTrue( cursor.next() );
-                assertThat( cursor.nodeReference(), equalTo( nodeID ) );
+                assertThat( cursor.nodeReference() ).isEqualTo( nodeID );
                 assertFalse( cursor.next() );
             }
         }
@@ -194,7 +191,7 @@ class CompositeIndexingIT
             try ( NodeValueIndexCursor cursor = seek( ktx ) )
             {
                 assertTrue( cursor.next() );
-                assertThat( cursor.nodeReference(), equalTo( nodeID ) );
+                assertThat( cursor.nodeReference() ).isEqualTo( nodeID );
                 assertFalse( cursor.next() );
             }
         }
@@ -272,7 +269,7 @@ class CompositeIndexingIT
                         result.add( cursor.nodeReference() );
                     }
                 }
-                assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
+                assertThat( result ).contains( nodeID1, nodeID2, nodeID3 );
             }
         }
     }
@@ -298,7 +295,7 @@ class CompositeIndexingIT
                         result.add( cursor.nodeReference() );
                     }
                 }
-                assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
+                assertThat( result ).contains( nodeID1, nodeID2, nodeID3 );
             }
         }
     }
@@ -329,7 +326,7 @@ class CompositeIndexingIT
                     result.add( cursor.nodeReference() );
                 }
             }
-            assertThat( result, contains( nodeID1 ) );
+            assertThat( result ).containsExactly( nodeID1 );
         }
     }
 

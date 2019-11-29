@@ -26,8 +26,7 @@ import java.util.Objects;
 
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestKernelReadTracer implements KernelReadTracer
 {
@@ -87,7 +86,7 @@ public class TestKernelReadTracer implements KernelReadTracer
 
     void assertEvents( List<TraceEvent> expected )
     {
-        assertThat( traceEvents, equalTo( expected ) );
+        assertThat( traceEvents ).isEqualTo( expected );
         clear();
     }
 

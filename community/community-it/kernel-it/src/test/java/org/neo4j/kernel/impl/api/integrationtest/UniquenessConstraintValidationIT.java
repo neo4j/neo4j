@@ -35,9 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -67,7 +65,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 'value1'" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ) ).contains( "`key1` = 'value1'" );
         }
         commit();
     }
@@ -120,7 +118,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 1" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ) ).contains( "`key1` = 1" );
         }
         commit();
     }
@@ -145,7 +143,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 'value1'" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ) ).contains( "`key1` = 'value1'" );
         }
         commit();
     }
@@ -228,7 +226,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 'value2'" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ) ).contains( "`key1` = 'value2'" );
         }
         commit();
     }
@@ -312,8 +310,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // then I should find the original node
         try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
         {
-            assertThat( transaction.dataRead().lockingNodeUniqueIndexSeek( idx, cursor, exact( propId, Values.of( 1 ) ) ),
-                    equalTo( ourNode ) );
+            assertThat( transaction.dataRead().lockingNodeUniqueIndexSeek( idx, cursor, exact( propId, Values.of( 1 ) ) ) ).isEqualTo( ourNode );
         }
         commit();
     }
@@ -342,8 +339,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // then I should find the original node
         try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
         {
-            assertThat( transaction.dataRead().lockingNodeUniqueIndexSeek( idx, cursor, exact( propId, Values.of( 1 ) ) ),
-                    equalTo( ourNode ) );
+            assertThat( transaction.dataRead().lockingNodeUniqueIndexSeek( idx, cursor, exact( propId, Values.of( 1 ) ) ) ).isEqualTo( ourNode );
         }
         commit();
     }

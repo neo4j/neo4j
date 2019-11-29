@@ -40,8 +40,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -100,8 +99,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertEquals( VirtualValues.list( stringValue( "foo" ) ), result[8] );
         assertEquals( stringValue( NATIVE_BTREE10.providerName() ), result[9] );
         assertMapsEqual( index.getIndexConfig().asMap(), (MapValue)result[10] );
-        assertThat( ((TextValue) result[11]).stringValue(),
-                containsString( "java.lang.RuntimeException: Fail on update during population" ) );
+        assertThat( ((TextValue) result[11]).stringValue() ).contains( "java.lang.RuntimeException: Fail on update during population" );
         assertEquals( 12, result.length );
     }
 

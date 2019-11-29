@@ -37,10 +37,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.values.storable.Values.stringOrNoValue;
@@ -66,10 +63,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry( ":`This:is_a:label`", singletonList( "This:is_a:label" ), "color",
-                        singletonList( "String" ), true ) ) ) );
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains(
+                nodeEntry( ":`This:is_a:label`", singletonList( "This:is_a:label" ), "color", singletonList( "String" ), true ) );
     }
 
     @Test
@@ -89,11 +84,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry(":`A`", singletonList( "A" ), "color", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`A`", singletonList( "A" ), "size", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`A`", singletonList( "A" ), "origin", singletonList( "String" ), false) ) ) );
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( ":`A`", singletonList( "A" ), "color", singletonList( "String" ), false ),
+                nodeEntry( ":`A`", singletonList( "A" ), "size", singletonList( "String" ), false ),
+                nodeEntry( ":`A`", singletonList( "A" ), "origin", singletonList( "String" ), false ) );
     }
 
     @Test
@@ -113,12 +106,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "color", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "size", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "origin", singletonList( "String" ), false) ) ) );
-
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( ":`B`", singletonList( "B" ), "color", singletonList( "String" ), false ),
+                nodeEntry( ":`B`", singletonList( "B" ), "size", singletonList( "String" ), false ),
+                nodeEntry( ":`B`", singletonList( "B" ), "origin", singletonList( "String" ), false ) );
     }
 
     @Test
@@ -138,13 +128,10 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-             assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry(":`C`", singletonList( "C" ), "color", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`C`", singletonList( "C" ), "size", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`C`", singletonList( "C" ), "origin", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`C`", singletonList( "C" ), "active", singletonList( "Boolean" ), false) ) ) );
-
-//        printStream( stream );
+             assertThat( asList( stream ) ).contains( nodeEntry( ":`C`", singletonList( "C" ), "color", singletonList( "String" ), false ),
+                     nodeEntry( ":`C`", singletonList( "C" ), "size", singletonList( "String" ), false ),
+                     nodeEntry( ":`C`", singletonList( "C" ), "origin", singletonList( "String" ), false ),
+                     nodeEntry( ":`C`", singletonList( "C" ), "active", singletonList( "Boolean" ), false ) );
     }
 
     @Test
@@ -167,11 +154,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`R`", "color", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "size", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "origin", singletonList( "String" ), false) ) ) );
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "color", singletonList( "String" ), false ),
+                relEntry( ":`R`", "size", singletonList( "String" ), false ),
+                relEntry( ":`R`", "origin", singletonList( "String" ), false ) );
     }
 
     @Test
@@ -194,12 +179,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`R`", "color", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "size", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "origin", singletonList( "String" ), false) ) ) );
-
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "color", singletonList( "String" ), false ),
+                relEntry( ":`R`", "size", singletonList( "String" ), false ),
+                relEntry( ":`R`", "origin", singletonList( "String" ), false ) );
     }
 
     @Test
@@ -223,13 +205,10 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`R`", "color", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "size", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "origin", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "active", singletonList( "Boolean" ), false))) );
-
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "color", singletonList( "String" ), false ),
+                relEntry( ":`R`", "size", singletonList( "String" ), false ),
+                relEntry( ":`R`", "origin", singletonList( "String" ), false ),
+                relEntry( ":`R`", "active", singletonList( "Boolean" ), false ) );
     }
 
     @Test
@@ -249,11 +228,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "type", singletonList( "String" ), true) ),
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "size", singletonList( "Integer" ), false) ) ) );
-
-//         printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( ":`B`", singletonList( "B" ), "type", singletonList( "String" ), true ),
+                nodeEntry( ":`B`", singletonList( "B" ), "size", singletonList( "Integer" ), false ) );
     }
 
     @Test
@@ -273,11 +249,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "type", singletonList( "String" ), true) ),
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "size", singletonList( "Integer" ), false) ) ) );
-
-//         printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( ":`B`", singletonList( "B" ), "type", singletonList( "String" ), true ),
+                nodeEntry( ":`B`", singletonList( "B" ), "size", singletonList( "Integer" ), false ) );
     }
 
     @Test
@@ -299,11 +272,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`B`", "type", singletonList( "String" ), true) ),
-                equalTo( relEntry(":`B`", "size", singletonList( "Integer" ), false) ) ) );
-
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`B`", "type", singletonList( "String" ), true ),
+                relEntry( ":`B`", "size", singletonList( "Integer" ), false ) );
     }
 
     @Test
@@ -325,11 +295,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`B`", "type", singletonList( "String" ), true) ),
-                equalTo( relEntry(":`B`", "size", singletonList( "Integer" ), false) ) ) );
-
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`B`", "type", singletonList( "String" ), true ),
+                relEntry( ":`B`", "size", singletonList( "Integer" ), false ) );
     }
 
     @Test
@@ -353,14 +320,11 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry(":`A`:`B`", Arrays.asList( "A", "B" ), "prop1", singletonList( "String" ), true) ),
-                equalTo( nodeEntry(":`A`:`B`", Arrays.asList( "A", "B" ), "prop2", singletonList( "Integer" ), true) ),
-                equalTo( nodeEntry(":`B`", singletonList( "B" ), "prop1", singletonList( "Boolean" ), true) ),
-                equalTo( nodeEntry(":`C`", singletonList( "C" ), "prop1", singletonList( "StringArray" ), true) ),
-                equalTo( nodeEntry("", emptyList(), null, null, false) ) ) );
-
-        // printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( ":`A`:`B`", Arrays.asList( "A", "B" ), "prop1", singletonList( "String" ), true ),
+                nodeEntry( ":`A`:`B`", Arrays.asList( "A", "B" ), "prop2", singletonList( "Integer" ), true ),
+                nodeEntry( ":`B`", singletonList( "B" ), "prop1", singletonList( "Boolean" ), true ),
+                nodeEntry( ":`C`", singletonList( "C" ), "prop1", singletonList( "StringArray" ), true ),
+                nodeEntry( "", emptyList(), null, null, false ) );
     }
 
     @Test
@@ -380,10 +344,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains(
-                equalTo( nodeEntry(":`A`", singletonList("A"), "prop1", singletonList( "String" ), true) ) ) );
-
-        // printStream( stream );
+        assertThat( asList( stream ) ).containsExactly( nodeEntry( ":`A`", singletonList( "A" ), "prop1", singletonList( "String" ), true ) );
     }
 
     @Test
@@ -407,12 +368,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry("", emptyList(), "prop1", singletonList( "String" ), true) ),
-                equalTo( nodeEntry("", emptyList(), "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( nodeEntry("", emptyList(), "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
-
-        // printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( "", emptyList(), "prop1", singletonList( "String" ), true ),
+                nodeEntry( "", emptyList(), "prop2", Arrays.asList( "Integer", "Float" ), false ),
+                nodeEntry( "", emptyList(), "prop3", Arrays.asList( "String", "Boolean" ), false ) );
     }
 
     @Test
@@ -436,12 +394,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry("", emptyList(), "prop1", singletonList( "String" ), false) ),
-                equalTo( nodeEntry("", emptyList(), "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( nodeEntry("", emptyList(), "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
-
-//        printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( "", emptyList(), "prop1", singletonList( "String" ), false ),
+                nodeEntry( "", emptyList(), "prop2", Arrays.asList( "Integer", "Float" ), false ),
+                nodeEntry( "", emptyList(), "prop3", Arrays.asList( "String", "Boolean" ), false ) );
     }
 
     @Test
@@ -465,14 +420,10 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ),
-                containsInAnyOrder(
-                        equalTo( relEntry(":`R`", "prop1", singletonList( "String" ), true) ),
-                        equalTo( relEntry(":`R`", "prop2", singletonList( "Integer" ), true) ),
-                        equalTo( relEntry(":`X`", "prop1", singletonList( "Boolean" ), true) ),
-                        equalTo( relEntry(":`Z`", null, null, false) ) ) );
-
-        // printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "prop1", singletonList( "String" ), true ),
+                relEntry( ":`R`", "prop2", singletonList( "Integer" ), true ),
+                relEntry( ":`X`", "prop1", singletonList( "Boolean" ), true ),
+                relEntry( ":`Z`", null, null, false ) );
     }
 
     @Test
@@ -494,11 +445,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ),
-                containsInAnyOrder(
-                        equalTo( relEntry(":`R`", "prop1", singletonList( "String" ), true ) ) ) );
-
-        //printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "prop1", singletonList( "String" ), true ) );
     }
 
     @Test
@@ -521,12 +468,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`R`", "prop1", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "prop2", singletonList( "Integer" ), false) ),
-                equalTo( relEntry(":`R`", "prop3", singletonList( "Boolean" ), false) ) ) );
-
-        //printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "prop1", singletonList( "String" ), false ),
+                relEntry( ":`R`", "prop2", singletonList( "Integer" ), false ),
+                relEntry( ":`R`", "prop3", singletonList( "Boolean" ), false ) );
     }
 
     @Test
@@ -552,12 +496,10 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`R`", "prop1", singletonList( "String" ), true) ),
-                equalTo( relEntry(":`R`", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( relEntry(":`R`", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "prop1", singletonList( "String" ), true ),
+                relEntry( ":`R`", "prop2", Arrays.asList( "Integer", "Float" ), false ),
+                relEntry( ":`R`", "prop3", Arrays.asList( "String", "Boolean" ), false ) );
 
-        //printStream( stream );
     }
 
     @Test
@@ -584,12 +526,9 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( relEntry(":`R`", "prop1", singletonList( "String" ), false) ),
-                equalTo( relEntry(":`R`", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( relEntry(":`R`", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
-
-        //printStream( stream );
+        assertThat( asList( stream ) ).contains( relEntry( ":`R`", "prop1", singletonList( "String" ), false ),
+                relEntry( ":`R`", "prop2", Arrays.asList( "Integer", "Float" ), false ),
+                relEntry( ":`R`", "prop3", Arrays.asList( "String", "Boolean" ), false ) );
     }
 
     @Test
@@ -616,14 +555,11 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry(":`A`", singletonList("A"), "prop1", singletonList( "String" ), true) ),
-                equalTo( nodeEntry(":`A`", singletonList("A"), "prop2", singletonList( "Integer" ), false) ),
-                equalTo( nodeEntry(":`A`", singletonList("A"), "prop3", singletonList( "Boolean" ), false) ),
-                equalTo( nodeEntry(":`B`", singletonList("B"), "prop1", singletonList( "String" ), false) ),
-                equalTo( nodeEntry(":`B`", singletonList("B"), "prop2", singletonList( "Integer" ), false) ) ) );
-
-        //printStream( stream );
+        assertThat( asList( stream ) ).contains( nodeEntry( ":`A`", singletonList( "A" ), "prop1", singletonList( "String" ), true ),
+                nodeEntry( ":`A`", singletonList( "A" ), "prop2", singletonList( "Integer" ), false ),
+                nodeEntry( ":`A`", singletonList( "A" ), "prop3", singletonList( "Boolean" ), false ),
+                nodeEntry( ":`B`", singletonList( "B" ), "prop1", singletonList( "String" ), false ),
+                nodeEntry( ":`B`", singletonList( "B" ), "prop2", singletonList( "Integer" ), false ) );
     }
 
     private static AnyValue[] nodeEntry( String escapedLabels, List<String> labels, String propertyName, List<String> propertyValueTypes, boolean mandatory )
@@ -688,21 +624,5 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
             transaction.dataWrite().relationshipSetProperty( relId, propKeyId, propValue );
         }
         commit();
-    }
-
-    /*
-      This method can be used to print to result stream to System.out -> Useful for debugging
-     */
-    @SuppressWarnings( "unused" )
-    private static void printStream( RawIterator<AnyValue[], ProcedureException> stream ) throws Throwable
-    {
-        for ( AnyValue[] row : asList( stream ) )
-        {
-            for ( Object column : row )
-            {
-                System.out.println( column );
-            }
-            System.out.println();
-        }
     }
 }

@@ -42,11 +42,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -85,7 +81,7 @@ public class NodeEntityTest extends EntityTest
                 node.getProperty( PROPERTY_KEY );
             }
         } );
-        assertThat( exception.getMessage(), containsString( PROPERTY_KEY ) );
+        assertThat( exception.getMessage() ).contains( PROPERTY_KEY );
     }
 
     @Test
@@ -174,7 +170,7 @@ public class NodeEntityTest extends EntityTest
         // Then
         catch ( NotFoundException exception )
         {
-            assertThat( exception.getMessage(), containsString( PROPERTY_KEY ) );
+            assertThat( exception.getMessage() ).contains( PROPERTY_KEY );
         }
     }
 
@@ -207,7 +203,7 @@ public class NodeEntityTest extends EntityTest
         }
 
         // Then
-        assertThat( exceptionThrownBySecondDelete, instanceOf( NotFoundException.class ) );
+        assertThat( exceptionThrownBySecondDelete ).isInstanceOf( NotFoundException.class );
 
         assertThrows( NotFoundException.class, () ->
         {
@@ -303,7 +299,7 @@ public class NodeEntityTest extends EntityTest
                     while ( !writerDone.get() )
                     {
                         int size = node.getAllProperties().size();
-                        assertThat( size, greaterThan( 0 ) );
+                        assertThat( size ).isGreaterThan( 0 );
                     }
                     tx.commit();
                 }
@@ -353,7 +349,7 @@ public class NodeEntityTest extends EntityTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( tx.getNodeById( node.getId() ).getProperty( "prop" ), instanceOf( Double.class ) );
+            assertThat( tx.getNodeById( node.getId() ).getProperty( "prop" ) ).isInstanceOf( Double.class );
         }
     }
 
@@ -374,8 +370,8 @@ public class NodeEntityTest extends EntityTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( Iterables.asList( tx.getNodeById( node.getId() ).getRelationshipTypes() ),
-                    equalTo( singletonList( RelationshipType.withName( "R" ) ) ) );
+            assertThat( Iterables.asList( tx.getNodeById( node.getId() ).getRelationshipTypes() ) ).isEqualTo(
+                    singletonList( RelationshipType.withName( "R" ) ) );
         }
     }
 

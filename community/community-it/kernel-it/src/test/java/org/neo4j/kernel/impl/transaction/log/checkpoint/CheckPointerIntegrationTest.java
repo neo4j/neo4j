@@ -56,9 +56,7 @@ import org.neo4j.test.extension.Inject;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -180,7 +178,7 @@ class CheckPointerIntegrationTest
         triggerCheckPointAttempt( db );
 
         int counter = checkPointInTxLog( db );
-        assertThat( counter, greaterThan( 0 ) );
+        assertThat( counter ).isGreaterThan( 0 );
 
         managementService.shutdown();
 
@@ -205,7 +203,7 @@ class CheckPointerIntegrationTest
         // nothing happens
 
         triggerCheckPointAttempt( db );
-        assertThat( checkPointInTxLog( db ), equalTo( 0 ) );
+        assertThat( checkPointInTxLog( db ) ).isEqualTo( 0 );
 
         managementService.shutdown();
 

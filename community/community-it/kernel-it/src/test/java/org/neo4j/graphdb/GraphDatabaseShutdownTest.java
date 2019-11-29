@@ -37,11 +37,9 @@ import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -81,7 +79,7 @@ public class GraphDatabaseShutdownTest
         {
             Node node = tx.createNode();
             tx.acquireWriteLock( node );
-            assertThat( lockCount( locks ), greaterThanOrEqualTo( 1 ) );
+            assertThat( lockCount( locks ) ).isGreaterThanOrEqualTo( 1 );
 
             managementService.shutdown();
 
@@ -94,7 +92,7 @@ public class GraphDatabaseShutdownTest
         }
 
         // THEN
-        assertThat( exceptionThrownByTxClose, instanceOf( TransactionTerminatedException.class ) );
+        assertThat( exceptionThrownByTxClose ).isInstanceOf( TransactionTerminatedException.class );
         assertFalse( db.isAvailable( 1 ) );
         assertEquals( 0, lockCount( locks ) );
     }
@@ -157,7 +155,7 @@ public class GraphDatabaseShutdownTest
         }
         catch ( Exception e )
         {
-            assertThat( getRootCause( e ), instanceOf( TransactionTerminatedException.class ) );
+            assertThat( getRootCause( e ) ).isInstanceOf( TransactionTerminatedException.class );
         }
         try
         {
@@ -166,7 +164,7 @@ public class GraphDatabaseShutdownTest
         }
         catch ( Exception e )
         {
-            assertThat( getRootCause( e ), instanceOf( TransactionTerminatedException.class ) );
+            assertThat( getRootCause( e ) ).isInstanceOf( TransactionTerminatedException.class );
         }
     }
 

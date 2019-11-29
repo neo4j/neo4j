@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -55,10 +54,7 @@ import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.lock.LockService.LockType;
@@ -172,8 +168,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         // Then
         transaction(
-                assertLookupNode( "a", is( a ) ),
-                assertLookupNode( "n" , is( n ) ) );
+                assertLookupNode( "a", a ),
+                assertLookupNode( "n" , n ) );
     }
 
     @Test
@@ -197,8 +193,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         // Then
         transaction(
-                assertLookupNode( "n", is( n ) ),
-                assertLookupNode( "m", is( m ) ) );
+                assertLookupNode( "n", n ),
+                assertLookupNode( "m", m ) );
     }
 
     @Test
@@ -225,8 +221,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         // Then
         transaction(
-                assertLookupNode( COLLISION_X, is( n ) ),
-                assertLookupNode( COLLISION_Y, is( m ) ) );
+                assertLookupNode( COLLISION_X, n ),
+                assertLookupNode( COLLISION_Y, m ) );
     }
 
     @Test
@@ -243,8 +239,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         // Then
         transaction(
-                assertLookupNode( "a", is( b ) ),
-                assertLookupNode( "b", is( a ) ) );
+                assertLookupNode( "a", b ),
+                assertLookupNode( "b", a ) );
     }
 
     @Test( expected = ConstraintViolationException.class )
@@ -326,11 +322,11 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         // Then
         transaction(
-                assertLookupNode( "a", is( a ) ),
-                assertLookupNode( "b", is( nullValue( Node.class ) ) ),
-                assertLookupNode( "c", is( nullValue( Node.class ) ) ),
-                assertLookupNode( "d", is( d ) ),
-                assertLookupNode( "c2", is( c ) ) );
+                assertLookupNode( "a", a ),
+                assertLookupNode( "b", null ),
+                assertLookupNode( "c", null ),
+                assertLookupNode( "d", d ),
+                assertLookupNode( "c2", c ) );
     }
 
     // Replaces UniqueIAC: shouldRejectEntryWithAlreadyIndexedValue
@@ -391,10 +387,10 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         // Then
         transaction(
-                assertLookupNode( "a", is( a ) ),
-                assertLookupNode( "b", is( b ) ),
-                assertLookupNode( "c", is( c ) ),
-                assertLookupNode( "d", is( d ) ) );
+                assertLookupNode( "a", a ),
+                assertLookupNode( "b", b ),
+                assertLookupNode( "c", c ),
+                assertLookupNode( "d", d ) );
     }
 
     // Replaces UniqueIAC: shouldUpdateUniqueEntries
@@ -408,7 +404,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         transaction( setProperty( a, "a1" ), success ); // This is a CHANGE update
 
         // Then
-        transaction( assertLookupNode( "a1", is( a ) ) );
+        transaction( assertLookupNode( "a1", a ) );
     }
 
     // Replaces UniqueIAC: shouldRejectEntriesInSameTransactionWithDuplicateIndexedValue\
@@ -500,7 +496,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         catch ( ExecutionException ee )
         {
             Throwable cause = ee.getCause();
-            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+            assertThat( cause ).isInstanceOf( ConstraintViolationException.class );
         }
     }
 
@@ -524,7 +520,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         catch ( ExecutionException ee )
         {
             Throwable cause = ee.getCause();
-            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+            assertThat( cause ).isInstanceOf( ConstraintViolationException.class );
         }
     }
 
@@ -564,7 +560,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         catch ( ExecutionException ee )
         {
             Throwable cause = ee.getCause();
-            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+            assertThat( cause ).isInstanceOf( ConstraintViolationException.class );
         }
     }
 
@@ -607,7 +603,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         catch ( ExecutionException ee )
         {
             Throwable cause = ee.getCause();
-            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+            assertThat( cause ).isInstanceOf( ConstraintViolationException.class );
         }
     }
 
@@ -835,7 +831,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         }
     }
 
-    private abstract class Action implements Consumer<Transaction>
+    private abstract static class Action implements Consumer<Transaction>
     {
         private final String name;
 
@@ -922,14 +918,14 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         };
     }
 
-    private Action assertLookupNode( final Object propertyValue, final Matcher<Node> matcher )
+    private Action assertLookupNode( final Object propertyValue, Object value )
     {
-        return new Action( "assertThat( lookUpNode( " + reprValue( propertyValue ) + " ), " + matcher + " );" )
+        return new Action( "assertThat( lookUpNode( " + reprValue( propertyValue ) + " ), " + value + " );" )
         {
             @Override
             public void accept( Transaction transaction )
             {
-                assertThat( lookUpNode( transaction, propertyValue ), matcher );
+                assertThat( lookUpNode( transaction, propertyValue ) ).isSameAs( value );
             }
         };
     }

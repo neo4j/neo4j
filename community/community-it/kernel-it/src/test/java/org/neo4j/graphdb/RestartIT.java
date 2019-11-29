@@ -28,8 +28,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyIterable;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @TestDirectoryExtension
@@ -55,7 +54,7 @@ class RestartIT
 
         try ( var tx = db.beginTx() )
         {
-            assertThat( tx.getAllNodes(), emptyIterable() );
+            assertThat( tx.getAllNodes() ).isEmpty();
         }
         finally
         {

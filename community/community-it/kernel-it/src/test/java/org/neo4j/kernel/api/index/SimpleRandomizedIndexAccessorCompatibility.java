@@ -40,9 +40,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
@@ -76,7 +75,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
             // then
             List<Long> hits = query( IndexQuery.exact( 0, update.values()[0] ) );
             assertEquals( hits.toString(), 1, hits.size() );
-            assertThat( single( hits ), equalTo( update.getEntityId() ) );
+            assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
         }
     }
 
@@ -164,7 +163,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
                 List<Long> actualIds = assertInOrder( order, predicate );
                 actualIds.sort( Long::compare );
                 // then
-                assertThat( actualIds, equalTo( expectedIds ) );
+                assertThat( actualIds ).isEqualTo( expectedIds );
             }
         }
     }

@@ -33,8 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 @ImpermanentDbmsExtension
@@ -96,7 +95,7 @@ abstract class IndexingStringQueryAcceptanceTestBase
         }
 
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     @Test
@@ -115,7 +114,7 @@ abstract class IndexingStringQueryAcceptanceTestBase
             collectNodes( found, tx.findNodes( LABEL, KEY, template, searchMode ) );
         }
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     @Test
@@ -140,7 +139,7 @@ abstract class IndexingStringQueryAcceptanceTestBase
             collectNodes( found, tx.findNodes( LABEL, KEY, template, searchMode ) );
         }
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     @Test
@@ -173,7 +172,7 @@ abstract class IndexingStringQueryAcceptanceTestBase
             collectNodes( found, tx.findNodes( LABEL, KEY, template, searchMode ) );
         }
         // THEN
-        assertThat( found, equalTo( expected ) );
+        assertThat( found ).isEqualTo( expected );
     }
 
     abstract static class ExactIndexingStringQueryAcceptanceTest extends IndexingStringQueryAcceptanceTestBase

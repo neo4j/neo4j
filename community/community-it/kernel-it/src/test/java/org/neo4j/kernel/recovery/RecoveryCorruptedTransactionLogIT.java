@@ -84,14 +84,9 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyArray;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -180,7 +175,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
             assertTrue( dbStateService.causeOfFailure( db.databaseId() ).isPresent() );
-            assertThat( dbStateService.causeOfFailure( db.databaseId() ).get(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
+            assertThat( dbStateService.causeOfFailure( db.databaseId() ).get() ).hasRootCauseInstanceOf( UnsupportedLogVersionException.class );
         }
         finally
         {
@@ -425,7 +420,7 @@ class RecoveryCorruptedTransactionLogIT
 
             DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
             assertTrue( dbStateService.causeOfFailure( db.databaseId() ).isPresent() );
-            assertThat( dbStateService.causeOfFailure( db.databaseId() ).get(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
+            assertThat( dbStateService.causeOfFailure( db.databaseId() ).get() ).hasRootCauseInstanceOf( NegativeArraySizeException.class );
         }
         finally
         {
@@ -455,7 +450,7 @@ class RecoveryCorruptedTransactionLogIT
         addCorruptedCommandsToLastLogFile();
         long modifiedFileLength = fileSystem.getFileSize( highestLogFile );
 
-        assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
+        assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
         startStopDbRecoveryOfCorruptedLogs();
 
@@ -498,7 +493,7 @@ class RecoveryCorruptedTransactionLogIT
         addCorruptedCommandsToLastLogFile();
         long modifiedFileLength = highestLogFile.length();
 
-        assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
+        assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
         startStopDbRecoveryOfCorruptedLogs();
 
@@ -539,7 +534,7 @@ class RecoveryCorruptedTransactionLogIT
         addCorruptedCommandsToLastLogFile();
         long modifiedFileLength = highestLogFile.length();
 
-        assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
+        assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
         startStopDbRecoveryOfCorruptedLogs();
 
@@ -571,7 +566,7 @@ class RecoveryCorruptedTransactionLogIT
         addCorruptedCommandsToLastLogFile();
         long modifiedFileLength = highestLogFile.length();
 
-        assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
+        assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
         startStopDbRecoveryOfCorruptedLogs();
 
@@ -629,11 +624,11 @@ class RecoveryCorruptedTransactionLogIT
             DatabaseManagementService managementService = databaseFactory.build();
             managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
-            assertThat( numberOfRecoveredTransactions, greaterThanOrEqualTo( 0 ) );
+            assertThat( numberOfRecoveredTransactions ).isGreaterThanOrEqualTo( 0 );
         }
 
         File corruptedLogArchives = new File( databaseDirectory, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
-        assertThat( corruptedLogArchives.listFiles(), not( emptyArray() ) );
+        assertThat( corruptedLogArchives.listFiles() ).isNotEmpty();
     }
 
     @Test
@@ -654,11 +649,11 @@ class RecoveryCorruptedTransactionLogIT
             DatabaseManagementService managementService = databaseFactory.setConfig( fail_on_corrupted_log_files, false ).build();
             managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
-            assertThat( numberOfRecoveredTransactions, greaterThanOrEqualTo( 0 ) );
+            assertThat( numberOfRecoveredTransactions ).isGreaterThanOrEqualTo( 0 );
         }
 
         File corruptedLogArchives = new File( databaseDirectory, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
-        assertThat( corruptedLogArchives.listFiles(), not( emptyArray() ) );
+        assertThat( corruptedLogArchives.listFiles() ).isNotEmpty();
     }
 
     private static TransactionIdStore getTransactionIdStore( GraphDatabaseAPI database )

@@ -35,8 +35,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
@@ -84,7 +83,7 @@ public class SchemaIndexWaitingAcceptanceTest
         catch ( IllegalStateException e )
         {
             // good
-            assertThat( e.getMessage(), containsString( "come online" ) );
+            assertThat( e.getMessage() ).contains( "come online" );
         }
         finally
         {
@@ -118,7 +117,7 @@ public class SchemaIndexWaitingAcceptanceTest
         catch ( IllegalStateException e )
         {
             // good
-            assertThat( e.getMessage(), containsString( "come online" ) );
+            assertThat( e.getMessage() ).contains( "come online" );
         }
         finally
         {
@@ -152,7 +151,7 @@ public class SchemaIndexWaitingAcceptanceTest
         catch ( IllegalStateException e )
         {
             // good
-            assertThat( e.getMessage(), containsString( "come online" ) );
+            assertThat( e.getMessage() ).contains( "come online" );
         }
         finally
         {

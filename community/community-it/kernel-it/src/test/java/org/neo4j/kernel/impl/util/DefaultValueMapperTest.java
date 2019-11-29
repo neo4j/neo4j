@@ -40,10 +40,7 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
@@ -71,15 +68,15 @@ class DefaultValueMapperTest
         {
             var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Path mapped = mapper.mapPath( path( asNodeValues( node ), asRelationshipsValues() ) );
-            assertThat( mapped.length(), equalTo( 0 ) );
-            assertThat( mapped.startNode(), equalTo( node ) );
-            assertThat( mapped.endNode(), equalTo( node ) );
-            assertThat( Iterables.asList( mapped.relationships() ), hasSize( 0 ) );
-            assertThat( Iterables.asList( mapped.reverseRelationships() ), hasSize( 0 ) );
-            assertThat( Iterables.asList( mapped.nodes() ), equalTo( singletonList( node ) ) );
-            assertThat( Iterables.asList( mapped.reverseNodes() ), equalTo( singletonList( node ) ) );
-            assertThat( mapped.lastRelationship(), nullValue() );
-            assertThat( Iterators.asList( mapped.iterator() ), equalTo( singletonList( node ) ) );
+            assertThat( mapped.length() ).isEqualTo( 0 );
+            assertThat( mapped.startNode() ).isEqualTo( node );
+            assertThat( mapped.endNode() ).isEqualTo( node );
+            assertThat( Iterables.asList( mapped.relationships() ) ).hasSize( 0 );
+            assertThat( Iterables.asList( mapped.reverseRelationships() ) ).hasSize( 0 );
+            assertThat( Iterables.asList( mapped.nodes() ) ).isEqualTo( singletonList( node ) );
+            assertThat( Iterables.asList( mapped.reverseNodes() ) ).isEqualTo( singletonList( node ) );
+            assertThat( mapped.lastRelationship() ).isNull();
+            assertThat( Iterators.asList( mapped.iterator() ) ).isEqualTo( singletonList( node ) );
         }
     }
 
@@ -102,15 +99,15 @@ class DefaultValueMapperTest
         {
             var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Path mapped = mapper.mapPath( path( asNodeValues( start, end ), asRelationshipsValues( relationship ) ) );
-            assertThat( mapped.length(), equalTo( 1 ) );
-            assertThat( mapped.startNode(), equalTo( start ) );
-            assertThat( mapped.endNode(), equalTo( end ) );
-            assertThat( Iterables.asList( mapped.relationships() ), equalTo( singletonList( relationship ) ) );
-            assertThat( Iterables.asList( mapped.reverseRelationships() ), equalTo( singletonList( relationship ) ) );
-            assertThat( Iterables.asList( mapped.nodes() ), equalTo( Arrays.asList( start, end ) ) );
-            assertThat( Iterables.asList( mapped.reverseNodes() ), equalTo( Arrays.asList( end, start ) ) );
-            assertThat( mapped.lastRelationship(), equalTo( relationship ) );
-            assertThat( Iterators.asList( mapped.iterator() ), equalTo( Arrays.asList( start, relationship, end ) ) );
+            assertThat( mapped.length() ).isEqualTo( 1 );
+            assertThat( mapped.startNode() ).isEqualTo( start );
+            assertThat( mapped.endNode() ).isEqualTo( end );
+            assertThat( Iterables.asList( mapped.relationships() ) ).isEqualTo( singletonList( relationship ) );
+            assertThat( Iterables.asList( mapped.reverseRelationships() ) ).isEqualTo( singletonList( relationship ) );
+            assertThat( Iterables.asList( mapped.nodes() ) ).isEqualTo( Arrays.asList( start, end ) );
+            assertThat( Iterables.asList( mapped.reverseNodes() ) ).isEqualTo( Arrays.asList( end, start ) );
+            assertThat( mapped.lastRelationship() ).isEqualTo( relationship );
+            assertThat( Iterators.asList( mapped.iterator() ) ).isEqualTo( Arrays.asList( start, relationship, end ) );
         }
     }
 
@@ -139,16 +136,15 @@ class DefaultValueMapperTest
         {
             var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Path mapped = mapper.mapPath( path( asNodeValues( a, b, c, d, e ), asRelationshipsValues( r1, r2, r3, r4 ) ) );
-            assertThat( mapped.length(), equalTo( 4 ) );
-            assertThat( mapped.startNode(), equalTo( a ) );
-            assertThat( mapped.endNode(), equalTo( e ) );
-            assertThat( Iterables.asList( mapped.relationships() ), equalTo( Arrays.asList( r1, r2, r3, r4 ) ) );
-            assertThat( Iterables.asList( mapped.reverseRelationships() ), equalTo( Arrays.asList( r4, r3, r2, r1 ) ) );
-            assertThat( Iterables.asList( mapped.nodes() ), equalTo( Arrays.asList( a, b, c, d, e ) ) );
-            assertThat( Iterables.asList( mapped.reverseNodes() ), equalTo( Arrays.asList( e, d, c, b, a ) ) );
-            assertThat( mapped.lastRelationship(), equalTo( r4 ) );
-            assertThat( Iterators.asList( mapped.iterator() ),
-                    equalTo( Arrays.asList( a, r1, b, r2, c, r3, d, r4, e ) ) );
+            assertThat( mapped.length() ).isEqualTo( 4 );
+            assertThat( mapped.startNode() ).isEqualTo( a );
+            assertThat( mapped.endNode() ).isEqualTo( e );
+            assertThat( Iterables.asList( mapped.relationships() ) ).isEqualTo( Arrays.asList( r1, r2, r3, r4 ) );
+            assertThat( Iterables.asList( mapped.reverseRelationships() ) ).isEqualTo( Arrays.asList( r4, r3, r2, r1 ) );
+            assertThat( Iterables.asList( mapped.nodes() ) ).isEqualTo( Arrays.asList( a, b, c, d, e ) );
+            assertThat( Iterables.asList( mapped.reverseNodes() ) ).isEqualTo( Arrays.asList( e, d, c, b, a ) );
+            assertThat( mapped.lastRelationship() ).isEqualTo( r4 );
+            assertThat( Iterators.asList( mapped.iterator() ) ).isEqualTo( Arrays.asList( a, r1, b, r2, c, r3, d, r4, e ) );
         }
     }
 
@@ -175,9 +171,9 @@ class DefaultValueMapperTest
         {
             var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Relationship coreAPIRelationship = mapper.mapRelationship( relationshipValue );
-            assertThat( coreAPIRelationship.getId(), equalTo( relationship.getId() ) );
-            assertThat( coreAPIRelationship.getStartNode(), equalTo( start ) );
-            assertThat( coreAPIRelationship.getEndNode(), equalTo( end ) );
+            assertThat( coreAPIRelationship.getId() ).isEqualTo( relationship.getId() );
+            assertThat( coreAPIRelationship.getStartNode() ).isEqualTo( start );
+            assertThat( coreAPIRelationship.getEndNode() ).isEqualTo( end );
         }
     }
 

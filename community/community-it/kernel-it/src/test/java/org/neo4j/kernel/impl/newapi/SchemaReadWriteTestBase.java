@@ -41,12 +41,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -115,7 +110,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( single( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ) ), equalTo( index ) );
+            assertThat( single( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ) ) ).isEqualTo( index );
         }
     }
 
@@ -127,9 +122,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaReadCore before = tx.schemaRead().snapshot();
             index = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
-            assertThat( tx.schemaRead().indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
-            assertThat( tx.schemaRead().snapshot().indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
-            assertThat( before.indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
+            assertThat( tx.schemaRead().indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
+            assertThat( tx.schemaRead().snapshot().indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
+            assertThat( before.indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
             tx.commit();
         }
     }
@@ -319,8 +314,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().indexCreate( schema, "my other index" );
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor index = single( schemaRead.index( schema ) );
-            assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
-            assertThat( 2, equalTo( Iterators.asList( schemaRead.indexesGetAll() ).size() ) );
+            assertThat( index.schema().getPropertyIds() ).isEqualTo( new int[]{prop2} );
+            assertThat( 2 ).isEqualTo( Iterators.asList( schemaRead.indexesGetAll() ).size() );
         }
     }
 
@@ -340,16 +335,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
             IndexDescriptor index = single( schemaReadBefore.index( forLabel( label, prop2 ) ) );
-            assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
-            assertThat( 2, equalTo( Iterators.asList( schemaReadBefore.indexesGetAll() ).size() ) );
-            assertThat( index, is( createdIndex ) );
-            assertThat( schemaReadBefore.indexGetForName( "my index 2" ), is( createdIndex ) );
+            assertThat( index.schema().getPropertyIds() ).isEqualTo( new int[]{prop2} );
+            assertThat( 2 ).isEqualTo( Iterators.asList( schemaReadBefore.indexesGetAll() ).size() );
+            assertThat( index ).isEqualTo( createdIndex );
+            assertThat( schemaReadBefore.indexGetForName( "my index 2" ) ).isEqualTo( createdIndex );
 
             index = single( schemaReadAfter.index( forLabel( label, prop2 ) ) );
-            assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
-            assertThat( 2, equalTo( Iterators.asList( schemaReadAfter.indexesGetAll() ).size() ) );
-            assertThat( index, is( createdIndex ) );
-            assertThat( schemaReadAfter.indexGetForName( "my index 2" ), is( createdIndex ) );
+            assertThat( index.schema().getPropertyIds() ).isEqualTo( new int[]{prop2} );
+            assertThat( 2 ).isEqualTo( Iterators.asList( schemaReadAfter.indexesGetAll() ).size() );
+            assertThat( index ).isEqualTo( createdIndex );
+            assertThat( schemaReadAfter.indexGetForName( "my index 2" ) ).isEqualTo( createdIndex );
         }
     }
 
@@ -389,7 +384,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             assertFalse( schemaReadBefore.index( forLabel( label, prop2 ) ).hasNext() );
             assertFalse( schemaReadAfter.index( forLabel( label, prop2 ) ).hasNext() );
-            assertThat( schemaReadBefore.indexGetForName( "my index" ), is( NO_INDEX ) );
+            assertThat( schemaReadBefore.indexGetForName( "my index" ) ).isEqualTo( NO_INDEX );
         }
     }
 
@@ -415,7 +410,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexDrop( toDrop );
 
             Iterable<IndexDescriptor> allIndexes = () -> tx.schemaRead().indexesGetAll();
-            assertThat( allIndexes, containsInAnyOrder( toRetain, toRetain2, created ) );
+            assertThat( allIndexes ).contains( toRetain, toRetain2, created );
 
             tx.commit();
         }
@@ -444,8 +439,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexDrop( toDrop );
             SchemaReadCore after = tx.schemaRead().snapshot();
 
-            assertThat( before::indexesGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
-            assertThat( after::indexesGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
+            assertThat( before.indexesGetAll() ).asList().contains( toRetain, toRetain2, created );
+            assertThat( after.indexesGetAll() ).asList().contains( toRetain, toRetain2, created );
 
             tx.commit();
         }
@@ -478,7 +473,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexDrop( droppedInTx );
 
             Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().indexesGetForLabel( label );
-            assertThat( indexes, containsInAnyOrder( inStore, createdInTx ) );
+            assertThat( indexes ).contains( inStore, createdInTx );
 
             tx.commit();
         }
@@ -512,8 +507,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexDrop( droppedInTx );
 
             Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().snapshot().indexesGetForLabel( label );
-            assertThat( indexes, containsInAnyOrder( inStore, createdInTx ) );
-            assertThat( () -> before.indexesGetForLabel( label ), containsInAnyOrder( inStore, createdInTx ) );
+            assertThat( indexes ).contains( inStore, createdInTx );
+            assertThat( before.indexesGetForLabel( label ) ).asList().contains( inStore, createdInTx );
 
             tx.commit();
         }
@@ -533,8 +528,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), equalTo( singletonList( constraint ) ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), equalTo( singletonList( constraint ) ) );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEqualTo( singletonList( constraint ) );
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEqualTo( singletonList( constraint ) );
         }
     }
 
@@ -558,8 +553,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
         }
     }
 
@@ -735,13 +730,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaReadCore after = schemaRead.snapshot();
             assertTrue( schemaRead.constraintExists( existing ) );
             assertTrue( schemaRead.constraintExists( newConstraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( before.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( after.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( before.constraintGetForName( "existing constraint" ), is( existing ) );
-            assertThat( after.constraintGetForName( "existing constraint" ), is( existing ) );
-            assertThat( before.constraintGetForName( "new constraint" ), is( newConstraint ) );
-            assertThat( after.constraintGetForName( "new constraint" ), is( newConstraint ) );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
+            assertThat( asList( before.constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
+            assertThat( asList( after.constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
+            assertThat( before.constraintGetForName( "existing constraint" ) ).isEqualTo( existing );
+            assertThat( after.constraintGetForName( "existing constraint" ) ).isEqualTo( existing );
+            assertThat( before.constraintGetForName( "new constraint" ) ).isEqualTo( newConstraint );
+            assertThat( after.constraintGetForName( "new constraint" ) ).isEqualTo( newConstraint );
         }
     }
 
@@ -761,9 +756,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().constraintDrop( existing );
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( existing ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( before.constraintsGetForLabel( label ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( before.constraintsGetForLabel( label ) ) ).isEmpty();
         }
     }
 
@@ -781,8 +776,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), equalTo( singletonList( constraint ) ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), equalTo( singletonList( constraint ) ) );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEqualTo( singletonList( constraint ) );
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEqualTo( singletonList( constraint ) );
         }
     }
 
@@ -806,8 +801,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
         }
     }
 
@@ -850,9 +845,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue( schemaRead.constraintExists( existing ) );
             assertTrue( schemaRead.constraintExists( newConstraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( before.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
+            assertThat( asList( before.constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
         }
     }
 
@@ -872,9 +867,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().constraintDrop( existing );
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( existing ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( before.constraintsGetForLabel( label ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( before.constraintsGetForLabel( label ) ) ).isEmpty();
 
         }
     }
@@ -893,8 +888,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), equalTo( singletonList( constraint ) ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), equalTo( singletonList( constraint ) ) );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEqualTo( singletonList( constraint ) );
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEqualTo( singletonList( constraint ) );
         }
     }
 
@@ -918,8 +913,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
         }
     }
 
@@ -962,9 +957,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue( schemaRead.constraintExists( existing ) );
             assertTrue( schemaRead.constraintExists( newConstraint ) );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( before.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
+            assertThat( asList( before.constraintsGetForLabel( label ) ) ).contains( existing, newConstraint );
         }
     }
 
@@ -986,9 +981,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertFalse( schemaRead.constraintExists( existing ) );
 
             assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop2 ) ).hasNext() );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( before.constraintsGetForLabel( label ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( before.constraintsGetForLabel( label ) ) ).isEmpty();
 
         }
     }
@@ -1008,8 +1003,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForRelationshipType( type ) ), equalTo( singletonList( constraint ) ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForRelationshipType( type ) ), equalTo( singletonList( constraint ) ) );
+            assertThat( asList( schemaRead.constraintsGetForRelationshipType( type ) ) ).isEqualTo( singletonList( constraint ) );
+            assertThat( asList( schemaRead.snapshot().constraintsGetForRelationshipType( type ) ) ).isEqualTo( singletonList( constraint ) );
         }
     }
 
@@ -1034,8 +1029,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( constraint ) );
-            assertThat( asList( schemaRead.constraintsGetForRelationshipType( type ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForRelationshipType( type ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForRelationshipType( type ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForRelationshipType( type ) ) ).isEmpty();
         }
     }
 
@@ -1077,9 +1072,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue( schemaRead.constraintExists( existing ) );
             assertTrue( schemaRead.constraintExists( newConstraint ) );
-            assertThat( asList( schemaRead.constraintsGetForRelationshipType( type ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForRelationshipType( type ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( before.constraintsGetForRelationshipType( type ) ), containsInAnyOrder( existing, newConstraint ) );
+            assertThat( asList( schemaRead.constraintsGetForRelationshipType( type ) ) ).contains( existing, newConstraint );
+            assertThat( asList( schemaRead.snapshot().constraintsGetForRelationshipType( type ) ) ).contains( existing, newConstraint );
+            assertThat( asList( before.constraintsGetForRelationshipType( type ) ) ).contains( existing, newConstraint );
         }
     }
 
@@ -1102,9 +1097,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertFalse( schemaRead.constraintExists( existing ) );
 
             assertFalse( schemaRead.index( SchemaDescriptor.forLabel( type, prop2 ) ).hasNext() );
-            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
-            assertThat( asList( before.constraintsGetForLabel( label ) ), empty() );
+            assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
+            assertThat( asList( before.constraintsGetForLabel( label ) ) ).isEmpty();
 
         }
     }
@@ -1130,7 +1125,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().constraintDrop( toDrop );
 
             Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetAll();
-            assertThat( allConstraints, containsInAnyOrder( toRetain, toRetain2, created ) );
+            assertThat( allConstraints ).contains( toRetain, toRetain2, created );
 
             tx.commit();
         }
@@ -1158,8 +1153,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().constraintDrop( toDrop );
 
             Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().snapshot().constraintsGetAll();
-            assertThat( allConstraints, containsInAnyOrder( toRetain, toRetain2, created ) );
-            assertThat( before::constraintsGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
+            assertThat( allConstraints ).contains( toRetain, toRetain2, created );
+            assertThat( before.constraintsGetAll() ).asList().contains( toRetain, toRetain2, created );
 
             tx.commit();
         }
@@ -1193,8 +1188,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().constraintDrop( droppedInTx );
 
             Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetForLabel( label );
-            assertThat( allConstraints, containsInAnyOrder( inStore, createdInTx ) );
-            assertThat( () -> before.constraintsGetForLabel( label ), containsInAnyOrder( inStore, createdInTx ) );
+            assertThat( allConstraints ).contains( inStore, createdInTx );
+            assertThat( before.constraintsGetForLabel( label ) ).asList().contains( inStore, createdInTx );
 
             tx.commit();
         }
@@ -1215,8 +1210,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                 overlapping.commit();
             }
 
-            assertThat( snapshot.indexGetForName( "a" ), is( NO_INDEX ) );
-            assertThat( snapshot.indexGetForName( "b" ), is( NO_INDEX ) );
+            assertThat( snapshot.indexGetForName( "a" ) ).isEqualTo( NO_INDEX );
+            assertThat( snapshot.indexGetForName( "b" ) ).isEqualTo( NO_INDEX );
             assertFalse( snapshot.indexesGetAll().hasNext() );
             assertFalse( snapshot.index( forLabel( label, prop1 ) ).hasNext() );
             assertFalse( snapshot.indexesGetForLabel( label ).hasNext() );
@@ -1240,12 +1235,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                 overlapping.commit();
             }
 
-            assertThat( snapshot.constraintGetForName( "a" ), is( nullValue() ) );
-            assertThat( snapshot.indexGetForName( "a" ), is( NO_INDEX ) );
-            assertThat( snapshot.constraintGetForName( "b" ), is( nullValue() ) );
-            assertThat( snapshot.indexGetForName( "b" ), is( NO_INDEX ) );
-            assertThat( snapshot.constraintGetForName( "c" ), is( nullValue() ) );
-            assertThat( snapshot.constraintGetForName( "d" ), is( nullValue() ) );
+            assertThat( snapshot.constraintGetForName( "a" ) ).isNull();
+            assertThat( snapshot.indexGetForName( "a" ) ).isEqualTo( NO_INDEX );
+            assertThat( snapshot.constraintGetForName( "b" ) ).isNull();
+            assertThat( snapshot.indexGetForName( "b" ) ).isEqualTo( NO_INDEX );
+            assertThat( snapshot.constraintGetForName( "c" ) ).isNull();
+            assertThat( snapshot.constraintGetForName( "d" ) ).isNull();
             assertFalse( snapshot.constraintsGetAll().hasNext() );
             assertFalse( snapshot.constraintsGetForLabel( label ).hasNext() );
             assertFalse( snapshot.constraintsGetForRelationshipType( type ).hasNext() );

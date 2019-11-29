@@ -36,9 +36,7 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
@@ -62,7 +60,7 @@ class SchemaProcedureIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{EMPTY_LIST, EMPTY_LIST} ) ) );
+        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{EMPTY_LIST, EMPTY_LIST} );
 
     }
 
@@ -98,7 +96,7 @@ class SchemaProcedureIT extends KernelIntegrationTest
             ListValue nodes = (ListValue) next[0];
             assertEquals( 1, nodes.size() );
             NodeValue node = (NodeValue) nodes.value( 0 );
-            assertThat( node.labels(), equalTo( Values.stringArray( "Person" ) ) );
+            assertThat( node.labels() ).isEqualTo( Values.stringArray( "Person" ) );
             assertEquals( stringValue( "Person" ), node.properties().get( "name" ) );
             assertEquals( VirtualValues.list( stringValue( "name" ) ), node.properties().get( "indexes" ) );
             assertEquals( VirtualValues.list( stringValue( "CONSTRAINT ON ( person:Person ) ASSERT (person.age) IS UNIQUE" ) ),
@@ -134,8 +132,8 @@ class SchemaProcedureIT extends KernelIntegrationTest
             assertEquals( 1, relationships.size() );
             RelationshipValue relationship = (RelationshipValue) relationships.value( 0 );
             assertEquals( "LIVES_IN", relationship.type().stringValue() );
-            assertThat( relationship.startNode().labels(), equalTo( Values.stringArray( "Person" ) ) );
-            assertThat( relationship.endNode().labels(), equalTo( Values.stringArray( "Location" ) ) );
+            assertThat( relationship.startNode().labels() ).isEqualTo( Values.stringArray( "Person" ) );
+            assertThat( relationship.endNode().labels() ).isEqualTo( Values.stringArray( "Location" ) );
         }
     }
 }

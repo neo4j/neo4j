@@ -39,8 +39,7 @@ import org.neo4j.test.extension.Inject;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -317,6 +316,6 @@ class RequireTransactionIT
     void checkThrowNotInTransaction( Executable executable )
     {
         var e = assertThrows( Exception.class, executable );
-        assertThat( getRootCause( e ), instanceOf( NotInTransactionException.class ) );
+        assertThat( getRootCause( e ) ).isInstanceOf( NotInTransactionException.class );
     }
 }

@@ -44,10 +44,8 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.iterableWithSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -266,7 +264,7 @@ public class GraphDatabaseServiceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( tx.getAllNodes(), is( iterableWithSize( 2 ) ) );
+            assertThat( tx.getAllNodes() ).hasSize( 2 );
             tx.commit();
         }
     }

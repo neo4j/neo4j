@@ -37,8 +37,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,7 +63,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // The size of the config is not fixed so just make sure it's the right magnitude
         assertTrue( names.size() > 10 );
 
-        assertThat( names, hasItem( GraphDatabaseSettings.record_format.name() ) );
+        assertThat( names ).contains( GraphDatabaseSettings.record_format.name() );
 
         // Should not contain "unsupported.*" configs
         assertEquals( names.stream()

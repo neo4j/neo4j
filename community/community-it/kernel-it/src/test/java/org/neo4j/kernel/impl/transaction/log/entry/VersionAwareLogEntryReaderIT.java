@@ -51,8 +51,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -161,7 +160,7 @@ class VersionAwareLogEntryReaderIT
             {
                 LogEntry logEntry = entryReader.readLogEntry( logChannel );
                 // we reading expected checkpoint records
-                assertThat( logEntry, instanceOf( CheckPoint.class ) );
+                assertThat( logEntry ).isInstanceOf( CheckPoint.class );
                 CheckPoint checkPoint = (CheckPoint) logEntry;
                 LogPosition logPosition = checkPoint.getLogPosition();
                 assertEquals( 4, logPosition.getLogVersion() );

@@ -50,8 +50,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @TestDirectoryExtension
@@ -107,27 +106,30 @@ class PageCacheCountersIT
         }
         stopNodeCreators( nodeCreators, nodeCreatorFutures );
 
-        assertThat( "Number of pins events in page cache tracer should equal to the sum of pin events in page cursor tracers.",
-            pageCacheTracer.pins(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getPins, initialPins ) ) );
-        assertThat( "Number of unpins events in page cache tracer should equal to the sum of unpin events in page cursor tracers.",
-            pageCacheTracer.unpins(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getUnpins, initialUnpins ) ) );
-        assertThat( "Number of initialBytesRead in page cache tracer should equal to the sum of initialBytesRead in page cursor tracers.",
-            pageCacheTracer.bytesRead(),
-            greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getBytesRead, initialBytesRead ) ) );
-        assertThat( "Number of bytesWritten in page cache tracer should equal to the sum of bytesWritten in page cursor tracers.",
-            pageCacheTracer.bytesWritten(),
-            greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getBytesWritten, initialBytesWritten ) ) );
-        assertThat( "Number of evictions in page cache tracer should equal to the sum of evictions in page cursor tracers.",
-            pageCacheTracer.evictions(),
-            greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getEvictions, initialEvictions ) ) );
-        assertThat( "Number of faults in page cache tracer should equal to the sum of faults in page cursor tracers.",
-            pageCacheTracer.faults(),
-            greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getFaults, initialFaults ) ) );
-        assertThat( "Number of flushes in page cache tracer should equal to the sum of flushes in page cursor tracers.",
-            pageCacheTracer.flushes(),
-            greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getFlushes, initialFlushes ) ) );
-        assertThat( "Number of hits in page cache tracer should equal to the sum of hits in page cursor tracers.",
-            pageCacheTracer.hits(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getHits, initialHits ) ) );
+        assertThat( pageCacheTracer.pins() ).as(
+                "Number of pins events in page cache tracer should equal to the sum of pin events in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getPins, initialPins ) );
+        assertThat( pageCacheTracer.unpins() ).as(
+                "Number of unpins events in page cache tracer should equal to the sum of unpin events in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getUnpins, initialUnpins ) );
+        assertThat( pageCacheTracer.bytesRead() ).as(
+                "Number of initialBytesRead in page cache tracer should equal to the sum of initialBytesRead in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getBytesRead, initialBytesRead ) );
+        assertThat( pageCacheTracer.bytesWritten() ).as(
+                "Number of bytesWritten in page cache tracer should equal to the sum of bytesWritten in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getBytesWritten, initialBytesWritten ) );
+        assertThat( pageCacheTracer.evictions() ).as(
+                "Number of evictions in page cache tracer should equal to the sum of evictions in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getEvictions, initialEvictions ) );
+        assertThat( pageCacheTracer.faults() ).as(
+                "Number of faults in page cache tracer should equal to the sum of faults in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getFaults, initialFaults ) );
+        assertThat( pageCacheTracer.flushes() ).as(
+                "Number of flushes in page cache tracer should equal to the sum of flushes in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getFlushes, initialFlushes ) );
+        assertThat( pageCacheTracer.hits() ).as(
+                "Number of hits in page cache tracer should equal to the sum of hits in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getHits, initialHits ) );
     }
 
     private static void stopNodeCreators( List<NodeCreator> nodeCreators, List<Future> nodeCreatorFutures )

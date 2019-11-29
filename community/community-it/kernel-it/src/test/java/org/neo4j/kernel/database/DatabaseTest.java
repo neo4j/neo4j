@@ -59,15 +59,12 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -181,7 +178,7 @@ public class DatabaseTest
         assertTrue( fs.fileExists( databaseDirectory ) );
         assertTrue( fs.fileExists( transactionLogsDirectory ) );
         File[] currentDatabaseFiles = databaseDirectory.listFiles();
-        assertThat( currentDatabaseFiles, arrayContainingInAnyOrder( databaseFilesShouldExist ) );
+        assertThat( currentDatabaseFiles ).contains( databaseFilesShouldExist );
     }
 
     @Test
@@ -201,7 +198,7 @@ public class DatabaseTest
         Set<File> files = databaseLayout.storeFiles();
         files.removeAll( filesToKeepOnTruncation( databaseLayout ) );
         File[] filesShouldBeDeleted = files.stream().filter( File::exists ).toArray( File[]::new );
-        assertThat( removedFiles, hasItems( filesShouldBeDeleted ) );
+        assertThat( removedFiles ).contains( filesShouldBeDeleted );
     }
 
     @Test
@@ -231,8 +228,8 @@ public class DatabaseTest
         File[] logFiles = fs.listFiles( transactionLogsDirectory );
 
         // files are equal by name - every store file is recreated as result
-        assertThat( databaseFilesBeforeTruncate, arrayContainingInAnyOrder( databaseFiles ) );
-        assertThat( logFilesBeforeTruncate, arrayContainingInAnyOrder( logFiles ) );
+        assertThat( databaseFilesBeforeTruncate ).contains( databaseFiles );
+        assertThat( logFilesBeforeTruncate ).contains( logFiles );
     }
 
     @Test
@@ -448,7 +445,7 @@ public class DatabaseTest
         {
             var logService = database.getDependencyResolver().resolveDependency( LogService.class );
             assertEquals( database.getLogService(), logService );
-            assertThat( logService, instanceOf( DatabaseLogService.class ) );
+            assertThat( logService ).isInstanceOf( DatabaseLogService.class );
         }
         finally
         {

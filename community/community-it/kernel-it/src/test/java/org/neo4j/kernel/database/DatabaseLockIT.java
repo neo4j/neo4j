@@ -28,9 +28,7 @@ import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -45,7 +43,7 @@ class DatabaseLockIT
     void allDatabasesLockedWhenStarted()
     {
         var databaseNames = managementService.listDatabases();
-        assertThat( databaseNames, not( empty() ) );
+        assertThat( databaseNames ).isNotEmpty();
 
         for ( var databaseName : databaseNames )
         {
@@ -58,7 +56,7 @@ class DatabaseLockIT
     void allDatabaseLocksReleasedWhenStopped()
     {
         var databaseNames = managementService.listDatabases();
-        assertThat( databaseNames, not( empty() ) );
+        assertThat( databaseNames ).isNotEmpty();
 
         for ( var databaseName : databaseNames )
         {

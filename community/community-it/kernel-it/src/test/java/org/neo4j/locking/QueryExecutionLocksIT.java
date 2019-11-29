@@ -81,10 +81,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.values.ValueMapper;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -101,7 +98,7 @@ class QueryExecutionLocksIT
     {
         String query = "MATCH (n) return count(n)";
         List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( "Observed list of lock operations is: " + lockOperationRecords, lockOperationRecords, is( empty() ) );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).isEmpty();
     }
 
     @Test
@@ -122,7 +119,7 @@ class QueryExecutionLocksIT
         String query = "MATCH (n:" + labelName + ") where n." + propertyKey + " = \"Fry\" RETURN n ";
 
         List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( "Observed list of lock operations is: " + lockOperationRecords, lockOperationRecords, hasSize( 1 ) );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
 
         LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
         assertTrue( operationRecord.acquisition );
@@ -149,7 +146,7 @@ class QueryExecutionLocksIT
 
         LockOperationListener lockOperationListener = new OnceSchemaFlushListener();
         List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query, lockOperationListener );
-        assertThat( "Observed list of lock operations is: " + lockOperationRecords, lockOperationRecords, hasSize( 3 ) );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 3 );
 
         LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
         assertTrue( operationRecord.acquisition );

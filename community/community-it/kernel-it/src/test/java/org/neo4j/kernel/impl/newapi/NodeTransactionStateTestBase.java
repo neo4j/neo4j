@@ -33,9 +33,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,9 +98,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat(
-                    tx.getNodeById( nodeId ).getLabels(),
-                    equalTo( Iterables.iterable( label( labelName ) ) ) );
+            assertThat( tx.getNodeById( nodeId ).getLabels() ).isEqualTo( Iterables.iterable( label( labelName ) ) );
         }
     }
 
@@ -128,9 +124,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat(
-                    tx.getNodeById( nodeId ).getLabels(),
-                    containsInAnyOrder( label( toRetainName ), label( toDeleteName ) ) );
+            assertThat( tx.getNodeById( nodeId ).getLabels() ).contains( label( toRetainName ), label( toDeleteName ) );
         }
 
         try ( KernelTransaction tx = beginTransaction() )
@@ -160,9 +154,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat(
-                    tx.getNodeById( nodeId ).getLabels(),
-                    containsInAnyOrder( label( toRetainName ), label( toAddName ) ) );
+            assertThat( tx.getNodeById( nodeId ).getLabels() ).contains( label( toRetainName ), label( toAddName ) );
         }
     }
 
@@ -282,8 +274,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat(
-                    tx.getNodeById( nodeId ).getProperty( propKey ), equalTo( "hello" ) );
+            assertThat( tx.getNodeById( nodeId ).getProperty( propKey ) ).isEqualTo( "hello" );
         }
     }
 
@@ -336,10 +327,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat(
-                    tx.getNodeById( nodeId ).getProperty( propKey1 ), equalTo( "hello" ) );
-            assertThat(
-                    tx.getNodeById( nodeId ).getProperty( propKey2 ), equalTo( "world" ) );
+            assertThat( tx.getNodeById( nodeId ).getProperty( propKey1 ) ).isEqualTo( "hello" );
+            assertThat( tx.getNodeById( nodeId ).getProperty( propKey2 ) ).isEqualTo( "world" );
         }
     }
 
@@ -384,8 +373,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat(
-                    tx.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
+            assertThat( tx.getNodeById( nodeId ).getProperty( propKey ) ).isEqualTo( "world" );
         }
     }
 
@@ -469,8 +457,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat(
-                    tx.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
+            assertThat( tx.getNodeById( nodeId ).getProperty( propKey ) ).isEqualTo( "world" );
         }
     }
 
@@ -806,7 +793,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 nodes.properties( properties );
 
                 assertTrue( properties.next() );
-                assertThat( properties.propertyType(), equalTo( ValueGroup.TEXT ) );
+                assertThat( properties.propertyType() ).isEqualTo( ValueGroup.TEXT );
             }
         }
     }

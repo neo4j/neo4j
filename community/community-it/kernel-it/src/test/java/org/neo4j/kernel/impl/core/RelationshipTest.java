@@ -34,8 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.token.api.NamedToken;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -224,7 +223,7 @@ public class RelationshipTest extends EntityTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( tx.getRelationshipById( relationship.getId() ).getProperty( "prop" ), instanceOf( Double.class ) );
+            assertThat( tx.getRelationshipById( relationship.getId() ).getProperty( "prop" ) ).isInstanceOf( Double.class );
         }
     }
 

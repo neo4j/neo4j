@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,8 +30,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.util.Collections.emptySet;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.asSet;
@@ -203,8 +201,7 @@ class NativeLabelScanStoreUpdateIT
             for ( int l = labelsToAdd - 1; l >= labelsToRemove; l-- )
             {
                 Label label = label( "Label-" + l );
-                assertThat( "Should have found node when looking for label " + label,
-                        single( tx.findNodes( label ) ), equalTo( node ) );
+                assertThat( single( tx.findNodes( label ) ) ).as( "Should have found node when looking for label " + label ).isEqualTo( node );
             }
         }
     }
@@ -215,7 +212,7 @@ class NativeLabelScanStoreUpdateIT
         {
             ResourceIterator<Node> nodes = tx.findNodes( label );
             List<Node> nodeList = Iterators.asList( nodes );
-            assertThat( sizeMismatchMessage, nodeList, Matchers.hasSize( expectedNodeIds.length ) );
+            assertThat( nodeList ).as( sizeMismatchMessage ).hasSize( expectedNodeIds.length );
             int index = 0;
             for ( Node node : nodeList )
             {

@@ -38,9 +38,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -133,7 +131,7 @@ class SchemaImplTest
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( USER_LABEL ).on( "name" ).create();
-            assertThat( index.getName(), equalTo( "index_a908f819" ) );
+            assertThat( index.getName() ).isEqualTo( "index_a908f819" );
             tx.commit();
         }
     }
@@ -145,13 +143,13 @@ class SchemaImplTest
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( USER_LABEL ).on( "name" ).withName( indexName ).create();
-            assertThat( index.getName(), is( indexName ) );
+            assertThat( index.getName() ).isEqualTo( indexName );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().getIndexByName( indexName );
-            assertThat( index.getName(), is( indexName ) );
+            assertThat( index.getName() ).isEqualTo( indexName );
             tx.commit();
         }
     }

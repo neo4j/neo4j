@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -49,7 +47,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -123,7 +121,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
                     found.add( nodes.nodeReference() );
                 }
 
-                assertThat( found.size(), Matchers.greaterThan( 0 ) );
+                assertThat( found.size() ).isGreaterThan( 0 );
 
                 if ( label == FOO_LABEL )
                 {

@@ -43,8 +43,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -421,7 +420,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
                 found.add( Pair.of( nodes.nodeReference(), nodes.propertyValue( 0 ) ) );
             }
 
-            assertThat( found, equalTo( expected ) );
+            assertThat( found ).isEqualTo( expected );
         }
         else
         {
@@ -432,7 +431,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             }
             ImmutableSet<Long> expectedIds = expected.stream().map( Pair::first ).collect( Collectors2.toImmutableSet() );
 
-            assertThat( foundIds, equalTo( expectedIds ) );
+            assertThat( foundIds ).isEqualTo( expectedIds );
         }
     }
 }

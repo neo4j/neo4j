@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -32,7 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -57,7 +56,7 @@ class SchemaImplMockTest
         IllegalStateException e = assertThrows( IllegalStateException.class, () -> schema.awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES ) );
 
         // then
-        assertThat( e.getMessage(), Matchers.containsString( Exceptions.stringify( cause ) ) );
+        assertThat( e.getMessage() ).contains( Exceptions.stringify( cause ) );
     }
 
     private static IndexDefinitionImpl mockIndexDefinition()

@@ -75,15 +75,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.emptyArray;
-import static org.hamcrest.Matchers.emptyCollectionOf;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -259,13 +251,11 @@ public class StoreUpgraderTest
                 pageCache, fileSystem, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
-            assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
-                equalTo( neoStores.getMetaDataStore().getLastCommittedTransaction() ) );
-            assertThat( neoStores.getMetaDataStore().getUpgradeTime(),
-                not( equalTo( MetaDataStore.FIELD_NOT_INITIALIZED ) ) );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isNotEqualTo( MetaDataStore.FIELD_NOT_INITIALIZED );
 
             long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
-            assertThat( neoStores.getMetaDataStore().getUpgradeTime(), greaterThan( minuteAgo ) );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isGreaterThan( minuteAgo );
         }
     }
 
@@ -283,7 +273,7 @@ public class StoreUpgraderTest
         newUpgrader( check, allowMigrateConfig, pageCache ).migrateIfNeeded( databaseLayout );
 
         // Then
-        assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
+        assertThat( migrationHelperDirs() ).isEmpty();
     }
 
     @ParameterizedTest
@@ -327,7 +317,7 @@ public class StoreUpgraderTest
         storeUpgrader.migrateIfNeeded( databaseLayout );
 
         // Then
-        assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
+        assertThat( migrationHelperDirs() ).isEmpty();
     }
 
     @ParameterizedTest
@@ -365,12 +355,12 @@ public class StoreUpgraderTest
 
         logProvider.rawMessageMatcher().assertContains( "Starting transaction logs migration." );
         logProvider.rawMessageMatcher().assertContains( "Transaction logs migration completed." );
-        assertThat( getLogFiles( migrationLayout.databaseDirectory() ), emptyArray() );
+        assertThat( getLogFiles( migrationLayout.databaseDirectory() ) ).isEmpty();
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
         assertTrue( fileSystem.fileExists( databaseTransactionLogsHome ) );
 
         Set<String> logFileNames = getLogFileNames( databaseTransactionLogsHome );
-        assertThat( logFileNames, not( empty() ) );
+        assertThat( logFileNames ).isNotEmpty();
         assertEquals( getLogFileNames( prepareDatabaseDirectory ), logFileNames );
     }
 
@@ -408,13 +398,13 @@ public class StoreUpgraderTest
 
         StoreVersionCheck check = getVersionCheck( pageCache );
         StoreUpgrader storeUpgrader = newUpgrader( check, pageCache );
-        assertThat( storeUpgrader.getParticipants(), hasSize( 2 ) );
+        assertThat( storeUpgrader.getParticipants() ).hasSize( 2 );
     }
 
     private void createDummyTxLogFiles( File databaseTransactionLogsHome ) throws IOException
     {
         Set<String> preparedLogFiles = getLogFileNames( prepareDatabaseDirectory );
-        assertThat( preparedLogFiles, not( empty() ) );
+        assertThat( preparedLogFiles ).isNotEmpty();
         for ( String preparedLogFile : preparedLogFiles )
         {
             fileSystem.write( new File( databaseTransactionLogsHome, preparedLogFile ) ).close();

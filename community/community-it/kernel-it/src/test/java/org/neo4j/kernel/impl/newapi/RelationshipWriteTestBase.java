@@ -30,8 +30,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -205,14 +204,14 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ) ).isEqualTo( NO_VALUE );
             tx.commit();
         }
 
         // Then
         try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ) ).isEqualTo( "hello" );
         }
     }
 
@@ -238,15 +237,14 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ),
-                    equalTo( intValue( 42 ) ) );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ) ).isEqualTo( intValue( 42 ) );
             tx.commit();
         }
 
         // Then
         try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ) ).isEqualTo( "hello" );
         }
     }
 
@@ -271,8 +269,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
-                    equalTo( intValue( 42 ) ) );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ) ).isEqualTo( intValue( 42 ) );
             tx.commit();
         }
 
@@ -302,8 +299,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
-                    equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ) ).isEqualTo( NO_VALUE );
             tx.commit();
         }
 
@@ -335,10 +331,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
-                    equalTo( intValue( 42 ) ) );
-            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
-                    equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ) ).isEqualTo( intValue( 42 ) );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ) ).isEqualTo( NO_VALUE );
             tx.commit();
         }
 
@@ -369,16 +363,16 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
-            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ) ).isEqualTo( NO_VALUE );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "world" ) ) ).isEqualTo( stringValue( "hello" ) );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, intValue( 1337 ) ) ).isEqualTo( stringValue( "world" ) );
             tx.commit();
         }
 
         // Then
         try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( 1337 ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ) ).isEqualTo( 1337 );
         }
     }
 
@@ -405,8 +399,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         KernelTransaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
-        assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, property, theValue ), equalTo( theValue ) );
+        assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, property, theValue ) ).isEqualTo( theValue );
 
-        assertThat( tx.commit(), equalTo( KernelTransaction.READ_ONLY ) );
+        assertThat( tx.commit() ).isEqualTo( KernelTransaction.READ_ONLY );
     }
 }

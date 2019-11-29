@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,7 +98,7 @@ import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
@@ -345,7 +344,7 @@ class CsvInputBatchImportIT
                 Map<String, AtomicInteger> innerInner = inner.get( endNodeName );
                 String type = relationship.getType().name();
                 int countAfterwards = innerInner.get( type ).decrementAndGet();
-                MatcherAssert.assertThat( countAfterwards, greaterThanOrEqualTo( 0 ) );
+                assertThat( countAfterwards ).isGreaterThanOrEqualTo( 0 );
                 if ( countAfterwards == 0 )
                 {
                     innerInner.remove( type );

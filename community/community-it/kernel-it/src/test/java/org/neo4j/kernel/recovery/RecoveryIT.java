@@ -61,10 +61,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import static java.lang.String.valueOf;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -319,7 +316,7 @@ class RecoveryIT
 
             var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
             assertTrue( failure.isPresent() );
-            assertThat( getRootCause( failure.get() ).getMessage(), containsString( "Transaction logs are missing and recovery is not possible." ) );
+            assertThat( getRootCause( failure.get() ).getMessage() ).contains( "Transaction logs are missing and recovery is not possible." );
         }
         finally
         {
@@ -546,7 +543,7 @@ class RecoveryIT
         try
         {
             var e = assertThrows( Exception.class, () -> service.database( DEFAULT_DATABASE_NAME ).beginTx() );
-            assertThat( getRootCause( e ), instanceOf( DatabaseStartAbortedException.class ) );
+            assertThat( getRootCause( e ) ).isInstanceOf( DatabaseStartAbortedException.class );
         }
         finally
         {
@@ -710,8 +707,8 @@ class RecoveryIT
         try
         {
             PageCache restartedCache = getDatabasePageCache( (GraphDatabaseAPI) restartedDatabase );
-            assertThat( getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ),
-                    greaterThan( 0L ) );
+            assertThat( getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ) ).isGreaterThan(
+                    0L );
         }
         finally
         {

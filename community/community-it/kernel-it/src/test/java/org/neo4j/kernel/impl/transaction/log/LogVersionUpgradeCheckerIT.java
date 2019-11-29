@@ -43,10 +43,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.matchers.NestedThrowableMatcher;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
@@ -97,7 +95,7 @@ class LogVersionUpgradeCheckerIT
 
             var failure = dbStateService.causeOfFailure( db.databaseId() );
             assertTrue( failure.isPresent() );
-            assertThat( getRootCause( failure.get() ), new NestedThrowableMatcher( UpgradeNotAllowedException.class ) );
+            assertThat( failure.get() ).hasRootCauseInstanceOf( UpgradeNotAllowedException.class );
         }
         finally
         {

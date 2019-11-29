@@ -35,14 +35,10 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsIterableContaining.hasItems;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
@@ -67,7 +63,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
                 .procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).signature();
 
         // Then
-        assertThat( found, equalTo( signature ) );
+        assertThat( found ).isEqualTo( signature );
         commit();
     }
 
@@ -79,8 +75,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
                 .procedureGet( procedureName( "db", "labels" ) ).signature();
 
         // Then
-        assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
-                .out(  "label", NTString ).build() ) );
+        assertThat( found ).isEqualTo( procedureSignature( procedureName( "db", "labels" ) ).out( "label", NTString ).build() );
         commit();
     }
 
@@ -97,10 +92,8 @@ class ProceduresKernelIT extends KernelIntegrationTest
                 Iterables.asList( newTransaction().procedures().proceduresGetAll() );
 
         // Then
-        assertThat( signatures, hasItems(
-            procedure.signature(),
-            procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build(),
-            procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() ) );
+        assertThat( signatures ).contains( procedure.signature(), procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build(),
+                procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() );
         commit();
     }
 
@@ -109,7 +102,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
     {
         var e = assertThrows( ProcedureException.class,
             () -> internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) ) );
-        assertThat( e.getMessage(), equalTo( "Procedures with zero output fields must be declared as VOID" ) );
+        assertThat( e.getMessage() ).isEqualTo( "Procedures with zero output fields must be declared as VOID" );
     }
 
     @Test
@@ -126,7 +119,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( found ), contains( equalTo( new AnyValue[]{longValue(1337)} ) ) );
+        assertThat( asList( found ).contains( new AnyValue[]{longValue(1337)} ) );
         commit();
     }
 

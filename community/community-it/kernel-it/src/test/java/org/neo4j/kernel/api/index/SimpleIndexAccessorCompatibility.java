@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.hamcrest.Matchers;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -65,10 +64,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQuery.exists;
@@ -110,10 +107,10 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 4L, descriptor.schema(), "apA" ),
                 add( 5L, descriptor.schema(), "b" ) ) );
 
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "A" ) ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "ba" ) ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "" ) ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 1L, 3L, 4L ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( singletonList( 2L ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
     }
 
     @Test
@@ -123,7 +120,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 1L, descriptor.schema(), "2a" ),
                 add( 2L, descriptor.schema(), 2L ),
                 add( 2L, descriptor.schema(), 20L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "2" ) ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "2" ) ) ) ).isEqualTo( singletonList( 1L ) );
     }
 
     @Test
@@ -145,7 +142,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 8L, descriptor.schema(), d8 )
             ) );
 
-        assertThat( query( range( 1, d4, true, d7, true ) ), Matchers.contains( 4L, 5L, 6L, 7L ) );
+        assertThat( query( range( 1, d4, true, d7, true ) ) ).containsExactly( 4L, 5L, 6L, 7L );
     }
 
     @Test
@@ -163,7 +160,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 3L, descriptor.schema(), p3 )
             ) );
 
-        assertThat( query( range( 1, p1, true, p2, true ) ), Matchers.contains( 1L, 2L ) );
+        assertThat( query( range( 1, p1, true, p2, true ) ) ).containsExactly( 1L, 2L );
     }
 
     @Test
@@ -178,7 +175,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         for ( NodeAndValue entry : valueSet1 )
         {
             List<Long> result = query( IndexQuery.exact( propertyKeyId, entry.value ) );
-            assertThat( result, equalTo( singletonList( entry.nodeId ) ) );
+            assertThat( result ).isEqualTo( singletonList( entry.nodeId ) );
         }
     }
 
@@ -193,7 +190,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         // THEN
         int propertyKeyId = descriptor.schema().getPropertyId();
         List<Long> result = query( IndexQuery.exists( propertyKeyId ) );
-        assertThat( result, containsInAnyOrder( allNodes ) );
+        assertThat( result ).contains( allNodes );
     }
 
     @Test
@@ -390,7 +387,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 {
                     for ( boolean toInclusive : new boolean[] {true, false} )
                     {
-                        assertThat( query( range( 1, from, fromInclusive, to, toInclusive ) ), equalTo( ids( f, fromInclusive, t, toInclusive ) ) );
+                        assertThat( query( range( 1, from, fromInclusive, to, toInclusive ) ) ).isEqualTo( ids( f, fromInclusive, t, toInclusive ) );
                     }
                 }
             }
@@ -909,7 +906,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         try ( AutoCloseable ignored = query( client, order, range ) )
         {
             List<Long> seenIds = assertClientReturnValuesInOrder( client, order );
-            assertThat( seenIds.size(), equalTo( expectedSize ) );
+            assertThat( seenIds.size() ).isEqualTo( expectedSize );
         }
     }
 
@@ -983,7 +980,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 1L, descriptor.schema(), "a" ),
                     add( 2L, descriptor.schema(), "a" ) ) );
 
-            assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+            assertThat( query( exact( 1, "a" ) ) ).containsExactly( 1L, 2L );
         }
 
         @Test
@@ -994,8 +991,8 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 2L, descriptor.schema(), "a" ),
                     add( 3L, descriptor.schema(), "b" ) ) );
 
-            assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
-            assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+            assertThat( query( exact( 1, "a" ) ) ).containsExactly(  1L, 2L );
+            assertThat( query( exists( 1 ) ) ).containsExactly(  1L, 2L, 3L );
         }
 
         @Test
@@ -1008,11 +1005,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 4L, descriptor.schema(), 5 ),
                     add( 5L, descriptor.schema(), 5 ) ) );
 
-            assertThat( query( range( 1, -5, true, 5, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-            assertThat( query( range( 1, -3, true, -1, true ) ), equalTo( EMPTY_LIST ) );
-            assertThat( query( range( 1, -5, true, 4, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-            assertThat( query( range( 1, -4, true, 5, true ) ), equalTo( asList( 3L, 4L, 5L ) ) );
-            assertThat( query( range( 1, -5, true, 5, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+            assertThat( query( range( 1, -5, true, 5, true ) ) ).containsExactly(  1L, 2L, 3L, 4L, 5L );
+            assertThat( query( range( 1, -3, true, -1, true ) ) ).isEmpty();
+            assertThat( query( range( 1, -5, true, 4, true ) ) ).containsExactly(  1L, 2L, 3L );
+            assertThat( query( range( 1, -4, true, 5, true ) ) ).containsExactly(  3L, 4L, 5L );
+            assertThat( query( range( 1, -5, true, 5, true ) ) ).containsExactly(  1L, 2L, 3L, 4L, 5L );
         }
 
         @Test
@@ -1025,11 +1022,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 4L, descriptor.schema(), "William" ),
                     add( 5L, descriptor.schema(), "William" ) ) );
 
-            assertThat( query( range( 1, "Anna", false, "William", false ) ), equalTo( singletonList( 3L ) ) );
-            assertThat( query( range( 1, "Arabella", false, "Bob", false ) ), equalTo( EMPTY_LIST ) );
-            assertThat( query( range( 1, "Anna", true, "William", false ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-            assertThat( query( range( 1, "Anna", false, "William", true ) ), equalTo( asList( 3L, 4L, 5L ) ) );
-            assertThat( query( range( 1, "Anna", true, "William", true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+            assertThat( query( range( 1, "Anna", false, "William", false ) ) ).containsExactly( 3L );
+            assertThat( query( range( 1, "Arabella", false, "Bob", false ) ) ).isEmpty();
+            assertThat( query( range( 1, "Anna", true, "William", false ) ) ).containsExactly(  1L, 2L, 3L );
+            assertThat( query( range( 1, "Anna", false, "William", true ) ) ).containsExactly(  3L, 4L, 5L );
+            assertThat( query( range( 1, "Anna", true, "William", true ) ) ).containsExactly(  1L, 2L, 3L, 4L, 5L );
         }
 
         @Test
@@ -1107,11 +1104,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 4L, descriptor.schema(), v4 ),
                     add( 5L, descriptor.schema(), v4 ) ) );
 
-            assertThat( query( range( 1, v1, false, v4, false ) ), equalTo( singletonList( 3L ) ) );
-            assertThat( query( range( 1, v2, false, v3, false ) ), equalTo( EMPTY_LIST ) );
-            assertThat( query( range( 1, v1, true, v4, false ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-            assertThat( query( range( 1, v1, false, v4, true ) ), equalTo( asList( 3L, 4L, 5L ) ) );
-            assertThat( query( range( 1, v1, true, v4, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+            assertThat( query( range( 1, v1, false, v4, false ) ) ).containsExactly( 3L );
+            assertThat( query( range( 1, v2, false, v3, false ) ) ).isEmpty();
+            assertThat( query( range( 1, v1, true, v4, false ) ) ).containsExactly(  1L, 2L, 3L );
+            assertThat( query( range( 1, v1, false, v4, true ) ) ).containsExactly(  3L, 4L, 5L );
+            assertThat( query( range( 1, v1, true, v4, true ) ) ).containsExactly(  1L, 2L, 3L, 4L, 5L );
         }
 
         @Test
@@ -1124,8 +1121,8 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 4L, descriptor.schema(), "apa" ),
                     add( 5L, descriptor.schema(), "apa" ) ) );
 
-            assertThat( query( stringPrefix( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-            assertThat( query( stringPrefix( 1, stringValue( "apa" ) ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+            assertThat( query( stringPrefix( 1, stringValue( "a" ) ) ) ).containsExactly(  1L, 3L, 4L, 5L );
+            assertThat( query( stringPrefix( 1, stringValue( "apa" ) ) ) ).containsExactly(  3L, 4L, 5L );
         }
 
         @Test
@@ -1138,9 +1135,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 4L, descriptor.schema(), "apa" ),
                     add( 5L, descriptor.schema(), "apalong" ) ) );
 
-            assertThat( query( stringContains( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-            assertThat( query( stringContains( 1, stringValue( "apa" ) ) ), equalTo( asList( 3L, 4L, 5L ) ) );
-            assertThat( query( stringContains( 1, stringValue( "apa*" ) ) ), equalTo( Collections.emptyList() ) );
+            assertThat( query( stringContains( 1, stringValue( "a" ) ) ) ).containsExactly(  1L, 3L, 4L, 5L );
+            assertThat( query( stringContains( 1, stringValue( "apa" ) ) ) ).containsExactly(  3L, 4L, 5L );
+            assertThat( query( stringContains( 1, stringValue( "apa*" ) ) ) ).isEmpty();
         }
 
         @Test
@@ -1154,10 +1151,10 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 5L, descriptor.schema(), "longapa" ),
                     add( 6L, descriptor.schema(), "apalong" ) ) );
 
-            assertThat( query( stringSuffix( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-            assertThat( query( stringSuffix( 1, stringValue( "apa" ) ) ), equalTo( asList( 3L, 4L, 5L ) ) );
-            assertThat( query( stringSuffix( 1, stringValue( "apa*" ) ) ), equalTo( Collections.emptyList() ) );
-            assertThat( query( stringSuffix( 1, stringValue( "" ) ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
+            assertThat( query( stringSuffix( 1, stringValue( "a" ) ) ) ).containsExactly(  1L, 3L, 4L, 5L );
+            assertThat( query( stringSuffix( 1, stringValue( "apa" ) ) ) ).containsExactly(  3L, 4L, 5L );
+            assertThat( query( stringSuffix( 1, stringValue( "apa*" ) ) ) ).isEmpty();
+            assertThat( query( stringSuffix( 1, stringValue( "" ) ) ) ).containsExactly(  1L, 2L, 3L, 4L, 5L, 6L );
         }
 
         @Test
@@ -1184,7 +1181,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             }
             updateAndCommit( updates );
 
-            assertThat( query( exists( 1 ) ), equalTo( nodeIds ) );
+            assertThat( query( exists( 1 ) ) ).containsAll( nodeIds );
         }
 
         private Value nextRandomValidArrayValue()
@@ -1223,7 +1220,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 1L, descriptor.schema(), "a" ),
                     add( 2L, descriptor.schema(), "a" ) ) );
 
-            assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+            assertThat( query( exact( 1, "a" ) ) ).containsExactly(  1L, 2L );
         }
 
         @Test
@@ -1234,8 +1231,8 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 2L, descriptor.schema(), "b" ),
                     add( 3L, descriptor.schema(), "c" ) ) );
 
-            assertThat( query( exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
-            assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+            assertThat( query( exact( 1, "a" ) ) ).containsExactly( 1L );
+            assertThat( query( IndexQuery.exists( 1 ) ) ).containsExactly(  1L, 2L, 3L );
         }
     }
 

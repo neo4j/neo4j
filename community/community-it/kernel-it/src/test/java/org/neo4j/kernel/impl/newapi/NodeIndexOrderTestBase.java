@@ -39,8 +39,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -144,11 +143,11 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         while ( cursor.next() && expectedRows.hasNext() )
         {
             Pair<Long, Value> expectedRow = expectedRows.next();
-            assertThat( cursor.nodeReference(), equalTo( expectedRow.first() ) );
+            assertThat( cursor.nodeReference() ).isEqualTo( expectedRow.first() );
             for ( int i = 0; i < cursor.numberOfProperties(); i++ )
             {
                 Value value = cursor.propertyValue( i );
-                assertThat( value, equalTo( expectedRow.other() ) );
+                assertThat( value ).isEqualTo( expectedRow.other() );
             }
         }
 

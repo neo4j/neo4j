@@ -33,8 +33,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptyMap;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @TestDirectoryExtension
@@ -75,7 +74,7 @@ class LockerLifecycleAdapterTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause().getCause(), instanceOf( FileLockException.class ) );
+            assertThat( e.getCause().getCause() ).isInstanceOf( FileLockException.class );
         }
         finally
         {
