@@ -35,9 +35,7 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -97,8 +95,8 @@ class PathImplTest
         Path secondPath = new PathImpl.Builder( node ).push( relationship ).push( createRelationship( 1337L, 7331L ) ).build();
 
         // When Then
-        assertThat( firstPath, not( equalTo( secondPath ) ) );
-        assertThat( secondPath, not( equalTo( firstPath ) ) );
+        assertThat( firstPath ).isNotEqualTo( secondPath );
+        assertThat( secondPath ).isNotEqualTo( firstPath );
     }
 
     @Test
