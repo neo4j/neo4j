@@ -187,7 +187,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               Some(new IllegalStateException("User failed to alter their own password: Command not available with auth disabled."))
             else // The 'current user' doesn't exist in the system graph
               Some(new IllegalStateException(s"User '$currentUser' failed to alter their own password: User does not exist."))
-          })
+          }),
+        checkCredentialsExpired = false
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO $newPassword
@@ -270,8 +271,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
-    case SystemProcedureCall(_, queryString, params) => (_, _, _) =>
-      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, params)
+    case SystemProcedureCall(_, queryString, params, checkCredentialsExpired) => (_, _, _) =>
+      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, params, checkCredentialsExpired = checkCredentialsExpired)
 
     // Ignore the log command in community
     case LogSystemCommand(source, _) => (context, parameterMapping, securityContext) =>

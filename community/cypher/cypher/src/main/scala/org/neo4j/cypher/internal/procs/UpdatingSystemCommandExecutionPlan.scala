@@ -39,7 +39,8 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               query: String,
                                               systemParams: MapValue,
                                               queryHandler: QueryHandler,
-                                              source: Option[ExecutionPlan] = None)
+                                              source: Option[ExecutionPlan] = None,
+                                              checkCredentialsExpired: Boolean = true)
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -53,6 +54,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
+      if (checkCredentialsExpired) tc.securityContext().assertCredentialsNotExpired()
       val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
