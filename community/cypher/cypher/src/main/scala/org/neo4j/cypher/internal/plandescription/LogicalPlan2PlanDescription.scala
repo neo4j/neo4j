@@ -335,20 +335,29 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
 
       case DoNothingIfNotExists(_, label, name) =>
-        val nameArgument = label match {
-          case "User" => User(Prettifier.escapeName(name))
-          case "Role" => Role(Prettifier.escapeName(name))
-          case "Database" => Database(Prettifier.escapeName(name))
-        }
+        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"DoNothingIfNotExists($label)", NoChildren, Seq(nameArgument), variables)
 
       case DoNothingIfExists(_, label, name) =>
-        val nameArgument = label match {
-          case "User" => User(Prettifier.escapeName(name))
-          case "Role" => Role(Prettifier.escapeName(name))
-          case "Database" => Database(Prettifier.escapeName(name))
-        }
+        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"DoNothingIfExists($label)", NoChildren, Seq(nameArgument), variables)
+
+      case EnsureNodeExists(_, label, name) =>
+        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
+        PlanDescriptionImpl(id, s"EnsureNodeExists($label)", NoChildren, Seq(nameArgument), variables)
+
+      case CheckFrozenRole(_, roleName) =>
+        PlanDescriptionImpl(id, "CheckFrozenRole", NoChildren, Seq(Role(Prettifier.escapeName(roleName))), variables)
+
+      case AssertDbmsAdmin(action) =>
+        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(DbmsAction(action.name)), variables)
+
+      case AssertDatabaseAdmin(action, normalizedName) =>
+        val arguments = Seq(DatabaseAction(action.name), Database(Prettifier.escapeName(normalizedName.name)))
+        PlanDescriptionImpl(id, "AssertDatabaseAdmin", NoChildren, arguments, variables)
+
+      case AssertNotCurrentUser(_, userName, _) =>
+        PlanDescriptionImpl(id, "AssertNotCurrentUser", NoChildren, Seq(User(Prettifier.escapeName(userName))), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -536,6 +545,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                             Seq(expandDescription) ++ predicatesDescription, variables)
 
       // TODO: These are currently required in both leaf and one-child code paths, surely there is a way to not require that?
+      case ShowUsers(_) =>
+        PlanDescriptionImpl(id, "ShowUsers", children, Seq.empty, variables)
+
       case CreateUser(_, name, _, _, _, _) =>
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateUser", children, Seq(userName), variables)
@@ -543,6 +555,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case DropUser(_, name) =>
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropUser", children, Seq(userName), variables)
+
+      case AlterUser(_, name, _, _, _, _) =>
+        val userName = User(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "AlterUser", children, Seq(userName), variables)
+
+      case ShowRoles(_, _,_) =>
+        PlanDescriptionImpl(id, "ShowRoles", children, Seq.empty, variables)
 
       case DropRole(_, name) =>
         val roleName = Role(Prettifier.escapeName(name))
@@ -632,6 +651,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
 
+      case ShowPrivileges(_, scope) =>
+        PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Scope(Prettifier.extractScope(scope))), variables)
+
       case CreateDatabase(_, normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "CreateDatabase", children, Seq(dbName), variables)
@@ -639,6 +661,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case DropDatabase(_, normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "DropDatabase", children, Seq(dbName), variables)
+
+      case StartDatabase(_, normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
+        PlanDescriptionImpl(id, "StartDatabase", children, Seq(dbName), variables)
 
       case StopDatabase(_, normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
@@ -653,6 +679,24 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case LogSystemCommand(_, _) =>
         PlanDescriptionImpl(id, "LogSystemCommand", children, Seq.empty, variables)
+
+      case DoNothingIfNotExists(_, label, name) =>
+        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
+        PlanDescriptionImpl(id, s"DoNothingIfNotExists($label)", children, Seq(nameArgument), variables)
+
+      case DoNothingIfExists(_, label, name) =>
+        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
+        PlanDescriptionImpl(id, s"DoNothingIfExists($label)", children, Seq(nameArgument), variables)
+
+      case EnsureNodeExists(_, label, name) =>
+        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
+        PlanDescriptionImpl(id, s"EnsureNodeExists($label)", children, Seq(nameArgument), variables)
+
+      case CheckFrozenRole(_, roleName) =>
+        PlanDescriptionImpl(id, "CheckFrozenRole", children, Seq(Role(Prettifier.escapeName(roleName))), variables)
+
+      case AssertNotCurrentUser(_, userName, _) =>
+        PlanDescriptionImpl(id, "AssertNotCurrentUser", children, Seq(User(Prettifier.escapeName(userName))), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -827,5 +871,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
 
     (name, indexDesc)
+  }
+
+  private def getNameArgumentForLabelInAdministrationCommand(label: String, name: String) = {
+    label match {
+      case "User" => User(Prettifier.escapeName(name))
+      case "Role" => Role(Prettifier.escapeName(name))
+      case "Database" => Database(Prettifier.escapeName(name))
+    }
   }
 }
