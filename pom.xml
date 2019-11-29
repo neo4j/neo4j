@@ -564,6 +564,7 @@
               <jvmArg>-Xms256m</jvmArg>
               <jvmArg>-Xmx1024m</jvmArg>
             </jvmArgs>
+            <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
           </configuration>
 
           <!-- This is needed to mix scala and java code in the same module -->
