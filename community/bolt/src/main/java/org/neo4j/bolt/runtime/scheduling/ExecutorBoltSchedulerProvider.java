@@ -31,6 +31,8 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements BoltSchedulerProvider
 {
     private final Config config;
@@ -57,7 +59,8 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
         scheduler.setThreadFactory( Group.BOLT_WORKER, NettyThreadFactory::new );
         if ( config.get( BoltConnector.enabled ) )
         {
-            this.forkJoinThreadPool = new ForkJoinPool();
+            checkState( forkJoinThreadPool == null, "ForkJoinPool already initialized, this should only be done once." );
+            forkJoinThreadPool = new ForkJoinPool();
             this.boltScheduler =
                     new ExecutorBoltScheduler( BoltConnector.NAME, executorFactory, scheduler, logService, config.get( BoltConnector.thread_pool_min_size ),
                             config.get( BoltConnector.thread_pool_max_size ), config.get( BoltConnector.thread_pool_keep_alive ),
