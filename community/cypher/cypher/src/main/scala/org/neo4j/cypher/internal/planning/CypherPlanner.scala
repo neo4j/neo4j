@@ -174,7 +174,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     // in the case of a cached query the notificationLogger will not be properly filled
     syntacticQuery.maybeSemantics.map(_.notifications).getOrElse(Set.empty).foreach(notificationLogger.log)
 
-    doPlan(syntacticQuery, preParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, innerVariableNamer)
+    doPlan(syntacticQuery, preParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, innerVariableNamer,
+      preParsedQuery.rawStatement)
   }
 
   /**
@@ -194,7 +195,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
            runtime: CypherRuntime[_]
           ): LogicalPlanResult = {
     val notificationLogger = new RecordingNotificationLogger(Some(fullyParsedQuery.options.offset))
-    doPlan(fullyParsedQuery.state, fullyParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, new GeneratingNamer)
+    doPlan(fullyParsedQuery.state, fullyParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, new GeneratingNamer,
+      fullyParsedQuery.state.queryText)
   }
 
   private def doPlan(syntacticQuery: BaseState,
@@ -204,7 +206,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                      params: MapValue,
                      runtime: CypherRuntime[_],
                      notificationLogger: InternalNotificationLogger,
-                     innerVariableNamer: InnerVariableNamer
+                     innerVariableNamer: InnerVariableNamer,
+                     rawQueryText: String
                     ): LogicalPlanResult = {
     val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
     // Context used for db communication during planning
@@ -216,7 +219,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val context = contextCreator.create(tracer,
       notificationLogger,
       planContext,
-      syntacticQuery.queryText,
+      rawQueryText,
       options.debugOptions,
       Some(options.offset),
       monitors,

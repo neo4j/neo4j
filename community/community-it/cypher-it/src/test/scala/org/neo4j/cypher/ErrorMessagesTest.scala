@@ -258,6 +258,34 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("should render caret correctly in parser errors for queries without prefix") {
+    testSyntaxErrorWithCaret(
+      "Invalid input '1': expected whitespace, comment or a pattern (line 1, column 7 (offset: 6))",
+      "MATCH 123",
+      "      ^")
+  }
+
+  test("should render caret correctly in parser errors for queries with prefix") {
+    testSyntaxErrorWithCaret(
+      "Invalid input '1': expected whitespace, comment or a pattern (line 1, column 15 (offset: 14))",
+      "EXPLAIN MATCH 123",
+      "              ^")
+  }
+
+  test("should render caret correctly in planner errors for queries without prefix") {
+    testSyntaxErrorWithCaret(
+      "Type mismatch: expected Integer but was String (line 1, column 22 (offset: 21))",
+      "CALL db.awaitIndexes('wrong')",
+      "                     ^")
+  }
+
+  test("should render caret correctly in planner errors for queries with prefix") {
+    testSyntaxErrorWithCaret(
+      "Type mismatch: expected Integer but was String (line 1, column 30 (offset: 29))",
+      "EXPLAIN CALL db.awaitIndexes('wrong')",
+      "                             ^")
+  }
+
   private def expectError(query: String, expectedError: String) {
     val error = intercept[Neo4jException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
@@ -267,6 +295,12 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     val error = intercept[SyntaxException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
     assertThat(error.getOffset, equalTo(Optional.of(expectedOffset.asInstanceOf[java.lang.Integer])))
+  }
+
+  private def testSyntaxErrorWithCaret(expectedError: String, query: String, expectedCaret: String) {
+    val error = intercept[SyntaxException](executeQuery(query))
+    val expected = String.format("%s\n\"%s\"\n %s", expectedError, query, expectedCaret)
+    error.getMessage.linesIterator.mkString("\n") should equal(expected)
   }
 
   private def executeQuery(query: String) {
