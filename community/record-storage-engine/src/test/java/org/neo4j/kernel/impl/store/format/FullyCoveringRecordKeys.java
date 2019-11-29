@@ -47,6 +47,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
             assertEquals( written.getNextProp(), read.getNextProp() );
             assertEquals( written.getNextRel(), read.getNextRel() );
             assertEquals( written.getLabelField(), read.getLabelField() );
+            assertEquals( written.getDynamicLabelRecords(), read.getDynamicLabelRecords() );
             assertEquals( written.isDense(), read.isDense() );
             assertEquals( written.isUseFixedReferences(), read.isUseFixedReferences() );
         };
