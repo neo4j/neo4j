@@ -282,13 +282,13 @@ public enum PrivilegeAction
 
     public static PrivilegeAction from( String name )
     {
-        for ( PrivilegeAction action : PrivilegeAction.values() )
+        try
         {
-            if ( action.toString().equalsIgnoreCase( name ) )
-            {
-                return action;
-            }
+            return PrivilegeAction.valueOf( name.toUpperCase() );
         }
-        return null;
+        catch ( IllegalArgumentException e )
+        {
+            return null;
+        }
     }
 }
