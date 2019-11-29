@@ -255,9 +255,34 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * 2L) // all node scan
   }
 
-  test("should profile rows with label scan and expand") {
+  test("should profile rows with shortest path") {
     // given
     val nodesPerLabel = 100
+    given {
+      for(_ <- 0 until nodesPerLabel)
+        sineGraph()
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .shortestPath("(x)-[r*]-(y)", Some("path"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "END")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodesPerLabel // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodesPerLabel // shortest path
+  }
+
+  test("should profile rows with label scan and expand") {
+    // given
+    val nodesPerLabel = 10
     given {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }

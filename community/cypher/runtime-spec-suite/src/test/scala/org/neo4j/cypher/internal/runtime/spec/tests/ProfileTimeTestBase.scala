@@ -178,6 +178,34 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
   }
 
+  test("should profile time with shortest path") {
+    // given
+    val nodesPerLabel = 10
+    given {
+      for(_ <- 0 until nodesPerLabel)
+        sineGraph()
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .shortestPath("(x)-[r*]-(y)", Some("path"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "END")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).time() should be > 0L // produce results
+    queryProfile.operatorProfile(1).time() should be > 0L // shortest path
+    queryProfile.operatorProfile(2).time() should be > 0L // cartesian product
+    queryProfile.operatorProfile(3).time() should be > 0L // nodeByLabelScan
+    queryProfile.operatorProfile(4).time() should be > 0L // nodeByLabelScan
+  }
+
   test("should profile time with expand into") {
     val size = sizeHint / 10
     given { circleGraph(size) }

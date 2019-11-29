@@ -341,7 +341,30 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val matchesPerVarExpand = 3
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should be > 0L
+  }
+
+  test("should profile dbHits with shortest path") {
+    // given
+    val nodesPerLabel = 10
+    given {
+      for(_ <- 0 until nodesPerLabel)
+        sineGraph()
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .shortestPath("(x)-[r*]-(y)", Some("path"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "END")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() should be > 0L
   }

@@ -87,3 +87,4 @@ class InterpretedSubscriberErrorTest extends SubscriberErrorTestBase(COMMUNITY.E
 class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime)
                                 with ThreadUnsafeExpressionTests[CommunityRuntimeContext]
                                 with ExpressionWithTxStateChangesTests[CommunityRuntimeContext]
+class InterpretedShortestPathTest extends ShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

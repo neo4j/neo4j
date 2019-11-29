@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.{CreateNode, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, pos}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
@@ -159,6 +159,30 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                                            )(_)))
     }
     self
+  }
+
+  def shortestPath(pattern: String, pathName: Option[String] = None, all: Boolean = false, predicates: Seq[String] = Seq.empty): IMPL = {
+    val p = patternParser.parse(pattern)
+    newRelationship(varFor(p.relName))
+
+    p.length match {
+      case SimplePatternLength => throw new IllegalArgumentException("Shortest path must have a variable length pattern")
+      case VarPatternLength(min, max) =>
+        appendAtCurrentIndent(UnaryOperator(lp => FindShortestPaths(lp,
+          ShortestPathPattern(pathName, PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length), !all)
+          (ShortestPaths(RelationshipChain(
+            NodePattern(Some(varFor(p.from)), Seq.empty, None)(pos), // labels and properties are not used at runtime
+            RelationshipPattern(Some(varFor(p.relName)),
+              p.relTypes,
+              Some(Some(Range(Some(UnsignedDecimalIntegerLiteral(min.toString)(pos)), max.map(i => UnsignedDecimalIntegerLiteral(i.toString)(pos)))(pos))),
+              None, // properties are not used at runtime
+              p.dir
+            )(pos),
+            NodePattern(Some(varFor(p.to)), Seq.empty, None)(pos) // labels and properties are not used at runtime
+          )(pos), !all)(pos)),
+          predicates.map(Parser.parseExpression)
+        )(_)))
+    }
   }
 
   def pruningVarExpand(pattern: String,
