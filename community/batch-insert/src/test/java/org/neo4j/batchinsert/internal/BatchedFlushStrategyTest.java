@@ -27,8 +27,8 @@ import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 class BatchedFlushStrategyTest
 {
@@ -38,7 +38,7 @@ class BatchedFlushStrategyTest
         DirectRecordAccessSet recordAccessSet = mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
         flushStrategy.flush();
-        verifyZeroInteractions( recordAccessSet );
+        verifyNoInteractions( recordAccessSet );
         flushStrategy.flush();
         verify( recordAccessSet ).commit();
         reset( recordAccessSet );
@@ -77,7 +77,7 @@ class BatchedFlushStrategyTest
 
         flushStrategy.flush();
         flushStrategy.flush();
-        verifyZeroInteractions( recordAccessSet );
+        verifyNoInteractions( recordAccessSet );
 
         flushStrategy.forceFlush();
         verify( recordAccessSet ).commit();
