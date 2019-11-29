@@ -45,7 +45,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgo
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingSparseCursor;
 
 /**
- * Tools for created specialized cursor for handling Expand(Into)
+ * Tools for creating a specialized cursor for handling Expand(Into)
  */
 @SuppressWarnings( "unused" )
 public abstract class ExpandIntoCursors
