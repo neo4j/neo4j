@@ -29,7 +29,8 @@ import org.neo4j.annotations.documented.Warning;
  */
 public interface GBPTreeConsistencyCheckVisitor<KEY>
 {
-    String indexInconsistent = "Index will be excluded from further consistency checks. Index file: %s.";
+    String indexFile = "Index file: %s.";
+    String indexInconsistent = "Index will be excluded from further consistency checks. " + indexFile;
 
     @Documented( "Index inconsistency: " +
             "Page: %d is not a tree node page. " +
@@ -131,9 +132,8 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
     void exception( Exception e );
 
     @Warning
-    @Documented( "Index inconsistency: " +
-            "Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery.%n" +
-            indexInconsistent )
+    @Documented( "Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery.%n" +
+            indexFile )
     void dirtyOnStartup( File file );
 
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>

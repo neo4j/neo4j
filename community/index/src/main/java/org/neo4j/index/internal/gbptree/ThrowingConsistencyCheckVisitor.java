@@ -159,7 +159,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     @Override
     public void dirtyOnStartup( File file )
     {
-        throwTreeMetaInconsistency( "Tree was dirty on startup." );
+        // This is not considered an inconsistency
     }
 
     private static String stateToString( long generation, long readPointer, long pointer, byte stateA )

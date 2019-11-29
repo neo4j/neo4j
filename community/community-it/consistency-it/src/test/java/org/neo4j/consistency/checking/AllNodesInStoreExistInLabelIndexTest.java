@@ -115,7 +115,8 @@ class AllNodesInStoreExistInLabelIndexTest
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
-        assertThat( readReport( result ), containsString("WARN : Label index was not properly shutdown and rebuild is required.") );
+        assertThat( readReport( result ), containsString(
+                "WARN : Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." ) );
     }
 
     @Test
@@ -133,7 +134,8 @@ class AllNodesInStoreExistInLabelIndexTest
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
-        assertThat( readReport( result ), containsString("WARN : Label index was not properly shutdown and rebuild is required.") );
+        assertThat( readReport( result ), containsString(
+                "WARN : Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." ) );
     }
 
     @Test

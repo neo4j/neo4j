@@ -1443,7 +1443,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             cleanTrackingVisitor.exception( e );
         }
-        return cleanTrackingVisitor.clean();
+        return cleanTrackingVisitor.isConsistent();
     }
 
     @VisibleForTesting
