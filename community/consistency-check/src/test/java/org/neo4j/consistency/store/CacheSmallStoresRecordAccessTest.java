@@ -19,9 +19,6 @@
  */
 package org.neo4j.consistency.store;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -29,10 +26,10 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class CacheSmallStoresRecordAccessTest
 {
@@ -89,49 +86,21 @@ class CacheSmallStoresRecordAccessTest
         } );
 
         // when
-        assertThat( recordAccess.propertyKey( 0 ), isDirectReferenceTo( propertyKey0 ) );
-        assertThat( recordAccess.propertyKey( 1 ), isDirectReferenceTo( propertyKey1 ) );
-        assertThat( recordAccess.propertyKey( 2 ), isDirectReferenceTo( propertyKey2 ) );
-        assertThat( recordAccess.relationshipType( 0 ), isDirectReferenceTo( relationshipType0 ) );
-        assertThat( recordAccess.relationshipType( 1 ), isDirectReferenceTo( relationshipType1 ) );
-        assertThat( recordAccess.relationshipType( 2 ), isDirectReferenceTo( relationshipType2 ) );
-        assertThat( recordAccess.label( 0 ), isDirectReferenceTo( label0 ) );
-        assertThat( recordAccess.label( 1 ), isDirectReferenceTo( label1 ) );
-        assertThat( recordAccess.label( 2 ), isDirectReferenceTo( label2 ) );
+        assertThat( getRecord( recordAccess.propertyKey( 0 ) ) ).isSameAs( propertyKey0 );
+        assertThat( getRecord( recordAccess.propertyKey( 1 ) ) ).isSameAs( propertyKey1 );
+        assertThat( getRecord( recordAccess.propertyKey( 2 ) ) ).isSameAs( propertyKey2 );
+        assertThat( getRecord( recordAccess.relationshipType( 0 ) ) ).isSameAs( relationshipType0 );
+        assertThat( getRecord( recordAccess.relationshipType( 1 ) ) ).isSameAs( relationshipType1 );
+        assertThat( getRecord( recordAccess.relationshipType( 2 ) ) ).isSameAs( relationshipType2 );
+        assertThat( getRecord( recordAccess.label( 0 ) ) ).isSameAs( label0 );
+        assertThat( getRecord( recordAccess.label( 1 ) ) ).isSameAs( label1 );
+        assertThat( getRecord( recordAccess.label( 2 ) ) ).isSameAs( label2 );
 
-        // then
-        verifyZeroInteractions( delegate );
+        verifyNoInteractions( delegate );
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static <T extends AbstractBaseRecord> Matcher<RecordReference<T>> isDirectReferenceTo( T record )
+    private static <T extends AbstractBaseRecord> AbstractBaseRecord getRecord( RecordReference<T> reference )
     {
-        return (Matcher) new DirectReferenceMatcher<>( record );
-    }
-
-    private static class DirectReferenceMatcher<T extends AbstractBaseRecord>
-            extends TypeSafeMatcher<DirectRecordReference<T>>
-    {
-        private final T record;
-
-        @SuppressWarnings( "unchecked" )
-        DirectReferenceMatcher( T record )
-        {
-            super( DirectRecordReference.class );
-            this.record = record;
-        }
-
-        @Override
-        public boolean matchesSafely( DirectRecordReference<T> reference )
-        {
-            return record == reference.record();
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( DirectRecordReference.class.getName() )
-                       .appendText( "( " ).appendValue( record ).appendText( " )" );
-        }
+        return ((DirectRecordReference) reference).record();
     }
 }

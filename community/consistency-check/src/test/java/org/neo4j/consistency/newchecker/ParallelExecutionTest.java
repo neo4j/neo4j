@@ -26,8 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.helpers.collection.LongRange;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -103,7 +102,7 @@ class ParallelExecutionTest
         Throwable[] suppressed = exception.getSuppressed();
         List<String> messages = List.of( exception.getCause().getMessage(), suppressed[0].getCause().getMessage(), suppressed[1].getCause().getMessage() );
 
-        assertThat("", messages, containsInAnyOrder( "A", "B", "C" ) );
+        assertThat( messages ).contains( "A", "B", "C" );
     }
 
     @Test

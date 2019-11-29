@@ -19,9 +19,6 @@
  */
 package org.neo4j.consistency.repair;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -31,7 +28,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -81,26 +78,8 @@ class OwningNodeRelationshipChainTest
                         relType ) );
 
         // then
-        assertThat( recordsInChains, containsAllRecords( node1RelChain ) );
-        assertThat( recordsInChains, containsAllRecords( node2RelChain ) );
-    }
-
-    private static Matcher<RecordSet<RelationshipRecord>> containsAllRecords( final RecordSet<RelationshipRecord> expectedSet )
-    {
-        return new TypeSafeMatcher<RecordSet<RelationshipRecord>>()
-        {
-            @Override
-            public boolean matchesSafely( RecordSet<RelationshipRecord> actualSet )
-            {
-                return actualSet.containsAll( expectedSet );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "RecordSet containing " ).appendValueList( "[", ",", "]", expectedSet );
-            }
-        };
+        assertThat( recordsInChains ).containsAll( node1RelChain );
+        assertThat( recordsInChains ).containsAll( node2RelChain );
     }
 
     @SafeVarargs

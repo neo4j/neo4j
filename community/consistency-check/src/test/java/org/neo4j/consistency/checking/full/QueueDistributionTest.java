@@ -25,10 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class QueueDistributionTest
 {
@@ -60,10 +57,9 @@ class QueueDistributionTest
             RelationshipRecord relationshipRecord = new RelationshipRecord( 1 );
             relationshipRecord.setFirstNode( nextLong( randomGenerator ) );
             relationshipRecord.setSecondNode( nextLong( randomGenerator ) );
-            distributor.distribute( relationshipRecord, ( record, qIndex ) ->
-                    assertThat( "Distribution index for record " + record + " should be within a range of available " +
-                            "executors, while expected records per cpu is: " + recordsPerCpu, qIndex,
-                    allOf( greaterThanOrEqualTo( 0 ), lessThan( numberOfThreads ) ) ) );
+            distributor.distribute( relationshipRecord, ( record, qIndex ) -> assertThat( qIndex ).as(
+                    "Distribution index for record " + record + " should be within a range of available " + "executors, while expected records per cpu is: " +
+                            recordsPerCpu ).isGreaterThanOrEqualTo( 0 ).isLessThan( numberOfThreads ) );
         }
     }
 
