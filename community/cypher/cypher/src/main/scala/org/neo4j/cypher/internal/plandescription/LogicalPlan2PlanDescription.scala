@@ -324,7 +324,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case LogSystemCommand(_, _) =>
         PlanDescriptionImpl(id, "LogSystemCommand", NoChildren, Seq.empty, variables)
 
-      case SystemProcedureCall(procedureName, _, _) =>
+      case SystemProcedureCall(procedureName, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
 
       case DoNothingIfNotExists(_, label, name) =>

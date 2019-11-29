@@ -37,7 +37,8 @@ import org.neo4j.values.virtual.MapValue
   */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
                                       queryHandler: QueryHandler = QueryHandler.handleError(identity),
-                                      source: Option[ExecutionPlan] = None)
+                                      source: Option[ExecutionPlan] = None,
+                                      checkCredentialsExpired: Boolean = true)
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -51,6 +52,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
+      if (checkCredentialsExpired) tc.securityContext().assertCredentialsNotExpired()
       val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
