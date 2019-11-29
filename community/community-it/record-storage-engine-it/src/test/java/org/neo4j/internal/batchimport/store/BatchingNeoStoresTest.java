@@ -87,9 +87,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -137,7 +135,7 @@ class BatchingNeoStoresTest
                 }
             }
         } );
-        assertThat( exception.getMessage(), containsString( "already contains" ) );
+        assertThat( exception.getMessage() ).contains( "already contains" );
     }
 
     @Test
@@ -197,7 +195,7 @@ class BatchingNeoStoresTest
                     RecordStore<AbstractBaseRecord> store = stores.getNeoStores().getRecordStore( type );
                     if ( type == typeToTest )
                     {
-                        assertThat( store.toString(), (int) store.getHighId(), greaterThan( store.getNumberOfReservedLowIds() ) );
+                        assertThat( (int) store.getHighId() ).as( store.toString() ).isGreaterThan( store.getNumberOfReservedLowIds() );
                     }
                     else
                     {

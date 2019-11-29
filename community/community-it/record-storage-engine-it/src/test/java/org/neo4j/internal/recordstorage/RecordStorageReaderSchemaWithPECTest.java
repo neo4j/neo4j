@@ -32,8 +32,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
@@ -71,14 +70,9 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
         int propKeyId = propertyKeyId( propertyKey );
         int propKeyId2 = propertyKeyId( otherPropertyKey );
 
-        assertThat( constraints, containsInAnyOrder(
-                uniqueForLabel( labelId1, propKeyId ),
-                uniqueForLabel( labelId2, propKeyId ),
-                nodeKeyForLabel( labelId1, propKeyId2 ),
-                nodeKeyForLabel( labelId2, propKeyId2 ),
-                existsForLabel( labelId2, propKeyId ),
-                ConstraintDescriptorFactory.existsForRelType( relTypeId, propKeyId )
-            ) );
+        assertThat( constraints ).contains( uniqueForLabel( labelId1, propKeyId ), uniqueForLabel( labelId2, propKeyId ),
+                nodeKeyForLabel( labelId1, propKeyId2 ), nodeKeyForLabel( labelId2, propKeyId2 ), existsForLabel( labelId2, propKeyId ),
+                ConstraintDescriptorFactory.existsForRelType( relTypeId, propKeyId ) );
     }
 
     @Test
