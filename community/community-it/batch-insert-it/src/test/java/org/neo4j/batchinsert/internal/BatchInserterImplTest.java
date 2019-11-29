@@ -48,12 +48,7 @@ import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,8 +74,7 @@ class BatchInserterImplTest
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
         inserter.shutdown();
         long mappedMemoryTotalSize = MuninnPageCache.memoryRequiredForPages( pageCache.maxCachedPages() );
-        assertThat( "memory mapped config is active", mappedMemoryTotalSize,
-                is( allOf( greaterThan( kibiBytes( 270 ) ), lessThan( kibiBytes( 290 ) ) ) ) );
+        assertThat( mappedMemoryTotalSize ).as( "memory mapped config is active" ).isGreaterThan( kibiBytes( 270 ) ).isLessThan( kibiBytes( 290 ) );
     }
 
     @Test
@@ -108,7 +102,7 @@ class BatchInserterImplTest
 
             var e = assertThrows( FileLockException.class,
                 () -> BatchInserters.inserter( databaseLayout, fileSystem ) );
-            assertThat( e.getMessage(), startsWith( "Unable to obtain lock on file" ) );
+            assertThat( e.getMessage() ).startsWith( "Unable to obtain lock on file" );
         }
     }
 

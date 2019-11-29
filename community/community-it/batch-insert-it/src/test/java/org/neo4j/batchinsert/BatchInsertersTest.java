@@ -34,9 +34,7 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.batchinsert.BatchInserters.inserter;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -84,8 +82,7 @@ class BatchInsertersTest
 
     private static void verifyInserterFileSystemClose( BatchInserter inserter )
     {
-        assertThat( "Expect specific implementation that will do required cleanups.", inserter,
-                is( instanceOf( FileSystemClosingBatchInserter.class ) ) );
+        assertThat( inserter ).as( "Expect specific implementation that will do required cleanups." ).isInstanceOf( FileSystemClosingBatchInserter.class );
         inserter.shutdown();
     }
 }
