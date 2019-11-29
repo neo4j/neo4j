@@ -31,8 +31,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -182,6 +181,6 @@ class JavaFunctionsTestIT
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
 
-        assertThat( response.get( "errors" ).toString(), containsString( error ) );
+        assertThat( response.get( "errors" ).toString() ).contains( error );
     }
 }

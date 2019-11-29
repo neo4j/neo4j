@@ -29,8 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -50,7 +49,7 @@ class Neo4jExtensionIT
     void neo4jAvailable( Neo4j neo4j )
     {
         assertNotNull( neo4j );
-        assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
+        assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
     }
 
     @Test

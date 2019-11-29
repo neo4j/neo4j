@@ -49,9 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static java.time.ZoneOffset.UTC;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -85,7 +83,7 @@ public class JUnitRuleTestIT
         // When I run this test
 
         // Then
-        assertThat( HTTP.GET( neo4j.httpURI().resolve( "test/myExtension" ).toString() ).status(), equalTo( 234 ) );
+        assertThat( HTTP.GET( neo4j.httpURI().resolve( "test/myExtension" ).toString() ).status() ).isEqualTo( 234 );
     }
 
     @Test
@@ -99,7 +97,7 @@ public class JUnitRuleTestIT
         HTTP.Response response = HTTP.POST( neo4j.httpURI().toString() + "db/neo4j/tx/commit",
                 quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-        assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 2 ) );
+        assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 2 );
     }
 
     @Test
@@ -166,8 +164,8 @@ public class JUnitRuleTestIT
     {
         String currentOffset = currentTimeZoneOffsetString();
 
-        assertThat( contentOf( "neo4j.log" ), containsString( currentOffset ) );
-        assertThat( contentOf( "debug.log" ), containsString( currentOffset ) );
+        assertThat( contentOf( "neo4j.log" ) ).contains( currentOffset );
+        assertThat( contentOf( "debug.log" ) ).contains( currentOffset );
     }
 
     private String contentOf( String file ) throws IOException

@@ -38,8 +38,7 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static java.lang.System.lineSeparator;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
@@ -71,8 +70,8 @@ class FixturesTestIT
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-            assertThat( response.status(), equalTo( 200 ) );
-            assertThat(response.get( "results" ).get(0).get("data").size(), equalTo(1));
+            assertThat( response.status() ).isEqualTo( 200 );
+            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 1 );
         }
     }
 
@@ -99,7 +98,7 @@ class FixturesTestIT
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-            assertThat( response.toString(), response.get( "results" ).get(0).get("data").size(), equalTo(3) );
+            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).as( response.toString() ).isEqualTo( 3 );
         }
     }
 
@@ -127,7 +126,7 @@ class FixturesTestIT
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-            assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(2));
+            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 2 );
         }
     }
 
@@ -146,7 +145,7 @@ class FixturesTestIT
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-            assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(1));
+            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 1 );
         }
     }
 
@@ -167,7 +166,7 @@ class FixturesTestIT
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-            assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(1));
+            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 1 );
         }
     }
 
@@ -186,9 +185,9 @@ class FixturesTestIT
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getMessage(), equalTo(
-                    "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() +
-                    "\"this is not a valid cypher statement\"" + lineSeparator() + " ^" ) );
+            assertThat( e.getMessage() ).isEqualTo(
+                    "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() + "\"this is not a valid cypher statement\"" +
+                            lineSeparator() + " ^" );
         }
     }
 
@@ -215,7 +214,7 @@ class FixturesTestIT
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 1 ) );
+            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 1 );
         }
     }
 

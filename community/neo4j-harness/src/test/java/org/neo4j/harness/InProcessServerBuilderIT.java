@@ -71,9 +71,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -104,12 +102,12 @@ class InProcessServerBuilderIT
         try ( Neo4j neo4j = getTestBuilder( workDir ).build() )
         {
             // Then
-            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
-            assertThat( workDir.list().length, equalTo( 1 ) );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
+            assertThat( workDir.list().length ).isEqualTo( 1 );
         }
 
         // And after it's been closed, it should've cleaned up after itself.
-        assertThat( Arrays.toString( workDir.list() ), workDir.list().length, equalTo( 0 ) );
+        assertThat( workDir.list().length ).as( Arrays.toString( workDir.list() ) ).isEqualTo( 0 );
     }
 
     @Test
@@ -146,8 +144,8 @@ class InProcessServerBuilderIT
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
-            assertThat( HTTP.GET( neo4j.httpsURI().toString() ).status(), equalTo( 200 ) );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
+            assertThat( HTTP.GET( neo4j.httpsURI().toString() ).status() ).isEqualTo( 200 );
             Config config = ((GraphDatabaseAPI) neo4j.defaultDatabaseService()).getDependencyResolver().resolveDependency( Config.class );
             assertEquals( 20, config.get( GraphDatabaseSettings.dense_node_threshold ) );
         }
@@ -162,8 +160,7 @@ class InProcessServerBuilderIT
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
-                    equalTo( 234 ) );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status() ).isEqualTo( 234 );
         }
     }
 
@@ -176,8 +173,7 @@ class InProcessServerBuilderIT
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
-                    equalTo( 234 ) );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status() ).isEqualTo( 234 );
         }
     }
 
@@ -187,7 +183,7 @@ class InProcessServerBuilderIT
         try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withExtensionFactories( asIterable( new TestExtensionFactory() ) ).build() )
         {
-            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
             assertEquals( 1, TestExtension.getStartCounter() );
         }
     }
@@ -222,7 +218,7 @@ class InProcessServerBuilderIT
             try ( Neo4j secondServer = getTestBuilder( directory.homeDir() ).build() )
             {
                 // Then
-                assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
+                assertThat( secondServer.httpURI().getPort() ).isNotEqualTo( firstServer.httpURI().getPort() );
             }
         }
     }
