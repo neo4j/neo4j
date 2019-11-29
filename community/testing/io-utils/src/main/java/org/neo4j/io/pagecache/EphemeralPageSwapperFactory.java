@@ -57,7 +57,7 @@ public class EphemeralPageSwapperFactory implements PageSwapperFactory, AutoClos
             File file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean noChannelStriping, boolean useDirectIO )
             throws IOException
     {
-        EphemeralSwapper swapper = swappers.compute( file, (f, existing) ->
+        EphemeralSwapper swapper = swappers.compute( file, ( f, existing ) ->
         {
             if ( existing != null )
             {
