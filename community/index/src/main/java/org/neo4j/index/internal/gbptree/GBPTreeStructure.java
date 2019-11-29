@@ -172,6 +172,7 @@ public class GBPTreeStructure<KEY, VALUE>
         while ( cursor.shouldRetry() );
         visitor.beginNode( cursor.getCurrentPageId(), isLeaf, generation, keyCount );
 
+        long offloadId;
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
         for ( int i = 0; i < keyCount; i++ )
@@ -179,7 +180,9 @@ public class GBPTreeStructure<KEY, VALUE>
             long child = -1;
             do
             {
-                node.keyAt( cursor, key, i, isLeaf ? LEAF : INTERNAL );
+                TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
+                offloadId = node.offloadIdAt( cursor, i, type );
+                node.keyAt( cursor, key, i, type );
                 if ( isLeaf )
                 {
                     node.valueAt( cursor, value, i );
@@ -194,13 +197,13 @@ public class GBPTreeStructure<KEY, VALUE>
             visitor.position( i );
             if ( isLeaf )
             {
-                visitor.key( key, isLeaf );
+                visitor.key( key, isLeaf, offloadId );
                 visitor.value( value );
             }
             else
             {
                 visitor.child( child );
-                visitor.key( key, isLeaf );
+                visitor.key( key, isLeaf, offloadId );
             }
         }
         if ( !isLeaf )

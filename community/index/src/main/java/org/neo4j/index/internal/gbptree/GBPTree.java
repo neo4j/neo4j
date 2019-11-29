@@ -1353,7 +1353,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     @SuppressWarnings( "unused" )
     public void printTree() throws IOException
     {
-        printTree( false, false, false, false, false );
+        printTree( false, false, false, false, false, false );
     }
 
     // Utility method
@@ -1365,13 +1365,15 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param printState whether or not to print the tree state.
      * @param printHeader whether or not to print header of each tree node
      * @param printFreelist whether or not to print freelist
+     * @param printOffload whether or not to also print offload page ids
      * @throws IOException on I/O error.
      */
     @SuppressWarnings( "SameParameterValue" )
-    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader, boolean printFreelist ) throws IOException
+    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader, boolean printFreelist, boolean printOffload )
+            throws IOException
     {
         PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, printValues, printPosition, printState, printHeader,
-                printFreelist );
+                printFreelist, printOffload );
         visit( printingVisitor );
     }
 
@@ -1380,7 +1382,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, true, false, false );
+            PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, true, false, false, false );
             GBPTreeStructure.visitTreeState( cursor, printingVisitor );
         }
     }

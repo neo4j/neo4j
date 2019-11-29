@@ -34,7 +34,7 @@ public interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
 
     void beginNode( long pageId, boolean isLeaf, long generation, int keyCount );
 
-    void key( KEY key, boolean isLeaf );
+    void key( KEY key, boolean isLeaf, long offloadId );
 
     void value( VALUE value );
 
@@ -69,7 +69,7 @@ public interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
         }
 
         @Override
-        public void key( KEY key, boolean isLeaf )
+        public void key( KEY key, boolean isLeaf, long offloadId )
         {
         }
 

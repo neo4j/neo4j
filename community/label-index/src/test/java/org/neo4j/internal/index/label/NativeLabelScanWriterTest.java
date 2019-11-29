@@ -186,7 +186,7 @@ class NativeLabelScanWriterTest
         tree.visit( new GBPTreeVisitor.Adaptor<>()
         {
             @Override
-            public void key( LabelScanKey labelScanKey, boolean isLeaf )
+            public void key( LabelScanKey labelScanKey, boolean isLeaf, long offloadId )
             {
                 if ( isLeaf )
                 {

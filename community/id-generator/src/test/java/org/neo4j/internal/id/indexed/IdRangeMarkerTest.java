@@ -168,7 +168,7 @@ class IdRangeMarkerTest
         tree.visit( new GBPTreeVisitor.Adaptor<>()
         {
             @Override
-            public void key( IdRangeKey key, boolean isLeaf )
+            public void key( IdRangeKey key, boolean isLeaf, long offloadId )
             {
                 if ( isLeaf )
                 {
@@ -191,7 +191,7 @@ class IdRangeMarkerTest
         tree.visit( new GBPTreeVisitor.Adaptor<>()
         {
             @Override
-            public void key( IdRangeKey key, boolean isLeaf )
+            public void key( IdRangeKey key, boolean isLeaf, long offloadId )
             {
                 assertFalse( isLeaf, "Should not have any key still in the tree, but got: " + key );
             }
@@ -257,7 +257,7 @@ class IdRangeMarkerTest
             private IdRangeKey idRangeKey;
 
             @Override
-            public void key( IdRangeKey idRangeKey, boolean isLeaf )
+            public void key( IdRangeKey idRangeKey, boolean isLeaf, long offloadId )
             {
                 this.idRangeKey = idRangeKey;
             }

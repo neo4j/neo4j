@@ -418,7 +418,7 @@ public class GBPTreeCountsStore implements CountsStore
                 private CountsKey key;
 
                 @Override
-                public void key( CountsKey key, boolean isLeaf )
+                public void key( CountsKey key, boolean isLeaf, long offloadId )
                 {
                     this.key = key;
                 }

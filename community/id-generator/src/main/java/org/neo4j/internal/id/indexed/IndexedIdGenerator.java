@@ -661,7 +661,7 @@ public class IndexedIdGenerator implements IdGenerator
                 private IdRangeKey key;
 
                 @Override
-                public void key( IdRangeKey key, boolean isLeaf )
+                public void key( IdRangeKey key, boolean isLeaf, long offloadId )
                 {
                     this.key = key;
                 }
