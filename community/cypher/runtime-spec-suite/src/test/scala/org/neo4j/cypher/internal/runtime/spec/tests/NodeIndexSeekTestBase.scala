@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.logical.plans.{GetValue, IndexOrderAscending, IndexOrderDescending, ManyQueryExpression}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.RelationshipType
 
 // Supported by all runtimes
 abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
@@ -567,6 +568,36 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     // then
     val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1).reverse
     runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
+  }
+
+  test("should handle multiple index seek with overflowing morsels") {
+    // given
+    given {
+      index("A", "prop")
+      val nodes = nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("prop" -> 42)
+        case _ => Map("prop" -> 1337)
+      }, "A")
+      nodes.foreach( n => {
+        n.createRelationshipTo(tx.createNode(), RelationshipType.withName("R1"))
+        n.createRelationshipTo(tx.createNode(), RelationshipType.withName("R2"))
+        n.createRelationshipTo(tx.createNode(), RelationshipType.withName("R3"))
+        n.createRelationshipTo(tx.createNode(), RelationshipType.withName("R4"))
+        n.createRelationshipTo(tx.createNode(), RelationshipType.withName("R5"))
+      })
+    }
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .optional() // The optional is here to avoid fully fusing
+      .expandAll("(x)-->(y)")
+      .nodeIndexOperator("x:A(prop = 42 OR 1337)")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint * 5))
   }
 }
 

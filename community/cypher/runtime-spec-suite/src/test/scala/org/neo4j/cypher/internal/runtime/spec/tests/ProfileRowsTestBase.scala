@@ -330,6 +330,34 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel) // node index seek
   }
 
+  test("should profile rows with multiple index seek and expand") {
+    // given
+    val nodesPerLabel = 100
+    given {
+      index("A", "prop")
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      aNodes.zipWithIndex.foreach {
+        case (node, i) if i % 2 == 0 => node.setProperty("prop", 42)
+        case (node, i) => node.setProperty("prop", 1337)
+      }
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expandInto("(x)-[r]->(y)")
+      .expandAll("(x)-->(y)")
+      .nodeIndexOperator("x:A(prop = 42 OR 1337)")
+      .build()
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand into
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand all
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel) // node index seek
+  }
+
   test("should profile rows with string search and expand") {
     // given
     val nodesPerLabel = 100
