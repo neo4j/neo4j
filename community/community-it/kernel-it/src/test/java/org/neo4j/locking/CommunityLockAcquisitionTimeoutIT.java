@@ -127,7 +127,7 @@ public class CommunityLockAcquisitionTimeoutIT
             }
         } );
         assertThat( e ).hasRootCauseInstanceOf( LockAcquisitionTimeoutException.class ).hasMessageContaining(
-                "The transaction has been terminated. " + "Retry your operation in a new transaction, and you should see a successful result. " +
+                "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. " +
                         "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
                         "Unable to acquire lock for resource: NODE with id: 0 within 2000 millis." );
     }
@@ -164,7 +164,7 @@ public class CommunityLockAcquisitionTimeoutIT
             }
         } );
         assertThat( e ).hasRootCauseInstanceOf( LockAcquisitionTimeoutException.class ).hasMessageContaining(
-                "The transaction has been terminated. " + "Retry your operation in a new transaction, and you should see a successful result. " +
+                "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. " +
                         "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
                         "Unable to acquire lock for resource: LABEL with id: 1 within 2000 millis." );
     }

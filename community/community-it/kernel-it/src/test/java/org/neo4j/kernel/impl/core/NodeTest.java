@@ -73,7 +73,7 @@ class NodeTest
             }
         } );
         assertThat( exception.getMessage() ).contains(
-                "Cannot delete node<" + nodeId + ">, because it still has relationships. " + "To delete this node, you must first delete its relationships." );
+                "Cannot delete node<" + nodeId + ">, because it still has relationships. To delete this node, you must first delete its relationships." );
     }
 
     @Test

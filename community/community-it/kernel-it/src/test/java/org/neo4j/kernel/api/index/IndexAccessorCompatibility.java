@@ -203,8 +203,9 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         for ( int i = 0; i < length; i++ )
         {
             int compare = Values.COMPARATOR.compare( o1[i], o2[i] );
-            assertThat( compare ).as( "expected less than or equal to but was " + Arrays.toString( o1 ) + " and " + Arrays.toString( o2 ) ).isLessThanOrEqualTo(
-                    0 );
+            assertThat( compare )
+                    .as( "expected less than or equal to but was " + Arrays.toString( o1 ) + " and " + Arrays.toString( o2 ) )
+                    .isLessThanOrEqualTo( 0 );
             if ( compare != 0 )
             {
                 return;
