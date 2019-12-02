@@ -71,6 +71,8 @@ object PlanDescriptionArgumentSerializer {
       case PlannerVersion(value) => value
       case Runtime(runtime) => runtime
       case RuntimeVersion(value) => value
+      case DbmsAction(action) => action
+      case DatabaseAction(action) => action
       case Database(name) => name
       case Role(name) => name
       case User(name) => name

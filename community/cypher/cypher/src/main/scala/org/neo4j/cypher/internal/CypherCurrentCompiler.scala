@@ -89,8 +89,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       }
 
       logicalPlan match {
-        case l@LogSystemCommand(source, _) =>
-          LogSystemCommand(resolveParameterForManagementCommands(source), l.command)(new SequentialIdGen(l.id.x + 1))
+        case l@LogSystemCommand(source: MultiDatabaseLogicalPlan, _) =>
+          LogSystemCommand(resolveParameterForManagementCommands(source).asInstanceOf[MultiDatabaseLogicalPlan], l.command)(new SequentialIdGen(l.id.x + 1))
         case c@CreateUser(_, _, _, Some(paramPassword), _, _) =>
           CreateUser(c.source, c.userName, Some(getParamValue(paramPassword)), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
         case a@AlterUser(_, _, _, Some(paramPassword), _, _) =>
