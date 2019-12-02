@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs._
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.security.{SecureHasher, SystemGraphCredential}
-import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.exceptions.{CantCompileQueryException, DatabaseAdministrationOnFollowerException}
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.{AdminActionOnResource, SecurityContext}
@@ -148,7 +148,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         QueryHandler
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
-              new IllegalStateException(s"Failed to delete the specified user '$userName': $followerError", error)
+              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '$userName': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified user '$userName'.", error)
           },
         source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
@@ -170,7 +170,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         QueryHandler
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
-              new IllegalStateException(s"User '$currentUser' failed to alter their own password: $followerError", error)
+              new DatabaseAdministrationOnFollowerException(s"User '$currentUser' failed to alter their own password: $followerError", error)
             case error => new IllegalStateException(s"User '$currentUser' failed to alter their own password.", error)
           }
           .handleResult((_, value) => {
@@ -232,7 +232,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           .ignoreNoResult()
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
-              new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
+              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
         source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
@@ -248,7 +248,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           .ignoreOnResult()
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
-              new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name': $followerError", error)
+              new DatabaseAdministrationOnFollowerException(s"Failed to create the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
         source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
@@ -264,7 +264,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '$name': $label does not exist.")))
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
-              new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
+              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
         source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
