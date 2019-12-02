@@ -61,7 +61,7 @@ public abstract class AbstractRecordFormatTest
     private static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
-    private final RandomRule random = new RandomRule().withSeedForAllTests( 1574763578997L );
+    private final RandomRule random = new RandomRule();
     private final EphemeralPageSwapperFactory swapperFactory = new EphemeralPageSwapperFactory();
     private final PageCacheRule pageCacheRule = new PageCacheRule( PageCacheRule.config().withPageSize( PAGE_SIZE ) );
     @Rule
