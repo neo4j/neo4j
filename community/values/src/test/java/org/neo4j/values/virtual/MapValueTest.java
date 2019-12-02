@@ -27,6 +27,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.values.AnyValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.numberValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -92,6 +93,20 @@ class MapValueTest
     {
         // Given
         MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
+
+        // When
+        MapValue updated = base.updatedWith( "k3", stringValue( "version3" ) );
+
+        // Then
+        assertMapValueEquals( updated, mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ),
+                "k3", stringValue( "version3" ) ) );
+    }
+
+    @Test
+    void shouldUpdateWithExistingKeyAndNoValue()
+    {
+        // Given
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", NO_VALUE );
 
         // When
         MapValue updated = base.updatedWith( "k3", stringValue( "version3" ) );

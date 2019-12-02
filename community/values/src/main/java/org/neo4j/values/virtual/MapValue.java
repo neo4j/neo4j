@@ -700,7 +700,7 @@ public abstract class MapValue extends VirtualValue
         {
             return this;
         }
-        else if ( current == NO_VALUE )
+        else if ( !containsKey( key ) )
         {
             return new UpdatedMapValue( this, new String[]{key}, new AnyValue[]{value} );
         }
