@@ -268,6 +268,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         }
         catch ( NotFoundException n )
         {
+            // Can occur if the user was dropped by another thread after the null check.
             throw userDontExists;
         }
     }
