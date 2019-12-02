@@ -211,6 +211,8 @@ public interface Status
                 "This query is not supported by the chosen runtime." ),
         NotSystemDatabaseError( ClientError,
                 "This is an administration command and it should be executed against the system database." ),
+        NotSystemDatabaseOnLeaderError( ClientError,
+                "This is an administration command and it should be executed against the LEADER server of the system database." ),
 
         // database errors
         ExecutionFailed( DatabaseError,
