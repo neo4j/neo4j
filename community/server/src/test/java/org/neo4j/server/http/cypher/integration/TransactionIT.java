@@ -64,7 +64,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.isValidRFCTimestamp;
@@ -923,7 +922,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                     count++;
                 }
             }
-            transaction.rollback();
+            transaction.commit();
             return count;
         }
     }
