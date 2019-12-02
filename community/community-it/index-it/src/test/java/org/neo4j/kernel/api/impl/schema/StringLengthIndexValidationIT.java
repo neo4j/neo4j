@@ -147,9 +147,11 @@ public abstract class StringLengthIndexValidationIT
         catch ( IllegalStateException e )
         {
             GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
-            assertThat( e.getMessage() ).contains( String.format(
-                    "Index IndexDefinition[label:LABEL_ONE on:largeString] " + "(Index( 1, 'index_71616483', GENERAL BTREE, :label[0](property[0]), %s )) " +
-                            "entered a FAILED state.", schemaIndex.providerName() ) );
+            assertThat( e.getMessage() ).contains(
+                    String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
+                            "(Index( 1, 'index_71616483', GENERAL BTREE, :label[0](property[0]), %s )) " +
+                            "entered a FAILED state.",
+                            schemaIndex.providerName() ) );
         }
 
         // Index should be in failed state

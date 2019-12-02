@@ -50,7 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.data.Offset.offset;
+import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
@@ -88,11 +88,11 @@ class UniqueIndexSeekIT
             assertNotNull( indexExtensionFactory.getIndexProvider( config.get( default_database ) ) );
             assertThat( numberOfClosedReaders() ).isGreaterThan( 0L );
             assertThat( numberOfOpenReaders() ).isGreaterThan( 0L );
-            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), offset( 1L ) );
+            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), within( 1L ) );
 
             lockNodeUsingUniqueIndexSeek( database, nameProperty );
 
-            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), offset( 1L ) );
+            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), within( 1L ) );
         }
         finally
         {
