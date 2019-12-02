@@ -65,7 +65,6 @@ public class PageCacheRule extends ExternalResource
         return getPageCache( fs, config() );
     }
 
-
     /**
      * Opens a new {@link PageCache} with the provided file system and config.
      *
