@@ -195,7 +195,7 @@ class BatchingNeoStoresTest
                     RecordStore<AbstractBaseRecord> store = stores.getNeoStores().getRecordStore( type );
                     if ( type == typeToTest )
                     {
-                        assertThat( (int) store.getHighId() ).as( store.toString() ).isGreaterThan( store.getNumberOfReservedLowIds() );
+                        assertThat( store.getHighId() ).as( store.toString() ).isGreaterThan( store.getNumberOfReservedLowIds() );
                     }
                     else
                     {
