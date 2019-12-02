@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -80,7 +80,7 @@ class CrashGenerationCleaner
 
     // === Methods about the execution and threading ===
 
-    public void clean( ExecutorService executor )
+    public void clean( Executor executor )
     {
         monitor.cleanupStarted();
         assert unstableGeneration > stableGeneration : unexpectedGenerations();
@@ -97,7 +97,7 @@ class CrashGenerationCleaner
         CountDownLatch activeThreadLatch = new CountDownLatch( threads );
         for ( int i = 0; i < threads; i++ )
         {
-            executor.submit( cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, activeThreadLatch, error ) );
+            executor.execute( cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, activeThreadLatch, error ) );
         }
 
         try
@@ -159,8 +159,6 @@ class CrashGenerationCleaner
                     }
                     numberOfTreeNodes.add( localNumberOfTreeNodes );
 
-                    // Check error status after a batch, to reduce volatility overhead.
-                    // Is this over thinking things? Perhaps
                     if ( error.get() != null )
                     {
                         break;

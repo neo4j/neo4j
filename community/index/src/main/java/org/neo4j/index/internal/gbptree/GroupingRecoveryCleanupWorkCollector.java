@@ -23,7 +23,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -37,15 +36,18 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
 {
     private final BlockingQueue<CleanupJob> jobs = new LinkedBlockingQueue<>();
     private final JobScheduler jobScheduler;
+    private final Group group;
     private volatile boolean started;
     private JobHandle handle;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
+     * @param group {@link Group} to which all cleanup jobs should be scheduled.
      */
-    public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler )
+    public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler, Group group )
     {
         this.jobScheduler = jobScheduler;
+        this.group = group;
     }
 
     @Override
@@ -79,55 +81,48 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
             // before reaching that phase in the lifecycle.
             handle.waitTermination();
         }
-        consumeAndCloseJobs( cj -> {} );
+        CleanupJob job;
+        while ( (job = jobs.poll()) != null )
+        {
+            job.close();
+        }
     }
 
     private void scheduleJobs()
     {
-        handle = jobScheduler.schedule( Group.STORAGE_MAINTENANCE, allJobs() );
+        handle = jobScheduler.schedule( group, allJobs() );
     }
 
     private Runnable allJobs()
     {
         return () ->
-                executeWithExecutor( executor ->
-                {
-                    CleanupJob job = null;
-                    do
-                    {
-                        try
-                        {
-                            job = jobs.poll( 100, TimeUnit.MILLISECONDS );
-                            if ( job != null )
-                            {
-                                job.run( executor );
-                            }
-                        }
-                        catch ( Exception e )
-                        {
-                            // There's no audience for these exceptions. The jobs themselves know if they've failed and communicates
-                            // that to its tree. The scheduled job is just a vessel for running these cleanup jobs.
-                        }
-                        finally
-                        {
-                            if ( job != null )
-                            {
-                                job.close();
-                            }
-                        }
-                    }
-                    // Even if there are no jobs in the queue then continue looping until we go to started state
-                    while ( !jobs.isEmpty() || !started );
-                } );
-    }
-
-    private void consumeAndCloseJobs( Consumer<CleanupJob> consumer )
-    {
-        CleanupJob job;
-        while ( (job = jobs.poll()) != null )
         {
-            consumer.accept( job );
-            job.close();
-        }
+            CleanupJob job = null;
+            do
+            {
+                try
+                {
+                    job = jobs.poll( 100, TimeUnit.MILLISECONDS );
+                    if ( job != null )
+                    {
+                        job.run( jobScheduler.executor( group ) );
+                    }
+                }
+                catch ( Exception e )
+                {
+                    // There's no audience for these exceptions. The jobs themselves know if they've failed and communicates
+                    // that to its tree. The scheduled job is just a vessel for running these cleanup jobs.
+                }
+                finally
+                {
+                    if ( job != null )
+                    {
+                        job.close();
+                    }
+                }
+            }
+            // Even if there are no jobs in the queue then continue looping until we go to started state
+            while ( !jobs.isEmpty() || !started );
+        };
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 /**
  * A job cleaning something up after recovery. Usually added to {@link RecoveryCleanupWorkCollector}.
@@ -53,15 +53,17 @@ public interface CleanupJob
      * Run cleanup job and use provided executor for parallel tasks.
      * This method will wait for all jobs passed to executor to finish before returning.
      */
-    void run( ExecutorService executor );
+    void run( Executor executor );
 
     /**
      * A {@link CleanupJob} that doesn't need cleaning, i.e. it's already clean.
      */
-    CleanupJob CLEAN = new CleanupJob()
+    CleanupJob CLEAN = new Adaptor();
+
+    class Adaptor implements CleanupJob
     {
         @Override
-        public void run( ExecutorService executor )
+        public void run( Executor executor )
         {   // no-op
         }
 
@@ -87,5 +89,5 @@ public interface CleanupJob
         public void close()
         {   // no-op
         }
-    };
+    }
 }

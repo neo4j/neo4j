@@ -70,7 +70,7 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
     }
 
     /**
-     * {@link CleanupJob#run( ExecutorService ) Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
+     * {@link CleanupJob#run(java.util.concurrent.Executor) Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
      * calling {@link #add(CleanupJob)}.
      */
     public static RecoveryCleanupWorkCollector immediate()
