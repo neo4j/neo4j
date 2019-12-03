@@ -175,6 +175,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     @Override
     public synchronized void markSessionDone()
     {
+        flushBuffer();
         checkRotateAndPrune();
     }
 
@@ -196,14 +197,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         putTypeAndTwoIds( Type.CHECKPOINT, highestWrittenId, highId );
 
         // Take the opportunity to also flush this log
-        try
-        {
-            channel.prepareForFlush().flush();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        flushBuffer();
     }
 
     @Override
@@ -225,6 +219,18 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         IOUtils.closeAllUnchecked( channel );
     }
 
+    private void flushBuffer()
+    {
+        try
+        {
+            channel.prepareForFlush().flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     private void putEntryHeader( Type type ) throws IOException
     {
         channel.put( type.id );
@@ -238,7 +244,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
             // Rotate
             try
             {
-                channel.prepareForFlush().flush();
+                flushBuffer();
                 channel.close();
                 moveAwayFile();
                 position.set( 0 );
@@ -332,7 +338,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         int dashIndex = name.lastIndexOf( '-' );
         if ( dashIndex == -1 )
         {
-            return 0;
+            return Long.MAX_VALUE;
         }
         return Long.parseLong( name.substring( dashIndex + 1 ) );
     }
@@ -372,7 +378,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     {
         File[] files = fs.listFiles( baseFile.getParentFile(),
                 ( dir, name ) -> name.startsWith( baseFile.getName() ) && !name.endsWith( ".txt" ) );
-        Arrays.sort( files, comparing( file -> file.getName().equals( baseFile.getName() ) ? 0 : millisOf( file ) ) );
+        Arrays.sort( files, comparing( LoggingIndexedIdGeneratorMonitor::millisOf ) );
         for ( File file : files )
         {
             dumpFile( fs, file, dumper );
