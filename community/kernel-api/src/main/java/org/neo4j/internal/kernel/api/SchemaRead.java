@@ -29,7 +29,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.register.Register;
+import org.neo4j.kernel.api.index.IndexInfo;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -94,32 +95,22 @@ public interface SchemaRead extends SchemaReadCore
     long nodesCountIndexed( IndexDescriptor index, long nodeId, int propertyKeyId, Value value ) throws KernelException;
 
     /**
-     * Returns how many updates that have been applied to the index since the last sampling, and total index size at the last sampling.
-     *
-     * Results are written to a {@link Register.DoubleLongRegister}, writing the update count into the first long, and
-     * the size into the second.
+     * Returns information about requested index
      *
      * @param index The index of interest
-     * @param target A {@link Register.DoubleLongRegister} to which to write the update count and size.
-     * @return {@code target}
+     * @return index update info
      * @throws IndexNotFoundKernelException if the index does not exist.
      */
-    Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, Register.DoubleLongRegister target )
-            throws IndexNotFoundKernelException;
+    IndexInfo indexUpdatesAndSize( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
-     * Returns the number of unique entries and the total number of entries in an index.
-     *
-     * Results are written to a {@link Register.DoubleLongRegister}, writing the number of unique entries into
-     * the first long, and the total number of entries into the second.
+     * Returns the index sample info.
      *
      * @param index The index of interest
-     * @param target A {@link Register.DoubleLongRegister} to which to write the entry counts.
-     * @return {@code target}
+     * @return index sample info
      * @throws IndexNotFoundKernelException if the index does not exist.
      */
-    Register.DoubleLongRegister indexSample( IndexDescriptor index, Register.DoubleLongRegister target )
-            throws IndexNotFoundKernelException;
+    IndexSample indexSample( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Finds all constraints for the given schema

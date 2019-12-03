@@ -54,7 +54,9 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -67,8 +69,6 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
@@ -695,9 +695,9 @@ public class AllStoreHolder extends Read
         acquireSharedSchemaLock( index );
         ktx.assertOpen();
         assertIndexExists( index ); // Throws if the index has been dropped.
-        DoubleLongRegister output = indexStatisticsStore.indexSample( index.getId(), Registers.newDoubleLongRegister() );
-        long unique = output.readFirst();
-        long size = output.readSecond();
+        final IndexSample indexSample = indexStatisticsStore.indexSample( index.getId() );
+        long unique = indexSample.uniqueValues();
+        long size = indexSample.sampleSize();
         return size == 0 ? 1.0d : ((double) unique) / ((double) size);
     }
 
@@ -707,7 +707,7 @@ public class AllStoreHolder extends Read
         assertValidIndex( index );
         acquireSharedSchemaLock( index );
         ktx.assertOpen();
-        return indexStatisticsStore.indexUpdatesAndSize( index.getId(), Registers.newDoubleLongRegister() ).readSecond();
+        return indexStatisticsStore.indexUpdatesAndSize( index.getId() ).getSize();
     }
 
     @Override
@@ -736,22 +736,20 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
-            throws IndexNotFoundKernelException
+    public IndexInfo indexUpdatesAndSize( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
-        return indexStatisticsStore.indexUpdatesAndSize( index.getId(), target );
+        return indexStatisticsStore.indexUpdatesAndSize( index.getId() );
 
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
-            throws IndexNotFoundKernelException
+    public IndexSample indexSample( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
-        return indexStatisticsStore.indexSample( index.getId(), target );
+        return indexStatisticsStore.indexSample( index.getId() );
     }
 
     private boolean checkIndexState( IndexDescriptor index, DiffSets<IndexDescriptor> diffSet )

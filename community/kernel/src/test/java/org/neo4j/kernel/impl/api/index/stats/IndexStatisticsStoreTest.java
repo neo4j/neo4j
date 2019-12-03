@@ -35,8 +35,9 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexInfo;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -46,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.Race.throwing;
 
 @EphemeralPageCacheExtension
@@ -90,13 +90,13 @@ class IndexStatisticsStoreTest
         store.replaceStats( indexId, 123, 456, 0, 0 );
 
         // then
-        assertRegister( 123, 456, store.indexSample( indexId, newDoubleLongRegister() ) );
+        assertSample( 123, 456, store.indexSample( indexId ) );
 
         // and when
         store.replaceStats( indexId, 444, 555, 0, 0 );
 
         // then
-        assertRegister( 444, 555, store.indexSample( indexId, newDoubleLongRegister() ) );
+        assertSample( 444, 555, store.indexSample( indexId ) );
     }
 
     @Test
@@ -109,13 +109,13 @@ class IndexStatisticsStoreTest
         store.replaceStats( indexId, 0, 0, 123, 456 );
 
         // then
-        assertRegister( 123, 456, store.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
+        assertUpdatesInfo( 123, 456, store.indexUpdatesAndSize( indexId ) );
 
         // and when
         store.replaceStats( indexId, 0, 0, 444, 555 );
 
         // then
-        assertRegister( 444, 555, store.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
+        assertUpdatesInfo( 444, 555, store.indexUpdatesAndSize( indexId ) );
     }
 
     @Test
@@ -129,7 +129,7 @@ class IndexStatisticsStoreTest
         store.incrementIndexUpdates( indexId, 5 );
 
         // then
-        assertRegister( 123 + 5, 456, store.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
+        assertUpdatesInfo( 123 + 5, 456, store.indexUpdatesAndSize( indexId ) );
     }
 
     @Test
@@ -145,10 +145,10 @@ class IndexStatisticsStoreTest
         restartStore();
 
         // then
-        assertRegister( 15, 20, store.indexUpdatesAndSize( indexId1, newDoubleLongRegister() ) );
-        assertRegister( 25, 35, store.indexUpdatesAndSize( indexId2, newDoubleLongRegister() ) );
-        assertRegister( 100, 200, store.indexSample( indexId1, newDoubleLongRegister() ) );
-        assertRegister( 200, 300, store.indexSample( indexId2, newDoubleLongRegister() ) );
+        assertUpdatesInfo( 15, 20, store.indexUpdatesAndSize( indexId1 ) );
+        assertUpdatesInfo( 25, 35, store.indexUpdatesAndSize( indexId2 ) );
+        assertSample( 100, 200, store.indexSample( indexId1 ) );
+        assertSample( 200, 300, store.indexSample( indexId2 ) );
     }
 
     private void restartStore() throws IOException
@@ -175,7 +175,7 @@ class IndexStatisticsStoreTest
         race.go();
 
         // then
-        assertRegister( contestants * delta, 0, store.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
+        assertUpdatesInfo( contestants * delta, 0, store.indexUpdatesAndSize( indexId ) );
     }
 
     @Test
@@ -217,12 +217,12 @@ class IndexStatisticsStoreTest
         // then
         for ( int i = 0; i < indexes; i++ )
         {
-            assertRegister( expected.get( i ), 0, store.indexUpdatesAndSize( i, newDoubleLongRegister() ) );
+            assertUpdatesInfo( expected.get( i ), 0, store.indexUpdatesAndSize( i ) );
         }
         restartStore();
         for ( int i = 0; i < indexes; i++ )
         {
-            assertRegister( expected.get( i ), 0, store.indexUpdatesAndSize( i, newDoubleLongRegister() ) );
+            assertUpdatesInfo( expected.get( i ), 0, store.indexUpdatesAndSize( i ) );
         }
     }
 
@@ -283,9 +283,15 @@ class IndexStatisticsStoreTest
         }
     }
 
-    private static void assertRegister( long first, long second, DoubleLongRegister register )
+    private static void assertSample( long uniqueValues, long sampleSize, IndexSample indexSample )
     {
-        assertEquals( first, register.readFirst() );
-        assertEquals( second, register.readSecond() );
+        assertEquals( uniqueValues, indexSample.uniqueValues() );
+        assertEquals( sampleSize, indexSample.sampleSize() );
+    }
+
+    private static void assertUpdatesInfo( long numberOfUpdates, long indexSize, IndexInfo indexInfo )
+    {
+        assertEquals( numberOfUpdates, indexInfo.getUpdates() );
+        assertEquals( indexSize, indexInfo.getSize() );
     }
 }

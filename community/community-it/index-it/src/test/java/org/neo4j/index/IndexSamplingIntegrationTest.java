@@ -36,9 +36,9 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.index.IndexInfo;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -122,14 +122,14 @@ class IndexSamplingIntegrationTest
         // Then
 
         // lucene will consider also the delete nodes, native won't
-        DoubleLongRegister register = fetchIndexSamplingValues();
-        assertEquals( names.length, register.readFirst() );
-        assertThat( register.readSecond() ).isGreaterThanOrEqualTo( nodes - deletedNodes ).isLessThanOrEqualTo( nodes );
+        var indexSample = fetchIndexSamplingValues();
+        assertEquals( names.length, indexSample.uniqueValues() );
+        assertThat( indexSample.sampleSize() ).isGreaterThanOrEqualTo( nodes - deletedNodes ).isLessThanOrEqualTo( nodes );
 
         // but regardless, the deleted nodes should not be considered in the index size value
-        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues();
-        assertEquals( 0, indexSizeRegister.readFirst() );
-        assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
+        var indexInfo = fetchIndexSizeValues();
+        assertEquals( 0, indexInfo.getUpdates() );
+        assertEquals( nodes - deletedNodes, indexInfo.getSize() );
     }
 
     @Test
@@ -183,13 +183,13 @@ class IndexSamplingIntegrationTest
         triggerIndexResamplingOnNextStartup();
 
         // Then
-        DoubleLongRegister indexSampleRegister = fetchIndexSamplingValues();
-        assertEquals( nodes - deletedNodes, indexSampleRegister.readFirst() );
-        assertEquals( nodes - deletedNodes, indexSampleRegister.readSecond() );
+        var indexSample = fetchIndexSamplingValues();
+        assertEquals( nodes - deletedNodes, indexSample.uniqueValues() );
+        assertEquals( nodes - deletedNodes, indexSample.sampleSize() );
 
-        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues();
-        assertEquals( 0, indexSizeRegister.readFirst() );
-        assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
+        var indexInfo = fetchIndexSizeValues();
+        assertEquals( 0, indexInfo.getUpdates() );
+        assertEquals( nodes - deletedNodes, indexInfo.getSize() );
     }
 
     private IndexDescriptor indexId( KernelTransaction tx )
@@ -197,7 +197,7 @@ class IndexSamplingIntegrationTest
         return tx.schemaRead().indexGetForName( schemaName );
     }
 
-    private DoubleLongRegister fetchIndexSamplingValues() throws IndexNotFoundKernelException, TransactionFailureException
+    private IndexSample fetchIndexSamplingValues() throws IndexNotFoundKernelException, TransactionFailureException
     {
         DatabaseManagementService managementService = null;
         try
@@ -209,7 +209,7 @@ class IndexSamplingIntegrationTest
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
             try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
             {
-                return tx.schemaRead().indexSample( indexId( tx ), Registers.newDoubleLongRegister() );
+                return tx.schemaRead().indexSample( indexId( tx ) );
             }
         }
         finally
@@ -221,7 +221,7 @@ class IndexSamplingIntegrationTest
         }
     }
 
-    private DoubleLongRegister fetchIndexSizeValues() throws IndexNotFoundKernelException, TransactionFailureException
+    private IndexInfo fetchIndexSizeValues() throws IndexNotFoundKernelException, TransactionFailureException
     {
         DatabaseManagementService managementService = null;
         try
@@ -233,7 +233,7 @@ class IndexSamplingIntegrationTest
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
             try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
             {
-                return tx.schemaRead().indexUpdatesAndSize( indexId( tx ), Registers.newDoubleLongRegister() );
+                return tx.schemaRead().indexUpdatesAndSize( indexId( tx ) );
             }
         }
         finally

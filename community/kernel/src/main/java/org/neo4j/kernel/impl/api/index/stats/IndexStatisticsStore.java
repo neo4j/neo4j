@@ -38,10 +38,13 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexInfo;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.util.VisibleForTesting;
+
+import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsValue.EMPTY_STATISTICS;
 
 /**
  * A simple store for keeping index statistics counts, like number of updates, index size, number of unique values a.s.o.
@@ -97,52 +100,16 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         scanTree( cache::put );
     }
 
-    /**
-     * The provided {@code target} will be filled with:
-     * <ol>
-     *     <li>{@link DoubleLongRegister#readFirst()}: Number of updates made to this index since last resampling</li>
-     *     <li>{@link DoubleLongRegister#readSecond()}: Total size of the index</li>
-     * </ol>
-     *
-     * @param target a register to store the read values in
-     * @return the input register for convenience
-     */
-    public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target )
+    public IndexInfo indexUpdatesAndSize( long indexId )
     {
-        IndexStatisticsValue value = cache.get( new IndexStatisticsKey( indexId ) );
-        if ( value != null )
-        {
-            target.write( value.getUpdatesCount(), value.getIndexSize() );
-        }
-        else
-        {
-            target.write( 0, 0 );
-        }
-        return target;
+        IndexStatisticsValue value = cache.getOrDefault( new IndexStatisticsKey( indexId ), EMPTY_STATISTICS );
+        return new IndexInfo( value.getUpdatesCount(), value.getIndexSize() );
     }
 
-    /**
-     * The provided {@code target} will be filled with:
-     * <ol>
-     *     <li>{@link DoubleLongRegister#readFirst()}: Number of unique values in the last sample set made of this index</li>
-     *     <li>{@link DoubleLongRegister#readSecond()}: Number of values in the last sample set made of this index</li>
-     * </ol>
-     *
-     * @param target a register to store the read values in
-     * @return the input register for convenience
-     */
-    public DoubleLongRegister indexSample( long indexId, DoubleLongRegister target )
+    public IndexSample indexSample( long indexId )
     {
-        IndexStatisticsValue value = cache.get( new IndexStatisticsKey( indexId ) );
-        if ( value != null )
-        {
-            target.write( value.getSampleUniqueValues(), value.getSampleSize() );
-        }
-        else
-        {
-            target.write( 0, 0 );
-        }
-        return target;
+        IndexStatisticsValue value = cache.getOrDefault( new IndexStatisticsKey( indexId ), EMPTY_STATISTICS );
+        return new IndexSample( value.getIndexSize(), value.getSampleUniqueValues(), value.getSampleSize() );
     }
 
     public void replaceStats( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long indexSize )

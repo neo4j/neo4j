@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -57,7 +56,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sam
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class IndexStatisticsIT
@@ -80,14 +78,7 @@ class IndexStatisticsIT
     @AfterEach
     void after()
     {
-        try
-        {
-            managementService.shutdown();
-        }
-        finally
-        {
-            db = null;
-        }
+        managementService.shutdown();
     }
 
     @Test
@@ -113,24 +104,14 @@ class IndexStatisticsIT
 
         // then we should have re-sampled the index
         IndexStatisticsStore indexStatisticsStore = indexStatistics();
-        assertEqualRegisters(
-                "Unexpected updates and size for the index",
-                newDoubleLongRegister( 0, 32 ),
-                indexStatisticsStore.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
-        assertEqualRegisters(
-            "Unexpected sampling result",
-            newDoubleLongRegister( 16, 32 ),
-            indexStatisticsStore.indexSample( indexId, newDoubleLongRegister() )
-        );
-
+        var indexInfo = indexStatisticsStore.indexUpdatesAndSize( indexId );
+        assertEquals( 0, indexInfo.getUpdates() );
+        assertEquals( 32, indexInfo.getSize() );
+        var indexSample = indexStatisticsStore.indexSample( indexId );
+        assertEquals( 16, indexSample.uniqueValues() );
+        assertEquals( 32, indexSample.sampleSize() );
         // and also
         assertLogExistsForRecoveryOn( ":Alien(specimen)" );
-    }
-
-    private void assertEqualRegisters( String message, DoubleLongRegister expected, DoubleLongRegister actual )
-    {
-        assertEquals( expected.readFirst(), actual.readFirst(), message + " (first part of register)" );
-        assertEquals( expected.readSecond(), actual.readSecond(), message + " (second part of register)" );
     }
 
     private void assertLogExistsForRecoveryOn( String labelAndProperty )

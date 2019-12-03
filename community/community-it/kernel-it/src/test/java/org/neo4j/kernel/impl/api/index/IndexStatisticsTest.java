@@ -58,8 +58,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -220,13 +218,15 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            DoubleLongRegister actual = getIndexingStatisticsStore().indexSample( index.getId(), Registers.newDoubleLongRegister() );
-            assertDoubleLongEquals( 0L, 0L, actual );
+            var sample = getIndexingStatisticsStore().indexSample( index.getId() );
+            assertEquals( 0, sample.uniqueValues() );
+            assertEquals( 0, sample.sampleSize() );
         }
 
         // and then index size and index updates are zero on disk
-        DoubleLongRegister actual = getIndexingStatisticsStore().indexUpdatesAndSize( index.getId(), Registers.newDoubleLongRegister() );
-        assertDoubleLongEquals( 0L, 0L, actual );
+        var indexInfo = getIndexingStatisticsStore().indexUpdatesAndSize( index.getId() );
+        assertEquals( 0, indexInfo.getSize() );
+        assertEquals( 0, indexInfo.getUpdates() );
     }
 
     @Test
@@ -540,12 +540,12 @@ public class IndexStatisticsTest
 
     private long indexSize( IndexDescriptor reference ) throws IndexNotFoundKernelException
     {
-        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).readSecond();
+        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).getSize();
     }
 
     private long indexUpdates( IndexDescriptor reference ) throws IndexNotFoundKernelException
     {
-        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).readFirst();
+        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).getUpdates();
     }
 
     private double indexSelectivity( IndexDescriptor reference ) throws KernelException
@@ -718,13 +718,6 @@ public class IndexStatisticsTest
     private boolean isCompletedPopulation( UpdatesTracker updatesTracker )
     {
         return !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline();
-    }
-
-    private void assertDoubleLongEquals( long expectedUniqueValue, long expectedSampledSize,
-                                         DoubleLongRegister register )
-    {
-        assertEquals( expectedUniqueValue, register.readFirst() );
-        assertEquals( expectedSampledSize, register.readSecond() );
     }
 
     private static void assertCorrectIndexSize( long expected, long actual )

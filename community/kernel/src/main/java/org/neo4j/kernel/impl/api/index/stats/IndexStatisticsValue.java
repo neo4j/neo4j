@@ -23,6 +23,7 @@ package org.neo4j.kernel.impl.api.index.stats;
 @SuppressWarnings( {"NonFinalFieldReferenceInEquals", "NonFinalFieldReferencedInHashCode"} )
 class IndexStatisticsValue
 {
+    public static final IndexStatisticsValue EMPTY_STATISTICS = new IndexStatisticsValue( 0, 0, 0, 0 );
     static final int SIZE = Long.SIZE * 4;
 
     private long sampleUniqueValues;

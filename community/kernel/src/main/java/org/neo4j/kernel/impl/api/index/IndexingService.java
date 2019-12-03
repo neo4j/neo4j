@@ -63,6 +63,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -72,8 +73,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -518,12 +517,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         indexStatisticsStore.shutdown();
     }
 
-    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index ) throws IndexNotFoundKernelException
+    IndexInfo indexUpdatesAndSize( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         final long indexId = indexMapRef.getOnlineIndexId( index );
-        final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        indexStatisticsStore.indexUpdatesAndSize( indexId, output );
-        return output;
+        return indexStatisticsStore.indexUpdatesAndSize( indexId );
     }
 
     @Override

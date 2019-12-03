@@ -42,8 +42,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.token.api.NamedToken;
 
 /**
@@ -156,12 +154,11 @@ final class GraphCountsSection
             data.put( "properties", map( index.schema().getPropertyIds(),
                                          id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
 
-            Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-            schemaRead.indexUpdatesAndSize( index, register );
-            data.put( "totalSize", register.readSecond() );
-            data.put( "updatesSinceEstimation", register.readFirst() );
-            schemaRead.indexSample( index, register );
-            data.put( "estimatedUniqueSize", register.readFirst() );
+            var indexInfo = schemaRead.indexUpdatesAndSize( index );
+            data.put( "totalSize", indexInfo.getSize() );
+            data.put( "updatesSinceEstimation", indexInfo.getUpdates() );
+            var indexSample = schemaRead.indexSample( index );
+            data.put( "estimatedUniqueSize", indexSample.uniqueValues() );
 
             indexes.add( data );
         }
