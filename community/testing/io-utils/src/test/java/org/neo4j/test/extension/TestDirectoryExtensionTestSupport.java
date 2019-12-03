@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.platform.engine.TestExecutionResult.Status.FAILED;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 import static org.neo4j.test.extension.DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.TEST_TOGGLE;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
@@ -132,12 +133,34 @@ class TestDirectoryExtensionTestSupport
         failedTestListener.assertTestObserver();
     }
 
+    @Test
+    void failedTestShouldKeepDirectoryInPerClassLifecycle()
+    {
+        CONTEXT.clear();
+        executeClass( DirectoryExtensionLifecycleVerificationTest.PerClassTest.class );
+        File failedFile = CONTEXT.getValue( FAILED_TEST_FILE_KEY );
+        assertNotNull( failedFile );
+        assertTrue( failedFile.exists() );
+    }
+
     private static void execute( String testName, TestExecutionListener... testExecutionListeners )
     {
         LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request()
                 .selectors( selectMethod( DirectoryExtensionLifecycleVerificationTest.class, testName ))
                 .configurationParameter( TEST_TOGGLE, "true" )
                 .build();
+        execute( discoveryRequest, testExecutionListeners );
+    }
+
+    private static void executeClass( Class testClass, TestExecutionListener... testExecutionListeners )
+    {
+        LauncherDiscoveryRequest discoveryRequest =
+                LauncherDiscoveryRequestBuilder.request().selectors( selectClass( testClass ) ).configurationParameter( TEST_TOGGLE, "true" ).build();
+        execute( discoveryRequest, testExecutionListeners );
+    }
+
+    private static void execute( LauncherDiscoveryRequest discoveryRequest, TestExecutionListener... testExecutionListeners )
+    {
         Launcher launcher = LauncherFactory.create();
         launcher.execute( discoveryRequest, testExecutionListeners );
     }

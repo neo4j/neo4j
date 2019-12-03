@@ -97,7 +97,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         return extensionContext.getStore( namespace );
     }
 
-    private Store getLocalStore( ExtensionContext extensionContext )
+    protected Store getLocalStore( ExtensionContext extensionContext )
     {
         return getStore( extensionContext, getNameSpace() );
     }

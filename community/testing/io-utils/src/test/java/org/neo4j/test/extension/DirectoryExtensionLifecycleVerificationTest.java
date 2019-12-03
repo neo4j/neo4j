@@ -19,7 +19,10 @@
  */
 package org.neo4j.test.extension;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,6 +78,22 @@ class DirectoryExtensionLifecycleVerificationTest
         File nonDeletableDirectory = directory.directory( "c" );
         CONTEXT.setValue( LOCKED_TEST_FILE_KEY, nonDeletableDirectory );
         assertTrue( nonDeletableDirectory.setReadable( false, false ) );
+    }
+
+    @Nested
+    @TestInstance( TestInstance.Lifecycle.PER_CLASS )
+    class PerClassTest
+    {
+        @Inject
+        TestDirectory testDirectory;
+
+        @Test
+        void iFail()
+        {
+            File file = testDirectory.createFile( "b" );
+            CONTEXT.setValue( FAILED_TEST_FILE_KEY, file );
+            Assertions.fail();
+        }
     }
 
     static class ConfigurationParameterCondition implements ExecutionCondition
