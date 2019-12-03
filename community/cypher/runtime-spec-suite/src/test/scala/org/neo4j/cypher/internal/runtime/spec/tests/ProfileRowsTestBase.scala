@@ -19,13 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.{Neo4jTypes, ProcedureSignature}
+import org.neo4j.kernel.api.ResourceTracker
+import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.procedure.Context
+import org.neo4j.procedure.Mode
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.NumberValue
 
 abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                               runtime: CypherRuntime[CONTEXT],
-                                                              sizeHint: Int,
+                                                              val sizeHint: Int,
                                                               cartesianProductChunkSize: Int // The size of a LHS chunk for cartesian product
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
@@ -865,5 +874,33 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe size * size // cartesian product
     result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe numberOfChunks * size // all node scan b
     result.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe size // all node scan a
+  }
+}
+
+trait ProcedureCallRowsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileRowsTestBase[CONTEXT] =>
+
+  test("should profile rows of procedure call") {
+    // given
+    registerProcedure(new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "proc").mode(Mode.READ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
+      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+        RawIterator.of[Array[AnyValue], ProcedureException](input, input)
+      }
+    })
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .procedureCall("proc(j) YIELD i AS i")
+      .unwind(s"range(0, ${sizeHint - 1}) AS j")
+      .argument()
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe sizeHint * 2// procedure call
+    result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe sizeHint // unwind
   }
 }

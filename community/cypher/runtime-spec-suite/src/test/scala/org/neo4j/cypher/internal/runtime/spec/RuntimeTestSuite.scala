@@ -34,7 +34,10 @@ import org.neo4j.cypher.internal.{CypherRuntime, ExecutionPlan, LogicalQuery, Ru
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
+import org.neo4j.kernel.api.Kernel
+import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.{QuerySubscriber, RecordingQuerySubscriber}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.{AssertableLogProvider, LogProvider}
@@ -70,9 +73,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   with BeforeAndAfterEach
   with Resolver {
 
-  var managementService: DatabaseManagementService = _
-  var graphDb: GraphDatabaseService = _
-  var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
+  private var managementService: DatabaseManagementService = _
+  private var graphDb: GraphDatabaseService = _
+  private var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
+  private var kernel: Kernel = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
 
@@ -80,6 +84,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     DebugLog.beginTime()
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
+    kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
     logProvider.clear()
     runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
     runtimeTestSupport.start()
@@ -91,7 +96,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     runtimeTestSupport.stopTx()
     DebugLog.log("")
     shutdownDatabase()
-    afterTest()
+    super.afterEach()
   }
 
   protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
@@ -108,8 +113,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       managementService = null
     }
   }
-
-  def afterTest(): Unit = {}
 
   override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
     super.test(testName, Tag(runtime.name) +: testTags: _*)(testFun)
@@ -560,6 +563,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       runtimeTestSupport.restartTx()
     }
     tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+  }
+
+  // PROCEDURES
+
+  def registerProcedure(proc: CallableProcedure): Unit = {
+    kernel.registerProcedure(proc)
   }
 
   // MATCHERS

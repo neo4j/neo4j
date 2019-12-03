@@ -79,6 +79,7 @@ class InterpretedProvidedOrderTest extends ProvidedOrderTestBase(COMMUNITY.EDITI
 class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                                    with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)
+                                 with ProcedureCallRowsTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime)
                                       with FullSupportMemoryManagementTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementDisabledTest extends MemoryManagementDisabledTestBase(COMMUNITY.EDITION, InterpretedRuntime)
@@ -87,4 +88,5 @@ class InterpretedSubscriberErrorTest extends SubscriberErrorTestBase(COMMUNITY.E
 class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime)
                                 with ThreadUnsafeExpressionTests[CommunityRuntimeContext]
                                 with ExpressionWithTxStateChangesTests[CommunityRuntimeContext]
+class InterpretedProcedureCallTest extends ProcedureCallTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedShortestPathTest extends ShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

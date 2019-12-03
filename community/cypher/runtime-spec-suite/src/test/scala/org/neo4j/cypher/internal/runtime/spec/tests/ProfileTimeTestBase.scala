@@ -19,15 +19,24 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
+import org.neo4j.kernel.api.ResourceTracker
+import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
+import org.neo4j.procedure.Mode
+import org.neo4j.values.AnyValue
+import org.neo4j.kernel.api.procedure.Context
 
 abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                               runtime: CypherRuntime[CONTEXT],
-                                                              sizeHint: Int
+                                                              val sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   // We always get OperatorProfile.NO_DATA for page cache hits and misses in Pipelined
@@ -340,10 +349,39 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).rows() should be > 0L// cartesian product
-    queryProfile.operatorProfile(2).rows() should be > 0L // all node scan b
-    queryProfile.operatorProfile(3).rows() should be > 0L // all node scan a
+    queryProfile.operatorProfile(1).time() should be > 0L// cartesian product
+    queryProfile.operatorProfile(2).time() should be > 0L // all node scan b
+    queryProfile.operatorProfile(3).time() should be > 0L // all node scan a
     // Should not attribute anything to the invalid id
     queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+  }
+}
+
+trait ProcedureCallTimeTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileTimeTestBase[CONTEXT] =>
+
+  test("should profile time of procedure call") {
+    // given
+    registerProcedure(new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "proc").mode(Mode.READ).out(VOID).build()) {
+      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+        RawIterator.empty[Array[AnyValue], ProcedureException]()
+      }
+    })
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("j")
+      .procedureCall("proc()")
+      .unwind(s"range(0, ${sizeHint - 1}) AS j")
+      .argument()
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).time() should be > 0L // procedure call
+    result.runtimeResult.queryProfile().operatorProfile(2).time() should be > 0L // unwind
+    result.runtimeResult.queryProfile().operatorProfile(3).time() should be > 0L // argument
   }
 }

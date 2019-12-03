@@ -130,7 +130,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
       }
       if (data.isEmpty) {
         // Make sure that if you ever call this in parallel, you cannot just create nodes here and need to redesign the test.
-        val value = if (nodeInput) runtimeTestSupport.tx.createNode() else i
+        val value = if (nodeInput) tx.createNode() else i
         Array(value)
       } else {
         data
