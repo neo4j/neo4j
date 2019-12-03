@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -209,5 +210,69 @@ class LoggingIndexedIdGeneratorMonitorTest
             assertTrue( ids.get( id ) );
         }
         assertFalse( ids.get( totalNumberOfIds ) );
+    }
+
+    @Test
+    void shouldDumpLogFilesInCorrectOrder() throws IOException
+    {
+        // given
+        File file = directory.file( "file" );
+        FakeClock clock = Clocks.fakeClock();
+        int numberOfIds = 100;
+        try ( LoggingIndexedIdGeneratorMonitor monitor = new LoggingIndexedIdGeneratorMonitor( fs, file, clock, 100, ByteUnit.Byte, 1, SECONDS ) )
+        {
+            for ( int i = 0; i < numberOfIds; i++ )
+            {
+                monitor.allocatedFromHigh( i );
+                clock.forward( 50, MILLISECONDS );
+                monitor.markSessionDone();
+            }
+        }
+
+        // when/then
+        MutableLong lastId = new MutableLong( -1 );
+        LoggingIndexedIdGeneratorMonitor.Dumper dumper = new LoggingIndexedIdGeneratorMonitor.Dumper()
+        {
+            private long lastFileMillis = -1;
+            private boolean lastFileWasTheBaseFile;
+
+            @Override
+            public void file( File dumpFile )
+            {
+                assertFalse( lastFileWasTheBaseFile );
+                long timestamp = LoggingIndexedIdGeneratorMonitor.millisOf( dumpFile );
+                if ( lastFileMillis != -1 )
+                {
+                    assertTrue( timestamp > lastFileMillis );
+                }
+                lastFileMillis = timestamp;
+                if ( dumpFile.equals( file ) )
+                {
+                    lastFileWasTheBaseFile = true;
+                }
+            }
+
+            @Override
+            public void type( LoggingIndexedIdGeneratorMonitor.Type type, long time )
+            {
+            }
+
+            @Override
+            public void typeAndId( LoggingIndexedIdGeneratorMonitor.Type type, long time, long id )
+            {
+                if ( lastId.longValue() != -1 )
+                {
+                    assertTrue( id > lastId.longValue() );
+                }
+                lastId.setValue( id );
+            }
+
+            @Override
+            public void typeAndTwoIds( LoggingIndexedIdGeneratorMonitor.Type type, long time, long id1, long id2 )
+            {
+            }
+        };
+        LoggingIndexedIdGeneratorMonitor.dump( fs, file, dumper );
+        assertEquals( numberOfIds - 1, lastId.getValue() );
     }
 }
