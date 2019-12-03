@@ -666,6 +666,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action access on databases foo $preposition role" ->
             s"$action ACCESS ON DATABASE foo $preposition role",
 
+          s"$action access on default database $preposition role" ->
+            s"$action ACCESS ON DEFAULT DATABASE $preposition role",
+
           s"$action start on database * $preposition role" ->
             s"$action START ON DATABASE * $preposition role",
 
@@ -677,6 +680,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action start on databases foo $preposition role" ->
             s"$action START ON DATABASE foo $preposition role",
+
+          s"$action start on default database $preposition role" ->
+            s"$action START ON DEFAULT DATABASE $preposition role",
 
           s"$action stop on database * $preposition role" ->
             s"$action STOP ON DATABASE * $preposition role",
@@ -690,6 +696,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action stop on databases foo $preposition role" ->
             s"$action STOP ON DATABASE foo $preposition role",
 
+          s"$action stop on default database $preposition role" ->
+            s"$action STOP ON DEFAULT DATABASE $preposition role",
+
           s"$action create index on database * $preposition role" ->
             s"$action CREATE INDEX ON DATABASE * $preposition role",
 
@@ -701,6 +710,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action create index on databases foo $preposition role" ->
             s"$action CREATE INDEX ON DATABASE foo $preposition role",
+
+          s"$action create index on default database $preposition role" ->
+            s"$action CREATE INDEX ON DEFAULT DATABASE $preposition role",
 
           s"$action drop index on database * $preposition role" ->
             s"$action DROP INDEX ON DATABASE * $preposition role",
@@ -714,6 +726,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action drop index on databases foo $preposition role" ->
             s"$action DROP INDEX ON DATABASE foo $preposition role",
 
+          s"$action drop index on default database $preposition role" ->
+            s"$action DROP INDEX ON DEFAULT DATABASE $preposition role",
+
           s"$action index on database * $preposition role" ->
             s"$action INDEX MANAGEMENT ON DATABASE * $preposition role",
 
@@ -725,6 +740,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action index on databases foo $preposition role" ->
             s"$action INDEX MANAGEMENT ON DATABASE foo $preposition role",
+
+          s"$action index on default database $preposition role" ->
+            s"$action INDEX MANAGEMENT ON DEFAULT DATABASE $preposition role",
 
           s"$action index management on database * $preposition role" ->
             s"$action INDEX MANAGEMENT ON DATABASE * $preposition role",
@@ -738,6 +756,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action index management on databases foo $preposition role" ->
             s"$action INDEX MANAGEMENT ON DATABASE foo $preposition role",
 
+          s"$action index management on default database $preposition role" ->
+            s"$action INDEX MANAGEMENT ON DEFAULT DATABASE $preposition role",
+
           s"$action create constraint on database * $preposition role" ->
             s"$action CREATE CONSTRAINT ON DATABASE * $preposition role",
 
@@ -749,6 +770,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action create constraint on databases foo $preposition role" ->
             s"$action CREATE CONSTRAINT ON DATABASE foo $preposition role",
+
+          s"$action create constraint on default database $preposition role" ->
+            s"$action CREATE CONSTRAINT ON DEFAULT DATABASE $preposition role",
 
           s"$action drop constraint on database * $preposition role" ->
             s"$action DROP CONSTRAINT ON DATABASE * $preposition role",
@@ -762,6 +786,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action drop constraint on databases foo $preposition role" ->
             s"$action DROP CONSTRAINT ON DATABASE foo $preposition role",
 
+          s"$action drop constraint on default database $preposition role" ->
+            s"$action DROP CONSTRAINT ON DEFAULT DATABASE $preposition role",
+
           s"$action constraint on database * $preposition role" ->
             s"$action CONSTRAINT MANAGEMENT ON DATABASE * $preposition role",
 
@@ -773,6 +800,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action constraint on databases foo $preposition role" ->
             s"$action CONSTRAINT MANAGEMENT ON DATABASE foo $preposition role",
+
+          s"$action constraint on default database $preposition role" ->
+            s"$action CONSTRAINT MANAGEMENT ON DEFAULT DATABASE $preposition role",
 
           s"$action constraint management on database * $preposition role" ->
             s"$action CONSTRAINT MANAGEMENT ON DATABASE * $preposition role",
@@ -786,6 +816,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action constraint management on databases foo $preposition role" ->
             s"$action CONSTRAINT MANAGEMENT ON DATABASE foo $preposition role",
 
+          s"$action constraint management on default database $preposition role" ->
+            s"$action CONSTRAINT MANAGEMENT ON DEFAULT DATABASE $preposition role",
+
           s"$action create new label on database * $preposition role" ->
             s"$action CREATE NEW NODE LABEL ON DATABASE * $preposition role",
 
@@ -797,6 +830,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action create new label on databases foo $preposition role" ->
             s"$action CREATE NEW NODE LABEL ON DATABASE foo $preposition role",
+
+          s"$action create new label on default database $preposition role" ->
+            s"$action CREATE NEW NODE LABEL ON DEFAULT DATABASE $preposition role",
 
           s"$action create new node label on database * $preposition role" ->
             s"$action CREATE NEW NODE LABEL ON DATABASE * $preposition role",
@@ -810,6 +846,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action create new node label on databases foo $preposition role" ->
             s"$action CREATE NEW NODE LABEL ON DATABASE foo $preposition role",
 
+          s"$action create new node label on default database $preposition role" ->
+            s"$action CREATE NEW NODE LABEL ON DEFAULT DATABASE $preposition role",
+
           s"$action create new type on database * $preposition role" ->
             s"$action CREATE NEW RELATIONSHIP TYPE ON DATABASE * $preposition role",
 
@@ -821,6 +860,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action create new type on databases foo $preposition role" ->
             s"$action CREATE NEW RELATIONSHIP TYPE ON DATABASE foo $preposition role",
+
+          s"$action create new type on default database $preposition role" ->
+            s"$action CREATE NEW RELATIONSHIP TYPE ON DEFAULT DATABASE $preposition role",
 
           s"$action create new relationship type on database * $preposition role" ->
             s"$action CREATE NEW RELATIONSHIP TYPE ON DATABASE * $preposition role",
@@ -834,6 +876,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action create new relationship type on databases foo $preposition role" ->
             s"$action CREATE NEW RELATIONSHIP TYPE ON DATABASE foo $preposition role",
 
+          s"$action create new relationship type on default database $preposition role" ->
+            s"$action CREATE NEW RELATIONSHIP TYPE ON DEFAULT DATABASE $preposition role",
+
           s"$action create new name on database * $preposition role" ->
             s"$action CREATE NEW PROPERTY NAME ON DATABASE * $preposition role",
 
@@ -845,6 +890,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action create new name on databases foo $preposition role" ->
             s"$action CREATE NEW PROPERTY NAME ON DATABASE foo $preposition role",
+
+          s"$action create new name on default database $preposition role" ->
+            s"$action CREATE NEW PROPERTY NAME ON DEFAULT DATABASE $preposition role",
 
           s"$action create new property name on database * $preposition role" ->
             s"$action CREATE NEW PROPERTY NAME ON DATABASE * $preposition role",
@@ -858,6 +906,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action create new property name on databases foo $preposition role" ->
             s"$action CREATE NEW PROPERTY NAME ON DATABASE foo $preposition role",
 
+          s"$action create new property name on default database $preposition role" ->
+            s"$action CREATE NEW PROPERTY NAME ON DEFAULT DATABASE $preposition role",
+
           s"$action name on database * $preposition role" ->
             s"$action NAME MANAGEMENT ON DATABASE * $preposition role",
 
@@ -869,6 +920,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action name on databases foo $preposition role" ->
             s"$action NAME MANAGEMENT ON DATABASE foo $preposition role",
+
+          s"$action name on default database $preposition role" ->
+            s"$action NAME MANAGEMENT ON DEFAULT DATABASE $preposition role",
 
           s"$action name management on database * $preposition role" ->
             s"$action NAME MANAGEMENT ON DATABASE * $preposition role",
@@ -882,6 +936,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action name management on databases foo $preposition role" ->
             s"$action NAME MANAGEMENT ON DATABASE foo $preposition role",
 
+          s"$action name management on default database $preposition role" ->
+            s"$action NAME MANAGEMENT ON DEFAULT DATABASE $preposition role",
+
           s"$action all on database * $preposition role" ->
             s"$action ALL DATABASE PRIVILEGES ON DATABASE * $preposition role",
 
@@ -893,6 +950,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action all on databases foo $preposition role" ->
             s"$action ALL DATABASE PRIVILEGES ON DATABASE foo $preposition role",
+
+          s"$action all on default database $preposition role" ->
+            s"$action ALL DATABASE PRIVILEGES ON DEFAULT DATABASE $preposition role",
 
           s"$action all privileges on database * $preposition role" ->
             s"$action ALL DATABASE PRIVILEGES ON DATABASE * $preposition role",
@@ -906,6 +966,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action all privileges on databases foo $preposition role" ->
             s"$action ALL DATABASE PRIVILEGES ON DATABASE foo $preposition role",
 
+          s"$action all privileges on default database $preposition role" ->
+            s"$action ALL DATABASE PRIVILEGES ON DEFAULT DATABASE $preposition role",
+
           s"$action all database privileges on database * $preposition role" ->
             s"$action ALL DATABASE PRIVILEGES ON DATABASE * $preposition role",
 
@@ -917,6 +980,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action all database privileges on databases foo $preposition role" ->
             s"$action ALL DATABASE PRIVILEGES ON DATABASE foo $preposition role",
+
+          s"$action all database privileges on default database $preposition role" ->
+            s"$action ALL DATABASE PRIVILEGES ON DEFAULT DATABASE $preposition role",
 
           s"$action role management on dbms $preposition role" ->
             s"$action ROLE MANAGEMENT ON DBMS $preposition role",

@@ -98,6 +98,14 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
             yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("role1", "role2")))
           }
 
+          test(s"$command $privilege ON DEFAULT DATABASE $preposition role") {
+            yields(privilegeFunc(action, ast.DefaultDatabaseScope() _, Seq("role")))
+          }
+
+          test(s"$command $privilege ON DEFAULT DATABASE $preposition role1, role2") {
+            yields(privilegeFunc(action, ast.DefaultDatabaseScope() _, Seq("role1", "role2")))
+          }
+
           test(s"$command $privilege ON GRAPH * $preposition role") {
             // GRAPH instead of DATABASE
             failsToParse
@@ -140,6 +148,21 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
 
           test(s"$command $privilege DATABASE foo $preposition role") {
             // Missing ON keyword
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DEFAULT DATABASES $preposition role") {
+            // 'databases' instead of 'database'
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DEFAULT DATABASE foo $preposition role") {
+            // both default and database name
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DEFAULT DATABASE * $preposition role") {
+            // both default and *
             failsToParse
           }
       }

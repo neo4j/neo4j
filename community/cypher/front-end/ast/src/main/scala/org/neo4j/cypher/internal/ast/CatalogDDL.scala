@@ -241,6 +241,8 @@ final case class NamedGraphScope(database: String)(val position: InputPosition) 
 
 final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
 
+final case class DefaultDatabaseScope()(val position: InputPosition) extends GraphScope
+
 sealed trait ShowPrivilegeScope
 
 final case class ShowRolePrivileges(role: String)(val position: InputPosition) extends ShowPrivilegeScope
@@ -374,12 +376,13 @@ object RevokePrivilege {
     RevokePrivilege(WritePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
 }
 
-sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: PrivilegeQualifier, position: InputPosition)
+sealed abstract class PrivilegeCommand(privilege: PrivilegeType, scope: GraphScope, qualifier: PrivilegeQualifier, position: InputPosition)
   extends MultiDatabaseAdministrationCommand {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       writeQualifierCheck chain
+      allowedScope chain
       SemanticState.recordCurrentScope(this)
 
   private def writeQualifierCheck: SemanticCheck =
@@ -387,22 +390,28 @@ sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: Priv
       SemanticError("The use of ELEMENT, NODE or RELATIONSHIP with the WRITE privilege is not supported in this version.", position)
     else
       SemanticCheckResult.success
+
+  private def allowedScope: SemanticCheck =
+    if (scope.isInstanceOf[DefaultDatabaseScope] && !privilege.isInstanceOf[DatabasePrivilege])
+      SemanticError(s"The DEFAULT DATABASE scope is not allowed for ${privilege.name} privilege.", position)
+    else
+      SemanticCheckResult.success
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                               (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+                               (val position: InputPosition) extends PrivilegeCommand(privilege, scope, qualifier, position) {
 
   override def name = s"GRANT ${privilege.name}"
 }
 
 final case class DenyPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                                (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+                                (val position: InputPosition) extends PrivilegeCommand(privilege, scope, qualifier, position) {
 
   override def name = s"DENY ${privilege.name}"
 }
 
 final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String],
-                                 revokeType: RevokeType)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+                                 revokeType: RevokeType)(val position: InputPosition) extends PrivilegeCommand(privilege, scope, qualifier, position) {
 
   override def name: String = {
     if (revokeType.name.nonEmpty) {

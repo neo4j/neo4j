@@ -176,16 +176,19 @@ case class Prettifier(expr: ExpressionStringifier) {
       s"${x.name} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
-      val dbName = Prettifier.extractDbScope(dbScope)
-      s"${x.name} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
+      val (dbName, default) = Prettifier.extractDbScope(dbScope)
+      val db = if (default) s"$dbName DATABASE" else s"DATABASE $dbName"
+      s"${x.name} ON $db TO ${Prettifier.escapeNames(roleNames)}"
 
     case x @ DenyPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
-      val dbName = Prettifier.extractDbScope(dbScope)
-      s"${x.name} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
+      val (dbName, default) = Prettifier.extractDbScope(dbScope)
+      val db = if (default) s"$dbName DATABASE" else s"DATABASE $dbName"
+      s"${x.name} ON $db TO ${Prettifier.escapeNames(roleNames)}"
 
     case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames, _) =>
-      val dbName = Prettifier.extractDbScope(dbScope)
-      s"${x.name} ON DATABASE $dbName FROM ${Prettifier.escapeNames(roleNames)}"
+      val (dbName, default) = Prettifier.extractDbScope(dbScope)
+      val db = if (default) s"$dbName DATABASE" else s"DATABASE $dbName"
+      s"${x.name} ON $db FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
@@ -511,15 +514,16 @@ object Prettifier {
       case AllQualifier() => "ELEMENTS *"
       case _ => "<unknown>"
     }
-    (resourceName, extractDbScope(dbScope), segment)
+    (resourceName, extractDbScope(dbScope)._1, segment)
   }
 
   def revokeOperation(operation: String, revokeType: String) = s"$operation($revokeType)"
 
-  def extractDbScope(dbScope: GraphScope): String = dbScope match {
-    case NamedGraphScope(name) => escapeName(name)
-    case AllGraphsScope() => "*"
-    case _ => "<unknown>"
+  def extractDbScope(dbScope: GraphScope): (String, Boolean) = dbScope match {
+    case NamedGraphScope(name) => (escapeName(name), false)
+    case AllGraphsScope() => ("*", false)
+    case DefaultDatabaseScope() => ("DEFAULT", true)
+    case _ => ("<unknown>", false)
   }
 
   /*

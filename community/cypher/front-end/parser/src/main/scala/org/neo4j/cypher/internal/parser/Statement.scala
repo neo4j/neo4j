@@ -421,11 +421,11 @@ trait Statement extends Parser
 
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
 
-  private def Database: Rule1[GraphScope] = rule("on a database")(
+  private def Database: Rule1[GraphScope] = rule("on a database") {
     group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-      (group(SymbolicNameString) ~~>> (ast.NamedGraphScope(_)) |
-        keyword("*") ~~~> ast.AllGraphsScope())
-  )
+      (SymbolicNameString ~~>> (ast.NamedGraphScope(_)) | keyword("*") ~~~> ast.AllGraphsScope()) |
+    keyword("ON DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope()
+  }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("access/start/stop a database and index, constraint and token management")(
     keyword("ACCESS") ~~~> (_ => ast.AccessDatabaseAction) |

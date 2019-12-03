@@ -411,6 +411,20 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
               }
           }
       }
+
+      // Database instead of graph keyword
+
+      test(s"$command ${privilege.name} ON DATABASES * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command ${privilege.name} ON DATABASE foo $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command ${privilege.name} ON DEFAULT DATABASE $preposition role") {
+        failsToParse
+      }
   }
 
 }

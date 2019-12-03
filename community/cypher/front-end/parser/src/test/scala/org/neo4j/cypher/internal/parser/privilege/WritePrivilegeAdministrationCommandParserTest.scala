@@ -96,5 +96,19 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
             }
         }
     }
+
+    // Database instead of graph keyword
+
+    test(s"$command WRITE ON DATABASES * $preposition role") {
+      failsToParse
+    }
+
+    test(s"$command WRITE ON DATABASE foo $preposition role") {
+      failsToParse
+    }
+
+    test(s"$command WRITE ON DEFAULT DATABASE $preposition role") {
+      failsToParse
+    }
   }
 }

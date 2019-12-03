@@ -230,7 +230,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case AssertValidRevoke(_, action, scope, roleName) =>
         val args = action match {
-          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)))
+          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)._1))
           case _ => Seq(DbmsAction(action.name))
         }
         PlanDescriptionImpl(id, "AssertValidRevoke", NoChildren, args :+ Role(Prettifier.escapeName(roleName)), variables)
@@ -245,15 +245,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), NoChildren, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
 
       case GrantDatabaseAction(_, action, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
+        val dbName = Prettifier.extractDbScope(database)._1
         PlanDescriptionImpl(id, "GrantDatabaseAction", NoChildren, Seq(DatabaseAction(action.name), Database(dbName), Role(Prettifier.escapeName(roleName))), variables)
 
       case DenyDatabaseAction(_, action, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
+        val dbName = Prettifier.extractDbScope(database)._1
         PlanDescriptionImpl(id, "DenyDatabaseAction", NoChildren, Seq(DatabaseAction(action.name), Database(dbName), Role(Prettifier.escapeName(roleName))), variables)
 
       case RevokeDatabaseAction(_, action, database, roleName, revokeType) =>
-        val dbName = Prettifier.extractDbScope(database)
+        val dbName = Prettifier.extractDbScope(database)._1
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), NoChildren,
           Seq(DatabaseAction(action.name), Database(dbName), Role(Prettifier.escapeName(roleName))), variables)
 
@@ -589,7 +589,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case AssertValidRevoke(_, action, scope, roleName) =>
         val args = action match {
-          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)))
+          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)._1))
           case _ => Seq(DbmsAction(action.name))
         }
         PlanDescriptionImpl(id, "AssertValidRevoke", children, args :+ Role(Prettifier.escapeName(roleName)), variables)
@@ -604,15 +604,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
 
       case GrantDatabaseAction(_, action, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
+        val dbName = Prettifier.extractDbScope(database)._1
         PlanDescriptionImpl(id, "GrantDatabaseAction", children, Seq(DatabaseAction(action.name), Database(dbName), Role(Prettifier.escapeName(roleName))), variables)
 
       case DenyDatabaseAction(_, action, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
+        val dbName = Prettifier.extractDbScope(database)._1
         PlanDescriptionImpl(id, "DenyDatabaseAction", children, Seq(DatabaseAction(action.name), Database(dbName), Role(Prettifier.escapeName(roleName))), variables)
 
       case RevokeDatabaseAction(_, action, database, roleName, revokeType) =>
-        val dbName = Prettifier.extractDbScope(database)
+        val dbName = Prettifier.extractDbScope(database)._1
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), children,
           Seq(DatabaseAction(action.name), Database(dbName), Role(Prettifier.escapeName(roleName))), variables)
 
