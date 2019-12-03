@@ -21,10 +21,12 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 public class EphemeralPageSwapperTest extends PageSwapperTest
 {
     @Override
-    protected PageSwapperFactory swapperFactory()
+    protected PageSwapperFactory swapperFactory( FileSystemAbstraction fileSystem )
     {
         return new EphemeralPageSwapperFactory();
     }
@@ -32,6 +34,12 @@ public class EphemeralPageSwapperTest extends PageSwapperTest
     @Override
     protected void mkdirs( File dir )
     {
+    }
+
+    @Override
+    protected FileSystemAbstraction getFs()
+    {
+        return null;
     }
 
     @Override

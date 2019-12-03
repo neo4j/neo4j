@@ -29,27 +29,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class EphemeralPageSwapperFactory implements PageSwapperFactory, AutoCloseable
 {
     private final ConcurrentHashMap<File,EphemeralSwapper> swappers = new ConcurrentHashMap<>();
 
     @Override
-    public void open( FileSystemAbstraction fs )
+    public long getRequiredBufferAlignment( boolean useDirectIO )
     {
-    }
-
-    @Override
-    public String getName()
-    {
-        return "ephemeral";
-    }
-
-    @Override
-    public long getRequiredBufferAlignment()
-    {
-        return 1;
+        return useDirectIO ? 512 : 1;
     }
 
     @Override
@@ -57,6 +45,10 @@ public class EphemeralPageSwapperFactory implements PageSwapperFactory, AutoClos
             File file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean noChannelStriping, boolean useDirectIO )
             throws IOException
     {
+        if ( useDirectIO && filePageSize == 0 || filePageSize % getRequiredBufferAlignment( useDirectIO ) != 0 )
+        {
+            throw new IllegalArgumentException( "Page size must be multiple of block size." );
+        }
         EphemeralSwapper swapper = swappers.compute( file, ( f, existing ) ->
         {
             if ( existing != null )

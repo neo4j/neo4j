@@ -46,7 +46,8 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );return createPageCache( factory, jobScheduler );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
+        return createPageCache( factory, jobScheduler );
     }
 
     public static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler )
