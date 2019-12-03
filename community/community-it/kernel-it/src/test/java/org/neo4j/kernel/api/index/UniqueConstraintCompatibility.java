@@ -925,7 +925,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             @Override
             public void accept( Transaction transaction )
             {
-                assertThat( lookUpNode( transaction, propertyValue ) ).isSameAs( value );
+                assertThat( lookUpNode( transaction, propertyValue ) ).isEqualTo( value );
             }
         };
     }
