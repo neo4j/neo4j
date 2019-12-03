@@ -27,11 +27,13 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.OpenOption;
 import java.util.HashSet;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -59,7 +61,6 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  */
 public class SingleFilePageSwapper implements PageSwapper
 {
-    private static final int MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS = 42;
     private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( SingleFilePageSwapper.class, "printReflectionExceptions", false );
 
     // Exponent of 2 of how many channels we open per file:
@@ -79,6 +80,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private static final ThreadLocal<ByteBuffer> PROXY_CACHE = new ThreadLocal<>();
     private static final Class<?> CLS_FILE_CHANNEL_IMPL = getInternalFileChannelClass();
     private static final MethodHandle POSITION_LOCK_GETTER = getPositionLockGetter();
+    private static final MethodHandle MAKE_CHANNEL_UNINTERRUPTIBLE = getUninterruptibleSetter();
 
     private static int defaultChannelStripePower()
     {
@@ -113,6 +115,31 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         requirePowerOfTwo( count );
         return count - 1;
+    }
+
+    private static MethodHandle getUninterruptibleSetter()
+    {
+        try
+        {
+            if ( CLS_FILE_CHANNEL_IMPL != null )
+            {
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                Method uninterruptibleSetter = CLS_FILE_CHANNEL_IMPL.getMethod( "setUninterruptible" );
+                return lookup.unreflect( uninterruptibleSetter );
+            }
+            else
+            {
+                return null;
+            }
+        }
+        catch ( Throwable e )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 
     private static MethodHandle getPositionLockGetter()
@@ -207,7 +234,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             var openOptions = new HashSet<>( WRITE_OPTIONS );
             openOptions.add( ExtendedOpenOption.DIRECT );
-            channels[i] = useDirectIO ? fs.open( file, openOptions ) : fs.write( file );
+            channels[i] = getStoreChannel( file, fs, useDirectIO, openOptions );
         }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
@@ -223,6 +250,31 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         hasPositionLock = channels[0].getClass() == StoreFileChannel.class
                 && StoreFileChannelUnwrapper.unwrap( channels[0] ).getClass() == CLS_FILE_CHANNEL_IMPL;
+    }
+
+    private StoreChannel getStoreChannel( File file, FileSystemAbstraction fs, boolean useDirectIO, HashSet<OpenOption> openOptions ) throws IOException
+    {
+        var storeChannel = useDirectIO ? fs.open( file, openOptions ) : fs.write( file );
+        if ( storeChannel instanceof StoreFileChannel )
+        {
+            tryMarkUninterruptible( StoreFileChannelUnwrapper.unwrap( storeChannel ) );
+        }
+        return storeChannel;
+    }
+
+    private void tryMarkUninterruptible( FileChannel fileChannel )
+    {
+        if ( MAKE_CHANNEL_UNINTERRUPTIBLE != null && fileChannel.getClass() == CLS_FILE_CHANNEL_IMPL )
+        {
+            try
+            {
+                MAKE_CHANNEL_UNINTERRUPTIBLE.invoke( fileChannel );
+            }
+            catch ( Throwable t )
+            {
+                throw new LinkageError( "No setter for uninterruptible flag", t );
+            }
+        }
     }
 
     private void validateDirectIOPossibility( File file, int filePageSize ) throws IOException
@@ -361,11 +413,6 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long read( long filePageId, long bufferAddress ) throws IOException
     {
-        return readAndRetryIfInterrupted( filePageId, bufferAddress, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
-    }
-
-    private long readAndRetryIfInterrupted( long filePageId, long bufferAddress, int attemptsLeft ) throws IOException
-    {
         long fileOffset = pageIdToPosition( filePageId );
         try
         {
@@ -381,19 +428,7 @@ public class SingleFilePageSwapper implements PageSwapper
         catch ( ClosedChannelException e )
         {
             tryReopen( filePageId, e );
-
-            if ( attemptsLeft < 1 )
-            {
-                throw new IOException( "IO failed due to interruption", e );
-            }
-
-            boolean interrupted = Thread.interrupted();
-            long bytesRead = readAndRetryIfInterrupted( filePageId, bufferAddress, attemptsLeft - 1 );
-            if ( interrupted )
-            {
-                Thread.currentThread().interrupt();
-            }
-            return bytesRead;
+            throw new IOException( "IO failed due to interruption", e );
         }
         return 0;
     }
@@ -426,7 +461,7 @@ public class SingleFilePageSwapper implements PageSwapper
         long fileOffset = pageIdToPosition( startFilePageId );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
-        long bytesRead = lockPositionReadVectorAndRetryIfInterrupted( startFilePageId, channel, fileOffset, srcs, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
+        long bytesRead = lockPositionReadVector( startFilePageId, channel, fileOffset, srcs );
         if ( bytesRead == -1 )
         {
             for ( long address : bufferAddresses )
@@ -455,8 +490,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return bytesRead;
     }
 
-    private long lockPositionReadVectorAndRetryIfInterrupted( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs, int attemptsLeft )
-            throws IOException
+    private long lockPositionReadVector( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
         {
@@ -477,20 +511,7 @@ public class SingleFilePageSwapper implements PageSwapper
         catch ( ClosedChannelException e )
         {
             tryReopen( filePageId, e );
-
-            if ( attemptsLeft < 1 )
-            {
-                throw new IOException( "IO failed due to interruption", e );
-            }
-
-            boolean interrupted = Thread.interrupted();
-            channel = unwrappedChannel( filePageId );
-            long bytesWritten = lockPositionReadVectorAndRetryIfInterrupted( filePageId, channel, fileOffset, srcs, attemptsLeft - 1 );
-            if ( interrupted )
-            {
-                Thread.currentThread().interrupt();
-            }
-            return bytesWritten;
+            throw new IOException( "IO failed due to interruption", e );
         }
     }
 
@@ -508,11 +529,6 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long write( long filePageId, long bufferAddress ) throws IOException
     {
-        return writeAndRetryIfInterrupted( filePageId, bufferAddress, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
-    }
-
-    private long writeAndRetryIfInterrupted( long filePageId, long bufferAddress, int attemptsLeft ) throws IOException
-    {
         long fileOffset = pageIdToPosition( filePageId );
         increaseFileSizeTo( fileOffset + filePageSize );
         try
@@ -523,19 +539,7 @@ public class SingleFilePageSwapper implements PageSwapper
         catch ( ClosedChannelException e )
         {
             tryReopen( filePageId, e );
-
-            if ( attemptsLeft < 1 )
-            {
-                throw new IOException( "IO failed due to interruption", e );
-            }
-
-            boolean interrupted = Thread.interrupted();
-            long bytesWritten = writeAndRetryIfInterrupted( filePageId, bufferAddress, attemptsLeft - 1 );
-            if ( interrupted )
-            {
-                Thread.currentThread().interrupt();
-            }
-            return bytesWritten;
+            throw new IOException( "IO failed due to interruption", e );
         }
     }
 
@@ -572,7 +576,7 @@ public class SingleFilePageSwapper implements PageSwapper
         increaseFileSizeTo( fileOffset + (((long) filePageSize) * length) );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
-        return lockPositionWriteVectorAndRetryIfInterrupted( startFilePageId, channel, fileOffset, srcs, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
+        return lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
     }
 
     private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int arrayOffset, int length ) throws Exception
@@ -592,8 +596,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return StoreFileChannelUnwrapper.unwrap( storeChannel );
     }
 
-    private long lockPositionWriteVectorAndRetryIfInterrupted( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs, int attemptsLeft )
-            throws IOException
+    private long lockPositionWriteVector( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
         {
@@ -613,20 +616,7 @@ public class SingleFilePageSwapper implements PageSwapper
         catch ( ClosedChannelException e )
         {
             tryReopen( filePageId, e );
-
-            if ( attemptsLeft < 1 )
-            {
-                throw new IOException( "IO failed due to interruption", e );
-            }
-
-            boolean interrupted = Thread.interrupted();
-            channel = unwrappedChannel( filePageId );
-            long bytesWritten = lockPositionWriteVectorAndRetryIfInterrupted( filePageId, channel, fileOffset, srcs, attemptsLeft - 1 );
-            if ( interrupted )
-            {
-                Thread.currentThread().interrupt();
-            }
-            return bytesWritten;
+            throw new IOException( "IO failed due to interruption", e );
         }
     }
 
@@ -802,11 +792,6 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void force() throws IOException
     {
-        forceAndRetryIfInterrupted( MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
-    }
-
-    private void forceAndRetryIfInterrupted( int attemptsLeft ) throws IOException
-    {
         try
         {
             channel( TOKEN_FILE_PAGE_ID ).force( false );
@@ -814,18 +799,7 @@ public class SingleFilePageSwapper implements PageSwapper
         catch ( ClosedChannelException e )
         {
             tryReopen( TOKEN_FILE_PAGE_ID, e );
-
-            if ( attemptsLeft < 1 )
-            {
-                throw new IOException( "IO failed due to interruption", e );
-            }
-
-            boolean interrupted = Thread.interrupted();
-            forceAndRetryIfInterrupted( attemptsLeft - 1 );
-            if ( interrupted )
-            {
-                Thread.currentThread().interrupt();
-            }
+            throw new IOException( "IO failed due to interruption", e );
         }
     }
 
@@ -845,11 +819,6 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void truncate() throws IOException
     {
-        truncateAndRetryIfInterrupted( MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
-    }
-
-    private void truncateAndRetryIfInterrupted( int attemptsLeft ) throws IOException
-    {
         setCurrentFileSize( 0 );
         try
         {
@@ -858,18 +827,7 @@ public class SingleFilePageSwapper implements PageSwapper
         catch ( ClosedChannelException e )
         {
             tryReopen( TOKEN_FILE_PAGE_ID, e );
-
-            if ( attemptsLeft < 1 )
-            {
-                throw new IOException( "IO failed due to interruption", e );
-            }
-
-            boolean interrupted = Thread.interrupted();
-            truncateAndRetryIfInterrupted( attemptsLeft - 1 );
-            if ( interrupted )
-            {
-                Thread.currentThread().interrupt();
-            }
+            throw new IOException( "IO failed due to interruption", e );
         }
     }
 

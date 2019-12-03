@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -37,11 +38,16 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.OpenOption;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -57,6 +63,11 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static java.util.concurrent.ConcurrentHashMap.newKeySet;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -74,18 +85,25 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     private EphemeralFileSystemAbstraction ephemeralFileSystem;
     private DefaultFileSystemAbstraction fileSystem;
     private File file;
+    private ExecutorService operationExecutor;
+    private ThreadRegistryFactory threadRegistryFactory;
+    private static final int INTERRUPT_ATTEMPTS = 100;
 
     @BeforeEach
     void setUp() throws IOException
     {
         file = new File( "file" ).getCanonicalFile();
         ephemeralFileSystem = new EphemeralFileSystemAbstraction();
+        ephemeralFileSystem.setInterruptible( false );
         fileSystem = new DefaultFileSystemAbstraction();
+        threadRegistryFactory = new ThreadRegistryFactory();
+        operationExecutor = Executors.newSingleThreadExecutor( threadRegistryFactory );
     }
 
     @AfterEach
     void tearDown() throws Exception
     {
+        operationExecutor.shutdown();
         IOUtils.closeAll( ephemeralFileSystem, fileSystem );
     }
 
@@ -167,6 +185,92 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         swapper.read( 1, target );
 
         assertThat( array( target ) ).containsExactly( 5, 6, 0, 0 );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void uninterruptibleRead( boolean noChannelStriping ) throws Exception
+    {
+        byte[] pageContent = new byte[] {1, 2, 3, 4};
+        StoreChannel channel = getFs().write( getFile() );
+        channel.writeAll( wrap( pageContent ) );
+        channel.close();
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, noChannelStriping );
+        long target = createPage( 4 );
+
+        CountDownLatch startInterruptsLatch = new CountDownLatch( 1 );
+        AtomicBoolean readFlag = new AtomicBoolean( true );
+        var uninterruptibleFuture = operationExecutor.submit( () ->
+        {
+            startInterruptsLatch.countDown();
+            while ( readFlag.get() )
+            {
+                try
+                {
+                    swapper.read( 0, target );
+                }
+                catch ( Throwable t )
+                {
+                    throw new RuntimeException( t );
+                }
+            }
+        } );
+
+        startInterruptsLatch.await();
+        assertFalse( threadRegistryFactory.getThreads().isEmpty() );
+
+        for ( int i = 0; i < INTERRUPT_ATTEMPTS; i++ )
+        {
+            threadRegistryFactory.getThreads().forEach( Thread::interrupt );
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
+        }
+        readFlag.set( false );
+        assertDoesNotThrow( (ThrowingSupplier<?>) uninterruptibleFuture::get );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void uninterruptibleWrite( boolean noChannelStriping ) throws Exception
+    {
+        byte[] pageContent = new byte[] {1, 2, 3, 4};
+        StoreChannel channel = getFs().write( getFile() );
+        channel.writeAll( wrap( pageContent ) );
+        channel.close();
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, noChannelStriping );
+        long target = createPage( 4 );
+
+        CountDownLatch startInterruptsLatch = new CountDownLatch( 1 );
+        AtomicBoolean writeFlag = new AtomicBoolean( true );
+        var uninterruptibleFuture = operationExecutor.submit( () ->
+        {
+            startInterruptsLatch.countDown();
+            while ( writeFlag.get() )
+            {
+                try
+                {
+                    swapper.write( 0, target );
+                }
+                catch ( Throwable t )
+                {
+                    throw new RuntimeException( t );
+                }
+            }
+        } );
+
+        startInterruptsLatch.await();
+        assertFalse( threadRegistryFactory.getThreads().isEmpty() );
+
+        for ( int i = 0; i < INTERRUPT_ATTEMPTS; i++ )
+        {
+            threadRegistryFactory.getThreads().forEach( Thread::interrupt );
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
+        }
+        writeFlag.set( false );
+        assertDoesNotThrow( (ThrowingSupplier<?>) uninterruptibleFuture::get );
     }
 
     @ParameterizedTest
@@ -640,6 +744,29 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         finally
         {
             swapper.close();
+        }
+    }
+
+    private static class ThreadRegistryFactory extends NamedThreadFactory
+    {
+        private final Set<Thread> threads = newKeySet();
+
+        ThreadRegistryFactory()
+        {
+            super( "SwapperInterruptTestThreads" );
+        }
+
+        @Override
+        public Thread newThread( Runnable runnable )
+        {
+            var thread = super.newThread( runnable );
+            threads.add( thread );
+            return thread;
+        }
+
+        public Set<Thread> getThreads()
+        {
+            return threads;
         }
     }
 }
