@@ -2913,6 +2913,40 @@ public class FulltextProceduresTest
         assertThat( e.getMessage(), containsString( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) );
     }
 
+    @Test
+    public void fulltextIndexMustWorkAfterRestartWithTxStateChanges()
+    {
+        // Create node and relationship fulltext indexes
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) ) ).close();
+            createSimpleRelationshipIndex( tx );
+            tx.commit();
+        }
+        awaitIndexesOnline();
+
+        // Restart
+        managementService.shutdown();
+        db = createDatabase();
+
+        // Query node
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode(); // Tx state changed
+            tx.execute( format( QUERY_NODES, "nodes", "*" ) ).close();
+            tx.commit();
+        }
+
+        // Query relationship
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode(); // Tx state changed
+            tx.execute( format( QUERY_RELS, "rels", "*" ) ).close();
+            tx.commit();
+        }
+    }
+
     private void assertNoIndexSeeks( Result result )
     {
         assertThat( result.stream().count(), is( 1L ) );
