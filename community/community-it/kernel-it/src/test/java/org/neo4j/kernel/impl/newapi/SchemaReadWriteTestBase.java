@@ -439,8 +439,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexDrop( toDrop );
             SchemaReadCore after = tx.schemaRead().snapshot();
 
-            assertThat( before.indexesGetAll() ).asList().contains( toRetain, toRetain2, created );
-            assertThat( after.indexesGetAll() ).asList().contains( toRetain, toRetain2, created );
+            assertThat( before.indexesGetAll() ).toIterable().contains( toRetain, toRetain2, created );
+            assertThat( after.indexesGetAll() ).toIterable().contains( toRetain, toRetain2, created );
 
             tx.commit();
         }
@@ -508,7 +508,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().snapshot().indexesGetForLabel( label );
             assertThat( indexes ).contains( inStore, createdInTx );
-            assertThat( before.indexesGetForLabel( label ) ).asList().contains( inStore, createdInTx );
+            assertThat( before.indexesGetForLabel( label ) ).toIterable().contains( inStore, createdInTx );
 
             tx.commit();
         }
@@ -1154,7 +1154,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().snapshot().constraintsGetAll();
             assertThat( allConstraints ).contains( toRetain, toRetain2, created );
-            assertThat( before.constraintsGetAll() ).asList().contains( toRetain, toRetain2, created );
+            assertThat( before.constraintsGetAll() ).toIterable().contains( toRetain, toRetain2, created );
 
             tx.commit();
         }
@@ -1189,7 +1189,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetForLabel( label );
             assertThat( allConstraints ).contains( inStore, createdInTx );
-            assertThat( before.constraintsGetForLabel( label ) ).asList().contains( inStore, createdInTx );
+            assertThat( before.constraintsGetForLabel( label ) ).toIterable().contains( inStore, createdInTx );
 
             tx.commit();
         }
