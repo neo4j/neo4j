@@ -60,6 +60,8 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
    * variables from the `outer` scope
    */
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck
+
+  def isCorrelated: Boolean
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart with SemanticAnalysisTooling {
@@ -74,6 +76,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
 
   override def returnColumns: List[LogicalVariable] = clauses.last.returnColumns
+
+  override def isCorrelated: Boolean = importWith.isDefined
 
   def importColumns: Seq[String] = importWith match {
     case Some(w) => w.returnItems.items.map(_.name)
@@ -302,6 +306,8 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   override def checkImportingWith: SemanticCheck =
     part.checkImportingWith chain
       query.checkImportingWith
+
+  override def isCorrelated: Boolean = query.isCorrelated || part.isCorrelated
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     // Because we get an additonal empty base scope as the first sibling of each query part in a sub-query context

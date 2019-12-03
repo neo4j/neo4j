@@ -73,7 +73,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       val sq = RegularSinglePlannerQuery(QueryGraph(patternNodes = Set("a")), horizon = RegularQueryProjection(Map("a" -> varFor("a"))))
 
-      val pq = RegularSinglePlannerQuery(horizon = CallSubqueryHorizon(sq))
+      val pq = RegularSinglePlannerQuery(horizon = CallSubqueryHorizon(sq, correlated = false))
       val inputPlan = Argument()
 
       // When
@@ -81,6 +81,26 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       producedPlan should equal(CartesianProduct(
+        inputPlan,
+        AllNodesScan("a", Set.empty)
+      ))
+    }
+  }
+
+  test("should plan correlated subqueries calls") {
+    // Given
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
+
+      val sq = RegularSinglePlannerQuery(QueryGraph(patternNodes = Set("a")), horizon = RegularQueryProjection(Map("a" -> varFor("a"))))
+
+      val pq = RegularSinglePlannerQuery(horizon = CallSubqueryHorizon(sq, correlated = true))
+      val inputPlan = Argument()
+
+      // When
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context)
+
+      // Then
+      producedPlan should equal(Apply(
         inputPlan,
         AllNodesScan("a", Set.empty)
       ))

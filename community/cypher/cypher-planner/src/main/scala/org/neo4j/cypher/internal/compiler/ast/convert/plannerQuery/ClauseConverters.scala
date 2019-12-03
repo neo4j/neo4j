@@ -324,11 +324,8 @@ object ClauseConverters {
 
   private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubQuery): PlannerQueryBuilder = {
     val subquery = clause.part
-    // These need to be passed into the callSubquery somehow - for correlated subqueries only
-    // val argumentIDs = acc.currentlyAvailableVariables
-
     val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable)
-    acc.withCallSubquery(callSubquery)
+    acc.withCallSubquery(callSubquery, subquery.isCorrelated)
   }
 
   private def toPropertyMap(expr: Option[Expression]): Map[PropertyKeyName, Expression] = expr match {

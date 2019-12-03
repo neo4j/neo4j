@@ -53,7 +53,7 @@ object CompilationPhases {
       Parsing.adds(BaseContains[Statement]) andThen
         SyntaxDeprecationWarnings(Deprecations.V2) andThen
         PreparatoryRewriting(Deprecations.V2) andThen
-        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
+        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries).adds(BaseContains[SemanticState]) andThen
         AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
     }
 }
@@ -69,13 +69,13 @@ object CompilationPhases {
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
         isolateAggregation andThen
-          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
+          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries) andThen
           Namespacer andThen
           transitiveClosure andThen
           rewriteEqualityToInPredicate andThen
           CNFNormalizer andThen
           LateAstRewriting andThen
-          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
+          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries) andThen
           ResolveTokens andThen
           CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
           OptionalMatchRemover andThen

@@ -37,8 +37,8 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
-  def withCallSubquery(subquery: PlannerQueryPart): PlannerQueryBuilder = {
-    withHorizon(CallSubqueryHorizon(subquery)).withTail(SinglePlannerQuery.empty)
+  def withCallSubquery(subquery: PlannerQueryPart, correlated: Boolean): PlannerQueryBuilder = {
+    withHorizon(CallSubqueryHorizon(subquery, correlated)).withTail(SinglePlannerQuery.empty)
   }
 
   def withTail(newTail: SinglePlannerQuery): PlannerQueryBuilder = {
@@ -166,5 +166,8 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
 }
 
 object PlannerQueryBuilder {
-  def apply(semanticTable: SemanticTable) = new PlannerQueryBuilder(SinglePlannerQuery.empty, semanticTable)
+  def apply(semanticTable: SemanticTable): PlannerQueryBuilder =
+    PlannerQueryBuilder(SinglePlannerQuery.empty, semanticTable)
+  def apply(semanticTable: SemanticTable, argumentIds: Set[String]): PlannerQueryBuilder =
+    PlannerQueryBuilder(RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds)), semanticTable)
 }

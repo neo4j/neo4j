@@ -118,7 +118,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case _: PassthroughAllHorizon =>
       in
 
-    case CallSubqueryHorizon(subquery) =>
+    case CallSubqueryHorizon(subquery, _) =>
       val subQueryCardinality = apply(subquery, QueryGraphSolverInput.empty, semanticTable)
       in * subQueryCardinality
   }

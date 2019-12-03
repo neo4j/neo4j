@@ -64,7 +64,7 @@ case class LoadCSVProjection(variable: String, url: Expression, format: CSVForma
   override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
-case class CallSubqueryHorizon(callSubquery: PlannerQueryPart) extends QueryHorizon {
+case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boolean) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ callSubquery.returns
 
   override def dependingExpressions: Seq[Expression] = Seq.empty

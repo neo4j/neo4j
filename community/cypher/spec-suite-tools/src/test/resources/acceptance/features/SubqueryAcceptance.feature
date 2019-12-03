@@ -192,3 +192,63 @@ Feature: SubqueryAcceptance
       | 'Charlie' | 5              |
       | 'Dora'    | 5              |
     And no side effects
+
+  Scenario: Should allow importing variables into a subquery
+    And having executed:
+    """
+    CREATE (:Person {age: 20, name: 'Alice'}),
+           (:Person {age: 27, name: 'Bob'}),
+           (:Person {age: 65, name: 'Charlie'}),
+           (:Person {age: 30, name: 'Dora'})
+    """
+    When executing query:
+      """
+      MATCH (p:Person)
+      CALL {
+        WITH p
+        RETURN p.name AS innerName
+      }
+      RETURN innerName
+      """
+    Then the result should be, in any order:
+      | innerName |
+      | 'Alice'   |
+      | 'Bob'     |
+      | 'Charlie' |
+      | 'Dora'    |
+    And no side effects
+
+  Scenario: Should not allow to use unimported variables in a subquery
+    When executing query:
+      """
+      MATCH (a), (b)
+      CALL {
+        WITH a
+        RETURN b AS c
+      }
+      RETURN c
+      """
+    Then a SyntaxError should be raised at compile time: UndefinedVariable
+
+  Scenario: Aggregating top and bottom results within correlated subquery
+    And having executed:
+    """
+    CREATE (:Config {threshold: 2})
+    WITH *
+    UNWIND range(1, 10) as p
+    CREATE (:Node {prop: p})
+    """
+    When executing query:
+      """
+      MATCH (c:Config)
+      CALL {
+        WITH c MATCH (x:Node) WHERE x.prop > c.threshold RETURN x ORDER BY x.prop LIMIT 3
+        UNION
+        WITH c MATCH (x:Node) WHERE x.prop > c.threshold RETURN x ORDER BY x.prop DESC LIMIT 3
+      }
+      RETURN sum(x.prop) AS sum
+      """
+    Then the result should be, in any order:
+      | sum  |
+      | 39   |
+    And no side effects

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters._
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, SinglePlannerQuery, PlannerQueryPart, PlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, PlannerQueryPart, QueryGraph, RegularSinglePlannerQuery, SinglePlannerQuery, UnionQuery}
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
@@ -33,10 +33,15 @@ import scala.collection.mutable.ArrayBuffer
 object StatementConverters {
   import org.neo4j.cypher.internal.v4_0.util.Foldable._
 
-  def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder =
-    flattenCreates(q.clauses).foldLeft(PlannerQueryBuilder(semanticTable)) {
+  def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder = {
+    val importedVariables: Set[String] = q.importWith.map((wth: With) =>
+      wth.returnItems.items.map(_.name).toSet
+    ).getOrElse(Set.empty)
+
+    flattenCreates(q.clauses).foldLeft(PlannerQueryBuilder(semanticTable, importedVariables)) {
       case (acc, clause) => addToLogicalPlanInput(acc, clause)
     }
+  }
 
   private val NODE_BLACKLIST: Set[Class[_ <: ASTNode]] = Set(
     classOf[And],

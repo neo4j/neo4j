@@ -92,9 +92,10 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val projected = context.logicalPlanProducer.planPassAll(plan, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
-      case CallSubqueryHorizon(callSubquery) =>
+      case CallSubqueryHorizon(callSubquery, correlated) =>
         val (subPlan, _) =  plannerQueryPartPlanner.plan(callSubquery, context)
-        context.logicalPlanProducer.planSubqueryCartesianProduct(plan, subPlan, context)
+        if (correlated) context.logicalPlanProducer.planSubqueryApply(plan, subPlan, context)
+        else context.logicalPlanProducer.planSubqueryCartesianProduct(plan, subPlan, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")

@@ -225,7 +225,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     )
   }
 
-  test("This should solve the aggregation on the RHS of the Apply") {
+  test("This should solve the aggregation on the RHS of the CartesianProduct") {
     val query = "WITH 1 AS x CALL { MATCH (y) RETURN sum(y.prop) AS sum } RETURN x + 1 AS res, sum"
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
@@ -293,4 +293,96 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .build()
     )
   }
+
+  // Correlated subqueries
+
+  test("CALL around single correlated query") {
+    val query = "WITH 1 AS x CALL { WITH x RETURN x as y } RETURN y"
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("y")
+        .projection("x AS y")
+        .projection("1 AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("nested correlated subqueries") {
+    val query = "WITH 1 AS a CALL { WITH a CALL { WITH a CALL { WITH a RETURN a AS b } RETURN b AS c } RETURN c AS d } RETURN d"
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("d")
+        .projection("c AS d")
+        .projection("b AS c")
+        .projection("a AS b")
+        .projection("1 AS a")
+        .argument()
+        .build()
+    )
+  }
+
+  test("CALL around correlated union query") {
+    val query =
+      """
+        |WITH 1 AS x, 2 AS y CALL {
+        |  WITH x RETURN x AS z
+        |  UNION
+        |  WITH y RETURN y AS z
+        |} RETURN z""".stripMargin
+
+    val Seq(z49, z53, z80) = namespaced("z", 49, 53, 80)
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults(z53)
+        .apply()
+        .|.distinct(s"$z53 AS $z53")
+        .|.union()
+        .|.|.projection(s"$z80 AS $z53")
+        .|.|.projection(s"y AS $z80")
+        .|.|.argument("y")
+        .|.projection(s"$z49 AS $z53")
+        .|.projection(s"x AS $z49")
+        .|.argument("x")
+        .projection("2 AS y", "1 AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("This should solve the aggregation on the RHS of the Apply") {
+    val query = "WITH 1 AS x CALL { WITH x MATCH (y) WHERE y.value > x RETURN sum(y.prop) AS sum } RETURN sum"
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("sum")
+        .apply()
+        .|.aggregation(Seq.empty, Seq("sum(y.prop) AS sum"))
+        .|.filter("y.value > x")
+        .|.allNodeScan("y", "x")
+        .projection("1 AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("correlated CALL in a sequence with ambiguous variable names") {
+    val query = "WITH 1 AS x CALL { WITH x RETURN x as y } CALL { MATCH (x) RETURN 1 AS z } RETURN y"
+
+    val Seq(x10, x56) = namespaced("x", 10, 56)
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("y")
+        .cartesianProduct()
+        .|.projection("1 AS z")
+        .|.allNodeScan(x56)
+        .projection(s"$x10 AS y")
+        .projection(s"1 AS $x10")
+        .argument()
+        .build()
+    )
+  }
+
 }

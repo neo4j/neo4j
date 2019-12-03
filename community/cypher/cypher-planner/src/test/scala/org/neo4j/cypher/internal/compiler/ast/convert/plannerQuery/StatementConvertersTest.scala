@@ -37,7 +37,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("CALL around single query") {
     val query = buildSinglePlannerQuery("CALL { RETURN 1 as x } RETURN 2 as y")
     query.horizon should equal(CallSubqueryHorizon(RegularSinglePlannerQuery(
-      horizon = RegularQueryProjection(Map("x" -> literalInt(1))))))
+      horizon = RegularQueryProjection(Map("x" -> literalInt(1)))), correlated = false))
 
     query.tail should not be empty
 
@@ -45,10 +45,31 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     nextQuery.horizon should equal(RegularQueryProjection(Map("y" -> literalInt(2))))
   }
 
+  test("CALL around single correlated query") {
+    val query = buildSinglePlannerQuery("WITH 1 AS x CALL { WITH x RETURN x as y } RETURN y")
+
+    query.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
+
+    query.tail should not be empty
+    val subQuery = query.tail.get
+
+    subQuery.horizon should equal(
+      CallSubqueryHorizon(
+        correlated = true,
+        callSubquery = RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set("x")),
+          horizon = RegularQueryProjection(Map("y" -> varFor("x"))))))
+
+    subQuery.tail should not be empty
+    val nextQuery = subQuery.tail.get
+
+    nextQuery.horizon should equal(RegularQueryProjection(Map("y" -> varFor("y"))))
+  }
+
   test("CALL around single query - using returned var in outer query") {
     val query = buildSinglePlannerQuery("CALL { RETURN 1 as x } RETURN x")
     query.horizon should equal(CallSubqueryHorizon(RegularSinglePlannerQuery(
-      horizon = RegularQueryProjection(Map("x" -> literalInt(1))))))
+      horizon = RegularQueryProjection(Map("x" -> literalInt(1)))), correlated = false))
 
     query.tail should not be empty
 
@@ -66,12 +87,38 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           horizon = RegularQueryProjection(Map("  x@39" -> literalInt(2)))),
         distinct = true,
         List(UnionMapping(varFor("  x@21"),varFor("  x@19"),varFor("  x@39")))
-      )))
+      ), correlated = false))
 
     query.tail should not be empty
 
     val nextQuery = query.tail.get
     nextQuery.horizon should equal(RegularQueryProjection(Map("y" -> literalInt(3))))
+  }
+
+  test("CALL around correlated union query") {
+    val query = buildSinglePlannerQuery("WITH 1 AS x, 2 AS n CALL { WITH x RETURN x as y UNION RETURN 2 as y } RETURN y")
+
+    query.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1), "n" -> literalInt(2))))
+
+    query.tail should not be empty
+
+    val subquery = query.tail.get
+    subquery.horizon should equal(CallSubqueryHorizon(
+      correlated = true,
+      callSubquery = UnionQuery(
+        RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set("x")),
+          horizon = RegularQueryProjection(Map("  y@46" -> varFor("x")))),
+        RegularSinglePlannerQuery(
+          horizon = RegularQueryProjection(Map("  y@66" -> literalInt(2)))),
+        distinct = true,
+        List(UnionMapping(varFor("  y@48"),varFor("  y@46"),varFor("  y@66")))
+      )))
+
+    subquery.tail should not be empty
+
+    val nextQuery = subquery.tail.get
+    nextQuery.horizon should equal(RegularQueryProjection(Map("  y@48" -> varFor("  y@48"))))
   }
 
   test("CALL around union query - using returned var in outer query") {
@@ -84,7 +131,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           horizon = RegularQueryProjection(Map("  x@39" -> literalInt(2)))),
         distinct = true,
         List(UnionMapping(varFor("  x@21"),varFor("  x@19"),varFor("  x@39")))
-      )))
+      ), correlated = false))
 
     query.tail should not be empty
 

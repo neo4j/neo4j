@@ -110,11 +110,21 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planSubqueryCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solvedLeft = solveds.get(left.id)
     val solvedRight = solveds.get(right.id)
-    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight)))
+    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated = false)))
 
     // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
     val providedOrder = providedOrders.get(left.id)
     annotate(CartesianProduct(left, right), solved, providedOrder, context)
+  }
+
+  def planSubqueryApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    val solvedLeft = solveds.get(left.id)
+    val solvedRight = solveds.get(right.id)
+    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated = true)))
+
+    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+    val providedOrder = providedOrders.get(left.id)
+    annotate(Apply(left, right), solved, providedOrder, context)
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
