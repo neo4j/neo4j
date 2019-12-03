@@ -19,12 +19,18 @@
  */
 package org.neo4j.kernel;
 
-import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +41,8 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 
@@ -53,19 +61,42 @@ class TokenCreationIT
     private GraphDatabaseService db;
 
     private volatile boolean stop;
+    private ExecutorService executorService;
+
+    @BeforeEach
+    void setUp()
+    {
+        executorService = Executors.newCachedThreadPool();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        executorService.shutdown();
+    }
 
     @RepeatedTest( 5 )
-    void concurrentLabelTokenCreation() throws InterruptedException
+    void concurrentLabelTokenCreation() throws InterruptedException, ExecutionException
     {
         int concurrentWorkers = 10;
         CountDownLatch latch = new CountDownLatch( concurrentWorkers );
+        List<Future<?>> futures = new ArrayList<>();
         for ( int i = 0; i < concurrentWorkers; i++ )
         {
-            new LabelCreator( db, latch ).start();
+            futures.add( executorService.submit( new LabelCreator( db, latch ) ) );
         }
-        LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 500 ) );
+        LockSupport.parkNanos( MILLISECONDS.toNanos( 500 ) );
         stop = true;
         latch.await();
+        consumeFutures( futures );
+    }
+
+    private void consumeFutures( List<Future<?>> futures ) throws InterruptedException, ExecutionException
+    {
+        for ( Future<?> future : futures )
+        {
+            future.get();
+        }
     }
 
     private Label[] getLabels()
@@ -74,12 +105,12 @@ class TokenCreationIT
         Label[] labels = new Label[randomLabelValue];
         for ( int i = 0; i < labels.length; i++ )
         {
-            labels[i] = Label.label( RandomStringUtils.randomAscii( randomLabelValue ) );
+            labels[i] = Label.label( randomAlphanumeric( randomLabelValue ) );
         }
         return labels;
     }
 
-    private class LabelCreator extends Thread
+    private class LabelCreator implements Runnable
     {
         private final GraphDatabaseService database;
         private final CountDownLatch createLatch;
