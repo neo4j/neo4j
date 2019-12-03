@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import java.time._
 import java.time.temporal.TemporalAmount
 
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable._
@@ -99,10 +100,10 @@ object CastSupport {
       case (_:LocalTimeValue, _:LocalTimeValue) => a
       case (_:DurationValue, _:DurationValue) => a
 
-      case (a, b) if (a eq Values.NO_VALUE) || (b eq Values.NO_VALUE) => throw new CypherTypeException(
+      case _ if (a eq Values.NO_VALUE) || (b eq Values.NO_VALUE) => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")
 
-      case (a, b) if a.isInstanceOf[ListValue] || b.isInstanceOf[ListValue] => throw new CypherTypeException(
+      case _ if a.isInstanceOf[ListValue] || b.isInstanceOf[ListValue] => throw new CypherTypeException(
         "Collections containing collections can not be stored in properties.")
 
       case _ => throw new CypherTypeException("Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
@@ -167,13 +168,13 @@ object CastSupport {
     private def fail() = throw new CypherTypeException(
       "Property values can only be of primitive types or arrays thereof")
 
-    private def write(value: Any) = {
+    private def write(value: Any): Unit = {
       java.lang.reflect.Array.set(_array, index, value)
       index += 1
     }
 
     def array: ArrayValue = {
-      assert(_array != null)
+      require(_array != null)
       transformer(_array)
     }
 

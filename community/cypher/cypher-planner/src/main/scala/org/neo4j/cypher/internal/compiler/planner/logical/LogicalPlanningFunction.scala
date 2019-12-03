@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ir.{SinglePlannerQuery, QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.Require.require
+import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph, SinglePlannerQuery}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
@@ -48,7 +49,7 @@ object LeafPlansForVariable {
 }
 
 case class LeafPlansForVariable(id: String, plans: Set[LogicalPlan]) {
-  assert(plans.nonEmpty)
+  require(plans.nonEmpty)
 }
 
 trait LeafPlanFromExpressions {

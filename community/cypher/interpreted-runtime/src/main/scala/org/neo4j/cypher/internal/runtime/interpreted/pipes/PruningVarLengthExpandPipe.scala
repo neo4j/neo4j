@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeReference, NodeValue, RelationshipValue, VirtualNodeValue}
+
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
@@ -38,7 +39,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                                      (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
-  assert(min <= max)
+  require(min <= max)
 
   filteringStep.predicateExpressions.foreach(_.registerOwningPipe(this))
 
@@ -166,7 +167,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     }
 
     private def currentOutgoingFullExpandDepth(): Int = {
-      assert(pathLength > 0)
+      require(pathLength > 0)
       if (pathLength == self.max) 0
       else {
         // The maximum amount of steps that have been fully explored is the minimum full expand depth of the

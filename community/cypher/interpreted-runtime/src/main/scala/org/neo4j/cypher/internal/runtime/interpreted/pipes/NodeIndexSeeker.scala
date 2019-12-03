@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList, IsNoValue, makeValueNeoSafe}
@@ -70,13 +71,13 @@ trait NodeIndexSeeker {
 
       // Index range seek over range of values
       case RangeQueryExpression(rangeWrapper) =>
-        assert(propertyIds.length == 1)
+        require(propertyIds.length == 1)
         computeRangeQueries(state, row, rangeWrapper, propertyIds.head).map(Seq(_))
 
       // Index composite seek over all values
       case CompositeQueryExpression(exprs) =>
         // ex:   x in [1] AND y in ["a", "b"] AND z > 3.0 AND exists(p)
-        assert(exprs.lengthCompare(propertyIds.length) == 0)
+        require(exprs.lengthCompare(propertyIds.length) == 0)
 
         // indexQueries = [
         //                  [exact(1)],
@@ -236,7 +237,7 @@ trait NodeIndexSeeker {
       //    eg:   x in [1] AND y in ["a", "b"] AND z in [3.0]
       // Should only get here from LockingUniqueIndexSeek
       case CompositeQueryExpression(exprs) =>
-        assert(exprs.lengthCompare(propertyIds.length) == 0)
+        require(exprs.lengthCompare(propertyIds.length) == 0)
 
         // indexQueries = [[1], ["a", "b"], [3.0]]
         val indexQueries: Seq[Seq[IndexQuery.ExactPredicate]] = exprs.zip(propertyIds).map {

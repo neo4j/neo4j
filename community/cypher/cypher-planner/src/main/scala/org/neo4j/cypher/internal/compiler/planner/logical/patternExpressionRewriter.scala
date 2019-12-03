@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -80,7 +81,7 @@ case class patternExpressionRewriter(planArguments: Set[String], interestingOrde
       // replace pattern comprehension
       case expr@PatternComprehension(namedPath, pattern, predicate, projection) =>
         acc =>
-          assert(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")
+          require(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")
           // only process pattern expressions that were not contained in previously seen nested plans
           val newAcc = if (acc.contains(expr)) {
             acc

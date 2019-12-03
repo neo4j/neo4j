@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.v4_0.util.Rewritable._
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{Condition, Phase}
+import org.neo4j.cypher.internal.v4_0.util.Rewritable._
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
@@ -144,7 +145,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
     predicates.foreach {
       case Predicate(deps, HasLabels(Variable(_), labels)) if deps.size == 1 && !kept(deps.head) =>
-        assert(labels.size == 1) // We know there is only a single label here because AST rewriting
+        require(labels.size == 1) // We know there is only a single label here because AST rewriting
         addLabel(deps.head, labels.head)
         ()
 

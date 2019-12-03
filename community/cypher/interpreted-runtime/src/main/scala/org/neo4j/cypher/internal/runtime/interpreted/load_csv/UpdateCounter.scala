@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
+import org.neo4j.cypher.internal.Require.require
+
 class UpdateCounter {
   def offsetForHeaders(): Unit = {
     if (uncommittedRows != 0)
@@ -30,7 +32,7 @@ class UpdateCounter {
   private var totalRows = 0L
 
   def +=(increment: Long) {
-    assert(increment > 0L, s"increment must be positive but was: $increment")
+    require(increment > 0L, s"increment must be positive but was: $increment")
     uncommittedRows += increment
     totalRows += increment
   }

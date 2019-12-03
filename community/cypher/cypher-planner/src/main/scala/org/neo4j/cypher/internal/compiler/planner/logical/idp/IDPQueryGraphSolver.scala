@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
@@ -37,7 +38,7 @@ trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
 }
 
 object IDPQueryGraphSolver {
-  val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
+  val VERBOSE: Boolean = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 }
 
 /**
@@ -51,7 +52,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
                                cartesianProductsOrValueJoins: JoinDisconnectedQueryGraphComponents,
                                monitor: IDPQueryGraphSolverMonitor) extends QueryGraphSolver with PatternExpressionSolving {
 
-  private implicit val x = singleComponentSolver
+  private implicit val x: SingleComponentPlannerTrait = singleComponentSolver
 
   override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrder, context), context)
@@ -113,8 +114,8 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     }
 
     val (resultingPlans, optionalMatches) = recurse(plans, qg.optionalMatches)
-    assert(resultingPlans.size == 1)
-    assert(optionalMatches.isEmpty)
+    require(resultingPlans.size == 1)
+    require(optionalMatches.isEmpty)
     resultingPlans.head.plan
   }
 }

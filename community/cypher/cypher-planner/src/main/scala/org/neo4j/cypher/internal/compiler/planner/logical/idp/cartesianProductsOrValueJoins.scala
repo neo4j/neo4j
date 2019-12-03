@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeIndexSeek, NodeUniqueIndexSeek}
@@ -53,7 +54,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
             kit: QueryPlannerKit,
             singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
 
-    assert(plans.size > 1, "Can't build cartesian product with less than two input plans")
+    require(plans.size > 1, "Can't build cartesian product with less than two input plans")
 
     /*
     To connect disconnected query parts, we have a couple of different ways. First we check if there are any joins that

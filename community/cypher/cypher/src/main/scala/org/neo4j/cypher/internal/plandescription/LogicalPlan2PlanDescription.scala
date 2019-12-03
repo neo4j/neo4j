@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.plandescription.Arguments._
@@ -54,7 +55,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     LogicalPlans.map(plan, this)
 
   override def onLeaf(plan: LogicalPlan): InternalPlanDescription = {
-    assert(plan.isLeaf)
+    require(plan.isLeaf)
 
     val id = plan.id
     val variables = plan.availableSymbols
@@ -366,8 +367,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   override def onOneChildPlan(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
-    assert(plan.lhs.nonEmpty)
-    assert(plan.rhs.isEmpty)
+    require(plan.lhs.nonEmpty)
+    require(plan.rhs.isEmpty)
 
     val id = plan.id
     val variables = plan.availableSymbols
@@ -706,8 +707,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   override def onTwoChildPlan(plan: LogicalPlan, lhs: InternalPlanDescription,
                               rhs: InternalPlanDescription): InternalPlanDescription = {
-    assert(plan.lhs.nonEmpty)
-    assert(plan.rhs.nonEmpty)
+    require(plan.lhs.nonEmpty)
+    require(plan.rhs.nonEmpty)
 
     val id = plan.id
     val variables = plan.availableSymbols
@@ -830,7 +831,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
     val (name, indexDesc) = valueExpr match {
       case e: RangeQueryExpression[_] =>
-        assert(propertyKeys.size == 1)
+        require(propertyKeys.size == 1)
         val propertyKey = propertyKeys.head.name
         val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
         e.expression match {
