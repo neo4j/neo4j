@@ -1353,27 +1353,20 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     @SuppressWarnings( "unused" )
     public void printTree() throws IOException
     {
-        printTree( false, false, false, false, false, false );
+        printTree( PrintConfig.defaults() );
     }
 
     // Utility method
     /**
      * Prints the contents of the tree to System.out.
      *
-     * @param printValues whether or not to print values in the leaf nodes.
-     * @param printPosition whether or not to print position for each key.
-     * @param printState whether or not to print the tree state.
-     * @param printHeader whether or not to print header of each tree node
-     * @param printFreelist whether or not to print freelist
-     * @param printOffload whether or not to also print offload page ids
+     * @param printConfig {@link PrintConfig} containing configurations for this printing.
      * @throws IOException on I/O error.
      */
     @SuppressWarnings( "SameParameterValue" )
-    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader, boolean printFreelist, boolean printOffload )
-            throws IOException
+    void printTree( PrintConfig printConfig ) throws IOException
     {
-        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, printValues, printPosition, printState, printHeader,
-                printFreelist, printOffload );
+        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( printConfig );
         visit( printingVisitor );
     }
 
@@ -1382,7 +1375,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, true, false, false, false );
+            PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults().printState() );
             GBPTreeStructure.visitTreeState( cursor, printingVisitor );
         }
     }

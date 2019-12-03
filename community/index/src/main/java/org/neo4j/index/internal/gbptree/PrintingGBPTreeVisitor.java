@@ -39,24 +39,17 @@ public class PrintingGBPTreeVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KE
     /**
      * Prints a {@link GBPTree} in human readable form, very useful for debugging.
      * Will print sub-tree from that point. Leaves cursor at same page as when called. No guarantees on offset.
-     *  @param out target to print tree at.
-     * @param printPosition whether or not to include positional (slot number) information.
-     * @param printState whether or not to also print state pages
-     * @param printHeader whether or not to also print header (type, generation, keyCount) of every node
-     * @param printFreelist whether or not to also print freelist
-     * @param printOffload whether or not to also print offload page ids
+     * @param printConfig {@link PrintConfig} containing configurations for this printing.
      */
-    public PrintingGBPTreeVisitor( PrintStream out, boolean printValues, boolean printPosition, boolean printState, boolean printHeader, boolean printFreelist,
-            boolean printOffload )
+    public PrintingGBPTreeVisitor( PrintConfig printConfig )
     {
-
-        this.out = out;
-        this.printValues = printValues;
-        this.printPosition = printPosition;
-        this.printState = printState;
-        this.printHeader = printHeader;
-        this.printFreelist = printFreelist;
-        this.printOffload = printOffload;
+        this.out = printConfig.getPrintStream();
+        this.printValues = printConfig.getPrintValues();
+        this.printPosition = printConfig.getPrintPosition();
+        this.printState = printConfig.getPrintState();
+        this.printHeader = printConfig.getPrintHeader();
+        this.printFreelist = printConfig.getPrintFreelist();
+        this.printOffload = printConfig.getPrintOffload();
     }
 
     @Override
