@@ -452,10 +452,10 @@ class CommonAbstractStoreBehaviourTest
         }
 
         @Override
-        protected int offsetForId( long id, long pageId )
+        protected int offsetForId( long id )
         {
             Integer override = nextPageOffset.poll();
-            return override != null ? override : super.offsetForId( id, pageId );
+            return override != null ? override : super.offsetForId( id );
         }
     }
 }

@@ -607,7 +607,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             throw new IllegalArgumentException( "Cannot write record without a page cursor that is write-locked" );
         }
-        int offset = offsetForId( position.id, cursor.getCurrentPageId() );
+        int offset = offsetForId( position.id );
         cursor.setOffset( offset );
         cursor.putByte( Record.IN_USE.byteValue() );
         cursor.putLong( value );
