@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -324,7 +325,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         AllStoreHolder allStoreHolder = (AllStoreHolder) kti.dataRead();
         IndexReference indexReference = kti.schemaRead().indexGetForName( indexName );
         FulltextIndexReader fulltextIndexReader;
-        if ( kti.hasTxStateWithChanges() && !((FulltextSchemaDescriptor) indexReference.schema()).isEventuallyConsistent() )
+        if ( kti.hasTxStateWithChanges() && !isEventuallyConsistent( indexReference ) )
         {
             FulltextAuxiliaryTransactionState auxiliaryTxState = (FulltextAuxiliaryTransactionState) allStoreHolder.auxiliaryTxState( TX_STATE_PROVIDER_KEY );
             fulltextIndexReader = auxiliaryTxState.indexReader( indexReference, kti );
@@ -335,6 +336,16 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
             fulltextIndexReader = (FulltextIndexReader) indexReader;
         }
         return fulltextIndexReader.query( queryString );
+    }
+
+    private boolean isEventuallyConsistent( IndexReference indexReference )
+    {
+        if ( indexReference instanceof CapableIndexDescriptor )
+        {
+            CapableIndexDescriptor index = (CapableIndexDescriptor) indexReference;
+            return index.isEventuallyConsistent();
+        }
+        return ((FulltextSchemaDescriptor) indexReference.schema()).isEventuallyConsistent();
     }
 
     @Override

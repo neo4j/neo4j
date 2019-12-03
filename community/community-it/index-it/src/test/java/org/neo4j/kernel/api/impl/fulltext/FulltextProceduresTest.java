@@ -2479,6 +2479,40 @@ public class FulltextProceduresTest
         }
     }
 
+    @Test
+    public void fulltextIndexMustWorkAfterRestartWithTxStateChanges()
+    {
+        // Create node and relationship fulltext indexes
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) ) ).close();
+            createSimpleRelationshipIndex();
+            tx.success();
+        }
+        awaitIndexesOnline();
+
+        // Restart
+        db.shutdown();
+        db = createDatabase();
+
+        // Query node
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode(); // Tx state changed
+            db.execute( format( QUERY_NODES, "nodes", "*" ) ).close();
+            tx.success();
+        }
+
+        // Query relationship
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode(); // Tx state changed
+            db.execute( format( QUERY_RELS, "rels", "*" ) ).close();
+            tx.success();
+        }
+    }
+
     private void assertNoIndexSeeks( Result result )
     {
         assertThat( result.stream().count(), is( 1L ) );
