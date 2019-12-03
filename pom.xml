@@ -88,7 +88,6 @@
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
-    <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
 
@@ -929,26 +928,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-
-    <!--
-     Git information extraction profiles.
-     Activate by adding the required Git information to the environment, e.g. on *nix:
-
-     export GIT_COMMIT
-     GIT_COMMIT=$(git rev-parse HEAD)
-    -->
-    <profile>
-      <id>attach-git-info-commit</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>env.GIT_COMMIT</name>
-        </property>
-      </activation>
-      <properties>
-        <git.commit>${env.GIT_COMMIT}</git.commit>
-      </properties>
     </profile>
 
     <profile>

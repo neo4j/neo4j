@@ -62,21 +62,6 @@
                 <groupId>org.revapi</groupId>
                 <artifactId>revapi-maven-plugin</artifactId>
             </plugin>
-
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <packageName>org/neo4j/kernel</packageName>
-                        </manifest>
-                        <manifestEntries>
-                            <!-- This becomes programmatically accessible from the 'org.neo4j.kernel' java.lang.Package object -->
-                            <Implementation-Version>${project.version},${git.commit}</Implementation-Version>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
