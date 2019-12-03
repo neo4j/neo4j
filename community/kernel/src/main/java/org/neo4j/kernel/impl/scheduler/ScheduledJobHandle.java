@@ -48,7 +48,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
  * otherwise its rescheduled for next execution.</li>
  * </ul>
  */
-final class ScheduledJobHandle extends AtomicInteger implements JobHandle
+final class ScheduledJobHandle implements JobHandle
 {
     // We extend AtomicInteger to inline our state field.
     // These are the possible state values:
@@ -63,6 +63,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     //   or happens after the relevant handles have been added to the queue.
     long nextDeadlineNanos;
 
+    private final AtomicInteger state;
     private final TimeBasedTaskScheduler scheduler;
     private final Group group;
     private final CopyOnWriteArrayList<CancelListener> cancelListeners;
@@ -74,6 +75,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     ScheduledJobHandle( TimeBasedTaskScheduler scheduler, Group group, Runnable task,
                         long nextDeadlineNanos, long reschedulingDelayNanos )
     {
+        this.state = new AtomicInteger();
         this.scheduler = scheduler;
         this.group = group;
         this.nextDeadlineNanos = nextDeadlineNanos;
@@ -92,13 +94,13 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
                 lastException = e;
                 if ( !isRecurring )
                 {
-                    set( FAILED );
+                    state.set( FAILED );
                 }
             }
             finally
             {
                 // Use compareAndSet to avoid overriding any cancellation state.
-                if ( compareAndSet( SUBMITTED, RUNNABLE ) && isRecurring )
+                if ( state.compareAndSet( SUBMITTED, RUNNABLE ) && isRecurring )
                 {
                     // We only reschedule if the rescheduling delay is greater than zero.
                     // A rescheduling delay of zero means this is a delayed task.
@@ -112,7 +114,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
 
     void submitIfRunnable( ThreadPoolManager pools )
     {
-        if ( compareAndSet( RUNNABLE, SUBMITTED ) )
+        if ( state.compareAndSet( RUNNABLE, SUBMITTED ) )
         {
             latestHandle = pools.getThreadPool( group ).submit( task );
             handleRelease.release();
@@ -122,7 +124,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     @Override
     public void cancel()
     {
-        set( FAILED );
+        state.set( FAILED );
         JobHandle handle = latestHandle;
         if ( handle != null )
         {
@@ -154,7 +156,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
         {
             runtimeException = t;
         }
-        if ( get() == FAILED )
+        if ( state.get() == FAILED )
         {
             Throwable exception = this.lastException;
             if ( exception != null )
@@ -175,6 +177,12 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
 
     @Override
     public void waitTermination( long timeout, TimeUnit unit )
+    {
+        throw new UnsupportedOperationException( "Not supported for repeating tasks." );
+    }
+
+    @Override
+    public Object get()
     {
         throw new UnsupportedOperationException( "Not supported for repeating tasks." );
     }

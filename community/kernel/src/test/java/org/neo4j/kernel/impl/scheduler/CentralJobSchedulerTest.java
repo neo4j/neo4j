@@ -28,6 +28,7 @@ import java.io.PrintStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -486,6 +487,16 @@ class CentralJobSchedulerTest
 
         checkpointLatch.release();
         profiler.finish();
+    }
+
+    @Test
+    void shouldPropagateResultFromCallable() throws ExecutionException, InterruptedException
+    {
+        life.start();
+        Callable<Boolean> job = () -> true;
+        JobHandle<Boolean> jobHandle = scheduler.schedule( Group.INDEX_POPULATION, job );
+
+        assertTrue( jobHandle.get() );
     }
 
     private void awaitFirstInvocation() throws InterruptedException

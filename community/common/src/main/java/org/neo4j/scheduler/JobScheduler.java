@@ -19,6 +19,7 @@
  */
 package org.neo4j.scheduler;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -81,6 +82,9 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
      * foundation for controlling things like thread affinity and priorities in a coordinated manner in the future.
      */
     ThreadFactory threadFactory( Group group );
+
+    /** Schedule a new callable in the specified group. */
+    <T> JobHandle<T> schedule( Group group, Callable<T> job );
 
     /** Schedule a new job in the specified group. */
     JobHandle schedule( Group group, Runnable job );

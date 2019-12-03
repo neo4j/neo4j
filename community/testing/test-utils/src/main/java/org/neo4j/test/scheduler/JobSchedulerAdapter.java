@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.scheduler;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +58,12 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
 
     @Override
     public ThreadFactory threadFactory( Group group )
+    {
+        return null;
+    }
+
+    @Override
+    public <T> JobHandle<T> schedule( Group group, Callable<T> job )
     {
         return null;
     }

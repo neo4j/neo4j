@@ -30,14 +30,14 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.JobHandle;
 
-final class PooledJobHandle implements JobHandle
+final class PooledJobHandle<T> implements JobHandle<T>
 {
-    private final Future<?> future;
+    private final Future<T> future;
     private final Object registryKey;
     private final ConcurrentHashMap<Object,Future<?>> registry;
     private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
-    PooledJobHandle( Future<?> future, Object registryKey, ConcurrentHashMap<Object,Future<?>> registry )
+    PooledJobHandle( Future<T> future, Object registryKey, ConcurrentHashMap<Object,Future<?>> registry )
     {
         this.future = future;
         this.registryKey = registryKey;
@@ -65,6 +65,12 @@ final class PooledJobHandle implements JobHandle
     public void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
     {
         future.get( timeout, unit );
+    }
+
+    @Override
+    public T get() throws ExecutionException, InterruptedException
+    {
+        return future.get();
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.time.FakeClock;
@@ -41,25 +43,32 @@ import org.neo4j.time.FakeClock;
 public class FakeClockJobScheduler extends FakeClock implements JobScheduler
 {
     private final AtomicLong jobIdGen = new AtomicLong();
-    private final Collection<JobHandle> jobs = new CopyOnWriteArrayList<>();
+    private final Collection<JobTrigger> jobs = new CopyOnWriteArrayList<>();
 
     public FakeClockJobScheduler()
     {
         super();
     }
 
-    private JobHandle schedule( Runnable job, long firstDeadline )
+    private <V> JobTrigger<V> schedule( Callable<V> job, long firstDeadline )
     {
-        JobHandle jobHandle = new JobHandle( job, firstDeadline, 0 );
-        jobs.add( jobHandle );
-        return jobHandle;
+        JobTrigger<V> jobTrigger = new JobTrigger<>( job, firstDeadline, 0 );
+        jobs.add( jobTrigger );
+        return jobTrigger;
     }
 
-    private JobHandle scheduleRecurring( Runnable job, long firstDeadline, long period )
+    private JobTrigger schedule( Runnable job, long firstDeadline )
     {
-        JobHandle jobHandle = new JobHandle( job, firstDeadline, period );
-        jobs.add( jobHandle );
-        return jobHandle;
+        JobTrigger jobTrigger = new JobTrigger( job, firstDeadline, 0 );
+        jobs.add( jobTrigger );
+        return jobTrigger;
+    }
+
+    private JobTrigger scheduleRecurring( Runnable job, long firstDeadline, long period )
+    {
+        JobTrigger jobTrigger = new JobTrigger( job, firstDeadline, period );
+        jobs.add( jobTrigger );
+        return jobTrigger;
     }
 
     @Override
@@ -76,7 +85,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         do
         {
             anyTriggered = false;
-            for ( JobHandle job : jobs )
+            for ( JobTrigger job : jobs )
             {
                 if ( job.tryTrigger() )
                 {
@@ -120,17 +129,25 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job )
+    public <T> JobTrigger<T> schedule( Group group, Callable<T> job )
     {
-        JobHandle handle = schedule( job, now() );
+        JobTrigger<T> handle = schedule( job, now() );
         processSchedule();
         return handle;
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
+    public JobTrigger schedule( Group group, Runnable job )
     {
-        JobHandle handle = schedule( job, now() + timeUnit.toMillis( initialDelay ) );
+        JobTrigger handle = schedule( job, now() );
+        processSchedule();
+        return handle;
+    }
+
+    @Override
+    public JobTrigger schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
+    {
+        JobTrigger handle = schedule( job, now() + timeUnit.toMillis( initialDelay ) );
         if ( initialDelay <= 0 )
         {
             processSchedule();
@@ -139,17 +156,17 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable job, long period, TimeUnit timeUnit )
+    public JobTrigger scheduleRecurring( Group group, Runnable job, long period, TimeUnit timeUnit )
     {
-        JobHandle handle = scheduleRecurring( job, now(), timeUnit.toMillis( period ) );
+        JobTrigger handle = scheduleRecurring( job, now(), timeUnit.toMillis( period ) );
         processSchedule();
         return handle;
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable job, long initialDelay, long period, TimeUnit timeUnit )
+    public JobTrigger scheduleRecurring( Group group, Runnable job, long initialDelay, long period, TimeUnit timeUnit )
     {
-        JobHandle handle = scheduleRecurring( job, now() + timeUnit.toMillis( initialDelay ), timeUnit.toMillis( period ) );
+        JobTrigger handle = scheduleRecurring( job, now() + timeUnit.toMillis( initialDelay ), timeUnit.toMillis( period ) );
         if ( initialDelay <= 0 )
         {
             processSchedule();
@@ -198,17 +215,27 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         shutdown();
     }
 
-    class JobHandle implements org.neo4j.scheduler.JobHandle
+    class JobTrigger<T> implements JobHandle<T>
     {
         private final long id = jobIdGen.incrementAndGet();
         private final Runnable runnable;
+        private final Callable<T> callable;
         private final long period;
 
         private long deadline;
 
-        JobHandle( Runnable runnable, long firstDeadline, long period )
+        JobTrigger( Callable<T> callable, long firstDeadline, long period )
+        {
+            this.runnable = null;
+            this.callable = callable;
+            this.deadline = firstDeadline;
+            this.period = period;
+        }
+
+        JobTrigger( Runnable runnable, long firstDeadline, long period )
         {
             this.runnable = runnable;
+            this.callable = null;
             this.deadline = firstDeadline;
             this.period = period;
         }
@@ -217,7 +244,21 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         {
             if ( now() >= deadline )
             {
-                runnable.run();
+                if ( runnable != null )
+                {
+                    runnable.run();
+                }
+                if ( callable != null )
+                {
+                    try
+                    {
+                        callable.call();
+                    }
+                    catch ( Exception e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
                 if ( period != 0 )
                 {
                     deadline += period;
@@ -250,6 +291,12 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
 
         @Override
+        public T get()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public boolean equals( Object o )
         {
             if ( this == o )
@@ -260,8 +307,8 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
             {
                 return false;
             }
-            JobHandle jobHandle = (JobHandle) o;
-            return id == jobHandle.id;
+            JobTrigger jobTrigger = (JobTrigger) o;
+            return id == jobTrigger.id;
         }
 
         @Override

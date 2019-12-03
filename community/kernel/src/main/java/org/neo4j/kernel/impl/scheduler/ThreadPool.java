@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.scheduler;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -63,6 +64,25 @@ final class ThreadPool
         return executor;
     }
 
+    public <T> JobHandle<T> submit( Callable<T> job )
+    {
+        Object registryKey = new Object();
+        Callable<T> registeredJob = () ->
+        {
+            try
+            {
+                return job.call();
+            }
+            finally
+            {
+                registry.remove( registryKey );
+            }
+        };
+        Future<T> future = executor.submit( registeredJob );
+        registry.put( registryKey, future );
+        return new PooledJobHandle<>( future, registryKey, registry );
+    }
+
     public JobHandle submit( Runnable job )
     {
         Object registryKey = new Object();
@@ -79,7 +99,7 @@ final class ThreadPool
         };
         Future<?> future = executor.submit( registeredJob );
         registry.put( registryKey, future );
-        return new PooledJobHandle( future, registryKey, registry );
+        return new PooledJobHandle<>( future, registryKey, registry );
     }
 
     int activeThreadCount()

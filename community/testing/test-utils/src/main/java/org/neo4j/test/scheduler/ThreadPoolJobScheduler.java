@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.scheduler;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -94,6 +95,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
+    public <T> JobHandle<T> schedule( Group group, Callable<T> job )
+    {
+        return new FutureJobHandle<>( executor.submit( job ) );
+    }
+
+    @Override
     public JobHandle schedule( Group group, Runnable job )
     {
         return new FutureJobHandle<>( executor.submit( job ) );
@@ -162,7 +169,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         }
     }
 
-    private static class FutureJobHandle<V> implements JobHandle
+    private static class FutureJobHandle<V> implements JobHandle<V>
     {
         private final Future<V> future;
 
@@ -187,6 +194,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         public void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
         {
             future.get( timeout, unit );
+        }
+
+        @Override
+        public V get() throws ExecutionException, InterruptedException
+        {
+            return future.get();
         }
     }
 }

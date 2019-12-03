@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -114,6 +115,13 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
         public void waitTermination( long timeout, TimeUnit unit )
         {
             // on demand
+        }
+
+        @Override
+        public Object get() throws ExecutionException, InterruptedException
+        {
+            // on demand
+            return null;
         }
     }
 }

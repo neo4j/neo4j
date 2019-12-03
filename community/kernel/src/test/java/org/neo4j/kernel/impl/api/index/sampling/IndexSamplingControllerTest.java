@@ -219,6 +219,13 @@ class IndexSamplingControllerTest
             {
                 throw new TimeoutException( "I'm sorry, so slow." );
             }
+
+            @Override
+            public Object get()
+            {
+                fail( "We should never use this wait for foreground sampling." );
+                return null;
+            }
         };
         when( tracker.scheduleSamplingJob( job ) ).thenReturn( jobHandle );
 

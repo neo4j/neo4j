@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.scheduler;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
@@ -133,6 +134,16 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     private ThreadPool getThreadPool( Group group )
     {
         return pools.getThreadPool( group, extraParameters.get( group ) );
+    }
+
+    @Override
+    public <T> JobHandle<T> schedule( Group group, Callable<T> job )
+    {
+        if ( !started )
+        {
+            throw new RejectedExecutionException( "Scheduler is not started" );
+        }
+        return getThreadPool( group ).submit( job );
     }
 
     @Override
