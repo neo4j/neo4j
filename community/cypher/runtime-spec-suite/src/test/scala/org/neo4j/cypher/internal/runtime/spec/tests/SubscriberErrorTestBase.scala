@@ -127,7 +127,7 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
     override def onRecord(): Unit =
       if (explodeOnRecord) throw new Kaboom
 
-    override def onField(value: AnyValue): Unit =
+    override def onField(offset: Int, value: AnyValue): Unit =
       if (explodeOnField) throw new Kaboom
 
     override def onRecordCompleted(): Unit =

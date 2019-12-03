@@ -28,17 +28,17 @@ import org.neo4j.values.AnyValue;
  * Used in conjunction with a {@link QuerySubscription}. The subscription will demand a number of records, {@link
  * QuerySubscription#request(long)}, and when there is data available the subscriber will receive a call chain like.
  *
- * <pre>
+ <pre>
  *     onResult(3)
  *     onRecord()
- *     onField(v1)
- *     onField(v2)
- *     onField(v3)
+ *     onField(0, v1)
+ *     onField(1, v2)
+ *     onField(2, v3)
  *     onRecordCompleted()
  *     onRecord()
- *     onField(v1)
- *     onField(v2)
- *     onField(v3)
+ *     onField(0, v1)
+ *     onField(1, v2)
+ *     onField(2, v3)
  *     onRecordCompleted()
  *     ...
  *     onResultCompleted(stats)
@@ -63,12 +63,13 @@ public interface QuerySubscriber
     /**
      * Writes the field.
      * <p>
-     * This method is guaranteed to be called exactly <tt>numberOfFields</tt> times with increasing offsets in [0, <tt>numberOfFields</tt> -1],
+     * This method is guaranteed to be called exactly <tt>numberOfFields</tt> times with increasing offsets in [0,
+     * <tt>numberOfFields</tt> -1],
      * where <tt>numberOfFields</tt> is the argument provided in {@link #onResult(int)} ()}
      *
      * @param value the value of the field at the current offset.
      */
-    void onField( AnyValue value ) throws Exception;
+    void onField( int offset, AnyValue value ) throws Exception;
 
     /**
      * The current record has been completed
@@ -124,7 +125,7 @@ public interface QuerySubscriber
         }
 
         @Override
-        public void onField( AnyValue value )
+        public void onField( int offset, AnyValue value )
         {
 
         }

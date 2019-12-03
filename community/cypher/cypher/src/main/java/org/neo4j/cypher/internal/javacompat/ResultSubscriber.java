@@ -66,7 +66,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     private Exception visitException;
     private List<Map<String,Object>> materializeResult;
     private Iterator<Map<String,Object>> materializedIterator;
-    private int currentOffset = -1;
 
     public ResultSubscriber( TransactionalContext context )
     {
@@ -97,19 +96,18 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     @Override
     public void onRecord()
     {
-        currentOffset = 0;
+        //do nothing
     }
 
     @Override
-    public void onField( AnyValue value )
+    public void onField( int offset, AnyValue value )
     {
-        currentRecord[currentOffset++] = value;
+        currentRecord[offset] = value;
     }
 
     @Override
     public void onRecordCompleted()
     {
-        currentOffset = -1;
         //We are coming from a call to accept
         if ( visitor != null )
         {

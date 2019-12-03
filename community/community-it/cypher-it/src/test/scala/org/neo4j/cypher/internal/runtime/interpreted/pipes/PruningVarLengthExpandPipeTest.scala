@@ -20,12 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryState
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate, True}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PruningVarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
@@ -33,7 +30,6 @@ import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
-import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
@@ -126,19 +122,11 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val records = ArrayBuffer.empty[ExecutionContext]
     val subscriber: QuerySubscriber = new QuerySubscriberAdapter {
       private var record: mutable.Map[String, AnyValue] = mutable.Map.empty
-      private var currentOffset = -1
 
-      override def onRecord(): Unit = currentOffset = 0
-
-      override def onField(value: AnyValue): Unit = {
-        try {
-          record.put(columns(currentOffset), value)
-        } finally {
-          currentOffset += 1
-        }
+      override def onField(offset: Int, value: AnyValue): Unit = {
+          record.put(columns(offset), value)
       }
       override def onRecordCompleted(): Unit = {
-        currentOffset = -1
         records.append(new MapExecutionContext(record))
         record =  mutable.Map.empty
       }

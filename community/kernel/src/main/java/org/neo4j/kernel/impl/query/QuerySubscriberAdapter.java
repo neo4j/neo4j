@@ -25,25 +25,25 @@ import org.neo4j.values.AnyValue;
 public abstract class QuerySubscriberAdapter implements QuerySubscriber
 {
     @Override
-    public void onResult( int numberOfFields ) throws Exception
+    public void onResult( int numberOfFields )
     {
 
     }
 
     @Override
-    public void onRecord() throws Exception
+    public void onRecord()
     {
 
     }
 
     @Override
-    public void onField( AnyValue value ) throws Exception
+    public void onField( int offset, AnyValue value )
     {
 
     }
 
     @Override
-    public void onRecordCompleted() throws Exception
+    public void onRecordCompleted()
     {
 
     }

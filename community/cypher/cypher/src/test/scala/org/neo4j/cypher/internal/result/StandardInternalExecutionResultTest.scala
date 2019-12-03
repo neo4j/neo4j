@@ -188,7 +188,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       while (iterator.hasNext && served < demand && !cancelled) {
         subscriber.onRecord()
         val nextValue = intValue(iterator.next())
-        for(_ <- 1 to numberOfFields) subscriber.onField(nextValue)
+        for(i <- 0 until numberOfFields) subscriber.onField(i, nextValue)
         subscriber.onRecordCompleted()
         served += 1L
       }

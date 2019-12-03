@@ -54,18 +54,18 @@ class NaiveQuerySubscriptionTest
 
         //record 1
         inOrder.verify( subscriber ).onRecord();
-        inOrder.verify( subscriber ).onField( stringValue( "hello" ) );
-        inOrder.verify( subscriber ).onField( stringValue( "there" ) );
+        inOrder.verify( subscriber ).onField( 0, stringValue( "hello" ) );
+        inOrder.verify( subscriber ).onField( 1, stringValue( "there" ) );
         inOrder.verify( subscriber ).onRecordCompleted();
         //record 2
         inOrder.verify( subscriber ).onRecord();
-        inOrder.verify( subscriber ).onField( stringValue( "hello" ) );
-        inOrder.verify( subscriber ).onField( stringValue( "there" ) );
+        inOrder.verify( subscriber ).onField( 0, stringValue( "hello" ) );
+        inOrder.verify( subscriber ).onField( 1, stringValue( "there" ) );
         inOrder.verify( subscriber ).onRecordCompleted();
         //record 3
         inOrder.verify( subscriber ).onRecord();
-        inOrder.verify( subscriber ).onField( stringValue( "hello" ) );
-        inOrder.verify( subscriber ).onField( stringValue( "there" ) );
+        inOrder.verify( subscriber ).onField( 0, stringValue( "hello" ) );
+        inOrder.verify( subscriber ).onField( 1, stringValue( "there" ) );
         inOrder.verify( subscriber ).onRecordCompleted();
 
         inOrder.verify( subscriber ).onResultCompleted( QueryStatistics.empty() );
@@ -89,8 +89,8 @@ class NaiveQuerySubscriptionTest
 
         //record 1
         inOrder.verify( subscriber ).onRecord();
-        inOrder.verify( subscriber ).onField( stringValue( "hello" ) );
-        inOrder.verify( subscriber ).onField( stringValue( "there" ) );
+        inOrder.verify( subscriber ).onField( 0, stringValue( "hello" ) );
+        inOrder.verify( subscriber ).onField( 1, stringValue( "there" ) );
         inOrder.verify( subscriber ).onRecordCompleted();
 
         //When, asking for the second record
@@ -101,8 +101,8 @@ class NaiveQuerySubscriptionTest
 
         //record 2
         inOrder.verify( subscriber ).onRecord();
-        inOrder.verify( subscriber ).onField( stringValue( "hello" ) );
-        inOrder.verify( subscriber ).onField( stringValue( "there" ) );
+        inOrder.verify( subscriber ).onField( 0, stringValue( "hello" ) );
+        inOrder.verify( subscriber ).onField( 1, stringValue( "there" ) );
         inOrder.verify( subscriber ).onRecordCompleted();
 
         //When, asking for the third and last record
@@ -113,8 +113,8 @@ class NaiveQuerySubscriptionTest
 
         //record 3
         inOrder.verify( subscriber ).onRecord();
-        inOrder.verify( subscriber ).onField( stringValue( "hello" ) );
-        inOrder.verify( subscriber ).onField( stringValue( "there" ) );
+        inOrder.verify( subscriber ).onField( 0, stringValue( "hello" ) );
+        inOrder.verify( subscriber ).onField( 1, stringValue( "there" ) );
         inOrder.verify( subscriber ).onRecordCompleted();
 
         inOrder.verify( subscriber ).onResultCompleted( QueryStatistics.empty() );

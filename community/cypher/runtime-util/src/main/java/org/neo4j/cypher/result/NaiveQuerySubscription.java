@@ -44,9 +44,9 @@ public abstract class NaiveQuerySubscription extends EagerQuerySubscription impl
     protected void streamRecordToSubscriber( int servedRecords ) throws Exception
     {
         AnyValue[] current = materializedResult.get( servedRecords );
-        for ( AnyValue anyValue : current )
+        for ( int i = 0; i < current.length; i++ )
         {
-            subscriber.onField( anyValue );
+            subscriber.onField( i, current[i] );
         }
     }
 
@@ -115,9 +115,11 @@ public abstract class NaiveQuerySubscription extends EagerQuerySubscription impl
     public boolean visit( QueryResult.Record record ) throws Exception
     {
         subscriber.onRecord();
-        for ( AnyValue field : record.fields() )
+        AnyValue[] fields = record.fields();
+        int fieldsLength = fields.length;
+        for ( int i = 0; i < fieldsLength; i++ )
         {
-            subscriber.onField( field );
+            subscriber.onField( i, fields[i] );
         }
         subscriber.onRecordCompleted();
         record.release();

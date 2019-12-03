@@ -50,7 +50,7 @@ public class BoltAdapterSubscriber implements QuerySubscriber
     }
 
     @Override
-    public void onField( AnyValue value ) throws IOException
+    public void onField( int offset, AnyValue value ) throws IOException
     {
         recordConsumer.consumeField( value );
     }
