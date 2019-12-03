@@ -31,11 +31,19 @@ public class AssertionRunner
         throw new AssertionError( "No instances" );
     }
 
+    /**
+     *  <code>true</code> if running with -ea otherwise <code>false</code>.
+     *
+     * Be careful about refactoring because it is accessed in mysterious way perhaps not known statically
+     */
+    public static final boolean ASSERTIONS_ENABLED = isAssertionsEnabled();
+
     public static void runUnderAssertion( Thunk thunk )
     {
         assert runIt(thunk);
     }
 
+    @SuppressWarnings( "SameReturnValue" )
     private static boolean runIt( Thunk thunk )
     {
         thunk.apply();
@@ -47,6 +55,7 @@ public class AssertionRunner
         void apply();
     }
 
+    @SuppressWarnings( {"AssertWithSideEffects", "ConstantConditions"} )
     public static boolean isAssertionsEnabled()
     {
         boolean assertionsEnabled = false;
