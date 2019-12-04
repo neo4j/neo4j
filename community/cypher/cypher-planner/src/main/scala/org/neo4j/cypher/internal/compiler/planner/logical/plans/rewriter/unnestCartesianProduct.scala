@@ -17,15 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.plans
+package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 
-/**
-  * Produce a single row with the contents of argument
-  */
-case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
+case object unnestCartesianProduct extends Rewriter {
 
-  override val availableSymbols: Set[String] = argumentIds
+  private val instance: Rewriter = topDown(Rewriter.lift {
+    case CartesianProduct(_: Argument, rhs) =>
+      rhs
 
+    case CartesianProduct(lhs, _: Argument) =>
+      lhs
+
+  })
+
+  override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder.FakeLeafPlan
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.{LogicalLeafPlan, LogicalPlan}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen}
 import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CypherType}
 
 class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](new LogicalPlanResolver) {
@@ -38,6 +39,8 @@ class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, Logical
   val cardinalities: Cardinalities = new CardinalitiesWithDefault
 
   private var semanticTable = new SemanticTable()
+
+  def fakeLeafPlan(args: String*): LogicalPlanBuilder = appendAtCurrentIndent(LeafOperator(FakeLeafPlan(args.toSet)(_)))
 
   override def newNode(node: Variable): Unit = {
     semanticTable = semanticTable.addNode(node)
@@ -62,5 +65,11 @@ class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, Logical
 
   def build(readOnly: Boolean = true): LogicalPlan = {
     buildLogicalPlan()
+  }
+}
+
+object LogicalPlanBuilder {
+  case class FakeLeafPlan(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
+    override val availableSymbols: Set[String] = argumentIds
   }
 }

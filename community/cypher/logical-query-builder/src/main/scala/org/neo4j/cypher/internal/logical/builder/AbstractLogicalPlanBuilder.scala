@@ -54,24 +54,24 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   val patternParser = new PatternParser
 
-  private sealed trait OperatorBuilder
-  private case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder{
+  protected sealed trait OperatorBuilder
+  protected case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder{
     private val id = idGen.id()
     _idOfLastPlan = id
     val plan: LogicalPlan = planToIdConstructor(SameId(id))
   }
-  private case class UnaryOperator(planToIdConstructor: LogicalPlan => IdGen => LogicalPlan) extends OperatorBuilder {
+  protected case class UnaryOperator(planToIdConstructor: LogicalPlan => IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
     val planConstructor: LogicalPlan => LogicalPlan = planToIdConstructor(_)(SameId(id))
   }
-  private case class BinaryOperator(planToIdConstructor: (LogicalPlan, LogicalPlan) => IdGen => LogicalPlan) extends OperatorBuilder {
+  protected case class BinaryOperator(planToIdConstructor: (LogicalPlan, LogicalPlan) => IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
     val planConstructor: (LogicalPlan, LogicalPlan) => LogicalPlan = planToIdConstructor(_, _)(SameId(id))
   }
 
-  private class Tree(operator: OperatorBuilder) {
+  protected class Tree(operator: OperatorBuilder) {
     var left: Option[Tree] = None
     var right: Option[Tree] = None
 
@@ -482,9 +482,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
   }
 
-  def argument(): IMPL =
-    appendAtCurrentIndent(LeafOperator(Argument()(_)))
-
   def input(nodes: Seq[String] = Seq.empty, relationships: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty, nullable: Boolean = true): IMPL = {
     if (indent != 0) {
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
@@ -537,7 +534,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   // HELPERS
 
-  private def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
+  protected def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
     if (tree == null) {
       throw new IllegalStateException("Must call produceResult before adding other operators.")
     }

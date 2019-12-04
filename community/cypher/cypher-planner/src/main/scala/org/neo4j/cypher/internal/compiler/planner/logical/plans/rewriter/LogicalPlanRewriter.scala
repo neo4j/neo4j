@@ -42,6 +42,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
   override def instance(context: PlannerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes[LogicalPlan]) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply(solveds, otherAttributes.withAlso(cardinalities)),
+    unnestCartesianProduct,
     cleanUpEager(solveds, otherAttributes.withAlso(cardinalities)),
     simplifyPredicates,
     unnestOptional,
