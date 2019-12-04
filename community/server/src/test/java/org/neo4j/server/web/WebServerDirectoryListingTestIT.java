@@ -44,12 +44,13 @@ public class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
+                .withAfterWebServerStartCallback( w -> w.addStaticContent( "test", "/test" ) )
                 .build();
         server.start();
 
         // When
-        HTTP.Response okResource = HTTP.GET( server.baseUri().resolve( "/browser/index.html" ).toString() );
-        HTTP.Response illegalResource = HTTP.GET( server.baseUri().resolve( "/browser/assets/" ).toString() );
+        HTTP.Response okResource = HTTP.GET( server.baseUri().resolve( "/test/index.html" ).toString() );
+        HTTP.Response illegalResource = HTTP.GET( server.baseUri().resolve( "/test/files/" ).toString() );
 
         // Then
         // Depends on specific resources exposed by the browser module; if this test starts to fail,
