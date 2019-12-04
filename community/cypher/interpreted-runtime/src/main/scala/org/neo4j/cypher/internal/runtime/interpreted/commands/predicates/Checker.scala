@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util
 
-import org.neo4j.cypher.internal.Require.require
+import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.{AnyValue, Equality}

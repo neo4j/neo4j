@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import java.time._
 import java.time.temporal.TemporalAmount
 
-import org.neo4j.cypher.internal.Require.require
+import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable._

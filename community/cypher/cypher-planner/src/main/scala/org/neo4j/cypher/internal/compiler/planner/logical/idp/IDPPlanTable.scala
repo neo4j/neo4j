@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
-import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.compiler.planner.logical.Solvable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.macros.Require.require
 
 import scala.collection.{Map, mutable}
 
@@ -39,7 +39,7 @@ class IDPPlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
     table.put(solved, plan)
   }
 
-  def removeAllTracesOf(solvables: Set[Solvable]): table.type = {
+  def removeAllTracesOf(solvables: Set[Solvable]): Unit = {
     table.retain {
       case (k, _) => (k intersect solvables).isEmpty
     }

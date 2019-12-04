@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING

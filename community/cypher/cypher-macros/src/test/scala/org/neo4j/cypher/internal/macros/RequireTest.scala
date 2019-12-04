@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.macros
 
-import org.neo4j.cypher.internal.Require.require
+import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.ASSERTIONS_ENABLED
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

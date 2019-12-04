@@ -9,10 +9,10 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-cypher-runtime-util</artifactId>
+    <artifactId>neo4j-cypher-macros</artifactId>
     <packaging>jar</packaging>
     <version>4.1.0-SNAPSHOT</version>
-    <name>Neo4j - Cypher Runtime Utilities</name>
+    <name>Neo4j - Cypher Macros</name>
 
     <description>Cypher runtime utilities</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -24,7 +24,7 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.runtime.util</moduleName>
+        <moduleName>org.neo4j.cypher.internal.macros</moduleName>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
     </properties>
 
@@ -53,46 +53,9 @@
         <!-- shared versions are defined in the parent pom -->
 
         <!-- neo4j -->
-
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-exceptions</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-logical-plans</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-planner-spi</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-values</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-graphdb-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-macros</artifactId>
+            <artifactId>neo4j-util-4.0</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -119,47 +82,10 @@
             <artifactId>scalacheck_${scala.binary.version}</artifactId>
         </dependency>
 
-        <!-- other -->
-
-        <dependency>
-            <groupId>org.parboiled</groupId>
-            <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-
-        <!-- test dependencies -->
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-util-4.0</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-expressions-4.0</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ast-4.0</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

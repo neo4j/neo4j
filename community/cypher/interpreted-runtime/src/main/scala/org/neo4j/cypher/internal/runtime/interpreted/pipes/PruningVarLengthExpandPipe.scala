@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
-import org.neo4j.cypher.internal.Require.require
+import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id

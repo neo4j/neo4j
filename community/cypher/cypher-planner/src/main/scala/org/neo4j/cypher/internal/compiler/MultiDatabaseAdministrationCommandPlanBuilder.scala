@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.configuration.helpers.{DatabaseNameValidator, NormalizedDatabaseName}
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, PrivilegePlan, QualifiedName, ResolvedCall, SecurityAdministrationLogicalPlan}
+import org.neo4j.cypher.internal.logical.plans.{ShowDatabases => _, ShowDefaultDatabase => _, ShowUsers => _, _}
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
-import org.neo4j.cypher.internal.v4_0.ast.{IndexManagementAction, _}
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.v4_0.ast.{IndexManagementAction, _}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
@@ -321,7 +321,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // GRANT MATCH {prop} ON GRAPH foo ELEMENTS A (*) TO role
       case c@GrantPrivilege(privilege, resources, database, segments, roleNames) =>
         val combos = for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
-          roleName -> (segment, resource)
+          roleName -> (segment -> resource)
         }
         val isAdmin = Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])
         val plan = privilege match {
@@ -338,7 +338,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // DENY MATCH {prop} ON GRAPH foo ELEMENTS A (*) TO role
       case c@DenyPrivilege(privilege, resources, database, segments, roleNames) =>
         val combos = for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
-          roleName -> (segment, resource)
+          roleName -> (segment -> resource)
         }
         val isAdmin = Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])
         val plan = privilege match {
@@ -355,7 +355,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // REVOKE MATCH {prop} ON GRAPH foo ELEMENTS A (*) FROM role
       case c@RevokePrivilege(_, resources, database, segments, roleNames, revokeType) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
-          roleName -> (segment, resource)
+          roleName -> (segment -> resource)
         }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => Some(plans.RevokeRead(s, resource, database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))

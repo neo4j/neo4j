@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.Prettifier

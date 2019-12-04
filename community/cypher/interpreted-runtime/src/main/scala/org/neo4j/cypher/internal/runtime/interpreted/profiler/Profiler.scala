@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.common.Edition
-import org.neo4j.cypher.internal.Require.require
+import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
