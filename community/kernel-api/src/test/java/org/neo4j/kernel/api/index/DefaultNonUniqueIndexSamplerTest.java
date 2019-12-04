@@ -25,6 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DefaultNonUniqueIndexSamplerTest
 {
+    // We make sure to load this class here before we fork the tests for parallel execution.
+    // The reason for this is we often deadlock on class loading together with BridgingIndexProgressorTest.
+    @SuppressWarnings( "unused" )
+    private static final Class<?> forceClassLoad = DefaultNonUniqueIndexSampler.class;
     private final String value = "aaa";
 
     @Test
