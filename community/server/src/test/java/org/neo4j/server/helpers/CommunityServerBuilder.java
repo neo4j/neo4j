@@ -25,6 +25,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -48,6 +49,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.InMemoryGraphFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.web.WebServer;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
@@ -78,6 +80,7 @@ public class CommunityServerBuilder
     private boolean httpEnabled = true;
     private boolean httpsEnabled;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
+    private Consumer<WebServer> afterWebServerStart;
 
     public static CommunityServerBuilder server( LogProvider logProvider )
     {
@@ -117,7 +120,7 @@ public class CommunityServerBuilder
     protected CommunityNeoServer build( File configFile, Config config,
             ExternalDependencies dependencies )
     {
-        return new TestCommunityNeoServer( config, configFile, dependencies );
+        return new TestCommunityNeoServer( config, configFile, dependencies, afterWebServerStart );
     }
 
     public File createConfigFiles() throws IOException
@@ -283,7 +286,13 @@ public class CommunityServerBuilder
         return this;
     }
 
-    private String getPath( String uri )
+    public CommunityServerBuilder withAfterWebServerStartCallback( Consumer<WebServer> callback )
+    {
+        this.afterWebServerStart = callback;
+        return this;
+    }
+
+    private static String getPath( String uri )
     {
         URI theUri = URI.create( uri );
         if ( theUri.isAbsolute() )
@@ -317,11 +326,25 @@ public class CommunityServerBuilder
     private class TestCommunityNeoServer extends CommunityNeoServer
     {
         private final File configFile;
+        private final Consumer<WebServer> afterWebServerStart;
 
-        private TestCommunityNeoServer( Config config, File configFile, ExternalDependencies dependencies )
+        private TestCommunityNeoServer( Config config, File configFile, ExternalDependencies dependencies,
+                Consumer<WebServer> afterWebServerStart )
         {
             super( config, persistent ? new CommunityGraphFactory() : new InMemoryGraphFactory(), dependencies );
             this.configFile = configFile;
+            this.afterWebServerStart = afterWebServerStart;
+        }
+
+        @Override
+        protected WebServer createWebServer()
+        {
+            WebServer webServer = super.createWebServer();
+            if ( afterWebServerStart != null )
+            {
+                afterWebServerStart.accept( webServer );
+            }
+            return webServer;
         }
 
         @Override
