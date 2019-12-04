@@ -62,7 +62,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  tracer: CompilationPhaseTracer,
                  innerVariableNamer: InnerVariableNamer,
                  params: MapValue,
-                 compatibilityMode: Boolean): BaseState = {
+                 compatibilityMode: CypherCompatibilityVersion): BaseState = {
 
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName)

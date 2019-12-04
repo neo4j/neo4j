@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.phases.{Compatibility3_5, Compatibility4_0, Compatibility4_1}
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.logging.{Log, LogProvider}
@@ -45,8 +46,9 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                               executionEngineProvider: () => ExecutionEngine): Compiler = {
 
     val compatibilityMode = cypherVersion match {
-      case CypherVersion.`v3_5` => true
-      case CypherVersion.v4_0 => false
+      case CypherVersion.`v3_5` => Compatibility3_5
+      case CypherVersion.v4_0 => Compatibility4_0
+      case CypherVersion.v4_1 => Compatibility4_1
     }
 
     val planner =

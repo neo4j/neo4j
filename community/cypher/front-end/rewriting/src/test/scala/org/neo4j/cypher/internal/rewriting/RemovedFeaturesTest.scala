@@ -24,33 +24,39 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val rewriter = replaceAliasedFunctionInvocations(Deprecations.removedFeaturesIn4_0)
-  private val deprecatedNameMap = Deprecations.removedFeaturesIn4_0.removedFunctionsRenames
+  private val rewriter4_0 = replaceAliasedFunctionInvocations(Deprecations.removedFeaturesIn4_0)
+  private val deprecatedNameMap4_0 = Deprecations.removedFeaturesIn4_0.removedFunctionsRenames
+
+  private val rewriter4_1 = replaceAliasedFunctionInvocations(Deprecations.removedFeaturesIn4_1)
+  private val deprecatedNameMap4_1 = Deprecations.removedFeaturesIn4_1.removedFunctionsRenames
 
   test("should rewrite removed function names regardless of casing") {
-    for ((oldName, newName) <- deprecatedNameMap ) {
-      rewriter(function(oldName, varFor("arg"))) should equal(function(oldName, varFor("arg")).copy(functionName = FunctionName(newName)(pos))(pos))
-      rewriter(function(oldName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(oldName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+    for (deprecatedMap <- Seq(deprecatedNameMap4_0, deprecatedNameMap4_1)) {
+      for ((oldName, newName) <- deprecatedMap) {
+        rewriter4_0(function(oldName, varFor("arg"))) should equal(function(oldName, varFor("arg")).copy(functionName = FunctionName(newName)(pos))(pos))
+        rewriter4_0(function(oldName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+        rewriter4_0(function(oldName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+      }
     }
   }
 
   test("should not touch new function names of regardless of casing") {
-    for (newName <- deprecatedNameMap.values ) {
-      rewriter(function(newName, varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(newName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(newName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+    for (deprecatedMap <- Seq(deprecatedNameMap4_0, deprecatedNameMap4_1)) {
+      for (newName <- deprecatedMap.values) {
+        rewriter4_0(function(newName, varFor("arg"))) should equal(function(newName, varFor("arg")))
+        rewriter4_0(function(newName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+        rewriter4_0(function(newName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+      }
     }
   }
-
 
   test("should rewrite length of strings and collections to size regardless of casing") {
     val str = literalString("a string")
     val list = listOfInt(1, 2, 3)
 
     for (lengthFunc <- Seq("length", "LENGTH", "leNgTh")) {
-      rewriter(function(lengthFunc, str)) should equal(function("size", str))
-      rewriter(function(lengthFunc, list)) should equal(function("size", list))
+      rewriter4_0(function(lengthFunc, str)) should equal(function("size", str))
+      rewriter4_0(function(lengthFunc, list)) should equal(function("size", list))
     }
   }
 
@@ -62,7 +68,7 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
     // filter(x IN ["a", "aa", "aaa"] WHERE x STARTS WITH "aa") -> [x IN ["a", "aa", "aaa"] WHERE x STARTS WITH "aa"]
     val before = FilterExpression(x, list, Some(predicate))(pos)
     val after = listComprehension(x, list, Some(predicate), None)
-    rewriter(before) should equal(after)
+    rewriter4_0(before) should equal(after)
   }
 
   test("should rewrite extract to list comprehension") {
@@ -73,13 +79,18 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
     // extract(x IN ["a", "aa", "aaa"] | size(x)) -> [x IN ["a", "aa", "aaa"] | size(x)]
     val before = ExtractExpression(x, list, None, Some(extractExpression))(pos)
     val after = listComprehension(x, list, None, Some(extractExpression))
-    rewriter(before) should equal(after)
+    rewriter4_0(before) should equal(after)
   }
 
   test("should rewrite old parameter syntax") {
     val before = ParameterWithOldSyntax("param", symbols.CTString)(pos)
 
     val after = parameter("param", symbols.CTString)
-    rewriter(before) should equal(after)
+    rewriter4_0(before) should equal(after)
+  }
+
+  test("4.1 rewriter should not rewrite things removed in 4.0") {
+    val oldParam = ParameterWithOldSyntax("param", symbols.CTString)(pos)
+    rewriter4_1(oldParam) should equal(oldParam)
   }
 }

@@ -26,7 +26,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler._
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext, PlannerContextCreator}
+import org.neo4j.cypher.internal.compiler.phases.{CypherCompatibilityVersion, LogicalPlanState, PlannerContext, PlannerContextCreator}
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
 import org.neo4j.cypher.internal.logical.plans._
@@ -68,7 +68,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          plannerOption: CypherPlannerOption,
                          updateStrategy: CypherUpdateStrategy,
                          txIdProvider: () => Long,
-                         compatibilityMode: Boolean) {
+                         compatibilityMode: CypherCompatibilityVersion) {
 
   private val parsedQueries = new LFUCache[String, BaseState](config.queryCacheSize)
 

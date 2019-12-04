@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.CypherVersion.v4_0
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -33,9 +33,9 @@ import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
-  private val CYPHER_VERSION = Version("CYPHER 4.0")
-  private val RUNTIME_VERSION = RuntimeVersion("4.0")
-  private val PLANNER_VERSION = PlannerVersion("4.0")
+  private val CYPHER_VERSION = Version("CYPHER 4.1")
+  private val RUNTIME_VERSION = RuntimeVersion("4.1")
+  private val PLANNER_VERSION = PlannerVersion("4.1")
 
   test("tests") {
     implicit val idGen: IdGen = new SequentialIdGen()
@@ -125,7 +125,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     forAll(modeCombinations) {
       case (logicalPlan: LogicalPlan, expectedPlanDescription: PlanDescriptionImpl) =>
-        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, v4_0, readOnly, cardinalities, providedOrders)
+        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly, cardinalities, providedOrders)
 
         def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription): Unit = {
           withClue("name")(a.name should equal(b.name))

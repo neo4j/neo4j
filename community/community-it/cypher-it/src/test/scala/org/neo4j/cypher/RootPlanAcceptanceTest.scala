@@ -30,6 +30,14 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("cost should be default planner in 4.0") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v4_0)
+      .shouldHaveCypherVersion(CypherVersion.v4_0)
+      .shouldHavePlanner(CostBasedPlannerName.default)
+  }
+
+  test("cost should be default planner in 4.1") {
+    given("match (n) return n")
+      .withCypherVersion(CypherVersion.v4_1)
+      .shouldHaveCypherVersion(CypherVersion.v4_1)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
@@ -45,47 +53,10 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("should use cost for varlength in 4.0") {
-    given("match (a)-[r:T1*]->(b) return a,r,b")
-      .withCypherVersion(CypherVersion.v4_0)
-      .shouldHaveCypherVersion(CypherVersion.v4_0)
-      .shouldHavePlanner(CostBasedPlannerName.default)
-  }
-
-  test("should use cost for cycles in 4.0") {
-    given("match (a)-[r]->(a) return a")
-      .withCypherVersion(CypherVersion.v4_0)
-      .shouldHaveCypherVersion(CypherVersion.v4_0)
-      .shouldHavePlanner(CostBasedPlannerName.default)
-  }
-
-  test("should handle updates in 4.0") {
-    given("create() return 1")
-      .withCypherVersion(CypherVersion.v4_0)
-      .shouldHaveCypherVersion(CypherVersion.v4_0)
-      .shouldHavePlanner(CostBasedPlannerName.default)
-  }
-
-  test("troublesome query that should be run in cost") {
-    given(
-      """MATCH (person)-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-()-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-(coc)-[:DIRECTED]->()
-        |WHERE NOT ((coc)-[:ACTED_IN]->()<-[:ACTED_IN]-(person)) AND coc <> person
-        |RETURN coc, COUNT(*) AS times
-        |ORDER BY times DESC
-        |LIMIT 10""".stripMargin)
-      .withCypherVersion(CypherVersion.v4_0)
-      .shouldHaveCypherVersion(CypherVersion.v4_0)
-      .shouldHavePlanner(CostBasedPlannerName.default)
-  }
-
-  test("another troublesome query that should be run in cost") {
-    given(
-      """MATCH (s:Location {name:'DeliverySegment-257227'}), (e:Location {name:'DeliverySegment-476821'})
-        |MATCH (s)<-[:DELIVERY_ROUTE]-(db1) MATCH (db2)-[:DELIVERY_ROUTE]->(e)
-        |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
-      .withCypherVersion(CypherVersion.v4_0)
-      .shouldHaveCypherVersion(CypherVersion.v4_0)
-      .shouldHavePlanner(CostBasedPlannerName.default)
+  test("interpreted should be default runtime in 4.1") {
+    given("match (n) return n")
+      .withCypherVersion(CypherVersion.v4_1)
+      .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
   test("AllNodesScan should be the only child of the plan") {

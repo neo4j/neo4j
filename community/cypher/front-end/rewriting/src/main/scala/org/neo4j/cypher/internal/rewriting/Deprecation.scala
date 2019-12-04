@@ -115,7 +115,7 @@ object Deprecations {
     override val find: PartialFunction[Any, Deprecation] = V1.find
   }
 
-  // This is functionality that have been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
+  // This is functionality that has been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
   case object removedFeaturesIn4_0 extends Deprecations {
     val removedFunctionsRenames: Map[String, String] =
       TreeMap(
@@ -161,6 +161,21 @@ object Deprecations {
         Deprecation(
           () => renameFunctionTo("size")(f),
           () => Some(LengthOnNonPathNotification(f.position))
+        )
+    }
+  }
+
+  // This is functionality that has been removed in 4.1 but still should work (but be deprecated) when using CYPHER 3.5 or CYPHER 4.0
+  case object removedFeaturesIn4_1 extends Deprecations {
+    val removedFunctionsRenames: Map[String, String] =
+      TreeMap()(CaseInsensitiveOrdered)
+
+    override def find: PartialFunction[Any, Deprecation] = {
+
+      case f@FunctionInvocation(_, FunctionName(name), _, _) if removedFunctionsRenames.contains(name) =>
+        Deprecation(
+          () => renameFunctionTo(removedFunctionsRenames(name))(f),
+          () => Some(DeprecatedFunctionNotification(f.position, name, removedFunctionsRenames(name)))
         )
     }
   }

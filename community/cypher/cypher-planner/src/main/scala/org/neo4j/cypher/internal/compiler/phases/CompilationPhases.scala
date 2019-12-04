@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature._
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.frontend.phases._
+import org.neo4j.cypher.internal.frontend.phases.{Parsing, _}
 import org.neo4j.cypher.internal.rewriting.rewriters.{IfNoParameter, InnerVariableNamer, LiteralExtraction}
 import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
 
@@ -38,25 +38,32 @@ object CompilationPhases {
   // Phase 1
   def parsing(sequencer: String => RewriterStepSequencer,
               innerVariableNamer: InnerVariableNamer,
-              compatibilityMode: Boolean = false,
+              compatibilityMode: CypherCompatibilityVersion = Compatibility4_1,
               literalExtraction: LiteralExtraction = IfNoParameter
              ): Transformer[BaseContext, BaseState, BaseState] = {
-    if (compatibilityMode) {
-      Parsing.adds(BaseContains[Statement]) andThen
-        SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
-        PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
-        SyntaxDeprecationWarnings(Deprecations.V2) andThen
-        PreparatoryRewriting(Deprecations.V2) andThen
-        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
-        AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
-    } else {
-      Parsing.adds(BaseContains[Statement]) andThen
-        SyntaxDeprecationWarnings(Deprecations.V2) andThen
-        PreparatoryRewriting(Deprecations.V2) andThen
-        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries).adds(BaseContains[SemanticState]) andThen
-        AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
-    }
-}
+    def compatibilityCheck(compatibilityMode: CypherCompatibilityVersion, base: Transformer[BaseContext, BaseState, BaseState]): Transformer[BaseContext, BaseState, BaseState] =
+      compatibilityMode match {
+        case Compatibility3_5 =>
+          base andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
+        case Compatibility4_0 =>
+          base andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
+        case Compatibility4_1 => base
+      }
+
+    val base = Parsing.adds(BaseContains[Statement])
+
+    compatibilityCheck(compatibilityMode, base) andThen
+      SyntaxDeprecationWarnings(Deprecations.V2) andThen
+      PreparatoryRewriting(Deprecations.V2) andThen
+      SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries).adds(BaseContains[SemanticState]) andThen
+      AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
+  }
 
   // Phase 2
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
@@ -95,3 +102,9 @@ object CompilationPhases {
         UnsupportedSystemCommand
       )
 }
+
+sealed trait CypherCompatibilityVersion
+case object Compatibility3_5 extends CypherCompatibilityVersion
+case object Compatibility4_0 extends CypherCompatibilityVersion
+case object Compatibility4_1 extends CypherCompatibilityVersion
+

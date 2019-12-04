@@ -24,7 +24,9 @@ import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
@@ -52,13 +54,22 @@ public class NotificationTestSupport
 
     void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
-        try ( Transaction transaction = db.beginTx() )
+        assertNotifications( List.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.1" ), query, matchesExpectation );
+    }
+
+    void assertNotifications( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
+    {
+
+        versions.forEach( version ->
         {
-            try ( Result result = transaction.execute( query ) )
+            try ( Transaction transaction = db.beginTx() )
             {
-                assertThat( result.getNotifications(), matchesExpectation );
+                try ( Result result = transaction.execute( version + query ) )
+                {
+                    assertThat( result.getNotifications(), matchesExpectation );
+                }
             }
-        }
+        } );
     }
 
     static Matcher<Notification> notification( String code, Matcher<String> description, Matcher<InputPosition> position, SeverityLevel severity )
@@ -131,57 +142,66 @@ public class NotificationTestSupport
         };
     }
 
-    void shouldNotifyInStream( String version, String query, InputPosition pos, NotificationCode code )
+    void shouldNotifyInStream( String query, InputPosition pos, NotificationCode code )
     {
-        try ( Transaction transaction = db.beginTx() )
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.1" ).forEach( version ->
         {
-            //when
-            try ( Result result = transaction.execute( version + query ) )
+            try ( Transaction transaction = db.beginTx() )
             {
-                //then
-                NotificationCode.Notification notification = code.notification( pos );
-                assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
-                Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-                assertThat( arguments.get( "version" ), equalTo( version ) );
+                //when
+                try ( Result result = transaction.execute( version + query ) )
+                {
+                    //then
+                    NotificationCode.Notification notification = code.notification( pos );
+                    assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
+                    Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+                    assertThat( arguments.get( "version" ), equalTo( version ) );
+                }
+                transaction.commit();
             }
-            transaction.commit();
-        }
+        } );
     }
 
-    void shouldNotifyInStreamWithDetail( String version, String query, InputPosition pos, NotificationCode code,
+    void shouldNotifyInStreamWithDetail( String query, InputPosition pos, NotificationCode code,
                                          NotificationDetail detail )
     {
-        try ( Transaction transaction = db.beginTx() )
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.1" ).forEach( version ->
         {
-            //when
-            try ( Result result = transaction.execute( version + " " + query ) )
+            try ( Transaction transaction = db.beginTx() )
             {
+                //when
+                try ( Result result = transaction.execute( version + " " + query ) )
+                {
 
-                //then
-                NotificationCode.Notification notification = code.notification( pos, detail );
-                assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
-                Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-                assertThat( arguments.get( "version" ), equalTo( version ) );
+                    //then
+                    NotificationCode.Notification notification = code.notification( pos, detail );
+                    assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
+                    Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+                    assertThat( arguments.get( "version" ), equalTo( version ) );
+                }
+                transaction.commit();
             }
-            transaction.commit();
-        }
+        } );
     }
 
-    void shouldNotNotifyInStream( String version, String query )
+    void shouldNotNotifyInStream( String query )
     {
-        try ( Transaction transaction = db.beginTx() )
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.1" ).forEach( version ->
         {
-            // when
-            try ( Result result = transaction.execute( version + query ) )
+            try ( Transaction transaction = db.beginTx() )
             {
+                // when
+                try ( Result result = transaction.execute( version + query ) )
+                {
 
-                // then
-                assertThat( Iterables.asList( result.getNotifications() ), empty() );
-                Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-                assertThat( arguments.get( "version" ), equalTo( version ) );
+                    // then
+                    assertThat( Iterables.asList( result.getNotifications() ), empty() );
+                    Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+                    assertThat( arguments.get( "version" ), equalTo( version ) );
+                }
+                transaction.commit();
             }
-            transaction.commit();
-        }
+        } );
     }
 
     Matcher<Notification> cartesianProductWarning = notification( "Neo.ClientNotification.Statement.CartesianProductWarning", containsString(
