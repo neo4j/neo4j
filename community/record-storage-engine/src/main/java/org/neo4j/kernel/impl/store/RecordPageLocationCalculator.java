@@ -46,13 +46,13 @@ public class RecordPageLocationCalculator
      * the given {@code id} lives at.
      *
      * @param id record id
-     * @param pageSize size of each page
      * @param recordSize size of each record
+     * @param recordsPerPage number of records per page
      * @return which offset into the right page the given {@code id} lives at, given the
      * {@code pageSize} and {@code recordSize}.
      */
-    public static int offsetForId( long id, int pageSize, int recordSize )
+    public static int offsetForId( long id, int recordSize, int recordsPerPage )
     {
-        return (int) ((id * recordSize) % pageSize);
+        return (int) (id % recordsPerPage) * recordSize;
     }
 }

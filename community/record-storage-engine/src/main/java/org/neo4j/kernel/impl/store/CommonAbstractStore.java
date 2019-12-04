@@ -319,7 +319,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     protected int offsetForId( long id )
     {
-        return RecordPageLocationCalculator.offsetForId( id, pagedFile.pageSize(), recordSize );
+        return RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage );
     }
 
     @Override

@@ -172,8 +172,9 @@ public abstract class AbstractRecordFormatTest
                 R read = format.newRecord();
                 try
                 {
-                    writeRecord( written, format, storeFile, recordSize, idSequence );
-                    readAndVerifyRecord( written, read, format, key, storeFile, recordSize, assertPostReadOffset );
+                    int recordsPerPage = storeFile.pageSize() / recordSize;
+                    writeRecord( written, format, storeFile, recordSize, idSequence, recordsPerPage );
+                    readAndVerifyRecord( written, read, format, key, storeFile, recordSize, assertPostReadOffset, recordsPerPage );
                     idSequence.reset();
                 }
                 catch ( Throwable t )
@@ -186,7 +187,7 @@ public abstract class AbstractRecordFormatTest
     }
 
     private static <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format,
-        RecordKey<R> key, PagedFile storeFile, int recordSize, boolean assertPostReadOffset ) throws IOException
+        RecordKey<R> key, PagedFile storeFile, int recordSize, boolean assertPostReadOffset, int recordsPerPage ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -197,7 +198,7 @@ public abstract class AbstractRecordFormatTest
              Retry loop is needed here because format does not handle retries on the primary cursor.
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
-            int offset = offsetForId( written.getId(), cursor.getCurrentPageSize(), recordSize );
+            int offset = offsetForId( written.getId(), recordSize, recordsPerPage );
             do
             {
                 cursor.setOffset( offset );
@@ -228,7 +229,7 @@ public abstract class AbstractRecordFormatTest
     }
 
     private static <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
-        int recordSize, BatchingIdSequence idSequence ) throws IOException
+        int recordSize, BatchingIdSequence idSequence, int recordsPerPage ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
@@ -238,7 +239,7 @@ public abstract class AbstractRecordFormatTest
                 format.prepare( record, recordSize, idSequence );
             }
 
-            int offset = offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize );
+            int offset = offsetForId( record.getId(), recordSize, recordsPerPage );
             cursor.setOffset( offset );
             format.write( record, cursor, recordSize, storeFile.pageSize() / recordSize );
             assertWithinBounds( record, cursor, "writing" );
