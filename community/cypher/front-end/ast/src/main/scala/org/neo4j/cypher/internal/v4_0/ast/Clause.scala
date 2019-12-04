@@ -663,7 +663,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
 sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
   override def semanticCheck: SemanticCheck = SemanticState.recordCurrentScope(this)
 
-  def semanticCheckContinuation: SemanticCheck
+  def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 
 object ProjectionClause {
@@ -713,11 +713,11 @@ sealed trait ProjectionClause extends HorizonClause {
   override def semanticCheck: SemanticCheck =
     returnItems.semanticCheck
 
-  override def semanticCheckContinuation: SemanticCheck = {
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
     state =>
 
       def runChecks: SemanticCheck = innerState => (
-        returnItems.declareVariables(state.currentScope.scope) chain
+        returnItems.declareVariables(previousScope) chain
           orderBy.semanticCheck chain
           checkSkip chain
           checkLimit chain
@@ -738,7 +738,7 @@ sealed trait ProjectionClause extends HorizonClause {
         // Re-declare projected variables in the new scope since the sub-scope is discarded
         // (We do not need to check warnOnAccessToRetrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
         val returnState = nextState.popScope.newSiblingScope
-        val SemanticCheckResult(finalState, errors2) = returnItems.declareVariables(state.currentScope.scope)(returnState)
+        val SemanticCheckResult(finalState, errors2) = returnItems.declareVariables(previousScope)(returnState)
 
         SemanticCheckResult(finalState, errors1 ++ errors2)
       } else {
@@ -860,31 +860,35 @@ case class SubQuery(part: QueryPart)(val position: InputPosition) extends Horizo
       checkSubquery
 
   def checkSubquery: SemanticCheck = { outer: SemanticState =>
+
+    val SemanticCheckResult(outerStateWithImports, importingWithErrors) = part.checkImportingWith(outer)
+
     // Create empty scope under root
-    val empty: SemanticState = outer.newBaseScope
+    val empty: SemanticState = outerStateWithImports.newBaseScope
+
     // Check inner query. Allow it to import from outer scope
-    val inner: SemanticCheckResult = part.semanticCheckInSubqueryContext(outer)(empty)
+    val inner: SemanticCheckResult = part.semanticCheckInSubqueryContext(outerStateWithImports)(empty)
     val output: Scope = part.finalScope(inner.state.currentScope.scope)
 
     // Keep working from the latest state
     val after: SemanticState = inner.state
-      // but jump back to scope tree of outer
-      .copy(currentScope = outer.currentScope)
+      // but jump back to scope tree of outerStateWithImports
+      .copy(currentScope = outerStateWithImports.currentScope)
       // Copy in the scope tree from inner query (needed for Namespacer)
       .insertSiblingScope(inner.state.currentScope.scope)
       // Import variables from scope before subquery
       .newSiblingScope
-      .importValuesFromScope(outer.currentScope.scope)
+      .importValuesFromScope(outerStateWithImports.currentScope.scope)
 
     // Declare variables that are in output from subquery
     val merged: SemanticCheckResult =
       declareVariables(output.valueSymbolTable.values)(after)
 
     // Keep errors from inner check and from variable declarations
-    SemanticCheckResult(merged.state, inner.errors ++ merged.errors)
+    SemanticCheckResult(merged.state, importingWithErrors ++ inner.errors ++ merged.errors)
   }
 
-  override def semanticCheckContinuation: SemanticCheck = { s =>
-    SemanticCheckResult(s, Vector())
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = { s =>
+    SemanticCheckResult(s.importValuesFromScope(previousScope), Vector())
   }
 }

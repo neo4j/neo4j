@@ -50,6 +50,12 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def finalScope(scope: Scope): Scope
 
   /**
+   * Check this query part if it start with an importing WITH
+   *
+   */
+  def checkImportingWith: SemanticCheck
+
+  /**
    * Semantic check for when this `QueryPart` is in a subquery, and might import
    * variables from the `outer` scope
    */
@@ -108,12 +114,13 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def semanticCheck: SemanticCheck =
     semanticCheckAbstract(clauses)
 
+  override def checkImportingWith: SemanticCheck = importWith.foldSemanticCheck(_.semanticCheck)
+
   override def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck = {
     def importVariables: SemanticCheck =
       importWith.foldSemanticCheck(wth =>
-        withState(outer)(wth.semanticCheck) chain
-          wth.semanticCheckContinuation chain
-          recordCurrentScope(wth)
+        wth.semanticCheckContinuation(outer.currentScope.scope) chain
+        recordCurrentScope(wth)
       )
 
     checkCorrelatedSubQueriesFeature chain
@@ -227,7 +234,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkHorizon(clause: HorizonClause, state: SemanticState, prevErrors: Seq[SemanticErrorDef]) = {
     val closingResult = clause.semanticCheck(state)
-    val continuationResult = clause.semanticCheckContinuation(closingResult.state)
+    val continuationResult = clause.semanticCheckContinuation(closingResult.state.currentScope.scope)(closingResult.state)
     semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
   }
 
@@ -291,6 +298,10 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
       query => query.semanticCheck,
       checkColumnNamesAgree
     )
+
+  override def checkImportingWith: SemanticCheck =
+    part.checkImportingWith chain
+      query.checkImportingWith
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     // Because we get an additonal empty base scope as the first sibling of each query part in a sub-query context
