@@ -280,31 +280,25 @@ class ExecutingQueryTest
     @Test
     void shouldObfuscateCreateUser()
     {
-        var queryPart = "create USER foo SET PaSsWoRd ";
-        var exeQuery1 = createExecutingQuery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
-        assertThat( exeQuery1.queryText() ).isEqualTo( queryPart + "'******'" );
-        assertThat( exeQuery1.queryParameters().size() ).isEqualTo( 0 );
+        testPasswordObfuscation( "create USER foo SET PaSsWoRd " );
+    }
 
-        MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
-        MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
-        var exeQuery2 = createExecutingQuery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
-        assertThat( exeQuery2.queryText() ).isEqualTo( queryPart + "$password" );
-        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams );
+    @Test
+    void shouldObfuscateCreateOrReplaceUser()
+    {
+        testPasswordObfuscation( "create OR replace USER foo SET PaSsWoRd " );
+    }
+
+    @Test
+    void shouldObfuscateCreateUserIfNotExits()
+    {
+        testPasswordObfuscation( "create USER foo IF not EXisTS SET PaSsWoRd " );
     }
 
     @Test
     void shouldObfuscateAlterUser()
     {
-        var queryPart = "alter USER foo SET PaSsWoRd ";
-        var exeQuery = createExecutingQuery( 1, queryPart + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
-        assertThat( exeQuery.queryText() ).isEqualTo( queryPart + "'******'" );
-        assertThat( exeQuery.queryParameters().size() ).isEqualTo( 0 );
-
-        MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
-        MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
-        var exeQuery2 = createExecutingQuery( 1, queryPart + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
-        assertThat( exeQuery2.queryText() ).isEqualTo( queryPart + "$password" );
-        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams );
+        testPasswordObfuscation( "alter USER foo SET PaSsWoRd " );
     }
 
     @Test
@@ -327,6 +321,19 @@ class ExecutingQueryTest
         assertThat( exeQuery3.queryText() ).isEqualTo( queryPart + "$old TO '******'" );
         assertThat( exeQuery3.queryParameters() ).isEqualTo( obfuscatedParams3 );
 
+    }
+
+    private void testPasswordObfuscation( String startOfQuery )
+    {
+        var exeQuery1 = createExecutingQuery( 1, startOfQuery + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
+        assertThat( exeQuery1.queryText() ).isEqualTo( startOfQuery + "'******'" );
+        assertThat( exeQuery1.queryParameters().size() ).isEqualTo( 0 );
+
+        MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
+        MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
+        var exeQuery2 = createExecutingQuery( 1, startOfQuery + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
+        assertThat( exeQuery2.queryText() ).isEqualTo( startOfQuery + "$password" );
+        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams );
     }
 
     private LockWaitEvent lock( String resourceType, long resourceId )

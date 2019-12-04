@@ -64,9 +64,11 @@ class QueryObfuscation
 
     private static final Pattern SYSTEM_PASSWORD_PATTERN = Pattern.compile(
             // CREATE USER user SET PASSWORD
+            // CREATE OR REPLACE USER user SET PASSWORD
+            // CREATE USER user IF NOT EXISTS SET PASSWORD
             // ALTER USER user SET PASSWORD
             // ALTER CURRENT USER SET PASSWORD
-            "^(?:(?:ALTER|CREATE)\\s+(?:CURRENT\\s+)?USER\\s+(?:(?:`)?\\w+(?:`)?\\s+)?SET\\s+PASSWORD\\s+)" +
+            "^(?:(?:ALTER|CREATE)\\s+(?:CURRENT\\s+)?(?:OR\\s+REPLACE\\s+)?USER\\s+(?:(?:`)?\\w+(?:`)?\\s+)?(?:IF\\s+NOT\\s+EXISTS\\s+)?SET\\s+PASSWORD\\s+)" +
             // password can be in single, double quotes, or parametrized
             // FROM password TO password
             "(?:FROM\\s+)?((?:\\$\\w+)|(?:\"[^\"]*\")|(?:'[^']*'))(?:\\s+TO\\s+)?((?:\\$\\w+)|(?:\"[^\"]*\")|(?:'[^']*'))?",
