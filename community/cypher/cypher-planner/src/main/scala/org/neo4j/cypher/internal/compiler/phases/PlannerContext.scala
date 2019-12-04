@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.phases
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.{ContextCreator, CypherPlannerConfiguration, Neo4jCypherExceptionFactory, SyntaxExceptionCreator, UpdateStrategy}
+import org.neo4j.cypher.internal.compiler.{ContextCreator, CypherPlannerConfiguration, Neo4jCypherExceptionFactory, UpdateStrategy}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
+import org.neo4j.cypher.internal.v4_0.util.{CypherExceptionFactory, InputPosition}
 import org.neo4j.values.virtual.MapValue
 
 class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,

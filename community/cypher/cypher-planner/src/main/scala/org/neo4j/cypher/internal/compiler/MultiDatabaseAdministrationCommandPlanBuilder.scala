@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.configuration.helpers.{DatabaseNameValidator, NormalizedDatabaseName}
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{ShowDatabases => _, ShowDefaultDatabase => _, ShowUsers => _, _}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, PrivilegePlan, QualifiedName, ResolvedCall, SecurityAdministrationLogicalPlan}
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
+import org.neo4j.cypher.internal.v4_0.ast.{IndexManagementAction, _}
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
-import org.neo4j.cypher.internal.v4_0.ast.{IndexManagementAction, _}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._

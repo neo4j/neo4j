@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, FunctionInvocation, LogicalVariable}
+import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, FunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 
