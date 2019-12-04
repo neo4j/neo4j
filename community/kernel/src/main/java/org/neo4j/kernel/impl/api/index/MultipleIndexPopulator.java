@@ -316,7 +316,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private void resetIndexCountsForPopulation( IndexPopulation indexPopulation )
     {
-        indexStatisticsStore.replaceStats( indexPopulation.indexId, 0, 0, 0 );
+        indexStatisticsStore.replaceStats( indexPopulation.indexId, new IndexSample( 0, 0, 0 ) );
     }
 
     void flipAfterPopulation( boolean verifyBeforeFlipping )
@@ -628,7 +628,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                                 populator.verifyDeferredConstraints( propertyAccessor );
                             }
                             IndexSample sample = populator.sampleResult();
-                            indexStatisticsStore.replaceStats( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
+                            indexStatisticsStore.replaceStats( indexId, sample );
                             populator.close( true );
                             schemaState.clear();
                             return true;

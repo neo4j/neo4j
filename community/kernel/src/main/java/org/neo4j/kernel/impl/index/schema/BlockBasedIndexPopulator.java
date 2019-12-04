@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -50,9 +51,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
+import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
@@ -101,6 +104,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final CloseCancellation cancellation = new CloseCancellation();
     // Will be instantiated right before merging and can be used to neatly await merge to complete
     private volatile CountDownLatch mergeOngoingLatch;
+    private IndexSample nonUniqueIndexSample;
+    private final AtomicLong numberOfIndexUpdatesSinceSample = new AtomicLong();
 
     // progress state
     private volatile long numberOfAppliedScanUpdates;
@@ -281,6 +286,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                         verifyUniqueKeys( allConflictingKeys );
                     }
                 }
+                else
+                {
+                    nonUniqueIndexSample = buildNonUniqueIndexSample();
+                }
             }
         }
         catch ( IOException e )
@@ -435,7 +444,15 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         if ( scanCompleted )
         {
             // Will need the reader from newReader, which a sub-class of this class implements
-            return super.newPopulatingUpdater();
+            return new DelegatingIndexUpdater( super.newPopulatingUpdater() )
+            {
+                @Override
+                public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
+                {
+                    numberOfIndexUpdatesSinceSample.incrementAndGet();
+                    super.process( update );
+                }
+            };
         }
 
         return new IndexUpdater()
@@ -601,6 +618,20 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             recordingConflictDetector.relaxUniqueness( key );
             writer.put( key, value );
         }
+    }
+
+    @Override
+    public IndexSample sampleResult()
+    {
+        if ( !descriptor.isUnique() )
+        {
+            return new IndexSample(
+                    nonUniqueIndexSample.indexSize(),
+                    nonUniqueIndexSample.uniqueValues(),
+                    nonUniqueIndexSample.sampleSize(),
+                    numberOfIndexUpdatesSinceSample.get() );
+        }
+        return super.sampleResult();
     }
 
     /**

@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.Arrays;
+
 public final class IndexSample
 {
     private final long indexSize;
     private final long uniqueValues;
     private final long sampleSize;
+    private final long updates;
 
     public IndexSample()
     {
@@ -32,9 +35,15 @@ public final class IndexSample
 
     public IndexSample( long indexSize, long uniqueValues, long sampleSize )
     {
+        this( indexSize, uniqueValues, sampleSize, 0 );
+    }
+
+    public IndexSample( long indexSize, long uniqueValues, long sampleSize, long updates )
+    {
         this.indexSize = indexSize;
         this.uniqueValues = uniqueValues;
         this.sampleSize = sampleSize;
+        this.updates = updates;
     }
 
     public long indexSize()
@@ -52,6 +61,11 @@ public final class IndexSample
         return sampleSize;
     }
 
+    public long updates()
+    {
+        return updates;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -64,16 +78,13 @@ public final class IndexSample
             return false;
         }
         IndexSample that = (IndexSample) o;
-        return indexSize == that.indexSize && uniqueValues == that.uniqueValues && sampleSize == that.sampleSize;
+        return indexSize == that.indexSize && uniqueValues == that.uniqueValues && sampleSize == that.sampleSize && updates == that.updates;
     }
 
     @Override
     public int hashCode()
     {
-        int result = (int) (indexSize ^ (indexSize >>> 32));
-        result = 31 * result + (int) (uniqueValues ^ (uniqueValues >>> 32));
-        result = 31 * result + (int) (sampleSize ^ (sampleSize >>> 32));
-        return result;
+        return Arrays.hashCode( new long[]{indexSize, uniqueValues, sampleSize, updates} );
     }
 
     @Override
@@ -83,6 +94,7 @@ public final class IndexSample
                "indexSize=" + indexSize +
                ", uniqueValues=" + uniqueValues +
                ", sampleSize=" + sampleSize +
+               ", updates=" + updates +
                '}';
     }
 }

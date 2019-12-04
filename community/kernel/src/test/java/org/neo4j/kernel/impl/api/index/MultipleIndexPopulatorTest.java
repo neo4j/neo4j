@@ -345,7 +345,7 @@ class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.cancel();
 
-        verify( indexStatisticsStore, times( 2 ) ).replaceStats( anyLong(), eq( 0L ), eq( 0L ), eq( 0L ) );
+        verify( indexStatisticsStore, times( 2 ) ).replaceStats( anyLong(), eq( new IndexSample( 0, 0, 0 ) ) );
         verify( indexPopulator1 ).close( false );
         verify( indexPopulator2 ).close( false );
     }
@@ -373,7 +373,7 @@ class MultipleIndexPopulatorTest
 
         verify( indexPopulator2 ).close( true );
         verify( indexPopulator2 ).sampleResult();
-        verify( indexStatisticsStore ).replaceStats( anyLong(), anyLong(), anyLong(), anyLong() );
+        verify( indexStatisticsStore ).replaceStats( anyLong(), any() );
         verify( schemaState ).clear();
     }
 
@@ -479,6 +479,33 @@ class MultipleIndexPopulatorTest
         // then
         verify( indexPopulator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( indexPopulator ).close( true );
+    }
+
+    @Test
+    void shouldIncludeIndexSampleUpdatesInStatsOnFlip()
+    {
+        IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
+        FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
+        FlippableIndexProxy flipper = new FlippableIndexProxy();
+        flipper.setFlipTarget( indexProxyFactory );
+
+        IndexPopulator indexPopulator = createIndexPopulator();
+        addPopulator( indexPopulator, 1, flipper, failedIndexProxyFactory );
+
+        int indexSize = 100;
+        int uniqueValues = 110;
+        int sampleSize = 120;
+        int updates = 130;
+        IndexSample sample = new IndexSample( indexSize, uniqueValues, sampleSize, updates );
+        when( indexPopulator.sampleResult() ).thenReturn( sample );
+
+        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.flipAfterPopulation( false );
+
+        verify( indexPopulator ).close( true );
+
+        verify( indexStatisticsStore ).replaceStats( 1, sample );
+        verify( schemaState ).clear();
     }
 
     private static IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )

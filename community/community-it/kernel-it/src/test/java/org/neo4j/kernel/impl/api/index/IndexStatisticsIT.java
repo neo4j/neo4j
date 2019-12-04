@@ -37,6 +37,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -171,7 +172,7 @@ class IndexStatisticsIT
 
     private void resetIndexCounts( long indexId )
     {
-        indexStatistics().replaceStats( indexId, 0, 0, 0 );
+        indexStatistics().replaceStats( indexId, new IndexSample( 0, 0, 0 ) );
     }
 
     private <T> T resolveDependency( Class<T> clazz )

@@ -54,6 +54,7 @@ class OnlineIndexSamplingJobTest
 
     private final long indexUniqueValues = 21L;
     private final long indexSize = 23L;
+    private final IndexSample sample = new IndexSample( indexSize, indexUniqueValues, indexSize );
 
     @BeforeEach
     void setup() throws IndexNotFoundKernelException
@@ -61,7 +62,7 @@ class OnlineIndexSamplingJobTest
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         when( indexReader.createSampler() ).thenReturn( indexSampler );
-        when( indexSampler.sampleIndex() ).thenReturn( new IndexSample( indexSize, indexUniqueValues, indexSize ) );
+        when( indexSampler.sampleIndex() ).thenReturn( sample );
     }
 
     @Test
@@ -75,7 +76,7 @@ class OnlineIndexSamplingJobTest
         job.run();
 
         // then
-        verify( indexStatisticsStore ).replaceStats( indexId, indexUniqueValues, indexSize, indexSize );
+        verify( indexStatisticsStore ).replaceStats( indexId, sample );
         verifyNoMoreInteractions( indexStatisticsStore );
     }
 

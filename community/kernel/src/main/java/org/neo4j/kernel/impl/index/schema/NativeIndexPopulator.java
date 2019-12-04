@@ -296,6 +296,11 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
             return uniqueSampler.result();
         }
+        return buildNonUniqueIndexSample();
+    }
+
+    IndexSample buildNonUniqueIndexSample()
+    {
         return new FullScanNonUniqueIndexSampler<>( tree, layout ).result();
     }
 }

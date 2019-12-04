@@ -42,6 +42,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
@@ -63,6 +64,7 @@ import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.test.Race.throwing;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @ActorsExtension
@@ -349,6 +351,37 @@ class BlockBasedIndexPopulatorTest
                 populator.close( true );
             }
         }
+    }
+
+    @Test
+    void shouldBuildNonUniqueSampleAsPartOfScanCompleted() throws IndexEntryConflictException
+    {
+        // given
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory );
+        Collection<IndexEntryUpdate<?>> populationUpdates = batchOfUpdates();
+        populator.add( populationUpdates );
+
+        // when
+        populator.scanCompleted( nullInstance );
+        // Also a couple of updates afterwards
+        int numberOfUpdatesAfterCompleted = 4;
+        try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+        {
+            for ( int i = 0; i < numberOfUpdatesAfterCompleted; i++ )
+            {
+                updater.process( IndexEntryUpdate.add( 10_000 + i, SCHEMA_DESCRIPTOR, intValue( i ) ) );
+            }
+        }
+        populator.close( true );
+
+        // then
+        IndexSample sample = populator.sampleResult();
+        assertEquals( populationUpdates.size(), sample.indexSize() );
+        assertEquals( populationUpdates.size(), sample.sampleSize() );
+        assertEquals( populationUpdates.size(), sample.uniqueValues() );
+        assertEquals( numberOfUpdatesAfterCompleted, sample.updates() );
     }
 
     private void externalUpdates( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, int firstId, int lastId )

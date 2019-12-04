@@ -87,13 +87,13 @@ class IndexStatisticsStoreTest
         long indexId = 4;
 
         // when
-        store.replaceStats( indexId, 123, 456, 0, 0 );
+        store.replaceStats( indexId, new IndexSample( 456, 123, 456, 3 ) );
 
         // then
         assertSample( 123, 456, store.indexSample( indexId ) );
 
         // and when
-        store.replaceStats( indexId, 444, 555, 0, 0 );
+        store.replaceStats( indexId, new IndexSample( 555, 444, 550, 0 ) );
 
         // then
         assertSample( 444, 555, store.indexSample( indexId ) );
@@ -106,13 +106,13 @@ class IndexStatisticsStoreTest
         long indexId = 4;
 
         // when
-        store.replaceStats( indexId, 0, 0, 123, 456 );
+        store.replaceStats( indexId, new IndexSample( 456, 450, 456, 123 ) );
 
         // then
         assertUpdatesInfo( 123, 456, store.indexUpdatesAndSize( indexId ) );
 
         // and when
-        store.replaceStats( indexId, 0, 0, 444, 555 );
+        store.replaceStats( indexId, new IndexSample( 555, 554, 554, 444 ) );
 
         // then
         assertUpdatesInfo( 444, 555, store.indexUpdatesAndSize( indexId ) );
@@ -123,13 +123,16 @@ class IndexStatisticsStoreTest
     {
         // given
         long indexId = 4;
-        store.replaceStats( indexId, 0, 0, 123, 456 );
+        int initialUpdates = 123;
+        int indexSize = 456;
+        store.replaceStats( indexId, new IndexSample( indexSize, 5, 200, initialUpdates ) );
 
         // when
-        store.incrementIndexUpdates( indexId, 5 );
+        int addedUpdates = 5;
+        store.incrementIndexUpdates( indexId, addedUpdates );
 
         // then
-        assertUpdatesInfo( 123 + 5, 456, store.indexUpdatesAndSize( indexId ) );
+        assertUpdatesInfo( initialUpdates + addedUpdates, indexSize, store.indexUpdatesAndSize( indexId ) );
     }
 
     @Test
@@ -138,17 +141,17 @@ class IndexStatisticsStoreTest
         // given
         long indexId1 = 1;
         long indexId2 = 2;
-        store.replaceStats( indexId1, 100, 200, 15, 20 );
-        store.replaceStats( indexId2, 200, 300, 25, 35 );
+        store.replaceStats( indexId1, new IndexSample( 500, 100, 200, 25 ) );
+        store.replaceStats( indexId2, new IndexSample( 501, 101, 201, 26 ) );
 
         // when
         restartStore();
 
         // then
-        assertUpdatesInfo( 15, 20, store.indexUpdatesAndSize( indexId1 ) );
-        assertUpdatesInfo( 25, 35, store.indexUpdatesAndSize( indexId2 ) );
+        assertUpdatesInfo( 25, 500, store.indexUpdatesAndSize( indexId1 ) );
+        assertUpdatesInfo( 26, 501, store.indexUpdatesAndSize( indexId2 ) );
         assertSample( 100, 200, store.indexSample( indexId1 ) );
-        assertSample( 200, 300, store.indexSample( indexId2 ) );
+        assertSample( 101, 201, store.indexSample( indexId2 ) );
     }
 
     private void restartStore() throws IOException
@@ -168,7 +171,7 @@ class IndexStatisticsStoreTest
         Race race = new Race();
         int contestants = 20;
         int delta = 3;
-        store.replaceStats( indexId, 0, 0, 0 );
+        store.replaceStats( indexId, new IndexSample( 0, 0, 0 ) );
         race.addContestants( contestants, () -> store.incrementIndexUpdates( indexId, delta ), 1 );
 
         // when
@@ -200,7 +203,7 @@ class IndexStatisticsStoreTest
         for ( int i = 0; i < indexes; i++ )
         {
             int indexId = i;
-            store.replaceStats( indexId, 0, 0, 0 );
+            store.replaceStats( indexId, new IndexSample( 0, 0, 0 ) );
             race.addContestants( contestantsPerIndex, () ->
             {
                 while ( !checkpointDone.get() )
@@ -239,7 +242,7 @@ class IndexStatisticsStoreTest
     @Test
     void shouldNotReplaceStatsIfReadOnly() throws IOException
     {
-        assertOperationThrowInReadOnlyMode( iss -> () -> iss.replaceStats( 1, 1, 1, 1 ) );
+        assertOperationThrowInReadOnlyMode( iss -> () -> iss.replaceStats( 1, new IndexSample( 1, 1, 1 ) ) );
     }
 
     @Test

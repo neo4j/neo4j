@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsValue.EMPTY_STATISTICS;
 
@@ -109,20 +108,14 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public IndexSample indexSample( long indexId )
     {
         IndexStatisticsValue value = cache.getOrDefault( new IndexStatisticsKey( indexId ), EMPTY_STATISTICS );
-        return new IndexSample( value.getIndexSize(), value.getSampleUniqueValues(), value.getSampleSize() );
+        return new IndexSample( value.getIndexSize(), value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount() );
     }
 
-    public void replaceStats( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long indexSize )
-    {
-        replaceStats( indexId, numberOfUniqueValuesInSample, sampleSize, 0, indexSize );
-    }
-
-    @VisibleForTesting
-    void replaceStats( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long updatesCount, long indexSize )
+    public void replaceStats( long indexId, IndexSample sample )
     {
         assertNotReadOnly();
         IndexStatisticsKey key = new IndexStatisticsKey( indexId );
-        IndexStatisticsValue value = new IndexStatisticsValue( numberOfUniqueValuesInSample, sampleSize, updatesCount, indexSize );
+        IndexStatisticsValue value = new IndexStatisticsValue( sample.uniqueValues(), sample.sampleSize(), sample.updates(), sample.indexSize() );
         cache.put( key, value );
     }
 
