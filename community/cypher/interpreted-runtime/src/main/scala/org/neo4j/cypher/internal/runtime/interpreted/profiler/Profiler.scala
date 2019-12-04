@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.common.Edition
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext}
-import org.neo4j.cypher.internal.v4_0.util.AssertionRunner
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
@@ -55,11 +55,8 @@ class Profiler(databaseInfo: DatabaseInfo,
 
   private def stopAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, id: Id): Unit = {
     val head :: rest = planIdStack
-    if (AssertionRunner.isAssertionsEnabled) {
-      if (head != id) {
-        throw new IllegalStateException(s"We messed up accounting the page cache statistics. Expected to pop $id but popped $head. Remaining stack: $planIdStack")
-      }
-    }
+    require(head != id,
+            s"We messed up accounting the page cache statistics. Expected to pop $id but popped $head. Remaining stack: $planIdStack")
 
     val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
     stats.pageCacheMap(id) += (currentStats - lastObservedStats)

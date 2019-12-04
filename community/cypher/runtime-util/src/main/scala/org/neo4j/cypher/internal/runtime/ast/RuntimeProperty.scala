@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
+import java.lang.reflect.Method
+
+import org.neo4j.cypher.internal.Require.require
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalProperty, PropertyKeyName}
-import org.neo4j.cypher.internal.v4_0.util.AssertionUtils.ifAssertionsEnabled
 import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewritable}
-import org.neo4j.exceptions.InternalException
 
 abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression{
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
@@ -38,15 +39,16 @@ abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalPropert
     val constructor = Rewritable.copyConstructor(this)
     val args = children.toVector
 
-    ifAssertionsEnabled {
-      val params = constructor.getParameterTypes
-      val ok = params.length == args.length + 1 && classOf[LogicalProperty].isAssignableFrom(params.last)
-      if (!ok)
-        throw new InternalException(s"Unexpected rewrite children $children")
-    }
+    require(allRewritten(children, constructor, args), s"Unexpected rewrite children $children")
+
 
     val ctorArgs = args :+ prop // Add the original Property expression
     val duped = constructor.invoke(this, ctorArgs: _*)
     duped.asInstanceOf[this.type]
+  }
+
+  private def allRewritten(children: scala.Seq[AnyRef], constructor: Method, args: Vector[AnyRef]): Boolean = {
+    val params = constructor.getParameterTypes
+    params.length == args.length + 1 && classOf[LogicalProperty].isAssignableFrom(params.last)
   }
 }

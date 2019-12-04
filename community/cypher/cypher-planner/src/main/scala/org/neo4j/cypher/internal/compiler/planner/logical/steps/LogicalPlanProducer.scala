@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.Require
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.planner._
@@ -32,8 +33,8 @@ import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
-import org.neo4j.cypher.internal.v4_0.util.{AssertionRunner, InputPosition}
 import org.neo4j.exceptions.{ExhaustiveShortestPathForbiddenException, InternalException}
 
 /*
@@ -1000,7 +1001,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     * There probably exists some type level way of achieving this with type safety instead of manually searching through the expression tree like this
     */
   private def assertNoBadExpressionsExists(root: Any): Unit = {
-    AssertionRunner.runUnderAssertion(() => new FoldableAny(root).treeExists {
+    Require.require( !new FoldableAny(root).treeExists {
       case _: PatternComprehension | _: PatternExpression | _: MapProjection =>
         throw new InternalException(s"This expression should not be added to a logical plan:\n$root")
       case _ =>
