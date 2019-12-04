@@ -19,13 +19,9 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import java.lang.Math.abs
-import java.lang.Math.max
+import java.lang.Math.{abs, max}
 
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.RelTypeId
-import org.neo4j.cypher.internal.v4_0.util.Selectivity
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 
 import scala.collection.mutable
 
@@ -39,6 +35,9 @@ case class IndexPropertyExistsSelectivity(index: IndexDescriptor) extends Statis
 class MutableGraphStatisticsSnapshot(val map: mutable.Map[StatisticsKey, Double] = mutable.Map.empty) {
   def freeze: GraphStatisticsSnapshot = GraphStatisticsSnapshot(map.toMap)
 }
+
+
+case class DivergenceState(key:StatisticsKey, divergence: Double, before: Double, after: Double)
 
 case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map.empty) {
   def recompute(statistics: GraphStatistics): GraphStatisticsSnapshot = {
@@ -59,18 +58,16 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
     snapshot.freeze
   }
 
-  //A plan has diverged if there is a relative change in any of the
-  //statistics that is bigger than the threshold
-  def diverges(snapshot: GraphStatisticsSnapshot, minThreshold: Double): Boolean = {
+  def diverges(snapshot: GraphStatisticsSnapshot): DivergenceState = {
     assert(statsValues.keySet == snapshot.statsValues.keySet)
     //find the maximum relative difference (|e1 - e2| / max(e1, e2))
-    val divergedStats = (statsValues map {
+    val (divergedStats, divergedStatKey, before, after) = (statsValues map {
       case (k, e1) =>
         val e2 = snapshot.statsValues(k)
         val divergence = abs(e1 - e2) / max(e1, e2)
-        if (divergence.isNaN) 0 else divergence
-    }).max
-    divergedStats > minThreshold
+        if (divergence.isNaN) (0.0, k, e1, e2) else (divergence, k, e1, e2)
+    }).maxBy(_._1)
+    DivergenceState(divergedStatKey, divergedStats, before, after)
   }
 }
 

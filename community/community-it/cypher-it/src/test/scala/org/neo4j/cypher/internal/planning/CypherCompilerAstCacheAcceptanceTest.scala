@@ -99,7 +99,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit = {
+    override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
 
@@ -303,8 +303,12 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
+    val dogId = graph.withTx(tx => tokenReader(tx, _.nodeLabel("Dog")))
+
     logProvider.assertExactly(
-      inLog(logName).debug(s"Discarded stale plan from the plan cache after 0 seconds: $query")
+      inLog(logName).debug(s"Discarded stale plan from the plan cache after 0 seconds. " +
+                             s"Reason: NodesWithLabelCardinality(Some(LabelId($dogId))) changed from 10.0 to 1001.0, " +
+                             s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Metadata: $query")
     )
   }
 

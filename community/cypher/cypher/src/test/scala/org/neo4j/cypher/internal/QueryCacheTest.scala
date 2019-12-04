@@ -103,7 +103,7 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache.executableQuery.recompiled should equal(false)
 
     verify(tracer, times(2)).queryCacheMiss(key, "")
-    verify(tracer).queryCacheStale(key, secondsSinceReplan, "")
+    verify(tracer).queryCacheStale(key, secondsSinceReplan, "", None)
     verifyNoMoreInteractions(tracer)
   }
 
@@ -181,7 +181,7 @@ class QueryCacheTest extends CypherFunSuite {
 
   private def alwaysStale(seconds: Int): PlanStalenessCaller[MyValue] = {
     val stalenessCaller: PlanStalenessCaller[MyValue] = mock[PlanStalenessCaller[MyValue]]
-    when(stalenessCaller.staleness(any[TransactionalContext], any[MyValue])).thenReturn(Stale(seconds))
+    when(stalenessCaller.staleness(any[TransactionalContext], any[MyValue])).thenReturn(Stale(seconds, None))
     stalenessCaller
   }
 

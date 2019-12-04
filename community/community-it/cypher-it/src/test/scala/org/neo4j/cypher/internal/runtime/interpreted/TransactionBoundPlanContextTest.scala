@@ -231,7 +231,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit) = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
-    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
+    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger, null)
 
     try {
       f(planContext, tx)

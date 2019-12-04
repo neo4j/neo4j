@@ -76,8 +76,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
-    override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], query: String, secondsSinceReplan: Int) {
-      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds: $query")
+    override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], query: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
+      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds${maybeReason.fold("")(r => s". Reason: $r")}. Query: $query")
     }
   })
 
@@ -85,7 +85,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     new PlanStalenessCaller[ExecutableQuery](clock,
                                              config.statsDivergenceCalculator,
                                              lastCommittedTxIdProvider,
-                                             planReusabilitiy)
+                                             planReusabilitiy,
+                                             log)
+
 
   private val toStringCacheTracer: CacheTracer[Pair[AnyRef, ParameterTypeMap]] = new CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
     private def str(p: Pair[AnyRef, ParameterTypeMap]): Pair[String, ParameterTypeMap] =
@@ -100,8 +102,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     override def queryCacheRecompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
       cacheTracer.queryCacheRecompile(str(queryKey), metaData)
 
-    override def queryCacheStale(queryKey: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit =
-      cacheTracer.queryCacheStale(str(queryKey), secondsSincePlan, metaData)
+    override def queryCacheStale(queryKey: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
+      cacheTracer.queryCacheStale(str(queryKey), secondsSincePlan, metaData, maybeReason)
 
     override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
       cacheTracer.queryCacheFlush(sizeOfCacheBeforeFlush)

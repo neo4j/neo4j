@@ -49,7 +49,7 @@ trait CacheTracer[QUERY_KEY] {
 
   def queryCacheRecompile(queryKey: QUERY_KEY, metaData: String): Unit
 
-  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String): Unit
+  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit
 
   def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit
 }
@@ -161,8 +161,9 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
 
                 hit(queryKey, newCachedValue, metaData)
               }
-            case Stale(secondsSincePlan) =>
-              tracer.queryCacheStale(queryKey, secondsSincePlan, metaData)
+            case Stale(secondsSincePlan, maybeReason) =>
+              tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
+
               compileAndCache(queryKey, tc, compile, metaData)
           }
       }

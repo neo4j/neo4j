@@ -43,15 +43,21 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
                                                override val tracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]],
                                                clock: Clock,
                                                divergence: StatsDivergenceCalculator,
-                                               lastCommittedTxIdProvider: () => Long
-) extends QueryCache[STATEMENT,Pair[STATEMENT,ParameterTypeMap], CacheableLogicalPlan](maximumSize,
-                                                  AstLogicalPlanCache.stalenessCaller(clock, divergence, lastCommittedTxIdProvider),
-                                                  tracer) {
+                                               lastCommittedTxIdProvider: () => Long,
+                                               log: Log)
+  extends QueryCache[STATEMENT, Pair[STATEMENT, ParameterTypeMap],
+    CacheableLogicalPlan](maximumSize,
+                          AstLogicalPlanCache.stalenessCaller(clock,
+                                                              divergence,
+                                                              lastCommittedTxIdProvider,
+                                                              log),
+                          tracer) {
 
   def logStalePlanRemovalMonitor(log: Log): CacheTracer[STATEMENT] =
     new CacheTracer[STATEMENT] {
-      override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String) {
-        log.debug(s"Discarded stale plan from the plan cache after $secondsSinceReplan seconds: $metaData")
+      override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String, maybeReason: Option[String]) {
+        log.debug(s"Discarded stale plan from the plan cache after $secondsSinceReplan " +
+                    s"seconds${maybeReason.fold("")(r => s". Reason: $r")}. Metadata: $metaData")
       }
 
       override def queryCacheHit(queryKey: STATEMENT, metaData: String): Unit = {}
@@ -67,8 +73,9 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
 object AstLogicalPlanCache {
   def stalenessCaller(clock: Clock,
                       divergence: StatsDivergenceCalculator,
-                      txIdProvider: () => Long): PlanStalenessCaller[CacheableLogicalPlan] = {
-    new PlanStalenessCaller[CacheableLogicalPlan](clock, divergence, txIdProvider, (state, _) => state.reusability)
+                      txIdProvider: () => Long,
+                      log: Log): PlanStalenessCaller[CacheableLogicalPlan] = {
+    new PlanStalenessCaller[CacheableLogicalPlan](clock, divergence, txIdProvider, (state, _) => state.reusability, log)
   }
 }
 

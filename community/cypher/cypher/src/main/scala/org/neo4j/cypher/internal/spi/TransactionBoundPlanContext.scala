@@ -33,15 +33,17 @@ import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.{ConstraintDescriptor, IndexLimitation, IndexOrder, IndexType, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueCategory
 
 import scala.collection.JavaConverters._
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper,
-            logger: InternalNotificationLogger): TransactionBoundPlanContext = {
+            logger: InternalNotificationLogger,
+            log: Log): TransactionBoundPlanContext = {
 
-    val statistics = TransactionBoundGraphStatistics(tc.dataRead, tc.schemaRead)
+    val statistics = TransactionBoundGraphStatistics(tc.dataRead, tc.schemaRead, log)
 
     new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(statistics, new MutableGraphStatisticsSnapshot()))
   }

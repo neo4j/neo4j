@@ -309,7 +309,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
       val transactionalContext = TransactionalContextWrapper(transactionContext(graph, tx))
-      val ctx = TransactionBoundPlanContext(transactionalContext, devNullLogger)
+      val ctx = TransactionBoundPlanContext(transactionalContext, devNullLogger, null)
       val literal = Literal(42)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get
@@ -326,7 +326,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def indexScan(graph: GraphDatabaseQueryService): NodeIndexScanPipe = {
     graph.withTx { tx =>
       val transactionalContext = TransactionalContextWrapper(transactionContext(graph, tx))
-      val ctx = TransactionBoundPlanContext(transactionalContext, devNullLogger)
+      val ctx = TransactionBoundPlanContext(transactionalContext, devNullLogger, null)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get
       val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get

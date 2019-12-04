@@ -29,7 +29,7 @@ class PlanCacheMetricsMonitor extends StringCacheMonitor {
   private val counter = new AtomicLong()
   private val waitTime = new AtomicLong()
 
-  override def cacheDiscard(ignored1: Pair[String, ParameterTypeMap], ignored2: String, secondsSinceReplan: Int): Unit = {
+  override def cacheDiscard(ignored1: Pair[String, ParameterTypeMap], ignored2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {
     counter.incrementAndGet()
     waitTime.addAndGet(secondsSinceReplan)
   }

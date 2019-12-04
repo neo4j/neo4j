@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import scala.Option;
+import scala.collection.immutable.Map;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -530,8 +532,8 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         }
 
         @Override
-        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key, String userKey,
-                int secondsSinceReplan )
+        public void cacheDiscard( Pair<String,Map<String,Class<?>>> key, String userKey, int secondsSinceReplan,
+                Option<String> maybeReason )
         {
         }
 

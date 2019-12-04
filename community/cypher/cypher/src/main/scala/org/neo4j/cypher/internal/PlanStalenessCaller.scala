@@ -25,19 +25,21 @@ import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.logging.Log
 
 /**
   * Decides whether a plan is stale or not, depending on it's fingerprint.
   *
   * @param clock Clock for measuring elapsed time.
-  * @param divergence Computes is the plan i stale depending on changes in the underlying
+  * @param divergenceCalculator Computes is the plan i stale depending on changes in the underlying
   *                   statistics, and how much time has passed.
   * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
   */
 class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
-                                            divergence: StatsDivergenceCalculator,
+                                            divergenceCalculator: StatsDivergenceCalculator,
                                             lastCommittedTxIdProvider: () => Long,
-                                            reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState) {
+                                            reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
+                                            log: Log) {
 
   def staleness(transactionalContext: TransactionalContext,
                 cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
@@ -45,10 +47,10 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
     reusability match {
       case MaybeReusable(ref) =>
         val ktx = transactionalContext.kernelTransaction()
-        staleness(ref, TransactionBoundGraphStatistics(ktx.dataRead, ktx.schemaRead))
+        staleness(ref, TransactionBoundGraphStatistics(ktx.dataRead, ktx.schemaRead, log))
 
       case FineToReuse => NotStale
-      case NeedsReplan(x) => Stale(x)
+      case NeedsReplan(x) => Stale(x, None)
     }
   }
 
@@ -60,24 +62,24 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
     // because for us to plan a query this tx has to be open, e.g. not committed.
     lazy val currentTxId = lastCommittedTxIdProvider()
 
-    val stale = divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
-      check(currentTxId != f.txId,
-            () => {
-              ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis)
-            }) &&
-      check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
-            () => {
-              ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId)
-            })
-
-    if(stale) {
-      val secondsSinceReplan = ((currentTimeMillis - f.creationTimeMillis) / 1000).toInt
-      Stale(secondsSinceReplan)
-    } else
+    if (divergenceCalculator.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) && currentTxId != f.txId) {
+      //check if we have diverged?
+      val threshold = divergenceCalculator.decay(currentTimeMillis - f.creationTimeMillis)
+      val divergence = f.snapshot.diverges(f.snapshot.recompute(statistics))
+      if (divergence.divergence > threshold) {
+        Stale(((currentTimeMillis - f.creationTimeMillis) / 1000).toInt,
+              Option(s"${divergence.key} changed from ${divergence.before} to ${divergence.after}, " +
+                       s"which is a divergence of ${divergence.divergence} which is greater than " +
+                       s"threshold $threshold"))
+      } else {
+        ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId)
+        NotStale
+      }
+    } else {
+      ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis)
       NotStale
+    }
   }
-
-  private def check(test: => Boolean, ifFalse: () => Unit ) = if (test) { true } else { ifFalse() ; false }
 }
 
 sealed trait ReusabilityState
@@ -87,4 +89,4 @@ case object FineToReuse extends ReusabilityState
 
 sealed trait Staleness
 case object NotStale extends Staleness
-case class Stale(secondsSincePlan: Int) extends Staleness
+case class Stale(secondsSincePlan: Int, maybeReason: Option[String]) extends Staleness

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import scala.Option;
 import scala.collection.immutable.Map;
 
 import org.neo4j.cypher.internal.CacheTracer;
@@ -56,9 +57,10 @@ public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.coll
     }
 
     @Override
-    public void queryCacheStale( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, int secondsSincePlan, String metaData )
+    public void queryCacheStale( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, int secondsSincePlan, String metaData,
+                                 Option<String> maybeReason )
     {
-        monitor.cacheDiscard( queryKey, metaData, secondsSincePlan );
+        monitor.cacheDiscard( queryKey, metaData, secondsSincePlan, maybeReason );
     }
 
     @Override

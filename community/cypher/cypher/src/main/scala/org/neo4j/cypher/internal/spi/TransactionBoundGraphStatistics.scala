@@ -28,16 +28,19 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.{Read, SchemaRead, TokenRead}
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.logging.Log
 
 object TransactionBoundGraphStatistics {
-  def apply(transactionalContext: TransactionalContext): MinimumGraphStatistics =
-    apply(transactionalContext.kernelTransaction().dataRead(), transactionalContext.kernelTransaction().schemaRead())
+  def apply(transactionalContext: TransactionalContext, log: Log): MinimumGraphStatistics =
+    apply(transactionalContext.kernelTransaction().dataRead(),
+          transactionalContext.kernelTransaction().schemaRead(),
+          log)
 
-  def apply(read: Read, schemaRead: SchemaRead): MinimumGraphStatistics = {
-    new MinimumGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))
+  def apply(read: Read, schemaRead: SchemaRead, log: Log): MinimumGraphStatistics = {
+    new MinimumGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead, log))
   }
 
-  private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead) extends GraphStatistics with IndexDescriptorCompatibility {
+  private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead, log: Log) extends GraphStatistics with IndexDescriptorCompatibility {
 
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
@@ -62,7 +65,9 @@ object TransactionBoundGraphStatistics {
         }
       }
       catch {
-        case _: IndexNotFoundKernelException => None
+        case e: IndexNotFoundKernelException =>
+          log.debug("Index not found for uniqueValueSelectivity", e)
+          None
       }
 
     override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
@@ -83,7 +88,9 @@ object TransactionBoundGraphStatistics {
         }
       }
       catch {
-        case _: IndexNotFoundKernelException => None
+        case e: IndexNotFoundKernelException =>
+          log.debug("Index not found for indexPropertyExistsSelectivity", e)
+          None
       }
 
     override def nodesAllCardinality(): Cardinality =

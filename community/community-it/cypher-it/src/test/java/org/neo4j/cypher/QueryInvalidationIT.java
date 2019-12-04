@@ -21,6 +21,7 @@ package org.neo4j.cypher;
 
 import org.junit.Rule;
 import org.junit.Test;
+import scala.Option;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -215,7 +216,8 @@ public class QueryInvalidationIT
         }
 
         @Override
-        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key, String ignored, int secondsSinceReplan )
+        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key, String ignored, int secondsSinceReplan,
+                                  Option<String> maybeReason )
         {
             discards.incrementAndGet();
             waitTime.addAndGet( secondsSinceReplan );

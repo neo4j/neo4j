@@ -38,8 +38,8 @@ import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalNotification}
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalNotification}
 import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.exceptions.{DatabaseAdministrationException, Neo4jException, SyntaxException}
 import org.neo4j.internal.helpers.collection.Pair
@@ -55,7 +55,7 @@ object CypherPlanner {
     * This back-door is intended for quick handling of bugs and support cases
     * where we need to inject some specific indexes and statistics.
     */
-  var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger) => PlanContext] = None
+  var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger, Log) => PlanContext] = None
 }
 
 /**
@@ -78,10 +78,11 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
   private val planCache: AstLogicalPlanCache[Statement] =
     new AstLogicalPlanCache(config.queryCacheSize,
-      cacheTracer,
-      clock,
-      config.statsDivergenceCalculator,
-      txIdProvider)
+                            cacheTracer,
+                            clock,
+                            config.statsDivergenceCalculator,
+                            txIdProvider,
+                            log)
 
   monitors.addMonitorListener(planCache.logStalePlanRemovalMonitor(log), "cypher")
 
@@ -208,7 +209,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
     // Context used for db communication during planning
     val createPlanContext = CypherPlanner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
-    val planContext = new ExceptionTranslatingPlanContext(createPlanContext(transactionalContextWrapper, notificationLogger))
+    val planContext = new ExceptionTranslatingPlanContext(createPlanContext(transactionalContextWrapper, notificationLogger, log))
 
     // Context used to create logical plans
     val logicalPlanIdGen = new SequentialIdGen()
@@ -344,7 +345,7 @@ trait CypherCacheHitMonitor[T] {
 
   def cacheMiss(key: T) {}
 
-  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
+  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int, maybeReason: Option[String]) {}
 
   def cacheRecompile(key: T) {}
 }
