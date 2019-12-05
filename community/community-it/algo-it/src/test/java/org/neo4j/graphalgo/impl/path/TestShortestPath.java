@@ -50,8 +50,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -540,8 +539,8 @@ class TestShortestPath extends Neo4jAlgoTestCase
             final Node start = graph.getNode( transaction, "start" );
             final Node end = graph.getNode( transaction, "end" );
             var context = new BasicEvaluationContext( transaction, graphDb );
-            assertThat( new ShortestPath( context, 2, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
-            assertThat( new ShortestPath( context, 3, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
+            assertThat( new ShortestPath( context, 2, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length() ).isEqualTo( 2 );
+            assertThat( new ShortestPath( context, 3, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length() ).isEqualTo( 2 );
             transaction.commit();
         }
     }
