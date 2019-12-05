@@ -31,8 +31,7 @@ import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
@@ -71,7 +70,7 @@ class TestNoFileDescriptorLeaks
         // THEN
         long finalFDs = OsBeanUtil.getOpenFileDescriptors();
         long upperBoundFDs = initialFDs + 50; // allow some slack
-        assertThat( finalFDs, lessThan( upperBoundFDs ) );
+        assertThat( finalFDs ).isLessThan( upperBoundFDs );
     }
 
     private void cycleMerge( int iterations )

@@ -27,8 +27,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.memory.EmptyMemoryTracker;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,7 +50,7 @@ class LargePageListIT
         PageList pageList = new PageList( pages, pageSize, mman, swappers, victimPage, Long.BYTES );
 
         // Verify we end up with the correct number of pages.
-        assertThat( pageList.getPageCount(), is( pages ) );
+        assertThat( pageList.getPageCount() ).isEqualTo( pages );
 
         // Spot-check the accessibility in the bulk of the pages.
         IntStream.range( 0, pages / 32 ).parallel().forEach( id -> verifyPageMetaDataIsAccessible( pageList, id * 32 ) );

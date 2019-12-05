@@ -41,10 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasItem;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,7 +62,7 @@ class DefaultFileSystemWatcherTest
         DefaultFileSystemWatcher watcher = createWatcher();
 
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> watcher.watch( new File( "notADirectory" ) ) );
-        assertThat( exception.getMessage(), containsString( "Only directories can be registered to be monitored." ) );
+        assertThat( exception.getMessage() ).contains( "Only directories can be registered to be monitored." );
     }
 
     @Test
@@ -298,19 +295,18 @@ class DefaultFileSystemWatcherTest
 
         void assertNoEvents()
         {
-            assertThat( "Should not have any deletion events", deletedFileNames, empty() );
-            assertThat( "Should not have any modification events", modifiedFileNames, empty() );
+            assertThat( deletedFileNames ).as( "Should not have any deletion events" ).isEmpty();
+            assertThat( modifiedFileNames ).as( "Should not have any modification events" ).isEmpty();
         }
 
         void assertDeleted( String fileName )
         {
-            assertThat( "Was expected to find notification about deletion.", deletedFileNames, hasItem( fileName ) );
+            assertThat( deletedFileNames ).as( "Was expected to find notification about deletion." ).contains( fileName );
         }
 
         void assertModified( String fileName )
         {
-            assertThat( "Was expected to find notification about modification.", modifiedFileNames,
-                    hasItem( fileName ) );
+            assertThat( modifiedFileNames ).as( "Was expected to find notification about modification." ).contains( fileName );
         }
     }
 }

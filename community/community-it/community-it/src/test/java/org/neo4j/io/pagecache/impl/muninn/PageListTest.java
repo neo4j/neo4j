@@ -54,15 +54,8 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -140,18 +133,16 @@ public class PageListTest
         long victimPage = VictimPageReference.getVictimPage( pageSize );
 
         pageCount = 3;
-        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
-                is( pageCount ) );
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount() ).isEqualTo( pageCount );
 
         pageCount = 42;
-        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
-                is( pageCount ) );
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount() ).isEqualTo( pageCount );
     }
 
     @Test
     public void mustBeAbleToReversePageRedToPageId()
     {
-        assertThat( pageList.toId( pageRef ), is( pageId ) );
+        assertThat( pageList.toId( pageRef ) ).isEqualTo( pageId );
     }
 
     // xxx ---[ Sequence lock tests ]---
@@ -974,7 +965,7 @@ public class PageListTest
     public void disallowFlushLockedPageToExplicitlyLowerModifiedFlag()
     {
         pageList.unlockExclusive( pageRef );
-        assertThat( pageList.tryFlushLock( pageRef ), is( not( 0L ) ) );
+        assertThat( pageList.tryFlushLock( pageRef ) ).isNotEqualTo( 0L );
         pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
     }
 
@@ -1007,8 +998,8 @@ public class PageListTest
         pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         long flushStamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
-        assertThat( flushStamp, is( not( 0L ) ) );
-        assertThat( pageList.tryFlushLock( pageRef ), is( 0L ) );
+        assertThat( flushStamp ).isNotEqualTo( 0L );
+        assertThat( pageList.tryFlushLock( pageRef ) ).isEqualTo( 0L );
         pageList.unlockFlush( pageRef, flushStamp, true );
     }
 
@@ -1031,9 +1022,9 @@ public class PageListTest
     {
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         long stamp = pageList.tryFlushLock( pageRef );
-        assertThat( stamp, is( not( 0L ) ) );
+        assertThat( stamp ).isNotEqualTo( 0L );
         long secondStamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
-        assertThat( secondStamp, is( 0L ) );
+        assertThat( secondStamp ).isEqualTo( 0L );
         pageList.unlockFlush( pageRef, stamp, true );
     }
 
@@ -1042,8 +1033,8 @@ public class PageListTest
     {
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         long flushStamp = pageList.tryFlushLock( pageRef );
-        assertThat( flushStamp, is( not( 0L ) ) );
-        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ), is( 0L ) );
+        assertThat( flushStamp ).isNotEqualTo( 0L );
+        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ) ).isEqualTo( 0L );
         long readStamp = pageList.tryOptimisticReadLock( pageRef );
         assertTrue( pageList.validateReadLock( pageRef, readStamp ) );
     }
@@ -1052,7 +1043,7 @@ public class PageListTest
     public void unlockWriteAndTryTakeFlushLockMustReleaseWriteLockWhenFlushLockSucceeds()
     {
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
-        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ), is( not( 0L ) ) );
+        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ) ).isNotEqualTo( 0L );
         long readStamp = pageList.tryOptimisticReadLock( pageRef );
         assertTrue( pageList.validateReadLock( pageRef, readStamp ) );
     }
@@ -1063,7 +1054,7 @@ public class PageListTest
         assertFalse( pageList.isModified( pageRef ) );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         assertTrue( pageList.isModified( pageRef ) );
-        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ), is( not( 0L ) ) );
+        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ) ).isNotEqualTo( 0L );
         assertTrue( pageList.isModified( pageRef ) );
     }
 
@@ -1093,7 +1084,7 @@ public class PageListTest
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) ); // two write locks, now
         long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef ); // one flush, one write lock
-        assertThat( stamp, is( not( 0L ) ) );
+        assertThat( stamp ).isNotEqualTo( 0L );
         pageList.unlockWrite( pageRef ); // one flush, zero write locks
         assertTrue( pageList.isModified( pageRef ) );
         pageList.unlockFlush( pageRef, stamp, true ); // flush is successful, but had one overlapping writer
@@ -1105,7 +1096,7 @@ public class PageListTest
     {
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef ); // one flush lock
-        assertThat( stamp, is( not( 0L ) ) );
+        assertThat( stamp ).isNotEqualTo( 0L );
         assertTrue( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryWriteLock( pageRef ) ); // one flush and one write lock
         pageList.unlockFlush( pageRef, stamp, true ); // flush is successful, but have one overlapping writer
@@ -1118,7 +1109,7 @@ public class PageListTest
     {
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef ); // one flush lock
-        assertThat( stamp, is( not( 0L ) ) );
+        assertThat( stamp ).isNotEqualTo( 0L );
         assertTrue( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryWriteLock( pageRef ) ); // one flush and one write lock
         pageList.unlockWrite( pageRef ); // back to one flush lock
@@ -1153,9 +1144,9 @@ public class PageListTest
     {
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
-        assertThat( pageList.tryFlushLock( pageRef ), is( 0L ) );
+        assertThat( pageList.tryFlushLock( pageRef ) ).isEqualTo( 0L );
         pageList.unlockFlush( pageRef, stamp, true );
-        assertThat( pageList.tryFlushLock( pageRef ), is( not( 0L ) ) );
+        assertThat( pageList.tryFlushLock( pageRef ) ).isNotEqualTo( 0L );
     }
 
     @Test
@@ -1163,9 +1154,9 @@ public class PageListTest
     {
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
-        assertThat( pageList.tryFlushLock( pageRef ), is( 0L ) );
+        assertThat( pageList.tryFlushLock( pageRef ) ).isEqualTo( 0L );
         pageList.unlockFlush( pageRef, stamp, false );
-        assertThat( pageList.tryFlushLock( pageRef ), is( not( 0L ) ) );
+        assertThat( pageList.tryFlushLock( pageRef ) ).isNotEqualTo( 0L );
     }
 
     @Test
@@ -1197,13 +1188,13 @@ public class PageListTest
     {
         PageList list = new PageList( 0, 42, mman, swappers,
                 VictimPageReference.getVictimPage( 42 ), ALIGNMENT );
-        assertThat( list.getCachePageSize(), is( 42 ) );
+        assertThat( list.getCachePageSize() ).isEqualTo( 42 );
     }
 
     @Test
     public void addressesMustBeZeroBeforeInitialisation()
     {
-        assertThat( pageList.getAddress( pageRef ), is( 0L ) );
+        assertThat( pageList.getAddress( pageRef ) ).isEqualTo( 0L );
     }
 
     @Test
@@ -1213,27 +1204,27 @@ public class PageListTest
         pageList.initBuffer( pageRef );
         long resultingUsedMemory = mman.usedMemory();
         int allocatedMemory = (int) (resultingUsedMemory - initialUsedMemory);
-        assertThat( allocatedMemory, greaterThanOrEqualTo( pageSize ) );
-        assertThat( allocatedMemory, lessThanOrEqualTo( pageSize + ALIGNMENT ) );
+        assertThat( allocatedMemory ).isGreaterThanOrEqualTo( pageSize );
+        assertThat( allocatedMemory ).isLessThanOrEqualTo( pageSize + ALIGNMENT );
     }
 
     @Test
     public void addressMustNotBeZeroAfterInitialisation()
     {
         pageList.initBuffer( pageRef );
-        assertThat( pageList.getAddress( pageRef ), is( not( equalTo( 0L ) ) ) );
+        assertThat( pageList.getAddress( pageRef ) ).isNotEqualTo( 0L );
     }
 
     @Test
     public void pageListMustBeCopyableViaConstructor()
     {
-        assertThat( pageList.getAddress( pageRef ), is( equalTo( 0L ) ) );
+        assertThat( pageList.getAddress( pageRef ) ).isEqualTo( 0L );
         PageList pl = new PageList( pageList );
-        assertThat( pl.getAddress( pageRef ), is( equalTo( 0L ) ) );
+        assertThat( pl.getAddress( pageRef ) ).isEqualTo( 0L );
 
         pageList.initBuffer( pageRef );
-        assertThat( pageList.getAddress( pageRef ), is( not( equalTo( 0L ) ) ) );
-        assertThat( pl.getAddress( pageRef ), is( not( equalTo( 0L ) ) ) );
+        assertThat( pageList.getAddress( pageRef ) ).isNotEqualTo( 0L );
+        assertThat( pl.getAddress( pageRef ) ).isNotEqualTo( 0L );
     }
 
     @Test
@@ -1299,7 +1290,7 @@ public class PageListTest
     @Test
     public void filePageIdIsUnboundByDefault()
     {
-        assertThat( pageList.getFilePageId( pageRef ), is( PageCursor.UNBOUND_PAGE_ID ) );
+        assertThat( pageList.getFilePageId( pageRef ) ).isEqualTo( PageCursor.UNBOUND_PAGE_ID );
     }
 
     // xxx ---[ Page fault tests ]---
@@ -1354,7 +1345,7 @@ public class PageListTest
         pageList.fault( pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL );
 
         long address = pageList.getAddress( pageRef );
-        assertThat( address, is( not( 0L ) ) );
+        assertThat( address ).isNotEqualTo( 0L );
         for ( int i = 0; i < pageSize; i++ )
         {
             byte actualByteContents = UnsafeUtil.getByte( address + i );
@@ -1375,8 +1366,8 @@ public class PageListTest
         long filePageId = 42;
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
-        assertThat( pageList.getFilePageId( pageRef ), is( filePageId ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( swapperId ) );
+        assertThat( pageList.getFilePageId( pageRef ) ).isEqualTo( filePageId );
+        assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( swapperId );
         assertTrue( pageList.isLoaded( pageRef ) );
         assertTrue( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
     }
@@ -1389,8 +1380,8 @@ public class PageListTest
         long filePageId = Integer.MAX_VALUE + 1L;
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
-        assertThat( pageList.getFilePageId( pageRef ), is( filePageId ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( swapperId ) );
+        assertThat( pageList.getFilePageId( pageRef ) ).isEqualTo( filePageId );
+        assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( swapperId );
         assertTrue( pageList.isLoaded( pageRef ) );
         assertTrue( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
     }
@@ -1417,10 +1408,10 @@ public class PageListTest
         }
         catch ( IOException e )
         {
-            assertThat( e.getMessage(), is( "boo" ) );
+            assertThat( e.getMessage() ).isEqualTo( "boo" );
         }
-        assertThat( pageList.getFilePageId( pageRef ), is( filePageId ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( 0 ) ); // 0 means not bound
+        assertThat( pageList.getFilePageId( pageRef ) ).isEqualTo( filePageId );
+        assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( 0 ); // 0 means not bound
         assertTrue( pageList.isLoaded( pageRef ) );
         assertFalse( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
     }
@@ -1471,7 +1462,7 @@ public class PageListTest
         }
         catch ( IOException e )
         {
-            assertThat( e.getMessage(), is( "boom" ) );
+            assertThat( e.getMessage() ).isEqualTo( "boom" );
         }
     }
 
@@ -1492,8 +1483,8 @@ public class PageListTest
         };
         StubPageFaultEvent event = new StubPageFaultEvent();
         pageList.fault( pageRef, swapper, swapperId, filePageId, event );
-        assertThat( event.bytesRead, is( 333L ) );
-        assertThat( event.cachePageId, is( not( 0 ) ) );
+        assertThat( event.bytesRead ).isEqualTo( 333L );
+        assertThat( event.cachePageId ).isEqualTo( pageId );
     }
 
     @Test
@@ -1638,11 +1629,11 @@ public class PageListTest
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.isBoundTo( pageRef, (short) 1, 42 ) );
         assertTrue( pageList.isLoaded( pageRef ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( 1 ) );
+        assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( 1 );
         pageList.tryEvict( pageRef, EvictionRunEvent.NULL );
         assertFalse( pageList.isBoundTo( pageRef, (short) 1, 42 ) );
         assertFalse( pageList.isLoaded( pageRef ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( 0 ) );
+        assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( 0 );
     }
 
     @Test
@@ -1680,8 +1671,8 @@ public class PageListTest
         pageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
-        assertThat( writtenFilePageId.get(), is( 42L ) );
-        assertThat( writtenBufferAddress.get(), is( pageList.getAddress( pageRef ) ) );
+        assertThat( writtenFilePageId.get() ).isEqualTo( 42L );
+        assertThat( writtenBufferAddress.get() ).isEqualTo( pageList.getAddress( pageRef ) );
     }
 
     @Test
@@ -1703,7 +1694,7 @@ public class PageListTest
         pageList.unlockExclusive( pageRef ); // we take no write lock, so page is not modified
         assertFalse( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
-        assertThat( writes.get(), is( 0 ) );
+        assertThat( writes.get() ).isEqualTo( 0 );
     }
 
     @Test
@@ -1717,7 +1708,7 @@ public class PageListTest
             public void evicted( long filePageId )
             {
                 evictionNotified.set( true );
-                assertThat( filePageId, is( 42L ) );
+                assertThat( filePageId ).isEqualTo( 42L );
             }
         };
         int swapperId = swappers.allocate( swapper );
@@ -1738,7 +1729,7 @@ public class PageListTest
             public void evicted( long filePageId )
             {
                 evictionNotified.set( true );
-                assertThat( filePageId, is( 42L ) );
+                assertThat( filePageId ).isEqualTo( 42L );
             }
         };
         int swapperId = swappers.allocate( swapper );
@@ -1921,15 +1912,15 @@ public class PageListTest
         pageList.unlockExclusive( pageRef );
         EvictionAndFlushRecorder recorder = new EvictionAndFlushRecorder();
         assertTrue( pageList.tryEvict( pageRef, () -> recorder ) );
-        assertThat( recorder.evictionClosed, is( true ) );
-        assertThat( recorder.filePageId, is( 42L ) ) ;
-        assertThat( recorder.swapper, sameInstance( swapper ) );
-        assertThat( recorder.evictionException, is( nullValue() ) );
-        assertThat( recorder.cachePageId, is( pageRef ) );
-        assertThat( recorder.bytesWritten, is( 0L ) );
-        assertThat( recorder.flushDone, is( false ) );
-        assertThat( recorder.flushException, is( nullValue() ) );
-        assertThat( recorder.pagesFlushed, is( 0 ) );
+        assertThat( recorder.evictionClosed ).isEqualTo( true );
+        assertThat( recorder.filePageId ).isEqualTo( 42L );
+        assertThat( recorder.swapper ).isSameAs( swapper );
+        assertThat( recorder.evictionException ).isNull();
+        assertThat( recorder.cachePageId ).isEqualTo( pageRef );
+        assertThat( recorder.bytesWritten ).isEqualTo( 0L );
+        assertThat( recorder.flushDone ).isEqualTo( false );
+        assertThat( recorder.flushException ).isNull();
+        assertThat( recorder.pagesFlushed ).isEqualTo( 0 );
     }
 
     @Test
@@ -1945,15 +1936,15 @@ public class PageListTest
         assertTrue( pageList.isModified( pageRef ) );
         EvictionAndFlushRecorder recorder = new EvictionAndFlushRecorder();
         assertTrue( pageList.tryEvict( pageRef, () -> recorder ) );
-        assertThat( recorder.evictionClosed, is( true ) );
-        assertThat( recorder.filePageId, is( 42L ) ) ;
-        assertThat( recorder.swapper, sameInstance( swapper ) );
-        assertThat( recorder.evictionException, is( nullValue() ) );
-        assertThat( recorder.cachePageId, is( pageRef ) );
-        assertThat( recorder.bytesWritten, is( (long) filePageSize ) );
-        assertThat( recorder.flushDone, is( true ) );
-        assertThat( recorder.flushException, is( nullValue() ) );
-        assertThat( recorder.pagesFlushed, is( 1 ) );
+        assertThat( recorder.evictionClosed ).isEqualTo( true );
+        assertThat( recorder.filePageId ).isEqualTo( 42L );
+        assertThat( recorder.swapper ).isSameAs( swapper );
+        assertThat( recorder.evictionException ).isNull();
+        assertThat( recorder.cachePageId ).isEqualTo( pageRef );
+        assertThat( recorder.bytesWritten ).isEqualTo( (long) filePageSize );
+        assertThat( recorder.flushDone ).isEqualTo( true );
+        assertThat( recorder.flushException ).isNull();
+        assertThat( recorder.pagesFlushed ).isEqualTo( 1 );
     }
 
     @Test
@@ -1984,15 +1975,15 @@ public class PageListTest
         {
             // Ok
         }
-        assertThat( recorder.evictionClosed, is( true ) );
-        assertThat( recorder.filePageId, is( 42L ) ) ;
-        assertThat( recorder.swapper, sameInstance( swapper ) );
-        assertThat( recorder.evictionException, sameInstance( ioException ) );
-        assertThat( recorder.cachePageId, is( pageRef ) );
-        assertThat( recorder.bytesWritten, is( 0L ) );
-        assertThat( recorder.flushDone, is( true ) );
-        assertThat( recorder.flushException, sameInstance( ioException ) );
-        assertThat( recorder.pagesFlushed, is( 0 ) );
+        assertThat( recorder.evictionClosed ).isEqualTo( true );
+        assertThat( recorder.filePageId ).isEqualTo( 42L );
+        assertThat( recorder.swapper ).isSameAs( swapper );
+        assertThat( recorder.evictionException ).isSameAs( ioException );
+        assertThat( recorder.cachePageId ).isEqualTo( pageRef );
+        assertThat( recorder.bytesWritten ).isEqualTo( 0L );
+        assertThat( recorder.flushDone ).isEqualTo( true );
+        assertThat( recorder.flushException ).isSameAs( ioException );
+        assertThat( recorder.pagesFlushed ).isEqualTo( 0 );
     }
 
     @Test

@@ -56,10 +56,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -69,7 +66,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
@@ -148,7 +144,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         long target = createPage( 4 );
         swapper.read( 0, target );
 
-        assertThat( array( target ), byteArray( bytes ) );
+        assertThat( array( target ) ).containsExactly( bytes );
     }
 
     @ParameterizedTest
@@ -170,7 +166,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         long target = createPage( 4 );
         swapper.read( 1, target );
 
-        assertThat( array( target ), byteArray( new byte[]{5, 6, 0, 0} ) );
+        assertThat( array( target ) ).containsExactly( 5, 6, 0, 0 );
     }
 
     @ParameterizedTest
@@ -189,8 +185,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         InputStream stream = getFs().openAsInputStream( getFile() );
         byte[] actual = new byte[expected.length];
 
-        assertThat( stream.read( actual ), is( actual.length ) );
-        assertThat( actual, byteArray( expected ) );
+        assertThat( stream.read( actual ) ).isEqualTo( actual.length );
+        assertThat( actual ).containsExactly( expected );
     }
 
     private long createPage( byte[] expected )
@@ -234,8 +230,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         InputStream stream = getFs().openAsInputStream( getFile() );
         byte[] actual = new byte[(int) getFs().getFileSize( getFile() )];
 
-        assertThat( stream.read( actual ), is( actual.length ) );
-        assertThat( actual, byteArray( finalData ) );
+        assertThat( stream.read( actual ) ).isEqualTo( actual.length );
+        assertThat( actual ).containsExactly( finalData );
     }
 
     /**
@@ -275,7 +271,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         try ( FileLock fileLock = channel.tryLock() )
         {
-            assertThat( fileLock, is( not( nullValue() ) ) );
+            assertThat( fileLock ).isNotNull();
             assertThrows( FileLockException.class, () -> createSwapper( factory, file, 4, NO_CALLBACK, true, channelStriping ) );
         }
     }
@@ -343,7 +339,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try ( StoreFileChannel channel = fileSystem.write( file );
               FileLock fileLock = channel.tryLock() )
         {
-            assertThat( fileLock, is( not( nullValue() ) ) );
+            assertThat( fileLock ).isNotNull();
         }
     }
 
@@ -407,7 +403,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         {
             // As expected.
         }
-        assertThat( openFilesCounter.get(), is( 0 ) );
+        assertThat( openFilesCounter.get() ).isEqualTo( 0 );
     }
 
     private byte[] array( long page )
@@ -465,8 +461,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             for ( int i = 0; i < 10_000; i++ )
             {
                 clear( page );
-                assertThat( swapper.read( 0, page ), is( (long) bytesTotal ) );
-                assertThat( array( page ), is( data ) );
+                assertThat( swapper.read( 0, page ) ).isEqualTo( (long) bytesTotal );
+                assertThat( array( page ) ).isEqualTo( data );
             }
         }
         finally
@@ -500,11 +496,11 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 swapper.write( 0, zeroPage );
                 putBytes( page, data, 0, 0, data.length );
                 adversary.setProbabilityFactor( 1 );
-                assertThat( swapper.write( 0, page ), is( (long) bytesTotal ) );
+                assertThat( swapper.write( 0, page ) ).isEqualTo( (long) bytesTotal );
                 clear( page );
                 adversary.setProbabilityFactor( 0 );
                 swapper.read( 0, page );
-                assertThat( array( page ), is( data ) );
+                assertThat( array( page ) ).isEqualTo( data );
             }
         }
         finally
@@ -555,11 +551,11 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 {
                     clear( page );
                 }
-                assertThat( swapper.read( 0, pages, 0, pages.length ), is( (long) bytesTotal ) );
+                assertThat( swapper.read( 0, pages, 0, pages.length ) ).isEqualTo( (long) bytesTotal );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     System.arraycopy( data, j * bytesPerPage, temp, 0, bytesPerPage );
-                    assertThat( array( pages[j] ), is( temp ) );
+                    assertThat( array( pages[j] ) ).isEqualTo( temp );
                 }
             }
         }
@@ -610,10 +606,10 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                     clear( readPage );
                 }
                 adversary.setProbabilityFactor( 0 );
-                assertThat( swapper.read( 0, readPages, 0, pageCount ), is( (long) bytesTotal ) );
+                assertThat( swapper.read( 0, readPages, 0, pageCount ) ).isEqualTo( (long) bytesTotal );
                 for ( int j = 0; j < pageCount; j++ )
                 {
-                    assertThat( array( readPages[j] ), is( array( writePages[j] ) ) );
+                    assertThat( array( readPages[j] ) ).containsExactly( array( writePages[j] ) );
                 }
             }
         }

@@ -30,10 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.util.concurrent.BinaryLatch;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class LatchMapTest
 {
@@ -43,7 +40,7 @@ class LatchMapTest
     void takeOrAwaitLatchMustReturnLatchIfAvailable()
     {
         BinaryLatch latch = latches.takeOrAwaitLatch( 0 );
-        assertThat( latch, is( notNullValue() ) );
+        assertThat( latch ).isNotNull();
         latch.release();
     }
 
@@ -52,7 +49,7 @@ class LatchMapTest
     {
         AtomicReference<Thread> threadRef = new AtomicReference<>();
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
-        assertThat( latch, is( notNullValue() ) );
+        assertThat( latch ).isNotNull();
         ExecutorService executor = null;
         try
         {
@@ -70,7 +67,7 @@ class LatchMapTest
             while ( th == null );
             ThreadTestUtils.awaitThreadState( th, 10_000, Thread.State.WAITING );
             latch.release();
-            assertThat( future.get( 1, TimeUnit.SECONDS ), is( nullValue() ) );
+            assertThat( future.get( 1, TimeUnit.SECONDS ) ).isNull();
         }
         finally
         {
@@ -85,13 +82,13 @@ class LatchMapTest
     void takeOrAwaitLatchMustNotLetUnrelatedLatchesConflictTooMuch() throws Exception
     {
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
-        assertThat( latch, is( notNullValue() ) );
+        assertThat( latch ).isNotNull();
         ExecutorService executor = null;
         try
         {
             executor = Executors.newSingleThreadExecutor();
             Future<BinaryLatch> future = executor.submit( () -> latches.takeOrAwaitLatch( 33 ) );
-            assertThat( future.get( 1, TimeUnit.SECONDS ), is( notNullValue() ) );
+            assertThat( future.get( 1, TimeUnit.SECONDS ) ).isNotNull();
             latch.release();
         }
         finally

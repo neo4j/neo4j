@@ -28,11 +28,9 @@ import java.io.IOException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.closeTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
-@SuppressWarnings( "WeakerAccess" ) // This test is accessed in neo4j-jfr.
 public class DefaultPageCacheTracerTest
 {
     private PageCacheTracer tracer;
@@ -116,41 +114,41 @@ public class DefaultPageCacheTracerTest
     @Test
     void shouldCalculateHitRatio()
     {
-        assertThat( "hitRation", tracer.hitRatio(), closeTo( 0d, 0.0001 ) );
+        assertThat( tracer.hitRatio() ).as( "hitRation" ).isCloseTo( 0d, within( 0.0001 ) );
         tracer.hits( 3 );
         tracer.faults( 7 );
-        assertThat( "hitRation", tracer.hitRatio(), closeTo( 3.0 / 10, 0.0001 ) );
+        assertThat( tracer.hitRatio() ).as( "hitRation" ).isCloseTo( 3.0 / 10, within( 0.0001 ) );
     }
 
     @Test
     void usageRatio()
     {
-        assertThat( tracer.usageRatio(), is( Double.NaN ) );
+        assertThat( tracer.usageRatio() ).isEqualTo( Double.NaN );
         tracer.maxPages( 10 );
-        assertThat( tracer.usageRatio(), closeTo( 0d, 0.0001 ) );
+        assertThat( tracer.usageRatio() ).isCloseTo( 0d, within( 0.0001 ) );
         tracer.faults( 5 );
-        assertThat( tracer.usageRatio(), closeTo( 0.5, 0.0001 ) );
+        assertThat( tracer.usageRatio() ).isCloseTo( 0.5, within( 0.0001 ) );
         tracer.faults( 5 );
         tracer.evictions( 5 );
-        assertThat( tracer.usageRatio(), closeTo( 0.5, 0.0001 ) );
+        assertThat( tracer.usageRatio() ).isCloseTo( 0.5, within( 0.0001 ) );
         tracer.faults( 5 );
-        assertThat( tracer.usageRatio(), closeTo( 1d, 0.0001 ) );
+        assertThat( tracer.usageRatio() ).isCloseTo( 1d, within( 0.0001 ) );
     }
 
     private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions,
             long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped, double hitRatio )
     {
-        assertThat( "pins", tracer.pins(), is( pins ) );
-        assertThat( "unpins", tracer.unpins(), is( unpins ) );
-        assertThat( "hits", tracer.hits(), is( hits ) );
-        assertThat( "faults", tracer.faults(), is( faults ) );
-        assertThat( "evictions", tracer.evictions(), is( evictions ) );
-        assertThat( "evictionExceptions", tracer.evictionExceptions(), is( evictionExceptions ) );
-        assertThat( "flushes", tracer.flushes(), is( flushes ) );
-        assertThat( "bytesRead", tracer.bytesRead(), is( bytesRead ) );
-        assertThat( "bytesWritten", tracer.bytesWritten(), is( bytesWritten ) );
-        assertThat( "filesMapped", tracer.filesMapped(), is( filesMapped ) );
-        assertThat( "filesUnmapped", tracer.filesUnmapped(), is( filesUnmapped ) );
-        assertThat( "hitRatio", tracer.hitRatio(), closeTo( hitRatio, 0.0001 ) );
+        assertThat( tracer.pins() ).as( "pins" ).isEqualTo( pins );
+        assertThat( tracer.unpins() ).as( "unpins" ).isEqualTo( unpins );
+        assertThat( tracer.hits() ).as( "hits" ).isEqualTo( hits );
+        assertThat( tracer.faults() ).as( "faults" ).isEqualTo( faults );
+        assertThat( tracer.evictions() ).as( "evictions" ).isEqualTo( evictions );
+        assertThat( tracer.evictionExceptions() ).as( "evictionExceptions" ).isEqualTo( evictionExceptions );
+        assertThat( tracer.flushes() ).as( "flushes" ).isEqualTo( flushes );
+        assertThat( tracer.bytesRead() ).as( "bytesRead" ).isEqualTo( bytesRead );
+        assertThat( tracer.bytesWritten() ).as( "bytesWritten" ).isEqualTo( bytesWritten );
+        assertThat( tracer.filesMapped() ).as( "filesMapped" ).isEqualTo( filesMapped );
+        assertThat( tracer.filesUnmapped() ).as( "filesUnmapped" ).isEqualTo( filesUnmapped );
+        assertThat( tracer.hitRatio() ).as( "hitRatio" ).isCloseTo( hitRatio, within( 0.0001 ) );
     }
 }

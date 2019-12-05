@@ -28,15 +28,13 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 class CompositePageCursorTest
 {
@@ -66,7 +64,7 @@ class CompositePageCursorTest
     void getByteMustHitFirstCursorBeforeFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 1, second, 1 );
-        assertThat( c.getByte(), is( (byte) 0xA0 ) );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xA0 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -74,8 +72,8 @@ class CompositePageCursorTest
     void getByteMustHitSecondCursorAfterFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 1, second, 1 );
-        assertThat( c.getByte(), is( (byte) 0xA0 ) );
-        assertThat( c.getByte(), is( (byte) 0xB0 ) );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xA0 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xB0 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -84,8 +82,8 @@ class CompositePageCursorTest
     {
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 1, second, 1 );
-        assertThat( c.getByte(), is( (byte) 0xA1 ) );
-        assertThat( c.getByte(), is( (byte) 0xB0 ) );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xA1 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xB0 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -94,8 +92,8 @@ class CompositePageCursorTest
     {
         second.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 1, second, 1 );
-        assertThat( c.getByte(), is( (byte) 0xA0 ) );
-        assertThat( c.getByte(), is( (byte) 0xB1 ) );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xA0 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xB1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -105,7 +103,7 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 1, second, 1 );
         c.putByte( (byte) 1 );
         c.setOffset( 0 );
-        assertThat( c.getByte(), is( (byte) 1 ) );
+        assertThat( c.getByte() ).isEqualTo( (byte) 1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -116,7 +114,7 @@ class CompositePageCursorTest
         c.putByte( (byte) 1 );
         c.putByte( (byte) 2 );
         c.setOffset( 1 );
-        assertThat( c.getByte(), is( (byte) 2 ) );
+        assertThat( c.getByte() ).isEqualTo( (byte) 2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -126,8 +124,8 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 1, second, 1 );
         c.putByte( (byte) 1 );
-        assertThat( first.getByte( 1 ), is( (byte) 1 ) );
-        assertThat( c.getByte(), is( (byte) 0xB0 ) );
+        assertThat( first.getByte( 1 ) ).isEqualTo( (byte) 1 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xB0 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -138,8 +136,8 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 1, second, 2 );
         c.putByte( (byte) 1 );
         c.putByte( (byte) 2 );
-        assertThat( second.getByte( 1 ), is( (byte) 2 ) );
-        assertThat( c.getByte(), is( (byte) 0xB2 ) );
+        assertThat( second.getByte( 1 ) ).isEqualTo( (byte) 2 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xB2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -149,8 +147,8 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         second.setOffset( 2 );
         PageCursor c = CompositePageCursor.compose( first, 1 + 1, second, 1 );
-        assertThat( c.getByte( 1 ), is( (byte) 0xA2 ) );
-        assertThat( c.getByte( 1 + 1 ), is( (byte) 0xB2 ) );
+        assertThat( c.getByte( 1 ) ).isEqualTo( (byte) 0xA2 );
+        assertThat( c.getByte( 1 + 1 ) ).isEqualTo( (byte) 0xB2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -162,10 +160,10 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 2 * 1, second, 2 * 1 );
         c.putByte( 1, (byte) 1 );
         c.putByte( 1 + 1, (byte) 2 );
-        assertThat( c.getByte(), is( (byte) 0xA1 ) );
-        assertThat( c.getByte(), is( (byte) 1 ) );
-        assertThat( c.getByte(), is( (byte) 2 ) );
-        assertThat( c.getByte(), is( (byte) 0xB3 ) );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xA1 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 1 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 2 );
+        assertThat( c.getByte() ).isEqualTo( (byte) 0xB3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -173,7 +171,7 @@ class CompositePageCursorTest
     void getShortMustHitFirstCursorBeforeFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 2, second, 2 );
-        assertThat( c.getShort(), is( (short) 0xA0A1 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xA0A1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -181,8 +179,8 @@ class CompositePageCursorTest
     void getShortMustHitSecondCursorAfterFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 2, second, 2 );
-        assertThat( c.getShort(), is( (short) 0xA0A1 ) );
-        assertThat( c.getShort(), is( (short) 0xB0B1 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xA0A1 );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xB0B1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -191,8 +189,8 @@ class CompositePageCursorTest
     {
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 2, second, 2 );
-        assertThat( c.getShort(), is( (short) 0xA1A2 ) );
-        assertThat( c.getShort(), is( (short) 0xB0B1 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xA1A2 );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xB0B1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -201,8 +199,8 @@ class CompositePageCursorTest
     {
         second.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 2, second, 2 );
-        assertThat( c.getShort(), is( (short) 0xA0A1 ) );
-        assertThat( c.getShort(), is( (short) 0xB1B2 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xA0A1 );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xB1B2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -212,7 +210,7 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 2, second, 2 );
         c.putShort( (short) 1 );
         c.setOffset( 0 );
-        assertThat( c.getShort(), is( (short) 1 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -223,7 +221,7 @@ class CompositePageCursorTest
         c.putShort( (short) 1 );
         c.putShort( (short) 2 );
         c.setOffset( 2 );
-        assertThat( c.getShort(), is( (short) 2 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -233,8 +231,8 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 2, second, 2 );
         c.putShort( (short) 1 );
-        assertThat( first.getShort( 1 ), is( (short) 1 ) );
-        assertThat( c.getShort(), is( (short) 0xB0B1 ) );
+        assertThat( first.getShort( 1 ) ).isEqualTo( (short) 1 );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xB0B1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -245,8 +243,8 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 2, second, 4 );
         c.putShort( (short) 1 );
         c.putShort( (short) 2 );
-        assertThat( second.getShort( 1 ), is( (short) 2 ) );
-        assertThat( c.getShort(), is( (short) 0xB3B4 ) );
+        assertThat( second.getShort( 1 ) ).isEqualTo( (short) 2 );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xB3B4 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -256,8 +254,8 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         second.setOffset( 2 );
         PageCursor c = CompositePageCursor.compose( first, 1 + 2, second, 2 );
-        assertThat( c.getShort( 1 ), is( (short) 0xA2A3 ) );
-        assertThat( c.getShort( 1 + 2 ), is( (short) 0xB2B3 ) );
+        assertThat( c.getShort( 1 ) ).isEqualTo( (short) 0xA2A3 );
+        assertThat( c.getShort( 1 + 2 ) ).isEqualTo( (short) 0xB2B3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -269,10 +267,10 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 2 * 2, second, 2 * 2 );
         c.putShort( 2, (short) 1 );
         c.putShort( 2 + 2, (short) 2 );
-        assertThat( c.getShort(), is( (short) 0xA1A2 ) );
-        assertThat( c.getShort(), is( (short) 1 ) );
-        assertThat( c.getShort(), is( (short) 2 ) );
-        assertThat( c.getShort(), is( (short) 0xB4B5 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xA1A2 );
+        assertThat( c.getShort() ).isEqualTo( (short) 1 );
+        assertThat( c.getShort() ).isEqualTo( (short) 2 );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xB4B5 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -280,7 +278,7 @@ class CompositePageCursorTest
     void getIntMustHitFirstCursorBeforeFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
-        assertThat( c.getInt(), is( 0xA0A1A2A3 ) );
+        assertThat( c.getInt() ).isEqualTo( 0xA0A1A2A3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -288,8 +286,8 @@ class CompositePageCursorTest
     void getIntMustHitSecondCursorAfterFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
-        assertThat( c.getInt(), is( 0xA0A1A2A3 ) );
-        assertThat( c.getInt(), is( 0xB0B1B2B3 ) );
+        assertThat( c.getInt() ).isEqualTo( 0xA0A1A2A3 );
+        assertThat( c.getInt() ).isEqualTo( 0xB0B1B2B3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -298,8 +296,8 @@ class CompositePageCursorTest
     {
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
-        assertThat( c.getInt(), is( 0xA1A2A3A4 ) );
-        assertThat( c.getInt(), is( 0xB0B1B2B3 ) );
+        assertThat( c.getInt() ).isEqualTo( 0xA1A2A3A4 );
+        assertThat( c.getInt() ).isEqualTo( 0xB0B1B2B3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -308,8 +306,8 @@ class CompositePageCursorTest
     {
         second.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
-        assertThat( c.getInt(), is( 0xA0A1A2A3 ) );
-        assertThat( c.getInt(), is( 0xB1B2B3B4 ) );
+        assertThat( c.getInt() ).isEqualTo( 0xA0A1A2A3 );
+        assertThat( c.getInt() ).isEqualTo( 0xB1B2B3B4 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -319,7 +317,7 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
         c.putInt( 1 );
         c.setOffset( 0 );
-        assertThat( c.getInt(), is( 1 ) );
+        assertThat( c.getInt() ).isEqualTo( 1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -330,7 +328,7 @@ class CompositePageCursorTest
         c.putInt( 1 );
         c.putInt( 2 );
         c.setOffset( 4 );
-        assertThat( c.getInt(), is( 2 ) );
+        assertThat( c.getInt() ).isEqualTo( 2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -340,8 +338,8 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
         c.putInt( 1 );
-        assertThat( first.getInt( 1 ), is( 1 ) );
-        assertThat( c.getInt(), is( 0xB0B1B2B3 ) );
+        assertThat( first.getInt( 1 ) ).isEqualTo( 1 );
+        assertThat( c.getInt() ).isEqualTo( 0xB0B1B2B3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -352,8 +350,8 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 4, second, 8 );
         c.putInt( 1 );
         c.putInt( 2 );
-        assertThat( second.getInt( 1 ), is( 2 ) );
-        assertThat( c.getInt(), is( 0xB5B6B7B8 ) );
+        assertThat( second.getInt( 1 ) ).isEqualTo( 2 );
+        assertThat( c.getInt() ).isEqualTo( 0xB5B6B7B8 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -363,8 +361,8 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         second.setOffset( 2 );
         PageCursor c = CompositePageCursor.compose( first, 1 + 4, second, 4 );
-        assertThat( c.getInt( 1 ), is( 0xA2A3A4A5 ) );
-        assertThat( c.getInt( 1 + 4 ), is( 0xB2B3B4B5 ) );
+        assertThat( c.getInt( 1 ) ).isEqualTo( 0xA2A3A4A5 );
+        assertThat( c.getInt( 1 + 4 ) ).isEqualTo( 0xB2B3B4B5 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -376,10 +374,10 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 2 * 4, second, 2 * 4 );
         c.putInt( 4, 1 );
         c.putInt( 4 + 4, 2 );
-        assertThat( c.getInt(), is( 0xA1A2A3A4 ) );
-        assertThat( c.getInt(), is( 1 ) );
-        assertThat( c.getInt(), is( 2 ) );
-        assertThat( c.getInt(), is( 0xB6B7B8B9 ) );
+        assertThat( c.getInt() ).isEqualTo( 0xA1A2A3A4 );
+        assertThat( c.getInt() ).isEqualTo( 1 );
+        assertThat( c.getInt() ).isEqualTo( 2 );
+        assertThat( c.getInt() ).isEqualTo( 0xB6B7B8B9 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -387,7 +385,7 @@ class CompositePageCursorTest
     void getLongMustHitFirstCursorBeforeFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
-        assertThat( c.getLong(), is( 0xA0A1A2A3A4A5A6A7L ) );
+        assertThat( c.getLong() ).isEqualTo( 0xA0A1A2A3A4A5A6A7L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -395,8 +393,8 @@ class CompositePageCursorTest
     void getLongMustHitSecondCursorAfterFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
-        assertThat( c.getLong(), is( 0xA0A1A2A3A4A5A6A7L ) );
-        assertThat( c.getLong(), is( 0xB0B1B2B3B4B5B6B7L ) );
+        assertThat( c.getLong() ).isEqualTo( 0xA0A1A2A3A4A5A6A7L );
+        assertThat( c.getLong() ).isEqualTo( 0xB0B1B2B3B4B5B6B7L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -405,8 +403,8 @@ class CompositePageCursorTest
     {
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
-        assertThat( c.getLong(), is( 0xA1A2A3A4A5A6A7A8L ) );
-        assertThat( c.getLong(), is( 0xB0B1B2B3B4B5B6B7L ) );
+        assertThat( c.getLong() ).isEqualTo( 0xA1A2A3A4A5A6A7A8L );
+        assertThat( c.getLong() ).isEqualTo( 0xB0B1B2B3B4B5B6B7L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -415,8 +413,8 @@ class CompositePageCursorTest
     {
         second.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
-        assertThat( c.getLong(), is( 0xA0A1A2A3A4A5A6A7L ) );
-        assertThat( c.getLong(), is( 0xB1B2B3B4B5B6B7B8L ) );
+        assertThat( c.getLong() ).isEqualTo( 0xA0A1A2A3A4A5A6A7L );
+        assertThat( c.getLong() ).isEqualTo( 0xB1B2B3B4B5B6B7B8L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -424,9 +422,9 @@ class CompositePageCursorTest
     void putLongMustHitFirstCursorBeforeFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
-        c.putLong( (long) 1 );
+        c.putLong( 1 );
         c.setOffset( 0 );
-        assertThat( c.getLong(), is( (long) 1 ) );
+        assertThat( c.getLong() ).isEqualTo( (long) 1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -434,10 +432,10 @@ class CompositePageCursorTest
     void putLongMustHitSecondCursorAfterFlip()
     {
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
-        c.putLong( (long) 1 );
-        c.putLong( (long) 2 );
+        c.putLong( 1 );
+        c.putLong( 2 );
         c.setOffset( 8 );
-        assertThat( c.getLong(), is( (long) 2 ) );
+        assertThat( c.getLong() ).isEqualTo( (long) 2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -446,9 +444,9 @@ class CompositePageCursorTest
     {
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
-        c.putLong( (long) 1 );
-        assertThat( first.getLong( 1 ), is( (long) 1 ) );
-        assertThat( c.getLong(), is( 0xB0B1B2B3B4B5B6B7L ) );
+        c.putLong( 1 );
+        assertThat( first.getLong( 1 ) ).isEqualTo( (long) 1 );
+        assertThat( c.getLong() ).isEqualTo( 0xB0B1B2B3B4B5B6B7L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -457,10 +455,10 @@ class CompositePageCursorTest
     {
         second.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 8, second, PAGE_SIZE );
-        c.putLong( (long) 1 );
-        c.putLong( (long) 2 );
-        assertThat( second.getLong( 1 ), is( (long) 2 ) );
-        assertThat( c.getLong(), is( 0xB9BABBBCBDBEBFC0L ) );
+        c.putLong( 1 );
+        c.putLong( 2 );
+        assertThat( second.getLong( 1 ) ).isEqualTo( (long) 2 );
+        assertThat( c.getLong() ).isEqualTo( 0xB9BABBBCBDBEBFC0L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -470,8 +468,8 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         second.setOffset( 2 );
         PageCursor c = CompositePageCursor.compose( first, 1 + 8, second, 8 );
-        assertThat( c.getLong( 1 ), is( 0xA2A3A4A5A6A7A8A9L ) );
-        assertThat( c.getLong( 1 + 8 ), is( 0xB2B3B4B5B6B7B8B9L ) );
+        assertThat( c.getLong( 1 ) ).isEqualTo( 0xA2A3A4A5A6A7A8A9L );
+        assertThat( c.getLong( 1 + 8 ) ).isEqualTo( 0xB2B3B4B5B6B7B8B9L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -483,12 +481,12 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         second.setOffset( 2 );
         PageCursor c = CompositePageCursor.compose( first, 2 * 8, second, 2 * 8 );
-        c.putLong( 8, (long) 1 );
-        c.putLong( 8 + 8, (long) 2 );
-        assertThat( c.getLong(), is( 0xA1A2A3A4A5A6A7A8L ) );
-        assertThat( c.getLong(), is( (long) 1 ) );
-        assertThat( c.getLong(), is( (long) 2 ) );
-        assertThat( c.getLong(), is( 0xCACBCCCDCECFD0D1L ) );
+        c.putLong( 8, 1 );
+        c.putLong( 8 + 8, 2 );
+        assertThat( c.getLong() ).isEqualTo( 0xA1A2A3A4A5A6A7A8L );
+        assertThat( c.getLong() ).isEqualTo( (long) 1 );
+        assertThat( c.getLong() ).isEqualTo( (long) 2 );
+        assertThat( c.getLong() ).isEqualTo( 0xCACBCCCDCECFD0D1L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -497,7 +495,7 @@ class CompositePageCursorTest
     {
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xA0, 0xA1, 0xA2, 0xA3 ) );
+        assertThat( bytes ).containsExactly( 0xA0, 0xA1, 0xA2, 0xA3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -506,9 +504,9 @@ class CompositePageCursorTest
     {
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xA0, 0xA1, 0xA2, 0xA3 ) );
+        assertThat( bytes ).containsExactly( 0xA0, 0xA1, 0xA2, 0xA3 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xB0, 0xB1, 0xB2, 0xB3 ) );
+        assertThat( bytes ).containsExactly( 0xB0, 0xB1, 0xB2, 0xB3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -518,9 +516,9 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xA1, 0xA2, 0xA3, 0xA4 ) );
+        assertThat( bytes ).containsExactly( 0xA1, 0xA2, 0xA3, 0xA4 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xB0, 0xB1, 0xB2, 0xB3 ) );
+        assertThat( bytes ).containsExactly( 0xB0, 0xB1, 0xB2, 0xB3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -530,9 +528,9 @@ class CompositePageCursorTest
         second.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 4, second, 4 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xA0, 0xA1, 0xA2, 0xA3 ) );
+        assertThat( bytes ).containsExactly( 0xA0, 0xA1, 0xA2, 0xA3 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xB1, 0xB2, 0xB3, 0xB4 ) );
+        assertThat( bytes ).containsExactly( 0xB1, 0xB2, 0xB3, 0xB4 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -543,7 +541,7 @@ class CompositePageCursorTest
         c.putBytes( new byte[]{1, 2, 3, 4} );
         c.setOffset( 0 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 1, 2, 3, 4 ) );
+        assertThat( bytes ).containsExactly( 1, 2, 3, 4 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -555,7 +553,7 @@ class CompositePageCursorTest
         c.putBytes( new byte[]{2} );
         c.setOffset( 1 );
         c.getBytes( bytes );
-        assertThat( Arrays.copyOfRange( bytes, 0, 1 ), byteArray( 2 ) );
+        assertThat( Arrays.copyOfRange( bytes, 0, 1 ) ).containsExactly( 2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -567,9 +565,9 @@ class CompositePageCursorTest
         c.putBytes( new byte[]{1} );
         first.setOffset( 1 );
         first.getBytes( bytes );
-        assertThat( Arrays.copyOfRange( bytes, 0, 1 ), byteArray( 1 ) );
+        assertThat( Arrays.copyOfRange( bytes, 0, 1 ) ).containsExactly( 1 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xB0, 0xB1, 0xB2, 0xB3 ) );
+        assertThat( bytes ).containsExactly( 0xB0, 0xB1, 0xB2, 0xB3 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -582,9 +580,9 @@ class CompositePageCursorTest
         c.putBytes( new byte[]{2} );
         second.setOffset( 1 );
         second.getBytes( bytes );
-        assertThat( Arrays.copyOfRange( bytes, 0, 1 ), byteArray( 2 ) );
+        assertThat( Arrays.copyOfRange( bytes, 0, 1 ) ).containsExactly( 2 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xB5, 0xB6, 0xB7, 0xB8 ) );
+        assertThat( bytes ).containsExactly( 0xB5, 0xB6, 0xB7, 0xB8 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -593,23 +591,23 @@ class CompositePageCursorTest
     {
         PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         c.setOffset( PAGE_SIZE - 2 );
-        assertThat( c.getInt(), is( 0xAEAFB0B1 ) );
+        assertThat( c.getInt() ).isEqualTo( 0xAEAFB0B1 );
         c.setOffset( PAGE_SIZE - 1 );
-        assertThat( c.getShort(), is( (short) 0xAFB0 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 0xAFB0 );
         c.setOffset( PAGE_SIZE - 4 );
-        assertThat( c.getLong(), is( 0xACADAEAFB0B1B2B3L ) );
+        assertThat( c.getLong() ).isEqualTo( 0xACADAEAFB0B1B2B3L );
         c.setOffset( PAGE_SIZE - 2 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0xAE, 0xAF, 0xB0, 0xB1 ) );
+        assertThat( bytes ).containsExactly( 0xAE, 0xAF, 0xB0, 0xB1 );
     }
 
     @Test
     void overlappingOffsetGetAccess()
     {
         PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        assertThat( c.getInt( PAGE_SIZE - 2 ), is( 0xAEAFB0B1 ) );
-        assertThat( c.getShort( PAGE_SIZE - 1 ), is( (short) 0xAFB0 ) );
-        assertThat( c.getLong( PAGE_SIZE - 4 ), is( 0xACADAEAFB0B1B2B3L ) );
+        assertThat( c.getInt( PAGE_SIZE - 2 ) ).isEqualTo( 0xAEAFB0B1 );
+        assertThat( c.getShort( PAGE_SIZE - 1 ) ).isEqualTo( (short) 0xAFB0 );
+        assertThat( c.getLong( PAGE_SIZE - 4 ) ).isEqualTo( 0xACADAEAFB0B1B2B3L );
     }
 
     @Test
@@ -619,17 +617,17 @@ class CompositePageCursorTest
         c.setOffset( PAGE_SIZE - 2 );
         c.putInt( 0x01020304 );
         c.setOffset( PAGE_SIZE - 2 );
-        assertThat( c.getInt(), is( 0x01020304 ) );
+        assertThat( c.getInt() ).isEqualTo( 0x01020304 );
 
         c.setOffset( PAGE_SIZE - 1 );
         c.putShort( (short) 0x0102 );
         c.setOffset( PAGE_SIZE - 1 );
-        assertThat( c.getShort(), is( (short) 0x0102 ) );
+        assertThat( c.getShort() ).isEqualTo( (short) 0x0102 );
 
         c.setOffset( PAGE_SIZE - 4 );
         c.putLong( 0x0102030405060708L );
         c.setOffset( PAGE_SIZE - 4 );
-        assertThat( c.getLong(), is( 0x0102030405060708L ) );
+        assertThat( c.getLong() ).isEqualTo( 0x0102030405060708L );
 
         c.setOffset( PAGE_SIZE - 2 );
         for ( int i = 0; i < bytes.length; i++ )
@@ -639,7 +637,7 @@ class CompositePageCursorTest
         c.putBytes( bytes );
         c.setOffset( PAGE_SIZE - 2 );
         c.getBytes( bytes );
-        assertThat( bytes, byteArray( 0x01, 0x02, 0x03, 0x04 ) );
+        assertThat( bytes ).containsExactly( 0x01, 0x02, 0x03, 0x04 );
     }
 
     @Test
@@ -647,13 +645,13 @@ class CompositePageCursorTest
     {
         PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         c.putInt( PAGE_SIZE - 2, 0x01020304 );
-        assertThat( c.getInt( PAGE_SIZE - 2 ), is( 0x01020304 ) );
+        assertThat( c.getInt( PAGE_SIZE - 2 ) ).isEqualTo( 0x01020304 );
 
         c.putShort( PAGE_SIZE - 1, (short) 0x0102 );
-        assertThat( c.getShort( PAGE_SIZE - 1 ), is( (short) 0x0102 ) );
+        assertThat( c.getShort( PAGE_SIZE - 1 ) ).isEqualTo( (short) 0x0102 );
 
         c.putLong( PAGE_SIZE - 4, 0x0102030405060708L );
-        assertThat( c.getLong( PAGE_SIZE - 4 ), is( 0x0102030405060708L ) );
+        assertThat( c.getLong( PAGE_SIZE - 4 ) ).isEqualTo( 0x0102030405060708L );
     }
 
     @Test
@@ -738,10 +736,10 @@ class CompositePageCursorTest
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.getLong();
-        assertThat( pageCursor.getOffset(), is( 8 ) );
+        assertThat( pageCursor.getOffset() ).isEqualTo( 8 );
         pageCursor.getLong();
         pageCursor.getLong();
-        assertThat( pageCursor.getOffset(), is( 24 ) );
+        assertThat( pageCursor.getOffset() ).isEqualTo( 24 );
     }
 
     @Test
@@ -749,11 +747,11 @@ class CompositePageCursorTest
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.setOffset( 13 );
-        assertThat( first.getOffset(), is( 13 ) );
-        assertThat( second.getOffset(), is( 0 ) );
+        assertThat( first.getOffset() ).isEqualTo( 13 );
+        assertThat( second.getOffset() ).isEqualTo( 0 );
         pageCursor.setOffset( 18 ); // beyond first page cursor
-        assertThat( first.getOffset(), is( PAGE_SIZE ) );
-        assertThat( second.getOffset(), is( 18 - PAGE_SIZE ) );
+        assertThat( first.getOffset() ).isEqualTo( PAGE_SIZE );
+        assertThat( second.getOffset() ).isEqualTo( 18 - PAGE_SIZE );
     }
 
     @Test
@@ -830,9 +828,9 @@ class CompositePageCursorTest
         second.setOffset( 4 );
         first.setNeedsRetry( true );
         pageCursor.shouldRetry();
-        assertThat( first.getOffset(), is( 1 ) );
-        assertThat( second.getOffset(), is( 2 ) );
-        assertThat( pageCursor.getOffset(), is( 0 ) );
+        assertThat( first.getOffset() ).isEqualTo( 1 );
+        assertThat( second.getOffset() ).isEqualTo( 2 );
+        assertThat( pageCursor.getOffset() ).isEqualTo( 0 );
 
         pageCursor.setOffset( 5 );
         first.setOffset( 3 );
@@ -840,9 +838,9 @@ class CompositePageCursorTest
         first.setNeedsRetry( false );
         second.setNeedsRetry( true );
         pageCursor.shouldRetry();
-        assertThat( first.getOffset(), is( 1 ) );
-        assertThat( second.getOffset(), is( 2 ) );
-        assertThat( pageCursor.getOffset(), is( 0 ) );
+        assertThat( first.getOffset() ).isEqualTo( 1 );
+        assertThat( second.getOffset() ).isEqualTo( 2 );
+        assertThat( pageCursor.getOffset() ).isEqualTo( 0 );
     }
 
     @Test
@@ -1129,7 +1127,7 @@ class CompositePageCursorTest
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
         {
-            pageCursor.putLong( (long) 1 );
+            pageCursor.putLong( 1 );
         }
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1141,7 +1139,7 @@ class CompositePageCursorTest
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
         {
-            pageCursor.putLong( i, (long) 1 );
+            pageCursor.putLong( i, 1 );
         }
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1160,7 +1158,7 @@ class CompositePageCursorTest
     void putLongOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        pageCursor.putLong( -1, (long) 1 );
+        pageCursor.putLong( -1, 1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
     }
@@ -1205,7 +1203,7 @@ class CompositePageCursorTest
         }
         catch ( CursorException e )
         {
-            assertThat( e.getMessage(), is( firstMsg ) );
+            assertThat( e.getMessage() ).isEqualTo( firstMsg );
         }
 
         cursor.setOffset( PAGE_SIZE );
@@ -1218,7 +1216,7 @@ class CompositePageCursorTest
         }
         catch ( CursorException e )
         {
-            assertThat( e.getMessage(), is( secondMsg ) );
+            assertThat( e.getMessage() ).isEqualTo( secondMsg );
         }
     }
 
@@ -1241,7 +1239,7 @@ class CompositePageCursorTest
         }
         catch ( CursorException e )
         {
-            assertThat( e.getMessage(), is( "boo" ) );
+            assertThat( e.getMessage() ).isEqualTo( "boo" );
         }
     }
 
@@ -1257,7 +1255,7 @@ class CompositePageCursorTest
         }
         catch ( CursorException e )
         {
-            assertThat( e.getMessage(), is( "boo" ) );
+            assertThat( e.getMessage() ).isEqualTo( "boo" );
         }
     }
 
@@ -1274,7 +1272,7 @@ class CompositePageCursorTest
         }
         catch ( CursorException e )
         {
-            assertThat( e.getMessage(), is( "first boo" ) );
+            assertThat( e.getMessage() ).isEqualTo( "first boo" );
         }
         try
         {
@@ -1283,7 +1281,7 @@ class CompositePageCursorTest
         }
         catch ( CursorException e )
         {
-            assertThat( e.getMessage(), is( "second boo" ) );
+            assertThat( e.getMessage() ).isEqualTo( "second boo" );
         }
     }
 

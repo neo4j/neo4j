@@ -21,18 +21,13 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -56,8 +51,8 @@ class SwapperSetTest
         int idB = set.allocate( b );
         SwapperSet.SwapperMapping allocA = set.getAllocation( idA );
         SwapperSet.SwapperMapping allocB = set.getAllocation( idB );
-        assertThat( allocA.swapper, is( a ) );
-        assertThat( allocB.swapper, is( b ) );
+        assertThat( allocA.swapper ).isEqualTo( a );
+        assertThat( allocB.swapper ).isEqualTo( b );
     }
 
     @Test
@@ -74,7 +69,7 @@ class SwapperSetTest
         int id = set.allocate( new DummyPageSwapper( "a", 42 ) );
         set.free( id );
         IllegalStateException exception = assertThrows( IllegalStateException.class, () -> set.free( id ) );
-        assertThat( exception.getMessage(), containsString( "double free" ) );
+        assertThat( exception.getMessage() ).contains( "double free" );
     }
 
     @Test
@@ -119,9 +114,9 @@ class SwapperSetTest
 
         allocateAndAddTenThousand( reused, swapper );
 
-        assertThat( allocated, is( equalTo( freed ) ) );
-        assertThat( allocated, is( equalTo( vacuumed ) ) );
-        assertThat( allocated, is( equalTo( reused ) ) );
+        assertThat( allocated ).isEqualTo( freed );
+        assertThat( allocated ).isEqualTo( vacuumed );
+        assertThat( allocated ).isEqualTo( reused );
     }
 
     private void allocateAndAddTenThousand( MutableIntSet allocated, PageSwapper swapper )
@@ -158,10 +153,9 @@ class SwapperSetTest
     void mustNotUseZeroAsSwapperId()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
-        Matcher<Integer> isNotZero = is( not( 0 ) );
         for ( int i = 0; i < 10_000; i++ )
         {
-            assertThat( set.allocate( swapper ), isNotZero );
+            assertThat( set.allocate( swapper ) ).isNotZero();
         }
     }
 
@@ -182,12 +176,12 @@ class SwapperSetTest
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
         int initial = (1 << 21) - 2;
-        assertThat( set.countAvailableIds(), is( initial ) );
+        assertThat( set.countAvailableIds() ).isEqualTo( initial );
         int id = set.allocate( swapper );
-        assertThat( set.countAvailableIds(), is( initial - 1 ) );
+        assertThat( set.countAvailableIds() ).isEqualTo( initial - 1 );
         set.free( id );
-        assertThat( set.countAvailableIds(), is( initial - 1 ) );
+        assertThat( set.countAvailableIds() ).isEqualTo( initial - 1 );
         set.vacuum( x -> {} );
-        assertThat( set.countAvailableIds(), is( initial ) );
+        assertThat( set.countAvailableIds() ).isEqualTo( initial );
     }
 }

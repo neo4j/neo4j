@@ -49,11 +49,9 @@ import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.Collections.emptyList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -123,8 +121,8 @@ public class AuthProceduresIT
         // Given
         assertSuccess( admin, "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'abc'" );
 
-        assertThat( login( "neo4j", "neo4j" ).subject().getAuthenticationResult(), equalTo( FAILURE ) );
-        assertThat( login( "neo4j", "abc" ).subject().getAuthenticationResult(), equalTo( SUCCESS ) );
+        assertThat( login( "neo4j", "neo4j" ).subject().getAuthenticationResult() ).isEqualTo( FAILURE );
+        assertThat( login( "neo4j", "abc" ).subject().getAuthenticationResult() ).isEqualTo( SUCCESS );
     }
 
     @Test
@@ -153,10 +151,9 @@ public class AuthProceduresIT
 
         // Then
         assertThat( execute( user, "CALL dbms.procedures", r ->
-                {
-                    assert !r.hasNext();
-                } ),
-                containsString( "The credentials you provided were valid, but must be changed before you can use this instance." ) );
+        {
+            assertFalse( r.hasNext() );
+        } ) ).contains( "The credentials you provided were valid, but must be changed before you can use this instance." );
     }
 
     //---------- create user -----------
@@ -275,7 +272,7 @@ public class AuthProceduresIT
             String[] items = new String[]{"neo4j", "andres"};
             List<Object> results = r.stream().map( s -> s.get( "username" ) ).collect( Collectors.toList() );
             assertEquals( Arrays.asList( items ).size(), results.size() );
-            assertThat( results, containsInAnyOrder( items ) );
+            assertThat( results ).contains( items );
         } );
     }
 
@@ -294,8 +291,8 @@ public class AuthProceduresIT
     @Test
     void shouldShowCurrentUser()
     {
-        assertThat( execute( admin, "CALL dbms.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", emptyList() ) ) ), equalTo( "" ) );
+        assertThat( execute( admin, "CALL dbms.showCurrentUser()", r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", emptyList() ) ) ) ).isEqualTo(
+                "" );
     }
 
     @Test
@@ -365,7 +362,7 @@ public class AuthProceduresIT
         }
         catch ( Exception e )
         {
-            assertThat( e.getMessage(), containsString( partOfErrorMsg ) );
+            assertThat( e.getMessage() ).contains( partOfErrorMsg );
         }
     }
 
@@ -410,7 +407,7 @@ public class AuthProceduresIT
                 assertEquals( value.size(), expectedValues.size(),
                         "Results for '" + key + "' should have size " + expectedValues.size() + " but was " +
                                 value.size() );
-                assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
+                assertThat( value ).containsAll( expectedValues );
             }
             else
             {

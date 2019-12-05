@@ -47,9 +47,8 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 @ResourceLock( SHARED_RESOURCE )
 public abstract class PageCacheTestSupport<T extends PageCache>
@@ -247,13 +246,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
     {
         int estimatedPageId = estimateId( actualBytes );
-        assertThat(
-                "Page id: " + pageId + " " +
-                "(based on record data, it should have been " +
-                estimatedPageId + ", a difference of " +
-                Math.abs( pageId - estimatedPageId ) + ")",
-                actualBytes,
-                byteArray( expectedBytes ) );
+        assertThat( actualBytes ).as( "Page id: " + pageId + " " + "(based on record data, it should have been " + estimatedPageId +
+                ", a difference of " + Math.abs( pageId - estimatedPageId ) + ")" ).containsExactly( expectedBytes );
     }
 
     protected int estimateId( byte[] record )

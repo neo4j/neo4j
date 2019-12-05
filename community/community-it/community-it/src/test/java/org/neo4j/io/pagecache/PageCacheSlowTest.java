@@ -52,11 +52,7 @@ import org.neo4j.test.extension.ProfilerExtension;
 import org.neo4j.test.extension.timeout.VerboseExceptionExtension;
 
 import static java.time.Duration.ofMillis;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,7 +60,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 
 @ExtendWith( {VerboseExceptionExtension.class, ProfilerExtension.class} )
@@ -192,7 +187,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                     String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
                                     String reason = String.format( "inconsistent page read from filePageId:%s, with %s, threadId:%s", pageId, lockName,
                                             Thread.currentThread().getId() );
-                                    assertThat( reason, counter, is( pageCounts[pageId] ) );
+                                    assertThat( counter ).as( reason ).isEqualTo( pageCounts[pageId] );
                                 }
                                 catch ( Throwable throwable )
                                 {
@@ -283,8 +278,9 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     }
                     while ( cursor.shouldRetry() );
 
-                    assertThat( "wrong count for threadId:" + threadId + ", aka. real threadId:" + result.realThreadId + ", filePageId:" + i, actualCount,
-                            is( expectedCount ) );
+                    assertThat( actualCount ).as(
+                            "wrong count for threadId:" + threadId + ", aka. real threadId:" + result.realThreadId + ", filePageId:" + i ).isEqualTo(
+                            expectedCount );
                 }
             }
         }
@@ -308,7 +304,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             // will run into live-locks, where a page fault will try to find a page to cooperatively evict, but all pages
             // in cache are already taken.
             final int maxCursorsPerThread = cachePages / (1 + threadCount);
-            assertThat( maxCursorsPerThread * threadCount, lessThan( cachePages ) );
+            assertThat( maxCursorsPerThread * threadCount ).isLessThan( cachePages );
 
             getPageCache( fs, cachePages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
             try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize ) )
@@ -354,7 +350,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                     String reason =
                                             String.format( "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]", pageId, lockName,
                                                     threadId, Thread.currentThread().getId() );
-                                    assertThat( reason, counter, is( pageCounts[pageId] ) );
+                                    assertThat( counter ).as( reason ).isEqualTo( pageCounts[pageId] );
                                     if ( updateCounter )
                                     {
                                         counter++;
@@ -489,8 +485,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                 catch ( ExecutionException e )
                 {
                     Throwable cause = e.getCause();
-                    assertThat( cause, instanceOf( FileIsNotMappedException.class ) );
-                    assertThat( cause.getMessage(), startsWith( "File has been unmapped" ) );
+                    assertThat( cause ).isInstanceOf( FileIsNotMappedException.class );
+                    assertThat( cause.getMessage() ).startsWith( "File has been unmapped" );
                 }
             }
             else
@@ -617,7 +613,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         while ( cursor.shouldRetry() );
         Arrays.fill( expectedPage, actualPage[0] );
         String msg = String.format( "filePageId = %s, pageSize = %s", cursor.getCurrentPageId(), pageSize );
-        assertThat( msg, actualPage, byteArray( expectedPage ) );
+        assertThat( actualPage ).as( msg ).containsExactly( expectedPage );
     }
 
     private void performConsistentAdversarialWrite( PageCursor cursor, ThreadLocalRandom rng, int pageSize ) throws IOException

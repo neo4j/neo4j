@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @Neo4jLayoutExtension
@@ -68,7 +68,7 @@ class DatabaseLayoutWatcherTest
     @Test
     void watchDatabaseDirectoryOnStart() throws Throwable
     {
-        verifyZeroInteractions( fileWatcher );
+        verifyNoInteractions( fileWatcher );
 
         watcher.start();
 
@@ -80,7 +80,7 @@ class DatabaseLayoutWatcherTest
     @Test
     void stopWatchingDatabaseDirectoriesOnStop() throws Throwable
     {
-        verifyZeroInteractions( fileWatcher );
+        verifyNoInteractions( fileWatcher );
 
         watcher.start();
         watcher.stop();

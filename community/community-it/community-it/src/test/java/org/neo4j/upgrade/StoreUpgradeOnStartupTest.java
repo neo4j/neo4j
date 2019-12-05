@@ -19,7 +19,6 @@
  */
 package org.neo4j.upgrade;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,7 +52,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
@@ -122,8 +121,8 @@ public class StoreUpgradeOnStartupTest
         {
             DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
             assertTrue( databaseStateService.causeOfFailure( database.databaseId() ).isPresent() );
-            assertThat( getRootCause( databaseStateService.causeOfFailure( database.databaseId() ).get() ),
-                    Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
+            assertThat( getRootCause( databaseStateService.causeOfFailure( database.databaseId() ).get() ) ).isInstanceOf(
+                    StoreUpgrader.UnableToUpgradeException.class );
         }
         finally
         {

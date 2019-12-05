@@ -78,19 +78,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static java.time.Duration.ofMillis;
 import static org.apache.commons.lang3.ArrayUtils.addAll;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -107,7 +95,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.ThreadTestUtils.fork;
-import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
@@ -132,14 +119,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void mustReportConfiguredMaxPages()
     {
         configureStandardPageCache();
-        assertThat( pageCache.maxCachedPages(), is( (long) maxPages ) );
+        assertThat( pageCache.maxCachedPages() ).isEqualTo( (long) maxPages );
     }
 
     @Test
     void mustReportConfiguredCachePageSize()
     {
         configureStandardPageCache();
-        assertThat( pageCache.pageSize(), is( pageCachePageSize ) );
+        assertThat( pageCache.pageSize() ).isEqualTo( pageCachePageSize );
     }
 
     @Test
@@ -161,7 +148,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File file = file( "a" );
         try ( PagedFile pf = map( file, filePageSize ) )
         {
-            assertThat( pf.file(), equalTo( file ) );
+            assertThat( pf.file() ).isEqualTo( file );
         }
     }
 
@@ -227,7 +214,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         };
         PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         Exception exception = assertThrows( Exception.class, cache::close );
-        assertThat( exception.getMessage(), is( "boo" ) );
+        assertThat( exception.getMessage() ).isEqualTo( "boo" );
 
         // We must still consider this a success, and not call PageSwapperFactory.close() again
         cache.close();
@@ -253,7 +240,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            assertThat( recordId, is( recordCount ) );
+            assertThat( recordId ).isEqualTo( recordCount );
         } );
     }
 
@@ -279,7 +266,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            assertThat( recordId, is( recordCount - (10 * recordsPerFilePage) ) );
+            assertThat( recordId ).isEqualTo( recordCount - (10 * recordsPerFilePage) );
         } );
     }
 
@@ -346,8 +333,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         pfA.close();
         pfB.close();
 
-        assertThat( callbackCounter.get(), greaterThan( 0 ) );
-        assertThat( ioCounter.get(), greaterThanOrEqualTo( pagesToDirty * 2 - 30 ) ); // -30 because of the eviction thread
+        assertThat( callbackCounter.get() ).isGreaterThan( 0 );
+        assertThat( ioCounter.get() ).isGreaterThanOrEqualTo( pagesToDirty * 2 - 30 ); // -30 because of the eviction thread
     }
 
     @Test
@@ -369,8 +356,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         } );
         pf.close();
 
-        assertThat( callbackCounter.get(), greaterThan( 0 ) );
-        assertThat( ioCounter.get(), greaterThanOrEqualTo( pagesToDirty - 30 ) ); // -30 because of the eviction thread
+        assertThat( callbackCounter.get() ).isGreaterThan( 0 );
+        assertThat( ioCounter.get() ).isGreaterThanOrEqualTo( pagesToDirty - 30 ); // -30 because of the eviction thread
     }
 
     private void dirtyManyPages( PagedFile pf, int pagesToDirty ) throws IOException
@@ -425,7 +412,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         for ( int j = 0; j < shortsPerPage; j++ )
                         {
                             int value = stream.readShort();
-                            assertThat( "short pos = " + j + ", iteration = " + i, value, is( i ) );
+                            assertThat( value ).as( "short pos = " + j + ", iteration = " + i ).isEqualTo( i );
                         }
                     }
                 }
@@ -578,7 +565,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 for ( int j = 0; j < filePageSize; j++ )
                 {
-                    assertThat( inputStream.read(), is( i ) );
+                    assertThat( inputStream.read() ).isEqualTo( i );
                 }
             }
             inputStream.close();
@@ -606,8 +593,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             pagedFile.flushAndForce();
 
-            assertThat( writeCounter.get(), greaterThanOrEqualTo( 2 ) ); // we might race with background flushing
-            assertThat( forceCounter.get(), is( 1 ) );
+            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 2 ); // we might race with background flushing
+            assertThat( forceCounter.get() ).isEqualTo( 1 );
         }
     }
 
@@ -638,8 +625,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             pageCache.flushAndForce();
 
-            assertThat( writeCounter.get(), greaterThanOrEqualTo( 3 ) ); // we might race with background flushing
-            assertThat( forceCounter.get(), is( 2 ) );
+            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 3 ); // we might race with background flushing
+            assertThat( forceCounter.get() ).isEqualTo( 2 );
         }
     }
 
@@ -766,13 +753,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 assertTrue( cursor.next() );
                 assertFalse( cursor.next( -1 ) );
-                assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( PageCursor.UNBOUND_PAGE_ID );
             }
             try ( PageCursor cursor = pf.io( pageId, PF_SHARED_READ_LOCK ) )
             {
                 assertTrue( cursor.next() );
                 assertFalse( cursor.next( -1 ) );
-                assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( PageCursor.UNBOUND_PAGE_ID );
             }
         }
     }
@@ -804,7 +791,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            assertThat( actualPageCounter, is( expectedPageCounterResult ) );
+            assertThat( actualPageCounter ).isEqualTo( expectedPageCounterResult );
         } );
     }
 
@@ -1133,11 +1120,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 byte[] bytes = new byte[4];
                 assertTrue( cursor.next() );
                 cursor.getBytes( bytes );
-                assertThat( bytes, byteArray( new byte[]{1, 2, 3, 4} ) );
+                assertThat( bytes ).containsExactly( 1, 2, 3, 4 );
 
                 assertTrue( cursor.next() );
                 cursor.getBytes( bytes );
-                assertThat( bytes, byteArray( new byte[]{5, 6, 7, 8} ) );
+                assertThat( bytes ).containsExactly( 5, 6, 7, 8 );
             }
             pagedFile.close();
         } );
@@ -1154,9 +1141,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentPageId(), is( 0L ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( 0L );
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentPageId(), is( 1L ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( 1L );
             }
         } );
     }
@@ -1172,11 +1159,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     PageCursor cursor = pagedFile.io( 1L, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentPageId(), is( 1L ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( 1L );
                 assertTrue( cursor.next( 4L ) );
-                assertThat( cursor.getCurrentPageId(), is( 4L ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( 4L );
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentPageId(), is( 5L ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( 5L );
             }
         } );
     }
@@ -1191,11 +1178,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
                     PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK ) )
             {
-                assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( PageCursor.UNBOUND_PAGE_ID );
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentPageId(), is( 0L ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( 0L );
                 cursor.rewind();
-                assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+                assertThat( cursor.getCurrentPageId() ).isEqualTo( PageCursor.UNBOUND_PAGE_ID );
             }
         } );
     }
@@ -1210,11 +1197,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
                     PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK ) )
             {
-                assertThat( cursor.getCurrentPageSize(), is( PageCursor.UNBOUND_PAGE_SIZE ) );
+                assertThat( cursor.getCurrentPageSize() ).isEqualTo( PageCursor.UNBOUND_PAGE_SIZE );
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentPageSize(), is( filePageSize ) );
+                assertThat( cursor.getCurrentPageSize() ).isEqualTo( filePageSize );
                 cursor.rewind();
-                assertThat( cursor.getCurrentPageSize(), is( PageCursor.UNBOUND_PAGE_SIZE ) );
+                assertThat( cursor.getCurrentPageSize() ).isEqualTo( PageCursor.UNBOUND_PAGE_SIZE );
             }
         } );
     }
@@ -1229,11 +1216,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
                     PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK ) )
             {
-                assertThat( cursor.getCurrentFile(), nullValue() );
+                assertThat( cursor.getCurrentFile() ).isNull();
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentFile(), is( file( "a" ) ) );
+                assertThat( cursor.getCurrentFile() ).isEqualTo( file( "a" ) );
                 cursor.rewind();
-                assertThat( cursor.getCurrentFile(), nullValue() );
+                assertThat( cursor.getCurrentFile() ).isNull();
             }
         } );
     }
@@ -1445,7 +1432,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             final Optional<PagedFile> optional = pageCache.getExistingMapping( file );
             assertTrue( optional.isPresent() );
             final PagedFile actual = optional.get();
-            assertThat( actual, sameInstance( pf ) );
+            assertThat( actual ).isSameAs( pf );
             actual.close();
         }
     }
@@ -1471,8 +1458,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             map( f3, filePageSize ).close();
             List<PagedFile> existingMappings = pageCache.listExistingMappings();
-            assertThat( existingMappings.size(), is( 2 ) );
-            assertThat( existingMappings, containsInAnyOrder( pf1, pf2 ) );
+            assertThat( existingMappings.size() ).isEqualTo( 2 );
+            assertThat( existingMappings ).contains( pf1, pf2 );
         }
     }
 
@@ -1760,7 +1747,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     pagesChecked++;
                 }
             }
-            assertThat( pagesChecked, is( initialPages + pagesToAdd ) );
+            assertThat( pagesChecked ).isEqualTo( initialPages + pagesToAdd );
 
             pagesChecked = 0;
             try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_READ_LOCK ) )
@@ -1771,7 +1758,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     pagesChecked++;
                 }
             }
-            assertThat( pagesChecked, is( initialPages + pagesToAdd ) );
+            assertThat( pagesChecked ).isEqualTo( initialPages + pagesToAdd );
             pagedFile.close();
         } );
     }
@@ -1795,7 +1782,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     pagesChecked++;
                 }
             }
-            assertThat( pagesChecked, is( initialPages ) );
+            assertThat( pagesChecked ).isEqualTo( initialPages );
         } );
     }
 
@@ -1861,7 +1848,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue( cursor.next() );
                 do
                 {
-                    assertThat( cursor.getByte(), is( expectedByte ) );
+                    assertThat( cursor.getByte() ).isEqualTo( expectedByte );
                 }
                 while ( cursor.shouldRetry() && currentTimeMillis() < timeout );
             }
@@ -1888,7 +1875,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( long currentPageId = lastFilePageId; currentPageId >= 0; currentPageId-- )
                 {
                     assertTrue( cursor.next( currentPageId ), "next( currentPageId = " + currentPageId + " )" );
-                    assertThat( cursor.getCurrentPageId(), is( currentPageId ) );
+                    assertThat( cursor.getCurrentPageId() ).isEqualTo( currentPageId );
                     verifyRecordsMatchExpected( cursor );
                 }
             }
@@ -2017,18 +2004,18 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             buf.flip();
 
-            assertThat( buf.getLong(), is( 42L ) );
-            assertThat( buf.getInt(), is( 42 ) );
-            assertThat( buf.getShort(), is( (short) 42 ) );
-            assertThat( buf.get(), is( (byte) 42 ) );
-            assertThat( buf.get(), is( (byte) 43 ) );
-            assertThat( buf.get(), is( (byte) 44 ) );
-            assertThat( buf.get(), is( (byte) 45 ) );
-            assertThat( buf.get(), is( (byte) 46 ) );
-            assertThat( buf.get(), is( (byte) 47 ) );
-            assertThat( buf.get(), is( (byte) 48 ) );
-            assertThat( buf.get(), is( (byte) 48 ) );
-            assertThat( buf.get(), is( (byte) 48 ) );
+            assertThat( buf.getLong() ).isEqualTo( 42L );
+            assertThat( buf.getInt() ).isEqualTo( 42 );
+            assertThat( buf.getShort() ).isEqualTo( (short) 42 );
+            assertThat( buf.get() ).isEqualTo( (byte) 42 );
+            assertThat( buf.get() ).isEqualTo( (byte) 43 );
+            assertThat( buf.get() ).isEqualTo( (byte) 44 );
+            assertThat( buf.get() ).isEqualTo( (byte) 45 );
+            assertThat( buf.get() ).isEqualTo( (byte) 46 );
+            assertThat( buf.get() ).isEqualTo( (byte) 47 );
+            assertThat( buf.get() ).isEqualTo( (byte) 48 );
+            assertThat( buf.get() ).isEqualTo( (byte) 48 );
+            assertThat( buf.get() ).isEqualTo( (byte) 48 );
         } );
     }
 
@@ -2380,15 +2367,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             // Verify the file contents
-            assertThat( fs.getFileSize( file2 ), is( file2sizeBytes ) );
+            assertThat( fs.getFileSize( file2 ) ).isEqualTo( file2sizeBytes );
             try ( InputStream inputStream = fs.openAsInputStream( file2 ) )
             {
                 for ( int i = 0; i < file2sizeBytes; i++ )
                 {
                     int b = inputStream.read();
-                    assertThat( b, is( (int) 'b' ) );
+                    assertThat( b ).isEqualTo( (int) 'b' );
                 }
-                assertThat( inputStream.read(), is( -1 ) );
+                assertThat( inputStream.read() ).isEqualTo( -1 );
             }
 
             try ( StoreChannel channel = fs.read( file( "a" ) ) )
@@ -2401,7 +2388,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     bufA.flip();
                     bufB.clear();
                     generateRecordForId( i, bufB );
-                    assertThat( bufB.array(), byteArray( bufA.array() ) );
+                    assertThat( bufB.array() ).containsExactly( bufA.array() );
                 }
             }
         } );
@@ -2448,23 +2435,23 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             pageCache.reportEvents();
 
-            assertThat( "wrong count of pins", tracer.pins(), is( countedPages ) );
-            assertThat( "wrong count of unpins", tracer.unpins(), is( countedPages ) );
+            assertThat( tracer.pins() ).as( "wrong count of pins" ).isEqualTo( countedPages );
+            assertThat( tracer.unpins() ).as( "wrong count of unpins" ).isEqualTo( countedPages );
 
             // We might be unlucky and fault in the second next call, on the page
             // we brought up in the first next call. That's why we assert that we
             // have observed *at least* the countedPages number of faults.
             long faults = tracer.faults();
             long bytesRead = tracer.bytesRead();
-            assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( countedFaults ) );
-            assertThat( "wrong number of bytes read", bytesRead, greaterThanOrEqualTo( countedFaults * filePageSize ) );
+            assertThat( faults ).as( "wrong count of faults" ).isGreaterThanOrEqualTo( countedFaults );
+            assertThat( bytesRead ).as( "wrong number of bytes read" ).isGreaterThanOrEqualTo( countedFaults * filePageSize );
             // Every page we move forward can put the freelist behind so the cache
             // wants to evict more pages. Plus, every page fault we do could also
             // block and get a page directly transferred to it, and these kinds of
             // evictions can count in addition to the evictions we do when the
             // cache is behind on keeping the freelist full.
-            assertThat( "wrong count of evictions", tracer.evictions(),
-                    both( greaterThanOrEqualTo( countedFaults - maxPages ) ).and( lessThanOrEqualTo( countedPages + faults ) ) );
+            assertThat( tracer.evictions() ).as( "wrong count of evictions" ).isGreaterThanOrEqualTo( countedFaults - maxPages )
+                    .isLessThanOrEqualTo( countedPages + faults );
         } );
     }
 
@@ -2484,9 +2471,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( long i = 0; i < pagesToGenerate; i++ )
                 {
                     assertTrue( cursor.next() );
-                    assertThat( cursor.getCurrentPageId(), is( i ) );
+                    assertThat( cursor.getCurrentPageId() ).isEqualTo( i );
                     assertTrue( cursor.next( i ) ); // This does not count as a pin
-                    assertThat( cursor.getCurrentPageId(), is( i ) );
+                    assertThat( cursor.getCurrentPageId() ).isEqualTo( i );
 
                     writeRecords( cursor );
                 }
@@ -2497,21 +2484,21 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             pageCache.reportEvents();
 
-            assertThat( "wrong count of pins", tracer.pins(), is( pagesToGenerate + 1 ) );
-            assertThat( "wrong count of unpins", tracer.unpins(), is( pagesToGenerate + 1 ) );
+            assertThat( tracer.pins() ).as( "wrong count of pins" ).isEqualTo( pagesToGenerate + 1 );
+            assertThat( tracer.unpins() ).as( "wrong count of unpins" ).isEqualTo( pagesToGenerate + 1 );
 
             // We might be unlucky and fault in the second next call, on the page
             // we brought up in the first next call. That's why we assert that we
             // have observed *at least* the countedPages number of faults.
             long faults = tracer.faults();
-            assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( pagesToGenerate ) );
+            assertThat( faults ).as( "wrong count of faults" ).isGreaterThanOrEqualTo( pagesToGenerate );
             // Every page we move forward can put the freelist behind so the cache
             // wants to evict more pages. Plus, every page fault we do could also
             // block and get a page directly transferred to it, and these kinds of
             // evictions can count in addition to the evictions we do when the
             // cache is behind on keeping the freelist full.
-            assertThat( "wrong count of evictions", tracer.evictions(),
-                    both( greaterThanOrEqualTo( pagesToGenerate - maxPages ) ).and( lessThanOrEqualTo( pagesToGenerate + faults ) ) );
+            assertThat( tracer.evictions() ).as( "wrong count of evictions" ).isGreaterThanOrEqualTo( pagesToGenerate - maxPages ).isLessThanOrEqualTo(
+                    pagesToGenerate + faults );
 
             // We use greaterThanOrEqualTo because we visit each page twice, and
             // that leaves a small window wherein we can race with eviction, have
@@ -2522,8 +2509,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             // the file, into a single flush.
             long flushes = tracer.flushes();
             long bytesWritten = tracer.bytesWritten();
-            assertThat( "wrong count of flushes", flushes, greaterThanOrEqualTo( pagesToGenerate - maxPages ) );
-            assertThat( "wrong count of bytes written", bytesWritten, greaterThanOrEqualTo( pagesToGenerate * filePageSize ) );
+            assertThat( flushes ).as( "wrong count of flushes" ).isGreaterThanOrEqualTo( pagesToGenerate - maxPages );
+            assertThat( bytesWritten ).as( "wrong count of bytes written" ).isGreaterThanOrEqualTo( pagesToGenerate * filePageSize );
         } );
     }
 
@@ -2565,8 +2552,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         pageCache.reportEvents(); // Reset thread-local event counters.
-        assertThat( "wrong read pin count", readCount.get(), is( pinsForRead ) );
-        assertThat( "wrong write pin count", writeCount.get(), is( pinsForWrite ) );
+        assertThat( readCount.get() ).as( "wrong read pin count" ).isEqualTo( pinsForRead );
+        assertThat( writeCount.get() ).as( "wrong write pin count" ).isEqualTo( pinsForWrite );
     }
 
     @Test
@@ -2576,7 +2563,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
-            assertThat( pagedFile.getLastPageId(), lessThan( 0L ) );
+            assertThat( pagedFile.getLastPageId() ).isLessThan( 0L );
         }
     }
 
@@ -2591,7 +2578,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
-            assertThat( pagedFile.getLastPageId(), is( 0L ) );
+            assertThat( pagedFile.getLastPageId() ).isEqualTo( 0L );
         }
     }
 
@@ -2605,7 +2592,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
-            assertThat( pagedFile.getLastPageId(), is( 1L ) );
+            assertThat( pagedFile.getLastPageId() ).isEqualTo( 1L );
         }
     }
 
@@ -2622,7 +2609,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
-            assertThat( pagedFile.getLastPageId(), is( 2L ) );
+            assertThat( pagedFile.getLastPageId() ).isEqualTo( 2L );
         }
     }
 
@@ -2644,7 +2631,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         long resultingLastPageId = pagedFile.getLastPageId();
         pagedFile.close();
-        assertThat( resultingLastPageId, is( initialLastPageId ) );
+        assertThat( resultingLastPageId ).isEqualTo( initialLastPageId );
     }
 
     @Test
@@ -2667,7 +2654,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try
         {
-            assertThat( resultingLastPageId, is( initialLastPageId ) );
+            assertThat( resultingLastPageId ).isEqualTo( initialLastPageId );
         }
         finally
         {
@@ -2682,11 +2669,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
 
-        assertThat( pagedFile.getLastPageId(), is( 9L ) );
+        assertThat( pagedFile.getLastPageId() ).isEqualTo( 9L );
         dirtyManyPages( pagedFile, 15 );
         try
         {
-            assertThat( pagedFile.getLastPageId(), is( 14L ) );
+            assertThat( pagedFile.getLastPageId() ).isEqualTo( 14L );
         }
         finally
         {
@@ -2701,14 +2688,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
 
-        assertThat( pagedFile.getLastPageId(), is( 9L ) );
+        assertThat( pagedFile.getLastPageId() ).isEqualTo( 9L );
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next( 15 ) );
         }
         try
         {
-            assertThat( pagedFile.getLastPageId(), is( 15L ) );
+            assertThat( pagedFile.getLastPageId() ).isEqualTo( 15L );
         }
         finally
         {
@@ -2758,41 +2745,41 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         cursor.setOffset( filePageSize / 2 );
         cursor.zapPage();
-        assertThat( cursor.getOffset(), is( filePageSize / 2 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( filePageSize / 2 );
         cursor.setOffset( 0 );
         cursor.putLong( 1 );
-        assertThat( cursor.getOffset(), is( 8 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 8 );
         cursor.putInt( 1 );
-        assertThat( cursor.getOffset(), is( 12 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 12 );
         cursor.putShort( (short) 1 );
-        assertThat( cursor.getOffset(), is( 14 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 14 );
         cursor.putByte( (byte) 1 );
-        assertThat( cursor.getOffset(), is( 15 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 15 );
         cursor.putBytes( new byte[]{1, 2, 3} );
-        assertThat( cursor.getOffset(), is( 18 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 18 );
         cursor.putBytes( new byte[]{1, 2, 3}, 1, 1 );
-        assertThat( cursor.getOffset(), is( 19 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 19 );
         cursor.putBytes( 5, (byte) 1 );
-        assertThat( cursor.getOffset(), is( 24 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 24 );
     }
 
     private void verifyReadOffsets( PageCursor cursor )
     {
-        assertThat( cursor.getOffset(), is( 0 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 0 );
         cursor.getLong();
-        assertThat( cursor.getOffset(), is( 8 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 8 );
         cursor.getInt();
-        assertThat( cursor.getOffset(), is( 12 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 12 );
         cursor.getShort();
-        assertThat( cursor.getOffset(), is( 14 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 14 );
         cursor.getByte();
-        assertThat( cursor.getOffset(), is( 15 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 15 );
         cursor.getBytes( new byte[3] );
-        assertThat( cursor.getOffset(), is( 18 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 18 );
         cursor.getBytes( new byte[3], 1, 1 );
-        assertThat( cursor.getOffset(), is( 19 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 19 );
         cursor.getBytes( new byte[5] );
-        assertThat( cursor.getOffset(), is( 24 ) );
+        assertThat( cursor.getOffset() ).isEqualTo( 24 );
 
         byte[] expectedBytes = new byte[]{0, 0, 0, 0, 0, 0, 0, 1, // first; long
                 0, 0, 0, 1, // second; int
@@ -2805,7 +2792,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         byte[] actualBytes = new byte[24];
         cursor.setOffset( 0 );
         cursor.getBytes( actualBytes );
-        assertThat( actualBytes, byteArray( expectedBytes ) );
+        assertThat( actualBytes ).containsExactly( expectedBytes );
     }
 
     @Test
@@ -2852,14 +2839,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.setOffset( 1 );
             cursor.putBytes( data, 1, 3 );
             cursor.setOffset( 0 );
-            assertThat( cursor.getByte(), is( (byte) 1 ) );
-            assertThat( cursor.getByte(), is( (byte) 41 ) );
-            assertThat( cursor.getByte(), is( (byte) 40 ) );
-            assertThat( cursor.getByte(), is( (byte) 39 ) );
-            assertThat( cursor.getByte(), is( (byte) 5 ) );
-            assertThat( cursor.getByte(), is( (byte) 6 ) );
-            assertThat( cursor.getByte(), is( (byte) 7 ) );
-            assertThat( cursor.getByte(), is( (byte) 8 ) );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 1 );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 41 );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 40 );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 39 );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 5 );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 6 );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 7 );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 8 );
         }
     }
 
@@ -2882,12 +2869,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             cursor.setOffset( 1 );
             cursor.getBytes( data, 1, data.length - 2 );
-            assertThat( data[0], is( (byte) 200 ) );
+            assertThat( data[0] ).isEqualTo( (byte) 200 );
             for ( int i = 1; i < 199; i++ )
             {
-                assertThat( data[i], is( (byte) (i + 1) ) );
+                assertThat( data[i] ).isEqualTo( (byte) (i + 1) );
             }
-            assertThat( data[199], is( (byte) 1 ) );
+            assertThat( data[199] ).isEqualTo( (byte) 1 );
         }
     }
 
@@ -2911,12 +2898,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.setOffset( 1 );
             cursor.putBytes( data, 1, data.length - 2 );
             cursor.setOffset( 0 );
-            assertThat( cursor.getByte(), is( (byte) 1 ) );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 1 );
             for ( int i = 0; i < 198; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (199 - i) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (199 - i) );
             }
-            assertThat( cursor.getByte(), is( (byte) 200 ) );
+            assertThat( cursor.getByte() ).isEqualTo( (byte) 200 );
         }
     }
 
@@ -2975,7 +2962,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 FileIsNotMappedException exception = assertThrows( FileIsNotMappedException.class, cursor::next );
                 StringWriter out = new StringWriter();
                 exception.printStackTrace( new PrintWriter( out ) );
-                assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+                assertThat( out.toString() ).contains( "closeThisPagedFile" );
             }
         } );
     }
@@ -2999,7 +2986,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileIsNotMappedException exception = assertThrows( FileIsNotMappedException.class, cursor::next );
             StringWriter out = new StringWriter();
             exception.printStackTrace( new PrintWriter( out ) );
-            assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+            assertThat( out.toString() ).contains( "closeThisPagedFile" );
         } );
     }
 
@@ -3844,7 +3831,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( IOException.class ) );
+            assertThat( e ).isInstanceOf( IOException.class );
         }
     }
 
@@ -4012,22 +3999,22 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pagedFileB.close();
 
             InputStream inputStream = fs.openAsInputStream( fileB );
-            assertThat( "first page first byte", inputStream.read(), is( 63 ) );
+            assertThat( inputStream.read() ).as( "first page first byte" ).isEqualTo( 63 );
             for ( int i = 0; i < filePageSizeB - 1; i++ )
             {
-                assertThat( "page 0 byte pos " + i, inputStream.read(), is( 0 ) );
+                assertThat( inputStream.read() ).as( "page 0 byte pos " + i ).isEqualTo( 0 );
             }
-            assertThat( "second page first byte", inputStream.read(), is( 63 ) );
+            assertThat( inputStream.read() ).as( "second page first byte" ).isEqualTo( 63 );
             for ( int i = 0; i < filePageSizeB - 1; i++ )
             {
-                assertThat( "page 1 byte pos " + i, inputStream.read(), is( 0 ) );
+                assertThat( inputStream.read() ).as( "page 1 byte pos " + i ).isEqualTo( 0 );
             }
-            assertThat( "third page first byte", inputStream.read(), is( 63 ) );
+            assertThat( inputStream.read() ).as( "third page first byte" ).isEqualTo( 63 );
             for ( int i = 0; i < filePageSizeB - 1; i++ )
             {
-                assertThat( "page 2 byte pos " + i, inputStream.read(), is( 0 ) );
+                assertThat( inputStream.read() ).as( "page 2 byte pos " + i ).isEqualTo( 0 );
             }
-            assertThat( "expect EOF", inputStream.read(), is( -1 ) );
+            assertThat( inputStream.read() ).as( "expect EOF" ).isEqualTo( -1 );
         } );
     }
 
@@ -4065,7 +4052,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     assertTrue( cursor.next() );
                     for ( int j = 0; j < filePageSize; j++ )
                     {
-                        assertThat( cursor.getByte(), is( (byte) 0 ) );
+                        assertThat( cursor.getByte() ).isEqualTo( (byte) 0 );
                     }
                 }
             }
@@ -4133,7 +4120,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 // Verify the page is all 'a's:
                 for ( int i = 0; i < filePageSize; i++ )
                 {
-                    assertThat( cursor.getByte(), is( a ) );
+                    assertThat( cursor.getByte() ).isEqualTo( a );
                 }
 
                 // Now fill file B with 'b's... this will cause our current page to be evicted
@@ -4154,7 +4141,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         }
                     }
                     while ( cursor.shouldRetry() );
-                    assertThat( actual, is( expected ) );
+                    assertThat( actual ).isEqualTo( expected );
                 }
             }
 
@@ -4242,7 +4229,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 if ( x != y )
                 {
                     String reason = "Failed to read back the value that was written at " + "offset " + toHexString( i );
-                    assertThat( reason, toHexString( y ), is( toHexString( x ) ) );
+                    assertThat( toHexString( y ) ).as( reason ).isEqualTo( toHexString( x ) );
                 }
             }
         }
@@ -4310,7 +4297,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         pageCount++;
                         recordFormat.assertRecordsWrittenCorrectly( cursor );
                     }
-                    assertThat( "pages in file " + file, pageCount, greaterThan( 0 ) );
+                    assertThat( pageCount ).as( "pages in file " + file ).isGreaterThan( 0 );
                 }
             }
         } );
@@ -4411,14 +4398,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PagedFile pf = map( file( "a" ), filePageSize );
                     PageCursor cursor = pf.io( 10, PF_SHARED_WRITE_LOCK ) )
             {
-                assertThat( pf.getLastPageId(), lessThan( 0L ) );
+                assertThat( pf.getLastPageId() ).isLessThan( 0L );
                 assertTrue( cursor.next() );
                 cursor.putInt( 0xcafebabe );
             }
             try ( PagedFile pf = map( file( "a" ), filePageSize, StandardOpenOption.TRUNCATE_EXISTING );
                     PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
             {
-                assertThat( pf.getLastPageId(), lessThan( 0L ) );
+                assertThat( pf.getLastPageId() ).isLessThan( 0L );
                 assertFalse( cursor.next() );
             }
         } );
@@ -4484,7 +4471,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             writeRecords( cursor );
             assertTrue( cursor.next() );
         }
-        assertThat( flushCounter.get(), lessThan( recordCount / recordsPerFilePage ) );
+        assertThat( flushCounter.get() ).isLessThan( recordCount / recordsPerFilePage );
     }
 
     @Test
@@ -4501,7 +4488,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             writeRecords( cursor );
             assertTrue( cursor.next() );
         }
-        assertThat( flushCounter.get(), is( 1 ) );
+        assertThat( flushCounter.get() ).isEqualTo( 1 );
     }
 
     private static SingleFilePageSwapperFactory flushCountingPageSwapperFactory( FileSystemAbstraction fs, AtomicInteger flushCounter )
@@ -4600,7 +4587,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     bytesCopied = cursorA.copyTo( 0, cursorB, 0, cursorA.getCurrentPageSize() );
                 }
                 while ( cursorA.shouldRetry() );
-                assertThat( bytesCopied, is( pageSize ) );
+                assertThat( bytesCopied ).isEqualTo( pageSize );
             }
         }
 
@@ -4622,7 +4609,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     b = cursor.getByte();
                 }
                 while ( cursor.shouldRetry() );
-                assertThat( b, is( (byte) i ) );
+                assertThat( b ).isEqualTo( (byte) i );
             }
         }
     }
@@ -4644,12 +4631,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursorA.putByte( (byte) (i + 1) );
             }
             assertTrue( cursorB.next() );
-            assertThat( cursorA.copyTo( 0, cursorB, 0, smallPageSize ), is( smallPageSize ) );
+            assertThat( cursorA.copyTo( 0, cursorB, 0, smallPageSize ) ).isEqualTo( smallPageSize );
             for ( int i = 0; i < smallPageSize; i++ )
             {
-                assertThat( cursorB.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursorB.getByte() ).isEqualTo( (byte) (i + 1) );
             }
-            assertThat( cursorB.getByte(), is( (byte) 0 ) );
+            assertThat( cursorB.getByte() ).isEqualTo( (byte) 0 );
         }
     }
 
@@ -4670,10 +4657,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursorA.putByte( (byte) (i + 1) );
             }
             assertTrue( cursorB.next() );
-            assertThat( cursorA.copyTo( 0, cursorB, 0, largePageSize ), is( smallPageSize ) );
+            assertThat( cursorA.copyTo( 0, cursorB, 0, largePageSize ) ).isEqualTo( smallPageSize );
             for ( int i = 0; i < smallPageSize; i++ )
             {
-                assertThat( cursorB.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursorB.getByte() ).isEqualTo( (byte) (i + 1) );
             }
         }
     }
@@ -4739,17 +4726,17 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
             // source buffer length overflow
-            assertThat( cursorA.copyTo( 1, cursorB, 0, pageSize ), is( pageSize - 1 ) );
+            assertThat( cursorA.copyTo( 1, cursorB, 0, pageSize ) ).isEqualTo( pageSize - 1 );
             assertFalse( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
             // target buffer length overflow
-            assertThat( cursorA.copyTo( 0, cursorB, 1, pageSize ), is( pageSize - 1 ) );
+            assertThat( cursorA.copyTo( 0, cursorB, 1, pageSize ) ).isEqualTo( pageSize - 1 );
             assertFalse( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
             // zero length
-            assertThat( cursorA.copyTo( 0, cursorB, 1, 0 ), is( 0 ) );
+            assertThat( cursorA.copyTo( 0, cursorB, 1, 0 ) ).isEqualTo( 0 );
             assertFalse( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
@@ -4830,7 +4817,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             copied = cursor.copyTo( 0, buffer );
         }
         while ( cursor.shouldRetry() );
-        assertThat( copied, is( filePageSize ) );
+        assertThat( copied ).isEqualTo( filePageSize );
         buffer.clear();
         verifyRecordsMatchExpected( 0, 0, buffer );
 
@@ -4843,9 +4830,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         buffer.clear();
         copied = cursor.copyTo( 1, buffer );
         assertFalse( cursor.checkAndClearBoundsFlag() );
-        assertThat( copied, is( filePageSize - 1 ) );
-        assertThat( buffer.position(), is( filePageSize - 1 ) );
-        assertThat( buffer.remaining(), is( 1 ) );
+        assertThat( copied ).isEqualTo( filePageSize - 1 );
+        assertThat( buffer.position() ).isEqualTo( filePageSize - 1 );
+        assertThat( buffer.remaining() ).isEqualTo( 1 );
         buffer.clear();
 
         // Smaller buffer at offset zero.
@@ -4857,9 +4844,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             copied = cursor.copyTo( 0, buffer );
         }
         while ( cursor.shouldRetry() );
-        assertThat( copied, is( filePageSize - recordSize ) );
-        assertThat( buffer.position(), is( filePageSize - recordSize ) );
-        assertThat( buffer.remaining(), is( 0 ) );
+        assertThat( copied ).isEqualTo( filePageSize - recordSize );
+        assertThat( buffer.position() ).isEqualTo( filePageSize - recordSize );
+        assertThat( buffer.remaining() ).isEqualTo( 0 );
         buffer.clear();
         buffer.limit( filePageSize - recordSize );
         verifyRecordsMatchExpected( 0, 0, buffer );
@@ -4873,9 +4860,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             copied = cursor.copyTo( recordSize, buffer );
         }
         while ( cursor.shouldRetry() );
-        assertThat( copied, is( filePageSize - recordSize ) );
-        assertThat( buffer.position(), is( filePageSize - recordSize ) );
-        assertThat( buffer.remaining(), is( 0 ) );
+        assertThat( copied ).isEqualTo( filePageSize - recordSize );
+        assertThat( buffer.position() ).isEqualTo( filePageSize - recordSize );
+        assertThat( buffer.remaining() ).isEqualTo( 0 );
         buffer.clear();
         buffer.limit( filePageSize - recordSize );
         verifyRecordsMatchExpected( 0, recordSize, buffer );
@@ -5069,11 +5056,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.setOffset( srcOffset );
             for ( int i = 0; i < shift; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (i + 1) );
             }
             for ( int i = 0; i < bytes.length; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (i + 1) );
             }
 
             assertFalse( cursor.checkAndClearBoundsFlag() );
@@ -5112,13 +5099,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.setOffset( srcOffset );
             for ( int i = 0; i < bytes.length; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (i + 1) );
             }
             assertZeroes( cursor, srcOffset + bytes.length + shift, gap );
             cursor.setOffset( srcOffset + shift );
             for ( int i = 0; i < bytes.length; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (i + 1) );
             }
 
             assertFalse( cursor.checkAndClearBoundsFlag() );
@@ -5156,11 +5143,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.setOffset( srcOffset + shift );
             for ( int i = 0; i < bytes.length; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (i + 1) );
             }
             for ( int i = shift; i < 0; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (bytes.length + i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (bytes.length + i + 1) );
             }
 
             assertFalse( cursor.checkAndClearBoundsFlag() );
@@ -5199,13 +5186,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.setOffset( srcOffset + shift );
             for ( int i = 0; i < bytes.length; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (i + 1) );
             }
             assertZeroes( cursor, srcOffset + bytes.length + shift, gap );
             cursor.setOffset( srcOffset );
             for ( int i = 0; i < bytes.length; i++ )
             {
-                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+                assertThat( cursor.getByte() ).isEqualTo( (byte) (i + 1) );
             }
 
             assertFalse( cursor.checkAndClearBoundsFlag() );
@@ -5216,7 +5203,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         for ( int i = 0; i < length; i++ )
         {
-            assertThat( cursor.getByte( offset + i ), is( (byte) 0 ) );
+            assertThat( cursor.getByte( offset + i ) ).isEqualTo( (byte) 0 );
         }
     }
 
@@ -5454,7 +5441,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             catch ( CursorException e )
             {
-                assertThat( e.getMessage(), is( msg ) );
+                assertThat( e.getMessage() ).isEqualTo( msg );
             }
 
             msg = "Boo" + ThreadLocalRandom.current().nextInt();
@@ -5467,7 +5454,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             catch ( CursorException e )
             {
-                assertThat( e.getMessage(), is( msg ) );
+                assertThat( e.getMessage() ).isEqualTo( msg );
             }
         }
     }
@@ -5726,7 +5713,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue( linkedWriter.next() );
                 linkedWriter.setCursorException( msg );
                 CursorException exception = assertThrows( CursorException.class, writer::checkAndClearCursorException );
-                assertThat( exception.getMessage(), is( msg ) );
+                assertThat( exception.getMessage() ).isEqualTo( msg );
             }
 
             msg = "Boo" + ThreadLocalRandom.current().nextInt();
@@ -5736,7 +5723,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue( linkedReader.next() );
                 linkedReader.setCursorException( msg );
                 CursorException exception = assertThrows( CursorException.class, reader::checkAndClearCursorException );
-                assertThat( exception.getMessage(), is( msg ) );
+                assertThat( exception.getMessage() ).isEqualTo( msg );
             }
         }
     }
@@ -5859,7 +5846,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         try ( PagedFile pf = map( file( "a" ), filePageSize ) )
         {
-            assertThat( pf.fileSize(), is( 0L ) );
+            assertThat( pf.fileSize() ).isEqualTo( 0L );
         }
     }
 
@@ -5872,9 +5859,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
-            assertThat( pf.fileSize(), is( increment ) );
+            assertThat( pf.fileSize() ).isEqualTo( increment );
             assertTrue( cursor.next() );
-            assertThat( pf.fileSize(), is( 2 * increment ) );
+            assertThat( pf.fileSize() ).isEqualTo( 2 * increment );
         }
     }
 
@@ -6024,7 +6011,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     private static void verifyNoFaultCursorIsInMemory( PageCursor nofault, long expectedPageId )
     {
-        assertThat( nofault.getCurrentPageId(), is( expectedPageId ) );
+        assertThat( nofault.getCurrentPageId() ).isEqualTo( expectedPageId );
         nofault.getByte();
         assertFalse( nofault.checkAndClearBoundsFlag() ); // Access must not be out of bounds.
         nofault.getByte( 0 );
@@ -6127,12 +6114,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         // Also check that no faults happened.
         cursorTracerSupplier.get().reportEvents();
-        assertThat( cacheTracer.faults(), is( 0L ) );
+        assertThat( cacheTracer.faults() ).isEqualTo( 0L );
     }
 
     private static void verifyNoFaultReadIsNotInMemory( PageCursor nofault )
     {
-        assertThat( nofault.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+        assertThat( nofault.getCurrentPageId() ).isEqualTo( PageCursor.UNBOUND_PAGE_ID );
         nofault.getByte();
         assertTrue( nofault.checkAndClearBoundsFlag() ); // Access must be out of bounds.
         nofault.getByte( 0 );
@@ -6142,7 +6129,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     private static void verifyNoFaultWriteIsOutOfBounds( PageCursor nofault ) throws IOException
     {
         assertTrue( nofault.next( 0 ) );
-        assertThat( nofault.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+        assertThat( nofault.getCurrentPageId() ).isEqualTo( PageCursor.UNBOUND_PAGE_ID );
         nofault.putByte( (byte) 1 );
         assertTrue( nofault.checkAndClearBoundsFlag() ); // Access must be out of bounds.
         nofault.putByte( 0, (byte) 1 );

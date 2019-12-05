@@ -28,9 +28,7 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.oneOf;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class RecordFormat
 {
@@ -88,7 +86,7 @@ public abstract class RecordFormat
             Record expectedRecord = createRecord( cursor.getCurrentFile(), recordId );
             Record actualRecord;
             actualRecord = readRecord( cursor );
-            assertThat( actualRecord, is( oneOf( expectedRecord, zeroRecord() ) ) );
+            assertThat( actualRecord ).isIn( expectedRecord, zeroRecord() );
         }
     }
 
@@ -100,13 +98,13 @@ public abstract class RecordFormat
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         for ( int i = 0; i < recordsInFile; i++ )
         {
-            assertThat( "reading record id " + i, channel.read( buffer ), is( recordSize ) );
+            assertThat( channel.read( buffer ) ).as( "reading record id " + i ).isEqualTo( recordSize );
             buffer.flip();
             Record expectedRecord = createRecord( file, i );
             cursor.setOffset( 0 );
             Record actualRecord = readRecord( cursor );
             buffer.clear();
-            assertThat( actualRecord, is( oneOf( expectedRecord, zeroRecord() ) ) );
+            assertThat( actualRecord ).isIn( expectedRecord, zeroRecord() );
         }
     }
 }

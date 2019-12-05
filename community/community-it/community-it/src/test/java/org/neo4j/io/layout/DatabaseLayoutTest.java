@@ -35,9 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -152,23 +150,23 @@ class DatabaseLayoutTest
     {
         DatabaseLayout layout = databaseLayout;
         Set<String> files = layout.storeFiles().stream().map( File::getName ).collect( toSet() );
-        assertThat( files, hasItem( "neostore" ) );
-        assertThat( files, hasItem( "neostore.counts.db" ) );
-        assertThat( files, hasItem( "neostore.labelscanstore.db" ) );
-        assertThat( files, hasItem( "neostore.labeltokenstore.db" ) );
-        assertThat( files, hasItem( "neostore.labeltokenstore.db.names" ) );
-        assertThat( files, hasItem( "neostore.nodestore.db" ) );
-        assertThat( files, hasItem( "neostore.nodestore.db.labels" ) );
-        assertThat( files, hasItem( "neostore.propertystore.db" ) );
-        assertThat( files, hasItem( "neostore.propertystore.db.arrays" ) );
-        assertThat( files, hasItem( "neostore.propertystore.db.index" ) );
-        assertThat( files, hasItem( "neostore.propertystore.db.index.keys" ) );
-        assertThat( files, hasItem( "neostore.propertystore.db.strings" ) );
-        assertThat( files, hasItem( "neostore.relationshipgroupstore.db" ) );
-        assertThat( files, hasItem( "neostore.relationshipstore.db" ) );
-        assertThat( files, hasItem( "neostore.relationshiptypestore.db" ) );
-        assertThat( files, hasItem( "neostore.relationshiptypestore.db.names" ) );
-        assertThat( files, hasItem( "neostore.schemastore.db" ) );
+        assertThat( files ).contains( "neostore" );
+        assertThat( files ).contains( "neostore.counts.db" );
+        assertThat( files ).contains( "neostore.labelscanstore.db" );
+        assertThat( files ).contains( "neostore.labeltokenstore.db" );
+        assertThat( files ).contains( "neostore.labeltokenstore.db.names" );
+        assertThat( files ).contains( "neostore.nodestore.db" );
+        assertThat( files ).contains( "neostore.nodestore.db.labels" );
+        assertThat( files ).contains( "neostore.propertystore.db" );
+        assertThat( files ).contains( "neostore.propertystore.db.arrays" );
+        assertThat( files ).contains( "neostore.propertystore.db.index" );
+        assertThat( files ).contains( "neostore.propertystore.db.index.keys" );
+        assertThat( files ).contains( "neostore.propertystore.db.strings" );
+        assertThat( files ).contains( "neostore.relationshipgroupstore.db" );
+        assertThat( files ).contains( "neostore.relationshipstore.db" );
+        assertThat( files ).contains( "neostore.relationshiptypestore.db" );
+        assertThat( files ).contains( "neostore.relationshiptypestore.db.names" );
+        assertThat( files ).contains( "neostore.schemastore.db" );
     }
 
     @Test
@@ -178,7 +176,7 @@ class DatabaseLayoutTest
         DatabaseFile nodeStore = DatabaseFile.NODE_STORE;
         List<File> allNodeStoreFile = databaseLayout.allFiles( nodeStore ).collect( toList() );
         File nodeStoreStoreFile = databaseLayout.file( nodeStore );
-        assertThat( allNodeStoreFile, hasItem( nodeStoreStoreFile ) );
+        assertThat( allNodeStoreFile ).contains( nodeStoreStoreFile );
     }
 
     @Test
@@ -188,7 +186,7 @@ class DatabaseLayoutTest
         DatabaseFile nodeStore = DatabaseFile.NODE_STORE;
         List<File> allNodeStoreFile = databaseLayout.allFiles( nodeStore ).collect( toList() );
         File nodeStoreIdFile = databaseLayout.idFile( nodeStore ).get();
-        assertThat( allNodeStoreFile, hasItems( nodeStoreIdFile ) );
+        assertThat( allNodeStoreFile ).contains( nodeStoreIdFile );
     }
 
     @Test

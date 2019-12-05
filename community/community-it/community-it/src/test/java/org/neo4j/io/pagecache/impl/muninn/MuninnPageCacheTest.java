@@ -60,8 +60,7 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 
 import static java.time.Duration.ofMillis;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -171,7 +170,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 1, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 1, 1, tracer.beginPageEvictions( 1 ) );
-            assertThat( clockArm, is( 1L ) );
+            assertThat( clockArm ).isEqualTo( 1L );
             assertNotNull( tracer.observe( Evict.class ) );
         }
     }
@@ -199,12 +198,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 1, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-            assertThat( clockArm, is( 1L ) );
+            assertThat( clockArm ).isEqualTo( 1L );
             assertNotNull( tracer.observe( Evict.class ) );
 
             ByteBuffer buf = readIntoBuffer( "a" );
-            assertThat( buf.getLong(), is( 0L ) );
-            assertThat( buf.getLong(), is( y ) );
+            assertThat( buf.getLong() ).isEqualTo( 0L );
+            assertThat( buf.getLong() ).isEqualTo( y );
         }
     }
 
@@ -230,12 +229,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 1, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-            assertThat( clockArm, is( 1L ) );
+            assertThat( clockArm ).isEqualTo( 1L );
             assertNotNull( tracer.observe( Evict.class ) );
 
             ByteBuffer buf = readIntoBuffer( "a" );
-            assertThat( buf.getLong(), is( x ) );
-            assertThat( buf.getLong(), is( 0L ) );
+            assertThat( buf.getLong() ).isEqualTo( x );
+            assertThat( buf.getLong() ).isEqualTo( 0L );
         }
     }
 
@@ -265,13 +264,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 2, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
-            assertThat( clockArm, is( 2L ) );
+            assertThat( clockArm ).isEqualTo( 2L );
             assertNotNull( tracer.observe( Evict.class ) );
             assertNotNull( tracer.observe( Evict.class ) );
 
             ByteBuffer buf = readIntoBuffer( "a" );
-            assertThat( buf.getLong(), is( 0L ) );
-            assertThat( buf.getLong(), is( 0L ) );
+            assertThat( buf.getLong() ).isEqualTo( 0L );
+            assertThat( buf.getLong() ).isEqualTo( 0L );
         }
     }
 
@@ -545,11 +544,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             }
 
             long clockArm = pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
-            assertThat( clockArm, is( 1L ) );
+            assertThat( clockArm ).isEqualTo( 1L );
 
             ByteBuffer buf = readIntoBuffer( "a" );
-            assertThat( buf.getLong(), is( 42L ) );
-            assertThat( buf.getLong(), is( y ) );
+            assertThat( buf.getLong() ).isEqualTo( 42L );
+            assertThat( buf.getLong() ).isEqualTo( y );
         }
     }
 
