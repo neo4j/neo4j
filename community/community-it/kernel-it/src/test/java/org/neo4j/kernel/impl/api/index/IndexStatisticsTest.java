@@ -224,9 +224,9 @@ public class IndexStatisticsTest
         }
 
         // and then index size and index updates are zero on disk
-        var indexInfo = getIndexingStatisticsStore().indexUpdatesAndSize( index.getId() );
-        assertEquals( 0, indexInfo.getSize() );
-        assertEquals( 0, indexInfo.getUpdates() );
+        var indexSample = getIndexingStatisticsStore().indexSample( index.getId() );
+        assertEquals( 0, indexSample.indexSize() );
+        assertEquals( 0, indexSample.updates() );
     }
 
     @Test
@@ -538,14 +538,14 @@ public class IndexStatisticsTest
         }
     }
 
-    private long indexSize( IndexDescriptor reference ) throws IndexNotFoundKernelException
+    private long indexSize( IndexDescriptor reference )
     {
-        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).getSize();
+        return resolveDependency( IndexStatisticsStore.class ).indexSample( reference.getId() ).indexSize();
     }
 
-    private long indexUpdates( IndexDescriptor reference ) throws IndexNotFoundKernelException
+    private long indexUpdates( IndexDescriptor reference )
     {
-        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).getUpdates();
+        return resolveDependency( IndexStatisticsStore.class ).indexSample( reference.getId() ).updates();
     }
 
     private double indexSelectivity( IndexDescriptor reference ) throws KernelException

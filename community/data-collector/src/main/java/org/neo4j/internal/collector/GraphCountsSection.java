@@ -154,10 +154,9 @@ final class GraphCountsSection
             data.put( "properties", map( index.schema().getPropertyIds(),
                                          id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
 
-            var indexInfo = schemaRead.indexUpdatesAndSize( index );
-            data.put( "totalSize", indexInfo.getSize() );
-            data.put( "updatesSinceEstimation", indexInfo.getUpdates() );
             var indexSample = schemaRead.indexSample( index );
+            data.put( "totalSize", indexSample.indexSize() );
+            data.put( "updatesSinceEstimation", indexSample.updates() );
             data.put( "estimatedUniqueSize", indexSample.uniqueValues() );
 
             indexes.add( data );

@@ -54,7 +54,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.procedure.Context;
@@ -707,7 +706,7 @@ public class AllStoreHolder extends Read
         assertValidIndex( index );
         acquireSharedSchemaLock( index );
         ktx.assertOpen();
-        return indexStatisticsStore.indexUpdatesAndSize( index.getId() ).getSize();
+        return indexStatisticsStore.indexSample( index.getId() ).indexSize();
     }
 
     @Override
@@ -733,15 +732,6 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
         long base = storageReader.relationshipsGetCount();
         return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedRelationships().delta() : base;
-    }
-
-    @Override
-    public IndexInfo indexUpdatesAndSize( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        assertValidIndex( index );
-        return indexStatisticsStore.indexUpdatesAndSize( index.getId() );
-
     }
 
     @Override

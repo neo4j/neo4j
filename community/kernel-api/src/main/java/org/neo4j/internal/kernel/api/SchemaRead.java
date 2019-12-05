@@ -29,7 +29,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.values.storable.Value;
 
@@ -93,15 +92,6 @@ public interface SchemaRead extends SchemaReadCore
      * @return number of index entries for the given {@code nodeId} and {@code value}.
      */
     long nodesCountIndexed( IndexDescriptor index, long nodeId, int propertyKeyId, Value value ) throws KernelException;
-
-    /**
-     * Returns information about requested index
-     *
-     * @param index The index of interest
-     * @return index update info
-     * @throws IndexNotFoundKernelException if the index does not exist.
-     */
-    IndexInfo indexUpdatesAndSize( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns the index sample info.

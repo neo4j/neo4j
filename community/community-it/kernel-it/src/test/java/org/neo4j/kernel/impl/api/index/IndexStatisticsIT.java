@@ -105,10 +105,9 @@ class IndexStatisticsIT
 
         // then we should have re-sampled the index
         IndexStatisticsStore indexStatisticsStore = indexStatistics();
-        var indexInfo = indexStatisticsStore.indexUpdatesAndSize( indexId );
-        assertEquals( 0, indexInfo.getUpdates() );
-        assertEquals( 32, indexInfo.getSize() );
         var indexSample = indexStatisticsStore.indexSample( indexId );
+        assertEquals( 0, indexSample.updates() );
+        assertEquals( 32, indexSample.indexSize() );
         assertEquals( 16, indexSample.uniqueValues() );
         assertEquals( 32, indexSample.sampleSize() );
         // and also

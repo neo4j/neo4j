@@ -72,7 +72,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -195,7 +194,6 @@ class IndexingServiceTest
     {
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample() );
-        when( indexStatisticsStore.indexUpdatesAndSize( anyLong() ) ).thenReturn( new IndexInfo( 0, 0 ) );
         when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
     }
 

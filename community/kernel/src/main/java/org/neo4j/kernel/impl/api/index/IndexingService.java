@@ -63,7 +63,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -515,12 +514,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         state = State.STOPPED;
         closeAllIndexes();
         indexStatisticsStore.shutdown();
-    }
-
-    IndexInfo indexUpdatesAndSize( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        final long indexId = indexMapRef.getOnlineIndexId( index );
-        return indexStatisticsStore.indexUpdatesAndSize( indexId );
     }
 
     @Override

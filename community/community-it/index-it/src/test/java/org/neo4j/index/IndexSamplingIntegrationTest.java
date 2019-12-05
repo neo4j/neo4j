@@ -36,7 +36,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -125,11 +124,9 @@ class IndexSamplingIntegrationTest
         var indexSample = fetchIndexSamplingValues();
         assertEquals( names.length, indexSample.uniqueValues() );
         assertThat( indexSample.sampleSize() ).isGreaterThanOrEqualTo( nodes - deletedNodes ).isLessThanOrEqualTo( nodes );
-
         // but regardless, the deleted nodes should not be considered in the index size value
-        var indexInfo = fetchIndexSizeValues();
-        assertEquals( 0, indexInfo.getUpdates() );
-        assertEquals( nodes - deletedNodes, indexInfo.getSize() );
+        assertEquals( 0, indexSample.updates() );
+        assertEquals( nodes - deletedNodes, indexSample.indexSize() );
     }
 
     @Test
@@ -186,10 +183,8 @@ class IndexSamplingIntegrationTest
         var indexSample = fetchIndexSamplingValues();
         assertEquals( nodes - deletedNodes, indexSample.uniqueValues() );
         assertEquals( nodes - deletedNodes, indexSample.sampleSize() );
-
-        var indexInfo = fetchIndexSizeValues();
-        assertEquals( 0, indexInfo.getUpdates() );
-        assertEquals( nodes - deletedNodes, indexInfo.getSize() );
+        assertEquals( 0, indexSample.updates() );
+        assertEquals( nodes - deletedNodes, indexSample.indexSize() );
     }
 
     private IndexDescriptor indexId( KernelTransaction tx )
@@ -210,30 +205,6 @@ class IndexSamplingIntegrationTest
             try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
             {
                 return tx.schemaRead().indexSample( indexId( tx ) );
-            }
-        }
-        finally
-        {
-            if ( managementService != null )
-            {
-                managementService.shutdown();
-            }
-        }
-    }
-
-    private IndexInfo fetchIndexSizeValues() throws IndexNotFoundKernelException, TransactionFailureException
-    {
-        DatabaseManagementService managementService = null;
-        try
-        {
-            // Then
-            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-            GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
-            try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
-            {
-                return tx.schemaRead().indexUpdatesAndSize( indexId( tx ) );
             }
         }
         finally

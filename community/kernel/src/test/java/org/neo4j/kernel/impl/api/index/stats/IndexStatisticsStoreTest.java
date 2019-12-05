@@ -35,7 +35,6 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
@@ -86,36 +85,9 @@ class IndexStatisticsStoreTest
         // given
         long indexId = 4;
 
-        // when
-        store.replaceStats( indexId, new IndexSample( 456, 123, 456, 3 ) );
-
-        // then
-        assertSample( 123, 456, store.indexSample( indexId ) );
-
-        // and when
-        store.replaceStats( indexId, new IndexSample( 555, 444, 550, 0 ) );
-
-        // then
-        assertSample( 444, 555, store.indexSample( indexId ) );
-    }
-
-    @Test
-    void shouldReplaceIndexStatistics()
-    {
-        // given
-        long indexId = 4;
-
-        // when
-        store.replaceStats( indexId, new IndexSample( 456, 450, 456, 123 ) );
-
-        // then
-        assertUpdatesInfo( 123, 456, store.indexUpdatesAndSize( indexId ) );
-
-        // and when
-        store.replaceStats( indexId, new IndexSample( 555, 554, 554, 444 ) );
-
-        // then
-        assertUpdatesInfo( 444, 555, store.indexUpdatesAndSize( indexId ) );
+        // when/then
+        replaceAndVerifySample( indexId, new IndexSample( 456, 123, 456, 3 ) );
+        replaceAndVerifySample( indexId, new IndexSample( 555, 444, 550, 0 ) );
     }
 
     @Test
@@ -123,16 +95,16 @@ class IndexStatisticsStoreTest
     {
         // given
         long indexId = 4;
-        int initialUpdates = 123;
-        int indexSize = 456;
-        store.replaceStats( indexId, new IndexSample( indexSize, 5, 200, initialUpdates ) );
+        IndexSample initialSample = new IndexSample( 456, 5, 200, 123 );
+        store.replaceStats( indexId, initialSample );
 
         // when
         int addedUpdates = 5;
         store.incrementIndexUpdates( indexId, addedUpdates );
 
         // then
-        assertUpdatesInfo( initialUpdates + addedUpdates, indexSize, store.indexUpdatesAndSize( indexId ) );
+        assertEquals( new IndexSample( initialSample.indexSize(), initialSample.uniqueValues(), initialSample.sampleSize(),
+                initialSample.updates() + addedUpdates ), store.indexSample( indexId ) );
     }
 
     @Test
@@ -141,17 +113,17 @@ class IndexStatisticsStoreTest
         // given
         long indexId1 = 1;
         long indexId2 = 2;
-        store.replaceStats( indexId1, new IndexSample( 500, 100, 200, 25 ) );
-        store.replaceStats( indexId2, new IndexSample( 501, 101, 201, 26 ) );
+        IndexSample sample1 = new IndexSample( 500, 100, 200, 25 );
+        IndexSample sample2 = new IndexSample( 501, 101, 201, 26 );
+        store.replaceStats( indexId1, sample1 );
+        store.replaceStats( indexId2, sample2 );
 
         // when
         restartStore();
 
         // then
-        assertUpdatesInfo( 25, 500, store.indexUpdatesAndSize( indexId1 ) );
-        assertUpdatesInfo( 26, 501, store.indexUpdatesAndSize( indexId2 ) );
-        assertSample( 100, 200, store.indexSample( indexId1 ) );
-        assertSample( 101, 201, store.indexSample( indexId2 ) );
+        assertEquals( sample1, store.indexSample( indexId1 ) );
+        assertEquals( sample2, store.indexSample( indexId2 ) );
     }
 
     private void restartStore() throws IOException
@@ -178,7 +150,7 @@ class IndexStatisticsStoreTest
         race.go();
 
         // then
-        assertUpdatesInfo( contestants * delta, 0, store.indexUpdatesAndSize( indexId ) );
+        assertEquals( new IndexSample( 0, 0, 0, contestants * delta ), store.indexSample( indexId ) );
     }
 
     @Test
@@ -220,12 +192,12 @@ class IndexStatisticsStoreTest
         // then
         for ( int i = 0; i < indexes; i++ )
         {
-            assertUpdatesInfo( expected.get( i ), 0, store.indexUpdatesAndSize( i ) );
+            assertEquals( new IndexSample( 0, 0, 0, expected.get( i ) ), store.indexSample( i ) );
         }
         restartStore();
         for ( int i = 0; i < indexes; i++ )
         {
-            assertUpdatesInfo( expected.get( i ), 0, store.indexUpdatesAndSize( i ) );
+            assertEquals( new IndexSample( 0, 0, 0, expected.get( i ) ), store.indexSample( i ) );
         }
     }
 
@@ -286,15 +258,9 @@ class IndexStatisticsStoreTest
         }
     }
 
-    private static void assertSample( long uniqueValues, long sampleSize, IndexSample indexSample )
+    private void replaceAndVerifySample( long indexId, IndexSample indexSample )
     {
-        assertEquals( uniqueValues, indexSample.uniqueValues() );
-        assertEquals( sampleSize, indexSample.sampleSize() );
-    }
-
-    private static void assertUpdatesInfo( long numberOfUpdates, long indexSize, IndexInfo indexInfo )
-    {
-        assertEquals( numberOfUpdates, indexInfo.getUpdates() );
-        assertEquals( indexSize, indexInfo.getSize() );
+        store.replaceStats( indexId, indexSample );
+        assertEquals( indexSample, store.indexSample( indexId ) );
     }
 }

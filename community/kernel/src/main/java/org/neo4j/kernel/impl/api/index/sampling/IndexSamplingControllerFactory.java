@@ -64,9 +64,9 @@ public class IndexSamplingControllerFactory
     private LongPredicate createSamplingPredicate()
     {
         return indexId -> {
-            var indexInfo = indexStatisticsStore.indexUpdatesAndSize( indexId );
-            long updates = indexInfo.getUpdates();
-            long size = indexInfo.getSize();
+            var indexInfo = indexStatisticsStore.indexSample( indexId );
+            long updates = indexInfo.updates();
+            long size = indexInfo.indexSize();
             long threshold = Math.round( config.updateRatio() * size );
             return updates > threshold;
         };

@@ -38,7 +38,6 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexInfo;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -97,12 +96,6 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
                     "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + file, e );
         }
         scanTree( cache::put );
-    }
-
-    public IndexInfo indexUpdatesAndSize( long indexId )
-    {
-        IndexStatisticsValue value = cache.getOrDefault( new IndexStatisticsKey( indexId ), EMPTY_STATISTICS );
-        return new IndexInfo( value.getUpdatesCount(), value.getIndexSize() );
     }
 
     public IndexSample indexSample( long indexId )
