@@ -89,7 +89,7 @@ public class PageCacheStressTest
         {
             PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
             try ( PageCache pageCacheUnderTest = new MuninnPageCache(
-                    swapperFactory, numberOfCachePages, tracer, pageCursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
+                    swapperFactory, numberOfCachePages, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {
                 PageCacheStresser pageCacheStresser =
                         new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );

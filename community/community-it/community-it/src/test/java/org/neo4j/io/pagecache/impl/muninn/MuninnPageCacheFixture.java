@@ -25,7 +25,6 @@ import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -36,12 +35,12 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
     private MemoryAllocator allocator;
 
     @Override
-    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier, JobScheduler jobScheduler )
+    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier contextSupplier,
+            JobScheduler jobScheduler )
     {
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
         allocator = MemoryAllocator.createAllocator( String.valueOf( memory ), new LocalMemoryTracker() );
-        return new MuninnPageCache( swapperFactory, allocator, tracer, cursorTracerSupplier, contextSupplier, jobScheduler );
+        return new MuninnPageCache( swapperFactory, allocator, tracer, contextSupplier, jobScheduler );
     }
 
     @Override

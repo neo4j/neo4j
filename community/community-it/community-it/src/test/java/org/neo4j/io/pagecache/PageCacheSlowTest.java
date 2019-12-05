@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 
 @ExtendWith( {VerboseExceptionExtension.class, ProfilerExtension.class} )
@@ -172,7 +173,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                         protected void performReadOrUpdate( ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
                         {
                             int pageId = rng.nextInt( 0, filePages );
-                            try ( PageCursor cursor = pagedFile.io( pageId, pf_flags ) )
+                            try ( PageCursor cursor = pagedFile.io( pageId, pf_flags, NULL ) )
                             {
                                 int counter;
                                 try
@@ -242,7 +243,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
     private void ensureAllPagesExists( int filePages, PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             for ( int i = 0; i < filePages; i++ )
             {
@@ -262,7 +263,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
         for ( UpdateResult result : results )
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
             {
                 for ( int i = 0; i < filePages; i++ )
                 {
@@ -332,7 +333,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                 PageCursor[] cursors = new PageCursor[pageCount];
                                 for ( int j = 0; j < pageCount; j++ )
                                 {
-                                    cursors[j] = pagedFile.io( pageIds[j], pf_flags );
+                                    cursors[j] = pagedFile.io( pageIds[j], pf_flags, NULL );
                                     assertTrue( cursors[j].next() );
                                 }
                                 for ( int j = 0; j < pageCount; j++ )
@@ -412,7 +413,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             executor.submit( () ->
             {
                 profiler.profile();
-                try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+                try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
                     cursor.next();
                     hasLockLatch.countDown();
@@ -426,7 +427,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             Future<Object> takeLockFuture = executor.submit( () ->
             {
                 profiler.profile();
-                try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+                try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
                     cursor.next();
                     doneWriteSignal.set( true );
@@ -534,7 +535,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     int pfFlags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
                     int pageSize = pagedFile.pageSize();
 
-                    try ( PageCursor cursor = pagedFile.io( startingPage, pfFlags ) )
+                    try ( PageCursor cursor = pagedFile.io( startingPage, pfFlags, NULL ) )
                     {
                         if ( performingRead )
                         {
@@ -549,7 +550,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     {
                         // Capture any exception that might have hit the eviction thread.
                         adversary.setProbabilityFactor( 0.0 );
-                        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                         {
                             for ( int j = 0; j < 100; j++ )
                             {
@@ -634,7 +635,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
     private void verifyAdversarialPagedContent( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {
             while ( cursor.next() )
             {
@@ -656,7 +657,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         {
             try ( PagedFile pagedFile = pageCache.map( file, filePageSize ) )
             {
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
                     assertTrue( cursor.next() );
                 }

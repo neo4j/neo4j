@@ -27,7 +27,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -77,8 +76,7 @@ public class GBPTreeBootstrapper
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
-        PageCursorTracerSupplier cursorTracerSupplier = PageCursorTracerSupplier.NULL;
-        return new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        return new MuninnPageCache( swapper, 100, NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }
 
     public interface Bootstrap

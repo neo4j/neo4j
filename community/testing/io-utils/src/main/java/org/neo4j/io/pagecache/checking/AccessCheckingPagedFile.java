@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class AccessCheckingPagedFile extends DelegatingPagedFile
 {
@@ -33,9 +34,9 @@ public class AccessCheckingPagedFile extends DelegatingPagedFile
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags ) throws IOException
+    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
     {
-        PageCursor delegate = super.io( pageId, pf_flags );
+        PageCursor delegate = super.io( pageId, pf_flags, tracer );
         if ( (pf_flags & PagedFile.PF_SHARED_READ_LOCK) != 0 )
         {
             return new AccessCheckingReadPageCursor( delegate );

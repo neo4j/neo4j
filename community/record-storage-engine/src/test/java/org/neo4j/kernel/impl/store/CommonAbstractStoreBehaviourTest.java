@@ -40,6 +40,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -234,7 +235,7 @@ class CommonAbstractStoreBehaviourTest
         createStore();
         int headerSizeInRecords = store.getNumberOfReservedLowIds();
         int headerSizeInBytes = headerSizeInRecords * store.getRecordSize();
-        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
         {
             assertTrue( cursor.next() );
             for ( int i = 0; i < headerSizeInBytes; i++ )

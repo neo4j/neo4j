@@ -28,6 +28,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * A {@linkplain PagedFile paged file} that wraps another paged file and an {@linkplain Adversary adversary} to provide
@@ -49,10 +50,10 @@ public class AdversarialPagedFile implements PagedFile
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags ) throws IOException
+    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
     {
         adversary.injectFailure( IllegalStateException.class );
-        PageCursor pageCursor = delegate.io( pageId, pf_flags );
+        PageCursor pageCursor = delegate.io( pageId, pf_flags, tracer );
         if ( (pf_flags & PF_SHARED_READ_LOCK) == PF_SHARED_READ_LOCK )
         {
             return new AdversarialReadPageCursor( pageCursor, adversary );

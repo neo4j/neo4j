@@ -54,7 +54,6 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -283,8 +282,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         MemoryAllocator memoryAllocator = createAllocator( config.get( pagecache_memory ), EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, DefaultPageCursorTracerSupplier.INSTANCE,
-                EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, OpenOption... openOptions )

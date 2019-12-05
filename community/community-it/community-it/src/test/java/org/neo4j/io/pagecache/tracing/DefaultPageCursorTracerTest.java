@@ -200,6 +200,35 @@ class DefaultPageCursorTracerTest
     }
 
     @Test
+    void closingTraceCursorReportEvents()
+    {
+        generateEventSet();
+        pageCursorTracer.close();
+
+        assertEquals( 1, cacheTracer.pins() );
+        assertEquals( 1, cacheTracer.unpins() );
+        assertEquals( 1, cacheTracer.faults() );
+        assertEquals( 1, cacheTracer.evictions() );
+        assertEquals( 1, cacheTracer.evictionExceptions() );
+        assertEquals( 1, cacheTracer.flushes() );
+        assertEquals( 10, cacheTracer.bytesWritten() );
+        assertEquals( 150, cacheTracer.bytesRead() );
+
+        generateEventSet();
+        generateEventSet();
+        pageCursorTracer.close();
+
+        assertEquals( 3, cacheTracer.pins() );
+        assertEquals( 3, cacheTracer.unpins() );
+        assertEquals( 3, cacheTracer.faults() );
+        assertEquals( 3, cacheTracer.evictions() );
+        assertEquals( 3, cacheTracer.evictionExceptions() );
+        assertEquals( 3, cacheTracer.flushes() );
+        assertEquals( 30, cacheTracer.bytesWritten() );
+        assertEquals( 450, cacheTracer.bytesRead() );
+    }
+
+    @Test
     void shouldCalculateHitRatio()
     {
         assertEquals( 0d, pageCursorTracer.hitRatio(), 0.0001 );

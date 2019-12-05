@@ -43,7 +43,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long flushes;
 
     private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
-    private DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
+    private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
 
     @Override
     public void init( PageCacheTracer pageCacheTracer )

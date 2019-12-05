@@ -25,7 +25,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -53,9 +52,8 @@ public final class StandalonePageCacheFactory
     public static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler )
     {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB", EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( factory, memoryAllocator, cacheTracer, cursorTracerSupplier, versionContextSupplier, jobScheduler );
+        return new MuninnPageCache( factory, memoryAllocator, cacheTracer, versionContextSupplier, jobScheduler );
     }
 }

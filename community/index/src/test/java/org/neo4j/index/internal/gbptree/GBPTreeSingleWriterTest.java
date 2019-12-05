@@ -43,7 +43,6 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralTestDirectoryExtension
@@ -64,7 +63,7 @@ class GBPTreeSingleWriterTest
         MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB", new LocalMemoryTracker() );
         jobScheduler = new ThreadPoolJobScheduler();
         pageCache =
-                new MuninnPageCache( factory, mman, 256, PageCacheTracer.NULL, NULL, EMPTY, jobScheduler );
+                new MuninnPageCache( factory, mman, 256, PageCacheTracer.NULL, EMPTY, jobScheduler );
         layout = SimpleLongLayout.longLayout()
                 .withFixedSize( true )
                 .build();

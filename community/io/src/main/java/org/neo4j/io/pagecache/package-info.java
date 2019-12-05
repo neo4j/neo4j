@@ -78,7 +78,8 @@
  * instantiated for the given file by the {@link org.neo4j.io.pagecache.PageSwapperFactory}.
  * <p>
  * Once a file has been mapped, and a {@code PagedFile} object made available, the
- * {@link org.neo4j.io.pagecache.PagedFile#io(long, int) io method} can be used to interact with the contents of the
+ * {@link org.neo4j.io.pagecache.PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)
+ * io method} can be used to interact with the contents of the
  * file. It takes in an initial file page id and a bitmap of intentions, such as what locking behaviour to use, and
  * returns a {@link org.neo4j.io.pagecache.PageCursor} object. The {@code PageCursor} is the window into the data
  * managed by the page cache.

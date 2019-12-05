@@ -24,10 +24,12 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Abstraction over page cache backed number arrays.
@@ -59,7 +61,8 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         this.defaultValue = defaultValue;
         this.base = base;
 
-        try ( PageCursor cursorToSetLength = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursorToSetLength = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             setLength( cursorToSetLength, length );
         }
@@ -96,14 +99,15 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
 
     protected void setDefaultValue( long defaultValue ) throws IOException
     {
-        try ( PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             writeCursor.next();
             int pageSize = pagedFile.pageSize();
             fillPageWithDefaultValue( writeCursor, defaultValue, pageSize );
             if ( pageId( length - 1 ) > 0 )
             {
-                try ( PageCursor cursor = pagedFile.io( 1, PF_NO_GROW | PF_SHARED_WRITE_LOCK ) )
+                try ( PageCursor cursor = pagedFile.io( 1, PF_NO_GROW | PF_SHARED_WRITE_LOCK, cursorTracer ) )
                 {
                     while ( cursor.next() )
                     {

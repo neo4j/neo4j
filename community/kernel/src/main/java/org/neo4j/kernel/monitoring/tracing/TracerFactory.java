@@ -78,6 +78,6 @@ public interface TracerFactory extends NamedService
      */
     default PageCursorTracerSupplier createPageCursorTracerSupplier()
     {
-        return DefaultPageCursorTracerSupplier.INSTANCE;
+        return DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
     }
 }

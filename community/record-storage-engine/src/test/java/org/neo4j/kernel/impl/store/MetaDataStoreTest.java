@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -101,9 +102,9 @@ class MetaDataStoreTest
                 return new DelegatingPagedFile( super.map( file, versionContextSupplier, pageSize, openOptions ) )
                 {
                     @Override
-                    public PageCursor io( long pageId, int pf_flags ) throws IOException
+                    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
                     {
-                        return new DelegatingPageCursor( super.io( pageId, pf_flags ) )
+                        return new DelegatingPageCursor( super.io( pageId, pf_flags, tracer ) )
                         {
                             @Override
                             public boolean checkAndClearBoundsFlag()
@@ -338,7 +339,7 @@ class MetaDataStoreTest
             // file readers
             race.addContestants( 3, throwing( () ->
             {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL ) )
                 {
                     assertTrue( cursor.next() );
                     long id;
@@ -422,7 +423,7 @@ class MetaDataStoreTest
 
             race.addContestants( 3, throwing( () ->
             {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL ) )
                 {
                     assertTrue( cursor.next() );
                     long id;
@@ -478,7 +479,7 @@ class MetaDataStoreTest
 
             race.addContestants( 3, throwing( () ->
             {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL ) )
                 {
                     assertTrue( cursor.next() );
                     long logVersion;

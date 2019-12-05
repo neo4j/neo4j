@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -66,6 +67,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -263,7 +265,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         if ( getNumberOfReservedLowIds() > 0 )
         {
-            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH, cursorTracer ) )
             {
                 if ( pageCursor.next() )
                 {
@@ -286,7 +289,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     private HEADER readStoreHeaderAndDetermineRecordSize( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             HEADER readHeader;
             if ( pageCursor.next() )
@@ -338,7 +342,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         byte[] data = new byte[recordSize];
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             if ( cursor.next() )
             {
@@ -386,7 +391,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
 
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             boolean recordIsInUse = false;
             if ( cursor.next() )
@@ -418,7 +424,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         try
         {
             long pageId = pageIdForRecord( id );
-            return pagedFile.io( pageId, PF_SHARED_READ_LOCK );
+            return pagedFile.io( pageId, PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {
@@ -527,7 +533,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         return visitor ->
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorTracer ) )
             {
                 int numberOfReservedLowIds = getNumberOfReservedLowIds();
                 int startingId = numberOfReservedLowIds;
@@ -610,7 +617,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     protected long scanForHighId()
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
@@ -840,7 +848,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public RECORD getRecord( long id, RECORD record, RecordLoad mode )
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             readIntoRecord( id, record, mode, cursor );
             return record;
@@ -935,7 +944,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             if ( cursor.next() )
             {

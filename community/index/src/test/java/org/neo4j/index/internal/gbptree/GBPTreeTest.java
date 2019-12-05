@@ -622,7 +622,7 @@ class GBPTreeTest
     {
         Pair<TreeState,TreeState> treeStatesBeforeOverwrite;
         try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
-              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
         {
             treeStatesBeforeOverwrite = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
         }
@@ -1513,7 +1513,7 @@ class GBPTreeTest
 
             // a tree state pointing to root with valid successor
             try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
-                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 Pair<TreeState,TreeState> treeStates =
                         TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -1814,7 +1814,7 @@ class GBPTreeTest
     private void corruptTheChild( PageCache pageCache, long corruptChild ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( indexFile, defaultPageSize );
-              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
         {
             assertTrue( cursor.next( corruptChild ) );
             assertTrue( TreeNode.isLeaf( cursor ) );
@@ -1913,10 +1913,10 @@ class GBPTreeTest
                 return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
                 {
                     @Override
-                    public PageCursor io( long pageId, int pf_flags ) throws IOException
+                    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
                     {
                         maybeThrow();
-                        return super.io( pageId, pf_flags );
+                        return super.io( pageId, pf_flags, tracer );
                     }
 
                     @Override
@@ -1950,10 +1950,10 @@ class GBPTreeTest
                 return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
                 {
                     @Override
-                    public PageCursor io( long pageId, int pf_flags ) throws IOException
+                    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
                     {
                         maybeBlock();
-                        return super.io( pageId, pf_flags );
+                        return super.io( pageId, pf_flags, tracer );
                     }
 
                     private void maybeBlock()

@@ -78,7 +78,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabel;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
@@ -226,7 +225,7 @@ class LabelsAcceptanceTest
         JobScheduler scheduler = JobSchedulerFactory.createScheduler();
         try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
                 Lifespan lifespan = new Lifespan( scheduler );
-                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, PageCacheTracer.NULL, NULL, EMPTY, scheduler ) )
+                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, PageCacheTracer.NULL, EMPTY, scheduler ) )
         {
             // Given
             Dependencies dependencies = new Dependencies();

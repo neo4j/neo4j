@@ -26,8 +26,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.FormattedLogProvider;
@@ -48,13 +46,12 @@ public final class ConfigurableStandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE,
-                Config.defaults(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        return createPageCache( fileSystem, PageCacheTracer.NULL, Config.defaults(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, JobScheduler jobScheduler )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE, config,
+        return createPageCache( fileSystem, PageCacheTracer.NULL, config,
                 EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }
 
@@ -62,23 +59,19 @@ public final class ConfigurableStandalonePageCacheFactory
      * Create page cache
      * @param fileSystem file system that page cache will be based on
      * @param pageCacheTracer global page cache tracer
-     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
-     * thread local page cache statistics
      * @param config page cache configuration
      * @param versionContextSupplier version context supplier
      * @param jobScheduler page cache job scheduler
      * @return created page cache instance
      */
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, Config config,
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer, Config config,
             VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
     {
         config.setIfNotSet( GraphDatabaseSettings.pagecache_memory, "8M" );
         ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, pageCacheTracer, pageCursorTracerSupplier,
-                logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler );
+                fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

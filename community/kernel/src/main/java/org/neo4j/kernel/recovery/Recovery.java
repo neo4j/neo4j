@@ -43,7 +43,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DefaultForceOperation;
@@ -453,7 +452,7 @@ public final class Recovery
     private static PageCache getPageCache( Config config, FileSystemAbstraction fs, JobScheduler jobScheduler )
     {
         ConfiguringPageCacheFactory pageCacheFactory =
-                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
+                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(),
                         EmptyVersionContextSupplier.EMPTY, jobScheduler );
         return pageCacheFactory.getOrCreatePageCache();
     }

@@ -97,12 +97,6 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public void reportEvents()
-    {
-        delegate.reportEvents();
-    }
-
-    @Override
     public VersionContextSupplier versionContextSupplier()
     {
         return delegate.versionContextSupplier();

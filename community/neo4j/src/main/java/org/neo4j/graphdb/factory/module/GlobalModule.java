@@ -370,8 +370,7 @@ public class GlobalModule
             Tracers tracers, JobScheduler jobScheduler )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(),
-                tracers.getPageCursorTracerSupplier(), pageCacheLog,
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
                 GuardVersionContextSupplier.INSTANCE, jobScheduler );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 

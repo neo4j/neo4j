@@ -23,7 +23,7 @@ public class DefaultPageCursorTracerSupplier implements PageCursorTracerSupplier
 {
     private ThreadLocal<DefaultPageCursorTracer> tracer = ThreadLocal.withInitial( DefaultPageCursorTracer::new );
 
-    public static final DefaultPageCursorTracerSupplier INSTANCE = new DefaultPageCursorTracerSupplier();
+    public static final DefaultPageCursorTracerSupplier TRACER_SUPPLIER = new DefaultPageCursorTracerSupplier();
 
     private DefaultPageCursorTracerSupplier()
     {

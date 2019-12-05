@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static java.util.Objects.requireNonNull;
@@ -126,12 +127,6 @@ public class DatabasePageCache implements PageCache
     }
 
     @Override
-    public void reportEvents()
-    {
-        globalPageCache.reportEvents();
-    }
-
-    @Override
     public VersionContextSupplier versionContextSupplier()
     {
         return versionContextSupplier;
@@ -149,9 +144,9 @@ public class DatabasePageCache implements PageCache
         }
 
         @Override
-        public PageCursor io( long pageId, int pf_flags ) throws IOException
+        public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
         {
-            return delegate.io( pageId, pf_flags );
+            return delegate.io( pageId, pf_flags, tracer );
         }
 
         @Override

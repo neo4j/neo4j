@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.logging.NullLog;
 import org.neo4j.scheduler.JobScheduler;
@@ -71,8 +70,7 @@ class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
-            fs, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
+            fs, config, PageCacheTracer.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )

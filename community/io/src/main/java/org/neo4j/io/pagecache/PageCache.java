@@ -162,12 +162,6 @@ public interface PageCache extends AutoCloseable
     long maxCachedPages();
 
     /**
-     * Report any thread-local events to the global page cache tracer, as if acquiring a thread-specific page cursor
-     * tracer, and reporting the events collected within it.
-     */
-    void reportEvents();
-
-    /**
      * Default supplier of thread local (transaction local) version context for current page cache instance that will be used
      * on page file mapping.
      * @return page cache specific version context supplier.

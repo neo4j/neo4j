@@ -23,9 +23,11 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 class FreeListIdProvider implements IdProvider
 {
@@ -123,7 +125,8 @@ class FreeListIdProvider implements IdProvider
         writePageId = nextLastId();
         readPageId = writePageId;
 
-        try ( PageCursor cursor = pagedFile.io( writePageId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( writePageId, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             goTo( cursor, "free-list", writePageId );
             FreelistNode.initialize( cursor );
@@ -134,7 +137,8 @@ class FreeListIdProvider implements IdProvider
     @Override
     public long acquireNewId( long stableGeneration, long unstableGeneration ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             return acquireNewId( cursor, stableGeneration, unstableGeneration, true );
         }
@@ -198,7 +202,8 @@ class FreeListIdProvider implements IdProvider
     @Override
     public void releaseId( long stableGeneration, long unstableGeneration, long id ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( writePageId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( writePageId, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             PageCursorUtil.goTo( cursor, "free-list write page", writePageId );
             freelistNode.write( cursor, unstableGeneration, id, writePos );
@@ -227,7 +232,8 @@ class FreeListIdProvider implements IdProvider
             return;
         }
 
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             GenerationKeeper generation = new GenerationKeeper();
             long prevPage;

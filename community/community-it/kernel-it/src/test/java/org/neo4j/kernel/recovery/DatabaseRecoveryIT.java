@@ -65,7 +65,6 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -467,12 +466,10 @@ class DatabaseRecoveryIT
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier, jobScheduler )
-                        .getOrCreatePageCache();
-                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier, jobScheduler )
-                        .getOrCreatePageCache();
+                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
+                        jobScheduler ).getOrCreatePageCache();
+                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
+                        jobScheduler ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, immediate() ),
                         pageCache1, fs1, logProvider ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, immediate() ),

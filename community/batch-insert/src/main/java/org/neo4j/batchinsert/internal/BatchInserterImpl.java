@@ -94,7 +94,6 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -257,7 +256,7 @@ public class BatchInserterImpl implements BatchInserter
 
             locker = tryLockStore( fileSystem, databaseLayout );
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
+                fileSystem, config, PageCacheTracer.NULL, NullLog.getInstance(),
                 EmptyVersionContextSupplier.EMPTY, jobScheduler );
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );

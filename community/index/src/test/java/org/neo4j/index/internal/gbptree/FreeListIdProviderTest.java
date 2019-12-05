@@ -39,6 +39,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -67,7 +68,7 @@ class FreeListIdProviderTest
     void setUpPagedFile() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
-        when( pagedFile.io( anyLong(), anyInt() ) ).thenAnswer(
+        when( pagedFile.io( anyLong(), anyInt(), any() ) ).thenAnswer(
                 invocation -> cursor.duplicate( invocation.getArgument( 0 ) ) );
         freelist.initialize( BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0 );
     }

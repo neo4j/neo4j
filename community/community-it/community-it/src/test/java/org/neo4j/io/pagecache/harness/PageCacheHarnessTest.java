@@ -55,6 +55,7 @@ import static org.neo4j.io.pagecache.randomharness.Command.ReadRecord;
 import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @TestDirectoryExtension
 @ExtendWith( ProfilerExtension.class )
@@ -109,7 +110,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                 {
                     File file = filesTouched.iterator().next();
                     try ( PagedFile pf = cache.map( file, cache.pageSize() );
-                          PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+                          PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                     {
                         for ( int pageId = 0; pageId < filePageCount; pageId++ )
                         {
@@ -209,7 +210,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             for ( File file : filesTouched )
             {
                 try ( PagedFile pf = cache.map( file, cache.pageSize() );
-                      PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+                      PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )
                     {

@@ -42,6 +42,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.rule.PageCacheRule;
@@ -286,7 +287,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
                                    new OpenOption[]{StandardOpenOption.WRITE};
         try ( PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
               PagedFile pagedFile = pageCache.map( storeFile, pageCache.pageSize(), openOptions );
-              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
         {
             cursor.next();
             cursorConsumer.accept( cursor );

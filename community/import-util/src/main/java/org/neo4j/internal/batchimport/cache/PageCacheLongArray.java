@@ -24,10 +24,12 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implements LongArray
 {
@@ -41,7 +43,8 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
             long result;
@@ -64,7 +67,8 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+            PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
             cursor.putLong( offset, value );

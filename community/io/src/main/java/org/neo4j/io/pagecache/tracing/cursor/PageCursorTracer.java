@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing.cursor;
 
+import java.io.Closeable;
+
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
@@ -32,7 +34,7 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
  *
  * @see PageCursorTracer
  */
-public interface PageCursorTracer extends PageCursorCounters
+public interface PageCursorTracer extends PageCursorCounters, Closeable
 {
 
     PageCursorTracer NULL = new PageCursorTracer()
@@ -130,4 +132,10 @@ public interface PageCursorTracer extends PageCursorCounters
      * about all of them except for accumulated counterparts.
      */
     void reportEvents();
+
+    @Override
+    default void close()
+    {
+        reportEvents();
+    }
 }

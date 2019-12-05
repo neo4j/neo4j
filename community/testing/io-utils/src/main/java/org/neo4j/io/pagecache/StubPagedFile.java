@@ -22,6 +22,8 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 public class StubPagedFile implements PagedFile
 {
     private final int pageSize;
@@ -35,7 +37,7 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags ) throws IOException
+    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
     {
         StubPageCursor cursor = new StubPageCursor( pageId, pageSize );
         prepareCursor( cursor );

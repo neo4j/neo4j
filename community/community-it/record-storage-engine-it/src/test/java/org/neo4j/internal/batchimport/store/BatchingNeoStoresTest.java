@@ -42,7 +42,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -291,8 +290,8 @@ class BatchingNeoStoresTest
     {
         NullLog nullLog = NullLog.getInstance();
         try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
-                PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                        nullLog, EmptyVersionContextSupplier.EMPTY, scheduler ).getOrCreatePageCache();
+                PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, nullLog,
+                        EmptyVersionContextSupplier.EMPTY, scheduler ).getOrCreatePageCache();
                 Lifespan life = new Lifespan() )
         {
             // TODO this little dance with TokenHolders is really annoying and must be solved with a better abstraction

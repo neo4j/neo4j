@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -47,7 +46,6 @@ public class ConfiguringPageCacheFactory
     private final Log log;
     private final VersionContextSupplier versionContextSupplier;
     private PageCache pageCache;
-    private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final JobScheduler scheduler;
 
     /**
@@ -55,14 +53,11 @@ public class ConfiguringPageCacheFactory
      * @param fs fileSystem file system that page cache will be based on
      * @param config page swapper configuration
      * @param pageCacheTracer global page cache tracer
-     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
-     * thread local page cache statistics
      * @param log page cache factory log
      * @param versionContextSupplier cursor context factory
      * @param scheduler job scheduler to execute page cache jobs
      */
-    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, Log log,
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log,
             VersionContextSupplier versionContextSupplier, JobScheduler scheduler )
     {
         this.fs = fs;
@@ -70,7 +65,6 @@ public class ConfiguringPageCacheFactory
         this.config = config;
         this.pageCacheTracer = pageCacheTracer;
         this.log = log;
-        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.scheduler = scheduler;
     }
 
@@ -87,8 +81,7 @@ public class ConfiguringPageCacheFactory
     protected PageCache createPageCache()
     {
         MemoryAllocator memoryAllocator = buildMemoryAllocator( config );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, pageCursorTracerSupplier,
-                versionContextSupplier, scheduler );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler );
     }
 
     private MemoryAllocator buildMemoryAllocator( Config config )

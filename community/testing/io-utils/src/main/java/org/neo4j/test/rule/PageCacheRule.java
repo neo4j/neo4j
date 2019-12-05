@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
@@ -97,10 +96,6 @@ public class PageCacheRule extends ExternalResource
         closeExistingPageCache();
         Integer pageSize = selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null );
         PageCacheTracer cacheTracer = selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL );
-        PageCursorTracerSupplier cursorTracerSupplier = selectConfig(
-                baseConfig.pageCursorTracerSupplier,
-                overriddenConfig.pageCursorTracerSupplier,
-                PageCursorTracerSupplier.NULL );
 
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
@@ -108,11 +103,11 @@ public class PageCacheRule extends ExternalResource
         initializeJobScheduler();
         if ( pageSize != null )
         {
-            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier, contextSupplier, jobScheduler );
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler );
         }
         else
         {
-            pageCache = new MuninnPageCache( factory, mman, cacheTracer, cursorTracerSupplier, contextSupplier, jobScheduler );
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler );
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;

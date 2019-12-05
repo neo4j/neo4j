@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
@@ -106,8 +106,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param filePageSize file page size
      * @param swapperFactory page cache swapper factory
      * @param pageCacheTracer global page cache tracer
-     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
-     * thread local page cache statistics
      * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
      * access to thread local version context
      * @param createIfNotExists should create file if it does not exists
@@ -116,15 +114,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * setting it to a single channel per mapped file.
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
-    MuninnPagedFile( File file, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory,
-            PageCacheTracer pageCacheTracer, PageCursorTracerSupplier pageCursorTracerSupplier,
-            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting,
-            boolean noChannelStriping, boolean useDirectIo ) throws IOException
+    MuninnPagedFile( File file, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
+            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean noChannelStriping, boolean useDirectIo )
+            throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorFactory = new CursorFactory( this, pageCursorTracerSupplier, pageCacheTracer, versionContextSupplier );
+        this.cursorFactory = new CursorFactory( this, versionContextSupplier );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap();
 
@@ -171,17 +168,17 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags )
+    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer )
     {
         int lockFlags = pf_flags & PF_LOCK_MASK;
         MuninnPageCursor cursor;
         if ( lockFlags == PF_SHARED_READ_LOCK )
         {
-            cursor = cursorFactory.takeReadCursor( pageId, pf_flags );
+            cursor = cursorFactory.takeReadCursor( pageId, pf_flags, tracer );
         }
         else if ( lockFlags == PF_SHARED_WRITE_LOCK )
         {
-            cursor = cursorFactory.takeWriteCursor( pageId, pf_flags );
+            cursor = cursorFactory.takeWriteCursor( pageId, pf_flags, tracer );
         }
         else
         {

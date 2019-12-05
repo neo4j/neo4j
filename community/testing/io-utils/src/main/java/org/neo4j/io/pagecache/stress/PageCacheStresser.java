@@ -34,8 +34,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * It works like this: We have N threads, and a number of records with N long fields plus a sum field. So each record
@@ -115,7 +117,8 @@ public class PageCacheStresser
         {
             stresser.verifyCounts();
         }
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             while ( cursor.next() )
             {

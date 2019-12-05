@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
 
@@ -37,6 +38,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
@@ -135,8 +137,9 @@ class CrashGenerationCleaner
     {
         return () ->
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK );
-                    PageCursor writeCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursorTracer tracer = TRACER_SUPPLIER.get();
+                    PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, tracer );
+                    PageCursor writeCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, tracer ) )
             {
                 long localNextId;
                 while ( ( localNextId = nextId.getAndAdd( batchSize )) < highTreeNodeId )

@@ -115,7 +115,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
                                        PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
                                        VersionContextSupplier versionContextSupplier )
     {
-        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier, jobScheduler );
+        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, versionContextSupplier, jobScheduler );
         pageCachePageSize = pageCache.pageSize();
         recordsPerFilePage = pageCachePageSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
@@ -338,9 +338,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     public abstract static class Fixture<T extends PageCache>
     {
-        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
-                                           PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
-                                           VersionContextSupplier contextSupplier, JobScheduler jobScheduler );
+        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier contextSupplier,
+                JobScheduler jobScheduler );
 
         public abstract void tearDownPageCache( T pageCache );
 

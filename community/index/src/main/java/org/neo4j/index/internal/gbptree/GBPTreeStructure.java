@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
@@ -66,7 +67,7 @@ public class GBPTreeStructure<KEY, VALUE>
     {
         try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.READ ) )
         {
-            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() ) )
             {
                 visitMeta( cursor, visitor );
                 visitTreeState( cursor, visitor );

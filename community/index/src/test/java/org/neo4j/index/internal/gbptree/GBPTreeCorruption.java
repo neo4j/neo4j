@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -268,7 +269,7 @@ public final class GBPTreeCorruption
     public static <KEY,VALUE> IndexCorruption<KEY,VALUE> decrementFreelistWritePos()
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 goTo( cursor, "", treeState.pageId() );
                 int decrementedWritePos = treeState.freeListWritePos() - 1;
@@ -284,7 +285,7 @@ public final class GBPTreeCorruption
         return ( pagedFile, layout, node, treeState ) -> {
             FreeListIdProvider freelist = getFreelist( pagedFile, treeState );
             freelist.releaseId( treeState.stableGeneration(), treeState.unstableGeneration(), releasedId );
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 goTo( cursor, "", treeState.pageId() );
                 TreeState.write( cursor, treeState.stableGeneration(), treeState.unstableGeneration(), treeState.rootId(),
@@ -297,7 +298,7 @@ public final class GBPTreeCorruption
     public static <KEY,VALUE> IndexCorruption<KEY,VALUE> setTreeState( TreeState target )
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 goTo( cursor, "", treeState.pageId() ); // Write new tree state to current tree states page
                 TreeState.write( cursor, target.stableGeneration(), target.unstableGeneration(), target.rootId(), target.rootGeneration(), target.lastId(),
@@ -310,7 +311,7 @@ public final class GBPTreeCorruption
             int otherChildPos )
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 goTo( cursor, "", otherInternalNode );
                 final GenerationKeeper generationKeeper = new GenerationKeeper();
@@ -344,7 +345,7 @@ public final class GBPTreeCorruption
     public static <KEY, VALUE> IndexCorruption<KEY,VALUE> pageSpecificCorruption( long targetPage, PageCorruption<KEY,VALUE> corruption )
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 goTo( cursor, "", targetPage );
                 corruption.corrupt( cursor, layout, node, treeState );
@@ -355,7 +356,7 @@ public final class GBPTreeCorruption
     public static <KEY,VALUE> IndexCorruption<KEY,VALUE> makeDirty()
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 goTo( cursor, "", treeState.pageId() );
                 // Need to also bump generations here otherwise both tree states will be identical which is an illegal state to be in.

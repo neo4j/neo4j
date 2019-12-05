@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
@@ -60,6 +61,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
 import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
@@ -644,13 +646,15 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private void initializeAfterCreation( Consumer<PageCursor> headerWriter ) throws IOException
     {
         // Initialize state
-        try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             TreeStatePair.initializeStatePages( cursor );
         }
 
         // Initialize index root node to a leaf node.
-        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             long stableGeneration = stableGeneration( generation );
             long unstableGeneration = unstableGeneration( generation );
@@ -736,7 +740,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
         TreeState state = TreeStatePair.selectNewestValidState( states );
-        try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             PageCursorUtil.goTo( cursor, "header data", state.pageId() );
             doReadHeader( headerReader, cursor );
@@ -771,7 +776,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
             TreeState state = TreeStatePair.selectNewestValidState( states );
-            try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {
                 PageCursorUtil.goTo( cursor, "header data", state.pageId() );
                 doReadHeader( headerReader, cursor );
@@ -815,7 +821,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
         long pageToOverwrite = oldestState.pageId();
         Root root = this.root;
-        try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ),
@@ -837,24 +844,27 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         int headerDataOffset = getHeaderDataOffset( headerOffset );
         if ( otherState.isValid() || headerWriter != CARRY_OVER_PREVIOUS_HEADER )
         {
-            PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK );
-            PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
-            checkOutOfBounds( cursor );
-            do
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {
-                // Clear any out-of-bounds from prior attempts
-                cursor.checkAndClearBoundsFlag();
-                // Place the previous state cursor after state data
-                TreeState.read( previousCursor );
-                // Read length of previous header
-                int previousLength = previousCursor.getInt();
-                // Reserve space to store length
-                cursor.setOffset( headerDataOffset );
-                // Write
-                headerWriter.write( previousCursor, previousLength, cursor );
+                PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
+                checkOutOfBounds( cursor );
+                do
+                {
+                    // Clear any out-of-bounds from prior attempts
+                    cursor.checkAndClearBoundsFlag();
+                    // Place the previous state cursor after state data
+                    TreeState.read( previousCursor );
+                    // Read length of previous header
+                    int previousLength = previousCursor.getInt();
+                    // Reserve space to store length
+                    cursor.setOffset( headerDataOffset );
+                    // Write
+                    headerWriter.write( previousCursor, previousLength, cursor );
+                }
+                while ( previousCursor.shouldRetry() );
+                checkOutOfBounds( previousCursor );
             }
-            while ( previousCursor.shouldRetry() );
-            checkOutOfBounds( previousCursor );
             checkOutOfBounds( cursor );
 
             int length = cursor.getOffset() - headerDataOffset;
@@ -871,7 +881,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             Pair<TreeState,TreeState> states = readStatePages( pagedFile );
             TreeState newestValidState = TreeStatePair.selectNewestValidState( states );
             long pageToOverwrite = newestValidState.pageId();
-            try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
                 PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
 
@@ -934,7 +945,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private static Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile ) throws IOException
     {
         Pair<TreeState,TreeState> states;
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             states = TreeStatePair.readStatePages(
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -942,9 +954,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return states;
     }
 
-    private static PageCursor openMetaPageCursor( PagedFile pagedFile, int pfFlags ) throws IOException
+    private static PageCursor openMetaPageCursor( PagedFile pagedFile, int pfFlags, PageCursorTracer pageCursorTracer ) throws IOException
     {
-        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, pfFlags );
+        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, pfFlags, pageCursorTracer );
         PageCursorUtil.goTo( metaCursor, "meta page", IdSpace.META_PAGE_ID );
         return metaCursor;
     }
@@ -952,7 +964,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private static <KEY,VALUE> Meta readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
             throws IOException
     {
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             return Meta.read( metaCursor, layout );
         }
@@ -961,7 +974,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private void writeMeta( Layout<KEY,VALUE> layout, TreeNodeSelector.Factory format, PagedFile pagedFile ) throws IOException
     {
         Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), pageSize, layout );
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             meta.write( metaCursor, layout );
         }
@@ -991,17 +1005,17 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     /**
-     * Utility for {@link PagedFile#io(long, int) acquiring} a new {@link PageCursor},
+     * Utility for {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer) acquiring} a new {@link PageCursor},
      * placed at the current root id and which have had its {@link PageCursor#next()} called-
      *
-     * @param pfFlags flags sent into {@link PagedFile#io(long, int)}.
-     * @return {@link PageCursor} result from call to {@link PagedFile#io(long, int)} after it has been
+     * @param pfFlags flags sent into {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)}.
+     * @return {@link PageCursor} result from call to {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)} after it has been
      * placed at the current root and has had {@link PageCursor#next()} called.
      * @throws IOException on {@link PageCursor} error.
      */
-    private PageCursor openRootCursor( int pfFlags ) throws IOException
+    private PageCursor openRootCursor( int pfFlags, PageCursorTracer cursorTracer ) throws IOException
     {
-        PageCursor cursor = pagedFile.io( 0L /*Ignored*/, pfFlags );
+        PageCursor cursor = pagedFile.io( 0L /*Ignored*/, pfFlags, cursorTracer );
         root.goTo( cursor );
         return cursor;
     }
@@ -1018,7 +1032,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         long stableGeneration = stableGeneration( generation );
         long unstableGeneration = unstableGeneration( generation );
 
-        PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK );
+        PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() );
         long rootGeneration = root.goTo( cursor );
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
@@ -1055,7 +1069,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
         // Read the root w/ all its keys
         List<KEY> rootKeys;
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             boolean goodRead;
             RootCatchup rootCatchup = rootCatchupSupplier.get();
@@ -1411,7 +1426,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     @VisibleForTesting
     public <VISITOR extends GBPTreeVisitor<KEY,VALUE>> VISITOR visit( VISITOR visitor ) throws IOException
     {
-        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             new GBPTreeStructure<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
                     .visitTree( cursor, writer.cursor, visitor );
@@ -1443,7 +1459,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     // Utility method
     public void printState() throws IOException
     {
-        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults().printState() );
             GBPTreeStructure.visitTreeState( cursor, printingVisitor );
@@ -1460,7 +1477,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         if ( id < freeList.lastId() )
         {
             // Use write lock to avoid adversary interference
-            try ( PageCursor cursor = pagedFile.io( id, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor cursor = pagedFile.io( id, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
                 cursor.next();
                 byte nodeType = TreeNode.nodeType( cursor );
@@ -1492,7 +1510,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportDirty ) throws IOException
     {
         CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             long unstableGeneration = unstableGeneration( generation );
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
@@ -1515,7 +1534,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     public void unsafe( GBPTreeUnsafe<KEY,VALUE> unsafe ) throws IOException
     {
         TreeState state;
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             // todo find better way of getting TreeState?
             Pair<TreeState,TreeState> states = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -1595,7 +1615,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 // Block here until cleaning has completed, if cleaning was required
                 lock.writerAndCleanerLock();
                 assertRecoveryCleanSuccessful();
-                cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
+                cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, TRACER_SUPPLIER.get() );
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
                 this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
@@ -1754,7 +1774,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     private static <KEY, VALUE> OffloadStoreImpl<KEY,VALUE> buildOffload( Layout<KEY,VALUE> layout, IdProvider idProvider, PagedFile pagedFile, int pageSize )
     {
-        OffloadPageCursorFactory pcFactory = pagedFile::io;
+        OffloadPageCursorFactory pcFactory = ( pageId, pf_flags ) -> pagedFile.io( pageId, pf_flags, TRACER_SUPPLIER.get() );
         OffloadIdValidator idValidator = id -> id >= IdSpace.MIN_TREE_NODE_ID && id <= pagedFile.getLastPageId();
         return new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, pageSize );
     }

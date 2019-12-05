@@ -215,7 +215,7 @@ public abstract class MuninnPageCursor extends PageCursor
         }
         else
         {
-            linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags );
+            linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags, tracer );
             linkedCursor.isLinkedCursor = true;
         }
         return linkedCursor;

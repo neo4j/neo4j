@@ -106,7 +106,7 @@ class CommonAbstractStoreTest
     {
         when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean() ) ).thenReturn( idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
-        when( pageFile.io( anyLong(), anyInt() ) ).thenReturn( pageCursor );
+        when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
         when( mockedPageCache.map( eq( storeFile ), anyInt() ) ).thenReturn( pageFile );
     }
 
@@ -135,7 +135,7 @@ class CommonAbstractStoreTest
         PageCursor pageCursor = mock( PageCursor.class );
 
         when( pageCache.map( eq( storeFile ), anyInt(), any( OpenOption.class ) ) ).thenReturn( pagedFile );
-        when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK ) ).thenReturn( pageCursor );
+        when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK, any() ) ).thenReturn( pageCursor );
         when( pageCursor.next() ).thenReturn( false );
 
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;

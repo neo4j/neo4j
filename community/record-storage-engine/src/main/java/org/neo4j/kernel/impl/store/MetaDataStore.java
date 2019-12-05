@@ -33,6 +33,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -50,6 +51,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
@@ -215,7 +217,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize ) )
         {
             int offset = offset( position );
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
                 if ( cursor.next() )
                 {
@@ -275,7 +278,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+                try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                      PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
                 {
                     if ( cursor.next() )
                     {
@@ -364,7 +368,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         assert pageId == pageIdForRecord( Position.UPGRADE_TRANSACTION_CHECKSUM.id );
         synchronized ( upgradeTransactionLock )
         {
-            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
                 if ( !cursor.next() )
                 {
@@ -444,7 +449,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         long version;
         synchronized ( logVersionLock )
         {
-            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                  PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
                 if ( cursor.next() )
                 {
@@ -580,7 +586,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void scanAllFields( int pf_flags, Visitor<PageCursor,IOException> visitor )
     {
-        try ( PageCursor cursor = pagedFile.io( 0, pf_flags ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, pf_flags, cursorTracer ) )
         {
             if ( cursor.next() )
             {
@@ -709,7 +716,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 {
                     long pageId = pageIdForRecord( Position.LAST_TRANSACTION_ID.id );
                     assert pageId == pageIdForRecord( Position.LAST_TRANSACTION_CHECKSUM.id );
-                    try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+                    try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                          PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
                     {
                         if ( cursor.next() )
                         {
@@ -789,7 +797,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             assert pageId == pageIdForRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET.id );
             synchronized ( transactionClosedLock )
             {
-                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+                try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+                      PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
                 {
                     if ( cursor.next() )
                     {

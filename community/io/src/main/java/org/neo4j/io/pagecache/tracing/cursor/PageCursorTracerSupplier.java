@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 /**
  * Supplier of page cursor tracers {@link PageCursorTracer} that use to provide transaction local page cache counters.
  */
+@FunctionalInterface
 public interface PageCursorTracerSupplier extends Supplier<PageCursorTracer>
 {
     PageCursorTracerSupplier NULL = () -> PageCursorTracer.NULL;

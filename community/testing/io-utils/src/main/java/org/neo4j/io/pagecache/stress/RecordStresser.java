@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -34,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class RecordStresser implements Callable<Void>
 {
@@ -66,7 +68,8 @@ public class RecordStresser implements Callable<Void>
         Random random = new Random();
         int recordsPerPage = format.getRecordsPerPage();
         int recordSize = format.getRecordSize();
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             while ( !condition.fulfilled() )
             {
@@ -97,7 +100,8 @@ public class RecordStresser implements Callable<Void>
     public void verifyCounts() throws IOException
     {
         long actualSum = 0;
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             while ( cursor.next() )
             {

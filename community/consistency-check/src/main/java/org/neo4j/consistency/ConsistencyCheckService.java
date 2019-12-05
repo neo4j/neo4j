@@ -56,7 +56,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -149,7 +148,7 @@ public class ConsistencyCheckService
         Log log = logProvider.getLog( getClass() );
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         ConfiguringPageCacheFactory pageCacheFactory =
-                new ConfiguringPageCacheFactory( fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, logProvider.getLog( PageCache.class ),
+                new ConfiguringPageCacheFactory( fileSystem, config, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ),
                         EmptyVersionContextSupplier.EMPTY, jobScheduler );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
