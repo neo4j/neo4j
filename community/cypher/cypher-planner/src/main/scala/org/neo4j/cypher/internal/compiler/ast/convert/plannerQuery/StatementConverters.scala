@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters._
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, PlannerQueryPart, QueryGraph, RegularSinglePlannerQuery, SinglePlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, PlannerQueryPart, SinglePlannerQuery, UnionQuery}
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable

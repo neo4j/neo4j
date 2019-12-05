@@ -107,24 +107,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
-  def planSubqueryCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+  def planSubquery(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext, correlated: Boolean): LogicalPlan = {
     val solvedLeft = solveds.get(left.id)
     val solvedRight = solveds.get(right.id)
-    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated = false)))
+    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated)))
 
     // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
     val providedOrder = providedOrders.get(left.id)
-    annotate(CartesianProduct(left, right), solved, providedOrder, context)
-  }
+    val plan =
+      if (correlated) Apply(left, right)
+      else CartesianProduct(left, right)
 
-  def planSubqueryApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val solvedLeft = solveds.get(left.id)
-    val solvedRight = solveds.get(right.id)
-    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated = true)))
-
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(left.id)
-    annotate(Apply(left, right), solved, providedOrder, context)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
