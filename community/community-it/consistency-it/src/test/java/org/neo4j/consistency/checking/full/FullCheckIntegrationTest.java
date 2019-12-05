@@ -124,8 +124,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
@@ -1078,7 +1077,7 @@ public class FullCheckIntegrationTest
                         return StandardDynamicRecordAllocator.allocateRecord( next.arrayProperty() );
                     }
                 }, true );
-                assertThat( allocatedRecords.size(), greaterThan( 1 ) );
+                assertThat( allocatedRecords.size() ).isGreaterThan( 1 );
                 DynamicRecord array = allocatedRecords.get( 0 );
                 array.setType( ARRAY.intValue() );
 

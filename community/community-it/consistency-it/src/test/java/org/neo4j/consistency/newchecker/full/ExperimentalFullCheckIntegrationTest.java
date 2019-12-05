@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.newchecker.full;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -37,8 +36,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consistency_checker_stop_threshold;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
@@ -112,7 +110,7 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
         // then number of relationship inconsistencies may be 1 or 2, because in a fail-fast setting not all failures are necessarily reported
         // before the checker is aborted. The driver for this arose when adding memory-limited testing to the new checker.
         int relationshipInconsistencies = stats.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
-        assertThat( relationshipInconsistencies, CoreMatchers.anyOf( equalTo( 1 ), equalTo( 2 ) ) );
+        assertThat( relationshipInconsistencies ).isIn( 1, 2 );
         assertEquals( stats.getTotalInconsistencyCount(), relationshipInconsistencies );
     }
 

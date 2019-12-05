@@ -38,8 +38,7 @@ import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -222,7 +221,7 @@ class NodeCheckerTest extends CheckerTestBase
             long nodeId = nodeStore.nextId();
             NodeRecord node = new NodeRecord( nodeId ).initialize( true, NULL, false, NULL, 0 );
             new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore() );
-            assertThat( node.getDynamicLabelRecords().size(), greaterThanOrEqualTo( 2 ) );
+            assertThat( node.getDynamicLabelRecords().size() ).isGreaterThanOrEqualTo( 2 );
             nodeStore.updateRecord( node );
             vandal.accept( node );
             nodeStore.updateRecord( node );

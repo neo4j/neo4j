@@ -52,8 +52,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
@@ -105,8 +104,8 @@ class IndexConsistencyIT
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
-        assertThat( readReport( result ), containsString(
-                "WARN : Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." ) );
+        assertThat( readReport( result ) ).contains(
+                "WARN : Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
     }
 
     @Test
@@ -125,8 +124,8 @@ class IndexConsistencyIT
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
-        assertThat( readReport( result ), containsString(
-                "WARN : Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." ) );
+        assertThat( readReport( result ) ).contains(
+                "WARN : Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
     }
 
     private <T> T resolveComponent( Class<T> clazz )

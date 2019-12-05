@@ -72,9 +72,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -149,9 +147,9 @@ public class ConsistencyCheckServiceIntegrationTest
 
         File reportFile = result.reportFile();
         assertTrue( reportFile.exists(), "Consistency check report file should be generated." );
-        assertThat( "Expected to see report about not deleted relationship record present as part of a chain",
-                Files.readString( reportFile.toPath() ),
-                containsString( "The relationship record is not in use, but referenced from relationships chain.") );
+        assertThat( Files.readString( reportFile.toPath() ) ).as(
+                "Expected to see report about not deleted relationship record present as part of a chain" ).contains(
+                "The relationship record is not in use, but referenced from relationships chain." );
     }
 
     @Test
@@ -281,11 +279,8 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( result.isSuccessful() );
         File reportFile = result.reportFile();
         assertTrue( reportFile.exists(), "Consistency check report file should be generated." );
-        assertThat( "Expected to see report about schema index not being online",
-                Files.readString( reportFile.toPath() ), allOf(
-                        containsString( "schema rule" ),
-                        containsString( "not online" )
-                ) );
+        assertThat( Files.readString( reportFile.toPath() ) ).as( "Expected to see report about schema index not being online" ).contains(
+                "schema rule" ).contains( "not online" );
     }
 
     @Test
