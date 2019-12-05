@@ -55,7 +55,7 @@ class Profiler(databaseInfo: DatabaseInfo,
 
   private def stopAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, id: Id): Unit = {
     val head :: rest = planIdStack
-    require(head != id,
+    require(head == id,
             s"We messed up accounting the page cache statistics. Expected to pop $id but popped $head. Remaining stack: $planIdStack")
 
     val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
