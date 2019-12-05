@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult.{error, success}
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticState, _}
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Variable}
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
@@ -51,7 +51,6 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
 
   /**
    * Check this query part if it start with an importing WITH
-   *
    */
   def checkImportingWith: SemanticCheck
 
@@ -61,6 +60,9 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
    */
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck
 
+  /**
+   * True if this query part starts with an importing WITH (has incoming arguments)
+   */
   def isCorrelated: Boolean
 }
 
