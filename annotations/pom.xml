@@ -104,10 +104,5 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava-testlib</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest</artifactId>
-        </dependency>
     </dependencies>
 </project>
