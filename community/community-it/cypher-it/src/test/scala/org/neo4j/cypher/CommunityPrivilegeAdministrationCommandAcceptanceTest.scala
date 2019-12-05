@@ -50,73 +50,83 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   }
 
   // Tests for granting privileges
+  Seq(
+    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
+    ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("MATCH", "MATCH {*} ON GRAPH * NODES * (*)"),
+    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
+    ("CREATE USER", "CREATE USER ON DBMS"),
+    ("DROP USER", "DROP USER ON DBMS"),
+    ("ALTER USER", "ALTER USER ON DBMS"),
+    ("SHOW USER", "SHOW USER ON DBMS"),
+    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
+    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
+    ("DROP ROLE", "DROP ROLE ON DBMS"),
+    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
+    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
+    ("SHOW ROLE", "SHOW ROLE ON DBMS")
+  ).foreach {
+    case (privilege, command) =>
+      test(s"should fail on granting $privilege privilege from community") {
+        // GIVEN
+        selectDatabase(SYSTEM_DATABASE_NAME)
 
-  test("should fail on granting traverse privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("GRANT TRAVERSE ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT TRAVERSE ON GRAPH * NODES * (*) TO custom")
-  }
-
-  test("should fail on granting read privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("GRANT READ {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT READ {*} ON GRAPH * NODES * (*) TO custom")
-  }
-
-  test("should fail on granting MATCH privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("GRANT MATCH {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT MATCH {*} ON GRAPH * NODES * (*) TO custom")
+        // THEN
+        assertFailure(s"GRANT $command TO custom", s"Unsupported administration command: GRANT $command TO custom")
+      }
   }
 
   // Tests for denying privileges
+  Seq(
+    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
+    ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("MATCH", "MATCH {*} ON GRAPH * NODES * (*)"),
+    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
+    ("CREATE USER", "CREATE USER ON DBMS"),
+    ("DROP USER", "DROP USER ON DBMS"),
+    ("ALTER USER", "ALTER USER ON DBMS"),
+    ("SHOW USER", "SHOW USER ON DBMS"),
+    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
+    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
+    ("DROP ROLE", "DROP ROLE ON DBMS"),
+    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
+    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
+    ("SHOW ROLE", "SHOW ROLE ON DBMS")
+  ).foreach {
+    case (privilege, command) =>
+      test(s"should fail on denying $privilege privilege from community") {
+        // GIVEN
+        selectDatabase(SYSTEM_DATABASE_NAME)
 
-  test("should fail on denying traverse privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("DENY TRAVERSE ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY TRAVERSE ON GRAPH * NODES * (*) TO custom")
-  }
-
-  test("should fail on denying read privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("DENY READ {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY READ {*} ON GRAPH * NODES * (*) TO custom")
-  }
-
-  test("should fail on denying MATCH privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("DENY MATCH {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY MATCH {*} ON GRAPH * NODES * (*) TO custom")
+        // THEN
+        assertFailure(s"DENY $command TO custom", s"Unsupported administration command: DENY $command TO custom")
+      }
   }
 
   // Tests for revoking grant privileges
+  Seq(
+    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
+    ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
+    ("CREATE USER", "CREATE USER ON DBMS"),
+    ("DROP USER", "DROP USER ON DBMS"),
+    ("ALTER USER", "ALTER USER ON DBMS"),
+    ("SHOW USER", "SHOW USER ON DBMS"),
+    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
+    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
+    ("DROP ROLE", "DROP ROLE ON DBMS"),
+    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
+    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
+    ("SHOW ROLE", "SHOW ROLE ON DBMS")
+  ).foreach {
+    case (privilege, command) =>
+      test(s"should fail on revoking grant $privilege privilege from community") {
+        // GIVEN
+        selectDatabase(SYSTEM_DATABASE_NAME)
 
-  test("should fail on revoking grant traverse privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom")
-  }
-
-  test("should fail on revoking grant read privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("REVOKE GRANT READ {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT READ {*} ON GRAPH * NODES * (*) FROM custom")
+        // THEN
+        assertFailure(s"REVOKE GRANT $command FROM custom", s"Unsupported administration command: REVOKE GRANT $command FROM custom")
+      }
   }
 
   test("should fail on revoking grant MATCH privilege from community") {
@@ -127,22 +137,31 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     assertFailureWithPartialMessage("REVOKE GRANT MATCH {*} ON GRAPH * NODES * (*) FROM custom",
       "REVOKE GRANT MATCH is not a valid command, use REVOKE GRANT READ and REVOKE GRANT TRAVERSE instead.")
   }
-  
+
   // Tests for revoking deny privileges
-  test("should fail on revoking deny traverse privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
+  Seq(
+    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
+    ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
+    ("CREATE USER", "CREATE USER ON DBMS"),
+    ("DROP USER", "DROP USER ON DBMS"),
+    ("ALTER USER", "ALTER USER ON DBMS"),
+    ("SHOW USER", "SHOW USER ON DBMS"),
+    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
+    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
+    ("DROP ROLE", "DROP ROLE ON DBMS"),
+    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
+    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
+    ("SHOW ROLE", "SHOW ROLE ON DBMS")
+  ).foreach {
+    case (privilege, command) =>
+      test(s"should fail on revoking deny $privilege privilege from community") {
+        // GIVEN
+        selectDatabase(SYSTEM_DATABASE_NAME)
 
-    // THEN
-    assertFailure("REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom")
-  }
-
-  test("should fail on revoking deny read privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("REVOKE DENY READ {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY READ {*} ON GRAPH * NODES * (*) FROM custom")
+        // THEN
+        assertFailure(s"REVOKE DENY $command FROM custom", s"Unsupported administration command: REVOKE DENY $command FROM custom")
+      }
   }
 
   test("should fail on revoking deny MATCH privilege from community") {
@@ -155,20 +174,29 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   }
 
   // Tests for revoking privileges
-  test("should fail on revoking traverse privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
+  Seq(
+    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
+    ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
+    ("CREATE USER", "CREATE USER ON DBMS"),
+    ("DROP USER", "DROP USER ON DBMS"),
+    ("ALTER USER", "ALTER USER ON DBMS"),
+    ("SHOW USER", "SHOW USER ON DBMS"),
+    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
+    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
+    ("DROP ROLE", "DROP ROLE ON DBMS"),
+    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
+    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
+    ("SHOW ROLE", "SHOW ROLE ON DBMS")
+  ).foreach {
+    case (privilege, command) =>
+      test(s"should fail on revoking $privilege privilege from community") {
+        // GIVEN
+        selectDatabase(SYSTEM_DATABASE_NAME)
 
-    // THEN
-    assertFailure("REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom")
-  }
-
-  test("should fail on revoking read privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("REVOKE READ {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE READ {*} ON GRAPH * NODES * (*) FROM custom")
+        // THEN
+        assertFailure(s"REVOKE $command FROM custom", s"Unsupported administration command: REVOKE $command FROM custom")
+      }
   }
 
   test("should fail on revoking MATCH privilege from community") {
