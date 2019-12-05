@@ -52,10 +52,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -92,7 +89,7 @@ class CheckConsistencyCommandIT
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo( String.format(
+        assertThat( baos.toString().trim() ).isEqualTo( String.format(
                 "Check the consistency of a database.%n" +
                 "%n" +
                 "USAGE%n" +
@@ -142,7 +139,7 @@ class CheckConsistencyCommandIT
                 "                              ownership. This check is very expensive in time%n" +
                 "                              and memory.%n" +
                 "                              Default: false"
-        ) ) );
+        ) );
     }
 
     @Test
@@ -185,8 +182,8 @@ class CheckConsistencyCommandIT
         {
             CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
             CommandFailedException exception = assertThrows( CommandFailedException.class, checkConsistencyCommand::execute );
-            assertThat( exception.getCause(), instanceOf( FileLockException.class ) );
-            assertThat( exception.getMessage(), equalTo( "The database is in use. Stop database 'mydb' and try again." ) );
+            assertThat( exception.getCause() ).isInstanceOf( FileLockException.class );
+            assertThat( exception.getMessage() ).isEqualTo( "The database is in use. Stop database 'mydb' and try again." );
         }
     }
 
@@ -234,7 +231,7 @@ class CheckConsistencyCommandIT
                     CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
                     checkConsistencyCommand.execute();
                 } );
-        assertThat( commandFailed.getMessage(), containsString( new File( "/the/report/path" ).toString() ) );
+        assertThat( commandFailed.getMessage() ).contains( new File( "/the/report/path" ).toString() );
     }
 
     @Test
@@ -343,7 +340,7 @@ class CheckConsistencyCommandIT
                     CommandLine.populateCommand( checkConsistencyCommand, "--database=foo", "--backup=bar" );
                     checkConsistencyCommand.execute();
                 } );
-        assertThat( incorrectUsage.getMessage(), containsString( "--database=<database>, --backup=<path> are mutually exclusive (specify only one)" ) );
+        assertThat( incorrectUsage.getMessage() ).contains( "--database=<database>, --backup=<path> are mutually exclusive (specify only one)" );
     }
 
     @Test
@@ -361,7 +358,7 @@ class CheckConsistencyCommandIT
             CommandLine.populateCommand( checkConsistencyCommand, "--backup=" + backupPath );
             checkConsistencyCommand.execute();
         } );
-        assertThat( commandFailed.getMessage(), containsString( "Report directory path doesn't exist or not a directory" ) );
+        assertThat( commandFailed.getMessage() ).contains( "Report directory path doesn't exist or not a directory" );
     }
 
     @Test

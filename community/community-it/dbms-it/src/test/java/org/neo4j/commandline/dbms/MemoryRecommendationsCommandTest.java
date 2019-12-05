@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
@@ -53,13 +52,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
@@ -106,7 +99,7 @@ class MemoryRecommendationsCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo( String.format(
+        assertThat( baos.toString().trim() ).isEqualTo( String.format(
                 "Print Neo4j heap and pagecache memory settings recommendations.%n" +
                 "%n" +
                 "USAGE%n" +
@@ -129,56 +122,56 @@ class MemoryRecommendationsCommandTest
                 "      --memory=<size>   Recommend memory settings with respect to the given%n" +
                 "                          amount of memory, instead of the total memory of the%n" +
                 "                          system running the command."
-        ) ) );
+        ) );
     }
 
     @Test
     void mustRecommendOSMemory()
     {
-        assertThat( recommendOsMemory( mebiBytes( 100 ) ), between( mebiBytes( 65 ), mebiBytes( 75 ) ) );
-        assertThat( recommendOsMemory( gibiBytes( 1 ) ), between( mebiBytes( 650 ), mebiBytes( 750 ) ) );
-        assertThat( recommendOsMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
-        assertThat( recommendOsMemory( gibiBytes( 192 ) ), between( gibiBytes( 17 ), gibiBytes( 19 ) ) );
-        assertThat( recommendOsMemory( gibiBytes( 1920 ) ), greaterThan( gibiBytes( 29 ) ) );
+        assertThat( recommendOsMemory( mebiBytes( 100 ) ) ).isBetween( mebiBytes( 65 ), mebiBytes( 75 ) );
+        assertThat( recommendOsMemory( gibiBytes( 1 ) ) ).isBetween( mebiBytes( 650 ), mebiBytes( 750 ) );
+        assertThat( recommendOsMemory( gibiBytes( 3 ) ) ).isBetween( mebiBytes( 1256 ), mebiBytes( 1356 ) );
+        assertThat( recommendOsMemory( gibiBytes( 192 ) ) ).isBetween( gibiBytes( 17 ), gibiBytes( 19 ) );
+        assertThat( recommendOsMemory( gibiBytes( 1920 ) ) ).isGreaterThan( gibiBytes( 29 ) );
     }
 
     @Test
     void mustRecommendHeapMemory()
     {
-        assertThat( recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 25 ), mebiBytes( 35 ) ) );
-        assertThat( recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 300 ), mebiBytes( 350 ) ) );
-        assertThat( recommendHeapMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
-        assertThat( recommendHeapMemory( gibiBytes( 6 ) ), between( mebiBytes( 3000 ), mebiBytes( 3200 ) ) );
-        assertThat( recommendHeapMemory( gibiBytes( 192 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
-        assertThat( recommendHeapMemory( gibiBytes( 1920 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
+        assertThat( recommendHeapMemory( mebiBytes( 100 ) ) ).isBetween( mebiBytes( 25 ), mebiBytes( 35 ) );
+        assertThat( recommendHeapMemory( gibiBytes( 1 ) ) ).isBetween( mebiBytes( 300 ), mebiBytes( 350 ) );
+        assertThat( recommendHeapMemory( gibiBytes( 3 ) ) ).isBetween( mebiBytes( 1256 ), mebiBytes( 1356 ) );
+        assertThat( recommendHeapMemory( gibiBytes( 6 ) ) ).isBetween( mebiBytes( 3000 ), mebiBytes( 3200 ) );
+        assertThat( recommendHeapMemory( gibiBytes( 192 ) ) ).isBetween( gibiBytes( 30 ), gibiBytes( 32 ) );
+        assertThat( recommendHeapMemory( gibiBytes( 1920 ) ) ).isBetween( gibiBytes( 30 ), gibiBytes( 32 ) );
     }
 
     @Test
     void mustRecommendPageCacheMemoryWithOffHeapTxState()
     {
-        assertThat( recommendPageCacheMemory( mebiBytes( 100 ), mebiBytes( 130 ) ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1 ), mebiBytes( 260 ) ), between( mebiBytes( 8 ), mebiBytes( 50 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 3 ), mebiBytes( 368 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 6 ), mebiBytes( 780 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 192 ), gibiBytes( 10 ) ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ), gibiBytes( 10 ) ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
+        assertThat( recommendPageCacheMemory( mebiBytes( 100 ), mebiBytes( 130 ) ) ).isBetween( mebiBytes( 7 ), mebiBytes( 12 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ), mebiBytes( 260 ) ) ).isBetween( mebiBytes( 8 ), mebiBytes( 50 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 3 ), mebiBytes( 368 ) ) ).isBetween( mebiBytes( 100 ), mebiBytes( 256 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 6 ), mebiBytes( 780 ) ) ).isBetween( mebiBytes( 100 ), mebiBytes( 256 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 192 ), gibiBytes( 10 ) ) ).isBetween( gibiBytes( 75 ), gibiBytes( 202 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ), gibiBytes( 10 ) ) ).isBetween( gibiBytes( 978 ), gibiBytes( 1900 ) );
 
         // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
-        assertThat( recommendPageCacheMemory( exbiBytes( 1 ), gibiBytes( 100 ) ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
+        assertThat( recommendPageCacheMemory( exbiBytes( 1 ), gibiBytes( 100 ) ) ).isLessThanOrEqualTo( tebiBytes( 16 ) );
     }
 
     @Test
     void mustRecommendPageCacheMemoryWithOnHeapTxState()
     {
-        assertThat( recommendPageCacheMemory( mebiBytes( 100 ), 0 ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1 ), 0 ), between( mebiBytes( 20 ), mebiBytes( 60 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 3 ), 0 ), between( mebiBytes( 256 ), mebiBytes( 728 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 6 ), 0 ), between( mebiBytes( 728 ), mebiBytes( 1056 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 192 ), 0 ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ), 0 ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
+        assertThat( recommendPageCacheMemory( mebiBytes( 100 ), 0 ) ).isBetween( mebiBytes( 7 ), mebiBytes( 12 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ), 0 ) ).isBetween( mebiBytes( 20 ), mebiBytes( 60 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 3 ), 0 ) ).isBetween( mebiBytes( 256 ), mebiBytes( 728 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 6 ), 0 ) ).isBetween( mebiBytes( 728 ), mebiBytes( 1056 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 192 ), 0 ) ).isBetween( gibiBytes( 75 ), gibiBytes( 202 ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ), 0 ) ).isBetween( gibiBytes( 978 ), gibiBytes( 1900 ) );
 
         // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
-        assertThat( recommendPageCacheMemory( exbiBytes( 1 ), gibiBytes( 100 ) ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
+        assertThat( recommendPageCacheMemory( exbiBytes( 1 ), gibiBytes( 100 ) ) ).isLessThanOrEqualTo( tebiBytes( 16 ) );
     }
 
     @Test
@@ -205,9 +198,7 @@ class MemoryRecommendationsCommandTest
             String bytesToString = bytesToString( expectedBytes );
             long actualBytes = setting.parse( bytesToString );
             long tenPercent = (long) (expectedBytes * 0.1);
-            assertThat( mebibytes + "m",
-                    actualBytes,
-                    between( expectedBytes - tenPercent, expectedBytes + tenPercent ) );
+            assertThat( actualBytes ).as( mebibytes + "m" ).isBetween( expectedBytes - tenPercent, expectedBytes + tenPercent );
         }
     }
 
@@ -278,9 +269,9 @@ class MemoryRecommendationsCommandTest
         String stringBelow100K = MemoryRecommendationsCommand.bytesToString( bytesBelow100K );
 
         // then
-        assertThat( stringBelowK, is( "1k" ) );
-        assertThat( stringBelow10K, is( "2k" ) );
-        assertThat( stringBelow100K, is( "18k" ) );
+        assertThat( stringBelowK ).isEqualTo( "1k" );
+        assertThat( stringBelow10K ).isEqualTo( "2k" );
+        assertThat( stringBelow100K ).isEqualTo( "18k" );
     }
 
     @Test
@@ -357,11 +348,6 @@ class MemoryRecommendationsCommandTest
         final long expectedPageCacheSize = totalPageCacheSize;
         verify( output ).println( contains( "Total size of lucene indexes in all databases: " + bytesToString( expectedLuceneIndexesSize ) ) );
         verify( output ).println( contains( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) ) );
-    }
-
-    private static Matcher<Long> between( long lowerBound, long upperBound )
-    {
-        return both( greaterThanOrEqualTo( lowerBound ) ).and( lessThanOrEqualTo( upperBound ) );
     }
 
     private static long[] calculatePageCacheFileSize( DatabaseLayout databaseLayout ) throws IOException
