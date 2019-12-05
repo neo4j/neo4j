@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TestableIterator}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
 

@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterCondition
+import org.neo4j.cypher.internal.rewriting.RewriterCondition
 
 case class StatementCondition(inner: Any => Seq[String]) extends Condition {
   override def check(state: AnyRef): Seq[String] = state match {

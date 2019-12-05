@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols._
 
 class NotEqualsTest extends InfixExpressionTestBase(expressions.NotEquals(_, _)(DummyPosition(0))) {
   private val types = List(CTList(CTAny), CTInteger, CTFloat, CTNumber, CTNode, CTPath, CTRelationship, CTMap, CTPoint,

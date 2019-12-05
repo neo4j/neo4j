@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions.{FunctionTypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.symbols._
 
 case object Sum extends AggregatingFunction with TypeSignatures {
   def name = "sum"

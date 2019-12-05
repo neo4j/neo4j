@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, Projection, RollUpApply}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.{MapKeys, SetExtractor}
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.{MapKeys, SetExtractor}
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

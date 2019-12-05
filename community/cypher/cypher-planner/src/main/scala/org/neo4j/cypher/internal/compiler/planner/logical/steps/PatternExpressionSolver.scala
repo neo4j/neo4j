@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.ir.{HasMappableExpressions, InterestingOrder, Q
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Coalesce, Exists, Head}
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
-import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
+import org.neo4j.cypher.internal.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
+import org.neo4j.cypher.internal.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag

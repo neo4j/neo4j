@@ -24,7 +24,7 @@ import java.util.Optional
 
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext, QueryStatistics}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{EmptyQuerySubscription, QueryProfile, RuntimeResult}

@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.expressions.Property
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
   * AntiConditionalApply works like ConditionalApply, but with reversed condition.

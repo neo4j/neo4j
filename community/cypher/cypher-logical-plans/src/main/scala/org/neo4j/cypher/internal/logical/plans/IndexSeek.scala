@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, LabelId, NonEmptyList, PropertyKeyId}
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.{InputPosition, LabelId, NonEmptyList, PropertyKeyId}
 
 import scala.collection.mutable.ArrayBuffer
 

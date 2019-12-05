@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
   * Like SemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without

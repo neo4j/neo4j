@@ -23,7 +23,7 @@ import java.lang.{Iterable => JavaIterable}
 import java.util
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.v4_0.util.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable

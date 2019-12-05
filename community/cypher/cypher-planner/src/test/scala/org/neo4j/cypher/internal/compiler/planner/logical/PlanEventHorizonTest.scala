@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

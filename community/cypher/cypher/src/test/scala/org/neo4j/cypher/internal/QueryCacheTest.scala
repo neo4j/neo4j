@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.mock.MockitoSugar

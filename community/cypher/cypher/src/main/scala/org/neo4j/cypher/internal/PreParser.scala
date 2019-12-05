@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.cache.LFUCache
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.{InvalidArgumentException, SyntaxException}
 import org.neo4j.cypher.internal.PreParser._
 

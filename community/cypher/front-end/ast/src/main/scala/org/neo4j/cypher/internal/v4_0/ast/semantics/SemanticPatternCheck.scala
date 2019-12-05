@@ -20,8 +20,8 @@ import org.neo4j.cypher.internal.v4_0.ast.ReturnItemsDef
 import org.neo4j.cypher.internal.v4_0.expressions.Pattern.SemanticContext.{Construct, Match, name}
 import org.neo4j.cypher.internal.v4_0.expressions.Pattern.{SemanticContext, findDuplicateRelationships}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, UnboundedShortestPathNotification}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.{InputPosition, UnboundedShortestPathNotification}
+import org.neo4j.cypher.internal.util.symbols._
 
 object SemanticPatternCheck extends SemanticAnalysisTooling {
 

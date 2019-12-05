@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.rewriting.AstRewritingTestSupport
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport with RewritePhaseTest {
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.{CastSupport, ExecutionContext}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.MergeConstraintConflictException
 import org.neo4j.values.virtual.VirtualNodeValue
 

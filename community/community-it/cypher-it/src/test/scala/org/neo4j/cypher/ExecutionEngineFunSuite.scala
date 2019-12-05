@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Entity, Node, Relationship, Result}
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}

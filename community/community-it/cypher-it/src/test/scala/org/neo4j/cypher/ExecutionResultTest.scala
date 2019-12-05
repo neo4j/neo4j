@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import java.util.regex.Pattern
 
 import org.junit.Assert._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 import scala.collection.JavaConverters._
 

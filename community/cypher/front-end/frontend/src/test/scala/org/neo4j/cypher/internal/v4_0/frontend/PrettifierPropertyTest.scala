@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.v4_0.frontend
 import org.neo4j.cypher.internal.v4_0.ast.generator.AstGenerator
 import org.neo4j.cypher.internal.v4_0.ast.generator.AstShrinker
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
-import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
 class PrettifierPropertyTest extends CypherFunSuite

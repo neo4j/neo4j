@@ -23,7 +23,7 @@ import java.util
 
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription.TotalHits
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics

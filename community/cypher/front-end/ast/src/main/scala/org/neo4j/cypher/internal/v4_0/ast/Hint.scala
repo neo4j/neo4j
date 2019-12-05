@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheckable, _}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Parameter, PropertyKeyName, Variable, _}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition, NonEmptyList}
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition, NonEmptyList}
 
 sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def variables: NonEmptyList[Variable]

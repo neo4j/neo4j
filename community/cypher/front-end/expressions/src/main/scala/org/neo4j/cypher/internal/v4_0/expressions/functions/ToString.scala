@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.symbols._
 
 case object ToString extends Function with FunctionWithInfo {
   override def name = "toString"

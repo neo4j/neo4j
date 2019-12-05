@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.expressions
 
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Rand
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Ref, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.{ASTNode, Ref, Rewriter, bottomUp}
 
 import scala.collection.immutable.Stack
 

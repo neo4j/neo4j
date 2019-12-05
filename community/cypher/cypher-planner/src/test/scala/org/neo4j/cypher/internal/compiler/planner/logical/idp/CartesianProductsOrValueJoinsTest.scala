@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.ir.{QueryGraph, RegularSinglePlannerQuery, Sele
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private val planA = allNodesScan("a")

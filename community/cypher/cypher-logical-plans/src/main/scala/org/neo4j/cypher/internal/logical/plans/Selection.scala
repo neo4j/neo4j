@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression}
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
   * For each source row, produce it if all predicates are true.

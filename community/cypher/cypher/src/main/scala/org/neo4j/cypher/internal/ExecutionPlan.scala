@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext, ResourceManager, ResourceMonitor}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.kernel.impl.query.QuerySubscriber

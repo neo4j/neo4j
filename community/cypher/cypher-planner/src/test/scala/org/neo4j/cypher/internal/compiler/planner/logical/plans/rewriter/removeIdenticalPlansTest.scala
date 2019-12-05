@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, LogicalPlan, NodeHashJoin}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val noAttributes = Attributes[LogicalPlan](idGen)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
   * This is a variation of apply, which only executes 'right' if all variables in 'items' != NO_VALUE.

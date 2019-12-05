@@ -18,10 +18,10 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast.Query
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CNFNormalizer
-import org.neo4j.cypher.internal.v4_0.rewriting.AstRewritingTestSupport
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.mergeInPredicates
-import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
+import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport {
 

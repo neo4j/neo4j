@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, Semant
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.string.UTF8
 

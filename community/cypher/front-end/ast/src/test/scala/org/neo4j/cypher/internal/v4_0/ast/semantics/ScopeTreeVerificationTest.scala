@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.ScopeTestHelper._
-import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ScopeTreeVerificationTest extends CypherFunSuite {
 

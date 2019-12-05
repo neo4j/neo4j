@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext, RelationshipOperations}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {

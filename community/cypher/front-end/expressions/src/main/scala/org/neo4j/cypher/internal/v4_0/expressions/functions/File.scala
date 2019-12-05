@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.v4_0.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object File extends Function with TypeSignatures {
   def name = "file"

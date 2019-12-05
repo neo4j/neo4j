@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NestedPlanExpression, PruningVarExpand, VarExpand}
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, LogicalVariable, Property, ScopeExpression}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
-import org.neo4j.cypher.internal.v4_0.util.{Foldable, Rewritable, Rewriter, topDown}
+import org.neo4j.cypher.internal.util.attribution.Attribute
+import org.neo4j.cypher.internal.util.{Foldable, Rewritable, Rewriter, topDown}
 
 import scala.collection.mutable
 

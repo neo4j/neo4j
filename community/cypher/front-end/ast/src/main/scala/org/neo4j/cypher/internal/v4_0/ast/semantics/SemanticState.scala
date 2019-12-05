@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable, Variable}
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.helpers.{TreeElem, TreeZipper}
-import org.neo4j.cypher.internal.v4_0.util.symbols.{TypeSpec, _}
+import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.helpers.{TreeElem, TreeZipper}
+import org.neo4j.cypher.internal.util.symbols.{TypeSpec, _}
 
 import scala.collection.immutable.HashMap
 import scala.language.postfixOps

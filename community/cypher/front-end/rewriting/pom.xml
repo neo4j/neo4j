@@ -23,7 +23,7 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.v4_0.rewriting</moduleName>
+        <moduleName>org.neo4j.cypher.internal.rewriting</moduleName>
     </properties>
 
     <licenses>

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc, FullSatisfaction, NoSatisfaction, Satisfaction}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InterestingOrderTest extends CypherFunSuite {
   test("should reverse project property to variable") {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 

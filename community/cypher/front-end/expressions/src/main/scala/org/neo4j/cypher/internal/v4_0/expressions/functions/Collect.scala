@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTAny, CTList}
+import org.neo4j.cypher.internal.util.symbols.{CTAny, CTList}
 
 case object Collect extends AggregatingFunction with TypeSignatures {
   def name = "collect"

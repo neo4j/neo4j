@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.v4_0.ast.UnresolvedCall
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.parser.{Expressions, ProcedureCalls}
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Rewriter, topDown}
+import org.neo4j.cypher.internal.parser.{Expressions, ProcedureCalls}
+import org.neo4j.cypher.internal.util.{ASTNode, Rewriter, topDown}
 import org.parboiled.scala.{ParsingResult, ReportingParseRunner, Rule1}
 
 object Parser {

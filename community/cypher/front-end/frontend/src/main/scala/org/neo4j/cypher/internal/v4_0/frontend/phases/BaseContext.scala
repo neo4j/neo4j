@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.v4_0.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 trait BaseContext {
   def tracer: CompilationPhaseTracer

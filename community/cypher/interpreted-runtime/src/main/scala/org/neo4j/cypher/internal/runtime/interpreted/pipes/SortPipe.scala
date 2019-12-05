@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 
 case class SortPipe(source: Pipe, comparator: Comparator[ExecutionContext])
                    (val id: Id = Id.INVALID_ID)

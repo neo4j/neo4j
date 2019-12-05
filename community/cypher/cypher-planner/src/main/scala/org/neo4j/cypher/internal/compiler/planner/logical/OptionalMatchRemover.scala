@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{Condition, Phase}
-import org.neo4j.cypher.internal.v4_0.util.Rewritable._
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.util.Rewritable._
+import org.neo4j.cypher.internal.util.{InputPosition, Rewriter, topDown}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer

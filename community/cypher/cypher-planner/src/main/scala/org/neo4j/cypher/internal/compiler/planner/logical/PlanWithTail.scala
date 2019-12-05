@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.Attributes
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,

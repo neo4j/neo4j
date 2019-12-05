@@ -36,10 +36,10 @@ import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, Transacti
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalNotification}
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.{InputPosition, InternalNotification}
 import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.exceptions.{DatabaseAdministrationException, Neo4jException, SyntaxException}
 import org.neo4j.internal.helpers.collection.Pair

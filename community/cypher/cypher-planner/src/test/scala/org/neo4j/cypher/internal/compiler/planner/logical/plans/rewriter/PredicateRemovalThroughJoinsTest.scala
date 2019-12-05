@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.ir.{QueryGraph, Selections, SinglePlannerQuery,
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.logical.plans.{NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val aHasLabel = hasLabels("a", "LABEL")

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{collapseMultipleInPredicates, nameUpdatingClauses, projectNamedPaths}
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, inSequence}
+import org.neo4j.cypher.internal.rewriting.rewriters.{collapseMultipleInPredicates, nameUpdatingClauses, projectNamedPaths}
+import org.neo4j.cypher.internal.util.{Rewriter, inSequence}
 
 object LateAstRewriting extends StatementRewriter {
   override def instance(context: BaseContext): Rewriter = inSequence(

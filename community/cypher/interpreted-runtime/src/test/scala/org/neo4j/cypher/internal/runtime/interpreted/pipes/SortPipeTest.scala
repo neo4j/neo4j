@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.junit.Assert._
 import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, Descending, InterpretedExecutionContextOrdering, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.intValue
 import org.scalatest.mock.MockitoSugar

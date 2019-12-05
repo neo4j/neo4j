@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Property, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, VisitorPhase}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 import org.neo4j.values.storable.{DurationFields, PointFields}

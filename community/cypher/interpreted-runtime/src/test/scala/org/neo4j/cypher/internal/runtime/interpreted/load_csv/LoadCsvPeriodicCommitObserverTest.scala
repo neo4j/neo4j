@@ -26,7 +26,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext, ResourceManager}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
   private val DEFAULT_BUFFER_SIZE = 4 * 1024 * 1024

@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

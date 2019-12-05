@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions.{DummyExpression, Property, Variable}
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTAny, CTInteger, CTMap, CTNode, CTNumber, CTRelationship, CTString, TypeSpec}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols.{CTAny, CTInteger, CTMap, CTNode, CTNumber, CTRelationship, CTString, TypeSpec}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, Variable}
 
 class SemanticStateTest extends CypherFunSuite {

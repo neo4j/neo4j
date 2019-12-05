@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpressions, PipeTreeBuilder}
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.{InterpretedProfileInformation, Profiler}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionResultBuilderFactory, InterpretedExecutionResultBuilderFactory, InterpretedPipeMapper, UpdateCountingQueryContext}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.exceptions.PeriodicCommitInOpenTransactionException
 import org.neo4j.internal.kernel.api.security.SecurityContext

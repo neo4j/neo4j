@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 case class AndedPropertyInequalities(
                                       variable: LogicalVariable,

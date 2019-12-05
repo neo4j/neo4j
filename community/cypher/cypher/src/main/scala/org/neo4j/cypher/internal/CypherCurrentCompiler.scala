@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.{InternalNotification, TaskCloser}
 import org.neo4j.cypher.{CypherExecutionMode, CypherVersion}
 import org.neo4j.exceptions.{Neo4jException, ParameterNotFoundException, ParameterWrongTypeException}
 import org.neo4j.graphdb.{Notification, QueryExecutionType}

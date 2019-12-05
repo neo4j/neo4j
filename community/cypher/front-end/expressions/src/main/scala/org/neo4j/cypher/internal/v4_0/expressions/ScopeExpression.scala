@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 // Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where

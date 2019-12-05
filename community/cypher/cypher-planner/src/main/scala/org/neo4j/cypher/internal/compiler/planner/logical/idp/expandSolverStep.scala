@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, Variable}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
 

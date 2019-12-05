@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.v4_0.parser.Base
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.parser.Base
+import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala._
 
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)

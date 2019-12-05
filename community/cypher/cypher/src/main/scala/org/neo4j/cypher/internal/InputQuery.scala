@@ -23,7 +23,7 @@ import org.neo4j.cypher.{internal, _}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.BaseState
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 /**
   * Input to query execution

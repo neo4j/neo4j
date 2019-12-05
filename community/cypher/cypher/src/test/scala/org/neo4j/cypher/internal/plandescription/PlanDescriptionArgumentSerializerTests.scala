@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.{Expression => argExpression, _}
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NestedPlanExpression}
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTBoolean, CTList, CTNode, CTString}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols.{CTBoolean, CTList, CTNode, CTString}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   implicit val idGen = new SequentialIdGen()

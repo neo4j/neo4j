@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCard
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelTestHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityModelTestHelper {
 

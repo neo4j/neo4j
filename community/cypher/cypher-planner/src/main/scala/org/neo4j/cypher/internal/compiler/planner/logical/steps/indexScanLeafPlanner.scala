@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.symbols._
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 

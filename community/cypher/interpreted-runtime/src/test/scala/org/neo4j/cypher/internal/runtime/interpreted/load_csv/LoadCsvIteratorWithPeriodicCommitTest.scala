@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LoadCsvIteratorWithPeriodicCommitTest extends CypherFunSuite {
 

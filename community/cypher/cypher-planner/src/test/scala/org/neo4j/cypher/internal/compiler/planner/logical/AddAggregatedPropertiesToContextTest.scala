@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val context: LogicalPlanningContext = newMockedLogicalPlanningContext(newMockedPlanContext())

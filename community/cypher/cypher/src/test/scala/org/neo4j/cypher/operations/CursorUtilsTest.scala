@@ -20,7 +20,7 @@
 package org.neo4j.cypher.operations
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.operations.CursorUtils.{nodeGetProperty, nodeHasLabel, relationshipGetProperty}
 import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read, RelationshipScanCursor}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}

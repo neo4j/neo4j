@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, ProduceResult, Selection}
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.v4_0.util.symbols
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSupport {
   implicit val idGen: SequentialIdGen = new SequentialIdGen()

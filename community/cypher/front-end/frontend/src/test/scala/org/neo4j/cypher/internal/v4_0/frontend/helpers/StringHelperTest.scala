@@ -17,11 +17,11 @@
 package org.neo4j.cypher.internal.v4_0.frontend.helpers
 
 import org.apache.commons.lang3.SystemUtils
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StringHelperTest extends CypherFunSuite {
 
-  import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper._
+  import org.neo4j.cypher.internal.util.helpers.StringHelper._
 
   test("should not fix position when the text contains no line break") {
     val text = "(line 1, column 8 (offset: 7))"

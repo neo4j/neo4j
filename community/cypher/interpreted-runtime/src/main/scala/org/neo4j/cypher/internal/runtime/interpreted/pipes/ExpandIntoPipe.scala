@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.{getRowNode, relationshipIterator}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.{CachingExpandInto, RelationshipSelectionCursor}

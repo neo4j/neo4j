@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.profiling;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id;
+import org.neo4j.cypher.internal.util.attribution.Id;
 import org.neo4j.cypher.result.OperatorProfile;
 import org.neo4j.cypher.result.QueryProfile;
 

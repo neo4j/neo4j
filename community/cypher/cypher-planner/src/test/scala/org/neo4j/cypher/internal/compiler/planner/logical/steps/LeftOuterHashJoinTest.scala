@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, LeftOuterHashJoin, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingJoinHint}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.Cost
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
 

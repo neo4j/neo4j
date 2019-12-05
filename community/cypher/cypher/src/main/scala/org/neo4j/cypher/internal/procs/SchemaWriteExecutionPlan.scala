@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.procs
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionPlan, RuntimeName, SchemaRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber

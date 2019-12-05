@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, Limit, Skip, DoNotIncludeTies}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

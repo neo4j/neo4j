@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.{LeafPlanFromExpressions, LeafPlansForVariable}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph, Selections}
 import org.neo4j.cypher.internal.logical.plans.{Distinct, Union}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v4_0.expressions.{In, Variable}
 
 /*

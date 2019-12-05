@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticError, SemanticExpressionCheck, SemanticState}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.SyntaxException
 
 object ResolvedCall {

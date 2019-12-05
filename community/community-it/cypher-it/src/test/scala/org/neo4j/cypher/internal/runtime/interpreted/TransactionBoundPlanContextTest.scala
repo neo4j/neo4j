@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, IndexLimitation, SlowContains}
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED

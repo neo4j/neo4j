@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.Where
 import org.neo4j.cypher.internal.v4_0.expressions.{And, Equals, Or, _}
-import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 
 /**
   * TODO: This should instead implement Rewriter

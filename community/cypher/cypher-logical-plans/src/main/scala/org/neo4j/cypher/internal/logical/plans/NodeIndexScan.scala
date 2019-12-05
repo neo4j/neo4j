@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, Property}
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
 
 /**
   * This operator does a full scan of an index, producing one row per entry.

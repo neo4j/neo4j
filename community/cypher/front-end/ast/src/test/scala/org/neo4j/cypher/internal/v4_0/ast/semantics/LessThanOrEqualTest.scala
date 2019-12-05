@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols._
 
 class LessThanOrEqualTest extends InfixExpressionTestBase(expressions.LessThanOrEqual(_, _)(DummyPosition(0))) {
 

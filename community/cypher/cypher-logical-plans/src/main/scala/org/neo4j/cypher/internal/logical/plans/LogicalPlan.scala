@@ -23,10 +23,10 @@ import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.ir.{SinglePlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util.Rewritable._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, Identifiable, SameId}
-import org.neo4j.cypher.internal.v4_0.util.{Foldable, Rewritable}
+import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.util.Rewritable._
+import org.neo4j.cypher.internal.util.attribution.{Id, IdGen, Identifiable, SameId}
+import org.neo4j.cypher.internal.util.{Foldable, Rewritable}
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable
@@ -179,7 +179,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
   def indexUsage: Seq[IndexUsage] = {
-    import org.neo4j.cypher.internal.v4_0.util.Foldable._
+    import org.neo4j.cypher.internal.util.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, properties, _, _, _) =>
         acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))

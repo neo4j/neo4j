@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticFeature._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{IfNoParameter, InnerVariableNamer, LiteralExtraction}
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.rewriting.rewriters.{IfNoParameter, InnerVariableNamer, LiteralExtraction}
+import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
 
 object CompilationPhases {
 

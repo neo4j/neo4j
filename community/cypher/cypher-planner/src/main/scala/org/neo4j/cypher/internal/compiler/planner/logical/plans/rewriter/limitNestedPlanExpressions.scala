@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.logical.plans.{DoNotIncludeTies, Limit, NestedPlanExpression}
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Head
 import org.neo4j.cypher.internal.v4_0.expressions.{Add, ContainerIndex, FunctionInvocation, FunctionName, ListSlice, Namespace, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
   * Places a Limit inside of NestenPlanExpressions, if the NestenPlanExpressions is inside an expression that does not need the whole list as a result.

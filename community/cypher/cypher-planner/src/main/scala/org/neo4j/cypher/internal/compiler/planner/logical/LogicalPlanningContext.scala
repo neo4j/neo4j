@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext, Plan
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,

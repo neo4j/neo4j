@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(

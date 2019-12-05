@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingIndexHint}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

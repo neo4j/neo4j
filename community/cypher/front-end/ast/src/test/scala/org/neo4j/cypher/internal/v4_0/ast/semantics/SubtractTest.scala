@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions.Subtract
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols._
 
 class SubtractTest extends InfixExpressionTestBase(Subtract(_, _)(DummyPosition(0))) {
 

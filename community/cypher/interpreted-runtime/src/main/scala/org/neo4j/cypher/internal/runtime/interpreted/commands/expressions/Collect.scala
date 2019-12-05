@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.CollectFunction
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.symbols._
 
 case class Collect(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   override def createAggregationFunction = new CollectFunction(anInner)

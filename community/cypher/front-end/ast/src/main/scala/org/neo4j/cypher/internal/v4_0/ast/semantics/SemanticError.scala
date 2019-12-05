@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 sealed trait SemanticErrorDef {
   def msg: String

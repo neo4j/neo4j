@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.profiling;
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id;
+import org.neo4j.cypher.internal.util.attribution.Id;
 
 public interface QueryProfiler
 {

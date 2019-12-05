@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.expressions.{CountStar, Property, PropertyKeyName}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 

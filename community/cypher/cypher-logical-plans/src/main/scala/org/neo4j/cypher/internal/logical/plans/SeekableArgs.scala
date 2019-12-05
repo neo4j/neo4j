@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.util.{One, ZeroOneOrMany}
+import org.neo4j.cypher.internal.util.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 sealed trait SeekableArgs {

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator._
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "

@@ -23,7 +23,7 @@ import java.util.Optional
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper._
+import org.neo4j.cypher.internal.util.helpers.StringHelper._
 import org.neo4j.exceptions.{Neo4jException, SyntaxException}
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite {

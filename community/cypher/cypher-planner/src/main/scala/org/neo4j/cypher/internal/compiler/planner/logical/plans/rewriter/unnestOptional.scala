@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 
 case object unnestOptional extends Rewriter {
 
   override def apply(input: AnyRef) = if (isSafe(input)) instance.apply(input) else input
 
-  import org.neo4j.cypher.internal.v4_0.util.Foldable._
+  import org.neo4j.cypher.internal.util.Foldable._
 
   /*
    * It is not safe to unnest an optional expand with when we have

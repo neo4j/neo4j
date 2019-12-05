@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalNotification}
+import org.neo4j.cypher.internal.util.{InputPosition, InternalNotification}
 
 /**
  * A NotificationLogger records notifications.

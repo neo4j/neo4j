@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryContext}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.values.AnyValue
 

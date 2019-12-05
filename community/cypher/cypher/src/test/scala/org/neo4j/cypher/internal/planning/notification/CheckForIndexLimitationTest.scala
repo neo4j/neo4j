@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.{SuboptimalIndexForConstainsQueryNotif
 import org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, IndexLimitation, PlanContext, SlowContains}
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId}
 
 class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

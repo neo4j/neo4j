@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition, Phase}
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 /**
   * This planner takes on queries that requires no planning such as schema commands

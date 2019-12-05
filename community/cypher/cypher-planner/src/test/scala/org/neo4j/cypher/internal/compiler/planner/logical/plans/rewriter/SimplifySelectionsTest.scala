@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.{FakePlan, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.v4_0.util.symbols.CTAny
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.logical.plans.{DropResult, LogicalPlan, Selection}
 import org.neo4j.cypher.internal.v4_0.expressions.DummyExpression
 

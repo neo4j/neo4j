@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.plandescription.Arguments._
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InternalPlanDescriptionTest extends CypherFunSuite {
 

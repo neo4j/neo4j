@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, Literal, ParameterFromSlot}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values.{longValue, stringValue, utf8Value}
 import org.neo4j.values.storable.{UTF8StringValue, Values}

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, MinimumGraphStatistics}
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.internal.helpers.collection
 import org.neo4j.internal.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}

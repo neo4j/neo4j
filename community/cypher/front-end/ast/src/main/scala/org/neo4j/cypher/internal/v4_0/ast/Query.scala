@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticState, _}
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Variable}
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
 
 import scala.annotation.tailrec
 

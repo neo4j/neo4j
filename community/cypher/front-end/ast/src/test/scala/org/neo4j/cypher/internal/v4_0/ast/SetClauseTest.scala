@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.expressions.{DummyExpression, Property}
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFunSuite, SemanticState}
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 

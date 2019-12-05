@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.ast.{Match, Query, SingleQuery, Where, _}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, RelTypeId}
 
 class ResolveTokensTest extends CypherFunSuite {
 
-  import org.neo4j.cypher.internal.v4_0.parser.ParserFixture._
+  import org.neo4j.cypher.internal.parser.ParserFixture._
 
   parseTest("match (n) where n.name = 'Resolved' return *") { query =>
     implicit val semanticTable = SemanticTable()

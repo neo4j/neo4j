@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import java.util.{List => JavaList, Map => JavaMap}
 
-import org.neo4j.cypher.internal.v4_0.util.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 
 import scala.collection.JavaConverters._
 import scala.collection.Map

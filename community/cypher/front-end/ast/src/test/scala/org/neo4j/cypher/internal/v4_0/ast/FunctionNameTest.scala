@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.expressions.FunctionName
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class FunctionNameTest extends CypherFunSuite {
   test("equality should ignore case") {

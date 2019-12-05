@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck}
 
 case class Where(expression: Expression)(val position: InputPosition)

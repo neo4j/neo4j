@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, 
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.v4_0.util._
+import org.neo4j.cypher.internal.util.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.util._
 import org.scalatest.BeforeAndAfterAll
 
 class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {

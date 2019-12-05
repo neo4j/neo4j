@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.v4_0.ast.{Query, Statement}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /*
 This is the state that is used during query compilation. It accumulates more and more values as it passes through

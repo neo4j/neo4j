@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Eagerness.unnestEager
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

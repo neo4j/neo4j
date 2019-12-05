@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.symbols._
 
 case object ToUpper extends Function with TypeSignatures {
   def name = "toUpper"

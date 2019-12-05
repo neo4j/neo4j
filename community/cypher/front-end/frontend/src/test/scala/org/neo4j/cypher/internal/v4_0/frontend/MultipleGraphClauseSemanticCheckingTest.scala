@@ -20,13 +20,13 @@ import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticErrorDef, SemanticFeature, SemanticState}
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.{TestContext, TestState}
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.parser.ParserTest
-import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations
-import org.neo4j.cypher.internal.v4_0.{ast, parser}
+import org.neo4j.cypher.internal.parser.ParserTest
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.v4_0.{ast, org.neo4j.cypher.internal.parser}
 import org.parboiled.scala.Rule1
 
 class MultipleGraphClauseSemanticCheckingTest
-  extends ParserTest[ast.Statement, SemanticCheckResult] with parser.Statement {
+  extends ParserTest[ast.Statement, SemanticCheckResult] with org.neo4j.cypher.internal.parser.Statement {
 
   // INFO: Use result.dumpAndExit to debug these tests
 

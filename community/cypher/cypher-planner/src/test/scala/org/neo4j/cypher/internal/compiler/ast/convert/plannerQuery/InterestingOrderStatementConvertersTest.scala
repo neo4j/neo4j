@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.expressions.CountStar
 import org.neo4j.cypher.internal.logical.plans.{QualifiedName, ResolvedFunctionInvocation}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InterestingOrderStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

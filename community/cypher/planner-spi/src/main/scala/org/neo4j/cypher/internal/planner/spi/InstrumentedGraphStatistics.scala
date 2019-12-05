@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.planner.spi
 
 import java.lang.Math.{abs, max}
 
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 
 import scala.collection.mutable
 

@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, HasLabels, LabelName, RelTypeName, SemanticDirection}
-import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId}
+import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

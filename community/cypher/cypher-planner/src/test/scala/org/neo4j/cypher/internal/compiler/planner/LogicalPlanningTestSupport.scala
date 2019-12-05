@@ -38,14 +38,14 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
+import org.neo4j.cypher.internal.rewriting.rewriters._
+import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 import scala.collection.mutable
 

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend
 
-import org.neo4j.cypher.internal.v4_0.util.Foldable
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 object FoldableTest {
   trait Exp extends Foldable

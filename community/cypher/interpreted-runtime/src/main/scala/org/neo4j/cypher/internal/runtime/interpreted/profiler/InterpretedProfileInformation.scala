@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import java.util
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 
 import scala.collection.mutable

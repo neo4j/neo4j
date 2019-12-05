@@ -18,10 +18,10 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, Statement}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{Monitors, isolateAggregation}
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriteTest
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.normalizeWithAndReturnClauses
-import org.neo4j.cypher.internal.v4_0.util.{OpenCypherExceptionFactory, inSequence}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.rewriting.RewriteTest
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, inSequence}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest = isolateAggregation.instance(new TestContext(mock[Monitors]))

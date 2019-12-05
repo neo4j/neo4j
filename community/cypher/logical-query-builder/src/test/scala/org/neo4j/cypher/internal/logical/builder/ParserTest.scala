@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.v4_0.ast.{ProcedureResult, ProcedureResultItem, UnresolvedCall}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, TestName}
 
 class ParserTest extends CypherFunSuite with TestName {
   private val pos = InputPosition.NONE

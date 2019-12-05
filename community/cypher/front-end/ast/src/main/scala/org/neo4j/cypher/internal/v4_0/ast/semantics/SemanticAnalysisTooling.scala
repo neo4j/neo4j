@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.{DefaultTypeMismatchMessageGenerator, SemanticContext}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.symbols._
 
 /**
   * This class holds methods for performing semantic analysis.

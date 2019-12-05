@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Distance, Exists}
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 

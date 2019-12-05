@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases.rewriting
 
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.collapseMultipleInPredicates
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.rewriting.rewriters.collapseMultipleInPredicates
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CNFNormalizer
-import org.neo4j.cypher.internal.v4_0.rewriting.AstRewritingTestSupport
-import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
 class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 

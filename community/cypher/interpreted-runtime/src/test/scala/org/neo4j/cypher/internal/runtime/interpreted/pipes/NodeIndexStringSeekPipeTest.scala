@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.logical.plans.{GetValue, IndexOrderNone, IndexedProperty}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 

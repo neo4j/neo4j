@@ -24,8 +24,8 @@ import java.util.Collections.singletonList
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{verify, when}
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, Selectivity}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, Selectivity}
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.internal.schema

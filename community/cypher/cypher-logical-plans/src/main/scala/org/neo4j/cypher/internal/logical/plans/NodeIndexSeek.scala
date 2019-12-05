@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelToken}
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
 
 /**
   * For every node with the given label and property values, produces rows with that node.

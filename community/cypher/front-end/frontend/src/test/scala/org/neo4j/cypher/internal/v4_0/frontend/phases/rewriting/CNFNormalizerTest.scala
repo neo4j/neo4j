@@ -20,9 +20,9 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CNFNormalizer, CompilationPhaseTracer, InternalNotificationLogger, Monitors, _}
-import org.neo4j.cypher.internal.v4_0.rewriting.{AstRewritingMonitor, PredicateTestSupport}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition, Rewriter}
+import org.neo4j.cypher.internal.rewriting.{AstRewritingMonitor, PredicateTestSupport}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition, Rewriter}
 import org.scalatest.mock.MockitoSugar
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {

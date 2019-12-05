@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.planner.spi
 
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.logical.plans.{DoNotGetValue, GetValueFromIndexBehavior}
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId}
 
 sealed trait IndexLimitation
 case object SlowContains extends IndexLimitation

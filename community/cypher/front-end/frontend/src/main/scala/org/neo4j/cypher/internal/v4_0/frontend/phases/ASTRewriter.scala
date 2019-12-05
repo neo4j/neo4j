@@ -19,11 +19,11 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.ast.{Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.v4_0.expressions.NotEquals
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStep._
-import org.neo4j.cypher.internal.v4_0.rewriting.conditions._
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{replaceLiteralDynamicPropertyLookups, _}
-import org.neo4j.cypher.internal.v4_0.rewriting.{RewriterCondition, RewriterStepSequencer}
-import org.neo4j.cypher.internal.v4_0.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.rewriting.RewriterStep._
+import org.neo4j.cypher.internal.rewriting.conditions._
+import org.neo4j.cypher.internal.rewriting.rewriters.{replaceLiteralDynamicPropertyLookups, _}
+import org.neo4j.cypher.internal.rewriting.{RewriterCondition, RewriterStepSequencer}
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
                   literalExtraction: LiteralExtraction,

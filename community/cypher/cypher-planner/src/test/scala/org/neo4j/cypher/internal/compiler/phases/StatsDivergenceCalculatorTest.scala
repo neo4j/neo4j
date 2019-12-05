@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatsDivergenceCalculatorTest extends CypherFunSuite {
   val defaultInitialThreshold = GraphDatabaseSettings.query_statistics_divergence_threshold.defaultValue.toDouble

@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.frontend
 
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, OpenCypherExceptionFactory, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.util.{ASTNode, OpenCypherExceptionFactory, Rewriter, bottomUp}
 import org.scalatest.{Assertion, Matchers}
 
 trait PrettifierTestUtils extends Matchers {

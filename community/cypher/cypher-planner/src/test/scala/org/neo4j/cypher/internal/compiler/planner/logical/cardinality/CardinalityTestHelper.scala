@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.ir.{QueryGraph, StrictnessMode}
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, MinimumGraphStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
-import org.neo4j.cypher.internal.v4_0.util.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
+import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 

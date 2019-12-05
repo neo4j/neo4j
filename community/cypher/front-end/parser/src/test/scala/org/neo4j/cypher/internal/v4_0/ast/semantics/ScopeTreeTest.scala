@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.ast.StatementHelper._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.ScopeTestHelper._
-import org.neo4j.cypher.internal.v4_0.parser.ParserFixture.parse
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.parser.ParserFixture.parse
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 
 /*

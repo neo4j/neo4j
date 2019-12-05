@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId}
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.internal.kernel.api.security.SecurityContext
 

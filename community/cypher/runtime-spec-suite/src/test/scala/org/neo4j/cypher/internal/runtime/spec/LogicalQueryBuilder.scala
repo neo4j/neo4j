@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.attribution.Default
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.attribution.Default
 
 /**
   * Test help utility for hand-writing logical queries.

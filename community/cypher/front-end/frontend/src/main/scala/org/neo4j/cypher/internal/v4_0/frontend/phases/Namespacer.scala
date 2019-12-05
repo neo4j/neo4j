@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.v4_0.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.v4_0.rewriting.conditions.containsNoNodesOfType
-import org.neo4j.cypher.internal.v4_0.util.Ref
-import org.neo4j.cypher.internal.v4_0.util.Rewriter
-import org.neo4j.cypher.internal.v4_0.util.bottomUp
-import org.neo4j.cypher.internal.v4_0.util.inSequence
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.util.Ref
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.inSequence
 
 object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   type VariableRenamings = Map[Ref[Variable], Variable]

@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.util.inSequence
+import org.neo4j.cypher.internal.rewriting.rewriters._
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.Deprecations
 
 case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
 

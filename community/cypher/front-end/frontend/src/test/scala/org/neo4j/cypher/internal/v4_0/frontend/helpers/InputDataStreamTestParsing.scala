@@ -21,9 +21,9 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTabl
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.parser.{Expressions, Statement}
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
+import org.neo4j.cypher.internal.parser.{Expressions, Statement}
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition}
 import org.parboiled.scala.{EOI, Parser, Rule1, group}
 
 case object InputDataStreamTestParsing extends Phase[BaseContext, BaseState, BaseState] {

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.{FieldSignature, ProcedureSignatu
 import org.neo4j.cypher.internal.v4_0.ast.{ProcedureResultItem, Statement, UnresolvedCall}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.v4_0.util._
+import org.neo4j.cypher.internal.util._
 import org.neo4j.exceptions.InternalException
 
 object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {

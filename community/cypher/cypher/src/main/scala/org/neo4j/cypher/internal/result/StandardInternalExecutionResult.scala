@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.javacompat.{ResultRowImpl, ResultSubscriber}
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v4_0.util.TaskCloser
+import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult, VisitableRuntimeResult}

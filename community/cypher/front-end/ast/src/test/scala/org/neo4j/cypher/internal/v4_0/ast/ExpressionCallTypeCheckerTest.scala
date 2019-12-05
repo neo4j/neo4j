@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticExpressionCheck, SemanticState}
 import org.neo4j.cypher.internal.v4_0.expressions.{DummyExpression, Expression}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions.TypeSignature
 
 class ExpressionCallTypeCheckerTest extends CypherFunSuite {

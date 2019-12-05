@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.planning.notification
 
 import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.logical.plans.{Eager, LoadCSV, LogicalPlan}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 
 object checkForEagerLoadCsv extends NotificationChecker {
 
   def apply(plan: LogicalPlan): Seq[InternalNotification] = {
-    import org.neo4j.cypher.internal.v4_0.util.Foldable._
+    import org.neo4j.cypher.internal.util.Foldable._
     sealed trait SearchState
     case object NoEagerFound extends SearchState
     case object EagerFound extends SearchState

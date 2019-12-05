@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.helpers
 
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{Fby, Last, NonEmptyList}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{Fby, Last, NonEmptyList}
 
 class NonEmptyListTest extends CypherFunSuite {
 

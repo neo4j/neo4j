@@ -21,10 +21,10 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.{Scope, SemanticAnalysisTool
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Distance, Exists}
 import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
-import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.util.symbols._
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String

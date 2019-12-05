@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend
 
-import org.neo4j.cypher.internal.v4_0.util.Rewriter
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RepeatTest extends CypherFunSuite {
 

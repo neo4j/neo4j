@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val leaf = newMockedLogicalPlan()

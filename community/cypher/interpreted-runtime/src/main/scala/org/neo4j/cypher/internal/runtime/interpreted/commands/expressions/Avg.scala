@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AvgFunction
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.symbols._
 
 case class Avg(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   override def createAggregationFunction = new AvgFunction(anInner)

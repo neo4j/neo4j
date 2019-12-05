@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.ir.{CSVFormat, StrictnessMode}
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
   * Operator which loads a CSV from some URL. For every source row, the CSV is loaded. Each CSV line is produced as a

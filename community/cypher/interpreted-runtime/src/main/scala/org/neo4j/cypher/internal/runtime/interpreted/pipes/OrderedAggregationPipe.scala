@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{AggregationTable, AggregationTableFactory}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.{OrderedGroupingAggTable, OrderedNonGroupingAggTable}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
   * Specialization of [[EagerAggregationPipe]] that leverages the order of some or all grouping columns.

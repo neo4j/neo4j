@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions.ReduceExpression.AccumulatorExpressionTypeMismatchMessageGenerator
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.symbols._
 
 import scala.util.Try
 

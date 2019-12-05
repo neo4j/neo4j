@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions.{Ors, DummyExpression}
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
 class OrsTest extends SemanticFunSuite {
   test("should semantic check all expressions in ors") {

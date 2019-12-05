@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.Statement
-import org.neo4j.cypher.internal.v4_0.parser.CypherParser
+import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
 
 case object Parsing extends Phase[BaseContext, BaseState, BaseState] {

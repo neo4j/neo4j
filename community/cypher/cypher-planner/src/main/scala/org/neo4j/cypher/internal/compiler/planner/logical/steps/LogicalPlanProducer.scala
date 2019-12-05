@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.attribution.{Attributes, IdGen}
 import org.neo4j.exceptions.{ExhaustiveShortestPathForbiddenException, InternalException}
 
 /*

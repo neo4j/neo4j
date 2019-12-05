@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {

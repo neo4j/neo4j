@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
-import org.neo4j.cypher.internal.v4_0.util.Cost
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

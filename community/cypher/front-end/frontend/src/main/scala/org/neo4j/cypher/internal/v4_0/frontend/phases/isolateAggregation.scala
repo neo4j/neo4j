@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.{Variable, _}
-import org.neo4j.cypher.internal.v4_0.rewriting.conditions.{aggregationsAreIsolated, hasAggregateButIsNotAggregate}
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v4_0.util.{AggregationNameGenerator, Rewriter, bottomUp, _}
+import org.neo4j.cypher.internal.rewriting.conditions.{aggregationsAreIsolated, hasAggregateButIsNotAggregate}
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.{AggregationNameGenerator, Rewriter, bottomUp, _}
 
 /**
   * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so

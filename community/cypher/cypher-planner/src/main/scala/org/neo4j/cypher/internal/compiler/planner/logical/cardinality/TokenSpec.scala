@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, NameId, RelTypeId}
+import org.neo4j.cypher.internal.util.{LabelId, NameId, RelTypeId}
 import org.neo4j.exceptions.InternalException
 
 sealed trait TokenSpec[+ID <: NameId] {

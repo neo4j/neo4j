@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{SingleNode, values => commandvalues}
-import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 import org.neo4j.exceptions.SyntaxException
 

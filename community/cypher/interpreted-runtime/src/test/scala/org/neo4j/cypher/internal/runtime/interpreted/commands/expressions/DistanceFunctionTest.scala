@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.values.storable.CRSCalculator.GeographicCalculator.EARTH_RADIUS_METERS
 import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}

@@ -28,8 +28,8 @@ import org.neo4j.values.storable.{DurationFields, PointFields}
 import org.neo4j.cypher.internal.v4_0.ast.Query
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 

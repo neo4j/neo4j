@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.ast.generator
 
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.scalacheck.Gen._
 import org.scalacheck.util.Buildable
 import org.scalacheck.{Arbitrary, Gen}

@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.v4_0.frontend
 
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
-import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
 
 class PrettifierIT extends CypherFunSuite {
   private implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe

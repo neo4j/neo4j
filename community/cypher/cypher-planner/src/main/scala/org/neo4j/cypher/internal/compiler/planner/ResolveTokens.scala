@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, VisitorPhase}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 
 object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] {

@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 import org.neo4j.cypher.internal.v4_0.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticChecker, SemanticFeature, SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.v4_0.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 
 case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
   extends Phase[BaseContext, BaseState, BaseState] {

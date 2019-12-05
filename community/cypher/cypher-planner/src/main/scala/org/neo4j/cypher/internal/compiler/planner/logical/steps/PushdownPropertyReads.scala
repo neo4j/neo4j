@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, Id}
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, InputPosition, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.attribution.{Attributes, Id}
+import org.neo4j.cypher.internal.util.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.util.{Cardinality, InputPosition, Rewriter, bottomUp}
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable

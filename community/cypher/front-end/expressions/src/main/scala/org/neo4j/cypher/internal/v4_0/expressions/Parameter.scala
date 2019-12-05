@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols._
 
 sealed trait Param {
 

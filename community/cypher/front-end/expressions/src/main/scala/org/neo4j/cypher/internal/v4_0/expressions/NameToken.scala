@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.{LabelId, NameId, PropertyKeyId}
+import org.neo4j.cypher.internal.util.{LabelId, NameId, PropertyKeyId}
 
 sealed abstract class NameToken[I <: NameId] {
   def name: String

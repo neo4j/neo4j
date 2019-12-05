@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCyph
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.GeneratingNamer
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
+import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
+import org.neo4j.cypher.internal.util.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition}
 import org.neo4j.values.virtual.MapValue
 import org.scalatest.mock.MockitoSugar
 

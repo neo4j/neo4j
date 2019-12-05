@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions.SignedHexIntegerLiteral
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
+import org.neo4j.cypher.internal.util.DummyPosition
 
 class HexIntegerLiteralTest extends SemanticFunSuite {
   test("correctly parses hexadecimal numbers") {

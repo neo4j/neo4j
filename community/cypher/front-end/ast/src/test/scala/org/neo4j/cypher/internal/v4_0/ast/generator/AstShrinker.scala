@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast.generator
 
 import org.neo4j.cypher.internal.v4_0.ast.Query
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.{ASTNode, Rewriter, bottomUp}
 import org.scalacheck.Shrink
 
 import scala.util.Random

@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{And, Or, Pattern, PatternPart}
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable.ArrayBuffer
 
 object StatementConverters {
-  import org.neo4j.cypher.internal.v4_0.util.Foldable._
+  import org.neo4j.cypher.internal.util.Foldable._
 
   def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder = {
     val importedVariables: Set[String] = q.importWith.map((wth: With) =>

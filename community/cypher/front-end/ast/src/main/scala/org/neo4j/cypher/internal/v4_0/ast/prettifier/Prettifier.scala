@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.ast.prettifier
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast.{Skip, Statement, _}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 case class Prettifier(expr: ExpressionStringifier) {
 

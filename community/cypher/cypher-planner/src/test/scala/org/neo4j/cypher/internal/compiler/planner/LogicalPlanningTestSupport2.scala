@@ -37,13 +37,13 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.rewriting.{RewriterStepSequencer, ValidatingRewriterStepSequencer}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, PropertyKeyId}
+import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
+import org.neo4j.cypher.internal.rewriting.rewriters._
+import org.neo4j.cypher.internal.rewriting.{RewriterStepSequencer, ValidatingRewriterStepSequencer}
+import org.neo4j.cypher.internal.util.attribution.Attribute
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.util.{Cardinality, Cost, PropertyKeyId}
 import org.neo4j.internal.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
@@ -284,7 +284,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     semanticTable.resolvedPropertyKeyNames(label)
 
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
-    import org.neo4j.cypher.internal.v4_0.util.Foldable._
+    import org.neo4j.cypher.internal.util.Foldable._
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.treeFold(false) {
         case lp if tag.runtimeClass.isInstance(lp) => acc => (true, None)

@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.values.virtual.MapValue
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,

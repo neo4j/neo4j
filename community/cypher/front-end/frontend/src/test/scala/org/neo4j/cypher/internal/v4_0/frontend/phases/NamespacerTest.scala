@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, ProjectingUnionDistinct, Query, Statement, Where}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, HasLabels, LabelName, NodePattern}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
 

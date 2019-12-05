@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName, ProcedureOutput}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 

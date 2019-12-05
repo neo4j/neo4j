@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
-import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.util.InternalNotification
 
 case class SyntaxDeprecationWarnings(deprecations: Deprecations) extends VisitorPhase[BaseContext, BaseState] {
   override def visit(state: BaseState, context: BaseContext): Unit = {

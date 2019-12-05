@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.profiling.{KernelStatisticProvider, OperatorPro
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.kernel.impl.factory.DatabaseInfo

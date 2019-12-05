@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.ir.{PlannerQueryPart, ProvidedOrder}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Attribute, Attributes, IdGen}
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.attribution.{Attribute, Attributes, IdGen}
 
 object PlanningAttributes {
   class Solveds extends Attribute[LogicalPlan, PlannerQueryPart]

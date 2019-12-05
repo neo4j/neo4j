@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, 
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, InputPosition}
+import org.neo4j.cypher.internal.util.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.util.{Cardinality, Cost, InputPosition}
 
 import scala.collection.{immutable, mutable}
 

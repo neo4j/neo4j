@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTAny, CTNode, CTRelationship, TypeSpec}
+import org.neo4j.cypher.internal.util.symbols.{CTAny, CTNode, CTRelationship, TypeSpec}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Labels
 import org.neo4j.exceptions.InternalException

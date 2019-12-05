@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckable
 
 sealed trait MergeAction extends ASTNode with SemanticCheckable

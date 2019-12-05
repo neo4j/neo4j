@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.expressions.{NODE_TYPE, CachedProperty, PropertyKeyName, Variable}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.BooleanValue
 
 class MapExecutionContextTest extends CypherFunSuite {

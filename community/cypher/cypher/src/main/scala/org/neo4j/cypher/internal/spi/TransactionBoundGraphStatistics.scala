@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi
 import java.lang.Math.min
 
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, MinimumGraphStatistics}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.{Read, SchemaRead, TokenRead}

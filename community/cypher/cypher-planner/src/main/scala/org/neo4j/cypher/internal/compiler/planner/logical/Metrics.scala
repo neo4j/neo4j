@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ResolvedFunctionInv
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Rand
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, LabelName, Parameter}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, CypherException}
+import org.neo4j.cypher.internal.util.{Cardinality, Cost, CypherException}
 
 import scala.language.implicitConversions
 

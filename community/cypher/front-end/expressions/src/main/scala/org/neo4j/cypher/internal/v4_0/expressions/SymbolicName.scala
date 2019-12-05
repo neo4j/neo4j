@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
 
 trait SymbolicName extends ASTNode {
   def name: String

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.plans.{NodeByLabelScan, NodeHashJoin, Selection}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should solve labels with joins") {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LazyTypesTest extends CypherFunSuite {
 

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
-import org.neo4j.cypher.internal.v4_0.util.Rewriter
-import org.neo4j.cypher.internal.v4_0.util.bottomUp
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NestedPlanExpression}
 
 object NestedPipeExpressions {

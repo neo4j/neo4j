@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, _}
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.parser.Expressions
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
+import org.neo4j.cypher.internal.parser.Expressions
+import org.neo4j.cypher.internal.util.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{Rewriter, topDown}
 import org.parboiled.scala.{ReportingParseRunner, Rule1}
 
 import scala.collection.mutable

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException

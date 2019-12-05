@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalNotification}
+import org.neo4j.cypher.internal.util.{InputPosition, InternalNotification}
 
 case class SuboptimalIndexForConstainsQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
 

@@ -31,9 +31,9 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, PropertyKeyId}
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{DummyPosition, PropertyKeyId}
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {

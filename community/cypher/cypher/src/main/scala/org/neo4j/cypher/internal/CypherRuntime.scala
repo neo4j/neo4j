@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.MemoryTrackingController
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.{CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption, CypherRuntimeOption}
 import org.neo4j.exceptions.{CantCompileQueryException, RuntimeUnsupportedException}
 import org.neo4j.internal.kernel.api.security.SecurityContext

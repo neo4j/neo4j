@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 
 trait GraphStatistics {
 

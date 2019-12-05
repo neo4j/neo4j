@@ -24,7 +24,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.ir.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.runtime.{ArrayBackedMap, ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.LoadExternalResourceException
 import org.neo4j.values._
 import org.neo4j.values.storable.{TextValue, Value, Values}

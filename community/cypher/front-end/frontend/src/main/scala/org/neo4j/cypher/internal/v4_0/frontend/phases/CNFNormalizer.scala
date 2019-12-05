@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.rewriting.AstRewritingMonitor
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, inSequence}
+import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.rewriting.rewriters._
+import org.neo4j.cypher.internal.util.{Rewriter, inSequence}
 
 case object CNFNormalizer extends StatementRewriter {
 

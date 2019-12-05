@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.exceptions.Status

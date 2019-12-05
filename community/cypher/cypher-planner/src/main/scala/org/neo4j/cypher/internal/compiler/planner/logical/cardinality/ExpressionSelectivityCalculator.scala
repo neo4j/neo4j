@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults._
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.Selectivity
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.Selectivity
 
 case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
 

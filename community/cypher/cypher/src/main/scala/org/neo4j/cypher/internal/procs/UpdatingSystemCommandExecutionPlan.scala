@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.procs
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, ProfileMode}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.security.AccessMode

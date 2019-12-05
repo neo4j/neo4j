@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.symbols.TypeSpec
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
+import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
 
 case class DummyExpression(possibleTypes: TypeSpec,
                            position: InputPosition = DummyPosition(0)) extends Expression

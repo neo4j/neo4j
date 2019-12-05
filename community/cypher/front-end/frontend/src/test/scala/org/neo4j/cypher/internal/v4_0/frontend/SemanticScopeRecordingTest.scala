@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.v4_0.frontend
 import org.neo4j.cypher.internal.v4_0.ast.Unwind
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.{ErrorCollectingContext, NoPlannerName}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{InitialState, Parsing, PreparatoryRewriting, SemanticAnalysis}
-import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SemanticScopeRecordingTest extends CypherFunSuite {
 

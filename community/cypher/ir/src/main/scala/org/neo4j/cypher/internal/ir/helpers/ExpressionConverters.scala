@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir.helpers
 
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
+import org.neo4j.cypher.internal.util.{Rewriter, topDown}
+import org.neo4j.cypher.internal.rewriting.rewriters._
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, HasLabels, NodePatternExpression, Not, Ors, PatternComprehension, PatternExpression, Range, RelationshipChain, Variable}
-import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
 

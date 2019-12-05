@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{IfNoParameter, LiteralExtraction, SameNameNamer}
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.rewriting.rewriters.{IfNoParameter, LiteralExtraction, SameNameNamer}
+import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
 
 object CompilationPhases {
 

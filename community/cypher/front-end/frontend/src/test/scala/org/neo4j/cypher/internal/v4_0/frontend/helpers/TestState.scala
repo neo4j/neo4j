@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 //noinspection TypeAnnotation
 case class TestState(override val maybeStatement: Option[ast.Statement]) extends BaseState {

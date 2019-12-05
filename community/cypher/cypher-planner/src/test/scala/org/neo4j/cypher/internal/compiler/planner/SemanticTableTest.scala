@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.ast.{ASTAnnotationMap, AstConstructionTestSupport}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
 
 class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {

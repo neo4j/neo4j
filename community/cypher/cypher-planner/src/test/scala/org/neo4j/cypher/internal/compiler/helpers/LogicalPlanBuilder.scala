@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.logical.plans.{LogicalLeafPlan, LogicalPlan}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen}
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CypherType}
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.attribution.{Id, IdGen}
+import org.neo4j.cypher.internal.util.symbols.{CTNode, CypherType}
 
 class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](new LogicalPlanResolver) {
 

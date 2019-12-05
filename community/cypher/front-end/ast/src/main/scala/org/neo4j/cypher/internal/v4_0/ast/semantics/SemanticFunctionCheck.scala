@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, PatternExpression, Property, PropertyKeyName, TypeSignatures, _}
-import org.neo4j.cypher.internal.v4_0.util.LengthOnNonPathNotification
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
+import org.neo4j.cypher.internal.util.symbols._
 
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 

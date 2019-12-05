@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.{ListLiteral, StringLiteral, Variable}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, Condition, Phase}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING

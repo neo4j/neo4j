@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.frontend
 
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.{ErrorCollectingContext, NoPlannerName}
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 /**
   * Opposed to `SemanticAnalysisTest` this does not focus on whether

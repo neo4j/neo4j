@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.ast.UsingScanHint
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryGraphConnectedComponentsTest
   extends CypherFunSuite with LogicalPlanningTestSupport {

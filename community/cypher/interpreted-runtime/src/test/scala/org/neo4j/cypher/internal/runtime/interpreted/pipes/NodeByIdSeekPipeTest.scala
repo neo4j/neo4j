@@ -25,7 +25,7 @@ import org.mockito.{ArgumentMatchers, Mockito}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.runtime.{NodeOperations, QueryContext}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.virtual.NodeValue

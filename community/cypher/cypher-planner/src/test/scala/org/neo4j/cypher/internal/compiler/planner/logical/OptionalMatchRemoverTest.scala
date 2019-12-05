@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.ir.{PatternRelationship, PlannerQuery, QueryGra
 import org.neo4j.cypher.internal.v4_0.ast.Query
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticChecker, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.flattenBooleanOperators
-import org.neo4j.cypher.internal.v4_0.util.Rewritable._
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, Rewriter}
+import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.util.Rewritable._
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{DummyPosition, Rewriter}
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

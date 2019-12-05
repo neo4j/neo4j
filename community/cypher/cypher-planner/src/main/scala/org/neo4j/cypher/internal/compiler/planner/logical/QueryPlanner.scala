@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Phase
-import org.neo4j.cypher.internal.v4_0.util.Cost
+import org.neo4j.cypher.internal.util.Cost
 
 case object QueryPlanner
   extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {

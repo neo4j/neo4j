@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength}
 import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, Variable}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 class QueryGraphTest extends CypherFunSuite {
   val x = "x"

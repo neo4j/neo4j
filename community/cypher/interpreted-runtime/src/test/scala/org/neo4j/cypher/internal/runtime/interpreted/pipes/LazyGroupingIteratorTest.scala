@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.api.LongIterable
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LazyGroupingIteratorTest extends CypherFunSuite {
 

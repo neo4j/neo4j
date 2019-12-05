@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.language.implicitConversions
 

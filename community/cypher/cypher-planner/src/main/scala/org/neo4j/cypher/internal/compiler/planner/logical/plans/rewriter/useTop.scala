@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.logical.plans.{DoNotIncludeTies, Limit, PartialSort, PartialTop, Sort, Top}
-import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 
 /**
   * When doing ORDER BY c1,c2,...,cn LIMIT e, we don't have to sort the full result in one go

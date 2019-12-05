@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.frontend.helpers
 
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition, OpenCypherExceptionFactory}
+import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition, OpenCypherExceptionFactory}
 import org.scalatest.mock.MockitoSugar.mock
 
 //noinspection TypeAnnotation

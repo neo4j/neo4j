@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
 
 import scala.language.implicitConversions
 

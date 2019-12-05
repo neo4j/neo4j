@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTInteger, CTList, CTNode, CTPath, CTString, TypeSpec}
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.{CTInteger, CTList, CTNode, CTPath, CTString, TypeSpec}
 import org.neo4j.cypher.internal.v4_0.ast.semantics
 
 object ScopeTestHelper {

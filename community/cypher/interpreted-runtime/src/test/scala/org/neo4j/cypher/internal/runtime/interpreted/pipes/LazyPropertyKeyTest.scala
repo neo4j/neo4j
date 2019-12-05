@@ -23,8 +23,8 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, PropertyKeyId}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{DummyPosition, PropertyKeyId}
 
 class LazyPropertyKeyTest extends CypherFunSuite {
   private val pos = DummyPosition(0)

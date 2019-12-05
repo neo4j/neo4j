@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticExpressionCheck, _}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.ASTNode
-import org.neo4j.cypher.internal.v4_0.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 
 // Skip/Limit
 trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Abstr
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{CastSupport, ExecutionContext, IsList, IsNoValue}
-import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.api.StatementConstants

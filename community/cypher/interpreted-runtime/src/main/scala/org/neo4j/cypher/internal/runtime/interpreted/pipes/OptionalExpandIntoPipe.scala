@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.{getRowNode, relationshipIterator}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.storable.Values

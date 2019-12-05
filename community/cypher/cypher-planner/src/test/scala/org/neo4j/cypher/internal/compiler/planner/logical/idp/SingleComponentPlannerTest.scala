@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingIndexHint, UsingJoinHint}
 import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, SemanticDirection}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("plans expands for queries with single pattern rel") {

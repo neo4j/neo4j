@@ -24,7 +24,7 @@ import java.nio.file.Files
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting

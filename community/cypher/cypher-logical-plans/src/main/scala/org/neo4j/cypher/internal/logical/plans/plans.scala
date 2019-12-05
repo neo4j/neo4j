@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical
 
-import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 package object plans {
   type Bounds[+V] = NonEmptyList[Bound[V]]

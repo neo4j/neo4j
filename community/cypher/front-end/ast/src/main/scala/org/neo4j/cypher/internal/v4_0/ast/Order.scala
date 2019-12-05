@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable, Property}
-import org.neo4j.cypher.internal.v4_0.util.ASTNode
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
 
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck

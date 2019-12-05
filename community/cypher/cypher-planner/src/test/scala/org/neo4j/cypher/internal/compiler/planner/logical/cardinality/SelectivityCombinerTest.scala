@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.v4_0.util.Selectivity
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SelectivityCombinerTest extends CypherFunSuite {
 

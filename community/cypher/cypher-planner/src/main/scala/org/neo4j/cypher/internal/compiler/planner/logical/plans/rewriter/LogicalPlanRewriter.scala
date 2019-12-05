@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, 
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{Condition, Phase}
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.v4_0.util.Rewriter
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
 /*
  * Rewriters that live here are required to adhere to the contract of
  * receiving a valid plan and producing a valid plan. It should be possible

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.util.{FreshIdNameGenerator, UnNamedNameGenerator}
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 

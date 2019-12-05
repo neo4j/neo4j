@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.ast.UnresolvedCall
 import org.neo4j.cypher.internal.v4_0.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedName,
                               inputSignature: IndexedSeq[FieldSignature],

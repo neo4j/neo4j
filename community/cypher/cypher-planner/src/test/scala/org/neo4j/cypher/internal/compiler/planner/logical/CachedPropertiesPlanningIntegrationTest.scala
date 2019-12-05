@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, CartesianProduct, Expand, Projection, Selection}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.v4_0.expressions.{AndedPropertyInequalities, InequalityExpression}
-import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

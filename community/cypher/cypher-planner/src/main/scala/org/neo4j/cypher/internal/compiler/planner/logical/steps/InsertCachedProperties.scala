@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerConte
 import org.neo4j.cypher.internal.logical.plans.{CanGetValue, DoNotGetValue, GetValue, IndexLeafPlan, LogicalPlan, ProjectingPlan}
 import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, EntityType, NODE_TYPE, Property, PropertyKeyName, RELATIONSHIP_TYPE, Variable}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Transformer
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.util.{InputPosition, Rewriter, bottomUp}
 
 /**
   * A logical plan rewriter that also changes the semantic table (thus a Transformer).

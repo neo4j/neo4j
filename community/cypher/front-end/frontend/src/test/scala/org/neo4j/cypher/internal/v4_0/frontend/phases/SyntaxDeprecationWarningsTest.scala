@@ -18,11 +18,11 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.{TestContext, TestState}
-import org.neo4j.cypher.internal.v4_0.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations
-import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations.{V1, V2}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{DeprecatedFunctionNotification, InputPosition, OpenCypherExceptionFactory}
+import org.neo4j.cypher.internal.parser.ParserFixture.parser
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.Deprecations.{V1, V2}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.{DeprecatedFunctionNotification, InputPosition, OpenCypherExceptionFactory}
 
 class SyntaxDeprecationWarningsTest extends CypherFunSuite {
 

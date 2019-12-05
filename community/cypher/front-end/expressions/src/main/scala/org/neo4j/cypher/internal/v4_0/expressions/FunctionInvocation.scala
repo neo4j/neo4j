@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.expressions
 
 import org.neo4j.cypher.internal.v4_0.expressions.functions.UnresolvedFunction
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =

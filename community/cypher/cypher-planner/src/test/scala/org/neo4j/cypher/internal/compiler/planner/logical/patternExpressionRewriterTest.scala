@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, LogicalPlan, NestedPlanExpression, Selection}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

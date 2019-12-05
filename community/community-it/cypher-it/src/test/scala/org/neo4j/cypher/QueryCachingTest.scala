@@ -23,7 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.CypherExpressionEngine.ONLY_WHEN_HOT
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.StringCacheMonitor
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Label, QueryExecutionException}
 import org.neo4j.internal.helpers.collection.Pair

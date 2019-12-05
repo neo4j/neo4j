@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckable, SemanticError}
 import org.neo4j.cypher.internal.v4_0.expressions.IntegerLiteral
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticCheckable}
 
 case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with SemanticCheckable {
