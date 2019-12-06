@@ -72,9 +72,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
+            IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, GBPTree.Monitor treeMonitor )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, false );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, treeMonitor, false );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;
@@ -180,7 +180,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
             {
                 // Successful and completed population
                 assertPopulatorOpen();
-                markTreeAsOnline();
+                flushTreeAndMarkAs( BYTE_ONLINE );
             }
             else if ( failureBytes != null )
             {
@@ -241,9 +241,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ) );
     }
 
-    void markTreeAsOnline()
+    void flushTreeAndMarkAs( byte state )
     {
-        tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter ) );
+        tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( state, additionalHeaderWriter ) );
     }
 
     private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetector )

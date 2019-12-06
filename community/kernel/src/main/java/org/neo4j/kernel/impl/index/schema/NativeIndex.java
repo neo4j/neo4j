@@ -45,12 +45,13 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final FileSystemAbstraction fileSystem;
     final IndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
+    private final GBPTree.Monitor treeMonitor;
     private final boolean readOnly;
 
     protected GBPTree<KEY,VALUE> tree;
 
     NativeIndex( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            IndexDescriptor descriptor, boolean readOnly )
+            IndexDescriptor descriptor, GBPTree.Monitor treeMonitor, boolean readOnly )
     {
         this.pageCache = pageCache;
         this.indexFiles = indexFiles;
@@ -58,6 +59,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         this.fileSystem = fs;
         this.descriptor = descriptor;
         this.monitor = monitor;
+        this.treeMonitor = treeMonitor;
         this.readOnly = readOnly;
     }
 
@@ -116,8 +118,13 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         }
     }
 
-    private class NativeIndexTreeMonitor extends GBPTree.Monitor.Adaptor
+    private class NativeIndexTreeMonitor extends GBPTree.Monitor.Delegate
     {
+        NativeIndexTreeMonitor()
+        {
+            super( treeMonitor );
+        }
+
         @Override
         public void cleanupRegistered()
         {

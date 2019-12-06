@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.helpers.Exceptions;
@@ -116,14 +117,15 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                               boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
     {
         this( pageCache, fs, indexFiles, layout, monitor, descriptor, archiveFailedIndex, bufferFactory,
-              FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR );
+              FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR, GBPTree.NO_MONITOR );
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
                               IndexProvider.Monitor monitor, IndexDescriptor descriptor,
-                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
+                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory, int mergeFactor, BlockStorage.Monitor blockStorageMonitor,
+                              GBPTree.Monitor treeMonitor )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER, treeMonitor );
         this.archiveFailedIndex = archiveFailedIndex;
         this.mergeFactor = mergeFactor;
         this.blockStorageMonitor = blockStorageMonitor;
@@ -291,6 +293,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     nonUniqueIndexSample = buildNonUniqueIndexSample();
                 }
             }
+
+            // Flush the tree here, but keep its state as populating. This is done so that the "actual" flush-and-mark-online during flip
+            // as way faster and so the flip lock time is reduced.
+            flushTreeAndMarkAs( BYTE_POPULATING );
         }
         catch ( IOException e )
         {

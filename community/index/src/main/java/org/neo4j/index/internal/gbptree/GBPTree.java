@@ -192,6 +192,76 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             }
         }
 
+        class Delegate implements Monitor
+        {
+            private final Monitor delegate;
+
+            public Delegate( Monitor delegate )
+            {
+                this.delegate = delegate;
+            }
+
+            @Override
+            public void checkpointCompleted()
+            {
+                delegate.checkpointCompleted();
+            }
+
+            @Override
+            public void noStoreFile()
+            {
+                delegate.noStoreFile();
+            }
+
+            @Override
+            public void cleanupRegistered()
+            {
+                delegate.cleanupRegistered();
+            }
+
+            @Override
+            public void cleanupStarted()
+            {
+                delegate.cleanupStarted();
+            }
+
+            @Override
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
+            {
+                delegate.cleanupFinished( numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
+            }
+
+            @Override
+            public void cleanupClosed()
+            {
+                delegate.cleanupClosed();
+            }
+
+            @Override
+            public void cleanupFailed( Throwable throwable )
+            {
+                delegate.cleanupFailed( throwable );
+            }
+
+            @Override
+            public void startupState( boolean clean )
+            {
+                delegate.startupState( clean );
+            }
+
+            @Override
+            public void treeGrowth()
+            {
+                delegate.treeGrowth();
+            }
+
+            @Override
+            public void treeShrink()
+            {
+                delegate.treeShrink();
+            }
+        }
+
         /**
          * Called when a {@link GBPTree#checkpoint(IOLimiter)} has been completed, but right before
          * {@link GBPTree#writer() writers} are re-enabled.

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
