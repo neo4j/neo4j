@@ -85,7 +85,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-parser-4.0</artifactId>
+      <artifactId>neo4j-parser</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -99,14 +99,14 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-util-4.0</artifactId>
+      <artifactId>neo4j-util</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ast-4.0</artifactId>
+      <artifactId>neo4j-ast</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

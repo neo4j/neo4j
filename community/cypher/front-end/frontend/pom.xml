@@ -3,13 +3,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-front-end-parent-4.0</artifactId>
+        <artifactId>neo4j-front-end-parent</artifactId>
         <version>4.1.0-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-front-end-4.0</artifactId>
+    <artifactId>neo4j-front-end</artifactId>
     <packaging>jar</packaging>
     <version>4.1.0-SNAPSHOT</version>
     <name>openCypher Front End</name>
@@ -54,25 +54,25 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util-4.0</artifactId>
+            <artifactId>neo4j-util</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-expressions-4.0</artifactId>
+            <artifactId>neo4j-expressions</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-rewriting-4.0</artifactId>
+            <artifactId>neo4j-rewriting</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-rewriting-4.0</artifactId>
+            <artifactId>neo4j-rewriting</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -80,7 +80,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-parser-4.0</artifactId>
+            <artifactId>neo4j-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -88,7 +88,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util-4.0</artifactId>
+            <artifactId>neo4j-util</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -96,7 +96,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-expressions-4.0</artifactId>
+            <artifactId>neo4j-expressions</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -104,7 +104,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ast-4.0</artifactId>
+            <artifactId>neo4j-ast</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -112,7 +112,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-parser-4.0</artifactId>
+            <artifactId>neo4j-parser</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
