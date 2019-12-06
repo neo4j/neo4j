@@ -28,11 +28,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,12 +46,14 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -179,42 +181,72 @@ public class IndexingServiceIntegrationTest
     }
 
     @Test
-    public void failForceIndexesWhenOneOfTheIndexesIsBroken() throws Exception
+    public void dropIndexDirectlyOnIndexingServiceRaceWithCheckpoint() throws Throwable
     {
-        String constraintLabelPrefix = "ConstraintLabel";
-        String constraintPropertyPrefix = "ConstraintProperty";
-        String indexLabelPrefix = "Label";
-        String indexPropertyPrefix = "Property";
-        IndexDescriptor index7 = null;
-        for ( int i = 0; i < 10; i++ )
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                transaction.schema().constraintFor( Label.label( constraintLabelPrefix + i ) )
-                        .assertPropertyIsUnique( constraintPropertyPrefix + i ).create();
-                IndexDefinition indexDefinition = transaction.schema().indexFor( Label.label( indexLabelPrefix + i ) ).on( indexPropertyPrefix + i ).create();
-                if ( i == 7 )
-                {
-                    index7 = ((IndexDefinitionImpl) indexDefinition).getIndexReference();
-                }
-                transaction.commit();
-            }
-        }
+        IndexingService indexingService = getIndexingService( database );
+        CheckPointer checkPointer = getCheckPointer( database );
 
+        IndexDescriptor indexDescriptor;
         try ( Transaction tx = database.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
+            indexDescriptor = indexDefinition.getIndexReference();
+            tx.commit();
+        }
+        try ( Transaction tx = database.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.commit();
         }
 
-        IndexingService indexingService = getIndexingService( database );
-        assert index7 != null;
-        IndexProxy index = indexingService.getIndexProxy( index7 );
+        Race race = new Race();
+        race.addContestant( Race.throwing( () -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test force" ) ) ) );
 
-        index.drop();
+        race.addContestant( Race.throwing( () -> indexingService.dropIndex( indexDescriptor ) ) );
+        race.go();
+    }
 
-        expectedException.expect( UnderlyingStorageException.class );
-        expectedException.expectMessage( "Unable to force" );
-        indexingService.forceAll( IOLimiter.UNLIMITED );
+    @Test
+    public void dropIndexRaceWithCheckpoint() throws Throwable
+    {
+        CheckPointer checkPointer = getCheckPointer( database );
+
+        int nbrOfIndexes = 100;
+        try ( Transaction tx = database.beginTx() )
+        {
+            for ( int i = 0; i < nbrOfIndexes; i++ )
+            {
+                tx.schema().indexFor( Label.label( "label" ) ).on( "prop" + i ).create();
+            }
+            tx.commit();
+        }
+        try ( Transaction tx = database.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.commit();
+        }
+
+        AtomicBoolean allIndexesDropped = new AtomicBoolean();
+        Race race = new Race();
+        race.addContestant( Race.throwing( () -> {
+            while ( !allIndexesDropped.get() )
+            {
+                checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test force" ) );
+            }
+        } ) );
+        race.addContestant( Race.throwing( () ->
+        {
+            try ( Transaction tx = database.beginTx() )
+            {
+                tx.schema().getIndexes().forEach( IndexDefinition::drop );
+                tx.commit();
+            }
+            finally
+            {
+                allIndexesDropped.set( true );
+            }
+        } ) );
+        race.go();
     }
 
     private void waitIndexOnline( IndexProxy indexProxy ) throws InterruptedException
@@ -228,6 +260,11 @@ public class IndexingServiceIntegrationTest
     private IndexingService getIndexingService( GraphDatabaseService database )
     {
         return getDependencyResolver(database).resolveDependency( IndexingService.class );
+    }
+
+    private CheckPointer getCheckPointer( GraphDatabaseService database )
+    {
+        return getDependencyResolver( database ).resolveDependency( CheckPointer.class );
     }
 
     private DependencyResolver getDependencyResolver( GraphDatabaseService database )
