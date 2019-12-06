@@ -118,14 +118,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainDynamicClone() throws CloneNotSupportedException
+    void plainDynamicClone()
     {
         DynamicRecord dynamicRecord = getDynamicRecord();
         keys.dynamic().assertRecordsEquals( dynamicRecord, dynamicRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedDynamicClone() throws CloneNotSupportedException
+    void preparedDynamicClone()
     {
         DynamicRecord dynamicRecord = getDynamicRecord();
         dynamicFormat.prepare( dynamicRecord, dynamicRecordSize, idSequence );
@@ -133,14 +133,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainLabelTokenClone() throws CloneNotSupportedException
+    void plainLabelTokenClone()
     {
         LabelTokenRecord labelTokenRecord = getLabelTokenRecord();
         keys.labelToken().assertRecordsEquals( labelTokenRecord, labelTokenRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedLabelTokenClone() throws CloneNotSupportedException
+    void preparedLabelTokenClone()
     {
         LabelTokenRecord labelTokenRecord = getLabelTokenRecord();
         labelTokenFormat.prepare( labelTokenRecord, labelTokenRecordSize, idSequence );
@@ -148,14 +148,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainNodeClone() throws CloneNotSupportedException
+    void plainNodeClone()
     {
         NodeRecord nodeRecord = getNodeRecord();
         keys.node().assertRecordsEquals( nodeRecord, nodeRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedNodeClone() throws CloneNotSupportedException
+    void preparedNodeClone()
     {
         NodeRecord nodeRecord = getNodeRecord();
         nodeFormat.prepare( nodeRecord, nodeRecordSize, idSequence );
@@ -163,7 +163,7 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainNodeWithDynamicLabelsClone() throws CloneNotSupportedException
+    void plainNodeWithDynamicLabelsClone()
     {
         NodeRecord nodeRecord = getNodeRecord();
         nodeRecord.setLabelField( 12, Arrays.asList( getDynamicRecord(), getDynamicRecord() ) );
@@ -171,7 +171,7 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void preparedNodeWithDynamicLabelsClone() throws CloneNotSupportedException
+    void preparedNodeWithDynamicLabelsClone()
     {
         NodeRecord nodeRecord = getNodeRecord();
         nodeRecord.setLabelField( 12, Arrays.asList( getDynamicRecord(), getDynamicRecord() ) );
@@ -180,14 +180,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainPropertyClone() throws CloneNotSupportedException
+    void plainPropertyClone()
     {
         PropertyRecord propertyRecord = getPropertyRecord();
         keys.property().assertRecordsEquals( propertyRecord, propertyRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedPropertyClone() throws CloneNotSupportedException
+    void preparedPropertyClone()
     {
         PropertyRecord propertyRecord = getPropertyRecord();
         propertyFormat.prepare( propertyRecord, propertyRecordSize, idSequence );
@@ -195,14 +195,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainPropertyKeyTokenClone() throws CloneNotSupportedException
+    void plainPropertyKeyTokenClone()
     {
         PropertyKeyTokenRecord propertyKeyTokenRecord = getPropertyKeyTokenRecord();
         keys.propertyKeyToken().assertRecordsEquals( propertyKeyTokenRecord, propertyKeyTokenRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedPropertyKeyTokenClone() throws CloneNotSupportedException
+    void preparedPropertyKeyTokenClone()
     {
         PropertyKeyTokenRecord propertyKeyTokenRecord = getPropertyKeyTokenRecord();
         propertyKeyTokenFormat.prepare( propertyKeyTokenRecord, propertyKeyTokenRecordSize, idSequence );
@@ -210,14 +210,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainRelationshipClone() throws CloneNotSupportedException
+    void plainRelationshipClone()
     {
         RelationshipRecord relationshipRecord = getRelationshipRecord();
         keys.relationship().assertRecordsEquals( relationshipRecord, relationshipRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedRelationshipClone() throws CloneNotSupportedException
+    void preparedRelationshipClone()
     {
         RelationshipRecord relationshipRecord = getRelationshipRecord();
         relationshipFormat.prepare( relationshipRecord, relationshipRecordSize, idSequence );
@@ -225,14 +225,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainRelationshipGroupClone() throws CloneNotSupportedException
+    void plainRelationshipGroupClone()
     {
         RelationshipGroupRecord relationshipGroupRecord = getRelationshipGroupRecord();
         keys.relationshipGroup().assertRecordsEquals( relationshipGroupRecord, relationshipGroupRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedRelationshipGroupClone() throws CloneNotSupportedException
+    void preparedRelationshipGroupClone()
     {
         RelationshipGroupRecord relationshipGroupRecord = getRelationshipGroupRecord();
         relationshipGroupFormat.prepare( relationshipGroupRecord, relationshipGroupRecordSize, idSequence );
@@ -240,14 +240,14 @@ public abstract class AbstractRecordCloningTest
     }
 
     @RepeatedTest( 1000 )
-    void plainRelationshipTypeTokenClone() throws CloneNotSupportedException
+    void plainRelationshipTypeTokenClone()
     {
         RelationshipTypeTokenRecord relationshipTypeTokenRecord = getRelationshipTypeTokenRecord();
         keys.relationshipTypeToken().assertRecordsEquals( relationshipTypeTokenRecord, relationshipTypeTokenRecord.clone() );
     }
 
     @RepeatedTest( 1000 )
-    void preparedRelationshipTypeTokenClone() throws CloneNotSupportedException
+    void preparedRelationshipTypeTokenClone()
     {
         RelationshipTypeTokenRecord relationshipTypeTokenRecord = getRelationshipTypeTokenRecord();
         relationshipTypeTokenFormat.prepare( relationshipTypeTokenRecord, relationshipTypeTokenRecordSize, idSequence );

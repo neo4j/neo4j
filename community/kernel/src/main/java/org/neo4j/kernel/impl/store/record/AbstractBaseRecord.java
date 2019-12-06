@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.apache.commons.lang3.exception.CloneFailedException;
+
 /**
  * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
  * and initialized with the public {@code initialize} method exposed by the specific record implementations,
@@ -181,8 +183,15 @@ public abstract class AbstractBaseRecord implements Cloneable
     }
 
     @Override
-    public AbstractBaseRecord clone() throws CloneNotSupportedException
+    public AbstractBaseRecord clone()
     {
-        return (AbstractBaseRecord) super.clone();
+        try
+        {
+            return (AbstractBaseRecord) super.clone();
+        }
+        catch ( CloneNotSupportedException e )
+        {
+            throw new CloneFailedException( e );
+        }
     }
 }

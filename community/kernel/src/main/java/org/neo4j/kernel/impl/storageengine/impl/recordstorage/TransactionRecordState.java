@@ -512,7 +512,7 @@ public class TransactionRecordState implements RecordState
                 }
 
                 @Override
-                public NeoStoreRecord clone( NeoStoreRecord neoStoreRecord ) throws CloneNotSupportedException
+                public NeoStoreRecord clone( NeoStoreRecord neoStoreRecord )
                 {
                     return neoStoreRecord.clone();
                 }

@@ -41,14 +41,7 @@ public class CloningRecordIterator<R extends AbstractBaseRecord> extends Prefetc
         if ( actualIterator.hasNext() )
         {
             R next = actualIterator.next();
-            try
-            {
-                return (R) next.clone();
-            }
-            catch ( CloneNotSupportedException e )
-            {
-                throw new AssertionError( "Expected " + next.getClass() + " objects to be cloneable.", e );
-            }
+            return (R) next.clone();
         }
         else
         {

@@ -2525,16 +2525,9 @@ public class FullCheckIntegrationTest
         }
     };
 
+    @SuppressWarnings( "unchecked" )
     private <T extends AbstractBaseRecord> T cloneRecord( T record )
     {
-        try
-        {
-            //noinspection unchecked
-            return (T) record.clone();
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            throw new AssertionError( "Record should be cloneable: " + record, e );
-        }
+        return (T) record.clone();
     }
 }

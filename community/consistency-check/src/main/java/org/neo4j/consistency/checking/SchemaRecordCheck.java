@@ -235,16 +235,10 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         checkForDuplicates( rule, record, engine );
     }
 
+    @SuppressWarnings( "unchecked" )
     private <T extends AbstractBaseRecord> T cloneRecord( T record )
     {
-        try
-        {
-            return (T) record.clone();
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            throw new AssertionError( "SchemaRecords should be cloneable.", e );
-        }
+        return (T) record.clone();
     }
 
     static class CheckSchema implements SchemaProcessor

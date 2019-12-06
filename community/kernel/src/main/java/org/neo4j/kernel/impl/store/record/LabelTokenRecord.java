@@ -40,7 +40,7 @@ public class LabelTokenRecord extends TokenRecord
     }
 
     @Override
-    public LabelTokenRecord clone() throws CloneNotSupportedException
+    public LabelTokenRecord clone()
     {
         return (LabelTokenRecord) super.clone();
     }

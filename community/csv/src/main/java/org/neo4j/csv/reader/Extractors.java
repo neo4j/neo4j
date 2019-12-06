@@ -19,6 +19,8 @@
  */
 package org.neo4j.csv.reader;
 
+import org.apache.commons.lang3.exception.CloneFailedException;
+
 import java.lang.reflect.Field;
 import java.nio.CharBuffer;
 import java.time.ZoneId;
@@ -336,7 +338,7 @@ public class Extractors
             }
             catch ( CloneNotSupportedException e )
             {
-                throw new AssertionError( Extractor.class.getName() + " implements " + Cloneable.class.getSimpleName() +
+                throw new CloneFailedException( Extractor.class.getName() + " implements " + Cloneable.class.getSimpleName() +
                         ", at least this implementation assumes that. This doesn't seem to be the case anymore", e );
             }
         }
