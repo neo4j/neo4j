@@ -30,6 +30,9 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.TestAccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -666,6 +669,90 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node2 = createNode( "label" );
 
         try ( KernelTransaction tx = beginTransaction() )
+        {
+            // when
+            tx.dataWrite().nodeDelete( node2.node );
+            long countTxState = tx.dataRead().countsForNode( node1.labels[0] );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( node1.labels[0] );
+
+            // then
+            assertEquals( 1, countTxState );
+            assertEquals( 2, countNoTxState );
+        }
+    }
+
+    @Test
+    void shouldCountNewLabelsFromTxStateRestrictedUser() throws Exception
+    {
+        // Given
+        Node node1 = createNode( "label" );
+        Node node2 = createNode();
+
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
+        try ( KernelTransaction tx = beginTransaction( loginContext ) )
+        {
+            // when
+            tx.dataWrite().nodeAddLabel( node2.node, node1.labels[0] );
+            long countTxState = tx.dataRead().countsForNode( node1.labels[0] );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( node1.labels[0] );
+
+            // then
+            assertEquals( 2, countTxState );
+            assertEquals( 1, countNoTxState );
+        }
+    }
+
+    @Test
+    void shouldCountNewNodesFromTxStateRestrictedUser() throws Exception
+    {
+        // Given
+        createNode();
+        createNode();
+
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
+        try ( KernelTransaction tx = beginTransaction( loginContext ) )
+        {
+            // when
+            tx.dataWrite().nodeCreate();
+            long countTxState = tx.dataRead().countsForNode( -1 );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( -1 );
+
+            // then
+            assertEquals( 3, countTxState );
+            assertEquals( 2, countNoTxState );
+        }
+    }
+
+    @Test
+    void shouldNotCountRemovedLabelsFromTxStateRestrictedUser() throws Exception
+    {
+        // Given
+        Node node1 = createNode( "label" );
+        Node node2 = createNode( "label" );
+
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
+        try ( KernelTransaction tx = beginTransaction( loginContext ) )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( node2.node, node2.labels[0] );
+            long countTxState = tx.dataRead().countsForNode( node1.labels[0] );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( node1.labels[0] );
+
+            // then
+            assertEquals( 1, countTxState );
+            assertEquals( 2, countNoTxState );
+        }
+    }
+
+    @Test
+    void shouldNotCountRemovedNodesFromTxStateRestrictedUser() throws Exception
+    {
+        // Given
+        Node node1 = createNode( "label" );
+        Node node2 = createNode( "label" );
+
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
+        try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             // when
             tx.dataWrite().nodeDelete( node2.node );

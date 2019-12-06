@@ -34,7 +34,6 @@ import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -184,15 +183,7 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForNode( int labelId )
     {
-        AccessMode mode = ktx.securityContext().mode();
-        if ( mode.allowsTraverseAllLabels() )
-        {
-            return countsForNodeWithoutTxState( labelId ) + countsForNodeInTxState( labelId );
-        }
-        else
-        {
-            return countsByAllNodeScan( labelId );
-        }
+        return countsForNodeWithoutTxState( labelId ) + countsForNodeInTxState( labelId );
     }
 
     @Override
@@ -205,68 +196,24 @@ public class AllStoreHolder extends Read
         }
         else
         {
-            return countsByAllNodeScan( labelId ) - countsForNodeInTxState( labelId );
-        }
-    }
-
-    private long countsByAllNodeScan( int labelId )
-    {
-        // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
-        // We need to calculate the counts through expensive operations. We cannot use a NodeLabelScan because the
-        // label requested might not be allowed for that node, and yet the node might be visible due to Traverse rules.
-        long count = 0;
-        try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
-        {
-            this.allNodesScan( nodes );
-            while ( nodes.next() )
+            long result;
+            // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
+            // We need to calculate the counts through expensive operations. We cannot use a NodeLabelScan because the
+            // label requested might not be allowed for that node, and yet the node might be visible due to Traverse rules.
+            long count = 0;
+            try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
             {
-                if ( labelId == TokenRead.ANY_LABEL || nodes.labels().contains( labelId ) )
+                this.allNodesScan( nodes );
+                while ( nodes.next() )
                 {
-                    count++;
-                }
-            }
-            return count;
-        }
-    }
-
-    private long countsByAllRelationshipScan( int startLabelId, int typeId, int endLabelId )
-    {
-        // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
-        // We need to calculate the counts through expensive operations.
-        long count = 0;
-        try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor() )
-        // DefaultRelationshipScanCursor already contains traversal checks within next()
-        {
-            this.allRelationshipsScan( rels );
-            while ( rels.next() )
-            {
-                if ( typeId == TokenRead.ANY_RELATIONSHIP_TYPE || rels.type() == typeId )
-                {
-                    // The user is allowed to see both start and end node, so we don't need to check here again
-                    try ( NodeCursor node = this.cursors().allocateFullAccessNodeCursor() )
+                    if ( labelId == TokenRead.ANY_LABEL || nodes.labels().contains( labelId ) )
                     {
-                        boolean startNodeCorrect = startLabelId == TokenRead.ANY_LABEL;
-                        boolean endNodeCorrect = endLabelId == TokenRead.ANY_LABEL;
-                        if ( !startNodeCorrect )
-                        {
-                            this.singleNode( rels.sourceNodeReference(), node );
-                            node.next();
-                            startNodeCorrect = node.hasLabel( startLabelId );
-                        }
-                        if ( !endNodeCorrect )
-                        {
-                            this.singleNode( rels.targetNodeReference(), node );
-                            node.next();
-                            endNodeCorrect = node.hasLabel( endLabelId );
-                        }
-                        if ( startNodeCorrect && endNodeCorrect )
-                        {
-                            count++;
-                        }
+                        count++;
                     }
                 }
+                result = count;
             }
-            return count;
+            return result - countsForNodeInTxState( labelId );
         }
     }
 
@@ -296,14 +243,45 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
-        AccessMode mode = ktx.securityContext().mode();
-        if ( !mode.allowsTraverseAllRelTypes() )
-        {
-            // expensive path
-            return countsByAllRelationshipScan( startLabelId, typeId, endLabelId );
-        }
+        return countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId ) + countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
+    }
 
-        long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        AccessMode mode = ktx.securityContext().mode();
+        if ( (typeId == TokenRead.ANY_RELATIONSHIP_TYPE && mode.allowsTraverseAllRelTypes() || mode.allowsTraverseRelType( typeId )) &&
+                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( startLabelId )) &&
+                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( endLabelId )) )
+        {
+            return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
+        }
+        else
+        {
+            long count = 0;
+            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor();
+                    DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor();
+                    DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor() )
+            {
+                this.relationshipTypeScan( typeId, rels );
+                while ( rels.next() )
+                {
+                    rels.source( sourceNode );
+                    rels.target( targetNode );
+                    if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.labels().contains( startLabelId )) &&
+                           targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.labels().contains( endLabelId )) )
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count - countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
+        }
+    }
+
+    private long countsForRelationshipInTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        long count = 0;
         if ( ktx.hasTxStateWithChanges() )
         {
             CountsDelta counts = new CountsDelta();
@@ -322,39 +300,6 @@ public class AllStoreHolder extends Read
             }
         }
         return count;
-    }
-
-    @Override
-    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
-    {
-        AccessMode mode = ktx.securityContext().mode();
-        if ( (typeId == TokenRead.ANY_RELATIONSHIP_TYPE && mode.allowsTraverseAllRelTypes() || mode.allowsTraverseRelType( typeId )) &&
-                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( startLabelId )) &&
-                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( endLabelId )) )
-        {
-            return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
-        }
-        else
-        {
-            long count = 0;
-            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor();
-                    DefaultNodeCursor sourceNode = cursors.allocateNodeCursor();
-                    DefaultNodeCursor targetNode = cursors.allocateNodeCursor() )
-            {
-                this.relationshipTypeScan( typeId, rels );
-                while ( rels.next() )
-                {
-                    rels.source( sourceNode );
-                    rels.target( targetNode );
-                    if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.labels().contains( startLabelId )) &&
-                           targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.labels().contains( endLabelId )) )
-                    {
-                        count++;
-                    }
-                }
-            }
-            return count;
-        }
     }
 
     @Override

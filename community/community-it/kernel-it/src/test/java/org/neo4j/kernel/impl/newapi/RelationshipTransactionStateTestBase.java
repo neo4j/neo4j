@@ -38,6 +38,9 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.TestAccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -1066,6 +1069,59 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
 
         try ( KernelTransaction tx = beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            write.relationshipDelete( relationship );
+
+            long countsTxState = tx.dataRead().countsForRelationship( -1, relationshipId, -1 );
+            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState( -1, relationshipId, -1 );
+
+            assertEquals( 0, countsTxState );
+            assertEquals( 1, countsNoTxState );
+        }
+    }
+
+    @Test
+    void shouldCountNewRelationshipsRestrictedUser() throws Exception
+    {
+        int relationship;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationship = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            write.relationshipCreate( write.nodeCreate(), relationship, write.nodeCreate() );
+            tx.commit();
+        }
+
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
+        try ( KernelTransaction tx = beginTransaction( loginContext ) )
+        {
+            Write write = tx.dataWrite();
+            write.relationshipCreate( write.nodeCreate(), relationship, write.nodeCreate() );
+
+            long countsTxState = tx.dataRead().countsForRelationship( -1, relationship, -1 );
+            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState( -1, relationship, -1 );
+
+            assertEquals( 2, countsTxState );
+            assertEquals( 1, countsNoTxState );
+        }
+    }
+
+    @Test
+    void shouldNotCountRemovedRelationshipsRestrictedUser() throws Exception
+    {
+        int relationshipId;
+        long relationship;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationshipId = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            relationship = write.relationshipCreate( write.nodeCreate(), relationshipId, write.nodeCreate() );
+            tx.commit();
+        }
+
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
+        try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             Write write = tx.dataWrite();
             write.relationshipDelete( relationship );
