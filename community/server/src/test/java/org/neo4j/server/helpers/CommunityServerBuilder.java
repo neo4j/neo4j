@@ -48,7 +48,6 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.InMemoryGraphFactory;
-import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
@@ -67,7 +66,6 @@ public class CommunityServerBuilder
     private String dataDir;
     private String dbUri = "/db";
     private String restUri = "/db/data";
-    private PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
@@ -103,7 +101,7 @@ public class CommunityServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        final File configFile = buildBefore();
+        final File configFile = createConfigFiles();
 
         Log log = logProvider.getLog( getClass() );
         Config config = Config.newBuilder()
@@ -303,24 +301,6 @@ public class CommunityServerBuilder
         {
             return theUri.toString();
         }
-    }
-
-    private File buildBefore() throws IOException
-    {
-        File configFile = createConfigFiles();
-
-        if ( preflightTasks == null )
-        {
-            preflightTasks = new PreFlightTasks( NullLogProvider.getInstance() )
-            {
-                @Override
-                public boolean run()
-                {
-                    return true;
-                }
-            };
-        }
-        return configFile;
     }
 
     private class TestCommunityNeoServer extends CommunityNeoServer
