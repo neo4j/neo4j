@@ -592,18 +592,7 @@ class NodeLabelsFieldTest
 
     private static <T extends AbstractBaseRecord> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
-        Function<T, T> clone = obj ->
-        {
-            try
-            {
-                return itemClass.cast( obj.clone() );
-            }
-            catch ( CloneNotSupportedException e )
-            {
-                throw new AssertionError( "Expected " + itemClass + " to be cloneable.", e );
-            }
-        };
-        return Iterables.map( clone, items );
+        return Iterables.map( obj -> itemClass.cast( obj.clone() ), items );
     }
 
     private static LongSet idsOf( Set<DynamicRecord> records )

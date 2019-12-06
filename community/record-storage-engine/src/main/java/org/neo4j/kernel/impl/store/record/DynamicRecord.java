@@ -205,7 +205,7 @@ public class DynamicRecord extends AbstractBaseRecord
     }
 
     @Override
-    public DynamicRecord clone() throws CloneNotSupportedException
+    public DynamicRecord clone()
     {
         DynamicRecord clone = (DynamicRecord) super.clone();
         if ( data != null )

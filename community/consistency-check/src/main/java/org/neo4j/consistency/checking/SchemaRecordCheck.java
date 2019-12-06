@@ -271,14 +271,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private SchemaRecord cloneRecord( SchemaRecord record )
     {
-        try
-        {
-            return record.clone();
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            throw new AssertionError( "SchemaRecords should be cloneable.", e );
-        }
+        return record.clone();
     }
 
     static class CheckSchema implements SchemaProcessor

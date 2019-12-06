@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleKind;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.newchecker.RecordLoading.safeClone;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -123,7 +122,7 @@ class SchemaChecker
                 }
 
                 SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id );
-                SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( schemaRule ), safeClone( record ) );
+                SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( schemaRule ), record.clone() );
                 if ( previousContentRecord != null )
                 {
                     reporter.forSchema( record ).duplicateRuleContent( previousContentRecord );
@@ -134,7 +133,7 @@ class SchemaChecker
                     IndexDescriptor rule = (IndexDescriptor) schemaRule;
                     if ( rule.isUnique() && rule.getOwningConstraintId().isPresent() )
                     {
-                        SchemaRecord previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(), safeClone( record ) );
+                        SchemaRecord previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(), record.clone() );
                         if ( previousObligation != null )
                         {
                             reporter.forSchema( record ).duplicateObligation( previousObligation );
@@ -146,7 +145,7 @@ class SchemaChecker
                     ConstraintDescriptor rule = (ConstraintDescriptor) schemaRule;
                     if ( rule.enforcesUniqueness() )
                     {
-                        SchemaRecord previousObligation = indexObligations.put( rule.asIndexBackedConstraint().ownedIndexId(), safeClone( record ) );
+                        SchemaRecord previousObligation = indexObligations.put( rule.asIndexBackedConstraint().ownedIndexId(), record.clone() );
                         if ( previousObligation != null )
                         {
                             reporter.forSchema( record ).duplicateObligation( previousObligation );

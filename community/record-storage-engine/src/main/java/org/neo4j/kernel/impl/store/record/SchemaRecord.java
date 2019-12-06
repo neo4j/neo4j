@@ -48,7 +48,7 @@ public class SchemaRecord extends PrimitiveRecord
     }
 
     @Override
-    public SchemaRecord clone() throws CloneNotSupportedException
+    public SchemaRecord clone()
     {
         return (SchemaRecord) super.clone();
     }

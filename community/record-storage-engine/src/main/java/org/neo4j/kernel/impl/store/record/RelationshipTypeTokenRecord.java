@@ -40,7 +40,7 @@ public class RelationshipTypeTokenRecord extends TokenRecord
     }
 
     @Override
-    public RelationshipTypeTokenRecord clone() throws CloneNotSupportedException
+    public RelationshipTypeTokenRecord clone()
     {
         return (RelationshipTypeTokenRecord) super.clone();
     }

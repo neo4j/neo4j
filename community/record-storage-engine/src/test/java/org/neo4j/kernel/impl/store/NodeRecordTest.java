@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 class NodeRecordTest
 {
     @Test
-    void cloneShouldProduceExactCopy() throws CloneNotSupportedException
+    void cloneShouldProduceExactCopy()
     {
         // Given
         long relId = 1337L;

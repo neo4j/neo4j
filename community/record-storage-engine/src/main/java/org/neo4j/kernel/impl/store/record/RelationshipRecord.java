@@ -207,7 +207,7 @@ public class RelationshipRecord extends PrimitiveRecord
     }
 
     @Override
-    public RelationshipRecord clone() throws CloneNotSupportedException
+    public RelationshipRecord clone()
     {
         return (RelationshipRecord) super.clone();
     }

@@ -42,7 +42,6 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.consistency.newchecker.RecordLoading.NO_DYNAMIC_HANDLER;
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
-import static org.neo4j.consistency.newchecker.RecordLoading.safeClone;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -144,7 +143,7 @@ class SafePropertyChainReader implements AutoCloseable
                             {
                             case STRING:
                                 dynamicRecords.clear();
-                                if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( safeClone( record ) ), stringReader, seenDynamicRecordIds,
+                                if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.clone() ), stringReader, seenDynamicRecordIds,
                                         block.getSingleValueLong(), stringStoreBlockSize, NO_DYNAMIC_HANDLER,
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).stringNotInUse( block, record ),
                                         ( id, record ) -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, stringReader.record() ).nextNotInUse( record ),
@@ -157,7 +156,7 @@ class SafePropertyChainReader implements AutoCloseable
                                 break;
                             case ARRAY:
                                 dynamicRecords.clear();
-                                if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( safeClone( record ) ), arrayReader, seenDynamicRecordIds,
+                                if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.clone() ), arrayReader, seenDynamicRecordIds,
                                         block.getSingleValueLong(), arrayStoreBlockSize, NO_DYNAMIC_HANDLER,
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).arrayNotInUse( block, record ),
                                         ( id, record ) -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, arrayReader.record() ).nextNotInUse( record ),
