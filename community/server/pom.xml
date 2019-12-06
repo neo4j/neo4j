@@ -21,12 +21,8 @@
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-
         <neo4j.version>${project.version}</neo4j.version>
         <neo4j-browser.version>3.2.26</neo4j-browser.version>
-
-        <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
-
         <test.runner.jvm.settings.additional>
             -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
         </test.runner.jvm.settings.additional>
@@ -59,26 +55,6 @@
         </license>
     </licenses>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <!-- TODO: Does the server jar need to be executable? -->
-                                    <mainClass>${neo4j-server.mainClass}</mainClass>
-                                </manifest>
-                            </archive>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -92,8 +68,6 @@
         </dependency>
 
         <dependency>
-            <!-- We need this one, or transitive dependencies of kernel
-        will end up in the test scope. -->
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
             <version>${project.version}</version>
@@ -228,7 +202,6 @@
             <artifactId>jaxb-api</artifactId>
         </dependency>
 
-        <!-- Test dependencies -->
         <dependency>
             <groupId>org.neo4j.community</groupId>
             <artifactId>it-test-support</artifactId>
@@ -239,14 +212,6 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
