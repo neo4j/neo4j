@@ -34,6 +34,7 @@ import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -1031,6 +1032,35 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
             PagedFile pagedFile = map( file( "a" ), pageCachePageSize );// this must NOT throw
             pagedFile.close();
+        } );
+    }
+
+    @Test
+    void flushAndForceAfterCloseAndEvictionMustNotGetStuckOnEvictedPages()
+    {
+        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        {
+            configureStandardPageCache();
+            PagedFile pagedFile = pageCache.map( file( "a" ), pageCachePageSize );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                for ( int i = 0; i < 20; i++ )
+                {
+                    cursor.next();
+                    writeRecords( cursor );
+                }
+            }
+            pagedFile.close();
+            try ( PagedFile b = pageCache.map( existingFile( "b" ), pageCachePageSize );
+                  PageCursor cursor = b.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                for ( int i = 0; i < 200; i++ )
+                {
+                    cursor.next();
+                }
+            }
+
+            assertThrows( ClosedChannelException.class, pagedFile::flushAndForce );
         } );
     }
 

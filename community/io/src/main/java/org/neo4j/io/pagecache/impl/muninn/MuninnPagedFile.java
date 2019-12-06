@@ -256,6 +256,17 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             // We cannot reuse those swapper ids until there are no more pages using them.
             pageCache.vacuum( getSwappers() );
         }
+        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
+        int[][] tt = this.translationTable;
+        for ( int[] chunk : tt )
+        {
+            for ( int i = 0; i < chunk.length; i++ )
+            {
+                filePageId++;
+                long offset = computeChunkOffset( filePageId );
+                UnsafeUtil.putIntVolatile( chunk, offset, UNMAPPED_TTE );
+            }
+        }
     }
 
     @Override
