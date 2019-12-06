@@ -95,7 +95,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         populator.add( asList( updates ) );
 
         // then
-        populator.scanCompleted( nullInstance );
+        populator.scanCompleted( nullInstance, jobScheduler );
         populator.close( true );
         verifyUpdates( updates );
     }
@@ -116,7 +116,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         }
 
         // then
-        populator.scanCompleted( nullInstance );
+        populator.scanCompleted( nullInstance, jobScheduler );
         populator.close( true );
         verifyUpdates( updates );
     }
@@ -148,7 +148,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
             }
 
             // WHEN
-            populator.scanCompleted( nullInstance );
+            populator.scanCompleted( nullInstance, jobScheduler );
             IndexSample sample = populator.sampleResult();
 
             // THEN

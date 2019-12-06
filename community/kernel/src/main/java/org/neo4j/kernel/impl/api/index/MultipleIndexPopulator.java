@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -113,10 +114,11 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final SchemaState schemaState;
     private final IndexStatisticsStore indexStatisticsStore;
     private final PhaseTracker phaseTracker;
+    private final JobScheduler jobScheduler;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore )
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
     {
         this.storeView = storeView;
         this.propertyAccessor = storeView.newPropertyAccessor();
@@ -126,6 +128,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.schemaState = schemaState;
         this.indexStatisticsStore = indexStatisticsStore;
         this.phaseTracker = new LoggingPhaseTracker( logProvider.getLog( IndexPopulationJob.class ) );
+        this.jobScheduler = jobScheduler;
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
@@ -304,7 +307,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void scanCompleted( PhaseTracker phaseTracker )
+    public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler )
     {
         throw new UnsupportedOperationException( "Not supposed to be called" );
     }
@@ -691,7 +694,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void scanCompleted() throws IndexEntryConflictException
         {
-            populator.scanCompleted( phaseTracker );
+            populator.scanCompleted( phaseTracker, jobScheduler );
         }
 
         PopulationProgress progress( PopulationProgress storeScanProgress )

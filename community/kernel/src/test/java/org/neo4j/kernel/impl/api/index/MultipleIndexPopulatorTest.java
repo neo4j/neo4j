@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
@@ -81,8 +82,9 @@ class MultipleIndexPopulatorTest
         when( indexStoreView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
         when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
+        JobScheduler jobScheduler = mock( JobScheduler.class );
         multipleIndexPopulator =
-            new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore );
+            new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler );
     }
 
     @Test

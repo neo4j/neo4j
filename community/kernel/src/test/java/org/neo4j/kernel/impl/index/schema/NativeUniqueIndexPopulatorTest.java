@@ -85,7 +85,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
         assertThrows( IndexEntryConflictException.class, () ->
         {
             populator.add( asList( updates ) );
-            populator.scanCompleted( nullInstance );
+            populator.scanCompleted( nullInstance, jobScheduler );
         } );
 
         populator.close( true );
@@ -107,7 +107,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
         var e = assertThrows( Exception.class, () ->
         {
             updater.close();
-            populator.scanCompleted( nullInstance );
+            populator.scanCompleted( nullInstance, jobScheduler );
         } );
         assertTrue( hasCause( e, IndexEntryConflictException.class ), e.getMessage() );
 
@@ -127,7 +127,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
         {
             populator.includeSample( update );
         }
-        populator.scanCompleted( nullInstance );
+        populator.scanCompleted( nullInstance, jobScheduler );
         IndexSample sample = populator.sampleResult();
 
         // THEN

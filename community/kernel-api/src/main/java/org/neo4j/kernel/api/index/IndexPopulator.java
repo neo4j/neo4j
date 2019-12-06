@@ -29,6 +29,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.UpdateMode;
@@ -154,7 +155,7 @@ public interface IndexPopulator extends IndexDropper
 
     IndexPopulator EMPTY = new Adapter();
 
-    default void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
+    default void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler ) throws IndexEntryConflictException
     {   // no-op by default
     }
 
@@ -182,7 +183,7 @@ public interface IndexPopulator extends IndexDropper
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker )
+        public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler )
         {
         }
 
@@ -283,9 +284,9 @@ public interface IndexPopulator extends IndexDropper
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
+        public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler ) throws IndexEntryConflictException
         {
-            delegate.scanCompleted( phaseTracker );
+            delegate.scanCompleted( phaseTracker, jobScheduler );
         }
 
         @Override

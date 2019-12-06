@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
@@ -133,9 +134,9 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
+    public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler ) throws IndexEntryConflictException
     {
-        instanceSelector.throwingForAll( ip -> ip.scanCompleted( phaseTracker ) );
+        instanceSelector.throwingForAll( ip -> ip.scanCompleted( phaseTracker, jobScheduler ) );
     }
 
     @Override

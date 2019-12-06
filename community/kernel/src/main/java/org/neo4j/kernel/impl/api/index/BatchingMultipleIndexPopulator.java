@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.FeatureToggles;
 
@@ -80,16 +81,16 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     /**
      * Creates a new multi-threaded populator for the given store view.
-     *
      * @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
      * @param type entity type to populate
      * @param schemaState the schema state
+     * @param jobScheduler the job scheduler
      */
     BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore )
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
     {
-        super( storeView, logProvider, type, schemaState, indexStatisticsStore );
+        super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler );
         this.executor = createThreadPool();
     }
 
@@ -97,16 +98,16 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * Creates a new multi-threaded populator with the specified thread pool.
      * <p>
      * <b>NOTE:</b> for testing only.
-     *
      * @param storeView the view of the store as a visitable of nodes
      * @param executor the thread pool to use for batched index insertions
      * @param logProvider the log provider
      * @param schemaState the schema state
+     * @param jobScheduler the job scheduler
      */
     BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore )
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
     {
-        super( storeView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore );
+        super( storeView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler );
         this.executor = executor;
     }
 

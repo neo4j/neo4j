@@ -115,6 +115,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexStatisticsStore indexStatisticsStore;
     private final boolean readOnly;
     private final TokenNameLookup tokenNameLookup;
+    private final JobScheduler jobScheduler;
     private final MultiPopulatorFactory multiPopulatorFactory;
     private final LogProvider internalLogProvider;
     private final Monitor monitor;
@@ -201,7 +202,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             Iterable<IndexDescriptor> indexDescriptors,
             IndexSamplingController samplingController,
             TokenNameLookup tokenNameLookup,
-            JobScheduler scheduler,
+            JobScheduler jobScheduler,
             SchemaState schemaState,
             MultiPopulatorFactory multiPopulatorFactory,
             LogProvider internalLogProvider,
@@ -217,11 +218,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.indexDescriptors = indexDescriptors;
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
+        this.jobScheduler = jobScheduler;
         this.schemaState = schemaState;
         this.multiPopulatorFactory = multiPopulatorFactory;
         this.internalLogProvider = internalLogProvider;
         this.monitor = monitor;
-        this.populationJobController = new IndexPopulationJobController( scheduler );
+        this.populationJobController = new IndexPopulationJobController( jobScheduler );
         this.internalLog = internalLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
         this.indexStatisticsStore = indexStatisticsStore;
@@ -794,7 +796,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
-        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, internalLogProvider, type, schemaState, indexStatisticsStore );
+        MultipleIndexPopulator multiPopulator =
+                multiPopulatorFactory.create( storeView, internalLogProvider, type, schemaState, indexStatisticsStore, jobScheduler );
         return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping );
     }
 

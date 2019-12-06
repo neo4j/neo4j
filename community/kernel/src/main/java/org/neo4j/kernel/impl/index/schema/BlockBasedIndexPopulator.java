@@ -30,10 +30,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -54,6 +50,9 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
@@ -235,7 +234,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
+    public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler ) throws IndexEntryConflictException
     {
         if ( !markMergeStarted() )
         {
@@ -249,7 +248,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
             if ( !allScanUpdates.isEmpty() )
             {
-                mergeScanUpdates();
+                mergeScanUpdates( jobScheduler );
             }
 
             externalUpdates.doneAdding();
@@ -315,28 +314,22 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void mergeScanUpdates() throws InterruptedException, ExecutionException, IOException
+    private void mergeScanUpdates( JobScheduler jobScheduler ) throws InterruptedException, ExecutionException, IOException
     {
-        ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
-        List<Future<?>> mergeFutures = new ArrayList<>();
+        List<JobHandle<?>> mergeFutures = new ArrayList<>();
         for ( ThreadLocalBlockStorage part : allScanUpdates )
         {
             BlockStorage<KEY,VALUE> scanUpdates = part.blockStorage;
             // Call doneAdding here so that the buffer it allocates if it needs to flush something will be shared with other indexes
             scanUpdates.doneAdding();
-            mergeFutures.add( executorService.submit( () ->
+            mergeFutures.add( jobScheduler.schedule( Group.INDEX_POPULATION, () ->
             {
                 scanUpdates.merge( mergeFactor, cancellation );
                 return null;
             } ) );
         }
-        executorService.shutdown();
-        while ( !executorService.awaitTermination( 1, TimeUnit.SECONDS ) )
-        {
-            // just wait longer
-        }
-        // Let potential exceptions in the merge threads have a chance to propagate
-        for ( Future<?> mergeFuture : mergeFutures )
+        // Wait for merge jobs to finish and let potential exceptions in the merge threads have a chance to propagate
+        for ( JobHandle<?> mergeFuture : mergeFutures )
         {
             mergeFuture.get();
         }

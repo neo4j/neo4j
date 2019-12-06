@@ -403,7 +403,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
-                    p.scanCompleted( PhaseTracker.nullInstance );
+                    p.scanCompleted( PhaseTracker.nullInstance, jobScheduler );
                     p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );

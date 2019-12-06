@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +49,11 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
@@ -56,7 +62,9 @@ import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.scheduler.DelegatingJobScheduler;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,18 +87,16 @@ class BlockBasedIndexPopulatorTest
     Actor merger;
     @Inject
     Actor closer;
+    @Inject
+    FileSystemAbstraction fs;
+    @Inject
+    TestDirectory testDir;
+    @Inject
+    PageCache pageCache;
 
     private IndexFiles indexFiles;
     private DatabaseIndexContext databaseIndexContext;
-
-    @Inject
-    FileSystemAbstraction fs;
-
-    @Inject
-    TestDirectory testDir;
-
-    @Inject
-    PageCache pageCache;
+    private JobScheduler jobScheduler;
 
     @BeforeEach
     void setup()
@@ -99,6 +105,13 @@ class BlockBasedIndexPopulatorTest
         IndexDirectoryStructure directoryStructure = directoriesByProvider( testDir.homeDir() ).forProvider( providerDescriptor );
         indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
         databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
+        jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.shutdown();
     }
 
     @Test
@@ -139,7 +152,7 @@ class BlockBasedIndexPopulatorTest
     {
         return () ->
         {
-            populator.scanCompleted( nullInstance );
+            populator.scanCompleted( nullInstance, jobScheduler );
             return null;
         };
     }
@@ -221,7 +234,7 @@ class BlockBasedIndexPopulatorTest
 
             // when
             Race race = new Race();
-            race.addContestant( throwing( () -> populator.scanCompleted( nullInstance ) ) );
+            race.addContestant( throwing( () -> populator.scanCompleted( nullInstance, jobScheduler ) ) );
             race.addContestant( throwing( () -> populator.close( false ) ) );
             race.go();
             closed = true;
@@ -295,7 +308,7 @@ class BlockBasedIndexPopulatorTest
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedDirectMemory();
-            populator.scanCompleted( nullInstance );
+            populator.scanCompleted( nullInstance, jobScheduler );
             externalUpdates( populator, nextId, nextId + 10 );
 
             // then
@@ -334,7 +347,7 @@ class BlockBasedIndexPopulatorTest
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedDirectMemory();
-            populator.scanCompleted( nullInstance );
+            populator.scanCompleted( nullInstance, jobScheduler );
             externalUpdates( populator, nextId, nextId + 10 );
 
             // then
@@ -367,7 +380,7 @@ class BlockBasedIndexPopulatorTest
         populator.add( populationUpdates );
 
         // when
-        populator.scanCompleted( nullInstance );
+        populator.scanCompleted( nullInstance, jobScheduler );
         // Also a couple of updates afterwards
         int numberOfUpdatesAfterCompleted = 4;
         try ( IndexUpdater updater = populator.newPopulatingUpdater() )
@@ -407,7 +420,7 @@ class BlockBasedIndexPopulatorTest
         {
             // when
             int numberOfCheckPointsBeforeScanCompleted = checkpoints.get();
-            populator.scanCompleted( nullInstance );
+            populator.scanCompleted( nullInstance, jobScheduler );
 
             // then
             assertEquals( numberOfCheckPointsBeforeScanCompleted + 1, checkpoints.get() );
@@ -415,6 +428,42 @@ class BlockBasedIndexPopulatorTest
         finally
         {
             populator.close( true );
+        }
+    }
+
+    @Test
+    void shouldScheduleMergeOnJobSchedulerWithCorrectGroup() throws IndexEntryConflictException
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        boolean closed = false;
+        try
+        {
+            populator.add( batchOfUpdates() );
+
+            // when
+            MutableBoolean called = new MutableBoolean();
+            DelegatingJobScheduler trackingJobScheduler = new DelegatingJobScheduler( jobScheduler )
+            {
+                @Override
+                public <T> JobHandle<T> schedule( Group group, Callable<T> job )
+                {
+                    called.setTrue();
+                    assertThat( group ).isSameAs( Group.INDEX_POPULATION );
+                    return super.schedule( group, job );
+                }
+            };
+            populator.scanCompleted( nullInstance, trackingJobScheduler );
+            assertTrue( called.booleanValue() );
+            populator.close( true );
+            closed = true;
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( true );
+            }
         }
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -43,6 +44,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
@@ -141,15 +144,26 @@ public abstract class IndexProviderCompatibilityTestSuite
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;
         final List<NodeAndValue> valueSet2;
+        final JobScheduler jobScheduler;
 
         @Before
-        public void setup()
+        public void setup() throws Exception
         {
             fs = pageCacheAndDependenciesRule.fileSystem();
             graphDbDir = pageCacheAndDependenciesRule.directory().homeDir();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
             descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.withName( "index_17" ).materialise( 17 ) );
+            jobScheduler.start();
+        }
+
+        @After
+        public void tearDown() throws Exception
+        {
+            if ( jobScheduler != null )
+            {
+                jobScheduler.shutdown();
+            }
         }
 
         Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
@@ -275,6 +289,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                             Values.pointValue( CoordinateReferenceSystem.WGS84, 9.21, 9.65 )
                     ) );
 
+            jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() ).with( testSuite.getClass() );
             random = new RandomRule();
             ruleChain = RuleChain.outerRule( pageCacheAndDependenciesRule ).around( random );
@@ -293,7 +308,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                 runWithPopulator.accept( populator );
                 if ( closeSuccessfully )
                 {
-                    populator.scanCompleted( PhaseTracker.nullInstance );
+                    populator.scanCompleted( PhaseTracker.nullInstance, jobScheduler );
                     testSuite.consistencyCheck( populator );
                 }
             }
