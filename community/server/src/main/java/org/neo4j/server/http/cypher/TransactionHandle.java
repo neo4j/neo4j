@@ -25,12 +25,9 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.TransactionalContext;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
@@ -57,7 +54,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class TransactionHandle implements TransactionTerminationHandle
 {
-    private final TransitionalPeriodTransactionMessContainer txManagerFacade;
+    private final GraphDatabaseFacade databaseFacade;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
@@ -67,16 +64,14 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final long customTransactionTimeoutMillis;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
-    private final GraphDatabaseQueryService queryService;
     private long expirationTimestamp = -1;
 
-    TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine, GraphDatabaseQueryService queryService,
+    TransactionHandle( GraphDatabaseFacade databaseFacade, QueryExecutionEngine engine,
                        TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, LoginContext loginContext,
                        ClientConnectionInfo connectionInfo, long customTransactionTimeoutMillis )
     {
-        this.txManagerFacade = txManagerFacade;
+        this.databaseFacade = databaseFacade;
         this.engine = engine;
-        this.queryService = queryService;
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.IMPLICIT : Type.EXPLICIT;
@@ -135,25 +130,24 @@ public class TransactionHandle implements TransactionTerminationHandle
     {
         if ( context == null )
         {
-            context = txManagerFacade.newTransaction( type, loginContext, connectionInfo, customTransactionTimeoutMillis );
+            context = new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, connectionInfo, customTransactionTimeoutMillis );
         }
     }
 
-    Result executeStatement( Statement statement, boolean periodicCommit ) throws QueryExecutionKernelException
+    Result executeStatement( Statement statement, boolean periodicCommit )
     {
         if ( periodicCommit )
         {
-            var db = txManagerFacade.getDb();
             Result result;
-            try ( Transaction transaction = db.beginTransaction(Type.IMPLICIT, loginContext, connectionInfo, customTransactionTimeoutMillis, MILLISECONDS ) )
+            try ( Transaction transaction = databaseFacade.beginTransaction( Type.IMPLICIT, loginContext, connectionInfo, customTransactionTimeoutMillis,
+                    MILLISECONDS ) )
             {
                 result = transaction.execute( statement.getStatement(), statement.getParameters() );
                 transaction.commit();
             }
             return result;
         }
-        TransactionalContext tc = txManagerFacade.create( queryService, context.getInternalTransaction(), statement.getStatement(), statement.getParameters() );
-        return engine.executeQuery( statement.getStatement(), ValueUtils.asMapValue( statement.getParameters() ), tc, false );
+        return context.getInternalTransaction().execute( statement.getStatement(), statement.getParameters() );
     }
 
     void forceRollback()

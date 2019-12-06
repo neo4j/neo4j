@@ -44,7 +44,6 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -77,6 +76,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -97,7 +97,7 @@ class InvocationTest
     private final Iterable<Notification> notifications = Collections.emptyList();
     private final List<Result.ResultRow> resultRows = new ArrayList<>();
     private final TransitionalTxManagementKernelTransaction transactionContext = mock( TransitionalTxManagementKernelTransaction.class );
-    private final TransitionalPeriodTransactionMessContainer kernel = mockKernel();
+    private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private final QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
     private final TransactionRegistry registry = mock( TransactionRegistry.class );
     private final OutputEventStream outputEventStream = mock( OutputEventStream.class );
@@ -125,11 +125,11 @@ class InvocationTest
     void shouldExecuteStatements() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -157,11 +157,11 @@ class InvocationTest
     void shouldSuspendTransactionAndReleaseForOtherRequestsAfterExecutingStatements() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -192,11 +192,11 @@ class InvocationTest
     void shouldResumeTransactionWhenExecutingStatementsOnSecondRequest() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -232,16 +232,14 @@ class InvocationTest
     {
         // given
         String queryText = "USING PERIODIC COMMIT CREATE()";
-        prepareKernelWithQuerySession( kernel );
         var facade = mock( GraphDatabaseFacade.class, Answers.RETURNS_DEEP_STUBS );
         var transaction = mock( InternalTransaction.class );
         when( facade.beginTransaction( eq( IMPLICIT ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
                 .thenReturn( transaction );
         when( transaction.execute( eq( queryText), any() ) ).thenReturn( executionResult );
         when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
-        when( kernel.getDb() ).thenReturn( facade );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( queryText, map() );
@@ -266,11 +264,11 @@ class InvocationTest
     void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -301,7 +299,7 @@ class InvocationTest
     {
         // given
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         RollbackInvocation invocation = new RollbackInvocation( log, handle );
 
@@ -322,7 +320,7 @@ class InvocationTest
     void shouldCreateTransactionContextOnlyWhenFirstNeeded() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
@@ -334,17 +332,18 @@ class InvocationTest
         mockDefaultResult();
 
         // when
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
         Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
 
         // then
-        verifyNoInteractions( kernel );
+        verifyZeroInteractions( databaseFacade );
 
         // when
         invocation.execute( outputEventStream );
 
         // then
-        verify( kernel ).newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), eq( EMBEDDED_CONNECTION ), anyLong() );
+        verify( databaseFacade ).beginTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), eq( EMBEDDED_CONNECTION ), anyLong(),
+                any() );
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeStatementStart( statement, List.of( "c1", "c2", "c3" ) );
@@ -358,12 +357,12 @@ class InvocationTest
     void shouldRollbackTransactionIfExecutionErrorOccurs() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow(
                 new IllegalStateException( "Something went wrong" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -390,12 +389,12 @@ class InvocationTest
     void shouldHandleCommitError() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
         doThrow( new IllegalStateException( "Something went wrong" ) ).when( transactionContext ).commit();
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -426,10 +425,10 @@ class InvocationTest
     void shouldHandleErrorWhenStartingTransaction()
     {
         // given
-        when( kernel.newTransaction( any(), any(), any(), anyLong() ) ).thenThrow( new IllegalStateException( "Something went wrong" ) );
+        when( databaseFacade.beginTransaction( any(), any(), any(), anyLong(), any() ) ).thenThrow( new IllegalStateException( "Something went wrong" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -455,10 +454,10 @@ class InvocationTest
     void shouldHandleAuthorizationErrorWhenStartingTransaction()
     {
         // given
-        when( kernel.newTransaction( any(), any(), any(), anyLong() ) ).thenThrow( new AuthorizationViolationException( "Forbidden" ) );
+        when( databaseFacade.beginTransaction( any(), any(), any(), anyLong(), any() ) ).thenThrow( new AuthorizationViolationException( "Forbidden" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -485,12 +484,12 @@ class InvocationTest
     {
         // given
         String queryText = "matsch (n) return n";
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( queryText, NO_PARAMS, transactionalContext, false ) ).thenThrow(
                 new QueryExecutionKernelException( new SyntaxException( "did you mean MATCH?" ) ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( queryText, map() );
@@ -515,11 +514,11 @@ class InvocationTest
     void shouldHandleExecutionEngineThrowingUndeclaredCheckedExceptions() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow( new RuntimeException( "BOO" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -544,12 +543,12 @@ class InvocationTest
     void shouldHandleRollbackError() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow( new RuntimeException( "BOO" ) );
         doThrow( new IllegalStateException( "Something went wrong" ) ).when( transactionContext ).rollback();
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -576,11 +575,11 @@ class InvocationTest
     void shouldInterruptTransaction() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -603,11 +602,11 @@ class InvocationTest
     void deadlockExceptionHasCorrectStatus() throws Exception
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow( new DeadlockDetectedException( "deadlock" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -632,9 +631,8 @@ class InvocationTest
     void startTransactionWithRequestedTimeout()
     {
         // given
-        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         TransactionHandle handle =
-                new TransactionHandle( kernel, executionEngine, queryService, mock( TransactionRegistry.class ), uriScheme, true, AUTH_DISABLED,
+                new TransactionHandle( databaseFacade, executionEngine, mock( TransactionRegistry.class ), uriScheme, true, AUTH_DISABLED,
                         EMBEDDED_CONNECTION, 100 );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
@@ -646,7 +644,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( kernel ).newTransaction( IMPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 100 );
+        verify( databaseFacade ).beginTransaction( IMPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 100, TimeUnit.MILLISECONDS );
     }
 
     @Test
@@ -654,7 +652,7 @@ class InvocationTest
     {
         // given
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenThrow( new InputFormatException( "Cannot parse input", new IOException( "JSON ERROR" ) ) );
@@ -679,7 +677,7 @@ class InvocationTest
     {
         // given
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenThrow( new ConnectionException( "Connection error", new IOException( "Broken pipe" ) ) );
@@ -702,7 +700,7 @@ class InvocationTest
     {
         // given
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry, false );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry, false );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenThrow( new ConnectionException( "Connection error", new IOException( "Broken pipe" ) ) );
@@ -725,11 +723,11 @@ class InvocationTest
     void shouldHandleConnectionErrorWhenWritingOutputInImplicitTransaction() throws QueryExecutionKernelException
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -761,11 +759,11 @@ class InvocationTest
     void shouldKeepTransactionOpenIfConnectionErrorWhenWritingOutputInImplicitTransaction() throws QueryExecutionKernelException
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
         when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry, false );
+        TransactionHandle handle = getTransactionHandle( executionEngine, registry, false );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         Statement statement = new Statement( "query", map() );
@@ -808,33 +806,20 @@ class InvocationTest
                 argThat( new ValuesMatcher( Map.of( "c1", "v4", "c2", "v5", "c3", "v6" ) ) ) );
     }
 
-    private TransactionHandle getTransactionHandle( TransitionalPeriodTransactionMessContainer kernel, QueryExecutionEngine executionEngine,
-            TransactionRegistry registry )
+    private TransactionHandle getTransactionHandle( QueryExecutionEngine executionEngine, TransactionRegistry registry )
     {
-        return getTransactionHandle( kernel, executionEngine, registry, true );
+        return getTransactionHandle( executionEngine, registry, true );
     }
 
-    private TransactionHandle getTransactionHandle( TransitionalPeriodTransactionMessContainer kernel, QueryExecutionEngine executionEngine,
-            TransactionRegistry registry, boolean implicitTransaction )
+    private TransactionHandle getTransactionHandle( QueryExecutionEngine executionEngine, TransactionRegistry registry, boolean implicitTransaction )
     {
-        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        return new TransactionHandle( kernel, executionEngine, queryService, registry, uriScheme, implicitTransaction, AUTH_DISABLED, EMBEDDED_CONNECTION,
+        return new TransactionHandle( databaseFacade, executionEngine, registry, uriScheme, implicitTransaction, AUTH_DISABLED, EMBEDDED_CONNECTION,
                 anyLong() );
     }
 
-    private TransitionalPeriodTransactionMessContainer mockKernel()
+    private TransactionalContext prepareKernelWithQuerySession()
     {
-        TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
-        when( kernel.newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), any( ClientConnectionInfo.class ), anyLong() ) )
-                .thenReturn( transactionContext );
-        return kernel;
-    }
-
-    private TransactionalContext prepareKernelWithQuerySession( TransitionalPeriodTransactionMessContainer kernel )
-    {
-        TransactionalContext tc = mock( TransactionalContext.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any(), any( String.class ), any( Map.class ) ) ).thenReturn( tc );
-        return tc;
+        return mock( TransactionalContext.class );
     }
 
     private void mockResultRow( Map<String,Object> row )

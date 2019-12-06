@@ -25,7 +25,6 @@ import java.util.Optional;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
@@ -80,13 +79,12 @@ public class HttpTransactionManager
         return transactionRegistry;
     }
 
-    public TransactionFacade createTransactionFacade( GraphDatabaseFacade graph )
+    public TransactionFacade createTransactionFacade( GraphDatabaseFacade databaseFacade )
     {
-        DependencyResolver dependencyResolver = graph.getDependencyResolver();
+        DependencyResolver dependencyResolver = databaseFacade.getDependencyResolver();
 
-        return new TransactionFacade( new TransitionalPeriodTransactionMessContainer( graph ),
-                dependencyResolver.resolveDependency( QueryExecutionEngine.class ), dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ),
-                transactionRegistry );
+        return new TransactionFacade( databaseFacade,
+                dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry );
     }
 
     private void scheduleTransactionTimeout( Duration timeout )
