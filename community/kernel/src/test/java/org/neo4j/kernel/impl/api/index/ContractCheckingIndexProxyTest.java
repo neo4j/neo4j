@@ -32,6 +32,8 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ThreadTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 class ContractCheckingIndexProxyTest
@@ -152,14 +154,15 @@ class ContractCheckingIndexProxyTest
     }
 
     @Test
-    void shouldNotForceBeforeCreate()
+    void shouldNotForceBeforeCreate() throws IOException
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        assertThrows( IllegalStateException.class, () -> outer.force( IOLimiter.UNLIMITED ) );
+        outer.force( IOLimiter.UNLIMITED );
+        verifyNoMoreInteractions( inner );
     }
 
     @Test
@@ -172,7 +175,11 @@ class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        assertThrows( IllegalStateException.class, () -> outer.force( IOLimiter.UNLIMITED ) );
+
+        outer.force( IOLimiter.UNLIMITED );
+        verify( inner ).start();
+        verify( inner ).close();
+        verifyNoMoreInteractions( inner );
     }
 
     @Test

@@ -1018,6 +1018,35 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void flushAndForceAfterCloseAndEvictionMustNotGetStuckOnEvictedPages()
+    {
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        {
+            configureStandardPageCache();
+            PagedFile pagedFile = pageCache.map( file( "a" ), pageCachePageSize );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                for ( int i = 0; i < 20; i++ )
+                {
+                    cursor.next();
+                    writeRecords( cursor );
+                }
+            }
+            pagedFile.close();
+            try ( PagedFile b = pageCache.map( existingFile( "b" ), pageCachePageSize );
+                  PageCursor cursor = b.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                for ( int i = 0; i < 200; i++ )
+                {
+                    cursor.next();
+                }
+            }
+
+            pagedFile.flushAndForce();
+        } );
+    }
+
+    @Test
     void notSpecifyingAnyPfFlagsMustThrow()
     {
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
