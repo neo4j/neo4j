@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 
 import scala.collection.mutable.ArrayBuffer
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.functions.Exists
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty

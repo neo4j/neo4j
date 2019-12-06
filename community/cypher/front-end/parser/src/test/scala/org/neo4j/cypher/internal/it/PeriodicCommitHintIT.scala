@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.it
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast.PeriodicCommitHint
-import org.neo4j.cypher.internal.v4_0.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.parser.ParserTest
 import org.neo4j.cypher.internal.parser.Query
 import org.neo4j.cypher.internal.util.DummyPosition

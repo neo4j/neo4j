@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
-import org.neo4j.cypher.internal.v4_0.ast.Statement
-import org.neo4j.cypher.internal.v4_0.expressions.Parameter
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Property, Variable}
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.expressions.{LabelName, Property, Variable}
 import org.parboiled.scala._
 
 trait Command extends Parser

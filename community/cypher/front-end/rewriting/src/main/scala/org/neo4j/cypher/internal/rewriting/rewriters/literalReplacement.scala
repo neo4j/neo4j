@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.{ASTNode, IdentityMap, Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, Parameter, RelationshipPattern}
+import org.neo4j.cypher.internal.expressions.{NodePattern, Parameter, RelationshipPattern}
 
 object literalReplacement {
 

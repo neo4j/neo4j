@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {

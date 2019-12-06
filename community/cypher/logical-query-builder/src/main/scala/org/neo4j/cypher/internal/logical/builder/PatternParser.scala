@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ir.{PatternLength, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
-import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.util.InputPosition.NONE
 
 class PatternParser

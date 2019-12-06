@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.ir.Predicate
-import org.neo4j.cypher.internal.v4_0.expressions.{AndedPropertyInequalities, InequalityExpression, Property, Variable}
+import org.neo4j.cypher.internal.expressions.{AndedPropertyInequalities, InequalityExpression, Property, Variable}
 
 // This transforms
 //

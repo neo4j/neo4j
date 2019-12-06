@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 
 
 object ProvidedOrder {

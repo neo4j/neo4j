@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.{functions, _}
 import org.neo4j.cypher.internal.util.{Last, NonEmptyList}
 import org.neo4j.cypher.internal.util.symbols._
 

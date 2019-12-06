@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList, IsNoValue, makeValueNeoSafe}
-import org.neo4j.cypher.internal.v4_0.frontend.helpers.SeqCombiner.combine
+import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner.combine
 import org.neo4j.exceptions.{CypherTypeException, InternalException}
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, NodeValueIndexCursor}
 import org.neo4j.values.AnyValue

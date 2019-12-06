@@ -24,12 +24,9 @@ import java.time.Clock
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.{DeprecatedCompiledRuntimeNotification, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.neo4j.graphdb.Notification
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.logging.LogProvider
-import org.neo4j.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
 
 object MasterCompiler {

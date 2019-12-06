@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import java.time.Clock
-import java.{lang, util}
+import java.lang
 
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.{InputDataStream, NoInput}
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
-import org.neo4j.cypher.internal.v4_0.expressions.functions.FunctionInfo
+import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
@@ -292,8 +292,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     preParsedQuery.options.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
   }
 
-  def getCypherFunctions: util.List[FunctionInformation] = {
-    val informations: Seq[FunctionInformation] = org.neo4j.cypher.internal.v4_0.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
+  def getCypherFunctions: java.util.List[FunctionInformation] = {
+    val informations: Seq[FunctionInformation] = org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
     informations.asJava
   }
 

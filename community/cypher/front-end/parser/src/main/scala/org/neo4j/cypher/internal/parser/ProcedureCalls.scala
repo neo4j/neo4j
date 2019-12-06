@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast.Where
-import org.neo4j.cypher.internal.v4_0.{expressions => exp}
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.{expressions => exp}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala._
 
@@ -29,7 +29,7 @@ trait ProcedureCalls {
     group(keyword("CALL") ~~ Namespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResult) ~~>> (ast.UnresolvedCall(_, _, _, _))
   }
 
-  private def ProcedureArguments: Rule1[Option[Seq[org.neo4j.cypher.internal.v4_0.expressions.Expression]]] = rule("arguments to a procedure") {
+  private def ProcedureArguments: Rule1[Option[Seq[exp.Expression]]] = rule("arguments to a procedure") {
     optional(group("(" ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
     ) ~~> (_.toIndexedSeq))
@@ -64,7 +64,7 @@ trait ProcedureCalls {
       Variable ~~>> (ast.ProcedureResultItem(_))
     }
 
-  private def ProcedureOutput: Rule1[org.neo4j.cypher.internal.v4_0.expressions.ProcedureOutput] =
+  private def ProcedureOutput: Rule1[exp.ProcedureOutput] =
     rule("procedure output") {
       SymbolicNameString ~~>> (exp.ProcedureOutput(_))
     }

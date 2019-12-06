@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp, symbols}
 
 /**

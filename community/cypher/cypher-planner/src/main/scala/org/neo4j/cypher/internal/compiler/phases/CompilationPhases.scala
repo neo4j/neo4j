@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, Res
 import org.neo4j.cypher.internal.compiler.{MultiDatabaseAdministrationCommandPlanBuilder, SchemaCommandPlanBuilder, UnsupportedSystemCommand}
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.ast.Statement
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticFeature._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature._
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.rewriting.rewriters.{IfNoParameter, InnerVariableNamer, LiteralExtraction}
 import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
 

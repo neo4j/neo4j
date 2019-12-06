@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPla
 import org.neo4j.cypher.internal.ir.{Predicate, QueryGraph, Selections, InterestingOrder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeByLabelScan}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.{Cost, LabelId}
 

@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctio
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 import org.neo4j.cypher.internal.util.symbols._
 

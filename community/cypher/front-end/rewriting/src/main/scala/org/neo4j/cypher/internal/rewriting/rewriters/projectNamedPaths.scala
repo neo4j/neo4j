@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast.{AliasedReturnItem, ProjectionClause}
-import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast.{AliasedReturnItem, ProjectionClause}
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.{Ref, Rewriter, topDown}
 

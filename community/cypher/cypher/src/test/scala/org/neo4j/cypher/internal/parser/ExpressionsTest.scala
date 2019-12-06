@@ -24,9 +24,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{predicates, expressions => legacy}
-import org.neo4j.cypher.internal.parser.{Expressions, ParserTest}
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.{expressions => ast}
+import org.neo4j.cypher.internal.{expressions => ast}
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module
 class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {

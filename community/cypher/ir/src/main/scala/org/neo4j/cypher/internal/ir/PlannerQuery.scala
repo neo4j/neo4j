@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.ast.Hint
-import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.Union.UnionMapping
 
 /**
  * A query in a representation that is consumed by the planner.

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression
 
 trait HasMappableExpressions[T] {
   def mapExpressions(f: Expression => Expression): T

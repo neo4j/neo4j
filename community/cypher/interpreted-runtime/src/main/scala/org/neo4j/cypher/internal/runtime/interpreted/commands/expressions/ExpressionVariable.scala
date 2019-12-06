@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ast}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.values.AnyValue
 
 object ExpressionVariable {

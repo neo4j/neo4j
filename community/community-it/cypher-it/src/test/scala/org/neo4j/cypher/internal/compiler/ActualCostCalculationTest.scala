@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.P
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, PropertyKeyToken, SemanticDirection}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.expressions.{LabelToken, PropertyKeyToken, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId}
 import org.neo4j.graphdb._

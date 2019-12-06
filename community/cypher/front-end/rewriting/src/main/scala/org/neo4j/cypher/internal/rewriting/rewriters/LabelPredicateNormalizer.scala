@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, HasLabels, NodePattern}
+import org.neo4j.cypher.internal.expressions.{Expression, HasLabels, NodePattern}
 
 object LabelPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {

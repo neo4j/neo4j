@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.v4_0.expressions.{SemanticDirection, LabelName => AstLabelName, _}
+import org.neo4j.cypher.internal.expressions.{SemanticDirection, LabelName => AstLabelName, _}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.util._
 import org.neo4j.cypher.internal.util.attribution.{Id, IdGen, SequentialIdGen}

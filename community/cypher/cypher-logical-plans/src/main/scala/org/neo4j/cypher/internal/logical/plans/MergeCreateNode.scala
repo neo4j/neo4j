@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName}
+import org.neo4j.cypher.internal.expressions.{Expression, LabelName}
 
 /**
   * For each input row, create a new node with the provided labels and properties,

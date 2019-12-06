@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.virtual.PathValue
 

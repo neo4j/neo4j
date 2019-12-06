@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast.{Where, _}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable, Variable}
+import org.neo4j.cypher.internal.ast.{Where, _}
+import org.neo4j.cypher.internal.expressions.{Expression, LogicalVariable, Variable}
 import org.neo4j.cypher.internal.util._
 
 /**

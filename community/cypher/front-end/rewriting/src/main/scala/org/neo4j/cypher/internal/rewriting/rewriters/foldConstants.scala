@@ -16,8 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.util
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.{CypherExceptionFactory, Rewriter, bottomUp}
 
 case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {

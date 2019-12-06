@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength, InterestingOrder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, LogicalPlan, RightOuterHashJoin}
-import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingJoinHint}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ast.{Hint, UsingJoinHint}
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

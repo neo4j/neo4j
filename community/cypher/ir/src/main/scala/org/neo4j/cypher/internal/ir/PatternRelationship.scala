@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.expressions.{RelTypeName, SemanticDirection}
 
 final case class PatternRelationship(name: String, nodes: (String, String), dir: SemanticDirection,
                                      types: Seq[RelTypeName], length: PatternLength) {

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.{IndependenceCombiner, SelectivityCombiner}
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.IntegerLiteral
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.util.{Cardinality, Multiplier}
 import org.neo4j.values.storable.NumberValue
 

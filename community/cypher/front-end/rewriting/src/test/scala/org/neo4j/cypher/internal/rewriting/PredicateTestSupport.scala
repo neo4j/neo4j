@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.{DummyPosition, Rewriter}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 
 trait PredicateTestSupport extends CypherTestSupport {
   self: CypherFunSuite =>

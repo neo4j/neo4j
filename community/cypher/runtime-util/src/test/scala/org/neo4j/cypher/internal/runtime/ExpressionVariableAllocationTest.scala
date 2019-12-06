@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, _}
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.{Expression, _}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.util.attribution.{IdGen, SequentialIdGen}

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.Equals
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.rewriting.Condition
 
 case object normalizedEqualsArguments extends Condition {

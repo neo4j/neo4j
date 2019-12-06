@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
-import org.neo4j.cypher.internal.v4_0.ast.RelationshipHint
+import org.neo4j.cypher.internal.ast.RelationshipHint
 import org.neo4j.exceptions.InternalException
 
 /**

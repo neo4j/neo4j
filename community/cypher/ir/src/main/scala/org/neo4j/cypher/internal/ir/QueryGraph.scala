@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.expressions._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{GenSet, GenTraversableOnce, mutable}

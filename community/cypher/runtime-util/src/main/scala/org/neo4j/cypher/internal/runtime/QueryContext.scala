@@ -26,7 +26,7 @@ import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api._

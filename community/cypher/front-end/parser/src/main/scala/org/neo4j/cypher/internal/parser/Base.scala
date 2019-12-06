@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Namespace => ASTNamespace}
+import org.neo4j.cypher.internal.expressions.{Namespace => ASTNamespace}
 import org.neo4j.cypher.internal.util.{CypherExceptionFactory, InputPosition}
 import org.parboiled.Context
 import org.parboiled.errors.{InvalidInputError, ParseError}

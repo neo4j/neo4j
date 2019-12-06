@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelName
 
 /**
   * Produce one row for every node in the graph labelled 'label'. This row contains the node (assigned to 'idName')

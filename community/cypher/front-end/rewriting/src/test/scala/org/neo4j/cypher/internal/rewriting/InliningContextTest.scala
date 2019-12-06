@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.rewriting.rewriters.InliningContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.planner.{LogicalPlanningTestSupport, ProcedureCallProjection}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
-import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
-import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingIndexHint}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast.Union.UnionMapping
+import org.neo4j.cypher.internal.ast.{Hint, UsingIndexHint}
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerConte
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition, Phase}
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.neo4j.cypher.internal.frontend.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 /**

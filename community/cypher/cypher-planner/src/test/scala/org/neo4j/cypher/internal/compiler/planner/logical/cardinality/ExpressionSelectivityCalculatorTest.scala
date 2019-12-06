@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults._
 import org.neo4j.cypher.internal.ir.{Predicate, Selections}
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.{MIN_NODES_ALL_CARDINALITY, MIN_NODES_WITH_LABEL_CARDINALITY}
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.{Distance, Exists}
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.functions.{Distance, Exists}
 import org.neo4j.cypher.internal.util._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

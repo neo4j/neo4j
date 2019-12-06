@@ -23,7 +23,7 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.plandescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 

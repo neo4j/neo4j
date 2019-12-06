@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
+import org.neo4j.cypher.internal.frontend.phases.{CompilationPhases => _, _}
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.InputPosition

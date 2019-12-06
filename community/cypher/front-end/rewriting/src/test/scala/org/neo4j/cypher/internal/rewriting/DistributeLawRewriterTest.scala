@@ -20,7 +20,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.rewriting.rewriters.distributeLawsRewriter
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.Or
+import org.neo4j.cypher.internal.expressions.Or
 
 class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {
 

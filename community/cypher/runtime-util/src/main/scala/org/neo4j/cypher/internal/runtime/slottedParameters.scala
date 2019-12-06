@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
-import org.neo4j.cypher.internal.v4_0.expressions.{ImplicitProcedureArgument, Parameter}
+import org.neo4j.cypher.internal.expressions.{ImplicitProcedureArgument, Parameter}
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 import org.neo4j.kernel.impl.util.ValueUtils
 

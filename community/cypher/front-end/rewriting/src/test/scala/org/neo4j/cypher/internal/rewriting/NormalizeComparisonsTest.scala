@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.InvalidNotEquals
+import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 
 class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSupport {
 

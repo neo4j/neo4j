@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
-import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
+import org.neo4j.cypher.internal.expressions.{functions, _}
 import org.neo4j.cypher.internal.rewriting.rewriters.calculateUsingGetDegree
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 

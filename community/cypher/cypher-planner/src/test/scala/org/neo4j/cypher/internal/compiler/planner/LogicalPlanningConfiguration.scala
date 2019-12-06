@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.ir.{PlannerQueryPart, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ProcedureSignature}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexOrderCapability}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.{Cardinality, Cost, LabelId, PropertyKeyId}
 

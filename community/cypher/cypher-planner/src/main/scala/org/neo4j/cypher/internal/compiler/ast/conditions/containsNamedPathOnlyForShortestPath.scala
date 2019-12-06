@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.conditions
 
-import org.neo4j.cypher.internal.v4_0.expressions.{NamedPatternPart, ShortestPaths}
+import org.neo4j.cypher.internal.expressions.{NamedPatternPart, ShortestPaths}
 import org.neo4j.cypher.internal.rewriting.Condition
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoMatchingNodes
 

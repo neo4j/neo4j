@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.expressions.{Parameter => Param}
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.expressions.{Parameter => Param}
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class UserAdministrationCommandParserTest extends AdministrationCommandParserTestBase {

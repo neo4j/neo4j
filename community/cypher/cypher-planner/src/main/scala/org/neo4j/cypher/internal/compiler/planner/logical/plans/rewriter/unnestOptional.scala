@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}

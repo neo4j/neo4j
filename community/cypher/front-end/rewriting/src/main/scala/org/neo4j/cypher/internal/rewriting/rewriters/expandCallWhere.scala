@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 
 // Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>

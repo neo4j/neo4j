@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{predicates, expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions._
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.functions._
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.{expressions => ast}
+import org.neo4j.cypher.internal.{expressions => ast}
 import org.neo4j.exceptions.InternalException
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {

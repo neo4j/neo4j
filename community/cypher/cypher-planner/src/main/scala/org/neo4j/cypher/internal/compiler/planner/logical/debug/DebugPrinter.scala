@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.debug
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan, ProduceResult, UnwindCollection}
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.{ListLiteral, StringLiteral, Variable}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, Condition, Phase}
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions.{ListLiteral, StringLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.{CompilationPhaseTracer, Condition, Phase}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 

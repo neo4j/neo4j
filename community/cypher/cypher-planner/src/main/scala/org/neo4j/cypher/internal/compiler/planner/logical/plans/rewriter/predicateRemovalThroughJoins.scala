@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression}
+import org.neo4j.cypher.internal.expressions.{Ands, Expression}
 import org.neo4j.cypher.internal.util.attribution.{Attributes, SameId}
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 

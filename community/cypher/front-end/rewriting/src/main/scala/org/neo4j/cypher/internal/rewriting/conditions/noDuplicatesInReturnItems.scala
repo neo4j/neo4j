@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.v4_0.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.rewriting.Condition
 
 case object noDuplicatesInReturnItems extends Condition {

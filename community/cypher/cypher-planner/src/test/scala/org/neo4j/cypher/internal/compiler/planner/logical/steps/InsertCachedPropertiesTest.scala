@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSup
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.logical.plans.{Aggregation, AllNodesScan, Argument, CanGetValue, DirectedRelationshipByIdSeek, DoNotGetValue, GetValue, GetValueFromIndexBehavior, IndexSeek, LogicalPlan, NodeHashJoin, Projection, Selection, SingleSeekableArg}
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.frontend.phases.InitialState
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.InputPosition

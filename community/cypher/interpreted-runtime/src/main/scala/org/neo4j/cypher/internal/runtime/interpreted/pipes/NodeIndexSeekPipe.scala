@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, LabelToken}
+import org.neo4j.cypher.internal.expressions.{CachedProperty, LabelToken}
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class NodeIndexSeekPipe(ident: String,

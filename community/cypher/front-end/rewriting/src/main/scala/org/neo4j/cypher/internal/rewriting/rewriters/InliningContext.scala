@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.rewriting.rewriters.InliningContext.INLINING_THRESHOLD
 import org.neo4j.cypher.internal.util._
-import org.neo4j.cypher.internal.v4_0.expressions.{PathExpression, Variable}
+import org.neo4j.cypher.internal.expressions.{PathExpression, Variable}
 
 case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.empty,
                            seenVariables: Set[LogicalVariable] = Set.empty,

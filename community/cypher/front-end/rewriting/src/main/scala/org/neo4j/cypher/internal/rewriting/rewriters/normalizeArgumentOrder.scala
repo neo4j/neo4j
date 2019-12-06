@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.v4_0.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.InequalityExpression
 
 case object normalizeArgumentOrder extends Rewriter {
 

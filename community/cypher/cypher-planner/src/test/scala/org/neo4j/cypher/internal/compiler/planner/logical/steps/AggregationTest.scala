@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.logical.plans.{Aggregation, LogicalPlan, Projection}
-import org.neo4j.cypher.internal.v4_0.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {

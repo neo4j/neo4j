@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc, FullSatisfaction, NoSatisfaction, Satisfaction}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

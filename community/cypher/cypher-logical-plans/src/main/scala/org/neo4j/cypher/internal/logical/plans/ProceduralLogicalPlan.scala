@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.{LazyMode, StrictnessMode}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {

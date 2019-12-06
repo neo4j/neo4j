@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util
-
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans._
@@ -127,7 +125,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         )
       } finally {
         // Clear password
-        if (initialPassword != null) util.Arrays.fill(initialPassword, 0.toByte)
+        if (initialPassword != null) java.util.Arrays.fill(initialPassword, 0.toByte)
       }
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD $password

@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.{LeafPlanFromExpressio
 import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.symbols.{CTAny, CypherType}
 

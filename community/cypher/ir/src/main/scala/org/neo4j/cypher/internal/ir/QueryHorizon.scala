@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.v4_0.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, StringLiteral, Variable}
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.expressions.{Expression, StringLiteral, Variable}
 import org.neo4j.exceptions.InternalException
 
 trait QueryHorizon {

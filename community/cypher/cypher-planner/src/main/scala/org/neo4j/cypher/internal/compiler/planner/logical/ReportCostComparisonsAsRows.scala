@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.{Cardinality, Cost, InputPosition}
 

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Rule1
 

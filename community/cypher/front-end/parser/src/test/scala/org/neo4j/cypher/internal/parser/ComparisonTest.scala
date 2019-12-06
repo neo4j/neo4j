@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-class ComparisonTest extends ParserAstTest[org.neo4j.cypher.internal.v4_0.expressions.Expression] with Expressions {
+class ComparisonTest extends ParserAstTest[org.neo4j.cypher.internal.expressions.Expression] with Expressions {
   implicit val parser = Expression
 
   test("a < b") {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.{Argument, DoNotIncludeTies, Limit, LogicalPlan, NestedPlanExpression}
-import org.neo4j.cypher.internal.v4_0.expressions.{Add, ContainerIndex, ListSlice, SignedDecimalIntegerLiteral, StringLiteral}
+import org.neo4j.cypher.internal.expressions.{Add, ContainerIndex, ListSlice, SignedDecimalIntegerLiteral, StringLiteral}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanningTestSupport {

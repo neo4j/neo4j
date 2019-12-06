@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.{InterestingOrder, RegularQueryProjection, RegularSinglePlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, Projection}
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.internal.kernel.api.security.{PrivilegeAction => KernelPrivilegeAction}
 
 object AdminActionMapper {

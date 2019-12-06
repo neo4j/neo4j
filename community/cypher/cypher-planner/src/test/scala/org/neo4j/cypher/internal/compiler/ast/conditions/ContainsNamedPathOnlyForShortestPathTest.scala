@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.conditions
 
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstConstructionTestSupport {

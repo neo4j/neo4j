@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.{QualifiedName, SeekableArgs}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.v4_0.{expressions => ast}
+import org.neo4j.cypher.internal.{expressions => ast}
 
 sealed abstract class Argument extends Product {
 

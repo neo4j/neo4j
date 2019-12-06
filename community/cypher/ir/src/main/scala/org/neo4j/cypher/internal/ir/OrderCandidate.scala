@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, ColumnOrder, Desc}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 
 /**
   * A candidate for how the rows in a query can be sorted, defined by OrderCandidate.order.

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityMo
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.ir.{PlannerQueryPart, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.util.Cardinality
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {

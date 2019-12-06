@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.parser.privilege
 
-import org.neo4j.cypher.internal.v4_0.ast
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
 
 class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {

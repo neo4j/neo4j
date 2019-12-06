@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.graphdb.{Node, RelationshipType}
 

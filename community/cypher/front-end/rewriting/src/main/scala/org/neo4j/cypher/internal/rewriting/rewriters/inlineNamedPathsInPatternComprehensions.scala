@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.expressions.{PathExpression, PatternElement}
+import org.neo4j.cypher.internal.expressions.{PathExpression, PatternElement}
 
 case object inlineNamedPathsInPatternComprehensions extends Rewriter {
 

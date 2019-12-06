@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Equals, NotEquals}
+import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.v4_0.expressions.{Equals, Not}
+import org.neo4j.cypher.internal.expressions.{Equals, Not}
 
 case object normalizeNotEquals extends Rewriter {
 

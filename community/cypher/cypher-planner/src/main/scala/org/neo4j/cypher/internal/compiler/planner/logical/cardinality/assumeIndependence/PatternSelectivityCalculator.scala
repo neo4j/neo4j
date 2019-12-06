@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality._
 import org.neo4j.cypher.internal.ir.{PatternRelationship, Selections, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.{LabelName, RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 
 trait Pattern2Selectivity {

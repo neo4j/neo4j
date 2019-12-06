@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.plandescription.Arguments.{DbHits, EstimatedRows, Order, Rows}
 import org.neo4j.cypher.internal.plandescription.{Arguments, _}
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.scalatest.matchers.{MatchResult, Matcher}

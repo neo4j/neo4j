@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionTestSupport {

@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.parser.{Expressions, ParserTest}
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.{expressions => ast}
+import org.neo4j.cypher.internal.{expressions => ast}
 import org.parboiled.scala._
 
 class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {

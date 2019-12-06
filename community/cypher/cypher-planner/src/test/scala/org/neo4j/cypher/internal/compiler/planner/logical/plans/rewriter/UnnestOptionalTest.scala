@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

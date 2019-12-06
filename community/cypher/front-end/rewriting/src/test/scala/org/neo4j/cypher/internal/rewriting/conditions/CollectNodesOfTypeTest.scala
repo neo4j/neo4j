@@ -16,12 +16,12 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.ast.Match
-import org.neo4j.cypher.internal.v4_0.expressions.EveryPath
-import org.neo4j.cypher.internal.v4_0.expressions.NodePattern
-import org.neo4j.cypher.internal.v4_0.expressions.Pattern
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

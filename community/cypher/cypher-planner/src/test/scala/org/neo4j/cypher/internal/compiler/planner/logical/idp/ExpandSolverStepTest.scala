@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.{Expand, ExpandAll, ExpandInto, LogicalPlan}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.language.implicitConversions

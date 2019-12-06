@@ -23,7 +23,7 @@ import org.neo4j.cypher.{CypherExpressionEngineOption, CypherInterpretedPipesFal
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.v4_0.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite

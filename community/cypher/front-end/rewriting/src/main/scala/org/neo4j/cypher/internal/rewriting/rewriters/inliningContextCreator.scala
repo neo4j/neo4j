@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.expressions.{Variable, _}
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.expressions.{Variable, _}
 import org.neo4j.cypher.internal.util.Foldable._
 
 object inliningContextCreator extends (ast.Statement => InliningContext) {

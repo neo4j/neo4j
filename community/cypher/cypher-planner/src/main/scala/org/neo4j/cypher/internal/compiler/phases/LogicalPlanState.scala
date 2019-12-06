@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.phases
 import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.ast.{Query, Statement}
-import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition}
+import org.neo4j.cypher.internal.ast.semantics.{SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.ast.{Query, Statement}
+import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType

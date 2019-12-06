@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatist
 import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.internal.schema.IndexDescriptor
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {

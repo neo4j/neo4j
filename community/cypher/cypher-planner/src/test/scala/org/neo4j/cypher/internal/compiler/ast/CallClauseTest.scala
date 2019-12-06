@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.ast
 
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
-import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName, ProcedureOutput}
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.expressions.{Namespace, ProcedureName, ProcedureOutput}
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

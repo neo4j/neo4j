@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
+import org.neo4j.cypher.internal.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /**

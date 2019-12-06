@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.util.InputPosition
 
 //TODO move into frontend?

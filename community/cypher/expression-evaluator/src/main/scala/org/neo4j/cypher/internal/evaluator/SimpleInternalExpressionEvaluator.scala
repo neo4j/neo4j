@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Parameter}
+import org.neo4j.cypher.internal.expressions.{Expression, Parameter}
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}

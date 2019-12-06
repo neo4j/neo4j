@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
-import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.{InterpretedRuntimeName, RuntimeName}
 import org.neo4j.graphdb.ExecutionPlanDescription
 

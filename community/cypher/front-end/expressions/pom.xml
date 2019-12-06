@@ -23,7 +23,7 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.v4_0.expressions</moduleName>
+        <moduleName>org.neo4j.cypher.internal.expressions</moduleName>
     </properties>
 
     <licenses>

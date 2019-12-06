@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, PropertyKeyName}
+import org.neo4j.cypher.internal.expressions.{Expression, PropertyKeyName}
 
 /**
   * for ( row <- source )

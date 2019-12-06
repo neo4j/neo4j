@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProd
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.v4_0.frontend.phases.Phase
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.util.Cost
 
 case object QueryPlanner

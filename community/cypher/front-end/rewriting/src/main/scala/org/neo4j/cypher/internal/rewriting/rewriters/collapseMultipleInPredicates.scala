@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, In, ListLiteral}
+import org.neo4j.cypher.internal.expressions.{Expression, In, ListLiteral}
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.expressions.{In, Ors}
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.{In, Ors}
 
 import scala.collection.immutable.Iterable
 

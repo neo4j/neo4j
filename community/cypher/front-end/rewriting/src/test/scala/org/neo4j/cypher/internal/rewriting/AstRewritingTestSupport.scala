@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.parser.ParserFixture
 

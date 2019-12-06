@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.ir.InterestingOrder.{FullSatisfaction, NoSatisfaction, Satisfaction}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
 
 case class SortColumnsWithProjections(columnOrder: ColumnOrder, providedOrderColumn: ProvidedOrder.Column,

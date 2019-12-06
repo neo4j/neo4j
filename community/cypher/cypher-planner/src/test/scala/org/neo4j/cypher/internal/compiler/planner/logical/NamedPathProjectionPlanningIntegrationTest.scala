@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.plans.{Expand, NodeByLabelScan, Projection, Selection}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{NodePathStep, PathExpression, SemanticDirection, SingleRelationshipPathStep, NilPathStep}
+import org.neo4j.cypher.internal.expressions.{NodePathStep, PathExpression, SemanticDirection, SingleRelationshipPathStep, NilPathStep}
 
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

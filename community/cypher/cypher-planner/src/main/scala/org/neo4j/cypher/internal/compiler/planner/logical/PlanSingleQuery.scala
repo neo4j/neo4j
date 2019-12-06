@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.countStorePlanner
 import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, QueryProjection, SinglePlannerQuery}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression
 
 import scala.collection.mutable
 

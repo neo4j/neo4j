@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
-import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.exceptions.InternalException
 
 object ExpressionVariable {

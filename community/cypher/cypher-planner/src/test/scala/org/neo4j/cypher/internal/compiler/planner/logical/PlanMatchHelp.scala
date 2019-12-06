@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.logical.plans.{GetValueFromIndexBehavior, IndexedProperty}
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.{PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.util.PropertyKeyId
 
 trait PlanMatchHelp extends AstConstructionTestSupport {

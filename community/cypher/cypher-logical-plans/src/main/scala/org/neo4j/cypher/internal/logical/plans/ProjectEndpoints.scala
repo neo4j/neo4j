@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 
 /**
   * For every source row, consider the path described by the relationships in 'rel'

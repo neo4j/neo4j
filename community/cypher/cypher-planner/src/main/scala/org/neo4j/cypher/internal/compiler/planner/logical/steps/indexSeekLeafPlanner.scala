@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
 import org.neo4j.cypher.internal.logical.plans.{IndexedProperty, LogicalPlan, QueryExpression}
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelToken}
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions.{Expression, LabelToken}
 
 object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   override protected def constructPlan(idName: String,

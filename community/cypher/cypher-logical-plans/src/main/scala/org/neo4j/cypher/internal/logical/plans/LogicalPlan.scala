@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.ir.{SinglePlannerQuery, Strictness}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.Foldable._
 import org.neo4j.cypher.internal.util.Rewritable._
 import org.neo4j.cypher.internal.util.attribution.{Id, IdGen, Identifiable, SameId}

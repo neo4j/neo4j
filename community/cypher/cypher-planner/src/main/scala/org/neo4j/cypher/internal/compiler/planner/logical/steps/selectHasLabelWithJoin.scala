@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, L
 import org.neo4j.cypher.internal.compiler.planner.unsolvedPreds
 import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.expressions.{HasLabels, Variable}
+import org.neo4j.cypher.internal.expressions.{HasLabels, Variable}
 
 case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
 

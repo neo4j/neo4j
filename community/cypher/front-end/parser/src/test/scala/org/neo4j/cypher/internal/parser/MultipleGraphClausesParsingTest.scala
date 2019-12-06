@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport}
+import org.neo4j.cypher.internal.ast.{AstConstructionTestSupport}
 import org.neo4j.cypher.internal.util.{symbols => sym}
-import org.neo4j.cypher.internal.v4_0.{ast, expressions => exp}
+import org.neo4j.cypher.internal.{ast, expressions => exp}
 import org.parboiled.scala._
 
 import scala.language.implicitConversions

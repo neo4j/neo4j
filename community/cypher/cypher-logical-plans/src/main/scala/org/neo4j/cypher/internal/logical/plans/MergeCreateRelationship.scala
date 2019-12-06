@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, RelTypeName}
+import org.neo4j.cypher.internal.expressions.{Expression, RelTypeName}
 
 /**
   * For each input row, create a new relationship with the provided type and properties,

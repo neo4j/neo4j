@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.planning
 
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
-import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName}
+import org.neo4j.cypher.internal.expressions.{FunctionInvocation, FunctionName}
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

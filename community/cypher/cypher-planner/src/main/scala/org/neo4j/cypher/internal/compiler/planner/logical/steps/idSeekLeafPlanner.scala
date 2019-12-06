@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.plans._
 import org.neo4j.cypher.internal.ir.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, SeekableArgs}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.expressions._
 
 object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 

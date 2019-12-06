@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.v4_0.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.logical.plans.{QualifiedName, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

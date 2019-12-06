@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ir.Predicate
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 
 class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 

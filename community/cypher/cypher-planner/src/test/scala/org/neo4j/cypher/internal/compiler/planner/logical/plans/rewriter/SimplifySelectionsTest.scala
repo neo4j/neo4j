@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.{FakePlan, LogicalPlanningTest
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.logical.plans.{DropResult, LogicalPlan, Selection}
-import org.neo4j.cypher.internal.v4_0.expressions.DummyExpression
+import org.neo4j.cypher.internal.expressions.DummyExpression
 
 class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Selection(false, source) to DropResult(source)") {

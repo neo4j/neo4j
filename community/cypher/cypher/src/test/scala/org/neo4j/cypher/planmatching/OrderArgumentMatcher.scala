@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.removeGeneratedNames
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.expressions._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 /**

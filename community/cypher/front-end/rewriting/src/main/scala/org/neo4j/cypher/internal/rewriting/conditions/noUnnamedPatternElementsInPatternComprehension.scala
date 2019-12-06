@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.v4_0.expressions.{PatternComprehension, PatternElement}
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.expressions.{PatternElement, RelationshipsPattern}
+import org.neo4j.cypher.internal.expressions.{PatternElement, RelationshipsPattern}
 import org.neo4j.cypher.internal.rewriting.Condition
 
 case object noUnnamedPatternElementsInPatternComprehension extends Condition {

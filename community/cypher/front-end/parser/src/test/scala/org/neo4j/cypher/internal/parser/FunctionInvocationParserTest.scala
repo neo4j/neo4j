@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.{expressions => exp}
+import org.neo4j.cypher.internal.{expressions => exp}
 
 class FunctionInvocationParserTest
-  extends ParserAstTest[org.neo4j.cypher.internal.v4_0.expressions.FunctionInvocation]
+  extends ParserAstTest[exp.FunctionInvocation]
     with Expressions
     with Literals
     with Base

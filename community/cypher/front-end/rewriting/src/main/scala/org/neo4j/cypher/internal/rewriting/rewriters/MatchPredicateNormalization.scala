@@ -16,12 +16,12 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast.Match
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.{InputPosition, Rewriter, topDown}
-import org.neo4j.cypher.internal.v4_0.ast.Where
-import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.expressions.{And, GreaterThan, Not, Or}
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.{And, GreaterThan, Not, Or}
 
 abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer, getDegreeRewriting: Boolean) extends Rewriter {
 

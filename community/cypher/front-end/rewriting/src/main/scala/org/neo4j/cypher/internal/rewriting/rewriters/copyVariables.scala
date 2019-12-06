@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.expressions.Variable
 
 case object copyVariables extends  Rewriter {
   private val instance = bottomUp(Rewriter.lift { case variable: Variable => variable.copyId })

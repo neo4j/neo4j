@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.{Parser, ReductionRule2, Rule1, _}
 
@@ -59,7 +59,7 @@ trait StartPoints extends Parser
     ) ~~ ")"
   }
 
-  private def LiteralIds: Rule1[Seq[org.neo4j.cypher.internal.v4_0.expressions.UnsignedIntegerLiteral]] = rule("an unsigned integer") {
+  private def LiteralIds: Rule1[Seq[org.neo4j.cypher.internal.expressions.UnsignedIntegerLiteral]] = rule("an unsigned integer") {
     oneOrMore(UnsignedIntegerLiteral, separator = CommaSep)
   }
 }

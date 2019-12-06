@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.{IndexHintUnfulfillableNotification, J
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.LabelName
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.exceptions.{HintException, IndexHintException, InternalException, JoinHintException}
 
 import scala.collection.JavaConverters._

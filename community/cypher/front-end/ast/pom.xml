@@ -23,7 +23,7 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.v4_0.ast</moduleName>
+        <moduleName>org.neo4j.cypher.internal.ast</moduleName>
     </properties>
 
     <licenses>

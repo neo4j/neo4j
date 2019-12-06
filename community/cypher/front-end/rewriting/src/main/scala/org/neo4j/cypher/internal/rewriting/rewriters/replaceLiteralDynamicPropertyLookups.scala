@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions.{ContainerIndex, Property, StringLiteral}
+import org.neo4j.cypher.internal.expressions.{ContainerIndex, Property, StringLiteral}
 import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 
 case object replaceLiteralDynamicPropertyLookups extends Rewriter {
 

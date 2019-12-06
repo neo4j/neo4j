@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.{IndexHintUnfulfillableNotification, J
 import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, RegularSinglePlannerQuery, VarPatternLength}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, SemanticDirection}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions.{PropertyKeyName, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.{HintException, IndexHintException, InternalException, JoinHintException}
 

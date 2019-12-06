@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.expressions.{ContainerIndex, PathExpression, Variable}
+import org.neo4j.cypher.internal.expressions.{ContainerIndex, PathExpression, Variable}
 import org.neo4j.exceptions.InternalException
 
 /*

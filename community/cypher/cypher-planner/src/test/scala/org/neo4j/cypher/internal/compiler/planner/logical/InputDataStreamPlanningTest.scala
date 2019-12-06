@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.v4_0.frontend.helpers.{InputDataStreamTestInitialState, InputDataStreamTestParsing}
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.frontend.helpers.{InputDataStreamTestInitialState, InputDataStreamTestParsing}
+import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.util.Random

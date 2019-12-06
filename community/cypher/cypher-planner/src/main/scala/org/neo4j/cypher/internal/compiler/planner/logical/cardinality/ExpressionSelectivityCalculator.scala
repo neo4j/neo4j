@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults._
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Selectivity

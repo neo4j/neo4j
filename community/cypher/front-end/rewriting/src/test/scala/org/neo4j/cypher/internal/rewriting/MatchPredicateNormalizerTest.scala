@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.{GetDegree, GreaterThan}
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.expressions.{GetDegree, GreaterThan}
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalization, PropertyPredicateNormalizer}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite

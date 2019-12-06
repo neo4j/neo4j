@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexScanLeafPlanner
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, PartialPredicate, PropertyKeyName}
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
+import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.expressions.{Expression, PartialPredicate, PropertyKeyName}
+import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

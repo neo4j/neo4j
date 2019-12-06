@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans.{CanGetValue, DoNotGetValue, GetValue, IndexLeafPlan, LogicalPlan, ProjectingPlan}
-import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, EntityType, NODE_TYPE, Property, PropertyKeyName, RELATIONSHIP_TYPE, Variable}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.Transformer
+import org.neo4j.cypher.internal.expressions.{CachedProperty, EntityType, NODE_TYPE, Property, PropertyKeyName, RELATIONSHIP_TYPE, Variable}
+import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.util.symbols.{CTNode, CTRelationship}
 import org.neo4j.cypher.internal.util.{InputPosition, Rewriter, bottomUp}
 

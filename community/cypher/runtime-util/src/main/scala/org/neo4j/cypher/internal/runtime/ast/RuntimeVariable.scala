@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Expression => ASTExpression}
+import org.neo4j.cypher.internal.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.expressions.{LogicalVariable, Expression => ASTExpression}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 

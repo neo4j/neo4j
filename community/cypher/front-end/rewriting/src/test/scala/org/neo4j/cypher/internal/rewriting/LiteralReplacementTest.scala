@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.{Forced, IfNoParameter, Lit
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Parameter
 
 class LiteralReplacementTest extends CypherFunSuite  {
 

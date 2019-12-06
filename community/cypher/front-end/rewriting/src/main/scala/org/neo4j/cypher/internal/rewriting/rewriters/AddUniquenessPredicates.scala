@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast.{Clause, Match, Merge, Where}
-import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, _}
+import org.neo4j.cypher.internal.ast.{Clause, Match, Merge, Where}
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.{Expression, _}
 import org.neo4j.cypher.internal.util._
 
 case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = SameNameNamer) extends Rewriter {

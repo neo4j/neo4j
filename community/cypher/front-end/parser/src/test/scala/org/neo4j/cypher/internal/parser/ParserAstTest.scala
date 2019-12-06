@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.{expressions => exp}
+import org.neo4j.cypher.internal.{expressions => exp}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.parboiled.scala._
@@ -30,9 +30,9 @@ trait ParserAstTest[AST] extends ParserTest[AST, AST] with TestName {
 
   final def failsToParse(implicit parser: Rule1[AST]): Unit = assertFails(testName)
 
-  private type Expression = InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression
+  private type Expression = InputPosition => exp.Expression
 
-  final def id(id: String): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Variable = exp.Variable(id)(_)
+  final def id(id: String): InputPosition => exp.Variable = exp.Variable(id)(_)
 
   final def lt(lhs: Expression, rhs: Expression): Expression = { pos => exp.LessThan(lhs(pos), rhs(pos))(pos) }
 

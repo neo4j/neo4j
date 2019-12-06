@@ -24,7 +24,7 @@ import java.util.Locale
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
+import org.neo4j.cypher.internal.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.util.attribution.{Id, SequentialIdGen}

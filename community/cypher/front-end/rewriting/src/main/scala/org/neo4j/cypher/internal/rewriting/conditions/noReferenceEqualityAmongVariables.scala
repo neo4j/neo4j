@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.util.Ref
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.Condition
 
 case object noReferenceEqualityAmongVariables extends Condition {

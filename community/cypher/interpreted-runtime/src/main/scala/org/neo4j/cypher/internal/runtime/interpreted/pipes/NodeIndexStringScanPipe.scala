@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexedProperty}
 import org.neo4j.internal.kernel.api.{IndexReadSession, NodeValueIndexCursor}
-import org.neo4j.values.storable.{TextValue, Values}
-import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, LabelToken}
+import org.neo4j.values.storable.TextValue
+import org.neo4j.cypher.internal.expressions.{CachedProperty, LabelToken}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 

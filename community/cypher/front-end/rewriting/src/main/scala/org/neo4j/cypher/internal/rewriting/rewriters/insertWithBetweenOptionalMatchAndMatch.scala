@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast.{Match, ReturnItems, SingleQuery, With}
+import org.neo4j.cypher.internal.ast.{Match, ReturnItems, SingleQuery, With}
 import org.neo4j.cypher.internal.util.{Rewriter, topDown}
 
 case object insertWithBetweenOptionalMatchAndMatch extends Rewriter {

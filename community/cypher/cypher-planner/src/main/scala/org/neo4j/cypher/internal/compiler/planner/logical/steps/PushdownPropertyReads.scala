@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.attribution.{Attributes, Id}
 import org.neo4j.cypher.internal.util.symbols.{CTNode, CTRelationship}
 import org.neo4j.cypher.internal.util.{Cardinality, InputPosition, Rewriter, bottomUp}

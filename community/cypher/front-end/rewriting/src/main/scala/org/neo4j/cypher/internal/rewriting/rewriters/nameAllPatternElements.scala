@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, RelationshipPattern, Variable}
+import org.neo4j.cypher.internal.expressions.{NodePattern, RelationshipPattern, Variable}
 import org.neo4j.cypher.internal.util.{Rewriter, UnNamedNameGenerator, bottomUp}
 
 case object nameAllPatternElements extends Rewriter {

@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.{MissingLabelNotification, MissingProp
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlanningAttributes}
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 import org.neo4j.values.storable.{DurationFields, PointFields}
-import org.neo4j.cypher.internal.v4_0.ast.Query
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

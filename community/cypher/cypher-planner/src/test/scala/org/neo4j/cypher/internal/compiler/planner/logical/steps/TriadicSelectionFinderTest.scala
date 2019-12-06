@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContex
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {

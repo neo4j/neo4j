@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.{InterestingOrder, InterestingOrderCandidate, ProvidedOrder, RequiredOrderCandidate}
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.{ASC, BOTH, DESC, NONE}
-import org.neo4j.cypher.internal.v4_0.expressions.Property
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

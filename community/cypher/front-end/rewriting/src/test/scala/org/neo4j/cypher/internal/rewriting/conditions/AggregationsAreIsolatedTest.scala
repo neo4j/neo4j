@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.CountStar
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTestSupport {

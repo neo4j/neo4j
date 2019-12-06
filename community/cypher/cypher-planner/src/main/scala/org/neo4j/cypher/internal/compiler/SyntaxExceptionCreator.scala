@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.util.{CypherExceptionFactory, InputPosition}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.exceptions.{ArithmeticException, Neo4jException, SyntaxException}
 
 case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Option[InputPosition]) extends CypherExceptionFactory {

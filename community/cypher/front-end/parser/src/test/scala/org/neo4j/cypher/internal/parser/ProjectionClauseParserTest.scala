@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, Clause}
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.ast.{AstConstructionTestSupport, Clause}
 import org.parboiled.scala._
 
 class ProjectionClauseParserTest

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.logical.plans.{ManySeekableArgs, PrefixRange, SingleSeekableArg}
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions.{AndedPropertyInequalities, Expression, LogicalVariable}
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.expressions.{AndedPropertyInequalities, Expression, LogicalVariable}
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite

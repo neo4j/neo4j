@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.ast.UsingScanHint
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, HasLabels, Variable}
+import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.expressions.{Expression, HasLabels, Variable}
 
 object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 

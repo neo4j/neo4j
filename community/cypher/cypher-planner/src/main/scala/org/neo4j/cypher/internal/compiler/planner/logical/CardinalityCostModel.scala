@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CostModel, Qu
 import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.expressions.{HasLabels, Property}
+import org.neo4j.cypher.internal.expressions.{HasLabels, Property}
 import org.neo4j.cypher.internal.util.{Cardinality, Cost, CostPerRow, Multiplier}
 
 case class CardinalityCostModel(config: CypherPlannerConfiguration) extends CostModel {

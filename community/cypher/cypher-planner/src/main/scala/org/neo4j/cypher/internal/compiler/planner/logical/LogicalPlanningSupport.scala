@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.v4_0.ast.Hint
+import org.neo4j.cypher.internal.ast.Hint
 
 object LogicalPlanningSupport {
 

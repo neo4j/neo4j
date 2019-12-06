@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.smallestGraphIncluding
 import org.neo4j.cypher.internal.compiler.{Neo4jCypherExceptionFactory, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.ir.{PatternRelationship, PlannerQuery, QueryGraph, SimplePatternLength}
-import org.neo4j.cypher.internal.v4_0.ast.Query
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticChecker, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.semantics.{SemanticChecker, SemanticTable}
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.util.Rewritable._
 import org.neo4j.cypher.internal.util.helpers.fixedPoint

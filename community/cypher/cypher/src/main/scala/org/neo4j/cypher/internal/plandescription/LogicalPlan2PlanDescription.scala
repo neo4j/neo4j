@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.v4_0.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Point
-import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
-import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.expressions.functions.Point
+import org.neo4j.cypher.internal.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.exceptions.InternalException
 
 object LogicalPlan2PlanDescription {

@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
 import org.neo4j.cypher.internal.ir.{HasMappableExpressions, InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.{Coalesce, Exists, Head}
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.functions.{Coalesce, Exists, Head}
 import org.neo4j.cypher.internal.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 

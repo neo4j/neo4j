@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.v4_0.ast.{ProcedureResult, ProcedureResultItem, UnresolvedCall}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.ast.{ProcedureResult, ProcedureResultItem, UnresolvedCall}
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, TestName}
 

@@ -29,21 +29,21 @@ import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, StatsDivergenceCalculator, SyntaxExceptionCreator, TestSignatureResolvingPlanContext}
+import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, StatsDivergenceCalculator, TestSignatureResolvingPlanContext}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.planner.spi._
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.semantics.{SemanticFeature, SemanticTable}
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.rewriters._
 import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
 import org.neo4j.cypher.internal.util._
-import org.neo4j.cypher.internal.util.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
