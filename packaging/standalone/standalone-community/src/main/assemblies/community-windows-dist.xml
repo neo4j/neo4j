@@ -100,9 +100,6 @@
         <include>org.parboiled:*</include>
         <include>org.apache.commons:commons-lang3</include>
       </includes>
-      <excludes>
-        <exclude>*:pom:*</exclude>
-      </excludes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>lib</outputDirectory>
