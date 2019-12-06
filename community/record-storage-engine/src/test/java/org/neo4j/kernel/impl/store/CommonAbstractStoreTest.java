@@ -252,7 +252,7 @@ class CommonAbstractStoreTest
         }
 
         @Override
-        public TheRecord clone() throws CloneNotSupportedException
+        public TheRecord clone()
         {
             return (TheRecord) super.clone();
         }

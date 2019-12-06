@@ -198,7 +198,7 @@ public class DetectAllRelationshipInconsistenciesIT
         }
     }
 
-    private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId ) throws CloneNotSupportedException
+    private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId )
     {
         RelationshipRecord before = store.getRecord( id, store.newRecord(), RecordLoad.NORMAL );
         RelationshipRecord after = before.clone();

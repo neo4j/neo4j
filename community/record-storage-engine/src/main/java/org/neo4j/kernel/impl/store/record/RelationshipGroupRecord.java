@@ -188,7 +188,7 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     }
 
     @Override
-    public RelationshipGroupRecord clone() throws CloneNotSupportedException
+    public RelationshipGroupRecord clone()
     {
         return (RelationshipGroupRecord) super.clone();
     }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
+import org.apache.commons.lang3.exception.CloneFailedException;
+
 import java.io.File;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -35,9 +37,9 @@ public class LabelScanIndex extends AbstractBaseRecord
     }
 
     @Override
-    public final AbstractBaseRecord clone() throws CloneNotSupportedException
+    public final AbstractBaseRecord clone()
     {
-        throw new CloneNotSupportedException( "Synthetic records cannot be cloned." );
+        throw new CloneFailedException( "Synthetic records cannot be cloned." );
     }
 
     @Override

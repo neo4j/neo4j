@@ -146,7 +146,7 @@ public abstract class TokenRecord extends AbstractBaseRecord
     }
 
     @Override
-    public TokenRecord clone() throws CloneNotSupportedException
+    public TokenRecord clone()
     {
         TokenRecord clone = (TokenRecord) super.clone();
         clone.nameRecords = new ArrayList<>( nameRecords.size() );

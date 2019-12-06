@@ -258,8 +258,9 @@ public class RecordBuilders
 
         }
 
+        @SuppressWarnings( "unchecked" )
         @Override
-        public T clone( T record ) throws CloneNotSupportedException
+        public T clone( T record )
         {
             return (T)record.clone();
         }
