@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -107,8 +106,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public static final String KEY = NATIVE_BTREE10.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
-    public static final String BLOCK_BASED_POPULATION_NAME = "blockBasedPopulation";
-    private final boolean blockBasedPopulation = FeatureToggles.flag( GenericNativeIndexPopulator.class, BLOCK_BASED_POPULATION_NAME, true );
 
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
@@ -167,14 +164,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory )
     {
-        if ( blockBasedPopulation )
-        {
-            return new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                    configuration, archiveFailedIndex, bufferFactory );
-        }
-        return new WorkSyncedNativeIndexPopulator<>(
-                new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(), configuration,
-                        archiveFailedIndex ) );
+        return new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+                configuration, archiveFailedIndex, bufferFactory );
     }
 
     @Override

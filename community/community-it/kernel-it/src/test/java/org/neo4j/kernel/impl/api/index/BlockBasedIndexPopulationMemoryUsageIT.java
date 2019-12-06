@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexPopulator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.DbmsExtension;
@@ -44,7 +43,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.BLOCK_SIZE_NAME;
-import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.BLOCK_BASED_POPULATION_NAME;
 
 @DbmsExtension
 class BlockBasedIndexPopulationMemoryUsageIT
@@ -61,14 +59,12 @@ class BlockBasedIndexPopulationMemoryUsageIT
     {
         // Configure populator so that it will use block-based population and reduce batch size and increase number of workers
         // so that population will very likely create more batches in more threads (affecting number of buffers used)
-        FeatureToggles.set( GenericNativeIndexPopulator.class, BLOCK_BASED_POPULATION_NAME, true );
         FeatureToggles.set( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME, TEST_BLOCK_SIZE );
     }
 
     @AfterAll
     static void restoreFeatureToggles()
     {
-        FeatureToggles.clear( GenericNativeIndexPopulator.class, BLOCK_BASED_POPULATION_NAME );
         FeatureToggles.clear( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME );
     }
 

@@ -37,12 +37,6 @@ class NativeIndexPopulatorTestCases
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
-    static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
-    {
-        return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-                new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false );
-    }
-
     static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
