@@ -190,6 +190,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  test("CREATE USER foo SET PASSWORD 'password' SET STATUS") {
+    failsToParse
+  }
+
   test("CREATE USER foo SET PASSWORD CHANGE REQUIRED") {
     failsToParse
   }
