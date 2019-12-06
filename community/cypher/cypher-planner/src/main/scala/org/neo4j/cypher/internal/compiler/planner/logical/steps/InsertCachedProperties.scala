@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.util.InputPosition
@@ -129,6 +130,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
         (acc.addRelProperty(prop), Some(identity))
 
       // Find index plans that can provide cached properties
+      case _: MultiNodeIndexSeek => acc =>
+        (acc, Some(identity))
+
       case indexPlan: IndexLeafPlan => acc =>
         val newAcc = indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(acc) { (acc, indexedProp) =>
           val prop = Property(Variable(indexPlan.idName)(InputPosition.NONE), PropertyKeyName(indexedProp.propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
@@ -163,7 +167,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: IndexLeafPlan =>
-        indexPlan.withProperties(indexPlan.properties.map { indexedProp =>
+        indexPlan.withMappedProperties { indexedProp =>
           val prop = Property(Variable(indexPlan.idName)(InputPosition.NONE), PropertyKeyName(indexedProp.propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
           acc.properties.get(prop) match {
             // Get the value since we use it later
@@ -173,8 +177,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
             case _ =>
               indexedProp.copy(getValueFromIndex = DoNotGetValue)
           }
-        })
-
+        }
     })
 
     val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]

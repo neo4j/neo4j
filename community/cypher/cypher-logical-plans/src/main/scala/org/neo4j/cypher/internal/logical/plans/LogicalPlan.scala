@@ -194,6 +194,7 @@ abstract class LogicalPlan(idGen: IdGen)
       case NodeIndexScan(idName, label, properties, _, _) =>
         acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       }
+    // TODO: FIXME Multi
   }
 }
 
@@ -213,32 +214,53 @@ abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) 
   def idName: String
 }
 
-abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
-  /**
-    * Indexed properties that will be retrieved from the index and cached in the row.
-    */
-  def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
+abstract class MultiNodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
+  def idNames: Set[String]
+}
 
+trait IndexedPropertyProvidingPlan {
   /**
-    * All properties
-    */
+   * All properties
+   */
   def properties: Seq[IndexedProperty]
 
   /**
-    * Create a copy of this plan, swapping out the properties
-    * @return
-    */
-  def withProperties(properties: Seq[IndexedProperty]): IndexLeafPlan
+   * Indexed properties that will be retrieved from the index and cached in the row.
+   */
+  def cachedProperties: Seq[CachedProperty]
 
   /**
-    * Get a copy of this index plan where getting values is disabled
-    */
-  def copyWithoutGettingValues: IndexLeafPlan
+   * Create a copy of this plan, swapping out the properties
+   */
+  def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexedPropertyProvidingPlan
+
+  /**
+   * Get a copy of this index plan where getting values is disabled
+   */
+  def copyWithoutGettingValues: IndexedPropertyProvidingPlan
+}
+
+abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+  override def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexLeafPlan
+
+  override def copyWithoutGettingValues: IndexLeafPlan
+}
+
+abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+
 }
 
 abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
 
   def valueExpr: QueryExpression[Expression]
+
+  def label: LabelToken
+
+  def properties: Seq[IndexedProperty]
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexSeekLeafPlan
 }
 
 case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {

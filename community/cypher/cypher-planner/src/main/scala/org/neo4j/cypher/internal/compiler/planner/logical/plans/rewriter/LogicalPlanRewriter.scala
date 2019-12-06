@@ -55,19 +55,23 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
     pruningVarExpander,
     useTop,
     simplifySelections,
-    limitNestedPlanExpressions(context.logicalPlanIdGen)
-  ).rewriter)
+    limitNestedPlanExpressions(context.logicalPlanIdGen),
+    combineCartesianProductOfMultipleIndexSeeks
+    ).rewriter)
 }
 
 trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: PlannerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes[LogicalPlan]): Rewriter
+  def instance(context: PlannerContext, solveds: Solveds,
+               cardinalities: Cardinalities,
+               otherAttributes: Attributes[LogicalPlan]): Rewriter
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val idGen = context.logicalPlanIdGen
     val otherAttributes = Attributes[LogicalPlan](idGen)
-    val rewritten = from.logicalPlan.endoRewrite(instance(context, from.planningAttributes.solveds, from.planningAttributes.cardinalities, otherAttributes))
+    val rewritten = from.logicalPlan.endoRewrite(instance(context, from.planningAttributes.solveds,
+      from.planningAttributes.cardinalities, otherAttributes))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
 }

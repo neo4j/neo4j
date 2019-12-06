@@ -46,6 +46,6 @@ case class NodeIndexEndsWithScan(idName: String,
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
     NodeIndexEndsWithScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 
-  override def withProperties(properties: Seq[IndexedProperty]): IndexLeafPlan =
-    NodeIndexEndsWithScan(idName, label, properties.head, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexLeafPlan =
+    NodeIndexEndsWithScan(idName, label, f(property), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }

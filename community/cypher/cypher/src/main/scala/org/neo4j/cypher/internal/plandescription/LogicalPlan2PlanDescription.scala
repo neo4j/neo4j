@@ -269,6 +269,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly, p.cachedProperties)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
+      case p@MultiNodeIndexSeek(indexLeafPlans) =>
+        val (indexModes, indexDescs) = indexLeafPlans.map { l =>
+          getDescriptions(l.label, l.properties.map(_.propertyKeyToken), l.valueExpr, unique = true, readOnly, p.cachedProperties)
+        }.unzip
+
+        // TODO: Convey the uniqueness and index mode information (locking etc.) in a user friendly way
+        PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", NoChildren,
+                            indexDescs, variables)
+
       case ProduceResult(_, _) =>
         PlanDescriptionImpl(id, "ProduceResults", NoChildren, Seq(), variables)
 
@@ -608,9 +617,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             CountRelationshipsExpression(idName, start.map(_.name), types.map(_.name), end.map(_.name))),
           variables)
 
-      case p@NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
-        PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
-          Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
+//      case p@NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
+//        PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
+//          Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)

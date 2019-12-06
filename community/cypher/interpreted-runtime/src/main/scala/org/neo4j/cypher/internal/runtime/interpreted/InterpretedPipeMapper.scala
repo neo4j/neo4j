@@ -105,6 +105,15 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
                                   buildExpression(valueExpr), indexOrder)(id = id)
 
+      case MultiNodeIndexSeek(indexLeafPlans) =>
+        indexLeafPlans.foldLeft(None: Option[Pipe]) {
+          case (None, plan) =>
+            Some(onLeaf(plan))
+          case (Some(pipe), plan) => {
+            Some(CartesianProductPipe(pipe, onLeaf(plan))(id = id))
+          }
+        }.get
+
       case Input(nodes, relationships, variables, _) =>
         InputPipe(nodes.toArray ++ relationships ++ variables)(id = id)
     }
