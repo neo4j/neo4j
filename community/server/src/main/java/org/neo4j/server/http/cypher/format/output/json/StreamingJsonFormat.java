@@ -64,14 +64,14 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     private JsonFactory createJsonFactory()
     {
         final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.getSerializationConfig().without( FLUSH_AFTER_WRITE_VALUE );
+        objectMapper.disable( FLUSH_AFTER_WRITE_VALUE );
         JsonFactory factory = new JsonFactory( objectMapper )
         {
             @Override
             protected JsonGenerator _createUTF8Generator( OutputStream out, IOContext ctxt )
             {
                 final int bufferSize = 1024 * 8;
-                UTF8JsonGenerator gen = new UTF8JsonGenerator( ctxt, _generatorFeatures, _objectCodec, out,
+                UTF8JsonGenerator gen = new UTF8JsonGenerator( ctxt, _generatorFeatures, _objectCodec, out, DEFAULT_QUOTE_CHAR,
                         new byte[bufferSize], 0, true );
                 if ( _characterEscapes != null )
                 {
@@ -89,7 +89,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     {
         try
         {
-            JsonGenerator g = factory.createJsonGenerator( output );
+            JsonGenerator g = factory.createGenerator( output );
             return new StreamingRepresentationFormat( g, this );
         }
         catch ( IOException e )
@@ -153,7 +153,6 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     @Override
     public List<Object> readList( String input )
     {
-        // TODO tobias: Implement readList() [Dec 10, 2010]
         throw new UnsupportedOperationException( "Not implemented: JsonInput.readList()" );
     }
 
@@ -434,7 +433,6 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         {
             try
             {
-                // todo only if needed
                 g.flush();
             }
             catch ( IOException e )

@@ -116,7 +116,7 @@ public class InternalJettyServletResponse extends Response
     @Override
     public void sendError( int code, String message )
     {
-        setStatus( code, message );
+        setStatusWithReason( code, message );
     }
 
     @Override
@@ -209,6 +209,7 @@ public class InternalJettyServletResponse extends Response
             Object value = headers.get( name );
             if ( value instanceof Collection )
             {
+                //noinspection unchecked
                 return (Collection<String>) value;
             }
             else
@@ -226,7 +227,7 @@ public class InternalJettyServletResponse extends Response
     }
 
     @Override
-    public void setStatus( int sc, String sm )
+    public void setStatusWithReason( int sc, String sm )
     {
         status = sc;
         message = sm;

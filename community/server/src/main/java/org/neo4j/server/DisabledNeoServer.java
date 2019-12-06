@@ -31,7 +31,6 @@ import org.neo4j.server.http.cypher.DisabledTransactionRegistry;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
-import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
 public class DisabledNeoServer implements NeoServer
 {
@@ -59,7 +58,7 @@ public class DisabledNeoServer implements NeoServer
         catch ( Throwable t )
         {
             life.shutdown();
-            throw translateToServerStartupError( t );
+            throw t;
         }
     }
 

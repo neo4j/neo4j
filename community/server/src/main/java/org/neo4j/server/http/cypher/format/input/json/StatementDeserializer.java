@@ -65,7 +65,7 @@ class StatementDeserializer
     {
         try
         {
-            this.input = JSON_FACTORY.createJsonParser( input );
+            this.input = JSON_FACTORY.createParser( input );
             this.state = State.BEFORE_OUTER_ARRAY;
         }
         catch ( IOException e )

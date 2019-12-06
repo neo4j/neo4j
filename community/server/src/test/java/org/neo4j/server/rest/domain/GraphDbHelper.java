@@ -19,31 +19,16 @@
  */
 package org.neo4j.server.rest.domain;
 
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintCreator;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.helpers.collection.IterableWrapper;
-import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.Kernel;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.server.database.DatabaseService;
 
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 public class GraphDbHelper
@@ -53,56 +38,6 @@ public class GraphDbHelper
     public GraphDbHelper( DatabaseService database )
     {
         this.database = database;
-    }
-
-    public int getNumberOfNodes()
-    {
-        Kernel kernel = database.getDatabase().getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AnonymousContext.read() ) )
-        {
-            return Math.toIntExact( tx.dataRead().nodesGetCount() );
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public int getNumberOfRelationships()
-    {
-        Kernel kernel = database.getDatabase().getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AnonymousContext.read() ) )
-        {
-            return Math.toIntExact( tx.dataRead().relationshipsGetCount() );
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public Map<String, Object> getNodeProperties( long nodeId )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.read() ) )
-        {
-            Node node = tx.getNodeById( nodeId );
-            Map<String, Object> allProperties = node.getAllProperties();
-            tx.commit();
-            return allProperties;
-        }
-    }
-
-    public void setNodeProperties( long nodeId, Map<String, Object> properties )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.writeToken() ) )
-        {
-            Node node = tx.getNodeById( nodeId );
-            for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
-            {
-                node.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
-            }
-            tx.commit();
-        }
     }
 
     public long createNode( Label... labels )
@@ -129,16 +64,6 @@ public class GraphDbHelper
         }
     }
 
-    public void deleteNode( long id )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.write() ) )
-        {
-            Node node = tx.getNodeById( id );
-            node.delete();
-            tx.commit();
-        }
-    }
-
     public long createRelationship( String type, long startNodeId, long endNodeId )
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.writeToken() ) )
@@ -161,138 +86,6 @@ public class GraphDbHelper
                     RelationshipType.withName( type ) );
             tx.commit();
             return relationship.getId();
-        }
-    }
-
-    public void setRelationshipProperties( long relationshipId, Map<String, Object> properties )
-
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.writeToken() ) )
-        {
-            Relationship relationship = tx.getRelationshipById( relationshipId );
-            for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
-            {
-                relationship.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
-            }
-            tx.commit();
-        }
-    }
-
-    public Map<String, Object> getRelationshipProperties( long relationshipId )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.read() ) )
-        {
-            Relationship relationship = tx.getRelationshipById( relationshipId );
-            Map<String, Object> allProperties = relationship.getAllProperties();
-            tx.commit();
-            return allProperties;
-        }
-    }
-
-    public Relationship getRelationship( long relationshipId )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.read() ) )
-        {
-            Relationship relationship = tx.getRelationshipById( relationshipId );
-            tx.commit();
-            return relationship;
-        }
-    }
-
-    public long getFirstNode()
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.write() ) )
-        {
-            try
-            {
-                Node referenceNode = tx.getNodeById( 0L );
-
-                tx.commit();
-                return referenceNode.getId();
-            }
-            catch ( NotFoundException e )
-            {
-                database.getDatabase();
-                Node newNode = tx.createNode();
-                tx.commit();
-                return newNode.getId();
-            }
-        }
-    }
-
-    public Iterable<String> getNodeLabels( Transaction tx, long node )
-    {
-        return new IterableWrapper<>( tx.getNodeById( node ).getLabels() )
-        {
-            @Override
-            protected String underlyingObjectToObject( Label object )
-            {
-                return object.name();
-            }
-        };
-    }
-
-    public void addLabelToNode( long node, String labelName )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.writeToken() ) )
-        {
-            tx.getNodeById( node ).addLabel( label( labelName ) );
-            tx.commit();
-        }
-    }
-
-    public IndexDefinition createSchemaIndex( String labelName, String propertyKey )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AUTH_DISABLED ) )
-        {
-            IndexDefinition index = tx.schema().indexFor( label( labelName ) ).on( propertyKey ).create();
-            tx.commit();
-            return index;
-        }
-    }
-
-    public Iterable<ConstraintDefinition> getPropertyUniquenessConstraints( String labelName, final String propertyKey )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.read() ) )
-        {
-            Iterable<ConstraintDefinition> definitions = Iterables.filter( item ->
-            {
-                if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
-                {
-                    Iterable<String> keys = item.getPropertyKeys();
-                    return single( keys ).equals( propertyKey );
-                }
-                else
-                {
-                    return false;
-                }
-
-            }, tx.schema().getConstraints( label( labelName ) ) );
-            tx.commit();
-            return definitions;
-        }
-    }
-
-    public ConstraintDefinition createPropertyUniquenessConstraint( String labelName, List<String> propertyKeys )
-    {
-        try ( Transaction tx = database.getDatabase().beginTransaction( IMPLICIT, AUTH_DISABLED ) )
-        {
-            ConstraintCreator creator = tx.schema().constraintFor( label( labelName ) );
-            for ( String propertyKey : propertyKeys )
-            {
-                creator = creator.assertPropertyIsUnique( propertyKey );
-            }
-            ConstraintDefinition result = creator.create();
-            tx.commit();
-            return result;
-        }
-    }
-
-    public long getLabelCount( long nodeId )
-    {
-        try ( Transaction transaction = database.getDatabase().beginTransaction( IMPLICIT, AnonymousContext.read() ) )
-        {
-            return count( transaction.getNodeById( nodeId ).getLabels());
         }
     }
 }

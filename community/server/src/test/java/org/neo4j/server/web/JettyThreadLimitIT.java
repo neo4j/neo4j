@@ -20,8 +20,10 @@
 package org.neo4j.server.web;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -29,18 +31,21 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.rule.SuppressOutput.suppressAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class JettyThreadLimitIT
+@ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
+class JettyThreadLimitIT
 {
-    @Rule
-    public final SuppressOutput suppressOutput = suppressAll();
+    @Inject
+    private SuppressOutput suppressOutput;
 
     @Test
-    public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
+    void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
         Jetty9WebServer server = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP );
         int numCores = 1;
@@ -59,7 +64,7 @@ public class JettyThreadLimitIT
             CountDownLatch endLatch = loadThreadPool( threadPool, configuredMaxThreads + 1, startLatch );
             startLatch.await(); // Wait for threadPool to create threads
             int threads = threadPool.getThreads();
-            assertEquals( "Wrong number of threads in pool", configuredMaxThreads, threads );
+            assertEquals( configuredMaxThreads, threads, "Wrong number of threads in pool" );
             endLatch.countDown();
         }
         finally

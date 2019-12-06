@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,106 +36,115 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class ConfigLoaderTest
+@TestDirectoryExtension
+@ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
+class ConfigLoaderTest
 {
-    @Rule
-    public final SuppressOutput suppressOutput = suppressAll();
-    @Rule
-    public final TemporaryFolder folder = new TemporaryFolder();
+    @Inject
+    private SuppressOutput suppressOutput;
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldProvideAConfiguration()
+    void shouldProvideAConfiguration()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
 
         // when
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
         // then
         assertNotNull( config );
     }
 
     @Test
-    public void shouldUseSpecifiedConfigFile()
+    void shouldUseSpecifiedConfigFile()
     {
         // given
         File configFile =
-                ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" ).build();
+                ConfigFileBuilder.builder( testDirectory.homeDir() ).withNameValue( default_advertised_address.name(), "bar" ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
         // then
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.get( GraphDatabaseSettings.default_advertised_address ).toString());
+        assertEquals( EXPECTED_VALUE, testConf.get( default_advertised_address ).toString());
     }
 
     @Test
-    public void shouldUseSpecifiedHomeDir()
+    void shouldUseSpecifiedHomeDir()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
         // then
-        assertEquals( folder.getRoot().getAbsolutePath(), testConf.get( GraphDatabaseSettings.neo4j_home ).toString() );
+        assertEquals( testDirectory.homeDir().getAbsolutePath(), testConf.get( neo4j_home ).toString() );
     }
 
     @Test
-    public void shouldUseWorkingDirForHomeDirIfUnspecified()
+    void shouldUseWorkingDirForHomeDirIfUnspecified()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
 
         // when
         Config testConf = Config.newBuilder().fromFile( configFile ).build();
 
         // then
-        assertEquals( new File( System.getProperty( "user.dir" ) ).getAbsolutePath(), testConf.get( GraphDatabaseSettings.neo4j_home ).toString() );
+        assertEquals( new File( System.getProperty( "user.dir" ) ).getAbsolutePath(), testConf.get( neo4j_home ).toString() );
     }
 
     @Test
-    public void shouldAcceptDuplicateKeysWithSameValue()
+    void shouldAcceptDuplicateKeysWithSameValue()
     {
         // given
-        File configFile =
-                ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" ).withNameValue(
-                        GraphDatabaseSettings.default_advertised_address.name(), "bar" ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() )
+                .withNameValue( default_advertised_address.name(), "bar" )
+                .withNameValue( default_advertised_address.name(), "bar" ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
         // then
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.get( GraphDatabaseSettings.default_advertised_address ).toString() );
+        assertEquals( EXPECTED_VALUE, testConf.get( default_advertised_address ).toString() );
     }
 
     @Test
-    public void loadOfflineConfigShouldDisableBolt()
+    void loadOfflineConfigShouldDisableBolt()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( BoltConnector.enabled.name(), TRUE ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withNameValue( BoltConnector.enabled.name(), TRUE ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
         ConfigUtils.disableAllConnectors( testConf );
 
         // then
@@ -143,14 +153,14 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void loadOfflineConfigAddDisabledBoltConnector()
+    void loadOfflineConfigAddDisabledBoltConnector()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
         ConfigUtils.disableAllConnectors( testConf );
 
         // then
@@ -159,10 +169,10 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldFindThirdPartyJaxRsPackages() throws IOException
+    void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
         // given
-        File file = ServerTestUtils.createTempConfigFile( folder.getRoot() );
+        File file = ServerTestUtils.createTempConfigFile( testDirectory.homeDir() );
 
         try ( BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ) )
         {
@@ -177,7 +187,7 @@ public class ConfigLoaderTest
         // when
         Config config = Config.newBuilder()
                 .fromFile( file )
-                .set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() )
+                .set( neo4j_home, testDirectory.homeDir().toPath() )
                 .build();
 
         // then
@@ -187,16 +197,16 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages()
+    void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( ServerSettings.third_party_packages.name(),
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withNameValue( ServerSettings.third_party_packages.name(),
                 "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                         "org.neo4j.extension.extension3=/extension3" ).build();
 
         // when
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -207,64 +217,61 @@ public class ConfigLoaderTest
         assertEquals( "/extension3", thirdpartyJaxRsPackages.get( 2 ).getMountPoint() );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenSpecifiedConfigFileDoesNotExist()
+    @Test
+    void shouldThrowWhenSpecifiedConfigFileDoesNotExist()
     {
         // Given
         File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
 
         // When
-        Config config = Config.newBuilder().fromFile( nonExistentConfigFile ).set( GraphDatabaseSettings.neo4j_home,
-                folder.getRoot().toPath() ).build();
+        assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( nonExistentConfigFile )
+                .set( neo4j_home, testDirectory.homeDir().toPath() ).build() );
+   }
+
+    @Test
+    void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
+    {
+        // Given
+        File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
+
+        // When
+        Config config = Config.newBuilder().fromFileNoThrow( nonExistentConfigFile ).set( neo4j_home,
+                testDirectory.homeDir().toPath() ).build();
 
         // Then
         assertNotNull( config );
     }
 
     @Test
-    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
+    void shouldDefaultToCorrectValueForAuthStoreLocation()
     {
-        // Given
-        File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
-
-        // When
-        Config config = Config.newBuilder().fromFileNoThrow( nonExistentConfigFile ).set( GraphDatabaseSettings.neo4j_home,
-                folder.getRoot().toPath() ).build();
-
-        // Then
-        assertNotNull( config );
-    }
-
-    @Test
-    public void shouldDefaultToCorrectValueForAuthStoreLocation()
-    {
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).withoutSetting( GraphDatabaseSettings.data_directory ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withoutSetting( GraphDatabaseSettings.data_directory ).build();
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
-                is( new File( folder.getRoot(), "data/dbms" ).getAbsoluteFile().toPath() ) );
+                is( new File( testDirectory.homeDir(), "data/dbms" ).getAbsoluteFile().toPath() ) );
     }
 
     @Test
-    public void shouldSetAValueForAuthStoreLocation()
+    void shouldSetAValueForAuthStoreLocation()
     {
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).build();
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).build();
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
-                is( new File( folder.getRoot(), "the-data-dir/dbms" ).getAbsoluteFile().toPath() ) );
+                is( new File( testDirectory.homeDir(), "the-data-dir/dbms" ).getAbsoluteFile().toPath() ) );
     }
 
     @Test
-    public void shouldNotOverwriteAuthStoreLocationIfProvided()
+    void shouldNotOverwriteAuthStoreLocationIfProvided()
     {
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).withSetting(
+        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).withSetting(
                 GraphDatabaseSettings.auth_store, "foo/bar/auth" ).build();
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toPath() ).build();
+                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
-        assertThat( config.get( GraphDatabaseSettings.auth_store ), is( new File( folder.getRoot(), "foo/bar/auth" ).getAbsoluteFile().toPath() ) );
+        assertThat( config.get( GraphDatabaseSettings.auth_store ), is( new File( testDirectory.homeDir(), "foo/bar/auth" ).getAbsoluteFile().toPath() ) );
     }
 }

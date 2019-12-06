@@ -192,7 +192,7 @@ class GraphExtractionWriterTest
     private JsonNode write( Map<String, Object> row ) throws IOException, JsonParseException
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = jsonFactory.createJsonGenerator( out );
+        JsonGenerator json = jsonFactory.createGenerator( out );
         json.writeStartObject();
         try
         {

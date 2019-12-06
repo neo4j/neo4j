@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher.format.input.json;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -33,16 +33,16 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
-public class StatementDeserializerTest
+class StatementDeserializerTest
 {
     @Test
-    public void shouldDeserializeSingleStatement()
+    void shouldDeserializeSingleStatement()
     {
         // Given
         String json = createJsonFrom( map( "statements", singletonList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
@@ -61,7 +61,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldRejectMapWithADifferentFieldBeforeStatement()
+    void shouldRejectMapWithADifferentFieldBeforeStatement()
     {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
@@ -72,7 +72,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished()
+    void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished()
     {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
@@ -94,7 +94,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldIgnoreUnknownFields()
+    void shouldIgnoreUnknownFields()
     {
         // Given
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
@@ -112,7 +112,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTakeParametersBeforeStatement()
+    void shouldTakeParametersBeforeStatement()
     {
         // Given
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
@@ -130,7 +130,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTreatEmptyInputStreamAsEmptyStatementList()
+    void shouldTreatEmptyInputStreamAsEmptyStatementList()
     {
         // Given
         byte[] json = new byte[0];
@@ -143,7 +143,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldDeserializeMultipleStatements()
+    void shouldDeserializeMultipleStatements()
     {
         // Given
         String json = createJsonFrom( map( "statements", asList(
@@ -170,7 +170,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldNotThrowButReportErrorOnInvalidInput()
+    void shouldNotThrowButReportErrorOnInvalidInput()
     {
         assertYieldsErrors( "{}", "Unable to " +
                         "deserialize request. " +

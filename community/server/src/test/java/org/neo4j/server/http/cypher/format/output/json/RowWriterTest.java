@@ -46,7 +46,7 @@ class RowWriterTest
     void shouldWriteNestedMaps() throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createJsonGenerator( out );
+        JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createGenerator( out );
 
         JsonNode row = serialize( out, json, new RowWriter() );
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import javax.servlet.FilterChain;
@@ -43,7 +43,7 @@ import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_REQUEST_HEADERS;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_REQUEST_METHOD;
 
-public class CorsFilterTest
+class CorsFilterTest
 {
     private final HttpServletRequest emptyRequest = requestMock( emptyList(), emptyList() );
     private final HttpServletResponse response = responseMock();
@@ -52,7 +52,7 @@ public class CorsFilterTest
     private final CorsFilter filter = new CorsFilter( NullLogProvider.getInstance(), "*" );
 
     @Test
-    public void shouldCallChainDoFilter() throws Exception
+    void shouldCallChainDoFilter() throws Exception
     {
         filter.doFilter( emptyRequest, response, chain );
 
@@ -60,7 +60,7 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldSetAccessControlAllowOrigin() throws Exception
+    void shouldSetAccessControlAllowOrigin() throws Exception
     {
         filter.doFilter( emptyRequest, response, filterChainMock() );
 
@@ -68,7 +68,7 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldAttachNoHttpMethodsToAccessControlAllowMethodsWhenHeaderIsEmpty() throws Exception
+    void shouldAttachNoHttpMethodsToAccessControlAllowMethodsWhenHeaderIsEmpty() throws Exception
     {
         filter.doFilter( emptyRequest, response, chain );
 
@@ -76,7 +76,7 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldAttachNoHttpMethodsToAccessControlAllowMethodsWhenHeaderIsNull() throws Exception
+    void shouldAttachNoHttpMethodsToAccessControlAllowMethodsWhenHeaderIsNull() throws Exception
     {
         HttpServletRequest request = requestMock();
         when( request.getHeaders( ACCESS_CONTROL_REQUEST_METHOD ) ).thenReturn( null );
@@ -87,7 +87,7 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldAttachValidHttpMethodsToAccessControlAllowMethods() throws Exception
+    void shouldAttachValidHttpMethodsToAccessControlAllowMethods() throws Exception
     {
         List<String> accessControlRequestMethods = asList( "GET", "WRONG", "POST", "TAKE", "CONNECT" );
         HttpServletRequest request = requestMock( accessControlRequestMethods, emptyList() );
@@ -103,7 +103,7 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldAttachNoRequestHeadersToAccessControlAllowHeadersWhenHeaderIsEmpty() throws Exception
+    void shouldAttachNoRequestHeadersToAccessControlAllowHeadersWhenHeaderIsEmpty() throws Exception
     {
         filter.doFilter( emptyRequest, response, chain );
 
@@ -111,7 +111,7 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldAttachNoRequestHeadersToAccessControlAllowHeadersWhenHeaderIsNull() throws Exception
+    void shouldAttachNoRequestHeadersToAccessControlAllowHeadersWhenHeaderIsNull() throws Exception
     {
         HttpServletRequest request = requestMock();
         when( request.getHeaders( ACCESS_CONTROL_REQUEST_HEADERS ) ).thenReturn( null );
@@ -122,7 +122,7 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldAttachValidRequestHeadersToAccessControlAllowHeaders() throws Exception
+    void shouldAttachValidRequestHeadersToAccessControlAllowHeaders() throws Exception
     {
         List<String> accessControlRequestHeaders = asList( "Accept", "X-Wrong\nHeader", "Content-Type", "Accept\r", "Illegal\r\nHeader", "", null, "   " );
         HttpServletRequest request = requestMock( emptyList(), accessControlRequestHeaders );

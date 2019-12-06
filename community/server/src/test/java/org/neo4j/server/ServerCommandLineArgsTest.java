@@ -19,22 +19,22 @@
  */
 package org.neo4j.server;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 public class ServerCommandLineArgsTest
 {
     @Test
-    public void shouldPickUpSpecifiedConfigFile()
+    void shouldPickUpSpecifiedConfigFile()
     {
         File dir = new File( "/some-dir" ).getAbsoluteFile();
         Optional<File> expectedFile = Optional.of( new File( dir, Config.DEFAULT_CONFIG_FILE_NAME ) );
@@ -43,7 +43,7 @@ public class ServerCommandLineArgsTest
     }
 
     @Test
-    public void shouldResolveConfigFileRelativeToWorkingDirectory()
+    void shouldResolveConfigFileRelativeToWorkingDirectory()
     {
         Optional<File> expectedFile = Optional.of( new File( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME ) );
         assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
@@ -51,13 +51,13 @@ public class ServerCommandLineArgsTest
     }
 
     @Test
-    public void shouldReturnNullIfConfigDirIsNotSpecified()
+    void shouldReturnNullIfConfigDirIsNotSpecified()
     {
         assertEquals( Optional.empty(), parse().configFile() );
     }
 
     @Test
-    public void shouldPickUpSpecifiedHomeDir()
+    void shouldPickUpSpecifiedHomeDir()
     {
         File homeDir = new File( "/some/absolute/homedir" ).getAbsoluteFile();
 
@@ -66,13 +66,13 @@ public class ServerCommandLineArgsTest
     }
 
     @Test
-    public void shouldReturnNullIfHomeDirIsNotSpecified()
+    void shouldReturnNullIfHomeDirIsNotSpecified()
     {
         assertNull( parse().homeDir() );
     }
 
     @Test
-    public void shouldPickUpOverriddenConfigurationParameters()
+    void shouldPickUpOverriddenConfigurationParameters()
     {
         // GIVEN
         String[] args = array( "-c", "myoption=myvalue" );
@@ -86,7 +86,7 @@ public class ServerCommandLineArgsTest
     }
 
     @Test
-    public void shouldPickUpOverriddenBooleanConfigurationParameters()
+    void shouldPickUpOverriddenBooleanConfigurationParameters()
     {
         // GIVEN
         String[] args = array( "-c", "myoptionenabled" );
@@ -100,7 +100,7 @@ public class ServerCommandLineArgsTest
     }
 
     @Test
-    public void shouldPickUpMultipleOverriddenConfigurationParameters()
+    void shouldPickUpMultipleOverriddenConfigurationParameters()
     {
         // GIVEN
         String[] args = array(

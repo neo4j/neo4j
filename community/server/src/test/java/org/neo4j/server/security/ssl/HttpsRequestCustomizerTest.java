@@ -26,7 +26,7 @@ import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
@@ -34,16 +34,16 @@ import org.neo4j.server.configuration.ServerSettings;
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
 import static org.eclipse.jetty.http.HttpScheme.HTTPS;
 import static org.eclipse.jetty.server.HttpConfiguration.Customizer;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HttpsRequestCustomizerTest
+class HttpsRequestCustomizerTest
 {
     @Test
-    public void shouldSetRequestSchemeToHttps()
+    void shouldSetRequestSchemeToHttps()
     {
         Customizer customizer = newCustomizer();
         Request request = mock( Request.class );
@@ -54,7 +54,7 @@ public class HttpsRequestCustomizerTest
     }
 
     @Test
-    public void shouldAddHstsHeaderWhenConfigured()
+    void shouldAddHstsHeaderWhenConfigured()
     {
         String configuredValue = "max-age=3600; includeSubDomains";
         Customizer customizer = newCustomizer( configuredValue );
@@ -67,7 +67,7 @@ public class HttpsRequestCustomizerTest
     }
 
     @Test
-    public void shouldNotAddHstsHeaderWhenNotConfigured()
+    void shouldNotAddHstsHeaderWhenNotConfigured()
     {
         Customizer customizer = newCustomizer();
         Request request = newRequest();

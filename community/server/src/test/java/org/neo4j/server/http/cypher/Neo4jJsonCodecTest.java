@@ -100,14 +100,7 @@ class Neo4jJsonCodecTest
         when( node.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
-        try
-        {
-            jsonCodec.writeValue( jsonGenerator, node );
-        }
-        catch ( RuntimeException e )
-        {
-            // do nothing
-        }
+        assertThrows( RuntimeException.class, () -> jsonCodec.writeValue( jsonGenerator, node ) );
 
         //Then
         verify( jsonGenerator ).writeEndObject();
@@ -121,14 +114,7 @@ class Neo4jJsonCodecTest
         when( relationship.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
-        try
-        {
-            jsonCodec.writeValue( jsonGenerator, relationship );
-        }
-        catch ( Exception e )
-        {
-            // do nothing
-        }
+        assertThrows( RuntimeException.class, () -> jsonCodec.writeValue( jsonGenerator, relationship ) );
 
         //Then
         verify( jsonGenerator ).writeEndObject();
@@ -144,14 +130,7 @@ class Neo4jJsonCodecTest
         when( path.iterator() ).thenReturn( Arrays.asList(entity).listIterator() );
 
         //When
-        try
-        {
-            jsonCodec.writeValue( jsonGenerator, path );
-        }
-        catch ( Exception ignored )
-        {
-
-        }
+        assertThrows( Exception.class, () -> jsonCodec.writeValue( jsonGenerator, path ) );
 
         //Then
         verify( jsonGenerator ).writeEndArray();
@@ -165,14 +144,7 @@ class Neo4jJsonCodecTest
         when( entity.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
-        try
-        {
-            jsonCodec.writeValue( jsonGenerator, Collections.singletonList( entity ) );
-        }
-        catch ( Exception ignored )
-        {
-
-        }
+        assertThrows( Exception.class, () -> jsonCodec.writeValue( jsonGenerator, Collections.singletonList( entity ) ) );
 
         //Then
         verify( jsonGenerator ).writeEndArray();
@@ -186,14 +158,7 @@ class Neo4jJsonCodecTest
         byte[] byteArray = new byte[]{ 1, 2, 3};
 
         //When
-        try
-        {
-            jsonCodec.writeValue( jsonGenerator, byteArray );
-        }
-        catch ( Exception ignored )
-        {
-
-        }
+        jsonCodec.writeValue( jsonGenerator, byteArray );
 
         //Then
         verify( jsonGenerator ).writeEndArray();
@@ -206,14 +171,7 @@ class Neo4jJsonCodecTest
         doThrow( new RuntimeException() ).when( jsonGenerator ).writeFieldName( anyString() );
 
         //When
-        try
-        {
-            jsonCodec.writeValue( jsonGenerator, new HashMap<String, String>() );
-        }
-        catch ( Exception ignored )
-        {
-
-        }
+        jsonCodec.writeValue( jsonGenerator, new HashMap<String, String>() );
 
         //Then
         verify( jsonGenerator ).writeEndObject();

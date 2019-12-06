@@ -77,9 +77,4 @@ class TransactionFacade
     {
         return registry.terminate( txId );
     }
-
-    TransitionalPeriodTransactionMessContainer getTransactionContainer()
-    {
-        return kernel;
-    }
 }

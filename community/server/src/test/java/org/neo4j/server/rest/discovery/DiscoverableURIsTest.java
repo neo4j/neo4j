@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -39,13 +39,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class DiscoverableURIsTest
+class DiscoverableURIsTest
 {
-    private BiConsumer<String,String> consumer = mock( BiConsumer.class );
-    private ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
+    private final BiConsumer<String,String> consumer = mock( BiConsumer.class );
+    private final ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
 
     @Test
-    public void shouldNotInvokeConsumerWhenEmpty()
+    void shouldNotInvokeConsumerWhenEmpty()
     {
         DiscoverableURIs empty = new DiscoverableURIs.Builder().build();
 
@@ -55,7 +55,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldInvokeConsumerForEachKey()
+    void shouldInvokeConsumerForEachKey()
     {
         var discoverables = new DiscoverableURIs.Builder()
                 .addEndpoint( "a", "/test" )
@@ -71,7 +71,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldSetBoltPort()
+    void shouldSetBoltPort()
     {
         var config = configWithBoltEnabled();
         var discoverables = new DiscoverableURIs.Builder()
@@ -85,7 +85,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldLookupBoltPort()
+    void shouldLookupBoltPort()
     {
         var config = Config.newBuilder().set(
                 Map.of( BoltConnector.enabled, true,
@@ -105,7 +105,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldSetBoltHostAndPortWithDefaultAdvertisedAddress()
+    void shouldSetBoltHostAndPortWithDefaultAdvertisedAddress()
     {
         var config = Config.newBuilder().set(
                 Map.of( BoltConnector.enabled, true,
@@ -122,7 +122,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldNotSetBoltHostWhenHostIsNotExplicitlySet()
+    void shouldNotSetBoltHostWhenHostIsNotExplicitlySet()
     {
         var config = Config.newBuilder().set(
                 Map.of( BoltConnector.enabled, true,
@@ -139,7 +139,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldSetBoltHostWhenHostIsExplicitlySet()
+    void shouldSetBoltHostWhenHostIsExplicitlySet()
     {
         var config = Config.newBuilder().set(
                 Map.of( BoltConnector.enabled, true,
@@ -156,7 +156,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldOverrideBoltHostWhenHostIsExplicitlySet()
+    void shouldOverrideBoltHostWhenHostIsExplicitlySet()
     {
         var config = Config.newBuilder().set(
                 Map.of( BoltConnector.enabled, true,
@@ -174,7 +174,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldOverrideBoltEndpoints()
+    void shouldOverrideBoltEndpoints()
     {
         var config = Config.newBuilder().set(
                 Map.of( BoltConnector.enabled, true,
@@ -195,7 +195,7 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldUpdateAllUnsetFields()
+    void shouldUpdateAllUnsetFields()
     {
         var config = Config.newBuilder().set(
                 Map.of( BoltConnector.enabled, true,

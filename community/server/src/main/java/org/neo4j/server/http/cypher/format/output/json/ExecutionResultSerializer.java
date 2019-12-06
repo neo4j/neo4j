@@ -80,16 +80,19 @@ class ExecutionResultSerializer
         this.transactionHandle = transactionHandle;
         this.output = output;
         JSON_FACTORY.setCodec( new Neo4jJsonCodec( transactionHandle ) );
-        JsonGenerator generator;
+        this.out = createGenerator( output );
+    }
+
+    private JsonGenerator createGenerator( OutputStream output )
+    {
         try
         {
-            generator = JSON_FACTORY.createJsonGenerator( output );
+            return JSON_FACTORY.createGenerator( output );
         }
         catch ( IOException e )
         {
             throw new IllegalStateException( "Failed to create JSON generator", e );
         }
-        this.out = generator;
     }
 
     void writeStatementStart( StatementStartEvent statementStartEvent, InputStatement inputStatement )

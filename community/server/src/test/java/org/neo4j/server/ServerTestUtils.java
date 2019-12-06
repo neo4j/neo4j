@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -55,13 +54,6 @@ public class ServerTestUtils
     public static File createTempDir() throws IOException
     {
         return Files.createTempDirectory( "neo4j-test" ).toFile();
-    }
-
-    public static File createTempConfigFile() throws IOException
-    {
-        File file = File.createTempFile( "neo4j", "conf" );
-        file.delete();
-        return file;
     }
 
     public static Path getRelativePath( File folder, Setting<Path> setting )
@@ -112,19 +104,13 @@ public class ServerTestUtils
 
     private static void storeProperties( File file, Properties properties )
     {
-        OutputStream out = null;
-        try
+        try ( OutputStream out = new FileOutputStream( file ) )
         {
-            out = new FileOutputStream( file );
             properties.store( out, "" );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-        finally
-        {
-            safeClose( out );
         }
     }
 
@@ -133,37 +119,16 @@ public class ServerTestUtils
         Properties properties = new Properties();
         if ( file.exists() )
         {
-            InputStream in = null;
-            try
+            try ( InputStream in = new FileInputStream( file ) )
             {
-                in = new FileInputStream( file );
                 properties.load( in );
             }
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
             }
-            finally
-            {
-                safeClose( in );
-            }
         }
         return properties;
-    }
-
-    private static void safeClose( Closeable closeable )
-    {
-        if ( closeable != null )
-        {
-            try
-            {
-                closeable.close();
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
-        }
     }
 
     public static File createTempConfigFile( File parentDir )

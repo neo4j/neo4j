@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 
 import java.time.Duration;
@@ -35,19 +35,19 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.database.DatabaseService;
 import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HttpTransactionManagerTest
+class HttpTransactionManagerTest
 {
     @Test
-    public void shouldSetupJobScheduler()
+    void shouldSetupJobScheduler()
     {
         DatabaseService database = mock( DatabaseService.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
@@ -60,7 +60,7 @@ public class HttpTransactionManagerTest
     }
 
     @Test
-    public void shouldCreateTransactionHandleRegistry()
+    void shouldCreateTransactionHandleRegistry()
     {
         DatabaseService database = mock( DatabaseService.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
@@ -73,7 +73,7 @@ public class HttpTransactionManagerTest
     }
 
     @Test
-    public void shouldGetEmptyTransactionFacadeOfDatabaseData()
+    void shouldGetEmptyTransactionFacadeOfDatabaseData()
     {
         DatabaseService database = mock( DatabaseService.class );
         HttpTransactionManager manager = newTransactionManager( database );
@@ -85,7 +85,7 @@ public class HttpTransactionManagerTest
     }
 
     @Test
-    public void shouldGetTransactionFacadeOfDatabaseWithSpecifiedName()
+    void shouldGetTransactionFacadeOfDatabaseWithSpecifiedName()
     {
         DatabaseService database = mock( DatabaseService.class );
         HttpTransactionManager manager = newTransactionManager( database );
@@ -97,7 +97,7 @@ public class HttpTransactionManagerTest
     }
 
     @Test
-    public void shouldGetEmptyTransactionFacadeForUnknownDatabase()
+    void shouldGetEmptyTransactionFacadeForUnknownDatabase()
     {
         DatabaseService database = mock( DatabaseService.class );
         HttpTransactionManager manager = newTransactionManager( database );

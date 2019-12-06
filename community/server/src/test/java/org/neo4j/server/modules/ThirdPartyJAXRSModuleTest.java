@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.modules;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -39,10 +39,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ThirdPartyJAXRSModuleTest
+class ThirdPartyJAXRSModuleTest
 {
     @Test
-    public void shouldReportThirdPartyPackagesAtSpecifiedMount() throws Exception
+    void shouldReportThirdPartyPackagesAtSpecifiedMount() throws Exception
     {
         // Given
         WebServer webServer = mock( WebServer.class );

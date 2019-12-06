@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -56,12 +55,6 @@ public class JsonHelper
     public static Map<String, Object> jsonToMap( String json ) throws JsonParseException
     {
         return (Map<String, Object>) readJson( json );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static List<Map<String, Object>> jsonToList( String json ) throws JsonParseException
-    {
-        return (List<Map<String, Object>>) readJson( json );
     }
 
     public static Object readJson( String json ) throws JsonParseException
@@ -110,17 +103,11 @@ public class JsonHelper
         try
         {
             StringWriter writer = new StringWriter();
-            try
-            {
-                JsonGenerator generator = OBJECT_MAPPER.getJsonFactory()
-                    .createJsonGenerator( writer )
-                    .useDefaultPrettyPrinter();
-                writeValue( generator, data );
-            }
-            finally
-            {
-                writer.close();
-            }
+            JsonGenerator generator = OBJECT_MAPPER.getFactory()
+                .createGenerator( writer )
+                .useDefaultPrettyPrinter();
+            writeValue( generator, data );
+
             return writer.getBuffer().toString();
         }
         catch ( IOException e )
@@ -132,10 +119,5 @@ public class JsonHelper
     public static void writeValue( JsonGenerator jgen, Object value ) throws IOException
     {
         OBJECT_MAPPER.writeValue( jgen, value );
-    }
-
-    public static String prettyPrint( Object item ) throws IOException
-    {
-        return OBJECT_MAPPER.writer().withDefaultPrettyPrinter().writeValueAsString( item );
     }
 }

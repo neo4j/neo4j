@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class HttpMethodTest
+class HttpMethodTest
 {
     @Test
-    public void shouldLookupExistingMethodByName()
+    void shouldLookupExistingMethodByName()
     {
         for ( HttpMethod method : HttpMethod.values() )
         {
@@ -36,7 +36,7 @@ public class HttpMethodTest
     }
 
     @Test
-    public void shouldLookupNonExistingMethodByName()
+    void shouldLookupNonExistingMethodByName()
     {
         assertNull( HttpMethod.valueOfOrNull( "get" ) );
         assertNull( HttpMethod.valueOfOrNull( "post" ) );
@@ -46,7 +46,7 @@ public class HttpMethodTest
     }
 
     @Test
-    public void shouldLookupNothingByNull()
+    void shouldLookupNothingByNull()
     {
         assertNull( HttpMethod.valueOfOrNull( null ) );
     }

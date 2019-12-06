@@ -53,7 +53,7 @@ public class ServerHelper
 
     public static void cleanTheDatabase( GraphDatabaseAPI db )
     {
-        new Transactor( db, new DeleteAllData( db ), 10 ).execute();
+        new Transactor( db, new DeleteAllData(), 10 ).execute();
         new Transactor( db, new DeleteAllSchema(), 10 ).execute();
     }
 
@@ -106,13 +106,6 @@ public class ServerHelper
 
     private static class DeleteAllData implements UnitOfWork
     {
-        private final GraphDatabaseAPI db;
-
-        DeleteAllData( GraphDatabaseAPI db )
-        {
-            this.db = db;
-        }
-
         @Override
         public void doWork( Transaction transaction )
         {

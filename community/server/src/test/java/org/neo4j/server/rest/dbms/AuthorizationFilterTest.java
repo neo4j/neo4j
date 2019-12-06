@@ -20,11 +20,10 @@
 package org.neo4j.server.rest.dbms;
 
 import org.apache.commons.codec.binary.Base64;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import javax.servlet.FilterChain;
@@ -40,10 +39,11 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.BasicLoginContext;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
@@ -56,7 +56,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.AuthTokenUtil.authTokenArgumentMatcher;
 
-public class AuthorizationFilterTest
+class AuthorizationFilterTest
 {
     private final BasicSystemGraphRealm authManager = mock( BasicSystemGraphRealm.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -65,8 +65,8 @@ public class AuthorizationFilterTest
     private final HttpServletResponse servletResponse = mock( HttpServletResponse.class );
     private final FilterChain filterChain = mock( FilterChain.class );
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         when( servletResponse.getOutputStream() ).thenReturn( new ServletOutputStream()
         {
@@ -91,7 +91,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldAllowOptionsRequests() throws Exception
+    void shouldAllowOptionsRequests() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();
@@ -105,7 +105,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldWhitelistMatchingUris() throws Exception
+    void shouldWhitelistMatchingUris() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter( "/", "/browser.*" );
@@ -121,7 +121,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldRequireAuthorizationForNonWhitelistedUris() throws Exception
+    void shouldRequireAuthorizationForNonWhitelistedUris() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter( "/", "/browser.*" );
@@ -136,14 +136,14 @@ public class AuthorizationFilterTest
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"" );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo" +
+        assertThat( outputStream.toString( UTF_8.name() ), containsString( "\"code\" : \"Neo" +
                 ".ClientError.Security.Unauthorized\"" ) );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"message\" : \"No authentication header supplied.\"" ) );
     }
 
     @Test
-    public void shouldRequireValidAuthorizationHeader() throws Exception
+    void shouldRequireValidAuthorizationHeader() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();
@@ -158,18 +158,18 @@ public class AuthorizationFilterTest
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 400 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"code\" : \"Neo.ClientError.Request.InvalidFormat\"" ) );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"message\" : \"Invalid authentication header.\"" ) );
     }
 
     @Test
-    public void shouldNotAuthorizeInvalidCredentials() throws Exception
+    void shouldNotAuthorizeInvalidCredentials() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
@@ -189,18 +189,18 @@ public class AuthorizationFilterTest
                 .warn( "Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address" ) );
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"code\" : \"Neo.ClientError.Security.Unauthorized\"" ) );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"message\" : \"Invalid username or password.\"" ) );
     }
 
     @Test
-    public void shouldAuthorizeWhenPasswordChangeRequired() throws Exception
+    void shouldAuthorizeWhenPasswordChangeRequired() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
@@ -221,11 +221,11 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldNotAuthorizeWhenTooManyAttemptsMade() throws Exception
+    void shouldNotAuthorizeWhenTooManyAttemptsMade() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
@@ -242,19 +242,19 @@ public class AuthorizationFilterTest
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 429 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"code\" : \"Neo.ClientError.Security.AuthenticationRateLimit\"" ) );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"message\" : \"Too many failed authentication requests. " +
                         "Please wait 5 seconds and try again.\"" ) );
     }
 
     @Test
-    public void shouldAuthorizeWhenValidCredentialsSupplied() throws Exception
+    void shouldAuthorizeWhenValidCredentialsSupplied() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
@@ -273,7 +273,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldIncludeCrippledAuthHeaderIfBrowserIsTheOneCalling() throws Throwable
+    void shouldIncludeCrippledAuthHeaderIfBrowserIsTheOneCalling() throws Throwable
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter( "/", "/browser.*" );
@@ -289,9 +289,9 @@ public class AuthorizationFilterTest
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"code\" : \"Neo.ClientError.Security.Unauthorized\"" ) );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
+        assertThat( outputStream.toString( UTF_8.name() ),
                 containsString( "\"message\" : \"No authentication header supplied.\"" ) );
     }
 

@@ -47,7 +47,7 @@ class RestRepresentationWriterTest
     void shouldWriteNestedMaps() throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createJsonGenerator( out );
+        JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createGenerator( out );
 
         JsonNode rest = serialize( out, json, new RestRepresentationWriter( URI.create( "localhost" ) ) );
 

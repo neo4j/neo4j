@@ -66,7 +66,7 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
 
     private SslConnectionFactory createSslConnectionFactory( SslPolicy sslPolicy )
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 
         String password = UUID.randomUUID().toString();
         sslContextFactory.setKeyStore( sslPolicy.getKeyStore( password.toCharArray(), password.toCharArray() ) );

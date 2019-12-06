@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -29,19 +29,19 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class TransactionHandleRegistryTest
+class TransactionHandleRegistryTest
 {
     @Test
-    public void shouldGenerateTransactionId()
+    void shouldGenerateTransactionId()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -58,7 +58,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void shouldStoreSuspendedTransaction() throws Exception
+    void shouldStoreSuspendedTransaction() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -77,7 +77,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void acquiringATransactionThatHasAlreadyBeenAcquiredShouldThrowInvalidConcurrentTransactionAccess() throws Exception
+    void acquiringATransactionThatHasAlreadyBeenAcquiredShouldThrowInvalidConcurrentTransactionAccess() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -89,22 +89,14 @@ public class TransactionHandleRegistryTest
         registry.acquire( id );
 
         // When
-        try
-        {
-            registry.acquire( id );
-            fail( "Should have thrown exception" );
-        }
-        catch ( InvalidConcurrentTransactionAccess e )
-        {
-            // expected
-        }
+        assertThrows( InvalidConcurrentTransactionAccess.class, () -> registry.acquire( id ) );
 
         // then
         logProvider.assertNoLoggingOccurred();
     }
 
     @Test
-    public void acquiringANonExistentTransactionShouldThrowErrorInvalidTransactionId() throws Exception
+    void acquiringANonExistentTransactionShouldThrowErrorInvalidTransactionId() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -113,22 +105,14 @@ public class TransactionHandleRegistryTest
         long madeUpTransactionId = 1337;
 
         // When
-        try
-        {
-            registry.acquire( madeUpTransactionId );
-            fail( "Should have thrown exception" );
-        }
-        catch ( InvalidTransactionId e )
-        {
-            // expected
-        }
+        assertThrows( InvalidTransactionId.class, () -> registry.acquire( madeUpTransactionId ) );
 
         // then
         logProvider.assertNoLoggingOccurred();
     }
 
     @Test
-    public void transactionsShouldBeEvictedWhenUnusedLongerThanTimeout() throws Exception
+    void transactionsShouldBeEvictedWhenUnusedLongerThanTimeout() throws Exception
     {
         // Given
         FakeClock clock = Clocks.fakeClock();
@@ -153,15 +137,7 @@ public class TransactionHandleRegistryTest
         assertThat( registry.acquire( txId2 ), equalTo( newTx ) );
 
         // And then the other should have been evicted
-        try
-        {
-            registry.acquire( txId1 );
-            fail( "Should have thrown exception" );
-        }
-        catch ( InvalidTransactionId e )
-        {
-            // ok
-        }
+        assertThrows( InvalidTransactionId.class, () -> registry.acquire( txId1 ) );
 
         logProvider.assertExactly(
                 inLog( TransactionHandleRegistry.class ).info( "Transaction with id 1 has been automatically rolled " +
@@ -170,7 +146,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void expiryTimeShouldBeSetToCurrentTimePlusTimeout() throws Exception
+    void expiryTimeShouldBeSetToCurrentTimePlusTimeout() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -198,7 +174,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void shouldProvideInterruptHandlerForActiveTransaction() throws TransactionLifecycleException
+    void shouldProvideInterruptHandlerForActiveTransaction() throws TransactionLifecycleException
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -220,7 +196,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void shouldProvideInterruptHandlerForSuspendedTransaction() throws TransactionLifecycleException
+    void shouldProvideInterruptHandlerForSuspendedTransaction() throws TransactionLifecycleException
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -242,8 +218,8 @@ public class TransactionHandleRegistryTest
         verifyNoMoreInteractions( handle );
     }
 
-    @Test( expected = InvalidTransactionId.class )
-    public void gettingInterruptHandlerForUnknownIdShouldThrowErrorInvalidTransactionId() throws TransactionLifecycleException
+    @Test
+    void gettingInterruptHandlerForUnknownIdShouldThrowErrorInvalidTransactionId()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -253,6 +229,6 @@ public class TransactionHandleRegistryTest
         TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
 
         // When
-        registry.terminate( 456 );
+        assertThrows( InvalidTransactionId.class, () -> registry.terminate( 456 ) );
     }
 }

@@ -19,30 +19,30 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.DefaultFormat;
 import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DefaultFormatTest
 {
     private DefaultFormat input;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         JsonFormat inner = new JsonFormat();
@@ -56,7 +56,7 @@ public class DefaultFormatTest
     {
         Map<String, Object> map = input.readMap( "{}" );
         assertNotNull( map );
-        assertTrue( "map is not empty", map.isEmpty() );
+        assertTrue( map.isEmpty(), "map is not empty" );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class DefaultFormatTest
         assertNotNull( map );
         assertThat( map, hasEntry( "key1", "value1" ) );
         assertThat( map, hasEntry( "key2", "value11" ) );
-        assertEquals( "map contained extra values", 2, map.size() );
+        assertEquals( 2, map.size(), "map contained extra values" );
     }
 
     @Test
@@ -75,7 +75,7 @@ public class DefaultFormatTest
         Map<String, Object> map = input.readMap( "{\"nested\": {\"key\": \"valuable\"}}" );
         assertNotNull( map );
         assertThat( map, hasKey( "nested" ) );
-        assertEquals( "map contained extra values", 1, map.size() );
+        assertEquals( 1, map.size(), "map contained extra values" );
         Object nested = map.get( "nested" );
         assertThat( nested, instanceOf( Map.class ) );
         @SuppressWarnings( "unchecked" )
@@ -83,21 +83,21 @@ public class DefaultFormatTest
         assertThat( nestedMap, hasEntry( "key", "valuable" ) );
     }
 
-    @Test( expected = MediaTypeNotSupportedException.class )
+    @Test
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput()
     {
-        input.readValue( "<xml />" );
+        assertThrows( MediaTypeNotSupportedException.class, () -> input.readValue( "<xml />" ) );
     }
 
-    @Test( expected = MediaTypeNotSupportedException.class )
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput2() throws BadInputException
+    @Test
+    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput2()
     {
-        input.readMap( "<xml />" );
+        assertThrows( MediaTypeNotSupportedException.class, () -> input.readMap( "<xml />" ) );
     }
 
-    @Test( expected = MediaTypeNotSupportedException.class )
+    @Test
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3()
     {
-        input.readUri( "<xml />" );
+        assertThrows( MediaTypeNotSupportedException.class, () -> input.readUri( "<xml />" ) );
     }
 }

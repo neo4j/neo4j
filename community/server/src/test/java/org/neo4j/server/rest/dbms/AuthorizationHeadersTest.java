@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
 
 import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
-public class AuthorizationHeadersTest
+class AuthorizationHeadersTest
 {
     @Test
-    public void shouldParseHappyPath()
+    void shouldParseHappyPath()
     {
         // Given
         String username = "jake";
@@ -48,7 +48,7 @@ public class AuthorizationHeadersTest
     }
 
     @Test
-    public void shouldHandleSadPaths()
+    void shouldHandleSadPaths()
     {
         // When & then
         assertNull( decode( "" ) );
