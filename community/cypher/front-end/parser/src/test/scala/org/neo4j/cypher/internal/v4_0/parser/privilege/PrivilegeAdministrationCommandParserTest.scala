@@ -75,6 +75,10 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
     failsToParse
   }
 
+  test("SHOW USERS user1, user2 PRIVILEGES") {
+    failsToParse
+  }
+
   test("SHOW ALL USER user PRIVILEGES") {
     failsToParse
   }
@@ -88,6 +92,10 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   }
 
   test("SHOW ROLE role1, role2 PRIVILEGES") {
+    failsToParse
+  }
+
+  test("SHOW ROLES role1, role2 PRIVILEGES") {
     failsToParse
   }
 
@@ -195,6 +203,15 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword * (*) $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword A $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword A (*) $preposition role")
+                // missing property list
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $nodeKeyword A (*) $preposition role")
               }
           }
 
@@ -276,6 +293,15 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword * (*) $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword A $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword A (*) $preposition role")
+                // missing property list
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $relTypeKeyword A (*) $preposition role")
               }
           }
 
@@ -357,6 +383,15 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword * (*) $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword A $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword A (*) $preposition role")
+                // missing property list
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword * $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {} ON $graphKeyword foo $elementKeyword A (*) $preposition role")
               }
           }
 
