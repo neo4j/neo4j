@@ -655,4 +655,35 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
+
+  test("should write null row if all is filtered out") {
+    // given
+    val n = sizeHint
+    val relTuples = (for(i <- 0 until n by 2) yield {
+      Seq(
+        (i, (2 * i) % n, "OTHER")
+        )
+    }).reduce(_ ++ _)
+
+    val (nodes, rels) = given {
+      val nodes = nodePropertyGraph(n, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .optionalExpandAll("(x)-[r]->(y)", Some(s"y.num > $n"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(Array(_, null, null))
+    runtimeResult should beColumns("x", "y", "r").withRows(expected)
+  }
 }
