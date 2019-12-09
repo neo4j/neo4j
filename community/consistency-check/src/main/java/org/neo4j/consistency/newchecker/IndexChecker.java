@@ -230,7 +230,8 @@ public class IndexChecker implements Checker
     {
         // This is one thread
         CheckerContext noReportingContext = context.withoutReporting();
-        try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores ); RecordNodeCursor nodeCursor = reader.allocateNodeCursor();
+        try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
+                RecordNodeCursor nodeCursor = reader.allocateNodeCursor();
                 RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore() );
                 SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext ) )
         {

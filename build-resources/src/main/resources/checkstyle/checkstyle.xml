@@ -85,7 +85,9 @@
       <property name="allowEmptyLambdas" value="true"/>
       <property name="allowEmptyMethods" value="true"/>
     </module>
-    <module name="OneStatementPerLine"/>
+    <module name="OneStatementPerLine">
+      <property name="treatTryResourcesAsStatement" value="true"/>
+    </module>
     <module name="ParenPad">
       <property name="tokens"
                 value="ANNOTATION, ANNOTATION_FIELD_DEF, CTOR_CALL, CTOR_DEF, ENUM_CONSTANT_DEF, LITERAL_CATCH, LITERAL_DO, LITERAL_FOR, LITERAL_IF, LITERAL_NEW, LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_WHILE, RESOURCE_SPECIFICATION, SUPER_CTOR_CALL, LAMBDA, METHOD_DEF"/>

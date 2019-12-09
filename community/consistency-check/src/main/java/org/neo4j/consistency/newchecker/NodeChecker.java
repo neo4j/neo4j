@@ -115,7 +115,8 @@ class NodeChecker implements Checker
     private void check( long fromNodeId, long toNodeId, boolean last ) throws Exception
     {
         long usedNodes = 0;
-        try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores ); RecordNodeCursor nodeCursor = reader.allocateNodeCursor();
+        try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
+                RecordNodeCursor nodeCursor = reader.allocateNodeCursor();
                 RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore() );
                 AllEntriesLabelScanReader labelIndexReader = context.labelScanStore.allNodeLabelRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId );
                 SafePropertyChainReader property = new SafePropertyChainReader( context );
