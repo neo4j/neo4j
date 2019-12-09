@@ -95,8 +95,7 @@ import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.StringUtils.repeat;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1176,7 +1175,7 @@ class ImportCommandTest
         catch ( MissingParameterException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( "Missing required option '--nodes" ) );
+            assertThat( e.getMessage() ).contains( "Missing required option '--nodes" );
         }
     }
 
@@ -1494,7 +1493,7 @@ class ImportCommandTest
         catch ( ParameterException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( "bogus" ) );
+            assertThat( e.getMessage() ).contains( "bogus" );
         }
     }
 
@@ -1515,7 +1514,7 @@ class ImportCommandTest
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( "Multi-line fields are illegal" ) );
+            assertThat( e.getMessage() ).contains( "Multi-line fields are illegal" );
         }
     }
 
@@ -1569,7 +1568,7 @@ class ImportCommandTest
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( format( "Multi-line fields" ) ) );
+            assertThat( e.getMessage() ).contains( format( "Multi-line fields" ) );
         }
     }
 
@@ -1769,7 +1768,7 @@ class ImportCommandTest
         catch ( IllegalStateException e )
         {
             // THEN good
-            assertThat( e.getMessage(), containsString( "input data" ) );
+            assertThat( e.getMessage() ).contains( "input data" );
         }
     }
 
@@ -1801,7 +1800,7 @@ class ImportCommandTest
         catch ( ParameterException e )
         {
             // THEN good
-            assertThat( e.getMessage(), containsString( "percent" ) );
+            assertThat( e.getMessage() ).contains( "percent" );
         }
     }
 
@@ -1997,8 +1996,8 @@ class ImportCommandTest
         catch ( InputException e )
         {
             String message = e.getMessage();
-            assertThat( message, containsString( "1000000" ) );
-            assertThat( message, containsString( "too big" ) );
+            assertThat( message ).contains( "1000000" );
+            assertThat( message ).contains( "too big" );
         }
     }
 
