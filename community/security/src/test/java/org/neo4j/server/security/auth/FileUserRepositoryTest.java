@@ -44,6 +44,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -52,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.test.assertion.Assert.assertException;
 
 @EphemeralTestDirectoryExtension
 class FileUserRepositoryTest
@@ -130,22 +130,18 @@ class FileUserRepositoryTest
         users.assertValidUsername( "johnosbourne" );
         users.assertValidUsername( "john_osbourne" );
 
-        assertException( () -> users.assertValidUsername( null ), InvalidArgumentsException.class,
-                "The provided username is empty." );
-        assertException( () -> users.assertValidUsername( "" ), InvalidArgumentsException.class,
-                "The provided username is empty." );
-        assertException( () -> users.assertValidUsername( "," ), InvalidArgumentsException.class,
-                "Username ',' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces" +
-                        "." );
-        assertException( () -> users.assertValidUsername( "with space" ), InvalidArgumentsException.class,
-                "Username 'with space' contains illegal characters. Use ascii characters that are not ',', ':' or " +
-                        "whitespaces." );
-        assertException( () -> users.assertValidUsername( "with:colon" ), InvalidArgumentsException.class,
-                "Username 'with:colon' contains illegal characters. Use ascii characters that are not ',', ':' or " +
-                        "whitespaces." );
-        assertException( () -> users.assertValidUsername( "withå" ), InvalidArgumentsException.class,
-                "Username 'withå' contains illegal characters. Use ascii characters that are not ',', ':' or " +
-                        "whitespaces." );
+        assertThatThrownBy( () -> users.assertValidUsername( null ) ).isInstanceOf( InvalidArgumentsException.class )
+                .hasMessage( "The provided username is empty." );
+        assertThatThrownBy( () -> users.assertValidUsername( "" ) ).isInstanceOf( InvalidArgumentsException.class )
+                .hasMessage( "The provided username is empty." );
+        assertThatThrownBy( () -> users.assertValidUsername( "," ) ).isInstanceOf( InvalidArgumentsException.class)
+                .hasMessage( "Username ',' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
+        assertThatThrownBy( () -> users.assertValidUsername( "with space" ) ).isInstanceOf( InvalidArgumentsException.class )
+                .hasMessage( "Username 'with space' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
+        assertThatThrownBy( () -> users.assertValidUsername( "with:colon" ) ).isInstanceOf( InvalidArgumentsException.class )
+                .hasMessage( "Username 'with:colon' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
+        assertThatThrownBy( () -> users.assertValidUsername( "withå" ) ).isInstanceOf( InvalidArgumentsException.class )
+                .hasMessage( "Username 'withå' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
     }
 
     @Test
@@ -224,7 +220,7 @@ class FileUserRepositoryTest
         // When
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
 
-        var e = assertThrows( IllegalStateException.class, () -> users.start() );
+        var e = assertThrows( IllegalStateException.class, users::start );
         assertThat( e.getMessage(), startsWith( "Failed to read authentication file: " ) );
 
         assertThat( users.numberOfUsers(), equalTo( 0 ) );

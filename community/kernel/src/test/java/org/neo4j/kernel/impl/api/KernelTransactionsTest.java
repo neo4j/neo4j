@@ -71,8 +71,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -86,7 +84,6 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -101,6 +98,7 @@ import org.neo4j.token.TokenHolders;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -121,7 +119,6 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.test.assertion.Assert.assertException;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.util.concurrent.Futures.combine;
 
@@ -421,8 +418,8 @@ class KernelTransactionsTest
         LoginContext loginContext = mock( LoginContext.class );
         when( loginContext.authorize( any(), any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
 
-        assertException( () -> kernelTransactions.newInstance( EXPLICIT, loginContext, EMBEDDED_CONNECTION, 0L ),
-                AuthorizationExpiredException.class, "Freeze failed." );
+        assertThatThrownBy( () -> kernelTransactions.newInstance( EXPLICIT, loginContext, EMBEDDED_CONNECTION, 0L ) )
+                .isInstanceOf( AuthorizationExpiredException.class ).hasMessage( "Freeze failed." );
 
         assertThat( kernelTransactions.activeTransactions() ).as( "We should not have any transaction" ).isEmpty();
     }
@@ -716,23 +713,6 @@ class KernelTransactionsTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
         return dependencies;
-    }
-
-    private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
-            throws TransactionFailureException
-    {
-        TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
-
-        when( commitProcess.commit(
-                any( TransactionToApply.class ), any( CommitEvent.class ),
-                any( TransactionApplicationMode.class ) ) )
-                .then( invocation ->
-                {
-                    slot[0] = ((TransactionToApply) invocation.getArgument( 0 )).transactionRepresentation();
-                    return 1L;
-                } );
-
-        return commitProcess;
     }
 
     private Future<?> unblockTxsInSeparateThread( final KernelTransactions kernelTransactions )

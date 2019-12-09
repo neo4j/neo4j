@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -47,7 +48,6 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.test.assertion.Assert.assertException;
 
 class SchemaRuleSerialization35Test
 {
@@ -560,7 +560,7 @@ class SchemaRuleSerialization35Test
         assertThat( deserialized.getId() ).isEqualTo( ruleId );
         assertThat( deserialized ).isEqualTo( constraint );
         assertThat( deserialized.schema() ).isEqualTo( constraint.schema() );
-        assertException( () -> deserialized.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
+        assertThatThrownBy( () -> deserialized.asIndexBackedConstraint().ownedIndexId() ).isInstanceOf( IllegalStateException.class );
         assertThat( deserialized.getName() ).isEqualTo( name );
     }
 
@@ -580,7 +580,7 @@ class SchemaRuleSerialization35Test
         assertThat( deserialized.getId() ).isEqualTo( ruleId );
         assertThat( deserialized ).isEqualTo( constraint );
         assertThat( deserialized.schema() ).isEqualTo( constraint.schema() );
-        assertException( () -> deserialized.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
+        assertThatThrownBy( () -> deserialized.asIndexBackedConstraint().ownedIndexId() ).isInstanceOf( IllegalStateException.class );
         assertThat( deserialized.getName() ).isEqualTo( name );
     }
 

@@ -49,7 +49,6 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -147,8 +146,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 "The client is unauthorized due to authentication failure." ) ) );
 
         assertThat( connection, eventuallyDisconnects() );
-        assertEventually( ignore -> "Matching log call not found in\n" + logProvider.serialize(),
-                this::authFailureLoggedToUserLog, is( true ), 30, SECONDS );
+        assertEventually( () -> "Matching log call not found in\n" + logProvider.serialize(), this::authFailureLoggedToUserLog, is( true ), 30, SECONDS );
     }
 
     private boolean authFailureLoggedToUserLog()

@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -53,7 +54,6 @@ import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MA
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
-import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BasicSystemGraphRealmTest
 {
@@ -61,7 +61,7 @@ public class BasicSystemGraphRealmTest
     private BasicSystemGraphRealm realm;
 
     @BeforeEach
-    void setUp() throws Exception
+    void setUp()
     {
         authStrategy = mock( AuthenticationStrategy.class );
         realm = spy( new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, null, new SecureHasher(), authStrategy, true ) );
@@ -164,30 +164,28 @@ public class BasicSystemGraphRealmTest
     @Test
     void shouldFailWhenAuthTokenIsInvalid()
     {
-        assertException(
-                () -> realm.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
-                InvalidAuthTokenException.class,
-                "Unsupported authentication token, scheme 'supercool' is not supported." );
+        assertThatThrownBy( () -> realm.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ) )
+                .isInstanceOf( InvalidAuthTokenException.class )
+                .hasMessage( "Unsupported authentication token, scheme 'supercool' is not supported." );
 
-        assertException(
-                () -> realm.login( map( AuthToken.SCHEME_KEY, "none" ) ),
-                InvalidAuthTokenException.class,
-                "Unsupported authentication token, scheme 'none' is only allowed when auth is disabled" );
+        assertThatThrownBy( () -> realm.login( map( AuthToken.SCHEME_KEY, "none" ) ) )
+                .isInstanceOf( InvalidAuthTokenException.class )
+                .hasMessage( "Unsupported authentication token, scheme 'none' is only allowed when auth is disabled" );
 
-        assertException(
-                () -> realm.login( map( "key", "value" ) ),
-                InvalidAuthTokenException.class,
-                "Unsupported authentication token, missing key `scheme`" );
+        assertThatThrownBy(
+                () -> realm.login( map( "key", "value" ) ) )
+                .isInstanceOf( InvalidAuthTokenException.class )
+                .hasMessage( "Unsupported authentication token, missing key `scheme`" );
 
-        assertException(
-                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
-                InvalidAuthTokenException.class,
-                "Unsupported authentication token, missing key `credentials`" );
+        assertThatThrownBy(
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ) )
+                .isInstanceOf( InvalidAuthTokenException.class )
+                .hasMessage( "Unsupported authentication token, missing key `credentials`" );
 
-        assertException(
-                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ) ),
-                InvalidAuthTokenException.class,
-                "Unsupported authentication token, missing key `principal`" );
+        assertThatThrownBy(
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ) ) )
+                .isInstanceOf( InvalidAuthTokenException.class )
+                .hasMessage( "Unsupported authentication token, missing key `principal`" );
     }
 
     private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult ) throws InvalidAuthTokenException

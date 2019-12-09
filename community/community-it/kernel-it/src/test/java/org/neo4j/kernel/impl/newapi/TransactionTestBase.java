@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.test.assertion.Assert;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -236,8 +235,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
 
     private void assertFrozenLocks( KernelTransaction tx, SchemaDescriptor schema )
     {
-        Assert.assertException( () -> tx.schemaRead().index( schema ).forEachRemaining( index -> {} ), // acquires shared schema lock
-                                FrozenLocksException.class );
+        assertThrows( FrozenLocksException.class, () -> tx.schemaRead().index( schema ).forEachRemaining( index -> { } ) );
     }
 
     private void assertNoNode( long nodeId ) throws TransactionFailureException

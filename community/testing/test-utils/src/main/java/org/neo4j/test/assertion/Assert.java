@@ -19,24 +19,26 @@
  */
 package org.neo4j.test.assertion;
 
-import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionFactory;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.StringDescription;
+import org.hamcrest.TypeSafeMatcher;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
 
 import static java.time.Duration.ZERO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.containsString;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.awaitility.Awaitility.await;
 
 public final class Assert
 {
@@ -51,57 +53,12 @@ public final class Assert
 
     public static <E extends Exception> void awaitUntilAsserted( String alias, ThrowingAction<E> condition )
     {
-        Awaitility.await( alias )
+        await( alias )
                 .atMost( 1, MINUTES )
                 .pollDelay( ZERO )
                 .pollInterval( 50, MILLISECONDS )
                 .pollInSameThread()
                 .untilAsserted( condition::apply );
-    }
-
-    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException )
-    {
-        assertException( f, typeOfException, (Matcher<String>) null );
-    }
-
-    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException,
-            String partOfMessage )
-    {
-        assertException( f, typeOfException, partOfMessage == null ? null : containsString( partOfMessage ) );
-    }
-
-    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException,
-            Matcher<String> messageMatcher )
-    {
-        try
-        {
-            f.apply();
-            throw new AssertionError( "Expected exception of type " + typeOfException + ", but no exception was thrown" );
-        }
-        catch ( Exception e )
-        {
-            if ( typeOfException.isInstance( e ) )
-            {
-                if ( messageMatcher != null )
-                {
-                    String message = e.getMessage();
-                    if ( !messageMatcher.matches( message ) )
-                    {
-                        StringBuilder sb = new StringBuilder();
-                        Description description = new StringDescription( sb );
-                        messageMatcher.describeTo( description );
-                        description.appendText( System.lineSeparator() );
-                        description.appendText( "but " );
-                        messageMatcher.describeMismatch( message, description );
-                        throw new AssertionError( "Exception (attached as cause) did not match expected message '" + sb + "'.", e );
-                    }
-                }
-            }
-            else
-            {
-                throw new AssertionError( "Expected exception of type '" + typeOfException + "', but instead got the attached cause.", e );
-            }
-        }
     }
 
     public static void assertObjectOrArrayEquals( Object expected, Object actual )
@@ -127,56 +84,31 @@ public final class Assert
         }
     }
 
-    public static <T, E extends Exception> void assertEventually(
-            ThrowingSupplier<T, E> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit
-    ) throws E, InterruptedException
+    public static <T> void assertEventually( Callable<T> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit )
     {
-        assertEventually( ignored -> "", actual, matcher, timeout, timeUnit );
+        assertEventually( EMPTY, actual, matcher, timeout, timeUnit );
     }
 
-    public static <T, E extends Exception> void assertEventually(
-            String reason, ThrowingSupplier<T, E> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit
-    ) throws E, InterruptedException
+    public static <T> void assertEventually( String message, Callable<T> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit )
     {
-        assertEventually( ignored -> reason, actual, matcher, timeout, timeUnit );
+        awaitCondition( message, timeout, timeUnit ).until( actual, matcher );
     }
 
-    public static <T, E extends Exception> void assertEventually(
-            Function<T, String> reason, ThrowingSupplier<T, E> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit
-    ) throws E, InterruptedException
+    public static <T> void assertEventually( Supplier<String> messageSupplier, Callable<T> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit )
     {
-        long endTimeMillis = System.currentTimeMillis() + timeUnit.toMillis( timeout );
+        assertEventually( ignore -> messageSupplier.get(), actual, matcher, timeout, timeUnit );
+    }
 
-        T last;
-        boolean matched;
+    public static <T> void assertEventually( Function<T,String> messageGenerator, Callable<T> actual, Matcher<? super T> matcher, long timeout,
+            TimeUnit timeUnit )
+    {
+        awaitCondition( "await condition", timeout, timeUnit ).until( actual, new DescriptiveMatcher<>( matcher, messageGenerator ) );
+    }
 
-        do
-        {
-            long sampleTime = System.currentTimeMillis();
-
-            last = actual.get();
-            matched = matcher.matches( last );
-
-            if ( matched || sampleTime > endTimeMillis )
-            {
-                break;
-            }
-
-            Thread.sleep( 10 );
-        } while ( true );
-
-        if ( !matched )
-        {
-            Description description = new StringDescription();
-            description.appendText( reason.apply( last ) )
-                    .appendText( "\nExpected: " )
-                    .appendDescriptionOf( matcher )
-                    .appendText( "\n     but: " );
-            matcher.describeMismatch( last, description );
-
-            throw new AssertionError( "Timeout hit (" + timeout + " " + timeUnit.toString().toLowerCase() +
-                    ") while waiting for condition to match: " + description.toString() );
-        }
+    private static ConditionFactory awaitCondition( String alias, long timeout, TimeUnit timeUnit )
+    {
+        return await( alias ).atMost( timeout, timeUnit )
+                .pollDelay( 10, MILLISECONDS ).pollInSameThread();
     }
 
     private static AssertionError newAssertionError( String message, Object expected, Object actual )
@@ -184,5 +116,32 @@ public final class Assert
         return new AssertionError( ((message == null || message.isEmpty()) ? "" : message + "\n") +
                                    "Expected: " + Strings.prettyPrint( expected ) +
                                    ", actual: " + Strings.prettyPrint( actual ) );
+    }
+
+    private static class DescriptiveMatcher<T> extends TypeSafeMatcher<T>
+    {
+
+        private final Matcher<? super T> matcher;
+        private final Function<T, String> messageGenerator;
+        private T lastItem;
+
+        DescriptiveMatcher( Matcher<? super T> matcher, Function<T,String> messageGenerator )
+        {
+            this.matcher = matcher;
+            this.messageGenerator = messageGenerator;
+        }
+
+        @Override
+        protected boolean matchesSafely( T item )
+        {
+            this.lastItem = item;
+            return matcher.matches( item );
+        }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendText( messageGenerator.apply( lastItem ) );
+        }
     }
 }

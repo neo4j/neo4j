@@ -34,10 +34,10 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -157,7 +157,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
                 .build();
     }
 
-    private static ThrowingSupplier<String,IOException> httpLogContent( CommunityNeoServer server )
+    private static Callable<String> httpLogContent( CommunityNeoServer server )
     {
         var httpLogFile = httpLogFile( server );
         return () -> Files.readString( httpLogFile );
