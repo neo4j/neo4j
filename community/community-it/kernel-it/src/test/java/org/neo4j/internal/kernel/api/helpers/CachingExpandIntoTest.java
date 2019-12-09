@@ -235,8 +235,6 @@ class CachingExpandIntoTest
         }
     }
 
-
-
     @Test
     void shouldBeAbleToReuseWithTypes() throws KernelException
     {
@@ -289,7 +287,6 @@ class CachingExpandIntoTest
         }
     }
 
-
     @Test
     void shouldBeAbleToPreformAllCursorMethodsFromReused() throws KernelException
     {
@@ -325,7 +322,6 @@ class CachingExpandIntoTest
 
             CachingExpandInto expandInto =
                     new CachingExpandInto( tx.dataRead(), INCOMING, new int[]{t2, t3} );
-
 
             //Find r3 first time
             RelationshipSelectionCursor cursor = expandInto.connectingRelationships( nodes, group, traversal, start, end );
@@ -384,7 +380,6 @@ class CachingExpandIntoTest
             assertFalse( cursor.next() );
         }
     }
-
 
     @Test
     void shouldComputeDegreeWithoutType() throws Exception

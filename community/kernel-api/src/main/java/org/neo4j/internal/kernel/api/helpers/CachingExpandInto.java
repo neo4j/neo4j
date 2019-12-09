@@ -535,23 +535,21 @@ public class CachingExpandInto
         {
             return allRelationships.getToken();
         }
-
     }
-
 
     public static class RelationshipCache
     {
-        private final MutableMap<Key, List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
-        public void add(long start, long end, Direction direction, List<Relationship> relationships)
+        private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
+
+        public void add( long start, long end, Direction direction, List<Relationship> relationships )
         {
             map.put( key( start, end, direction ), relationships );
         }
 
-        public List<Relationship> get(long start, long end, Direction direction)
+        public List<Relationship> get( long start, long end, Direction direction )
         {
-            return map.get( key( start, end, direction) );
+            return map.get( key( start, end, direction ) );
         }
-
 
         public Key key( long startNode, long endNode, Direction direction )
         {
@@ -568,7 +566,7 @@ public class CachingExpandInto
                 a = startNode;
                 b = endNode;
             }
-            return new Key(a, b);
+            return new Key( a, b );
         }
 
         static class Key
@@ -619,8 +617,8 @@ public class CachingExpandInto
                 allRelationships.relationshipReference(),
                 allRelationships.sourceNodeReference(),
                 allRelationships.targetNodeReference(),
-                allRelationships.propertiesReference( ),
-                allRelationships.type());
+                allRelationships.propertiesReference(),
+                allRelationships.type() );
     }
 
     private static class Relationship
