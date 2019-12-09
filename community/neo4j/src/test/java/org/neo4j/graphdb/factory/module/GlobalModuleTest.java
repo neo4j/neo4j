@@ -36,8 +36,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
@@ -72,7 +71,7 @@ class GlobalModuleTest
         // if I try and get the lock it should fail because the deferred executor is still waiting for a real executor implementation.
         // n.b. this will take the whole timeout time. So don't set this high, even if it means that this test might get lucky and pass
         assertFalse( lock.tryAcquire( 1, 1, SECONDS ) );
-        assertThat( latch.getCount(), equalTo( 1L ) );
+        assertThat( latch.getCount() ).isEqualTo( 1L );
 
         Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
         new GlobalModule( cfg, DatabaseInfo.UNKNOWN, externalDependencies );

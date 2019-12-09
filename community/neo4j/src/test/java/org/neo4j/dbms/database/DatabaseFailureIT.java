@@ -33,11 +33,10 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.apache.commons.io.FileUtils.deleteDirectory;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,7 +88,7 @@ class DatabaseFailureIT
         deleteDirectory( neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
 
         Exception startException = assertThrows( Exception.class, this::startDatabase );
-        assertThat( startException, new NestedThrowableMatcher( UnableToStartDatabaseException.class ) );
+        assertThat( startException ).hasCauseInstanceOf( UnableToStartDatabaseException.class );
     }
 
     private GraphDatabaseAPI startDatabase()

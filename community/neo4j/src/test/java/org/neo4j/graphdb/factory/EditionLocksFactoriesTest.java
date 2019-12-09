@@ -31,8 +31,7 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,7 +61,7 @@ class EditionLocksFactoriesTest
         Config config = Config.defaults();
         LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
 
-        assertThat( lockFactory, instanceOf( CommunityLocksFactory.class ) );
+        assertThat( lockFactory ).isInstanceOf( CommunityLocksFactory.class );
     }
 
     @Test
@@ -72,7 +71,7 @@ class EditionLocksFactoriesTest
 
         LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
 
-        assertThat( lockFactory, instanceOf( CommunityLocksFactory.class ) );
+        assertThat( lockFactory ).isInstanceOf( CommunityLocksFactory.class );
     }
 
     @Test

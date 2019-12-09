@@ -37,8 +37,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -62,8 +61,8 @@ class CommunityEditionModuleIntegrationTest
             IdController idController = dependencyResolver.resolveDependency( IdController.class );
             IdGeneratorFactory idGeneratorFactory = dependencyResolver.resolveDependency( IdGeneratorFactory.class );
 
-            assertThat( idController, instanceOf( BufferedIdController.class ) );
-            assertThat( idGeneratorFactory, instanceOf( BufferingIdGeneratorFactory.class ) );
+            assertThat( idController ).isInstanceOf( BufferedIdController.class );
+            assertThat( idGeneratorFactory ).isInstanceOf( BufferingIdGeneratorFactory.class );
         }
         finally
         {

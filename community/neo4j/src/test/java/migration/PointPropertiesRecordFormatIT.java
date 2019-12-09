@@ -36,8 +36,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.PointValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayWithSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
@@ -104,7 +103,7 @@ class PointPropertiesRecordFormatIT
             {
                 Node node = nodes.next();
                 PointValue[] points = (PointValue[]) node.getProperty( propertyKey );
-                assertThat( points, arrayWithSize( 2 ) );
+                assertThat( points ).hasSize( 2 );
             }
         }
         managementService.shutdown();

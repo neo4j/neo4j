@@ -40,9 +40,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -64,7 +62,7 @@ class IdContextFactoryBuilderTest
     void requireFileSystemWhenIdGeneratorFactoryNotProvided()
     {
         NullPointerException exception = assertThrows( NullPointerException.class, () -> IdContextFactoryBuilder.of( null, jobScheduler, null ).build() );
-        assertThat( exception.getMessage(), containsString( "File system is required" ) );
+        assertThat( exception.getMessage() ).contains( "File system is required" );
     }
 
     @Test
@@ -76,8 +74,8 @@ class IdContextFactoryBuilderTest
         DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.getByName( "database" ).get() );
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
-        assertThat( idContext.getIdController(), instanceOf( BufferedIdController.class ) );
-        assertThat( bufferedGeneratorFactory, instanceOf( BufferingIdGeneratorFactory.class ) );
+        assertThat( idContext.getIdController() ).isInstanceOf( BufferedIdController.class );
+        assertThat( bufferedGeneratorFactory ).isInstanceOf( BufferingIdGeneratorFactory.class );
 
         ((BufferingIdGeneratorFactory)bufferedGeneratorFactory).initialize( () -> mock( KernelTransactionsSnapshot.class ) );
         File file = testDirectory.file( "a" );
