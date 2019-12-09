@@ -101,42 +101,42 @@ public class CachingExpandInto
         {
             return new FromCachedSelectionCursor( connections.iterator(), read );
         }
-
-        //Check from
-        int fromDegree = calculateTotalDegreeIfDense( read, fromNode, nodeCursor, direction, groupCursor );
-        if ( fromDegree == 0 )
+        Direction reverseDirection = direction.reverse();
+        //Check toNode, will position nodeCursor at toNode
+        int toDegree = calculateTotalDegreeIfDense( read, toNode, nodeCursor, reverseDirection, groupCursor );
+        if ( toDegree == 0 )
         {
             return RelationshipSelectionCursor.EMPTY;
         }
-        boolean fromNodeIsDense = fromDegree != NOT_DENSE_DEGREE;
+        boolean toNodeIsDense = toDegree != NOT_DENSE_DEGREE;
 
-        //Check to
-        if ( !singleNode( read, nodeCursor, toNode ) )
+        //Check fromNode, note that nodeCursor is now pointing at fromNode
+        if ( !singleNode( read, nodeCursor, fromNode ) )
         {
             return RelationshipSelectionCursor.EMPTY;
         }
-        boolean toNodeIsDense = nodeCursor.isDense();
+        boolean fromNodeIsDense = nodeCursor.isDense();
 
         //Both are dense, start with the one with the lesser degree
         if ( fromNodeIsDense && toNodeIsDense )
         {
-            //Note that we have already position the cursor at toNode
-            int toDegree = calculateTotalDegreeDense( nodeCursor, direction.reverse(), groupCursor );
+            //Note that we have already position the cursor at fromNode
+            int fromDegree = calculateTotalDegreeDense( nodeCursor, direction, groupCursor );
             long startNode;
             long endNode;
             Direction relDirection;
             if ( fromDegree < toDegree )
             {
-                // here we must reposition cursor to fromNode
-                singleNode( read, nodeCursor, fromNode );
+                // Everything is correctly positioned
                 endNode = toNode;
                 relDirection = direction;
             }
             else
             {
-                //cursor is already pointing at toNode
+                //cursor is already pointing at fromNode
+                singleNode( read, nodeCursor, toNode );
                 endNode = fromNode;
-                relDirection = direction.reverse();
+                relDirection = reverseDirection;
             }
 
             return denseConnectingRelationshipsCursor( relDirection, groupCursor, traversalCursor, nodeCursor, types,
@@ -144,8 +144,6 @@ public class CachingExpandInto
         }
         else if ( toNodeIsDense )
         {
-            //we need to point the cursor to fromNode again
-            singleNode( read, nodeCursor, fromNode );
 
             //TODO this closing is for compiled runtime and can be removed with the compiled runtime
             groupCursor.close();
@@ -154,11 +152,10 @@ public class CachingExpandInto
         else
         {
             //Either the from node is dense or both are sparse, either way since the node cursor is currently pointing at
-            //the toNode lets start from that one.
+            //the fromNode lets start from that one.
             //TODO this closing is for compiled runtime and can be removed with the compiled runtime
             groupCursor.close();
-            return sparseConnectingRelationshipsCursor( direction.reverse(), traversalCursor, nodeCursor, types,
-                    fromNode );
+            return sparseConnectingRelationshipsCursor( direction, traversalCursor, nodeCursor, types, toNode );
         }
     }
 
