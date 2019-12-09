@@ -56,9 +56,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -113,7 +111,7 @@ class LoadCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo( String.format(
+        assertThat( baos.toString().trim() ).isEqualTo( String.format(
                 "Load a database from an archive created with the dump command.%n" +
                         "%n" +
                         "USAGE%n" +
@@ -125,17 +123,10 @@ class LoadCommandTest
                         "Load a database from an archive. <archive-path> must be an archive created with%n" +
                         "the dump command. <database> is the name of the database to create. Existing%n" +
                         "databases can be replaced by specifying --force. It is not possible to replace%n" +
-                        "a database that is mounted in a running Neo4j server.%n" +
-                        "%n" +
-                        "OPTIONS%n" +
-                        "%n" +
-                        "      --verbose       Enable verbose output.%n" +
-                        "      --from=<path>   Path to archive created with the dump command.%n" +
-                        "      --database=<database>%n" +
-                        "                      Name of the database to load.%n" +
-                        "                        Default: neo4j%n" +
-                        "      --force         If an existing database should be replaced."
-        ) ) );
+                        "a database that is mounted in a running Neo4j server.%n" + "%n" + "OPTIONS%n" + "%n" +
+                        "      --verbose       Enable verbose output.%n" + "      --from=<path>   Path to archive created with the dump command.%n" +
+                        "      --database=<database>%n" + "                      Name of the database to load.%n" + "                        Default: neo4j%n" +
+                        "      --force         If an existing database should be replaced." ) );
     }
 
     @Test
@@ -213,7 +204,7 @@ class LoadCommandTest
 
         doAnswer( ignored ->
         {
-            assertThat( Files.exists( marker ), equalTo( false ) );
+            assertThat( Files.exists( marker ) ).isEqualTo( false );
             return null;
         } ).when( loader ).load( any(), any() );
 
@@ -229,7 +220,7 @@ class LoadCommandTest
 
         doAnswer( ignored ->
         {
-            assertThat( Files.exists( databaseDirectory ), equalTo( true ) );
+            assertThat( Files.exists( databaseDirectory ) ).isEqualTo( true );
             return null;
         } ).when( loader ).load( any(), any() );
 
@@ -291,8 +282,8 @@ class LoadCommandTest
     {
         doThrow( IncorrectFormat.class ).when( loader ).load( any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
-        assertThat( commandFailed.getMessage(), containsString( archive.toString() ) );
-        assertThat( commandFailed.getMessage(), containsString( "valid Neo4j archive" ) );
+        assertThat( commandFailed.getMessage() ).contains( archive.toString() );
+        assertThat( commandFailed.getMessage() ).contains( "valid Neo4j archive" );
     }
 
     private DatabaseLayout createDatabaseLayout( Path storePath, String databaseName, Path transactionLogsPath )

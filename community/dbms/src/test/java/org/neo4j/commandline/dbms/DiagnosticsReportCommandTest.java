@@ -51,10 +51,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
@@ -129,7 +126,7 @@ public class DiagnosticsReportCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo( String.format(
+        assertThat( baos.toString().trim() ).isEqualTo( String.format(
                 "Produces a zip/tar of the most common information needed for remote assessments.%n" +
                 "%n" +
                 "USAGE%n" +
@@ -156,7 +153,7 @@ public class DiagnosticsReportCommandTest
                 "      --to=<path>         Destination directory for reports. Defaults to a%n" +
                 "                            system tmp directory.%n" +
                 "      --pid=<pid>         Specify process id of running neo4j instance"
-        ) ) );
+        ) );
     }
 
     @Test
@@ -167,7 +164,7 @@ public class DiagnosticsReportCommandTest
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
         CommandLine.populateCommand( diagnosticsReportCommand, args );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, diagnosticsReportCommand::execute );
-        assertThat( commandFailed.getMessage(), containsString( "Unable to find config file, tried: " ) );
+        assertThat( commandFailed.getMessage() ).contains( "Unable to find config file, tried: " );
     }
 
     @Test
@@ -219,7 +216,7 @@ public class DiagnosticsReportCommandTest
             CommandLine.populateCommand( diagnosticsReportCommand, args );
             diagnosticsReportCommand.execute();
 
-            assertThat( baos.toString(), is(String.format(
+            assertThat( baos.toString() ).isEqualTo( String.format(
                     "Finding running instance of neo4j%n" +
                             "No running instance of neo4j was found. Online reports will be omitted.%n" +
                             "If neo4j is running but not detected, you can supply the process id of the running instance with --pid%n" +
@@ -229,7 +226,7 @@ public class DiagnosticsReportCommandTest
                             "  plugins    include a view of the plugin directory%n" +
                             "  ps         include a list of running processes%n" +
                             "  tree       include a view of the tree structure of the data directory%n" +
-                            "  tx         include transaction logs%n" ) ) );
+                            "  tx         include transaction logs%n" ) );
         }
     }
 
@@ -244,11 +241,11 @@ public class DiagnosticsReportCommandTest
         diagnosticsReportCommand.execute();
 
         File other = testDirectory.directory( "other" );
-        assertThat( ctx.fs().fileExists( other ), is( true ) );
-        assertThat( ctx.fs().listFiles( other ).length, is( 1 ) );
+        assertThat( ctx.fs().fileExists( other ) ).isEqualTo( true );
+        assertThat( ctx.fs().listFiles( other ).length ).isEqualTo( 1 );
 
         // Default should be empty
         File reports = new File( testDirectory.homeDir(), "reports" );
-        assertThat( ctx.fs().fileExists( reports ), is( false ) );
+        assertThat( ctx.fs().fileExists( reports ) ).isEqualTo( false );
     }
 }

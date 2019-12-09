@@ -48,8 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -128,7 +127,7 @@ class LoaderTest
         }
         final InvalidDumpEntryException exception =
                 assertThrows( InvalidDumpEntryException.class, () -> new Loader().load( archive, databaseLayout ) );
-        assertThat( exception.getMessage(), containsString( "points to a location outside of the destination database." ) );
+        assertThat( exception.getMessage() ).contains( "points to a location outside of the destination database." );
     }
 
     @Test
