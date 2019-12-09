@@ -23,8 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SerializerTest
 {
@@ -38,8 +37,8 @@ class SerializerTest
         };
 
         String aRelativeUrl = "/path/path/path";
-        assertThat( serializer.relativeUri( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ) );
-        assertThat( serializer.relativeTemplate( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ) );
+        assertThat( serializer.relativeUri( aRelativeUrl ) ).isEqualTo( baseUrl + aRelativeUrl.substring( 1 ) );
+        assertThat( serializer.relativeTemplate( aRelativeUrl ) ).isEqualTo( baseUrl + aRelativeUrl.substring( 1 ) );
     }
 
 }
