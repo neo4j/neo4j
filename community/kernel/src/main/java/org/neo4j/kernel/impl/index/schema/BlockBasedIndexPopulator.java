@@ -295,7 +295,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             }
 
             // Flush the tree here, but keep its state as populating. This is done so that the "actual" flush-and-mark-online during flip
-            // as way faster and so the flip lock time is reduced.
+            // becomes way faster and so the flip lock time is reduced.
             flushTreeAndMarkAs( BYTE_POPULATING );
         }
         catch ( IOException e )

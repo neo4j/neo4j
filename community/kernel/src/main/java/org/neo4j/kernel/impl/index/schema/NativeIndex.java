@@ -129,12 +129,14 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         public void cleanupRegistered()
         {
             monitor.recoveryCleanupRegistered( indexFiles.getStoreFile(), descriptor );
+            super.cleanupRegistered();
         }
 
         @Override
         public void cleanupStarted()
         {
             monitor.recoveryCleanupStarted( indexFiles.getStoreFile(), descriptor );
+            super.cleanupStarted();
         }
 
         @Override
@@ -142,18 +144,21 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         {
             monitor.recoveryCleanupFinished( indexFiles.getStoreFile(), descriptor,
                     numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
+            super.cleanupFinished( numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
         }
 
         @Override
         public void cleanupClosed()
         {
             monitor.recoveryCleanupClosed( indexFiles.getStoreFile(), descriptor );
+            super.cleanupClosed();
         }
 
         @Override
         public void cleanupFailed( Throwable throwable )
         {
             monitor.recoveryCleanupFailed( indexFiles.getStoreFile(), descriptor, throwable );
+            super.cleanupFailed( throwable );
         }
     }
 }
