@@ -25,15 +25,16 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.util.VisibleForTesting;
 
@@ -81,8 +82,10 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, isSingleInstance );
         boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
 
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( readOnly ).build();
         GenericNativeIndexProvider generic =
-                new GenericNativeIndexProvider( childDirectoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
+                new GenericNativeIndexProvider( databaseIndexContext, childDirectoryStructure,
+                        recoveryCleanupWorkCollector, config );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, isSingleInstance );
 
         return new FusionIndexProvider( generic, lucene, new FusionSlotSelector30(),

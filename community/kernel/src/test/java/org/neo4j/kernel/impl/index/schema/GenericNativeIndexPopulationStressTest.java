@@ -24,13 +24,15 @@ import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 
 class GenericNativeIndexPopulationStressTest extends IndexPopulationStressTest
 {
     GenericNativeIndexPopulationStressTest()
     {
         super( "generic", true, RandomValues::nextValue, test ->
-            new GenericNativeIndexProvider( test.directory(), test.pageCache, test.fs, EMPTY, immediate(), false, defaults() ) );
+        {
+            DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs ).build();
+            return new GenericNativeIndexProvider( context, test.directory(), immediate(), defaults() );
+        } );
     }
 }

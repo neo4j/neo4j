@@ -45,13 +45,10 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.memory.ByteBufferFactory.Allocator;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
@@ -112,20 +109,18 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private volatile long numberOfAppliedScanUpdates;
     private volatile long numberOfAppliedExternalUpdates;
 
-    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-                              IndexProvider.Monitor monitor, IndexDescriptor descriptor,
-                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
+    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
     {
-        this( pageCache, fs, indexFiles, layout, monitor, descriptor, archiveFailedIndex, bufferFactory,
+        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory,
               FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR, GBPTree.NO_MONITOR );
     }
 
-    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-                              IndexProvider.Monitor monitor, IndexDescriptor descriptor,
-                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory, int mergeFactor, BlockStorage.Monitor blockStorageMonitor,
-                              GBPTree.Monitor treeMonitor )
+    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexDescriptor descriptor,
+            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, int mergeFactor, BlockStorage.Monitor blockStorageMonitor,
+            GBPTree.Monitor treeMonitor )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER, treeMonitor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, NO_HEADER_WRITER, treeMonitor );
         this.archiveFailedIndex = archiveFailedIndex;
         this.mergeFactor = mergeFactor;
         this.blockStorageMonitor = blockStorageMonitor;

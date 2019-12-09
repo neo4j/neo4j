@@ -61,7 +61,6 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -80,6 +79,7 @@ class GenericBlockBasedIndexPopulatorTest
     private PageCache pageCache;
 
     private IndexFiles indexFiles;
+    private DatabaseIndexContext databaseIndexContext;
 
     @BeforeEach
     void setup()
@@ -87,6 +87,7 @@ class GenericBlockBasedIndexPopulatorTest
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
         IndexDirectoryStructure directoryStructure = directoriesByProvider( directory.homeDir() ).forProvider( providerDescriptor );
         indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
+        databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
     }
 
     @Test
@@ -331,7 +332,7 @@ class GenericBlockBasedIndexPopulatorTest
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         GenericBlockBasedIndexPopulator populator =
-            new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, EMPTY, indexDescriptor, spatialSettings, configuration, false,
+                new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor, spatialSettings, configuration, false,
                 heapBufferFactory( (int) kibiBytes( 40 ) ) );
         populator.create();
         return populator;

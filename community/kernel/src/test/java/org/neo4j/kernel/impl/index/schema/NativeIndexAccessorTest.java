@@ -75,8 +75,10 @@ class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
     private static AccessorFactory<GenericKey, NativeIndexValue> genericAccessorFactory()
     {
         return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, readOnly ) ->
-                new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration,
-                        readOnly );
+        {
+            DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( readOnly ).build();
+            return new GenericNativeIndexAccessor( context, storeFiles, layout, cleanup, descriptor, spaceFillingCurveSettings, configuration );
+        };
     }
 
     @FunctionalInterface

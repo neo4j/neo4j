@@ -59,7 +59,6 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 @PageCacheExtension
@@ -90,8 +89,9 @@ class GenericAccessorPointsTest
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 );
-        accessor = new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration(),
-                false );
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
+        StandardConfiguration configuration = new StandardConfiguration();
+        accessor = new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, layout, collector, descriptor, indexSettings, configuration );
     }
 
     @AfterEach

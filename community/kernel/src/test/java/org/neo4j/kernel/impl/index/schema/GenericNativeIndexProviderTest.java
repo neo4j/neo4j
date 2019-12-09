@@ -48,7 +48,8 @@ class GenericNativeIndexProviderTest
     void mustCompleteIndexDescriptorConfigurationsWithSpatialConfig()
     {
         // Given
-        GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
+        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null ).build();
+        GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
                 .withName( "index" ).materialise( 1 );
@@ -71,7 +72,8 @@ class GenericNativeIndexProviderTest
     void completeConfigurationMustNotOverrideExistingSettings()
     {
         // Given
-        GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
+        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null ).build();
+        GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         Map<String,Value> existingSettings = new HashMap<>();
         CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.Cartesian;
         DoubleArray min = Values.doubleArray( new double[]{0, 0} );

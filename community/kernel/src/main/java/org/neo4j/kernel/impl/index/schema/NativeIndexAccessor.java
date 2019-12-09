@@ -29,13 +29,10 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -50,10 +47,10 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     private final NativeIndexUpdater<KEY,VALUE> singleUpdater;
     final NativeIndexHeaderWriter headerWriter;
 
-    NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, boolean readOnly )
+    NativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+            IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, GBPTree.NO_MONITOR, readOnly );
+        super( databaseIndexContext, layout, indexFiles, descriptor, GBPTree.NO_MONITOR );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter );
     }

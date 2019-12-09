@@ -27,8 +27,10 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 class NativeIndexProviderTest extends NativeIndexProviderTests
 {
     private static final ProviderFactory factory =
-        ( pageCache, fs, dir, monitor, collector, readOnly ) -> new GenericNativeIndexProvider( dir, pageCache, fs, monitor, collector, readOnly,
-            Config.defaults() );
+            ( pageCache, fs, dir, monitor, collector, readOnly ) -> {
+                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( readOnly ).build();
+                return new GenericNativeIndexProvider( context, dir, collector, Config.defaults() );
+            };
 
     NativeIndexProviderTest()
     {

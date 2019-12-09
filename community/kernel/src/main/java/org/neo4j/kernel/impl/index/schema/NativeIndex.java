@@ -50,17 +50,17 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
 
     protected GBPTree<KEY,VALUE> tree;
 
-    NativeIndex( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            IndexDescriptor descriptor, GBPTree.Monitor treeMonitor, boolean readOnly )
+    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY,VALUE> layout, IndexFiles indexFiles, IndexDescriptor descriptor,
+            GBPTree.Monitor treeMonitor )
     {
-        this.pageCache = pageCache;
+        this.pageCache = databaseIndexContext.pageCache;
+        this.fileSystem = databaseIndexContext.fileSystem;
+        this.monitor = databaseIndexContext.monitor;
+        this.readOnly = databaseIndexContext.readOnly;
         this.indexFiles = indexFiles;
         this.layout = layout;
-        this.fileSystem = fs;
         this.descriptor = descriptor;
-        this.monitor = monitor;
         this.treeMonitor = treeMonitor;
-        this.readOnly = readOnly;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )

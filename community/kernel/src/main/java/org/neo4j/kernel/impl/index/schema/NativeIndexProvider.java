@@ -54,21 +54,15 @@ import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue,LAYOUT extends IndexLayout<KEY,VALUE>>
         extends IndexProvider
 {
-    protected final PageCache pageCache;
-    protected final FileSystemAbstraction fs;
-    protected final Monitor monitor;
+    protected final DatabaseIndexContext databaseIndexContext;
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-    protected final boolean readOnly;
 
-    protected NativeIndexProvider( IndexProviderDescriptor descriptor, Factory directoryStructureFactory, PageCache pageCache,
-            FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+    protected NativeIndexProvider( DatabaseIndexContext databaseIndexContext, IndexProviderDescriptor descriptor,
+            Factory directoryStructureFactory, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         super( descriptor, directoryStructureFactory );
-        this.pageCache = pageCache;
-        this.fs = fs;
-        this.monitor = monitor;
+        this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-        this.readOnly = readOnly;
     }
 
     /**
@@ -84,12 +78,12 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
-        if ( readOnly )
+        if ( databaseIndexContext.readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
         return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
                 bufferFactory );
     }
@@ -100,18 +94,18 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
-        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor, readOnly );
+        IndexFiles indexFiles = new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
+        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor, boolean readOnly ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor ) throws IOException;
 
     @Override
     public String getPopulationFailure( IndexDescriptor descriptor )
     {
         try
         {
-            String failureMessage = NativeIndexes.readFailureMessage( pageCache, storeFile( descriptor ) );
+            String failureMessage = NativeIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ) );
             return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
         }
         catch ( IOException e )
@@ -125,11 +119,11 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     {
         try
         {
-            return NativeIndexes.readState( pageCache, storeFile( descriptor ) );
+            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ) );
         }
         catch ( MetadataMismatchException | IOException e )
         {
-            monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
+            databaseIndexContext.monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
     }
@@ -144,7 +138,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
 
     private File storeFile( IndexDescriptor descriptor )
     {
-        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
         return indexFiles.getStoreFile();
     }
 }

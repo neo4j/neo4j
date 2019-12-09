@@ -24,9 +24,6 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -39,15 +36,15 @@ class NativeIndexPopulatorTestCases
 
     static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-                new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false,
+        return ( nativeIndexContext, storeFile, layout, descriptor ) ->
+                new GenericBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, spaceFillingCurveSettings, configuration, false,
                         heapBufferFactory( 10 * 1024 ) );
     }
 
     @FunctionalInterface
     public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
-        NativeIndexPopulator<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-                IndexProvider.Monitor monitor, IndexDescriptor descriptor ) throws IOException;
+        NativeIndexPopulator<KEY,VALUE> create( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+                IndexDescriptor descriptor ) throws IOException;
     }
 }

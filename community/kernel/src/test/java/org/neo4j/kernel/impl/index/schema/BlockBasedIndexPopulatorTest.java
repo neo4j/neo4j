@@ -62,7 +62,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.test.Race.throwing;
@@ -82,6 +81,7 @@ class BlockBasedIndexPopulatorTest
     Actor closer;
 
     private IndexFiles indexFiles;
+    private DatabaseIndexContext databaseIndexContext;
 
     @Inject
     FileSystemAbstraction fs;
@@ -98,6 +98,7 @@ class BlockBasedIndexPopulatorTest
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
         IndexDirectoryStructure directoryStructure = directoriesByProvider( testDir.homeDir() ).forProvider( providerDescriptor );
         indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
+        databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
     }
 
     @Test
@@ -440,8 +441,7 @@ class BlockBasedIndexPopulatorTest
         IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
-                new BlockBasedIndexPopulator<>( pageCache, fs, indexFiles, layout, EMPTY, INDEX_DESCRIPTOR, false, bufferFactory,
-                                                2, monitor, treeMonitor )
+                new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory, 2, monitor, treeMonitor )
                 {
                     @Override
                     NativeIndexReader<GenericKey,NativeIndexValue> newReader()

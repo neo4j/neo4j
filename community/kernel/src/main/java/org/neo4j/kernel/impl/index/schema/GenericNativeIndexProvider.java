@@ -35,9 +35,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -119,10 +117,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
 
-    public GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs,
-            Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
+    public GenericNativeIndexProvider( DatabaseIndexContext databaseIndexContext, IndexDirectoryStructure.Factory directoryStructureFactory,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config )
     {
-        super( DESCRIPTOR, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        super( databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector );
 
         this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
@@ -164,15 +162,15 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory )
     {
-        return new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+        return new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, layout.getSpaceFillingCurveSettings(),
                 configuration, archiveFailedIndex, bufferFactory );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, boolean readOnly )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor )
     {
-        return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                layout.getSpaceFillingCurveSettings(), configuration, readOnly );
+        return new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor,
+                layout.getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override
