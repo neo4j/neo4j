@@ -6028,7 +6028,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, NULL ) )
+                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorTracer ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, nofault );
         }
@@ -6058,7 +6059,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, NULL ) )
+                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorTracer ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, nofault );
             verifyNoFaultWriteIsOutOfBounds( nofault );
@@ -6075,7 +6077,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, NULL );
+                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorTracer );
                 PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, linkedNoFault );
@@ -6092,7 +6095,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, NULL );
+                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorTracer );
                 PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, linkedNoFault );
