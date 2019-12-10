@@ -23,6 +23,7 @@ import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Strictness
 import org.neo4j.cypher.internal.util.Foldable
@@ -259,6 +260,8 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
   def label: LabelToken
 
   def properties: Seq[IndexedProperty]
+
+  def indexOrder: IndexOrder
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexSeekLeafPlan
 }

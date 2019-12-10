@@ -23,7 +23,8 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 
-class DefaultIndexReadSession implements IndexReadSession
+class
+DefaultIndexReadSession implements IndexReadSession
 {
     final IndexReader reader;
     final IndexDescriptor reference;

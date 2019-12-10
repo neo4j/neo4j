@@ -66,7 +66,7 @@ trait NodeIndexSeeker {
 
   private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
 
-  protected def computeIndexQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery]] =
+  def computeIndexQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery]] =
     valueExpr match {
 
       // Index range seek over range of values
