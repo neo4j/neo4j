@@ -858,7 +858,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.relationship_grouping_threshold", INT, 50 ).addConstraint( min( 1 ) ).build();
 
     @Description( "Specifies the use of the new faster but experimental consistency checker" )
-    public static final Setting<Boolean> experimental_consistency_checker = newBuilder( "unsupported.consistency_checker.experimental", BOOL, false ).build();
+    public static final Setting<Boolean> experimental_consistency_checker = newBuilder( "unsupported.consistency_checker.experimental", BOOL, true ).build();
 
     @Description( "Specifies if the experimental consistency checker should stop when number of observed inconsistencies exceed the threshold. " +
             "If the value is zero, all inconsistencies will be reported" )
