@@ -79,12 +79,13 @@ public abstract class GraphAlgoFactory
      * Returns an algorithm which can find all shortest paths (that is paths
      * with as short {@link Path#length()} as possible) between two nodes. These
      * returned paths cannot contain loops (i.e. a node cannot occur more than
-     * once in any returned path).
+     * once in any returned path). The algorithm is bi-directional breadth-first
+     * where nodes will be expanded according to the given {@code expander}.
      *
      * @param expander the {@link PathExpander} to use for expanding
      *            {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
-     *            to have.
+     *            to have. Longer paths than that will not be examined.
      * @return an algorithm which finds shortest paths between two nodes.
      */
     public static PathFinder<Path> shortestPath( PathExpander expander, int maxDepth )
@@ -96,12 +97,13 @@ public abstract class GraphAlgoFactory
      * Returns an algorithm which can find all shortest paths (that is paths
      * with as short {@link Path#length()} as possible) between two nodes. These
      * returned paths cannot contain loops (i.e. a node cannot occur more than
-     * once in any returned path).
+     * once in any returned path). The algorithm is bi-directional breadth-first
+     * where nodes will be expanded according to the given {@code expander}.
      *
      * @param expander the {@link PathExpander} to use for expanding
      *            {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
-     *            to have.
+     *            to have. Longer paths than that will not be examined.
      * @param maxHitCount the maximum number of {@link Path}s to return.
      * If this number of found paths are encountered the traversal will stop.
      * @return an algorithm which finds shortest paths between two nodes.
