@@ -36,7 +36,7 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.frontend.v3_5</moduleName>
+        <moduleName>org.neo4j.cypher.internal.frontend</moduleName>
     </properties>
 
     <licenses>
