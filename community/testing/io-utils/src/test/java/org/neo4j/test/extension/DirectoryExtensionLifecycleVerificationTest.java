@@ -36,6 +36,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
@@ -88,11 +89,11 @@ class DirectoryExtensionLifecycleVerificationTest
         TestDirectory testDirectory;
 
         @Test
-        void iFail()
+        void createAFileAndThenFail()
         {
             File file = testDirectory.createFile( "b" );
             CONTEXT.setValue( FAILED_TEST_FILE_KEY, file );
-            Assertions.fail();
+            fail();
         }
     }
 
