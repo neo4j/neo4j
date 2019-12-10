@@ -83,7 +83,7 @@ class ExecutionResultSerializer
         this.out = createGenerator( output );
     }
 
-    private JsonGenerator createGenerator( OutputStream output )
+    private static JsonGenerator createGenerator( OutputStream output )
     {
         try
         {
