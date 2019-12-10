@@ -168,7 +168,7 @@ public class KernelTransactionTimeoutMonitorIT
         return () ->
         {
             try ( InternalTransaction tx = database
-                    .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED, EMBEDDED_CONNECTION, 1, TimeUnit.SECONDS ) )
+                    .beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED, EMBEDDED_CONNECTION, 1, TimeUnit.SECONDS ) )
             {
                 Node node = tx.getNodeById( NODE_ID );
                 node.setProperty( "c", "d" );

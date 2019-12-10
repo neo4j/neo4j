@@ -108,19 +108,17 @@ public class SslPolicy
         }
     }
 
-    @SuppressWarnings( "unused" )
     public ChannelHandler nettyServerHandler( Channel channel ) throws SSLException
     {
         return nettyServerHandler( channel, nettyServerContext() );
     }
 
-    private ChannelHandler nettyServerHandler( Channel channel, SslContext sslContext )
+    private static ChannelHandler nettyServerHandler( Channel channel, SslContext sslContext )
     {
         SSLEngine sslEngine = sslContext.newEngine( channel.alloc() );
         return new SslHandler( sslEngine );
     }
 
-    @SuppressWarnings( "unused" )
     public ChannelHandler nettyClientHandler( Channel channel ) throws SSLException
     {
         return nettyClientHandler( channel, nettyClientContext() );
@@ -195,7 +193,7 @@ public class SslPolicy
                '}';
     }
 
-    private String describeCertificate( X509Certificate certificate )
+    private static String describeCertificate( X509Certificate certificate )
     {
         return "Subject: " + certificate.getSubjectDN() +
                ", Issuer: " + certificate.getIssuerDN();
@@ -203,7 +201,7 @@ public class SslPolicy
 
     private String describeCertChain()
     {
-        List<String> certificates = Arrays.stream( keyCertChain ).map( this::describeCertificate ).collect( Collectors.toList() );
+        List<String> certificates = Arrays.stream( keyCertChain ).map( SslPolicy::describeCertificate ).collect( Collectors.toList() );
         return String.join( ", ", certificates );
     }
 }

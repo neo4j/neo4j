@@ -102,7 +102,7 @@ public final class GrabAllocator implements MemoryAllocator
             this.memoryTracker = memoryTracker;
         }
 
-        private long nextAligned( long pointer, long alignment )
+        private static long nextAligned( long pointer, long alignment )
         {
             if ( alignment == 1 )
             {

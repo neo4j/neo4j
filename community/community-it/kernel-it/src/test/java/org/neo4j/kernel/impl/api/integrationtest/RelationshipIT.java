@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 class RelationshipIT extends KernelIntegrationTest
 {
@@ -209,7 +209,7 @@ class RelationshipIT extends KernelIntegrationTest
     {
         assertTrue( otherThread.execute( state ->
         {
-            try ( KernelTransaction ktx = kernel.beginTransaction( implicit, LoginContext.AUTH_DISABLED ) )
+            try ( KernelTransaction ktx = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED ) )
             {
                 assertRels( nodeGetRelationships( ktx, refNode, both ), longs );
             }

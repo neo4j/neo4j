@@ -110,18 +110,6 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     }
 
     @Override
-    public Position suspend()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void resume( Position position )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public void neighbour( NodeCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );

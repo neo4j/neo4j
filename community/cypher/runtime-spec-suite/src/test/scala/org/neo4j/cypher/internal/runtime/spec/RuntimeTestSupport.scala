@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{InputDataStream, NormalMode, ProfileMode, QueryContext, ResourceManager, ResourceMonitor}
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
@@ -71,14 +71,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   }
 
   def startTx(): Unit = {
-    _tx = cypherGraphDb.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
+    _tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
   def restartTx(): Unit = {
     txContext.close()
     _tx.commit()
-    _tx = cypherGraphDb.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
+    _tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
@@ -106,7 +106,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   subscriber: QuerySubscriber,
                   profile: Boolean): RESULT = {
     DebugLog.log("RuntimeTestSupport.run(...)")
-    val tx = cypherGraphDb.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
+    val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
     val queryContext = newQueryContext(txContext)
     try {

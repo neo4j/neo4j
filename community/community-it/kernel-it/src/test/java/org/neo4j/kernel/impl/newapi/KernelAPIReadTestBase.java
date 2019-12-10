@@ -119,6 +119,6 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
 
     private static KernelTransaction beginTransaction( Kernel kernel ) throws TransactionFailureException
     {
-        return kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        return kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED );
     }
 }

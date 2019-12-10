@@ -96,35 +96,35 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksu
     @Override
     public short getShort() throws IOException
     {
-        ensureDataExists( 2 );
+        ensureDataExists( Short.BYTES );
         return aheadBuffer.getShort();
     }
 
     @Override
     public int getInt() throws IOException
     {
-        ensureDataExists( 4 );
+        ensureDataExists( Integer.BYTES );
         return aheadBuffer.getInt();
     }
 
     @Override
     public long getLong() throws IOException
     {
-        ensureDataExists( 8 );
+        ensureDataExists( Long.BYTES );
         return aheadBuffer.getLong();
     }
 
     @Override
     public float getFloat() throws IOException
     {
-        ensureDataExists( 4 );
+        ensureDataExists( Float.BYTES );
         return aheadBuffer.getFloat();
     }
 
     @Override
     public double getDouble() throws IOException
     {
-        ensureDataExists( 8 );
+        ensureDataExists( Double.BYTES );
         return aheadBuffer.getDouble();
     }
 

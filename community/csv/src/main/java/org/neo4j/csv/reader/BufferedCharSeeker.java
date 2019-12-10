@@ -72,7 +72,6 @@ public class BufferedCharSeeker implements CharSeeker
     {
         this.source = source;
         this.quoteChar = config.quotationCharacter();
-        this.lineStartPos = this.bufferPos;
         this.multilineFields = config.multilineFields();
         this.legacyStyleQuoting = config.legacyStyleQuoting();
         this.trim = getTrimStringIgnoreErrors( config );
@@ -220,7 +219,7 @@ public class BufferedCharSeeker implements CharSeeker
         return index;
     }
 
-    private boolean isWhitespace( int ch )
+    private static boolean isWhitespace( int ch )
     {
         return ch == ' ' ||
                 ch == Character.SPACE_SEPARATOR ||
@@ -245,7 +244,7 @@ public class BufferedCharSeeker implements CharSeeker
         buffer[offset - stepsBack] = buffer[offset];
     }
 
-    private boolean isNewLine( int ch )
+    private static boolean isNewLine( int ch )
     {
         return ch == EOL_CHAR || ch == EOL_CHAR_2;
     }
@@ -266,7 +265,7 @@ public class BufferedCharSeeker implements CharSeeker
         }
     }
 
-    private boolean eof( Mark mark )
+    private static boolean eof( Mark mark )
     {
         mark.set( -1, -1, Mark.END_OF_LINE_CHARACTER, false );
         return false;

@@ -29,7 +29,7 @@ import static java.util.Arrays.copyOf;
  * Methods "missing" from {@link Arrays} are provided here.
  *
  */
-public abstract class ArrayUtil
+public final class ArrayUtil
 {
     public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 

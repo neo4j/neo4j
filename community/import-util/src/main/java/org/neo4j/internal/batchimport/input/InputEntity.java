@@ -28,7 +28,7 @@ import java.util.List;
  * Simple utility for gathering all information about an {@link InputEntityVisitor} and exposing getters
  * for that data. Easier to work with than purely visitor-based implementation in tests.
  */
-public class InputEntity implements InputEntityVisitor, Cloneable
+public class InputEntity implements InputEntityVisitor
 {
     public static final Object[] NO_PROPERTIES = new Object[0];
     public static final String[] NO_LABELS = new String[0];

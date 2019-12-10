@@ -21,7 +21,7 @@ package org.neo4j.io;
 
 import java.io.OutputStream;
 
-public class NullOutputStream extends OutputStream
+public final class NullOutputStream extends OutputStream
 {
     public static final OutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
 

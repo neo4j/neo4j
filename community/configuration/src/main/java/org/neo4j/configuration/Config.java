@@ -22,9 +22,10 @@ package org.neo4j.configuration;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +57,7 @@ public class Config implements Configuration
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
 
-    public static class Builder
+    public static final class Builder
     {
         private final Collection<Class<? extends SettingsDeclaration>> settingsClasses = new HashSet<>();
         private final Collection<Class<? extends GroupSetting>> groupSettingClasses = new HashSet<>();
@@ -226,7 +227,7 @@ public class Config implements Configuration
 
             try
             {
-                try ( FileInputStream stream = new FileInputStream( file ) )
+                try ( InputStream stream = Files.newInputStream( file.toPath() ) )
                 {
                     new Properties()
                     {

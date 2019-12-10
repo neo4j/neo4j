@@ -294,9 +294,9 @@ public class BuiltInProcedures
     private static Map<String,Object> asObjectMap( Map<String,Value> valueConfig )
     {
         Map<String,Object> objectConfig = new HashMap<>();
-        for ( String key : valueConfig.keySet() )
+        for ( Map.Entry<String,Value> entry : valueConfig.entrySet() )
         {
-            objectConfig.put( key, valueConfig.get( key ).asObject() );
+            objectConfig.put( entry.getKey(), entry.getValue().asObject() );
         }
         return objectConfig;
     }

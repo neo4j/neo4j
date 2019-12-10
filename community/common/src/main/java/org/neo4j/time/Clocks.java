@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * This class consists of {@code static} utility methods for operating
  * on clocks. These utilities include factory methods for different type of clocks.
  */
-public class Clocks
+public final class Clocks
 {
     private static final Clock SYSTEM_CLOCK = Clock.systemUTC();
 

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
@@ -122,7 +122,7 @@ class SslPolicyLoaderTest
 
         // when
         Exception exception = assertThrows( Exception.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
-        assertThat( exception.getCause() ).isInstanceOf( FileNotFoundException.class );
+        assertThat( exception.getCause() ).isInstanceOf( NoSuchFileException.class );
     }
 
     @Test

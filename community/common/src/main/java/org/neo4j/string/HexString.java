@@ -22,7 +22,7 @@ package org.neo4j.string;
 /**
  * Utility for dealing with hexadecimal strings.
  */
-public class HexString
+public final class HexString
 {
     private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 

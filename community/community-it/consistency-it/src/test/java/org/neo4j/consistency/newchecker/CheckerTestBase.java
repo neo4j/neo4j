@@ -149,7 +149,7 @@ class CheckerTestBase
 
         // Create our tokens
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             initialData( tx );
             tx.commit();
@@ -302,7 +302,7 @@ class CheckerTestBase
     KernelTransaction ktx() throws TransactionFailureException
     {
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        return kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED );
+        return kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
     }
 
     /**
@@ -311,7 +311,7 @@ class CheckerTestBase
     AutoCloseable tx() throws TransactionFailureException
     {
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED );
+        KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
         return () ->
         {
             tx.commit();

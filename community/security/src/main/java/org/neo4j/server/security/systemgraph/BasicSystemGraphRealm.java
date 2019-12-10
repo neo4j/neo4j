@@ -86,8 +86,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             AuthenticationStrategy authenticationStrategy,
             boolean authenticationEnabled )
     {
-        super();
-
         this.systemGraphInitializer = systemGraphInitializer;
         this.databaseManager = databaseManager;
         this.secureHasher = secureHasher;
@@ -134,7 +132,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     }
 
     @Override
-    public AuthenticationInfo doGetAuthenticationInfo( AuthenticationToken token ) throws AuthenticationException
+    public AuthenticationInfo doGetAuthenticationInfo( AuthenticationToken token )
     {
         if ( !authenticationEnabled )
         {

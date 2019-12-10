@@ -26,6 +26,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.DefaultDatabaseStateService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
@@ -77,7 +78,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     @Override
-    public DatabaseManager<?> createDatabaseManager( GlobalModule globalModule )
+    public DatabaseManager<StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule )
     {
         var databaseManager = new DefaultDatabaseManager( globalModule, this );
         databaseStateService = new DefaultDatabaseStateService( databaseManager );

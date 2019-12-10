@@ -386,7 +386,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private static DurationValue parseDateDuration( String year, Matcher matcher, boolean time )
     {
-        int sign = "-".equals( matcher.group( "sign" ) ) ? -1 : 1;
         long months = 0;
         long days = 0;
         if ( year != null )
@@ -414,6 +413,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 throw new InvalidArgumentException( "days is out of range: " + day );
             }
         }
+        int sign = "-".equals( matcher.group( "sign" ) ) ? -1 : 1;
         if ( time )
         {
             if ( matcher.group( "longHour" ) != null )
@@ -686,13 +686,14 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return str.toString();
     }
 
-    private void nanos( StringBuilder str, int nanos )
+    private static void nanos( StringBuilder str, int nanos )
     {
         str.append( '.' );
         int n = nanos < 0 ? -nanos : nanos;
         for ( int mod = (int)NANOS_PER_SECOND; mod > 1 && n > 0; n %= mod )
         {
-            str.append( n / (mod /= 10) );
+            mod /= 10;
+            str.append( n / mod );
         }
     }
 

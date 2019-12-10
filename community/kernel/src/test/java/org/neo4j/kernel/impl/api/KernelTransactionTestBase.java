@@ -157,7 +157,7 @@ class KernelTransactionTestBase
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
         SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
-        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.explicit,
+        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.EXPLICIT,
                 securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
         return tx;
     }

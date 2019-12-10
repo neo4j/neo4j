@@ -98,7 +98,7 @@ public class KernelTransactionFactory
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit,
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
 
         return new Instances( transaction );

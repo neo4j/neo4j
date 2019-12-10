@@ -69,7 +69,7 @@ public class NativeMemoryAllocationRefusedError extends Error
         return sb.toString();
     }
 
-    private StringBuilder appendBytes( StringBuilder sb, long bytes )
+    private static StringBuilder appendBytes( StringBuilder sb, long bytes )
     {
         if ( bytes == VALUE_UNAVAILABLE )
         {
@@ -82,7 +82,7 @@ public class NativeMemoryAllocationRefusedError extends Error
         return sb;
     }
 
-    private void appendSysProp( StringBuilder sb, String sysProp )
+    private static void appendSysProp( StringBuilder sb, String sysProp )
     {
         sb.append( '"' ).append( sysProp ).append( "\" = \"" ).append( System.getProperty( sysProp ) ).append( '"' );
     }

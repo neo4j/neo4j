@@ -21,7 +21,7 @@ package org.neo4j.internal.helpers.collection;
 
 import static java.lang.String.format;
 
-public class LongRange
+public final class LongRange
 {
     public static LongRange range( long from, long to )
     {

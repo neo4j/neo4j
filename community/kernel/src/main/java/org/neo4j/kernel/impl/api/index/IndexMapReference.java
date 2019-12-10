@@ -34,7 +34,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     @Override
     public IndexMap indexMapSnapshot()
     {
-        return indexMap.clone();
+        return new IndexMap( indexMap );
     }
 
     /**

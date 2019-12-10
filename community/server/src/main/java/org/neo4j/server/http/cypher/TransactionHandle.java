@@ -79,7 +79,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.queryService = queryService;
         this.registry = registry;
         this.uriScheme = uriScheme;
-        this.type = implicitTransaction ? Type.implicit : Type.explicit;
+        this.type = implicitTransaction ? Type.IMPLICIT : Type.EXPLICIT;
         this.loginContext = loginContext;
         this.connectionInfo = connectionInfo;
         this.customTransactionTimeoutMillis = customTransactionTimeoutMillis;
@@ -93,7 +93,7 @@ public class TransactionHandle implements TransactionTerminationHandle
 
     boolean isImplicit()
     {
-        return type == Type.implicit;
+        return type == Type.IMPLICIT;
     }
 
     long getExpirationTimestamp()
@@ -145,7 +145,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             var db = txManagerFacade.getDb();
             Result result;
-            try ( Transaction transaction = db.beginTransaction(Type.implicit, loginContext, connectionInfo, customTransactionTimeoutMillis, MILLISECONDS ) )
+            try ( Transaction transaction = db.beginTransaction(Type.IMPLICIT, loginContext, connectionInfo, customTransactionTimeoutMillis, MILLISECONDS ) )
             {
                 result = transaction.execute( statement.getStatement(), statement.getParameters() );
                 transaction.commit();

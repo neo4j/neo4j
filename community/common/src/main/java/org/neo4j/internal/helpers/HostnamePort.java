@@ -36,7 +36,7 @@ public class HostnamePort
     private final String host;
     private final int[] ports;
 
-    public HostnamePort( String hostnamePort ) throws IllegalArgumentException
+    public HostnamePort( String hostnamePort )
     {
         Objects.requireNonNull( hostnamePort );
 

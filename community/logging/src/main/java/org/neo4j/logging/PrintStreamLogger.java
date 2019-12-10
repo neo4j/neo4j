@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class PrintStreamLogger implements Logger
 {
@@ -47,7 +48,7 @@ public class PrintStreamLogger implements Logger
     }
 
     @Override
-    public void log( @Nonnull String format, @Nonnull Object... arguments )
+    public void log( @Nonnull String format, @Nullable Object... arguments )
     {
         printStream.printf( format, arguments );
         printStream.println();

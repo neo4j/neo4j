@@ -54,7 +54,6 @@ public class LifeSupport implements Lifecycle
      */
     @Override
     public synchronized void init()
-            throws LifecycleException
     {
         if ( status == LifecycleStatus.NONE )
         {
@@ -395,7 +394,6 @@ public class LifeSupport implements Lifecycle
 
         @Override
         public void init()
-                throws LifecycleException
         {
             if ( currentStatus == LifecycleStatus.NONE )
             {

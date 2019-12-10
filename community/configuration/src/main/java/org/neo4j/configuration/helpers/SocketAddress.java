@@ -85,7 +85,7 @@ public class SocketAddress
 
     public boolean isIPv6()
     {
-        return isIPv6( hostname );
+        return isHostnameIPv6( hostname );
     }
 
     @Override
@@ -131,12 +131,12 @@ public class SocketAddress
         String hostnameStr = "";
         if ( hostname != null )
         {
-            hostnameStr = isIPv6( hostname ) ? String.format( "[%s]", hostname ) : hostname;
+            hostnameStr = isHostnameIPv6( hostname ) ? String.format( "[%s]", hostname ) : hostname;
         }
         return hostnameStr + portStr;
     }
 
-    private static boolean isIPv6( String hostname )
+    private static boolean isHostnameIPv6( String hostname )
     {
         return hostname.contains( ":" );
     }

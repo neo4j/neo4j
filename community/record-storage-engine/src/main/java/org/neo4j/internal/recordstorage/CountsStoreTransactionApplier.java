@@ -25,14 +25,12 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 class CountsStoreTransactionApplier extends TransactionApplier.Adapter
 {
-    private final TransactionApplicationMode mode;
     private final CountsAccessor.Updater countsUpdater;
     private boolean haveUpdates;
     private boolean countsUpdaterClosed;
 
-    CountsStoreTransactionApplier( TransactionApplicationMode mode, CountsAccessor.Updater countsUpdater )
+    CountsStoreTransactionApplier( CountsAccessor.Updater countsUpdater )
     {
-        this.mode = mode;
         this.countsUpdater = countsUpdater;
     }
 

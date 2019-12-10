@@ -33,7 +33,7 @@ public class TransactionApplierFacade implements TransactionApplier
 {
     final TransactionApplier[] appliers;
 
-    public TransactionApplierFacade( TransactionApplier... appliers )
+    TransactionApplierFacade( TransactionApplier... appliers )
     {
         this.appliers = appliers;
     }
@@ -43,7 +43,7 @@ public class TransactionApplierFacade implements TransactionApplier
     {
         // Need to close in reverse order or LuceneRecoveryIT can hang on database shutdown, when
         // errors are thrown
-        for ( int i = appliers.length; i-- > 0; )
+        for ( int i = appliers.length - 1; i >= 0; i-- )
         {
             appliers[i].close();
         }

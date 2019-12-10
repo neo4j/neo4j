@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.ThrowingConsumer;
 
-public class FileVisitors
+public final class FileVisitors
 {
     private FileVisitors()
     {

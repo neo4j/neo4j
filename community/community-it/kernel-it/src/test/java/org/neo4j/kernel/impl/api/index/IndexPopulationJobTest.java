@@ -100,7 +100,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -134,7 +134,7 @@ class IndexPopulationJobTest
         indexStoreView = indexStoreView();
         indexStatisticsStore = db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
 
-        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AUTH_DISABLED ) )
         {
             labelId = tx.tokenWrite().labelGetOrCreateForName( FIRST.name() );
             tx.tokenWrite().labelGetOrCreateForName( SECOND.name() );
@@ -788,7 +788,7 @@ class IndexPopulationJobTest
 
     private IndexPrototype indexPrototype( Label label, String propertyKey, boolean constraint ) throws KernelException
     {
-        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AUTH_DISABLED ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
@@ -833,7 +833,7 @@ class IndexPopulationJobTest
 
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
-        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AUTH_DISABLED ) )
         {
             int result = tx.tokenRead().propertyKey( name );
             tx.commit();

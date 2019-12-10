@@ -78,7 +78,7 @@ public interface StatementLocks extends AutoCloseable
      *
      * @return the locks held by this transaction.
      */
-    Stream<? extends ActiveLock> activeLocks();
+    Stream<ActiveLock> activeLocks();
 
     /**
      * Get the current number of active locks.

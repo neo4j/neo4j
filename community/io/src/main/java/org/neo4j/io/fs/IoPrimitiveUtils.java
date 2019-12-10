@@ -28,8 +28,12 @@ import java.util.Map;
 
 import org.neo4j.string.UTF8;
 
-public abstract class IoPrimitiveUtils
+public final class IoPrimitiveUtils
 {
+    private IoPrimitiveUtils()
+    {
+    }
+
     public static String readString( ReadableChannel channel, int length ) throws IOException
     {
         assert length >= 0 : "invalid array length " + length;

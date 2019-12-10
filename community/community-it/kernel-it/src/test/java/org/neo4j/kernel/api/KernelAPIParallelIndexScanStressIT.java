@@ -43,7 +43,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
@@ -89,7 +89,7 @@ class KernelAPIParallelIndexScanStressIT
         // when & then
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         IndexReadSession[] indexes = new IndexReadSession[3];
-        try ( KernelTransaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             indexes[0] = indexReadSession( tx, index1 );
             indexes[1] = indexReadSession( tx, index2 );

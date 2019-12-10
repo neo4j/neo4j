@@ -40,7 +40,7 @@ public class LruCache<K, E>
         protected boolean removeEldestEntry( Map.Entry<K,E> eldest )
         {
             // synchronization miss with old value on maxSize here is ok
-            if ( size() > maxSize )
+            if ( super.size() > maxSize )
             {
                 elementCleaned( eldest.getValue() );
                 return true;

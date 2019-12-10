@@ -23,7 +23,7 @@ import java.util.function.IntFunction;
 
 import org.neo4j.common.TokenNameLookup;
 
-public class TokenIdPrettyPrinter
+public final class TokenIdPrettyPrinter
 {
     private TokenIdPrettyPrinter()
     {

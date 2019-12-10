@@ -146,7 +146,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         };
     }
 
-    private IdContextFactory createIdContextFactory( GlobalModule globalModule )
+    private static IdContextFactory createIdContextFactory( GlobalModule globalModule )
     {
         return IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getJobScheduler(), globalModule.getGlobalConfig() ).build();
     }

@@ -69,18 +69,6 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     }
 
     @Override
-    public Position suspend()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void resume( Position position )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public boolean next()
     {
         //We need to check tx state if there are new types added

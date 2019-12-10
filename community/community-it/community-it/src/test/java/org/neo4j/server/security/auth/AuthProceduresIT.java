@@ -319,7 +319,7 @@ public class AuthProceduresIT
 
     private void assertNotification( LoginContext subject, String query, Notification wantedNotification )
     {
-        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
+        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.IMPLICIT, subject ) )
         {
             Result result = tx.execute( query );
 
@@ -339,7 +339,7 @@ public class AuthProceduresIT
 
     private void assertSuccess( LoginContext subject, String query, Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
     {
-        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
+        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.IMPLICIT, subject ) )
         {
             Result result = tx.execute( query );
             resultConsumer.accept( result );
@@ -353,7 +353,7 @@ public class AuthProceduresIT
         {
             assert !row.hasNext();
         };
-        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
+        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.IMPLICIT, subject ) )
         {
             Result result = tx.execute( query );
             resultConsumer.accept( result );
@@ -369,7 +369,7 @@ public class AuthProceduresIT
     private String execute( LoginContext subject, String query,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
-        try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )
+        try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.IMPLICIT, subject ) )
         {
             resultConsumer.accept( tx.execute( query ) );
             tx.commit();

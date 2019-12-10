@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Log} implementation that duplicates all messages to other Log instances
@@ -185,7 +186,7 @@ public class DuplicatingLog extends AbstractLog
         }
 
         @Override
-        public void log( @Nonnull String format, @Nonnull Object... arguments )
+        public void log( @Nonnull String format, @Nullable Object... arguments )
         {
             for ( Logger logger : loggers )
             {

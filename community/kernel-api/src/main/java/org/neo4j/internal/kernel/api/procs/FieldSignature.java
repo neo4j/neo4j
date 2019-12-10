@@ -28,7 +28,7 @@ import org.neo4j.values.ValueMapper;
 import static java.util.Objects.requireNonNull;
 
 /** Represents a type and a name for a field in a record, used to define input and output record signatures. */
-public class FieldSignature
+public final class FieldSignature
 {
     public static FieldSignature inputField( String name, Neo4jTypes.AnyType type )
     {
@@ -61,14 +61,11 @@ public class FieldSignature
         this.type = requireNonNull( type, "type" );
         this.defaultValue = defaultValue;
         this.deprecated = deprecated;
-        if ( defaultValue != null )
+        if ( defaultValue != null && !type.equals( defaultValue.neo4jType() ) )
         {
-            if ( !type.equals( defaultValue.neo4jType() ) )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "Default value does not have a valid type, field type was %s, but value type was %s.",
-                        type.toString(), defaultValue.neo4jType().toString() ) );
-            }
+            throw new IllegalArgumentException( String.format(
+                    "Default value does not have a valid type, field type was %s, but value type was %s.",
+                    type.toString(), defaultValue.neo4jType().toString() ) );
         }
     }
 
@@ -127,17 +124,16 @@ public class FieldSignature
             return false;
         }
         FieldSignature that = (FieldSignature) o;
-        return name.equals( that.name ) &&
+        return this.deprecated == that.deprecated &&
+                name.equals( that.name ) &&
                 type.equals( that.type ) &&
-                Objects.equals( this.defaultValue, that.defaultValue ) &&
-                this.deprecated == that.deprecated;
+                Objects.equals( this.defaultValue, that.defaultValue );
     }
 
     @Override
     public int hashCode()
     {
         int result = name.hashCode();
-        result = 31 * result + type.hashCode();
-        return result;
+        return 31 * result + type.hashCode();
     }
 }

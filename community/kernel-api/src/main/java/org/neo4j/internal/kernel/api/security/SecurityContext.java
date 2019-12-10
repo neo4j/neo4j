@@ -84,7 +84,7 @@ public class SecurityContext implements LoginContext
 
     public void assertCredentialsNotExpired()
     {
-        if ( subject().getAuthenticationResult().equals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) )
+        if ( AuthenticationResult.PASSWORD_CHANGE_REQUIRED.equals( subject().getAuthenticationResult() ) )
         {
             throw mode().onViolation( PERMISSION_DENIED );
         }
@@ -104,7 +104,7 @@ public class SecurityContext implements LoginContext
     @SuppressWarnings( "StaticInitializerReferencesSubClass" )
     public static final SecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
 
-    private static class AuthDisabled extends SecurityContext
+    private static final class AuthDisabled extends SecurityContext
     {
         private AuthDisabled( AccessMode mode )
         {

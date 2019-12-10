@@ -33,7 +33,7 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 
-public class Util
+public final class Util
 {
     private Util()
     {

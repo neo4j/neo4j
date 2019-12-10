@@ -59,7 +59,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
-import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @RunWith( Parameterized.class )
 public class IndexingServiceIntegrationTest
@@ -134,7 +134,7 @@ public class IndexingServiceIntegrationTest
     {
         IndexDescriptor index;
         Kernel kernel = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
         {
             int foodId = tx.tokenWrite().relationshipTypeGetOrCreateForName( FOOD_LABEL );
             int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );

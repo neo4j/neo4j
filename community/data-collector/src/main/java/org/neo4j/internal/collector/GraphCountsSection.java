@@ -59,7 +59,7 @@ final class GraphCountsSection
     static Stream<RetrieveResult> retrieve( Kernel kernel, Anonymizer anonymizer )
             throws TransactionFailureException, IndexNotFoundKernelException
     {
-        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             TokenRead tokens = tx.tokenRead();
             Read read = tx.dataRead();

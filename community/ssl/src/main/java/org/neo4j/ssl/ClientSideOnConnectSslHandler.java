@@ -126,7 +126,7 @@ public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler
      * Some tests rely on having these ssl details available.
      * Having this adapter exposes those details to the tests.
      */
-    private class HandshakeCompletionSslDetailsHandler extends ChannelInboundHandlerAdapter
+    private static class HandshakeCompletionSslDetailsHandler extends ChannelInboundHandlerAdapter
     {
         @Override
         public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception

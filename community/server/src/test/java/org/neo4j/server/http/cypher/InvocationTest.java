@@ -81,7 +81,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 public class InvocationTest
 {
@@ -236,7 +236,7 @@ public class InvocationTest
         TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
         var facade = mock( GraphDatabaseFacade.class, Answers.RETURNS_DEEP_STUBS );
         var transaction = mock( InternalTransaction.class );
-        when( facade.beginTransaction( eq( implicit ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
+        when( facade.beginTransaction( eq( IMPLICIT ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
                 .thenReturn( transaction );
         when( transaction.execute( eq( queryText), any() ) ).thenReturn( executionResult );
         when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
@@ -647,7 +647,7 @@ public class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( kernel ).newTransaction( implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 100 );
+        verify( kernel ).newTransaction( IMPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 100 );
     }
 
     @Test

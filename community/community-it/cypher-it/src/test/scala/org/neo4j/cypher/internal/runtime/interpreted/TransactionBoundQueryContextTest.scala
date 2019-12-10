@@ -93,7 +93,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should mark transaction successful if successful") {
     // GIVEN
     when(outerTx.rollback()).thenThrow(new AssertionError("Shouldn't be called"))
-    when(outerTx.transactionType()).thenReturn(Type.`implicit`)
+    when(outerTx.transactionType()).thenReturn(Type.IMPLICIT)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
 
@@ -116,7 +116,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should mark transaction failed if not successful") {
     // GIVEN
     when(outerTx.commit()).thenThrow(new AssertionError("Shouldn't be called"))
-    when(outerTx.transactionType()).thenReturn(Type.`implicit`)
+    when(outerTx.transactionType()).thenReturn(Type.IMPLICIT)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
     val transaction = mock[KernelTransaction]
@@ -141,7 +141,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val relTypeName = "LINK"
     val node = createMiniGraph(relTypeName)
 
-    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
@@ -162,7 +162,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should deny non-whitelisted URL protocols for loading") {
     // GIVEN
-    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
@@ -179,7 +179,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     managementService.shutdown()
     startGraph(GraphDatabaseSettings.allow_file_urls -> FALSE)
-    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
@@ -198,7 +198,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     creator.createNode()
     creator.commit()
 
-    val tx = graph.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
+    val tx = graph.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
 
     val tracer = transactionalContext.kernelStatisticProvider
@@ -239,7 +239,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should add cursor as resource when calling all") {
     // GIVEN
-    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     val initSize = context.resources.allResources.size
@@ -255,7 +255,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should add cursor as resource when calling allPrimitive") {
     // GIVEN
-    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     val initSize = context.resources.allResources.size
@@ -271,7 +271,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should remove cursor after closing resource") {
     // GIVEN
-    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     val initSize = context.resources.allResources.size
@@ -300,7 +300,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def createMiniGraph(relTypeName: String): Node = {
     val relType = RelationshipType.withName(relTypeName)
-    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.writeToken())
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.writeToken())
     try {
       val node = tx.createNode()
       val other1 = tx.createNode()

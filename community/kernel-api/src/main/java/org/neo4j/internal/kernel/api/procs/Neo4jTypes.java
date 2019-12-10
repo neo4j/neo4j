@@ -26,7 +26,7 @@ package org.neo4j.internal.kernel.api.procs;
  * This should also move to replace the specialized type handling in packstream, or be tied to it in some
  * way to ensure a strict mapping.
  */
-public class Neo4jTypes
+public final class Neo4jTypes
 {
     public static final AnyType NTAny = new AnyType();
     public static final TextType NTString = new TextType();

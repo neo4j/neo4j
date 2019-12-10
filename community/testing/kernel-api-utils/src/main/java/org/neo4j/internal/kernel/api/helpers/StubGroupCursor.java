@@ -44,18 +44,6 @@ public class StubGroupCursor extends DefaultCloseListenable implements Relations
     }
 
     @Override
-    public Position suspend()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void resume( Position position )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public boolean next()
     {
         offset++;

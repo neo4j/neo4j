@@ -73,7 +73,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     }
 
     @Override
-    public <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type )
+    public <T> Iterable<T> resolveTypeDependencies( Class<T> type )
     {
         MutableSet<T> options = (MutableSet<T>) typeDependencies.get( type );
         if ( parent != null )

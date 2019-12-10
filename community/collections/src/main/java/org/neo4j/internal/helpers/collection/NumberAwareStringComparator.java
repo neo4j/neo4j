@@ -36,7 +36,7 @@ import java.util.Iterator;
  * undesirable in scenarios where the number matters. This comparator will sort the strings from the
  * example above as {@code string-1}, {@code string-2}, {@code string-12}.
  */
-public class NumberAwareStringComparator implements Comparator<String>
+public final class NumberAwareStringComparator implements Comparator<String>
 {
     public static final Comparator<String> INSTANCE = new NumberAwareStringComparator();
 

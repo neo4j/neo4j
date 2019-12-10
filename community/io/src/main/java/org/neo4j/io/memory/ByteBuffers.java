@@ -27,7 +27,7 @@ import org.neo4j.io.ByteUnit;
 
 import static java.lang.Math.toIntExact;
 
-public class ByteBuffers
+public final class ByteBuffers
 {
     private ByteBuffers()
     {

@@ -82,9 +82,9 @@ public final class SpatialIndexConfig
     {
         Map<String,Value> spatialConfig = new HashMap<>();
         addSpatialConfig( spatialConfig, crs, settings );
-        for ( String key : spatialConfig.keySet() )
+        for ( var entry : spatialConfig.entrySet() )
         {
-            indexConfig = indexConfig.withIfAbsent( key, spatialConfig.get( key ) );
+            indexConfig = indexConfig.withIfAbsent( entry.getKey(), entry.getValue() );
         }
         return indexConfig;
     }

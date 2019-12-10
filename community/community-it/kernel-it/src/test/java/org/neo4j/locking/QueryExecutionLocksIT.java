@@ -181,7 +181,7 @@ class QueryExecutionLocksIT
     {
         GraphDatabaseQueryService graph = db.getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class );
         QueryExecutionEngine executionEngine = db.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
-        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
+        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             TransactionalContextWrapper context = new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
             executionEngine.executeQuery( query, EMPTY_MAP, context, false );

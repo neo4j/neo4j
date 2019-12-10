@@ -73,7 +73,7 @@ public final class Nodes
         return count;
     }
 
-    public static int countOutgoingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
+    private static int countOutgoingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
     {
         assert !nodeCursor.isDense();
         int count = 0;
@@ -127,7 +127,7 @@ public final class Nodes
         return count;
     }
 
-    public static int countIncomingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
+    private static int countIncomingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
     {
         assert !nodeCursor.isDense();
         int count = 0;
@@ -179,7 +179,7 @@ public final class Nodes
         return count;
     }
 
-    public static int countAllSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
+    private static int countAllSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal )
     {
         assert !nodeCursor.isDense();
         int count = 0;
@@ -233,7 +233,7 @@ public final class Nodes
         return 0;
     }
 
-    public static int countOutgoingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
+    private static int countOutgoingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
     {
         assert !nodeCursor.isDense();
         int count = 0;
@@ -280,7 +280,6 @@ public final class Nodes
     {
         assert nodeCursor.isDense();
         nodeCursor.relationships( group );
-        int count = 0;
         while ( group.next() )
         {
             if ( group.type() == type )
@@ -288,10 +287,10 @@ public final class Nodes
                 return group.incomingCount() + group.loopCount();
             }
         }
-        return count;
+        return 0;
     }
 
-    public static int countIncomingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
+    private static int countIncomingSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
     {
         assert !nodeCursor.isDense();
         int count = 0;
@@ -336,7 +335,6 @@ public final class Nodes
     {
         assert nodeCursor.isDense();
         nodeCursor.relationships( group );
-        int count = 0;
         while ( group.next() )
         {
             if ( group.type() == type )
@@ -344,10 +342,10 @@ public final class Nodes
                 return group.totalCount();
             }
         }
-        return count;
+        return 0;
     }
 
-    public static int countAllSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
+    private static int countAllSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, int type )
     {
         assert !nodeCursor.isDense();
         int count = 0;

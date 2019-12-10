@@ -138,7 +138,7 @@ class KernelIT extends KernelIntegrationTest
         KernelTransaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
 
-        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertEquals( KernelTransaction.ROLLBACK_ID, tx.closeTransaction() );
         assertFalse( tx.isOpen() );
     }
 
@@ -151,7 +151,7 @@ class KernelIT extends KernelIntegrationTest
         tx.dataWrite().nodeCreate();
         tx.markForTermination( Status.Transaction.Terminated );
 
-        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertEquals( KernelTransaction.ROLLBACK_ID, tx.closeTransaction() );
         assertFalse( tx.isOpen() );
     }
 
@@ -164,7 +164,7 @@ class KernelIT extends KernelIntegrationTest
         tx.dataWrite().nodeCreate();
         tx.markForTermination( Status.Transaction.Terminated );
 
-        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertEquals( KernelTransaction.ROLLBACK_ID, tx.closeTransaction() );
         assertFalse( tx.isOpen() );
     }
 
@@ -180,7 +180,7 @@ class KernelIT extends KernelIntegrationTest
             node.next();
         }
 
-        assertEquals( KernelTransaction.READ_ONLY, tx.commit() );
+        assertEquals( KernelTransaction.READ_ONLY_ID, tx.commit() );
         assertFalse( tx.isOpen() );
     }
 

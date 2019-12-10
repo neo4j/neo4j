@@ -70,7 +70,7 @@ import static java.util.stream.Collectors.toList;
  *
  * @see DatabaseLayout
  */
-public class Neo4jLayout
+public final class Neo4jLayout
 {
     private static final String STORE_LOCK_FILENAME = "store_lock";
 

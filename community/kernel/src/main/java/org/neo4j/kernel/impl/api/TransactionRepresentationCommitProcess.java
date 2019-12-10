@@ -84,7 +84,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
     }
 
-    private void close( TransactionToApply batch )
+    private static void close( TransactionToApply batch )
     {
         while ( batch != null )
         {

@@ -149,7 +149,7 @@ public interface PageCache extends AutoCloseable
      * <em>WILL BE</em> considered to have been closed successfully.
      */
     @Override
-    void close() throws IllegalStateException;
+    void close();
 
     /**
      * The size in bytes of the pages managed by this cache.

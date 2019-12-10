@@ -478,11 +478,11 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static IndexConfig extractIndexConfig( Map<String,Value> props )
     {
         Map<String,Value> configMap = new HashMap<>();
-        for ( String key : props.keySet() )
+        for ( Map.Entry<String,Value> entry : props.entrySet() )
         {
-            if ( key.startsWith( PROP_INDEX_CONFIG_PREFIX ) )
+            if ( entry.getKey().startsWith( PROP_INDEX_CONFIG_PREFIX ) )
             {
-                configMap.put( key.substring( PROP_INDEX_CONFIG_PREFIX.length() ), props.get( key ) );
+                configMap.put( entry.getKey().substring( PROP_INDEX_CONFIG_PREFIX.length() ), entry.getValue() );
             }
         }
         return IndexConfig.with( configMap );

@@ -22,7 +22,7 @@ package org.neo4j.logging;
 /**
  * A {@link LogProvider} implementation that discards all messages
  */
-public class NullLogProvider implements LogProvider
+public final class NullLogProvider implements LogProvider
 {
     private static final NullLogProvider INSTANCE = new NullLogProvider();
 

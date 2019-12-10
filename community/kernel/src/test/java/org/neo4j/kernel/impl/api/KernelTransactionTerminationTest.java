@@ -316,7 +316,7 @@ class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION );
+            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.IMPLICIT, AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION );
             monitor.reset();
             return this;
         }

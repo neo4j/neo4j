@@ -39,7 +39,7 @@ import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
 /**
  * Constructors for basic {@link Predicate} types
  */
-public class Predicates
+public final class Predicates
 {
     public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
     public static final IntPredicate ALWAYS_FALSE_INT = v -> false;

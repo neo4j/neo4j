@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -75,7 +75,7 @@ enum MigrationStatus
             String info = reader.readLine().trim();
             return Pair.of( state, info );
         }
-        catch ( FileNotFoundException e )
+        catch ( NoSuchFileException e )
         {
             return null;
         }

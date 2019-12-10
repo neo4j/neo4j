@@ -401,6 +401,6 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
         assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, property, theValue ) ).isEqualTo( theValue );
 
-        assertThat( tx.commit() ).isEqualTo( KernelTransaction.READ_ONLY );
+        assertThat( tx.commit() ).isEqualTo( KernelTransaction.READ_ONLY_ID );
     }
 }

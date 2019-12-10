@@ -39,6 +39,7 @@ public class SecureString
 
     private byte[] obfuscationKey;
     private static final Charset encoding = UTF_8;
+    private static final int KEY_SIZE = 16;
 
     public SecureString( String stringToSecure )
     {
@@ -58,7 +59,7 @@ public class SecureString
             {
                 try
                 {
-                    final byte[] buf = new byte[16];
+                    final byte[] buf = new byte[KEY_SIZE];
                     random.nextBytes( buf );
                     final Key aesKey = new SecretKeySpec( buf, "AES" );
                     cipher = Cipher.getInstance( "AES/CBC/PKCS5Padding" );
@@ -82,7 +83,7 @@ public class SecureString
             if ( !encryptionAvailable )
             {
                 //Using simple obfuscation
-                obfuscationKey = new byte[16];
+                obfuscationKey = new byte[KEY_SIZE];
                 random.nextBytes( obfuscationKey );
                 encryptedData = XOR( dataToSecure, obfuscationKey );
             }
@@ -114,7 +115,7 @@ public class SecureString
             }
             catch ( Exception e )
             {
-                throw new RuntimeException( "Data corruption, could not decrypt data" );
+                throw new RuntimeException( "Data corruption, could not decrypt data", e );
             }
         }
         return XOR( encryptedData, obfuscationKey );
@@ -134,7 +135,7 @@ public class SecureString
     public String getString()
     {
         byte[] data = getData();
-        return data != null ? new String( getData(), encoding ) : null;
+        return data != null ? new String( data, encoding ) : null;
     }
 
     @Override

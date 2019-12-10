@@ -61,7 +61,7 @@ class ServerExecutionEngineTest
         // We need two node vars to have one non-pooled cursor
         String query = "MATCH (n), (m) WHERE true RETURN n, m, n.name, m.name";
 
-        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED ) )
+        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.EXPLICIT, AUTH_DISABLED ) )
         {
             tx.createNode();
             tx.createNode();

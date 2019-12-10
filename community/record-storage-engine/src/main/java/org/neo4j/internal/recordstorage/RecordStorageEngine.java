@@ -332,7 +332,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         if ( mode.needsAuxiliaryStores() )
         {
             // Counts store application
-            appliers.add( new CountsStoreBatchTransactionApplier( countsStore, mode ) );
+            appliers.add( new CountsStoreBatchTransactionApplier( countsStore ) );
 
             // Schema index application
             appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, indexUpdatesSync,
@@ -340,8 +340,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
 
         // Perform the application
-        return new BatchTransactionApplierFacade(
-                appliers.toArray( new BatchTransactionApplier[0] ) );
+        return new BatchTransactionApplierFacade( appliers.toArray( new BatchTransactionApplier[0] ) );
     }
 
     private LockService lockService( TransactionApplicationMode mode )

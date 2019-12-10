@@ -433,7 +433,7 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 
             List<List<Node>> paths = dijkstra.getPathsAsNodes();
 
-            assertEquals( paths.size(), 3 );
+            assertEquals( 3, paths.size() );
             String[] commonPrefix = {"a", "b", "c"};
             String[] commonSuffix = {"f", "g"};
             for ( List<Node> path : paths )

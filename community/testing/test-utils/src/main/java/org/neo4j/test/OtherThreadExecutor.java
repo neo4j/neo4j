@@ -23,8 +23,7 @@ import java.io.Closeable;
 import java.io.PrintStream;
 import java.lang.Thread.State;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.EnumSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -36,7 +35,6 @@ import java.util.function.Predicate;
 
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -60,12 +58,13 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 
     private static final class AnyThreadState implements Predicate<Thread>
     {
-        private final Set<State> possibleStates;
-        private final Set<Thread.State> seenStates = new HashSet<>();
+        private final EnumSet<State> possibleStates;
+        private final EnumSet<State> seenStates = EnumSet.noneOf( State.class );
 
         private AnyThreadState( State... possibleStates )
         {
-            this.possibleStates = new HashSet<>( asList( possibleStates ) );
+            this.possibleStates = EnumSet.noneOf( State.class );
+            this.possibleStates.addAll( Arrays.asList( possibleStates ) );
         }
 
         @Override
@@ -185,7 +184,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     @Override
     public Thread newThread( Runnable r )
     {
-        Thread thread = new Thread( r, getClass().getName() + ":" + name )
+        Thread newThread = new Thread( r, getClass().getName() + ":" + name )
         {
             @Override
             public void run()
@@ -200,8 +199,8 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
                 }
             }
         };
-        this.thread = thread;
-        return thread;
+        this.thread = newThread;
+        return newThread;
     }
 
     @Override

@@ -21,9 +21,8 @@ package org.neo4j.internal.helpers;
 
 import static org.neo4j.util.Preconditions.requirePositive;
 
-public class Numbers
+public final class Numbers
 {
-
     private static final long MAX_POWER_OF_TWO_LONG = 1L << (Long.SIZE - 2);
     private static final long MAX_POWER_OF_TWO_INTEGER = 1 << (Integer.SIZE - 2);
 

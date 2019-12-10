@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Utilities for working with UTF8 encoding and decoding.
  */
-public class UTF8
+public final class UTF8
 {
     public static final int MINIMUM_SERIALISED_LENGTH_BYTES = Integer.BYTES;
 

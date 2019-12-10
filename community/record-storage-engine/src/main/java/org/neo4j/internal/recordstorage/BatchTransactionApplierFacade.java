@@ -65,7 +65,7 @@ public class BatchTransactionApplierFacade implements BatchTransactionApplier
     public void close() throws Exception
     {
         // Not sure why it is necessary to close them in reverse order
-        for ( int i = appliers.length; i-- > 0; )
+        for ( int i = appliers.length - 1; i >= 0; i-- )
         {
             appliers[i].close();
         }

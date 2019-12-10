@@ -78,8 +78,6 @@ public class QualifiedName
     @Override
     public int hashCode()
     {
-        int result = Arrays.hashCode( namespace );
-        result = 31 * result + name.hashCode();
-        return result;
+        return 31 * Arrays.hashCode( namespace ) + name.hashCode();
     }
 }

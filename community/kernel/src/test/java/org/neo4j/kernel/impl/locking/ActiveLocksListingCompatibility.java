@@ -50,7 +50,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         clientA.acquireShared( LockTracer.NONE, NODE, 3, 4, 5 );
 
         // when
-        Stream<? extends ActiveLock> locks = clientA.activeLocks();
+        Stream<ActiveLock> locks = clientA.activeLocks();
 
         // then
         assertEquals(

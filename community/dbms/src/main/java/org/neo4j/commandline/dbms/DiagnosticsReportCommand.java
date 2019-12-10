@@ -158,11 +158,11 @@ public class DiagnosticsReportCommand extends AbstractCommand
                 classifiers = new HashSet<>( classifiers );
                 classifiers.retainAll( availableClassifiers );
             }
-            validateClassifiers( availableClassifiers, classifiers );
+            validateOrphanClassifiers( availableClassifiers, classifiers );
         }
     }
 
-    private static void validateClassifiers( Set<String> availableClassifiers, Set<String> orphans )
+    private static void validateOrphanClassifiers( Set<String> availableClassifiers, Set<String> orphans )
     {
         for ( String classifier : orphans )
         {

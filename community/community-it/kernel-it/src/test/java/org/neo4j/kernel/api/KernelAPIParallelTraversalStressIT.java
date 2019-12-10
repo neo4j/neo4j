@@ -33,7 +33,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @DbmsExtension
 class KernelAPIParallelTraversalStressIT
@@ -60,7 +60,7 @@ class KernelAPIParallelTraversalStressIT
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         long[] nodes = new long[N_NODES];
-        KernelTransaction setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
+        KernelTransaction setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
 
         int relationshipType = setup.token().relationshipTypeCreateForName( "R", false );
         for ( int i = 0; i < N_NODES; i++ )
@@ -69,7 +69,7 @@ class KernelAPIParallelTraversalStressIT
             if ( (i + 1) % 10000 == 0 )
             {
                 setup.commit();
-                setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
+                setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
             }
         }
 
@@ -85,7 +85,7 @@ class KernelAPIParallelTraversalStressIT
             if ( (i + 1) % 10000 == 0 )
             {
                 setup.commit();
-                setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
+                setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
             }
         }
 

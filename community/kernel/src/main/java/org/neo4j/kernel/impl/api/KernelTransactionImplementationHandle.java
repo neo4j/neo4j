@@ -165,7 +165,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public Stream<? extends ActiveLock> activeLocks()
+    public Stream<ActiveLock> activeLocks()
     {
         return tx.activeLocks();
     }

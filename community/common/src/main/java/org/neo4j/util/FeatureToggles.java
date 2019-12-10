@@ -38,7 +38,7 @@ import java.util.Objects;
  *
  * For features that the user is ever expected to touch, feature toggles is the wrong abstraction!
  */
-public class FeatureToggles
+public final class FeatureToggles
 {
     /**
      * Get the value of a {@code boolean} system property.

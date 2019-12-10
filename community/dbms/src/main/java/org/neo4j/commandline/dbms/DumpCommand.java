@@ -45,7 +45,6 @@ import org.neo4j.kernel.internal.locker.FileLockException;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.dbms.archive.CompressionFormat.selectCompressionFormat;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -108,11 +107,6 @@ public class DumpCommand extends AbstractCommand
         {
             throw new CommandFailedException( "You do not have permission to dump the database.", e );
         }
-    }
-
-    private static Path getDatabaseDirectory( Config config )
-    {
-        return config.get( databases_root_path );
     }
 
     private Config buildConfig()

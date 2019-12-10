@@ -35,7 +35,7 @@ public class AdminActionOnResource
         return action.satisfies( request.action ) && (resource.all || resource.name.equals( request.resource.name ));
     }
 
-    public static AdminActionOnResource ALL = new AdminActionOnResource( PrivilegeAction.ADMIN, DatabaseScope.ALL );
+    public static final AdminActionOnResource ALL = new AdminActionOnResource( PrivilegeAction.ADMIN, DatabaseScope.ALL );
 
     public static class DatabaseScope
     {

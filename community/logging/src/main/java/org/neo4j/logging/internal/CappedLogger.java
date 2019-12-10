@@ -184,7 +184,7 @@ public class CappedLogger
         return this;
     }
 
-    private static class Filter
+    private static final class Filter
     {
         private static final AtomicIntegerFieldUpdater<Filter> CURRENT_COUNT =
                 AtomicIntegerFieldUpdater.newUpdater( Filter.class, "currentCount" );

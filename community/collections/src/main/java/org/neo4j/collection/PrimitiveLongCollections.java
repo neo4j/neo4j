@@ -25,12 +25,10 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.LongPredicate;
@@ -196,46 +194,6 @@ public final class PrimitiveLongCollections
                     return next( nextValue );
                 }
                 return false;
-            }
-        };
-    }
-
-    /**
-     * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each long.
-     *
-     * @param iterator {@link LongIterator} to pull values from.
-     * @return a {@link List} containing all items.
-     */
-    public static List<Long> asList( LongIterator iterator )
-    {
-        List<Long> out = new ArrayList<>();
-        while ( iterator.hasNext() )
-        {
-            out.add( iterator.next() );
-        }
-        return out;
-    }
-
-    public static Iterator<Long> toIterator( final LongIterator primIterator )
-    {
-        return new Iterator<>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return primIterator.hasNext();
-            }
-
-            @Override
-            public Long next()
-            {
-                return primIterator.next();
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
             }
         };
     }

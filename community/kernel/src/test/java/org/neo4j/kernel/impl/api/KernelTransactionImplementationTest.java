@@ -406,7 +406,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext( isWriteTx ) ) )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
-            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
+            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.IMPLICIT,
                 SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION );
             transaction.txState().nodeDoCreate( 1L );
             // WHEN committing it at a later point
@@ -468,7 +468,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         // WHEN
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
+        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.IMPLICIT,
             loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
 
         // THEN
@@ -642,7 +642,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit,
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.IMPLICIT,
             loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
@@ -664,7 +664,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit,
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.IMPLICIT,
             loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
@@ -731,7 +731,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             }
         } );
         KernelTransactionImplementation transaction = newNotInitializedTransaction( leaseClient );
-        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.implicit,
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.IMPLICIT,
                 mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
         assertEquals( "KernelTransaction[lease:" + leaseId + "]", transaction.toString() );
     }
@@ -746,7 +746,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         for ( int i = 0; i < times; i++ )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit,
+            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.IMPLICIT,
                 loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
             tx.close();
         }

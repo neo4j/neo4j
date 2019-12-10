@@ -212,22 +212,7 @@ public class BatchInserterImpl implements BatchInserter
     private boolean labelsTouched;
     private boolean isShutdown;
 
-    private final LongFunction<Label> labelIdToLabelFunction = new LongFunction<>()
-    {
-        @Override
-        public Label apply( long from )
-        {
-            try
-            {
-                return label( tokenHolders.labelTokens().getTokenById( safeCastLongToInt( from ) ).name() );
-            }
-            catch ( TokenNotFoundException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-    };
-
+    private final LongFunction<Label> labelIdToLabelFunction;
     private final FlushStrategy flushStrategy;
     // Helper structure for setNodeProperty
     private final RelationshipCreator relationshipCreator;
@@ -274,7 +259,7 @@ public class BatchInserterImpl implements BatchInserter
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
                 EmptyVersionContextSupplier.EMPTY, jobScheduler );
-            PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
+            pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 
             File internalLog = config.get( store_internal_log_path ).toFile();
@@ -302,7 +287,6 @@ public class BatchInserterImpl implements BatchInserter
             neoStores = sf.openAllNeoStores( true );
             neoStores.verifyStoreOk();
             neoStores.start();
-            this.pageCache = pageCache;
 
             nodeStore = neoStores.getNodeStore();
             relationshipStore = neoStores.getRelationshipStore();
@@ -318,12 +302,22 @@ public class BatchInserterImpl implements BatchInserter
             TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
             tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
             tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
+            labelIdToLabelFunction = from ->
+            {
+                try
+                {
+                    return label( tokenHolders.labelTokens().getTokenById( safeCastLongToInt( from ) ).name() );
+                }
+                catch ( TokenNotFoundException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            };
 
             monitors = new Monitors();
 
             storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) );
             Dependencies deps = new Dependencies();
-            Monitors monitors = new Monitors();
             deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, storeIndexStoreView, tokenHolders, pageCache, monitors, immediate() );
 
             DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(

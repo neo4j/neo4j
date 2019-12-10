@@ -394,7 +394,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
         assertThat( tx.dataWrite().nodeSetProperty( nodeId, property, theValue ) ).isEqualTo( theValue );
 
-        assertThat( tx.commit() ).isEqualTo( KernelTransaction.READ_ONLY );
+        assertThat( tx.commit() ).isEqualTo( KernelTransaction.READ_ONLY_ID );
     }
 
     @Test

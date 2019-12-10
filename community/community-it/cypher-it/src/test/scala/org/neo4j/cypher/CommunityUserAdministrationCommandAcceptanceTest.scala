@@ -817,7 +817,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
                         resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
     selectDatabase(database)
     val login = authManager.login(SecurityTestUtils.authToken(username, password))
-    val tx = graph.beginTransaction(Type.explicit, login)
+    val tx = graph.beginTransaction(Type.EXPLICIT, login)
     try {
       var count = 0
       val result: Result = tx.execute(query, params)

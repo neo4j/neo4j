@@ -42,7 +42,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
@@ -143,7 +143,7 @@ class IndexPopulationFlipRaceIT
             throws Exception
     {
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AnonymousContext.read() ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AnonymousContext.read() ) )
         {
             int labelAId = tx.tokenRead().nodeLabel( labelA( i ).name() );
             int keyAId = tx.tokenRead().propertyKey( keyA( i ) );

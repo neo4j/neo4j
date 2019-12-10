@@ -103,7 +103,7 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
         }
     }
 
-    private void assertSameArrayLength( String[] names, int[] ids )
+    private static void assertSameArrayLength( String[] names, int[] ids )
     {
         if ( names.length != ids.length )
         {

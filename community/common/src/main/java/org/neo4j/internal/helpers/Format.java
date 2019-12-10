@@ -27,7 +27,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class Format
+public final class Format
 {
     /**
      * Default time zone is UTC (+00:00) so that comparing timestamped logs from different

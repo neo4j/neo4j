@@ -37,9 +37,8 @@ import org.bouncycastle.util.io.pem.PemReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
@@ -55,7 +54,6 @@ import java.util.LinkedList;
 public final class PkiUtils
 {
     public static final String CERTIFICATE_TYPE = "X.509";
-    private static final String DEFAULT_ENCRYPTION = "RSA";
 
     private static final Provider PROVIDER = new BouncyCastleProvider();
     static
@@ -73,7 +71,7 @@ public final class PkiUtils
         CertificateFactory certFactory = CertificateFactory.getInstance( CERTIFICATE_TYPE );
         Collection<X509Certificate> certificates = new LinkedList<>();
 
-        try ( PemReader r = new PemReader( new FileReader( certFile ) ) )
+        try ( PemReader r = new PemReader( Files.newBufferedReader( certFile.toPath() ) ) )
         {
             for ( PemObject pemObject = r.readPemObject(); pemObject != null; pemObject = r.readPemObject() )
             {
@@ -82,18 +80,8 @@ public final class PkiUtils
                         (Collection<X509Certificate>) certFactory.generateCertificates( new ByteArrayInputStream( encodedCert ) );
                 certificates.addAll( loadedCertificates );
             }
+            return certificates.toArray( new X509Certificate[0] );
         }
-
-        if ( certificates.isEmpty() )
-        {
-            // Ok, failed to read as PEM file, try and read it as raw binary certificate
-            try ( FileInputStream in = new FileInputStream( certFile ) )
-            {
-                certificates = (Collection<X509Certificate>) certFactory.generateCertificates( in );
-            }
-        }
-
-        return certificates.toArray( new X509Certificate[0] );
     }
 
     public static PrivateKey loadPrivateKey( File privateKeyFile, String passPhrase ) throws IOException
@@ -102,7 +90,7 @@ public final class PkiUtils
         {
             passPhrase = "";
         }
-        try ( PEMParser r = new PEMParser( new FileReader( privateKeyFile ) ) )
+        try ( PEMParser r = new PEMParser(  Files.newBufferedReader( privateKeyFile.toPath() ) ) )
         {
             Object pemObject = r.readObject();
             final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider( PROVIDER );

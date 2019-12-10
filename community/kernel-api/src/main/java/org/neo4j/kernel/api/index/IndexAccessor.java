@@ -324,7 +324,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         @Override
         public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
         {
-            return newAllEntriesReader( fromIdInclusive, toIdExclusive );
+            return delegate.newAllEntriesReader( fromIdInclusive, toIdExclusive );
         }
 
         @Override

@@ -89,35 +89,35 @@ public class PhysicalFlushableChannel implements FlushableChannel
     @Override
     public FlushableChannel putShort( short value ) throws IOException
     {
-        bufferWithGuaranteedSpace( 2 ).putShort( value );
+        bufferWithGuaranteedSpace( Short.BYTES ).putShort( value );
         return this;
     }
 
     @Override
     public FlushableChannel putInt( int value ) throws IOException
     {
-        bufferWithGuaranteedSpace( 4 ).putInt( value );
+        bufferWithGuaranteedSpace( Integer.BYTES ).putInt( value );
         return this;
     }
 
     @Override
     public FlushableChannel putLong( long value ) throws IOException
     {
-        bufferWithGuaranteedSpace( 8 ).putLong( value );
+        bufferWithGuaranteedSpace( Long.BYTES ).putLong( value );
         return this;
     }
 
     @Override
     public FlushableChannel putFloat( float value ) throws IOException
     {
-        bufferWithGuaranteedSpace( 4 ).putFloat( value );
+        bufferWithGuaranteedSpace( Float.BYTES ).putFloat( value );
         return this;
     }
 
     @Override
     public FlushableChannel putDouble( double value ) throws IOException
     {
-        bufferWithGuaranteedSpace( 8 ).putDouble( value );
+        bufferWithGuaranteedSpace( Double.BYTES ).putDouble( value );
         return this;
     }
 

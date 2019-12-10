@@ -71,14 +71,14 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int = 50): IndexedSeq[Node] = {
     val r = new Random(seed)
 
-    var tx = graph.beginTransaction(Type.`implicit`, LoginContext.AUTH_DISABLED)
+    var tx = graph.beginTransaction(Type.IMPLICIT, LoginContext.AUTH_DISABLED)
     var count = 0
 
     def checkAndSwitch(): Unit = {
       count += 1
       if (count == 1000) {
         tx.commit()
-        tx = graph.beginTransaction(Type.`implicit`, LoginContext.AUTH_DISABLED)
+        tx = graph.beginTransaction(Type.IMPLICIT, LoginContext.AUTH_DISABLED)
         count = 0
       }
     }

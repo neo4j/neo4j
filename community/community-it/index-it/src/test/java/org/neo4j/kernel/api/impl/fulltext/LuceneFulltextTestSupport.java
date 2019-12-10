@@ -100,7 +100,7 @@ public class LuceneFulltextTestSupport
         try
         {
             return (KernelTransactionImplementation) db.resolveDependency( KernelImpl.class ).beginTransaction(
-                    KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED );
+                    KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
         }
         catch ( TransactionFailureException e )
         {

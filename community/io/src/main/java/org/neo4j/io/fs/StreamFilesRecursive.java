@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
-public class StreamFilesRecursive
+public final class StreamFilesRecursive
 {
     private StreamFilesRecursive()
     {

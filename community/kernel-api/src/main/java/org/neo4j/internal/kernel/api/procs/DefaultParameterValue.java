@@ -128,7 +128,6 @@ public class DefaultParameterValue
     public int hashCode()
     {
         int result = value != null ? value.hashCode() : 0;
-        result = 31 * result + type.hashCode();
-        return result;
+        return 31 * result + type.hashCode();
     }
 }

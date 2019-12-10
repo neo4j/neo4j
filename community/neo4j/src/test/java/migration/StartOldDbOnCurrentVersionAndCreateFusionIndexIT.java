@@ -57,10 +57,10 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.Inject;
@@ -230,7 +230,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
                 Iterator<String> fts1props = fts1.getPropertyKeys().iterator();
                 assertTrue( fts1props.hasNext() );
-                assertEquals( fts1props.next(), "prop1" );
+                assertEquals( "prop1", fts1props.next() );
                 assertFalse( fts1props.hasNext() );
 
                 IndexDefinition fts2 = tx.schema().getIndexByName( "fts2" );
@@ -244,9 +244,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
                 Iterator<String> fts2props = fts2.getPropertyKeys().iterator();
                 assertTrue( fts2props.hasNext() );
-                assertEquals( fts2props.next(), "prop1" );
+                assertEquals( "prop1", fts2props.next() );
                 assertTrue( fts2props.hasNext() );
-                assertEquals( fts2props.next(), "prop2" );
+                assertEquals( "prop2", fts2props.next() );
                 assertFalse( fts2props.hasNext() );
 
                 IndexDefinition fts3 = tx.schema().getIndexByName( "fts3" );
@@ -258,7 +258,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
                 Iterator<String> fts3props = fts3.getPropertyKeys().iterator();
                 assertTrue( fts3props.hasNext() );
-                assertEquals( fts3props.next(), "prop1" );
+                assertEquals( "prop1", fts3props.next() );
                 assertFalse( fts3props.hasNext() );
                 // TODO verify the index configuration of 'fts3' -- it is eventually consistent.
 
@@ -273,9 +273,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
                 Iterator<String> fts4props = fts4.getPropertyKeys().iterator();
                 assertTrue( fts4props.hasNext() );
-                assertEquals( fts4props.next(), "prop1" );
+                assertEquals( "prop1", fts4props.next() );
                 assertTrue( fts4props.hasNext() );
-                assertEquals( fts4props.next(), "prop2" );
+                assertEquals( "prop2", fts4props.next() );
                 assertFalse( fts4props.hasNext() );
                 // TODO verify the index configuration of 'fts3' -- it is eventually consistent.
 

@@ -115,7 +115,7 @@ class Neo4jTransactionalContextTest
         // Given
         KernelTransaction initialKTX = mockTransaction( statement );
         InternalTransaction userTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
-        KernelTransaction.Type transactionType = KernelTransaction.Type.implicit;
+        KernelTransaction.Type transactionType = KernelTransaction.Type.IMPLICIT;
         SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         ClientConnectionInfo connectionInfo = ClientConnectionInfo.EMBEDDED_CONNECTION;
         when( userTransaction.transactionType() ).thenReturn( transactionType );
@@ -172,7 +172,7 @@ class Neo4jTransactionalContextTest
     {
         // Given
         InternalTransaction userTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
-        KernelTransaction.Type transactionType = KernelTransaction.Type.implicit;
+        KernelTransaction.Type transactionType = KernelTransaction.Type.IMPLICIT;
         SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         ClientConnectionInfo connectionInfo = ClientConnectionInfo.EMBEDDED_CONNECTION;
         when( userTransaction.transactionType() ).thenReturn( transactionType );
@@ -276,7 +276,7 @@ class Neo4jTransactionalContextTest
     void shouldBeTopLevelWithImplicitTx()
     {
         InternalTransaction tx = mock( InternalTransaction.class );
-        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.implicit );
+        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.IMPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
 
@@ -287,7 +287,7 @@ class Neo4jTransactionalContextTest
     void shouldNotBeTopLevelWithExplicitTx()
     {
         InternalTransaction tx = mock( InternalTransaction.class );
-        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.explicit );
+        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.EXPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
 
@@ -298,7 +298,7 @@ class Neo4jTransactionalContextTest
     void shouldNotCloseTransactionDuringTermination()
     {
         InternalTransaction tx = mock( InternalTransaction.class );
-        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.implicit );
+        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.IMPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
 
@@ -312,7 +312,7 @@ class Neo4jTransactionalContextTest
     void shouldBePossibleToCloseAfterTermination()
     {
         InternalTransaction tx = mock( InternalTransaction.class );
-        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.implicit );
+        when( tx.transactionType() ).thenReturn( KernelTransaction.Type.IMPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
 

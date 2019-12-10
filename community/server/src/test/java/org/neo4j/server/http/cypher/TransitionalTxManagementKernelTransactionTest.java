@@ -37,7 +37,7 @@ class TransitionalTxManagementKernelTransactionTest
 {
     private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private final LoginContext loginContext = AnonymousContext.read();
-    private final KernelTransaction.Type type = KernelTransaction.Type.implicit;
+    private final KernelTransaction.Type type = KernelTransaction.Type.IMPLICIT;
 
     @Test
     void reopenStartTransactionWithCustomTimeoutIfSpecified()

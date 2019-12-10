@@ -52,6 +52,7 @@ class ProfilerTest
         }
         otherIntenseWork();
         String output = getProfilerOutput( profiler );
+        assertThat( output ).contains( "expensiveComputation" );
         assertThat( output ).doesNotContain( "otherIntensiveWork" );
     }
 

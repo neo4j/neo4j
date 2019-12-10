@@ -81,11 +81,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
-  protected def inTestTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = withTx(f, txType)
+  protected def inTestTx[T](f: InternalTransaction => T, txType: Type = Type.IMPLICIT): T = withTx(f, txType)
 
   protected def inTestTx[T](f: => T): T = inTestTx(_ => f)
 
-  protected def withTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = {
+  protected def withTx[T](f: InternalTransaction => T, txType: Type = Type.IMPLICIT): T = {
     if (tx == null) {
       graph.withTx(f, txType)
     } else {

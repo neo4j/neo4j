@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-public class IdContextFactoryBuilder
+public final class IdContextFactoryBuilder
 {
     private FileSystemAbstraction fileSystemAbstraction;
     private JobScheduler jobScheduler;

@@ -793,7 +793,7 @@ public class FulltextIndexProviderTest
         {
             KernelImpl kernel = db.resolveDependency( KernelImpl.class );
             return (KernelTransactionImplementation) kernel.beginTransaction(
-                    KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED );
+                    KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
         }
         catch ( TransactionFailureException e )
         {

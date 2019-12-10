@@ -59,7 +59,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIt
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 @TestDirectoryExtension
@@ -161,7 +161,7 @@ public abstract class KernelIntegrationTest
 
     private void beginTransaction( LoginContext context )
     {
-        transaction = db.beginTransaction( implicit, context );
+        transaction = db.beginTransaction( IMPLICIT, context );
         kernelTransaction = transaction.kernelTransaction();
     }
 

@@ -30,7 +30,7 @@ import org.neo4j.memory.MemoryTracker;
  * @see org.neo4j.memory.MemoryAllocationTracker
  * @see MemoryTracker
  */
-class GlobalMemoryTracker implements MemoryAllocationTracker
+final class GlobalMemoryTracker implements MemoryAllocationTracker
 {
     static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
 

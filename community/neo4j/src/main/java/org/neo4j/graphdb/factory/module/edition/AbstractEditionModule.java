@@ -27,6 +27,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
@@ -114,7 +115,7 @@ public abstract class AbstractEditionModule
 
     protected abstract BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 
-    public abstract DatabaseManager<?> createDatabaseManager( GlobalModule globalModule );
+    public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager( GlobalModule globalModule );
 
     public abstract SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 

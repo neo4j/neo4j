@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.traversal;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
@@ -120,16 +119,15 @@ class TestPath extends TraversalTestBase
         }
     }
 
-    //TODO: This leaks cursors, and disabling cursor checking of this entire module seems
-    //      like the wrong thing. We should preferably fix the leaking and reenable the test
-    //      or move it to a module where we can disable `trackCursors`
-    @Disabled
+    @Test
     public void testBidirectionalPath()
     {
         var graphDb = getGraphDb();
         BidirectionalTraversalDescription bidirectional;
         try ( var transaction = graphDb.beginTx() )
         {
+            Node a = transaction.getNodeById( this.a.getId() );
+            Node e = transaction.getNodeById( this.e.getId() );
             TraversalDescription side = transaction.traversalDescription().uniqueness( Uniqueness.NODE_PATH );
             bidirectional = transaction.bidirectionalTraversalDescription().mirroredSides( side );
             Path bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );

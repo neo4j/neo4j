@@ -26,17 +26,15 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final CountsStore countsStore;
-    private final TransactionApplicationMode mode;
 
-    CountsStoreBatchTransactionApplier( CountsStore countsStore, TransactionApplicationMode mode )
+    CountsStoreBatchTransactionApplier( CountsStore countsStore )
     {
         this.countsStore = countsStore;
-        this.mode = mode;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
     {
-        return new CountsStoreTransactionApplier( mode, countsStore.apply( transaction.transactionId() ) );
+        return new CountsStoreTransactionApplier( countsStore.apply( transaction.transactionId() ) );
     }
 }

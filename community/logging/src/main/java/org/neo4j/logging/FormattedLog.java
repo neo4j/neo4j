@@ -47,7 +47,7 @@ public class FormattedLog extends AbstractLog
     /**
      * A Builder for a {@link FormattedLog}
      */
-    public static class Builder
+    public static final class Builder
     {
         private ZoneId zoneId = ZoneOffset.UTC;
         private Object lock = this;

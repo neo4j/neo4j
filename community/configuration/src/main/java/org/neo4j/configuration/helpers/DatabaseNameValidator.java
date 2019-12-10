@@ -26,10 +26,11 @@ import static org.apache.commons.lang3.CharUtils.isAsciiAlphaLower;
 
 public class DatabaseNameValidator
 {
+    private static final int MINIMUM_DATABASE_NAME_LENGTH = 3;
     public static final int MAXIMUM_DATABASE_NAME_LENGTH = 63;
     public static final String DESCRIPTION = "Containing only alphabetic characters, numbers, dots and dashes, " +
-                                             "with a length between 3 and 63 characters. " +
-                                             "It should be starting with an alphabetic character but not with the name 'system'.";
+            "with a length between " + MINIMUM_DATABASE_NAME_LENGTH + " and " + MAXIMUM_DATABASE_NAME_LENGTH + " characters. " +
+            "It should be starting with an alphabetic character but not with the name 'system'.";
     private static final Pattern DATABASE_NAME_PATTERN = Pattern.compile( "^[a-z0-9-.]+$" );
 
     public static void assertValidDatabaseName( NormalizedDatabaseName normalizedName )
@@ -43,9 +44,10 @@ public class DatabaseNameValidator
             throw new IllegalArgumentException( "The provided database name is empty." );
         }
 
-        if ( name.length() < 3 || name.length() > MAXIMUM_DATABASE_NAME_LENGTH )
+        if ( name.length() < MINIMUM_DATABASE_NAME_LENGTH || name.length() > MAXIMUM_DATABASE_NAME_LENGTH )
         {
-            throw new IllegalArgumentException( "The provided database name must have a length between 3 and 63 characters." );
+            throw new IllegalArgumentException( "The provided database name must have a length between " + MINIMUM_DATABASE_NAME_LENGTH +
+                    " and " + MAXIMUM_DATABASE_NAME_LENGTH + " characters." );
         }
 
         if ( !isAsciiAlphaLower( name.charAt( 0 ) ) )

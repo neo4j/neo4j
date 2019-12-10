@@ -47,14 +47,14 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
 
 public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 {
-    protected Label USER_LABEL = Label.label( "User" );
+    protected static final Label USER_LABEL = Label.label( "User" );
     protected List<Node> userNodes = new ArrayList<>();
-    protected List<String> usernames = new ArrayList<>();
+    protected final List<String> usernames = new ArrayList<>();
 
     protected final DatabaseManager<?> databaseManager;
     protected GraphDatabaseService systemDb;
     protected final SystemGraphInitializer systemGraphInitializer;
-    protected Log log;
+    protected final Log log;
 
     protected final UserRepository migrationUserRepository;
     private final UserRepository initialUserRepository;
@@ -138,7 +138,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         }
     }
 
-    protected ArrayList<Node> findInitialNodes( Transaction tx, Label label )
+    protected static ArrayList<Node> findInitialNodes( Transaction tx, Label label )
     {
         ArrayList<Node> nodeList = new ArrayList<>();
         final ResourceIterator<Node> nodes = tx.findNodes( label );

@@ -47,7 +47,7 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
         this( 1, TimeUnit.MILLISECONDS );
     }
 
-    public ReentrantLockService( long maxParkTime, TimeUnit unit )
+    private ReentrantLockService( long maxParkTime, TimeUnit unit )
     {
         this.maxParkNanos = unit.toNanos( maxParkTime );
     }

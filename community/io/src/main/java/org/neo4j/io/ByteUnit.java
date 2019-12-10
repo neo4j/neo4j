@@ -73,7 +73,7 @@ public enum ByteUnit
      * <p>
      * Giving zero always produces 1. Giving 1 will produce 1000 or 1024, for SI and EIC respectively, and so on.
      */
-    private long factorFromPower( long power )
+    private static long factorFromPower( long power )
     {
         if ( power == 0 )
         {

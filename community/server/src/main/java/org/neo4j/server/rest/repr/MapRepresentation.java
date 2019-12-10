@@ -32,7 +32,7 @@ import static java.util.Arrays.asList;
 public class MapRepresentation extends MappingRepresentation
 {
 
-    private final Map value;
+    private final Map<String,Object> value;
 
     public MapRepresentation( Map value )
     {
@@ -43,10 +43,10 @@ public class MapRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        for ( Object key : value.keySet() )
+        for ( var entry : value.entrySet() )
         {
-            Object val = value.get( key );
-            String keyString = key == null ? "null" : key.toString();
+            Object val = entry.getValue();
+            String keyString = entry.getKey() == null ? "null" : entry.getKey();
             if ( val instanceof Number )
             {
                 serializer.putNumber( keyString, (Number) val );
@@ -94,7 +94,7 @@ public class MapRepresentation extends MappingRepresentation
         }
     }
 
-    private Object[] toArray( Object val )
+    private static Object[] toArray( Object val )
     {
         int length = getLength( val );
 

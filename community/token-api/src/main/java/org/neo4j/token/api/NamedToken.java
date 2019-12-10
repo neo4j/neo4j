@@ -76,7 +76,7 @@ public final class NamedToken
 
         NamedToken that = (NamedToken) o;
 
-        return id == that.id && name.equals( that.name ) && internal == that.internal;
+        return id == that.id && internal == that.internal && name.equals( that.name );
     }
 
     @Override

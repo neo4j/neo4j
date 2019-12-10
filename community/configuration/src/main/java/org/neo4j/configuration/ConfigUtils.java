@@ -23,7 +23,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 
-public abstract class ConfigUtils
+public final class ConfigUtils
 {
     private ConfigUtils()
     {
@@ -37,8 +37,8 @@ public abstract class ConfigUtils
      */
     public static void disableAllConnectors( Config config )
     {
-        config.set( BoltConnector.enabled, false );
-        config.set( HttpConnector.enabled, false );
-        config.set( HttpsConnector.enabled, false );
+        config.set( BoltConnector.enabled, Boolean.FALSE );
+        config.set( HttpConnector.enabled, Boolean.FALSE );
+        config.set( HttpsConnector.enabled, Boolean.FALSE );
     }
 }

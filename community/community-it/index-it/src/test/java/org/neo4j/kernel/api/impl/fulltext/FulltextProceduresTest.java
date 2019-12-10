@@ -2206,7 +2206,7 @@ public class FulltextProceduresTest
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
                 assertThat( eventuallyConsistentObj ).isInstanceOf( Boolean.class );
-                assertEquals( true, eventuallyConsistentObj );
+                assertTrue( (Boolean) eventuallyConsistentObj );
             }
             tx.commit();
         }
@@ -2237,7 +2237,7 @@ public class FulltextProceduresTest
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
                 assertThat( eventuallyConsistentObj ).isInstanceOf( Boolean.class );
-                assertEquals( true, eventuallyConsistentObj );
+                assertTrue( (Boolean) eventuallyConsistentObj );
                 Object analyzerObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_ANALYZER );
                 assertNotNull( analyzerObj );
                 assertThat( analyzerObj ).isInstanceOf( String.class );

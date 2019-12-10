@@ -78,6 +78,7 @@ public enum PrivilegeAction
 
     ADMIN
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     return USER_MANAGEMENT.satisfies( action ) ||
@@ -91,6 +92,7 @@ public enum PrivilegeAction
 
     TOKEN
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
@@ -107,6 +109,7 @@ public enum PrivilegeAction
 
     SCHEMA
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     return INDEX.satisfies( action ) || CONSTRAINT.satisfies( action ) || this == action;
@@ -145,6 +148,7 @@ public enum PrivilegeAction
 
     DATABASE_MANAGEMENT
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
@@ -162,6 +166,7 @@ public enum PrivilegeAction
 
     TRANSACTION_MANAGEMENT
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
@@ -179,6 +184,7 @@ public enum PrivilegeAction
 
     USER_MANAGEMENT
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
@@ -196,6 +202,7 @@ public enum PrivilegeAction
 
     ROLE_MANAGEMENT
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
@@ -214,6 +221,7 @@ public enum PrivilegeAction
 
     PRIVILEGE_MANAGEMENT
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )

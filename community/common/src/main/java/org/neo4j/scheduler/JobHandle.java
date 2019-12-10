@@ -28,7 +28,12 @@ public interface JobHandle
 {
     void cancel();
 
-    void waitTermination() throws InterruptedException, ExecutionException, CancellationException;
+    /**
+     * @throws InterruptedException
+     * @throws ExecutionException
+     * @throws CancellationException
+     */
+    void waitTermination() throws InterruptedException, ExecutionException;
 
     void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException;
 
@@ -47,7 +52,7 @@ public interface JobHandle
         }
 
         @Override
-        public void waitTermination() throws CancellationException
+        public void waitTermination()
         {   // no-op
         }
 

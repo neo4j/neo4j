@@ -33,7 +33,7 @@ import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.internal.locker.GlobalLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 
-public class LockChecker implements Closeable
+public final class LockChecker implements Closeable
 {
     private final FileSystemAbstraction fileSystem;
     private final Locker locker;

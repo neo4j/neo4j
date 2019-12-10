@@ -81,7 +81,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
 
     private KernelTransaction beginTransaction() throws TransactionFailureException
     {
-        return kernelToTest().beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        return kernelToTest().beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED );
     }
 
     @Override

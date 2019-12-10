@@ -60,7 +60,7 @@ public class GraphNameValidator
                     "Graph name '" + name + "' contains illegal characters. Use simple ascii characters, numbers, dots and dashes." );
         }
 
-        if ( name.equals( "graph" ) )
+        if ( "graph".equals( name ) )
         {
             throw new IllegalArgumentException( "Graph name 'graph' is reserved." );
         }

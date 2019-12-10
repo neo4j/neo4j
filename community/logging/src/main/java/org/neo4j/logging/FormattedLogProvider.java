@@ -43,7 +43,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     /**
      * A Builder for a {@link FormattedLogProvider}
      */
-    public static class Builder
+    public static final class Builder
     {
         private boolean renderContext = true;
         private ZoneId zoneId = ZoneOffset.UTC;

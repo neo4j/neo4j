@@ -31,7 +31,7 @@ import java.io.OutputStream;
  *
  * @see FileUtils
  */
-public class FileSystemUtils
+public final class FileSystemUtils
 {
     private FileSystemUtils()
     {
@@ -83,12 +83,12 @@ public class FileSystemUtils
     {
         if ( fs.isDirectory( file ) )
         {
-            long size = 0L;
             File[] files = fs.listFiles( file );
             if ( files == null )
             {
                 return 0L;
             }
+            long size = 0L;
             for ( File child : files )
             {
                 size += size( fs, child );

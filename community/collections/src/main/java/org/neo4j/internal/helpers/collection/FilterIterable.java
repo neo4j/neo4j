@@ -89,13 +89,10 @@ class FilterIterable<T> implements Iterable<T>
             }
             else
             {
-                if ( !finished )
+                if ( !finished && moveToNextValid() )
                 {
-                    if ( moveToNextValid() )
-                    {
-                        nextConsumed = true;
-                        return currentValue;
-                    }
+                    nextConsumed = true;
+                    return currentValue;
                 }
             }
             throw new NoSuchElementException( "This iterator is exhausted." );

@@ -95,7 +95,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
     new Runnable {
       def run() {
         while (continue.get()) {
-          val tx = graph.beginTransaction(Type.`implicit`, AUTH_DISABLED)
+          val tx = graph.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
           try {
             val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
             tcs.put(transactionalContext)

@@ -21,6 +21,7 @@ package org.neo4j.logging;
 
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Logger} implementation that discards all messages
@@ -52,7 +53,7 @@ public final class NullLogger implements Logger
     }
 
     @Override
-    public void log( @Nonnull String format, @Nonnull Object... arguments )
+    public void log( @Nonnull String format, @Nullable Object... arguments )
     {
     }
 

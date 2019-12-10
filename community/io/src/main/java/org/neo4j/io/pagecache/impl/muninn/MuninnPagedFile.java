@@ -558,7 +558,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return UnsafeUtil.getLongVolatile( this, headerStateOffset );
     }
 
-    private long refCountOf( long state )
+    private static long refCountOf( long state )
     {
         return (state & headerStateRefCountMask) >>> headerStateRefCountShift;
     }

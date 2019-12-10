@@ -32,7 +32,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
  * IndexingService is expected to either make a copy before making any changes or update this
  * while being single threaded.
  */
-public final class IndexMap implements Cloneable
+public final class IndexMap
 {
     private final MutableLongObjectMap<IndexProxy> indexesById;
 
@@ -41,9 +41,14 @@ public final class IndexMap implements Cloneable
         this( new LongObjectHashMap<>() );
     }
 
-    private IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
+    IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
     {
         this.indexesById = indexesById;
+    }
+
+    IndexMap( IndexMap other )
+    {
+        indexesById = LongObjectHashMap.newMap( other.indexesById );
     }
 
     public IndexProxy getIndexProxy( IndexDescriptor index )
@@ -75,13 +80,6 @@ public final class IndexMap implements Cloneable
     Iterable<IndexProxy> getAllIndexProxies()
     {
         return indexesById.values();
-    }
-
-    @SuppressWarnings( "MethodDoesntCallSuperMethod" )
-    @Override
-    public IndexMap clone()
-    {
-        return new IndexMap( LongObjectHashMap.newMap( indexesById ) );
     }
 
     public LongIterator indexIds()

@@ -139,7 +139,7 @@ public class CompositeUniquenessConstraintValidationIT
         transaction.schemaWrite().constraintDrop( constraintDescriptor );
         commit();
 
-        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
@@ -333,7 +333,7 @@ public class CompositeUniquenessConstraintValidationIT
         {
             fail( "tx already opened" );
         }
-        transaction = kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        transaction = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED );
     }
 
     protected void commit() throws TransactionFailureException

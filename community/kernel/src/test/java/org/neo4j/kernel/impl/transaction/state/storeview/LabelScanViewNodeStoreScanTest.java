@@ -22,10 +22,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -70,10 +68,12 @@ class LabelScanViewNodeStoreScanTest
 
         LabelScanViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
-        List<Long> visitedNodeIds = PrimitiveLongCollections.asList( idIterator );
 
-        assertThat( visitedNodeIds ).hasSize( 4 );
-        assertThat( visitedNodeIds ).contains( 1L, 2L, 4L, 8L );
+        assertThat( idIterator.next() ).isEqualTo( 1L );
+        assertThat( idIterator.next() ).isEqualTo( 2L );
+        assertThat( idIterator.next() ).isEqualTo( 4L );
+        assertThat( idIterator.next() ).isEqualTo( 8L );
+        assertThat( idIterator.hasNext() ).isEqualTo( false );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )

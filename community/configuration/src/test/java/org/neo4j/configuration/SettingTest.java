@@ -185,11 +185,11 @@ class SettingTest
     void testBool()
     {
         var setting = (SettingImpl<Boolean>) setting( "setting", BOOL );
-        assertEquals( true, setting.parse( "True" ) );
-        assertEquals( false, setting.parse( "false" ) );
-        assertEquals( false, setting.parse( "false" ) );
-        assertEquals( false, setting.parse( FALSE ) );
-        assertEquals( true, setting.parse( TRUE ) );
+        assertTrue( setting.parse( "True" ) );
+        assertFalse( setting.parse( "false" ) );
+        assertFalse( setting.parse( "false" ) );
+        assertFalse( setting.parse( FALSE ) );
+        assertTrue( setting.parse( TRUE ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
     }
 

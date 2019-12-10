@@ -22,16 +22,15 @@ package org.neo4j.lock;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 public class LockGroup implements AutoCloseable
 {
     private final List<Lock> locks = new ArrayList<>();
 
     public final void add( Lock lock )
     {
-        if ( lock == null )
-        {
-            throw new IllegalArgumentException( "Cannot add null locks. See LockService.NOLOCK instead." );
-        }
+        requireNonNull( lock, "Cannot add null locks. See LockService.NOLOCK instead." );
         locks.add( lock );
     }
 

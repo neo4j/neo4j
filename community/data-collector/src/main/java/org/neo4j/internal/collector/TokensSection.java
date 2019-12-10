@@ -43,7 +43,7 @@ final class TokensSection
 
     static Stream<RetrieveResult> retrieve( Kernel kernel ) throws TransactionFailureException
     {
-        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             TokenRead tokens = tx.tokenRead();
 
@@ -66,7 +66,7 @@ final class TokensSection
 
     static void putTokenCounts( Map<String,Object> metaData, Kernel kernel ) throws TransactionFailureException
     {
-        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             TokenRead tokens = tx.tokenRead();
             metaData.put( "labelCount", tokens.labelCount() );

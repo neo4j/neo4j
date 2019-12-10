@@ -166,7 +166,7 @@ class ManyPropertyKeysIT
     private static int propertyKeyCount( GraphDatabaseAPI db ) throws TransactionFailureException
     {
         Kernel kernelAPI = db.getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernelAPI.beginTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )
+        try ( KernelTransaction tx = kernelAPI.beginTransaction( KernelTransaction.Type.IMPLICIT, AnonymousContext.read() ) )
         {
             return tx.tokenRead().propertyKeyCount();
         }

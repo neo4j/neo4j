@@ -33,6 +33,7 @@ class WrappingResourceIterator<T> extends PrefetchingResourceIterator<T>
     @Override
     public void close()
     {
+        // nothing to release
     }
 
     @Override

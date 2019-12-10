@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Buffers all messages sent to it, and is able to replay those messages into
@@ -82,7 +83,7 @@ public class BufferingLog extends AbstractLog
         protected abstract LogMessage buildMessage( String message, Throwable throwable );
 
         @Override
-        public void log( @Nonnull String format, @Nonnull Object... arguments )
+        public void log( @Nonnull String format, @Nullable Object... arguments )
         {
             LogMessage logMessage = buildMessage( format, arguments );
             synchronized ( buffer )

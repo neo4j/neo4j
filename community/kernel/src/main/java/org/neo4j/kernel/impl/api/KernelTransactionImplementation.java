@@ -595,7 +595,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 rollback( null );
                 failOnNonExplicitRollbackIfNeeded();
-                return ROLLBACK;
+                return ROLLBACK_ID;
             }
             else
             {
@@ -669,7 +669,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long commitTransaction() throws KernelException
     {
         boolean success = false;
-        long txId = READ_ONLY;
+        long txId = READ_ONLY_ID;
         TransactionListenersState listenersState = null;
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
@@ -1072,7 +1072,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *
      * @return the locks held by this transaction.
      */
-    public Stream<? extends ActiveLock> activeLocks()
+    public Stream<ActiveLock> activeLocks()
     {
         StatementLocks locks = this.statementLocks;
         return locks == null ? Stream.empty() : locks.activeLocks();

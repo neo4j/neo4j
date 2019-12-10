@@ -22,11 +22,8 @@ package org.neo4j.internal.kernel.api;
 /**
  * Cursor for traversing the relationship groups of a node.
  */
-public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipGroupCursor.Position>
+public interface RelationshipGroupCursor extends Cursor
 {
-    abstract class Position extends CursorPosition<Position>
-    {
-    }
 
     /**
      * Find the first relationship group with a label greater than or equal to the provided label.

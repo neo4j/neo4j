@@ -43,8 +43,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 public abstract class AbstractTransactionStateMachineSPI implements TransactionStateMachineSPI
 {
@@ -73,14 +73,14 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     public BoltTransaction beginTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
             Map<String,Object> txMetadata )
     {
-        return boltGraphDatabaseServiceSPI.beginTransaction( explicit, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata );
+        return boltGraphDatabaseServiceSPI.beginTransaction( EXPLICIT, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata );
     }
 
     @Override
     public BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
             Map<String,Object> txMetadata )
     {
-        return boltGraphDatabaseServiceSPI.beginTransaction( implicit, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata );
+        return boltGraphDatabaseServiceSPI.beginTransaction( IMPLICIT, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata );
     }
 
     @Override

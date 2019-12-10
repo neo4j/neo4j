@@ -42,9 +42,9 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
-public class StoreLogService extends AbstractLogService implements Lifecycle
+public final class StoreLogService extends AbstractLogService implements Lifecycle
 {
-    public static class Builder
+    public static final class Builder
     {
         private LogProvider userLogProvider = NullLogProvider.getInstance();
         private Executor rotationExecutor;

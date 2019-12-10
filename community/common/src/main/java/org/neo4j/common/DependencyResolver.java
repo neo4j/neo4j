@@ -42,7 +42,7 @@ public interface DependencyResolver
      * @throws IllegalArgumentException if no matching dependency was found.
      * @throws UnsatisfiedDependencyException if no matching dependency was found.
      */
-    <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException, UnsatisfiedDependencyException;
+    <T> T resolveDependency( Class<T> type );
 
     /**
      * Tries to resolve a dependency that matches a given class. All candidates are fed to the
@@ -56,7 +56,7 @@ public interface DependencyResolver
      * @throws IllegalArgumentException if no matching dependency was found.
      * @throws UnsatisfiedDependencyException if no matching dependency was found.
      */
-    <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException, UnsatisfiedDependencyException;
+    <T> T resolveDependency( Class<T> type, SelectionStrategy selector );
 
     /**
      * Tries to resolve a dependencies that matches a given class.
@@ -65,7 +65,7 @@ public interface DependencyResolver
      * @param <T> the type that the returned instance must implement
      * @return the iterables with resolved dependencies for the given type.
      */
-    default <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type )
+    default <T> Iterable<T> resolveTypeDependencies( Class<T> type )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -141,7 +141,7 @@ public interface DependencyResolver
     abstract class Adapter implements DependencyResolver
     {
         @Override
-        public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+        public <T> T resolveDependency( Class<T> type )
         {
             return resolveDependency( type, SINGLE );
         }

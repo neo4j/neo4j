@@ -351,7 +351,7 @@ class TransactionEventsIT
 
     private void runTransaction( LoginContext loginContext, Map<String,Object> metaData )
     {
-        try ( var transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext ) )
+        try ( var transaction = db.beginTransaction( KernelTransaction.Type.EXPLICIT, loginContext ) )
         {
             KernelTransaction kernelTransaction = transaction.kernelTransaction();
             kernelTransaction.setMetaData( metaData );

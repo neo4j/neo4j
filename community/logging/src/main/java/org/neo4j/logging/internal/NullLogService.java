@@ -24,7 +24,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
-public class NullLogService implements LogService
+public final class NullLogService implements LogService
 {
     private static final NullLogService INSTANCE = new NullLogService();
 

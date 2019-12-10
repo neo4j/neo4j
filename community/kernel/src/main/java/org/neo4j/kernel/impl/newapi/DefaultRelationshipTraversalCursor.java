@@ -92,18 +92,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     }
 
     @Override
-    public Position suspend()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void resume( Position position )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public void neighbour( NodeCursor cursor )
     {
         read.singleNode( neighbourNodeReference(), cursor );

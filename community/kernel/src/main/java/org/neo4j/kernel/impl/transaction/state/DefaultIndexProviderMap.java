@@ -54,7 +54,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     @Override
     public void init()
     {
-        Iterable<? extends IndexProvider> indexProviders = dependencies.resolveTypeDependencies( IndexProvider.class );
+        Iterable<IndexProvider> indexProviders = dependencies.resolveTypeDependencies( IndexProvider.class );
         for ( IndexProvider provider : indexProviders )
         {
             IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();

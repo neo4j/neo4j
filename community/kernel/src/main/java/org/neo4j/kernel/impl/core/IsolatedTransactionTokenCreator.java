@@ -48,7 +48,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int createToken( String name, boolean internal ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
-        try ( KernelTransaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( Type.IMPLICIT, AUTH_DISABLED ) )
         {
             int id = createKey( tx, name, internal );
             tx.commit();
@@ -60,7 +60,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized void createTokens( String[] names, int[] ids, boolean internal, IntPredicate filter ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
-        try ( KernelTransaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( Type.IMPLICIT, AUTH_DISABLED ) )
         {
             for ( int i = 0; i < ids.length; i++ )
             {

@@ -24,7 +24,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.token.api.NamedToken;
-import org.neo4j.token.api.NonUniqueTokenException;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -41,13 +40,13 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
     }
 
     @Override
-    public void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException
+    public void setInitialTokens( List<NamedToken> tokens )
     {
         tokenRegistry.setInitialTokens( tokens );
     }
 
     @Override
-    public void addToken( NamedToken token ) throws NonUniqueTokenException
+    public void addToken( NamedToken token )
     {
         tokenRegistry.put( token );
     }

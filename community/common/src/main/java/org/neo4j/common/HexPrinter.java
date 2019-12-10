@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 
 import static java.nio.ByteBuffer.wrap;
 
@@ -307,11 +308,11 @@ public class HexPrinter
     public static String hex( ByteBuffer bytes, int offset, int length, int bytesPerBlock, String groupSep )
     {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( outStream );
+        PrintStream out = new PrintStream( outStream, false, StandardCharsets.UTF_8 );
 
         new HexPrinter( out, bytesPerBlock, groupSep ).append( bytes, offset, length );
         out.flush();
-        return outStream.toString();
+        return outStream.toString( StandardCharsets.UTF_8  );
     }
 
     /**

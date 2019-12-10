@@ -207,7 +207,7 @@ trait GraphIcing {
     }
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
-    def inTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = withTx(f, txType)
+    def inTx[T](f: InternalTransaction => T, txType: Type = Type.IMPLICIT): T = withTx(f, txType)
 
     def inTx[T](f: => T): T = inTx(_ => f)
 
@@ -225,7 +225,7 @@ trait GraphIcing {
     }
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
-    def withTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = {
+    def withTx[T](f: InternalTransaction => T, txType: Type = Type.IMPLICIT): T = {
       val tx = graph.beginTransaction(txType, AUTH_DISABLED)
       try {
         val result = f(tx)
@@ -240,7 +240,7 @@ trait GraphIcing {
     }
 
     def rollback[T](f: InternalTransaction => T): T = {
-      val tx = graph.beginTransaction(Type.`implicit`, AUTH_DISABLED)
+      val tx = graph.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
       try {
         val result = f(tx)
         tx.rollback()

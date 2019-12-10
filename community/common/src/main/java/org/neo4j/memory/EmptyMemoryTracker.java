@@ -19,7 +19,7 @@
  */
 package org.neo4j.memory;
 
-public class EmptyMemoryTracker implements MemoryAllocationTracker
+public final class EmptyMemoryTracker implements MemoryAllocationTracker
 {
     public static final EmptyMemoryTracker INSTANCE = new EmptyMemoryTracker();
 

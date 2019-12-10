@@ -98,13 +98,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     protected InternalTransaction beginTransaction()
     {
-        return beginTransaction( Type.explicit, AUTH_DISABLED );
+        return beginTransaction( Type.EXPLICIT, AUTH_DISABLED );
     }
 
     @Override
     public Transaction beginTx( long timeout, TimeUnit unit )
     {
-        return beginTransaction( Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout, unit );
+        return beginTransaction( Type.EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout, unit );
     }
 
     @Override
@@ -149,7 +149,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             throws QueryExecutionException
     {
         T transformedResult;
-        try ( var internalTransaction = beginTransaction( Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
+        try ( var internalTransaction = beginTransaction( Type.IMPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
         {
             try ( var result = internalTransaction.execute( query, parameters ) )
             {

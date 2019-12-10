@@ -40,8 +40,7 @@ class CountsStoreTransactionApplierTest
         final CountsStore counts = mock( CountsStore.class );
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
         when( counts.apply( anyLong() ) ).thenReturn( updater );
-        final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( counts,
-                TransactionApplicationMode.INTERNAL );
+        final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( counts );
 
         // WHEN
         try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ) ) )

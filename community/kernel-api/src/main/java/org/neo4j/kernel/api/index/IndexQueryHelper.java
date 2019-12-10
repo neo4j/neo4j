@@ -25,7 +25,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class IndexQueryHelper
+public final class IndexQueryHelper
 {
     private IndexQueryHelper()
     {

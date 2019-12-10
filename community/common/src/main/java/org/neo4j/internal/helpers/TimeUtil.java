@@ -53,13 +53,13 @@ public final class TimeUtil
             return DEFAULT_TIME_UNIT.toMillis( Integer.parseInt( timeWithOrWithoutUnit ) );
         }
 
-        String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
         if ( unitIndex == 0 )
         {
             throw new IllegalArgumentException( "Missing numeric value" );
         }
 
         // We have digits
+        String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
         int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
         switch ( unit )
         {

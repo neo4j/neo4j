@@ -64,7 +64,7 @@ public class TokenRegistry
         registries = insertAllChecked( tokens, new Registries() );
     }
 
-    public synchronized void put( NamedToken token ) throws NonUniqueTokenException
+    public synchronized void put( NamedToken token )
     {
         Registries reg = this.registries;
         if ( reg.idToToken.containsKey( token.id() ) )
@@ -88,7 +88,7 @@ public class TokenRegistry
         this.registries = reg;
     }
 
-    public synchronized void putAll( List<NamedToken> tokens ) throws NonUniqueTokenException
+    public synchronized void putAll( List<NamedToken> tokens )
     {
         registries = insertAllChecked( tokens, registries.copy() );
     }
@@ -200,7 +200,7 @@ public class TokenRegistry
         }
     }
 
-    private void insertUnchecked( NamedToken token, Registries registries )
+    private static void insertUnchecked( NamedToken token, Registries registries )
     {
         registries.idToToken.put( token.id(), token );
         if ( token.isInternal() )
@@ -213,7 +213,7 @@ public class TokenRegistry
         }
     }
 
-    private Integer getIdForName( MutableObjectIntMap<String> nameToId, String name )
+    private static Integer getIdForName( MutableObjectIntMap<String> nameToId, String name )
     {
         int id = nameToId.getIfAbsent( name, NO_TOKEN );
         return id == NO_TOKEN ? null : id;

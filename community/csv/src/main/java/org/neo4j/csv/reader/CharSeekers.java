@@ -26,7 +26,7 @@ import static org.neo4j.csv.reader.ThreadAheadReadable.threadAhead;
 /**
  * Factory for common {@link CharSeeker} implementations.
  */
-public class CharSeekers
+public final class CharSeekers
 {
     private CharSeekers()
     {

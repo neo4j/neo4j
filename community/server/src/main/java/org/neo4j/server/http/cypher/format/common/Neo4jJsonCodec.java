@@ -312,9 +312,9 @@ public class Neo4jJsonCodec extends ObjectMapper
         else if ( value instanceof Map )
         {
             Map map = (Map) value;
-            for ( Object key : map.keySet() )
+            for ( var mapValue : map.values() )
             {
-                writeMeta( out, map.get( key ) );
+                writeMeta( out, mapValue );
             }
         }
         else if ( value instanceof Geometry )
@@ -335,7 +335,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private Neo4jJsonMetaType parseGeometryType( Geometry value ) throws IOException
+    private Neo4jJsonMetaType parseGeometryType( Geometry value )
     {
         Neo4jJsonMetaType type = null;
         if ( value instanceof Point )

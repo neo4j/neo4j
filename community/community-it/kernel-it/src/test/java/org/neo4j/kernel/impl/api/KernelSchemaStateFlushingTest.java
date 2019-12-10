@@ -42,7 +42,7 @@ import org.neo4j.test.extension.Inject;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 @ImpermanentDbmsExtension
 class KernelSchemaStateFlushingTest
@@ -228,7 +228,7 @@ class KernelSchemaStateFlushingTest
 
     private KernelTransaction beginTransaction() throws TransactionFailureException
     {
-        return kernel.beginTransaction( implicit, AUTH_DISABLED );
+        return kernel.beginTransaction( IMPLICIT, AUTH_DISABLED );
     }
 
 }

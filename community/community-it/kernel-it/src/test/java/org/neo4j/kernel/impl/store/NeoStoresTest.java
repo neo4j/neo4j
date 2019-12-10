@@ -706,7 +706,7 @@ public class NeoStoresTest
 
     private void startTx() throws TransactionFailureException
     {
-        tx = database.getKernel().beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        tx = database.getKernel().beginTransaction( KernelTransaction.Type.IMPLICIT, AUTH_DISABLED );
         transactionState = ((KernelTransactionImplementation) tx).txState();
     }
 

@@ -95,14 +95,14 @@ public abstract class AbstractExtensions extends DependencyResolver.Adapter impl
     }
 
     @Override
-    public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
+    public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
     {
-        Iterable<? extends T> typeDependencies = resolveTypeDependencies( type );
+        Iterable<T> typeDependencies = resolveTypeDependencies( type );
         return selector.select( type, typeDependencies );
     }
 
     @Override
-    public <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type ) throws IllegalArgumentException
+    public <T> Iterable<T> resolveTypeDependencies( Class<T> type )
     {
         return life.getLifecycleInstances().stream().filter( type::isInstance ).map( type::cast ).collect( toList() );
     }

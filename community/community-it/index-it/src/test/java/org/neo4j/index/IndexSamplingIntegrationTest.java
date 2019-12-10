@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.fs.FileUtils.deleteFile;
-import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @Neo4jLayoutExtension
 class IndexSamplingIntegrationTest
@@ -207,7 +207,7 @@ class IndexSamplingIntegrationTest
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
-            try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
+            try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
             {
                 return tx.schemaRead().indexSample( indexId( tx ) );
             }
@@ -231,7 +231,7 @@ class IndexSamplingIntegrationTest
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
-            try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
+            try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
             {
                 return tx.schemaRead().indexUpdatesAndSize( indexId( tx ) );
             }

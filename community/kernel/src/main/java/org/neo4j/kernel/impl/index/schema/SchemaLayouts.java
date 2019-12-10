@@ -74,7 +74,7 @@ public class SchemaLayouts implements LayoutBootstrapper
         throw new RuntimeException( "Could not find any layout matching meta " + meta );
     }
 
-    private static boolean matchingLayout( Meta meta, Layout layout )
+    private static boolean matchingLayout( Meta meta, Layout<?,?> layout )
     {
         try
         {

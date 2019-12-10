@@ -20,8 +20,6 @@
 package org.neo4j.io.fs;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,6 +42,7 @@ import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 import static java.lang.String.format;
+import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -57,6 +56,8 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to write directory path [%s] for Neo4j store.";
     public static final Set<OpenOption> WRITE_OPTIONS = Set.of( READ, WRITE, CREATE );
     private static final Set<OpenOption> READ_OPTIONS = Set.of( READ );
+    private static final OpenOption[] APPEND_OPTIONS = new OpenOption[]{CREATE, APPEND};
+    private static final OpenOption[] DEFAULT_OUTPUT_OPTIONS = new OpenOption[0];
 
     @Override
     public FileWatcher fileWatcher() throws IOException
@@ -75,13 +76,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new FileOutputStream( fileName, append );
+        return Files.newOutputStream( fileName.toPath(), append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new FileInputStream( fileName );
+        return Files.newInputStream( fileName.toPath() );
     }
 
     @Override
@@ -122,14 +123,10 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
             return;
         }
 
-        path.mkdirs();
-
-        if ( path.exists() )
+        if ( !path.mkdirs() )
         {
-            return;
+            throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
         }
-
-        throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
     }
 
     @Override

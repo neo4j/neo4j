@@ -93,7 +93,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         awaitUpToDate( bookmarks );
         InternalTransaction topLevelInternalTransaction = beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
         KernelTransaction kernelTransaction = topLevelInternalTransaction.kernelTransaction();
-        if ( KernelTransaction.Type.implicit == type )
+        if ( KernelTransaction.Type.IMPLICIT == type )
         {
             return new PeriodicBoltKernelTransaction( queryExecutionEngine, transactionalContextFactory,
                     topLevelInternalTransaction, this::bookmarkWithTxId );

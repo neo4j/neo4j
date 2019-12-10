@@ -81,7 +81,7 @@ import static org.neo4j.util.FeatureToggles.flag;
  *
  * @see FileSystemUtils
  */
-public class FileUtils
+public final class FileUtils
 {
     private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( FileUtils.class, "printReflectionExceptions", false );
     private static final int NUMBER_OF_RETRIES = 5;

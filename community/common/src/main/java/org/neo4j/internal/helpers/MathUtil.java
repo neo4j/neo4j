@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class MathUtil
+public final class MathUtil
 {
     public static final double DEFAULT_EPSILON = 1.0E-8;
 
@@ -44,7 +44,7 @@ public class MathUtil
         assert n.length > 0;
 
         double first = n[0];
-        if ( numbersEqual( first, 0 ) )
+        if ( Math.abs( first ) < DEFAULT_EPSILON )
         {
             return 0d;
         }
