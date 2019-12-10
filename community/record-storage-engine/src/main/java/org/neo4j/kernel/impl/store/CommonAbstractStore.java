@@ -632,16 +632,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     do
                     {
                         found = false;
-                        // Scan record backwards in the page
-                        for ( int offset = recordsPerPage * recordSize - recordSize; offset >= 0; offset -= recordSize )
+                        long basePageId = cursor.getCurrentPageId() * recordsPerPage;
+                        for ( int record = 0; record < recordsPerPage; record++ )
                         {
-                            cursor.setOffset( offset );
+                            cursor.setOffset( record * recordSize );
                             if ( isInUse( cursor ) )
                             {
                                 // We've found the highest id in use
-                                highestId = (cursor.getCurrentPageId() * recordsPerPage) + offset / recordSize + 1;
+                                highestId = basePageId + record + 1;
                                 found = true;
-                                break;
                             }
                         }
                     }
