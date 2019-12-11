@@ -161,4 +161,22 @@ public class LimitedFileChannel implements StoreChannel
     {
         inner.flush();
     }
+
+    @Override
+    public boolean hasPositionLock()
+    {
+        return inner.hasPositionLock();
+    }
+
+    @Override
+    public Object getPositionLock()
+    {
+        return inner.getPositionLock();
+    }
+
+    @Override
+    public void tryMakeUninterruptible()
+    {
+        inner.tryMakeUninterruptible();
+    }
 }

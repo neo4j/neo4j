@@ -24,13 +24,8 @@ import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.OpenOption;
@@ -39,8 +34,6 @@ import java.util.HashSet;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.io.fs.StoreFileChannelUnwrapper;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -48,7 +41,6 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
-import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
@@ -61,7 +53,6 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  */
 public class SingleFilePageSwapper implements PageSwapper
 {
-    private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( SingleFilePageSwapper.class, "printReflectionExceptions", false );
 
     // Exponent of 2 of how many channels we open per file:
     private static final int GLOBAL_CHANNEL_STRIPE_POWER = getInteger( SingleFilePageSwapper.class, "channelStripePower", defaultChannelStripePower() );
@@ -78,9 +69,6 @@ public class SingleFilePageSwapper implements PageSwapper
     private static final long FILE_SIZE_OFFSET = UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
 
     private static final ThreadLocal<ByteBuffer> PROXY_CACHE = new ThreadLocal<>();
-    private static final Class<?> CLS_FILE_CHANNEL_IMPL = getInternalFileChannelClass();
-    private static final MethodHandle POSITION_LOCK_GETTER = getPositionLockGetter();
-    private static final MethodHandle MAKE_CHANNEL_UNINTERRUPTIBLE = getUninterruptibleSetter();
 
     private static int defaultChannelStripePower()
     {
@@ -94,78 +82,10 @@ public class SingleFilePageSwapper implements PageSwapper
         return Math.min( 64, Math.max( 1, stripePower ) );
     }
 
-    private static Class<?> getInternalFileChannelClass()
-    {
-        Class<?> cls = null;
-        try
-        {
-            cls = Class.forName( "sun.nio.ch.FileChannelImpl" );
-        }
-        catch ( Throwable throwable )
-        {
-            if ( PRINT_REFLECTION_EXCEPTIONS )
-            {
-                throwable.printStackTrace();
-            }
-        }
-        return cls;
-    }
-
     private static int stripeMask( int count )
     {
         requirePowerOfTwo( count );
         return count - 1;
-    }
-
-    private static MethodHandle getUninterruptibleSetter()
-    {
-        try
-        {
-            if ( CLS_FILE_CHANNEL_IMPL != null )
-            {
-                MethodHandles.Lookup lookup = MethodHandles.lookup();
-                Method uninterruptibleSetter = CLS_FILE_CHANNEL_IMPL.getMethod( "setUninterruptible" );
-                return lookup.unreflect( uninterruptibleSetter );
-            }
-            else
-            {
-                return null;
-            }
-        }
-        catch ( Throwable e )
-        {
-            if ( PRINT_REFLECTION_EXCEPTIONS )
-            {
-                e.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    private static MethodHandle getPositionLockGetter()
-    {
-        try
-        {
-            if ( CLS_FILE_CHANNEL_IMPL != null )
-            {
-                MethodHandles.Lookup lookup = MethodHandles.lookup();
-                Field field = CLS_FILE_CHANNEL_IMPL.getDeclaredField( "positionLock" );
-                field.setAccessible( true );
-                return lookup.unreflectGetter( field );
-            }
-            else
-            {
-                return null;
-            }
-        }
-        catch ( Throwable e )
-        {
-            if ( PRINT_REFLECTION_EXCEPTIONS )
-            {
-                e.printStackTrace();
-            }
-            return null;
-        }
     }
 
     private static ByteBuffer proxy( long buffer, int bufferLength ) throws IOException
@@ -201,7 +121,6 @@ public class SingleFilePageSwapper implements PageSwapper
     private final StoreChannel[] channels;
     private FileLock fileLock;
     private final boolean hasPositionLock;
-    private final int channelStripeCount;
     private final int channelStripeMask;
 
     // Guarded by synchronized(this). See tryReopen() and close().
@@ -215,14 +134,15 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         this.fs = fs;
         this.file = file;
+        int channelStripeCount;
         if ( noChannelStriping )
         {
-            this.channelStripeCount = 1;
+            channelStripeCount = 1;
             this.channelStripeMask = stripeMask( channelStripeCount );
         }
         else
         {
-            this.channelStripeCount = GLOBAL_CHANNEL_STRIPE_COUNT;
+            channelStripeCount = GLOBAL_CHANNEL_STRIPE_COUNT;
             this.channelStripeMask = GLOBAL_CHANNEL_STRIPE_MASK;
         }
         if ( useDirectIO )
@@ -248,33 +168,14 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             closeAndCollectExceptions( 0, e );
         }
-        hasPositionLock = channels[0].getClass() == StoreFileChannel.class
-                && StoreFileChannelUnwrapper.unwrap( channels[0] ).getClass() == CLS_FILE_CHANNEL_IMPL;
+        hasPositionLock = channels[0].hasPositionLock();
     }
 
     private StoreChannel getStoreChannel( File file, FileSystemAbstraction fs, boolean useDirectIO, HashSet<OpenOption> openOptions ) throws IOException
     {
         var storeChannel = useDirectIO ? fs.open( file, openOptions ) : fs.write( file );
-        if ( storeChannel instanceof StoreFileChannel )
-        {
-            tryMarkUninterruptible( StoreFileChannelUnwrapper.unwrap( storeChannel ) );
-        }
+        storeChannel.tryMakeUninterruptible();
         return storeChannel;
-    }
-
-    private void tryMarkUninterruptible( FileChannel fileChannel )
-    {
-        if ( MAKE_CHANNEL_UNINTERRUPTIBLE != null && fileChannel.getClass() == CLS_FILE_CHANNEL_IMPL )
-        {
-            try
-            {
-                MAKE_CHANNEL_UNINTERRUPTIBLE.invoke( fileChannel );
-            }
-            catch ( Throwable t )
-            {
-                throw new LinkageError( "No setter for uninterruptible flag", t );
-            }
-        }
     }
 
     private void validateDirectIOPossibility( File file, int filePageSize ) throws IOException
@@ -436,30 +337,22 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
-        if ( POSITION_LOCK_GETTER != null && hasPositionLock )
+        if ( length == 0 )
         {
-            try
-            {
-                return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
-            }
-            catch ( IOException ioe )
-            {
-                throw ioe;
-            }
-            catch ( Exception ignore )
-            {
-                // There's a lot of reflection going on in that method. We ignore everything that can go wrong, and
-                // isn't exactly an IOException. Instead, we'll try our fallback code and see what it says.
-            }
+            return 0;
+        }
+        if ( hasPositionLock )
+        {
+            return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
         }
         return readPositionedVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
     private long readPositionedVectoredToFileChannel(
-            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws Exception
+            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
-        FileChannel channel = unwrappedChannel( startFilePageId );
+        StoreChannel channel = channel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
         long bytesRead = lockPositionReadVector( startFilePageId, channel, fileOffset, srcs );
         if ( bytesRead == -1 )
@@ -490,16 +383,16 @@ public class SingleFilePageSwapper implements PageSwapper
         return bytesRead;
     }
 
-    private long lockPositionReadVector( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
+    private long lockPositionReadVector( long filePageId, StoreChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
         {
             long toRead = filePageSize * (long) srcs.length;
             long read;
             long readTotal = 0;
-            synchronized ( positionLock( channel ) )
+            synchronized ( channel.getPositionLock() )
             {
-                channel.position( fileOffset );
+                setPositionUnderLock( channel, fileOffset );
                 do
                 {
                     read = channel.read( srcs );
@@ -546,65 +439,54 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
-        if ( POSITION_LOCK_GETTER != null && hasPositionLock )
+        if ( length == 0 )
         {
-            try
-            {
-                return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
-            }
-            catch ( IOException ioe )
-            {
-                throw ioe;
-            }
-            catch ( Exception exception )
-            {
-                // There's a lot of reflection going on in that method. We ignore everything that can go wrong, and
-                // isn't exactly an IOException. Instead, we'll try our fallback code and see what it says.
-                if ( PRINT_REFLECTION_EXCEPTIONS )
-                {
-                    exception.printStackTrace();
-                }
-            }
+            return 0;
+        }
+        if ( hasPositionLock )
+        {
+            return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
         }
         return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
     private long writePositionedVectoredToFileChannel(
-            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws Exception
+            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
         increaseFileSizeTo( fileOffset + (((long) filePageSize) * length) );
-        FileChannel channel = unwrappedChannel( startFilePageId );
+        StoreChannel channel = channel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
         return lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
     }
 
-    private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int arrayOffset, int length ) throws Exception
+    private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int arrayOffset, int length )
     {
         ByteBuffer[] buffers = new ByteBuffer[length];
         for ( int i = 0; i < length; i++ )
         {
             long address = bufferAddresses[arrayOffset + i];
-            buffers[i] = UnsafeUtil.newDirectByteBuffer( address, filePageSize );
+            try
+            {
+                buffers[i] = UnsafeUtil.newDirectByteBuffer( address, filePageSize );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Failed to wrap pointer in ByteBuffer.", e );
+            }
         }
         return buffers;
     }
 
-    private FileChannel unwrappedChannel( long startFilePageId )
-    {
-        StoreChannel storeChannel = channel( startFilePageId );
-        return StoreFileChannelUnwrapper.unwrap( storeChannel );
-    }
-
-    private long lockPositionWriteVector( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
+    private long lockPositionWriteVector( long filePageId, StoreChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
         {
             long toWrite = filePageSize * (long) srcs.length;
             long bytesWritten = 0;
-            synchronized ( positionLock( channel ) )
+            synchronized ( channel.getPositionLock() )
             {
-                channel.position( fileOffset );
+                setPositionUnderLock( channel, fileOffset );
                 do
                 {
                     bytesWritten += channel.write( srcs );
@@ -620,15 +502,17 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private Object positionLock( FileChannel channel )
+    private void setPositionUnderLock( StoreChannel channel, long fileOffset ) throws IOException
     {
         try
         {
-            return (Object) POSITION_LOCK_GETTER.invoke( channel );
+            channel.position( fileOffset );
         }
-        catch ( Throwable th )
+        catch ( IllegalArgumentException e )
         {
-            throw new LinkageError( "No getter for FileChannel.positionLock", th );
+            // This is thrown if the position is negative. Turn it into an IOException,
+            // which is the same exception that would be thrown in the non-vectored code path.
+            throw new IOException( e );
         }
     }
 

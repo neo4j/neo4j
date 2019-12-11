@@ -110,6 +110,24 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
+    public boolean hasPositionLock()
+    {
+        return delegateChannel.hasPositionLock();
+    }
+
+    @Override
+    public Object getPositionLock()
+    {
+        return delegateChannel.getPositionLock();
+    }
+
+    @Override
+    public void tryMakeUninterruptible()
+    {
+        delegateChannel.tryMakeUninterruptible();
+    }
+
+    @Override
     public int read( ByteBuffer dst ) throws IOException
     {
         return (int) advance( delegateChannel.read( dst ) );

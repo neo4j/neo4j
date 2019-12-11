@@ -81,4 +81,25 @@ public interface StoreChannel extends Flushable, SeekableByteChannel, GatheringB
      * @return underlying file channel
      */
     FileChannel fileChannel();
+
+    /**
+     * Returns {@code true} if {@link #getPositionLock} returns a valid position lock object.
+     * @return {@code true} if this channel has a valid position lock.
+     */
+    boolean hasPositionLock();
+
+    /**
+     * Return the position lock object for this channel, if any.
+     * This method only returns something meaningful if {@link #hasPositionLock()} returns {@code true}.
+     * The position lock object works by synchronizing on the object.
+     * The file position is guaranteed to not be concurrently modified by other threads in the critical section.
+     * @return The position lock object, if any.
+     */
+    Object getPositionLock();
+
+    /**
+     * Make this channel uninterruptible, if possible.
+     * An uninterruptible channel will not automatically close itself if a calling thread is interrupted before or during an IO operation.
+     */
+    void tryMakeUninterruptible();
 }

@@ -596,7 +596,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             pagedFile.flushAndForce();
 
-            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 2 ); // we might race with background flushing
+            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 2 ); // We might race with background flushing.
             assertThat( forceCounter.get() ).isEqualTo( 1 );
         }
     }
@@ -628,7 +628,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             pageCache.flushAndForce();
 
-            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 3 ); // we might race with background flushing
+            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 3 ); // We might race with background flushing.
             assertThat( forceCounter.get() ).isEqualTo( 2 );
         }
     }
@@ -647,6 +647,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     {
                         writeCounter.getAndIncrement();
                         super.writeAll( src, position );
+                    }
+
+                    @Override
+                    public long write( ByteBuffer[] srcs ) throws IOException
+                    {
+                        writeCounter.getAndAdd( srcs.length );
+                        return super.write( srcs );
                     }
 
                     @Override

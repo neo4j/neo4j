@@ -20,12 +20,93 @@
 package org.neo4j.io.fs;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapper;
+
+import static org.neo4j.util.FeatureToggles.flag;
+
 public class StoreFileChannel implements StoreChannel
 {
+    private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( SingleFilePageSwapper.class, "printReflectionExceptions", false );
+    private static final Class<?> CLS_FILE_CHANNEL_IMPL = getInternalFileChannelClass();
+    private static final MethodHandle POSITION_LOCK_GETTER = getPositionLockGetter();
+    private static final MethodHandle MAKE_CHANNEL_UNINTERRUPTIBLE = getUninterruptibleSetter();
+
+    private static Class<?> getInternalFileChannelClass()
+    {
+        Class<?> cls = null;
+        try
+        {
+            cls = Class.forName( "sun.nio.ch.FileChannelImpl" );
+        }
+        catch ( Throwable throwable )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                throwable.printStackTrace();
+            }
+        }
+        return cls;
+    }
+
+    private static MethodHandle getUninterruptibleSetter()
+    {
+        try
+        {
+            if ( CLS_FILE_CHANNEL_IMPL != null )
+            {
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                Method uninterruptibleSetter = CLS_FILE_CHANNEL_IMPL.getMethod( "setUninterruptible" );
+                return lookup.unreflect( uninterruptibleSetter );
+            }
+            else
+            {
+                return null;
+            }
+        }
+        catch ( Throwable e )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
+    private static MethodHandle getPositionLockGetter()
+    {
+        try
+        {
+            if ( CLS_FILE_CHANNEL_IMPL != null )
+            {
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                Field field = CLS_FILE_CHANNEL_IMPL.getDeclaredField( "positionLock" );
+                field.setAccessible( true );
+                return lookup.unreflectGetter( field );
+            }
+            else
+            {
+                return null;
+            }
+        }
+        catch ( Throwable e )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
     private final FileChannel channel;
 
     public StoreFileChannel( FileChannel channel )
@@ -90,6 +171,45 @@ public class StoreFileChannel implements StoreChannel
     public FileChannel fileChannel()
     {
         return channel;
+    }
+
+    @Override
+    public boolean hasPositionLock()
+    {
+        return POSITION_LOCK_GETTER != null && channel.getClass() == CLS_FILE_CHANNEL_IMPL;
+    }
+
+    @Override
+    public Object getPositionLock()
+    {
+        if ( POSITION_LOCK_GETTER == null )
+        {
+            return null;
+        }
+        try
+        {
+            return (Object) POSITION_LOCK_GETTER.invoke( channel );
+        }
+        catch ( Throwable th )
+        {
+            throw new LinkageError( "Cannot get FileChannel.positionLock", th );
+        }
+    }
+
+    @Override
+    public void tryMakeUninterruptible()
+    {
+        if ( MAKE_CHANNEL_UNINTERRUPTIBLE != null && channel.getClass() == CLS_FILE_CHANNEL_IMPL )
+        {
+            try
+            {
+                MAKE_CHANNEL_UNINTERRUPTIBLE.invoke( channel );
+            }
+            catch ( Throwable t )
+            {
+                throw new LinkageError( "No setter for uninterruptible flag", t );
+            }
+        }
     }
 
     @Override
@@ -182,11 +302,5 @@ public class StoreFileChannel implements StoreChannel
     public void flush() throws IOException
     {
         force( false );
-    }
-
-    static FileChannel unwrap( StoreChannel channel )
-    {
-        StoreFileChannel sfc = (StoreFileChannel) channel;
-        return sfc.channel;
     }
 }

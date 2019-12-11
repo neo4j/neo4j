@@ -154,4 +154,22 @@ public class DelegatingStoreChannel implements StoreChannel
     {
         delegate.flush();
     }
+
+    @Override
+    public boolean hasPositionLock()
+    {
+        return delegate.hasPositionLock();
+    }
+
+    @Override
+    public Object getPositionLock()
+    {
+        return delegate.getPositionLock();
+    }
+
+    @Override
+    public void tryMakeUninterruptible()
+    {
+        delegate.tryMakeUninterruptible();
+    }
 }

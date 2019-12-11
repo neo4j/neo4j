@@ -1116,7 +1116,7 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    void vectoredWriteMustReadNothingWhenLengthIsZero() throws Exception
+    void vectoredWriteMustWriteNothingWhenLengthIsZero() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
