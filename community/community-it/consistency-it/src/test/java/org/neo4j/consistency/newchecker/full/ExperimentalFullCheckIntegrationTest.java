@@ -152,6 +152,43 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
                 .andThatsAllFolks();
     }
 
+    @Test
+    void shouldHandleNegativeRelationshipPointers() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long node = next.node();
+                long otherNode = next.node();
+                long rel = next.relationship();
+                tx.create( new NodeRecord( node, false, rel, NO_NEXT_PROPERTY.intValue() ) );
+                tx.create( new NodeRecord( otherNode, false, rel, NO_NEXT_PROPERTY.intValue() ) );
+
+                RelationshipRecord relationship = new RelationshipRecord( rel, node, otherNode, C );
+                relationship.setFirstNextRel( -3 ); //Set some negative pointers
+                relationship.setFirstPrevRel( -4 );
+                relationship.setSecondNextRel( -5 );
+                relationship.setSecondPrevRel( -6 );
+                tx.create( relationship );
+
+                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 1 );
+
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 4 )
+                .andThatsAllFolks();
+    }
+
     @Disabled( "New checker checks the live graph, i.e. anything that can be reached from the used nodes/relationships" )
     @Test
     protected void shouldReportOrphanedNodeDynamicLabelAsNodeInconsistency() throws Exception
