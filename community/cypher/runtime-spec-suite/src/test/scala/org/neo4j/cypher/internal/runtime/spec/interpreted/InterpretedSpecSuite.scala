@@ -124,7 +124,7 @@ class InterpretedNodeIndexSeekTest extends NodeIndexSeekTestBase(COMMUNITY.EDITI
                                    with NodeLockingUniqueIndexSeekTestBase[CommunityRuntimeContext]
                                    with ArrayIndexSupport[CommunityRuntimeContext]
 class InterpretedNodeIndexPointDistanceSeekTest extends NodeIndexPointDistanceSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-
+class InterpretedMultiNodeIndexSeekTest extends MultiNodeIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedInputTest extends InputTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedPartialSortTest extends PartialSortTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedTopTest extends TopTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

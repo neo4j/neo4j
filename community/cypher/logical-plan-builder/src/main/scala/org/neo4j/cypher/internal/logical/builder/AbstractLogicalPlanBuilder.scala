@@ -510,12 +510,35 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
-    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
-    val propIds = PartialFunction(resolver.getPropertyKeyId)
+
     val planBuilder = (idGen: IdGen) => {
-      val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique, customQueryExpression)(idGen)
+      val plan = indexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, unique, customQueryExpression)(idGen)
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def indexSeek(indexSeekString: String,
+                getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                indexOrder: IndexOrder = IndexOrderNone,
+                paramExpr: Option[Expression] = None,
+                argumentIds: Set[String] = Set.empty,
+                unique: Boolean = false,
+                customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => IndexLeafPlan = {
+    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val propIds: PartialFunction[String, Int] = { case x => resolver.getPropertyKeyId(x) }
+    val planBuilder = (idGen: IdGen) => {
+      val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique,
+                           customQueryExpression)(idGen)
       newNode(varFor(plan.idName))
       plan
+    }
+    planBuilder
+  }
+
+  def multiNodeIndexSeekOperator(seeks: (IMPL => IdGen => IndexLeafPlan)*): IMPL = {
+    val planBuilder = (idGen: IdGen) => {
+      MultiNodeIndexSeek(seeks.map(_(this)(idGen).asInstanceOf[IndexSeekLeafPlan]))(idGen)
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }

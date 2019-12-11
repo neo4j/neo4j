@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, Expression, LabelToken}
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
 
 /**
   * Produces one or zero rows containing the nodes with the given labels and property values.
