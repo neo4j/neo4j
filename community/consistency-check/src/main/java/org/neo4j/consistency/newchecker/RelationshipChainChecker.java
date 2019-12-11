@@ -153,7 +153,7 @@ class RelationshipChainChecker implements Checker
 
         Stopwatch stopwatch = Stopwatch.start();
         cacheAccess.clearCache();
-        context.execution.run( getClass().getSimpleName() + "-" + direction.name(), workers );
+        context.execution.runAll( getClass().getSimpleName() + "-" + direction.name(), workers );
         detectSingleRelationshipChainInconsistencies( nodeIdRange );
         context.paddedDebug( "%s %s took %s", this, direction, duration( stopwatch.elapsed( TimeUnit.MILLISECONDS ) ) );
     }

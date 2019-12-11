@@ -54,7 +54,33 @@ class ParallelExecution
         this.idsPerChunk = idsPerChunk;
     }
 
+    /**
+     * Runs the given tasks with a thread pool with a fixed number of threads, which is the number of threads given to this
+     * {@link ParallelExecution} instance at construction time. The number of jobs may exceed this number.
+     *
+     * @param taskName name that the spawned threads will get.
+     * @param runnables jobs to run.
+     * @throws Exception on any job exception.
+     */
     void run( String taskName, ThrowingRunnable... runnables ) throws Exception
+    {
+        run( taskName, numberOfThreads, runnables );
+    }
+
+    /**
+     * Runs the given tasks with a thread pool with number of threads set to the number of tasks.
+     * I.e. all the given jobs will be run concurrently.
+     *
+     * @param taskName name that the spawned threads will get.
+     * @param runnables jobs to run.
+     * @throws Exception on any job exception.
+     */
+    void runAll( String taskName, ThrowingRunnable... runnables ) throws Exception
+    {
+        run( taskName, runnables.length, runnables );
+    }
+
+    private void run( String taskName, int numberOfThreads, ThrowingRunnable... runnables ) throws Exception
     {
         var forkJoinPool = Executors.newFixedThreadPool( numberOfThreads, new NamedThreadFactory( getClass().getSimpleName() + "-" + taskName ) );
         try

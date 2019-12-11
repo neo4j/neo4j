@@ -21,7 +21,11 @@ package org.neo4j.consistency.newchecker;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.helpers.collection.LongRange;
@@ -122,5 +126,45 @@ class ParallelExecutionTest
         verify( rangeOperation ).operation( 290, 435, false );
         verify( rangeOperation ).operation( 435, 470, true );
         verifyNoMoreInteractions( rangeOperation );
+    }
+
+    @Test
+    void shouldRunAllJobsConcurrently() throws Exception
+    {
+        // given
+        ParallelExecution execution = new ParallelExecution( 2, NOOP_EXCEPTION_HANDLER, 100 );
+        ParallelExecution.ThrowingRunnable[] blockingJobs = new ParallelExecution.ThrowingRunnable[execution.getNumberOfThreads() + 2];
+        CountDownLatch latch = new CountDownLatch( blockingJobs.length );
+        Arrays.fill( blockingJobs, (ParallelExecution.ThrowingRunnable) () ->
+        {
+            latch.countDown();
+            latch.await();
+        } );
+
+        // when
+        execution.runAll( "test", blockingJobs );
+
+        // then
+        assertEquals( 0, latch.getCount() );
+    }
+
+    @Test
+    void shouldRunJobs() throws Exception
+    {
+        // given
+        ParallelExecution execution = new ParallelExecution( 2, NOOP_EXCEPTION_HANDLER, 100 );
+        ParallelExecution.ThrowingRunnable[] blockingJobs = new ParallelExecution.ThrowingRunnable[execution.getNumberOfThreads() * 5];
+        Set<Thread> threads = new CopyOnWriteArraySet<>();
+        Arrays.fill( blockingJobs, (ParallelExecution.ThrowingRunnable) () ->
+        {
+            Thread.sleep( 10 );
+            threads.add( Thread.currentThread() );
+        } );
+
+        // when
+        execution.run( "test", blockingJobs );
+
+        // then
+        assertEquals( 2, threads.size() );
     }
 }
