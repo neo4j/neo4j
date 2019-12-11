@@ -113,7 +113,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @PageCacheExtension
 class CheckerTestBase
 {
-    private static final int NUMBER_OF_THREADS = 4;
+    static final int NUMBER_OF_THREADS = 4;
     static final long NULL = NULL_REFERENCE.longValue();
 
     @Inject
@@ -183,6 +183,11 @@ class CheckerTestBase
 
     CheckerContext context() throws Exception
     {
+        return context( NUMBER_OF_THREADS );
+    }
+
+    CheckerContext context( int numberOfThreads ) throws Exception
+    {
         if ( context != null )
         {
             return context;
@@ -204,7 +209,7 @@ class CheckerTestBase
         NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( pageCache.pageSize() * pageCache.maxCachedPages(),
                 Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId() );
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
-        ParallelExecution execution = new ParallelExecution( NUMBER_OF_THREADS, NOOP_EXCEPTION_HANDLER, 100 );
+        ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, 100 );
         context = new CheckerContext( neoStores, indexAccessors, labelIndex, execution, reporter, cacheAccess, tokenHolders, new RecordLoading( neoStores ),
                 countsState, limiter, progress, pageCache, false, ConsistencyFlags.DEFAULT );
         context.initialize();

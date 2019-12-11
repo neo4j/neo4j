@@ -58,6 +58,11 @@ class RelationshipChainCheckerTest extends CheckerTestBase
         nodeId3 = tx.dataWrite().nodeCreate();
     }
 
+    int numberOfThreads()
+    {
+        return NUMBER_OF_THREADS;
+    }
+
     @Test
     void shouldReportSourcePrevDoesNotReferenceBack() throws Exception
     {
@@ -183,7 +188,7 @@ class RelationshipChainCheckerTest extends CheckerTestBase
             tx.commit();
         }
 
-        RelationshipStore relationshipStore = context().neoStores.getRelationshipStore();
+        RelationshipStore relationshipStore = context( numberOfThreads() ).neoStores.getRelationshipStore();
         RelationshipRecord arbitraryRelationship =
                 relationshipStore.getRecord( relationshipIds[relationshipIds.length / 2], relationshipStore.newRecord(), RecordLoad.NORMAL );
         vandal.accept( arbitraryRelationship );
@@ -236,6 +241,6 @@ class RelationshipChainCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new RelationshipChainChecker( context() ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
+        new RelationshipChainChecker( context( numberOfThreads() ) ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
     }
 }
