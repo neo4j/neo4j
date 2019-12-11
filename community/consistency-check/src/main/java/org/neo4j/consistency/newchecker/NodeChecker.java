@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 
@@ -61,6 +62,7 @@ import static org.neo4j.consistency.checking.full.NodeInUseWithCorrectLabelsChec
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 /**
@@ -139,6 +141,12 @@ class NodeChecker implements Checker
 
                 // Cache nextRel
                 long nextRel = nodeCursor.getNextRel();
+                if ( nextRel < NULL_REFERENCE.longValue() )
+                {
+                    reporter.forNode( nodeCursor ).relationshipNotInUse( new RelationshipRecord( nextRel ) );
+                    nextRel = NULL_REFERENCE.longValue();
+                }
+
                 nextRelCacheFields[CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID] = nextRel;
                 nextRelCacheFields[CacheSlots.NodeLink.SLOT_IS_DENSE] = longOf( nodeCursor.isDense() );
                 usedNodes++;

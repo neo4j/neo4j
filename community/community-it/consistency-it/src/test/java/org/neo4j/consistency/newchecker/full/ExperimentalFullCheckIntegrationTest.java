@@ -189,6 +189,28 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
                 .andThatsAllFolks();
     }
 
+    @Test
+    void shouldHandleNegativeNodeRelationshipPointer() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                tx.create( new NodeRecord( next.node(), false, -6, NO_NEXT_PROPERTY.intValue() ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.NODE, 1 )
+                .andThatsAllFolks();
+    }
+
     @Disabled( "New checker checks the live graph, i.e. anything that can be reached from the used nodes/relationships" )
     @Test
     protected void shouldReportOrphanedNodeDynamicLabelAsNodeInconsistency() throws Exception
