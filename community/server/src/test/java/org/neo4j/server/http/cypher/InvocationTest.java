@@ -21,7 +21,6 @@ package org.neo4j.server.http.cypher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
@@ -49,7 +48,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.Log;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
@@ -61,6 +59,7 @@ import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -76,7 +75,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -99,6 +97,7 @@ class InvocationTest
     private final TransitionalTxManagementKernelTransaction transactionContext = mock( TransitionalTxManagementKernelTransaction.class );
     private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private final QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
+    private final InternalTransaction internalTransaction = mock( InternalTransaction.class );
     private final TransactionRegistry registry = mock( TransactionRegistry.class );
     private final OutputEventStream outputEventStream = mock( OutputEventStream.class );
 
@@ -115,6 +114,7 @@ class InvocationTest
             }
             return null;
         } ).when( executionResult ).accept( any() );
+        when( databaseFacade.beginTransaction( any(), any(), any() ) ).thenReturn( internalTransaction );
         when( executionResult.getQueryExecutionType() ).thenReturn( queryExecutionType );
         when( executionResult.getQueryStatistics() ).thenReturn( queryStatistics );
         when( executionResult.getExecutionPlanDescription() ).thenReturn( executionPlanDescription );
@@ -122,11 +122,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldExecuteStatements() throws Exception
+    void shouldExecuteStatements()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -143,7 +142,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
+        verify( internalTransaction ).execute( "query", emptyMap() );
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeStatementStart( statement, List.of( "c1", "c2", "c3" ) );
@@ -154,11 +153,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldSuspendTransactionAndReleaseForOtherRequestsAfterExecutingStatements() throws Exception
+    void shouldSuspendTransactionAndReleaseForOtherRequestsAfterExecutingStatements()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -178,7 +176,7 @@ class InvocationTest
         InOrder transactionOrder = inOrder( transactionContext, registry );
         transactionOrder.verify( registry ).release( 1337L, handle );
 
-        verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
+        verify( internalTransaction ).execute( "query", emptyMap() );
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeStatementStart( statement, List.of( "c1", "c2", "c3" ) );
@@ -189,11 +187,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldResumeTransactionWhenExecutingStatementsOnSecondRequest() throws Exception
+    void shouldResumeTransactionWhenExecutingStatementsOnSecondRequest()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -207,16 +204,16 @@ class InvocationTest
         Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, false );
 
         invocation.execute( outputEventStream );
-        reset( transactionContext, registry, executionEngine, outputEventStream );
+        reset( transactionContext, registry, internalTransaction, outputEventStream );
         when( inputEventStream.read() ).thenReturn( statement, NULL_STATEMENT );
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         // when
         invocation.execute( outputEventStream );
 
         // then
-        InOrder order = inOrder( transactionContext, registry, executionEngine );
-        order.verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
+        InOrder order = inOrder( transactionContext, registry, internalTransaction );
+        order.verify( internalTransaction ).execute( "query", emptyMap() );
         order.verify( registry ).release( 1337L, handle );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -232,9 +229,8 @@ class InvocationTest
     {
         // given
         String queryText = "USING PERIODIC COMMIT CREATE()";
-        var facade = mock( GraphDatabaseFacade.class, Answers.RETURNS_DEEP_STUBS );
         var transaction = mock( InternalTransaction.class );
-        when( facade.beginTransaction( eq( IMPLICIT ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
+        when( databaseFacade.beginTransaction( eq( IMPLICIT ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
                 .thenReturn( transaction );
         when( transaction.execute( eq( queryText), any() ) ).thenReturn( executionResult );
         when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
@@ -261,11 +257,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Exception
+    void shouldCommitTransactionAndTellRegistryToForgetItsHandle()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -282,8 +277,8 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        InOrder transactionOrder = inOrder( transactionContext, registry );
-        transactionOrder.verify( transactionContext ).commit();
+        InOrder transactionOrder = inOrder( internalTransaction, registry );
+        transactionOrder.verify( internalTransaction ).commit();
         transactionOrder.verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -307,8 +302,8 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        InOrder transactionOrder = inOrder( transactionContext, registry );
-        transactionOrder.verify( transactionContext ).rollback();
+        InOrder transactionOrder = inOrder( internalTransaction, registry );
+        transactionOrder.verify( internalTransaction ).rollback();
         transactionOrder.verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -317,11 +312,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldCreateTransactionContextOnlyWhenFirstNeeded() throws Exception
+    void shouldCreateTransactionContextOnlyWhenFirstNeeded()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
 
@@ -336,14 +330,13 @@ class InvocationTest
         Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
 
         // then
-        verifyZeroInteractions( databaseFacade );
+        verifyNoInteractions( databaseFacade );
 
         // when
         invocation.execute( outputEventStream );
 
         // then
-        verify( databaseFacade ).beginTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), eq( EMBEDDED_CONNECTION ), anyLong(),
-                any() );
+        verify( databaseFacade ).beginTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), eq( EMBEDDED_CONNECTION ) );
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeStatementStart( statement, List.of( "c1", "c2", "c3" ) );
@@ -354,11 +347,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldRollbackTransactionIfExecutionErrorOccurs() throws Exception
+    void shouldRollbackTransactionIfExecutionErrorOccurs()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow(
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenThrow(
                 new IllegalStateException( "Something went wrong" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
@@ -374,8 +366,8 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
-        verify( transactionContext ).rollback();
+        verify( internalTransaction ).execute( "query", emptyMap() );
+        verify( internalTransaction ).rollback();
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -386,12 +378,11 @@ class InvocationTest
     }
 
     @Test
-    void shouldHandleCommitError() throws Exception
+    void shouldHandleCommitError()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
-        doThrow( new IllegalStateException( "Something went wrong" ) ).when( transactionContext ).commit();
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
+        doThrow( new IllegalStateException( "Something went wrong" ) ).when( internalTransaction ).commit();
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -408,7 +399,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
+        verify( internalTransaction ).execute( "query", emptyMap() );
         verify( log ).error( eq( "Failed to commit transaction." ), any( IllegalStateException.class ) );
         verify( registry ).forget( 1337L );
 
@@ -425,7 +416,7 @@ class InvocationTest
     void shouldHandleErrorWhenStartingTransaction()
     {
         // given
-        when( databaseFacade.beginTransaction( any(), any(), any(), anyLong(), any() ) ).thenThrow( new IllegalStateException( "Something went wrong" ) );
+        when( databaseFacade.beginTransaction( any(), any(), any() ) ).thenThrow( new IllegalStateException( "Something went wrong" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -454,7 +445,7 @@ class InvocationTest
     void shouldHandleAuthorizationErrorWhenStartingTransaction()
     {
         // given
-        when( databaseFacade.beginTransaction( any(), any(), any(), anyLong(), any() ) ).thenThrow( new AuthorizationViolationException( "Forbidden" ) );
+        when( databaseFacade.beginTransaction( any(), any(), any() ) ).thenThrow( new AuthorizationViolationException( "Forbidden" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -480,13 +471,12 @@ class InvocationTest
     }
 
     @Test
-    void shouldHandleCypherSyntaxError() throws Exception
+    void shouldHandleCypherSyntaxError()
     {
         // given
         String queryText = "matsch (n) return n";
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( queryText, NO_PARAMS, transactionalContext, false ) ).thenThrow(
-                new QueryExecutionKernelException( new SyntaxException( "did you mean MATCH?" ) ) );
+        when( internalTransaction.execute( queryText, emptyMap() ) ).thenThrow(
+                new RuntimeException( new SyntaxException( "did you mean MATCH?" ) ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -501,7 +491,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( transactionContext ).rollback();
+        verify( internalTransaction ).rollback();
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -511,11 +501,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldHandleExecutionEngineThrowingUndeclaredCheckedExceptions() throws Exception
+    void shouldHandleExecutionEngineThrowingUndeclaredCheckedExceptions()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow( new RuntimeException( "BOO" ) );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenThrow( new RuntimeException( "BOO" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -530,7 +519,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( transactionContext ).rollback();
+        verify( internalTransaction ).rollback();
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -540,12 +529,11 @@ class InvocationTest
     }
 
     @Test
-    void shouldHandleRollbackError() throws Exception
+    void shouldHandleRollbackError()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow( new RuntimeException( "BOO" ) );
-        doThrow( new IllegalStateException( "Something went wrong" ) ).when( transactionContext ).rollback();
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenThrow( new RuntimeException( "BOO" ) );
+        doThrow( new IllegalStateException( "Something went wrong" ) ).when( internalTransaction ).rollback();
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -560,7 +548,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
+        verify( internalTransaction ).execute( "query", emptyMap() );
         verify( log ).error( eq( "Failed to roll back transaction." ), any( IllegalStateException.class ) );
         verify( registry ).forget( 1337L );
 
@@ -595,15 +583,14 @@ class InvocationTest
         handle.terminate();
 
         // then
-        verify( transactionContext ).terminate();
+        verify( internalTransaction ).terminate();
     }
 
     @Test
-    void deadlockExceptionHasCorrectStatus() throws Exception
+    void deadlockExceptionHasCorrectStatus()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenThrow( new DeadlockDetectedException( "deadlock" ) );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenThrow( new DeadlockDetectedException( "deadlock" ) );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -618,7 +605,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( transactionContext ).rollback();
+        verify( internalTransaction ).rollback();
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -663,7 +650,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( transactionContext ).rollback();
+        verify( internalTransaction ).rollback();
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -689,7 +676,7 @@ class InvocationTest
         assertEquals( "Connection error", e.getMessage() );
 
         // then
-        verify( transactionContext ).rollback();
+        verify( internalTransaction ).rollback();
         verify( registry ).forget( 1337L );
 
         verifyNoInteractions( outputEventStream );
@@ -720,11 +707,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldHandleConnectionErrorWhenWritingOutputInImplicitTransaction() throws QueryExecutionKernelException
+    void shouldHandleConnectionErrorWhenWritingOutputInImplicitTransaction()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
@@ -745,7 +731,7 @@ class InvocationTest
         assertEquals( "Connection error", e.getMessage() );
 
         // then
-        verify( transactionContext ).rollback();
+        verify( internalTransaction ).rollback();
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -756,11 +742,10 @@ class InvocationTest
     }
 
     @Test
-    void shouldKeepTransactionOpenIfConnectionErrorWhenWritingOutputInImplicitTransaction() throws QueryExecutionKernelException
+    void shouldKeepTransactionOpenIfConnectionErrorWhenWritingOutputInImplicitTransaction()
     {
         // given
-        TransactionalContext transactionalContext = prepareKernelWithQuerySession();
-        when( executionEngine.executeQuery( "query", NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( executionEngine, registry, false );
@@ -781,7 +766,7 @@ class InvocationTest
         assertEquals( "Connection error", e.getMessage() );
 
         // then
-        verify( transactionContext, never() ).rollback();
+        verify( internalTransaction, never() ).rollback();
         verify( registry, never() ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
