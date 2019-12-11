@@ -105,6 +105,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
                                   buildExpression(valueExpr), indexOrder)(id = id)
 
+      // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>
         indexLeafPlans.foldLeft(None: Option[Pipe]) {
           case (None, plan) =>

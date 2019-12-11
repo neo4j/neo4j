@@ -55,8 +55,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
     pruningVarExpander,
     useTop,
     simplifySelections,
-    limitNestedPlanExpressions(context.logicalPlanIdGen),
-    combineCartesianProductOfMultipleIndexSeeks
+    limitNestedPlanExpressions(context.logicalPlanIdGen)
     ).rewriter)
 }
 
