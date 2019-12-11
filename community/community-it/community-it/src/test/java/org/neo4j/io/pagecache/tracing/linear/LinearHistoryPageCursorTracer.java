@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.tracing.linear;
 
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -105,12 +104,6 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         return tracer.add( new HEvents.PinHEvent( tracer, writeLock, filePageId, swapper ) );
-    }
-
-    @Override
-    public void init( PageCacheTracer tracer )
-    {
-        // nothing to do
     }
 
     @Override

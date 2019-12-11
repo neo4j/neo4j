@@ -278,9 +278,7 @@ class DefaultPageCursorTracerTest
 
     private PageCursorTracer createTracer()
     {
-        DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer();
-        pageCursorTracer.init( cacheTracer );
-        return pageCursorTracer;
+        return new DefaultPageCursorTracer( cacheTracer );
     }
 
     private void pinAndHit()

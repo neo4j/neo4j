@@ -42,11 +42,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long evictionExceptions;
     private long flushes;
 
-    private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
+    private PageCacheTracer pageCacheTracer;
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
 
-    @Override
-    public void init( PageCacheTracer pageCacheTracer )
+    public DefaultPageCursorTracer( PageCacheTracer pageCacheTracer )
     {
         this.pageCacheTracer = pageCacheTracer;
     }

@@ -43,7 +43,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.resources.Profiler;
@@ -157,7 +156,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 //        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
 //        getPageCache( fs, cachePages, pageSize, linearTracers.getPageCacheTracer(),
 //                linearTracers.getCursorTracerSupplier() );
-            getPageCache( fs, cachePages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+            getPageCache( fs, cachePages, PageCacheTracer.NULL );
             try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize ) )
             {
                 profiler.profile();
@@ -307,7 +306,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             final int maxCursorsPerThread = cachePages / (1 + threadCount);
             assertThat( maxCursorsPerThread * threadCount ).isLessThan( cachePages );
 
-            getPageCache( fs, cachePages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+            getPageCache( fs, cachePages, PageCacheTracer.NULL );
             try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize ) )
             {
                 profiler.profile();
@@ -400,7 +399,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             File file = file( "a" );
             generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
 
-            getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+            getPageCache( fs, maxPages, PageCacheTracer.NULL );
             profiler.profile();
 
             final PagedFile pf = pageCache.map( file, filePageSize );
@@ -518,7 +517,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             // Because our test failures are non-deterministic, we use this tracer to capture a full history of the
             // events leading up to any given failure.
             LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
-            getPageCache( fs, maxPages, linearTracers.getPageCacheTracer(), linearTracers.getCursorTracerSupplier() );
+            getPageCache( fs, maxPages, linearTracers.getPageCacheTracer() );
 
             try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
                   PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 ) )

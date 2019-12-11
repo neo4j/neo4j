@@ -69,6 +69,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -135,7 +136,7 @@ class CommonAbstractStoreTest
         PageCursor pageCursor = mock( PageCursor.class );
 
         when( pageCache.map( eq( storeFile ), anyInt(), any( OpenOption.class ) ) ).thenReturn( pagedFile );
-        when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK, any() ) ).thenReturn( pageCursor );
+        when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() ) ).thenReturn( pageCursor );
         when( pageCursor.next() ).thenReturn( false );
 
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;

@@ -39,6 +39,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -784,6 +785,11 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     private static class PredictablePageCursorTracer extends DefaultPageCursorTracer
     {
         private long iteration = 1;
+
+        PredictablePageCursorTracer()
+        {
+            super( DefaultPageCacheTracer.TRACER );
+        }
 
         @Override
         public long hits()

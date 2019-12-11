@@ -46,7 +46,7 @@ public class DefaultTracerFactory implements TracerFactory
     @Override
     public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, Log log )
     {
-        return new DefaultPageCacheTracer();
+        return DefaultPageCacheTracer.TRACER;
     }
 
     @Override

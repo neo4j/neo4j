@@ -172,12 +172,6 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
-    public void init( PageCacheTracer tracer )
-    {
-        this.tracer = tracer;
-    }
-
-    @Override
     public void reportEvents()
     {
         Objects.requireNonNull( tracer );

@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.tracing.cursor;
 import java.io.Closeable;
 
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
 /**
@@ -106,12 +105,6 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         }
 
         @Override
-        public void init( PageCacheTracer tracer )
-        {
-
-        }
-
-        @Override
         public void reportEvents()
         {
 
@@ -119,12 +112,6 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
     };
 
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
-
-    /**
-     * Initialize page cursor tracer with required context dependent values.
-     * @param tracer page cache tracer
-     */
-    void init( PageCacheTracer tracer );
 
     /**
      * Report to global page cache tracer events observed by current page cursor tracer.

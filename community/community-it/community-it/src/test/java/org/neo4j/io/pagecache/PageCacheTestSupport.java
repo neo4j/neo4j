@@ -41,7 +41,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
@@ -111,9 +110,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         fs.close();
     }
 
-    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
-                                       PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
-                                       VersionContextSupplier versionContextSupplier )
+    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier versionContextSupplier )
     {
         T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, versionContextSupplier, jobScheduler );
         pageCachePageSize = pageCache.pageSize();
@@ -124,33 +121,30 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return pageCache;
     }
 
-    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-                                 PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier versionContextSupplier )
+    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer, VersionContextSupplier versionContextSupplier )
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
-        return createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier );
+        return createPageCache( swapperFactory, maxPages, tracer, versionContextSupplier );
     }
 
-    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier )
+    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
     {
-        return createPageCache( fs, maxPages, tracer, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY );
+        return createPageCache( fs, maxPages, tracer, EmptyVersionContextSupplier.EMPTY );
     }
 
-    protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-                                    PageCursorTracerSupplier cursorTracerSupplier )
+    protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
     {
         if ( pageCache != null )
         {
             tearDownPageCache( pageCache );
         }
-        pageCache = createPageCache( fs, maxPages, tracer, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY );
+        pageCache = createPageCache( fs, maxPages, tracer, EmptyVersionContextSupplier.EMPTY );
         return pageCache;
     }
 
     protected void configureStandardPageCache()
     {
-        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL );
     }
 
     protected final void tearDownPageCache( T pageCache )
