@@ -248,14 +248,33 @@ class RelationshipChainChecker implements Checker
                             if ( processStartNode )
                             {
                                 boolean wasInUse = client.getBooleanFromCache( firstNode, SLOT_IN_USE );
-                                client.putToCache( firstNode, relationship.getId(), sourceCachePointer.link( relationship ), SOURCE, prevOrNext, 1,
-                                        longOf( wasInUse ), longOf( relationship.isFirstInFirstChain() ) );
+                                long link = sourceCachePointer.link( relationship );
+                                if ( link < NULL_REFERENCE.longValue() )
+                                {
+                                    sourceCachePointer.reportDoesNotReferenceBack( reporter, relationship, otherRelationship );
+                                }
+                                else
+                                {
+                                    client.putToCache( firstNode, relationship.getId(), link, SOURCE, prevOrNext, 1,
+                                            longOf( wasInUse ), longOf( relationship.isFirstInFirstChain() ) );
+                                }
+
                             }
                             if ( processEndNode )
                             {
                                 boolean wasInUse = client.getBooleanFromCache( secondNode, SLOT_IN_USE );
-                                client.putToCache( secondNode, relationship.getId(), targetCachePointer.link( relationship ), TARGET, prevOrNext, 1,
-                                        longOf( wasInUse ), longOf( relationship.isFirstInSecondChain() ) );
+
+                                long link = targetCachePointer.link( relationship );
+                                if ( link < NULL_REFERENCE.longValue() )
+                                {
+                                    targetCachePointer.reportDoesNotReferenceBack( reporter, relationship, otherRelationship );
+                                }
+                                else
+                                {
+                                    client.putToCache( secondNode, relationship.getId(), link, TARGET, prevOrNext, 1,
+                                            longOf( wasInUse ), longOf( relationship.isFirstInSecondChain() ) );
+                                }
+
                             }
                         }
                     }
