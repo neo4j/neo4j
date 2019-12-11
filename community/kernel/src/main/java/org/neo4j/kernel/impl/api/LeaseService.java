@@ -25,8 +25,16 @@ public interface LeaseService
 
     LeaseClient newClient();
 
-    LeaseService NO_LEASES = () -> new LeaseClient()
+    LeaseService NO_LEASES = () -> NoLeaseClient.INSTANCE;
+
+    class NoLeaseClient implements LeaseClient
     {
+        private static final NoLeaseClient INSTANCE = new NoLeaseClient();
+
+        private NoLeaseClient()
+        {
+        }
+
         @Override
         public int leaseId()
         {
@@ -38,5 +46,5 @@ public interface LeaseService
         {
             // always valid
         }
-    };
+    }
 }
