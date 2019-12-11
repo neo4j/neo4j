@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 /**
  * Class to alter behavior and configuration of {@link PageCache} instances opened in this rule.
@@ -34,7 +33,6 @@ public final class PageCacheConfig
     protected Integer pageSize;
     protected AtomicBoolean nextReadIsInconsistent;
     protected PageCacheTracer tracer;
-    protected PageCursorTracerSupplier pageCursorTracerSupplier;
     protected boolean accessChecks;
     protected String memory;
 
@@ -101,17 +99,6 @@ public final class PageCacheConfig
     public PageCacheConfig withTracer( PageCacheTracer tracer )
     {
         this.tracer = tracer;
-        return this;
-    }
-
-    /**
-     * {@link PageCursorTracerSupplier} to use for this page cache.
-     * @param tracerSupplier supplier of page cursors tracers
-     * @return this instance
-     */
-    public PageCacheConfig withCursorTracerSupplier( PageCursorTracerSupplier tracerSupplier )
-    {
-        this.pageCursorTracerSupplier = tracerSupplier;
         return this;
     }
 
