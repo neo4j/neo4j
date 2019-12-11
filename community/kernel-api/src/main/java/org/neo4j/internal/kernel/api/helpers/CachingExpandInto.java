@@ -144,15 +144,21 @@ public class CachingExpandInto
         }
         else if ( toNodeIsDense )
         {
-
             //TODO this closing is for compiled runtime and can be removed with the compiled runtime
             groupCursor.close();
             return sparseConnectingRelationshipsCursor( direction, traversalCursor, nodeCursor, types, toNode );
         }
+        else if ( fromNodeIsDense )
+        {
+            //TODO this closing is for compiled runtime and can be removed with the compiled runtime
+            groupCursor.close();
+            //must move to toNode
+            singleNode( read, nodeCursor, toNode );
+            return sparseConnectingRelationshipsCursor( reverseDirection, traversalCursor, nodeCursor, types, fromNode );
+        }
         else
         {
-            //Either the from node is dense or both are sparse, either way since the node cursor is currently pointing at
-            //the fromNode lets start from that one.
+            //Both are sparse
             //TODO this closing is for compiled runtime and can be removed with the compiled runtime
             groupCursor.close();
             return sparseConnectingRelationshipsCursor( direction, traversalCursor, nodeCursor, types, toNode );
