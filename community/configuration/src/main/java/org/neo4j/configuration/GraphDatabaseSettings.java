@@ -651,7 +651,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Set the maximum number of threads used for index population work. " +
             "Those threads execute individual subtasks provided by index population main threads, see unsupported.dbms.index_population.parallelism." +
-            "Zero means unrestricted." )
+            "Zero means one thread per cpu core." )
     @Internal
     public static final Setting<Integer> index_population_workers =
             newBuilder( "unsupported.dbms.index_population.workers", INT, 8 ).addConstraint( min( 0 ) ).build();

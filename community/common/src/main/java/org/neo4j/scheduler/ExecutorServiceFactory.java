@@ -134,9 +134,13 @@ interface ExecutorServiceFactory
     {
         return ( group, factory, threadCount ) ->
         {
+            if ( threadCount == 0 )
+            {
+                threadCount = getRuntime().availableProcessors();
+            }
             BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( 2 * threadCount );
             RejectedExecutionHandler callerRuns = new ThreadPoolExecutor.CallerRunsPolicy();
-            return new ThreadPoolExecutor( threadCount, threadCount, 0L, TimeUnit.MILLISECONDS, workQueue, factory, callerRuns );
+            return new ThreadPoolExecutor( 0, threadCount, 60L, TimeUnit.SECONDS, workQueue, factory, callerRuns );
         };
     }
 
