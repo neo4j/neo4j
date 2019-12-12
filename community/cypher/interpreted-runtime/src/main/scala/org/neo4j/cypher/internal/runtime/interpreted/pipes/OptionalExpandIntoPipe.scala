@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.graphdb.Direction
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
@@ -31,14 +33,21 @@ import scala.collection.mutable.ListBuffer
 case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
                                   dir: SemanticDirection, types: RelationshipTypes, predicate: Option[Expression])
                                  (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) with CachingExpandInto {
-  private final val CACHE_SIZE = 100000
+  extends PipeWithSource(source)  {
+  private val kernelDirection = dir match {
+    case SemanticDirection.OUTGOING => Direction.OUTGOING
+    case SemanticDirection.INCOMING => Direction.INCOMING
+    case SemanticDirection.BOTH => Direction.BOTH
+  }
 
   predicate.foreach(_.registerOwningPipe(this))
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //cache of known connected nodes
-    val relCache = new RelationshipsCache(CACHE_SIZE)
+    val query = state.query
+    val expandInto = new org.neo4j.internal.kernel.api.helpers.CachingExpandInto(query.transactionalContext.dataRead,
+                                                                                 kernelDirection,
+                                                                                 types.types(query))
+    val nodeCursor = state.cursors.nodeCursor
 
     input.flatMap {
       row =>
@@ -52,13 +61,11 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 row.set(relName, Values.NO_VALUE)
                 Iterator.single(row)
               case n: NodeValue =>
-                val relationships = relCache.get(fromNode, n, dir)
-                  .getOrElse(findRelationships(state, fromNode, n, relCache, dir, types.types(state.query)))
-
-                val it = relationships.toIterator
+                val relationships =
+                  query.relationshipIterator(expandInto.connectingRelationships(query.transactionalContext.cursors, nodeCursor, fromNode.id(), n.id()))
                 val filteredRows = ListBuffer.empty[ExecutionContext]
-                while (it.hasNext) {
-                  val candidateRow = executionContextFactory.copyWith(row, relName, it.next())
+                while (relationships.hasNext) {
+                  val candidateRow = executionContextFactory.copyWith(row, relName, relationships.next())
                   if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)){
                     filteredRows.append(candidateRow)
                   }

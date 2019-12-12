@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.exceptions.{InternalException, ParameterWrongTypeException}
+import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.graphdb.Direction
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.NodeValue
 
 /**
@@ -41,14 +45,20 @@ case class ExpandIntoPipe(source: Pipe,
                           dir: SemanticDirection,
                           lazyTypes: RelationshipTypes)
                           (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) with CachingExpandInto {
+  extends PipeWithSource(source) {
   self =>
-  private final val CACHE_SIZE = 100000
+  private val kernelDirection = dir match {
+    case SemanticDirection.OUTGOING => Direction.OUTGOING
+    case SemanticDirection.INCOMING => Direction.INCOMING
+    case SemanticDirection.BOTH => Direction.BOTH
+  }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //cache of known connected nodes
-    val relCache = new RelationshipsCache(CACHE_SIZE)
-
+    val query = state.query
+    val expandInto = new org.neo4j.internal.kernel.api.helpers.CachingExpandInto(query.transactionalContext.dataRead,
+                                                                                 kernelDirection,
+                                                                                 lazyTypes.types(query))
+    val nodeCursor = state.cursors.nodeCursor
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -58,17 +68,27 @@ case class ExpandIntoPipe(source: Pipe,
             toNode match {
               case IsNoValue() => Iterator.empty
               case n: NodeValue =>
-
-                val relationships = relCache.get(fromNode, n, dir)
-                  .getOrElse(findRelationships(state, fromNode, n, relCache, dir, lazyTypes.types(state.query)))
+                val relationships = query.relationshipIterator(expandInto.connectingRelationships(query.transactionalContext.cursors, nodeCursor, fromNode.id(), n.id()))
 
                 if (relationships.isEmpty) Iterator.empty
                 else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
-              case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$fromName' but found $value instead")
+              case value => throw new ParameterWrongTypeException(
+                s"Expected to find a node at '$fromName' but found $value instead")
             }
 
           case IsNoValue() => Iterator.empty
         }
+    }
+  }
+}
+
+object ExpandIntoPipe {
+  @inline
+  def getRowNode(row: ExecutionContext, col: String): AnyValue = {
+    row.getByName(col) match {
+      case n: NodeValue => n
+      case IsNoValue() => NO_VALUE
+      case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$col' but found $value instead")
     }
   }
 }

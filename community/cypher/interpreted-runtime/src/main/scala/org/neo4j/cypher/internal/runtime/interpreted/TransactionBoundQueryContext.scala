@@ -202,6 +202,18 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
+  override def relationshipIterator(cursor: RelationshipSelectionCursor): Iterator[RelationshipValue] =  new CursorIterator[RelationshipValue] {
+    override protected def fetchNext(): RelationshipValue = {
+      if (cursor.next()) {
+        relationshipById(cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.`type`())
+      } else {
+        null
+      }
+    }
+
+    override protected def close(): Unit = cursor.closeInternal()
+  }
+
   override def relationshipById(relationshipId: Long,
                                 startNodeId: Long,
                                 endNodeId: Long,
