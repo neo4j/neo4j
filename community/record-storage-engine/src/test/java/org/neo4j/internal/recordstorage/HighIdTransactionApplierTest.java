@@ -143,17 +143,14 @@ class HighIdTransactionApplierTest
 
         NodeRecord node = new NodeRecord( 5 ).initialize( true, 123, true, 456, 0 );
         node.setSecondaryUnitIdOnLoad( 6 );
-        node.setRequiresSecondaryUnit( true );
 
         RelationshipRecord relationship = new RelationshipRecord( 10 )
                 .initialize( true, 1, 2, 3, 4, 5, 6, 7, 8, true, true );
         relationship.setSecondaryUnitIdOnLoad( 12 );
-        relationship.setRequiresSecondaryUnit( true );
 
         RelationshipGroupRecord relationshipGroup = new RelationshipGroupRecord( 8 )
                 .initialize( true, 0, 1, 2, 3, 4, 5 );
         relationshipGroup.setSecondaryUnitIdOnLoad( 20 );
-        relationshipGroup.setRequiresSecondaryUnit( true );
 
         // WHEN
         tracker.visitNodeCommand( new NodeCommand( new NodeRecord( node.getId() ), node ) );

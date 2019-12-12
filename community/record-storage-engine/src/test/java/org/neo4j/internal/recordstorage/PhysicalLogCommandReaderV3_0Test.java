@@ -64,7 +64,6 @@ class PhysicalLogCommandReaderV3_0Test
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setRequiresSecondaryUnit( true );
         before.setSecondaryUnitIdOnLoad( 47 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
@@ -84,7 +83,6 @@ class PhysicalLogCommandReaderV3_0Test
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setRequiresSecondaryUnit( false );
         before.setSecondaryUnitIdOnLoad( 52 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
@@ -171,7 +169,6 @@ class PhysicalLogCommandReaderV3_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
-        after.setRequiresSecondaryUnit( true );
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
@@ -197,7 +194,6 @@ class PhysicalLogCommandReaderV3_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
-        after.setRequiresSecondaryUnit( false );
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
@@ -349,7 +345,6 @@ class PhysicalLogCommandReaderV3_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
         PropertyRecord after = new PropertyRecord( 2 );
-        after.setRequiresSecondaryUnit( true );
         after.setSecondaryUnitIdOnCreate( 78 );
 
         new Command.PropertyCommand( before, after ).serialize( channel );
@@ -372,7 +367,6 @@ class PhysicalLogCommandReaderV3_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
         PropertyRecord after = new PropertyRecord( 2 );
-        after.setRequiresSecondaryUnit( false );
         after.setSecondaryUnitIdOnCreate( 78 );
 
         new Command.PropertyCommand( before, after ).serialize( channel );

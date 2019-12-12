@@ -32,9 +32,9 @@ import org.apache.commons.lang3.exception.CloneFailedException;
  * <ul>
  *     <li>{@link #requiresSecondaryUnit()} set when a record is prepared, at a time where actual ids cannot be allocated, for one or more reasons.
  *     This state is accessed at some point later and if this record doesn't have a secondary unit it assigned already, such an id will be allocated
- *     and assigned {@link #setSecondaryUnitId(long)} and the {@link #setCreatedSecondaryUnit()} flag raised because it was set right now.</li>
+ *     and assigned {@link #setSecondaryUnitIdOnLoad(long)} and the {@link #setSecondaryUnitIdOnCreate(long)} flag raised because it was set right now.</li>
  *     <li>{@link #getSecondaryUnitId()} set when a large record requires a secondary unit. If such a large record is created right now
- *     (and not loaded from store) the {@link #setCreatedSecondaryUnit()} should also be set to reflect this fact.</li>
+ *     (and not loaded from store) the {@link #setSecondaryUnitIdOnCreate(long)} should also be set to reflect this fact.</li>
  *     <li>{@link #isSecondaryUnitCreated()} whether or not the secondary unit in this record (assuming it has one) was created now
  *     and wasn't there when it was loaded from the store</li>
  * </ul>
@@ -112,10 +112,11 @@ public abstract class AbstractBaseRecord implements Cloneable
     public void setSecondaryUnitIdOnLoad( long id )
     {
         this.secondaryUnitId = id;
+        this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
     }
 
     /**
-     * Sets a secondary record unit ID for this record on creating the secondary unit. This method also sets the {@link #setCreatedSecondaryUnit()}.
+     * Sets a secondary record unit ID for this record on creating the secondary unit. This method also sets the {@link #setSecondaryUnitIdOnLoad(long)}.
      * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id may be used to just free that id
      * at the time of updating in the store if a record goes from two to one unit.
      */
@@ -123,6 +124,7 @@ public abstract class AbstractBaseRecord implements Cloneable
     {
         this.secondaryUnitId = id;
         this.createdSecondaryUnit = true;
+        this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
     }
 
     public boolean hasSecondaryUnitId()

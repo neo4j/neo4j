@@ -19,37 +19,30 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.id.BatchingIdSequence;
-import org.neo4j.io.pagecache.EphemeralPageSwapperFactory;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.System.currentTimeMillis;
-import static java.nio.file.StandardOpenOption.CREATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -59,9 +52,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 @ResourceLock( Resources.SYSTEM_OUT )
 public abstract class AbstractRecordFormatTest
 {
-    @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
-
     // Whoever is hit first
     private static final long TEST_ITERATIONS = 100_000;
     private static final long TEST_TIME = 1000;
@@ -70,8 +60,6 @@ public abstract class AbstractRecordFormatTest
 
     @Inject
     private RandomRule random;
-    private final EphemeralPageSwapperFactory swapperFactory = new EphemeralPageSwapperFactory();
-    private PageCache pageCache;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
@@ -92,14 +80,7 @@ public abstract class AbstractRecordFormatTest
     public void before( TestInfo testInfo )
     {
         testName = testInfo.getDisplayName();
-        pageCache = pageCacheExtension.getPageCache( swapperFactory );
         generators = new LimitedRecordGenerators( random.randomValues(), entityBits, propertyBits, 40, 16, -1 );
-    }
-
-    @AfterEach
-    public void clearSwappers()
-    {
-        swapperFactory.close();
     }
 
     @Test
@@ -163,36 +144,34 @@ public abstract class AbstractRecordFormatTest
         Generator<R> generator = generatorSupplier.get();
         int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
         BatchingIdSequence idSequence = new BatchingIdSequence( 1 );
-        try ( PagedFile storeFile = pageCache.map( new File( "store-" + testName ), Math.max( recordSize, Long.SIZE ), CREATE ) )
+        // WHEN
+        PageCursor cursor = ByteArrayPageCursor.wrap( recordSize );
+        long time = currentTimeMillis();
+        long endTime = time + TEST_TIME;
+        long i = 0;
+        for ( ; i < TEST_ITERATIONS && currentTimeMillis() < endTime; i++ )
         {
-            // WHEN
-            long time = currentTimeMillis();
-            long endTime = time + TEST_TIME;
-            long i = 0;
-            for ( ; i < TEST_ITERATIONS && currentTimeMillis() < endTime; i++ )
-            {
-                R written = generator.get( recordSize, format, random.nextLong( 1, format.getMaxId() ) );
-                verifyWriteAndReadRecord( assertPostReadOffset, format, key, recordSize, idSequence, storeFile, i, written );
-            }
+            R written = generator.get( recordSize, format, random.nextLong( 1, format.getMaxId() ) );
+            verifyWriteAndReadRecord( assertPostReadOffset, format, key, recordSize, idSequence, cursor, i, written );
         }
     }
 
     private <R extends AbstractBaseRecord> void verifyWriteAndReadRecord( boolean assertPostReadOffset, RecordFormat<R> format, RecordKey<R> key,
-            int recordSize, BatchingIdSequence idSequence, PagedFile storeFile, long i, R written ) throws IOException
+            int recordSize, BatchingIdSequence idSequence, PageCursor cursor, long i, R written ) throws IOException
     {
                 R read = format.newRecord();
                 R read2 = format.newRecord();
                 try
                 {
-                    writeRecord( written, format, storeFile, recordSize, idSequence, true );
-                    readAndVerifyRecord( written, read, format, key, storeFile, recordSize, assertPostReadOffset );
-                    writeRecord( read, format, storeFile, recordSize, idSequence, false );
-                    readAndVerifyRecord( read, read2, format, key, storeFile, recordSize, assertPostReadOffset );
+                    writeRecord( written, format, cursor, recordSize, idSequence, true );
+                    readAndVerifyRecord( written, read, format, key, cursor, recordSize, assertPostReadOffset );
+                    writeRecord( read, format, cursor, recordSize, idSequence, false );
+                    readAndVerifyRecord( read, read2, format, key, cursor, recordSize, assertPostReadOffset );
                     idSequence.reset();
                 }
                 catch ( Throwable t )
                 {
-                    StringBuilder sb = new StringBuilder( t.getMessage() ).append( System.lineSeparator() );
+                    StringBuilder sb = new StringBuilder( String.valueOf( t.getMessage() ) ).append( System.lineSeparator() );
                     sb.append( "Initially written:         " ).append( written ).append( System.lineSeparator() );
                     sb.append( "Read back:                 " ).append( read ).append( System.lineSeparator() );
                     sb.append( "Wrote and read back again: " ).append( read2 ).append( System.lineSeparator() );
@@ -204,56 +183,48 @@ public abstract class AbstractRecordFormatTest
             }
 
     private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format,
-        RecordKey<R> key, PagedFile storeFile, int recordSize, boolean assertPostReadOffset ) throws IOException
+        RecordKey<R> key, PageCursor cursor, int recordSize, boolean assertPostReadOffset ) throws IOException
     {
-        try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
-        {
-            assertedNext( cursor );
-            read.setId( written.getId() );
+        read.setId( written.getId() );
 
             /*
              Retry loop is needed here because format does not handle retries on the primary cursor.
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
-            do
-            {
-                cursor.setOffset( 0 );
-                format.read( read, cursor, NORMAL, recordSize );
-            }
-            while ( cursor.shouldRetry() );
-            assertWithinBounds( written, cursor, "reading" );
-            if ( assertPostReadOffset )
-            {
-                assertEquals( recordSize, cursor.getOffset(), "Cursor is positioned on first byte of next record after a read" );
-            }
-            cursor.checkAndClearCursorException();
+        do
+        {
+            cursor.setOffset( 0 );
+            format.read( read, cursor, NORMAL, recordSize );
+        }
+        while ( cursor.shouldRetry() );
+        assertWithinBounds( written, cursor, "reading" );
+        if ( assertPostReadOffset )
+        {
+            assertEquals( recordSize, cursor.getOffset(), "Cursor is positioned on first byte of next record after a read" );
+        }
+        cursor.checkAndClearCursorException();
 
-            // THEN
-            assertEquals( written.inUse(), read.inUse() );
-            if ( written.inUse() )
-            {
-                assertEquals( written.getId(), read.getId() );
-                assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
-                key.assertRecordsEquals( written, read );
-            }
+        // THEN
+        assertEquals( written.inUse(), read.inUse() );
+        if ( written.inUse() )
+        {
+            assertEquals( written.getId(), read.getId() );
+            assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+            key.assertRecordsEquals( written, read );
         }
     }
 
-    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
+    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PageCursor cursor,
             int recordSize, BatchingIdSequence idSequence, boolean prepare ) throws IOException
     {
-        try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        if ( prepare && record.inUse() )
         {
-            assertedNext( cursor );
-            if ( prepare && record.inUse() )
-            {
-                format.prepare( record, recordSize, idSequence );
-            }
-
-            cursor.setOffset( 0 );
-            format.write( record, cursor, recordSize );
-            assertWithinBounds( record, cursor, "writing" );
+            format.prepare( record, recordSize, idSequence );
         }
+
+        cursor.setOffset( 0 );
+        format.write( record, cursor, recordSize );
+        assertWithinBounds( record, cursor, "writing" );
     }
 
     private <R extends AbstractBaseRecord> void assertWithinBounds( R record, PageCursor cursor, String operation )
@@ -262,10 +233,5 @@ public abstract class AbstractRecordFormatTest
         {
             fail( "Out-of-bounds when " + operation + " record " + record );
         }
-    }
-
-    private void assertedNext( PageCursor cursor ) throws IOException
-    {
-        assertTrue( cursor.next() );
     }
 }
