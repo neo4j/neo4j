@@ -109,3 +109,27 @@ Feature: AggregationAcceptance
       | result |
       | null   |
     And no side effects
+
+  Scenario: optional match followed by aggregation
+    Given an empty graph
+    When executing query:
+    """
+   OPTIONAL MATCH (n)
+   UNWIND [n] AS m
+   RETURN collect(m) AS c
+    """
+    Then the result should be, in any order:
+      | c  |
+      | [] |
+    And no side effects
+
+  Scenario: aggregation on function with null argument
+    Given an empty graph
+    When executing query:
+    """
+    RETURN collect(sin(null)) AS c
+    """
+    Then the result should be, in any order:
+      | c |
+      | []     |
+    And no side effects

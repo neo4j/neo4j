@@ -359,6 +359,27 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     })
   }
 
+  test("should collect(n) where n is null") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
+    val input = inputValues(Array(Array[Any](null)):_*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("collect(x) AS c"))
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(Array.empty)
+  }
+
   test("should sum(n.prop)") {
     given {
       nodePropertyGraph(sizeHint, {
