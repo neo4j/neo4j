@@ -110,8 +110,7 @@ public abstract class AbstractRecordFormatTest
     @Test
     public void relationshipTypeToken() throws Exception
     {
-        verifyWriteAndRead( formats::relationshipTypeToken, generators::relationshipTypeToken,
-            keys::relationshipTypeToken, false );
+        verifyWriteAndRead( formats::relationshipTypeToken, generators::relationshipTypeToken, keys::relationshipTypeToken, false );
     }
 
     @Test
@@ -132,11 +131,8 @@ public abstract class AbstractRecordFormatTest
         verifyWriteAndRead( formats::dynamic, generators::dynamic, keys::dynamic, false );
     }
 
-    private <R extends AbstractBaseRecord> void verifyWriteAndRead(
-        Supplier<RecordFormat<R>> formatSupplier,
-        Supplier<Generator<R>> generatorSupplier,
-        Supplier<RecordKey<R>> keySupplier,
-        boolean assertPostReadOffset ) throws IOException
+    private <R extends AbstractBaseRecord> void verifyWriteAndRead( Supplier<RecordFormat<R>> formatSupplier, Supplier<Generator<R>> generatorSupplier,
+            Supplier<RecordKey<R>> keySupplier, boolean assertPostReadOffset ) throws IOException
     {
         // GIVEN
         RecordFormat<R> format = formatSupplier.get();
@@ -159,31 +155,31 @@ public abstract class AbstractRecordFormatTest
     private <R extends AbstractBaseRecord> void verifyWriteAndReadRecord( boolean assertPostReadOffset, RecordFormat<R> format, RecordKey<R> key,
             int recordSize, BatchingIdSequence idSequence, PageCursor cursor, long i, R written ) throws IOException
     {
-                R read = format.newRecord();
-                R read2 = format.newRecord();
-                try
-                {
-                    writeRecord( written, format, cursor, recordSize, idSequence, true );
-                    readAndVerifyRecord( written, read, format, key, cursor, recordSize, assertPostReadOffset );
-                    writeRecord( read, format, cursor, recordSize, idSequence, false );
-                    readAndVerifyRecord( read, read2, format, key, cursor, recordSize, assertPostReadOffset );
-                    idSequence.reset();
-                }
-                catch ( Throwable t )
-                {
-                    StringBuilder sb = new StringBuilder( String.valueOf( t.getMessage() ) ).append( System.lineSeparator() );
-                    sb.append( "Initially written:         " ).append( written ).append( System.lineSeparator() );
-                    sb.append( "Read back:                 " ).append( read ).append( System.lineSeparator() );
-                    sb.append( "Wrote and read back again: " ).append( read2 ).append( System.lineSeparator() );
-                    sb.append( "Seed:                      " ).append( random.seed() ).append( System.lineSeparator() );
-                    sb.append( "Iteration:                 " ).append( i ).append( System.lineSeparator() );
-                    withMessage( t, sb.toString() );
-                    throw t;
-                }
-            }
+        R read = format.newRecord();
+        R read2 = format.newRecord();
+        try
+        {
+            writeRecord( written, format, cursor, recordSize, idSequence, true );
+            readAndVerifyRecord( written, read, format, key, cursor, recordSize, assertPostReadOffset );
+            writeRecord( read, format, cursor, recordSize, idSequence, false );
+            readAndVerifyRecord( read, read2, format, key, cursor, recordSize, assertPostReadOffset );
+            idSequence.reset();
+        }
+        catch ( Throwable t )
+        {
+            StringBuilder sb = new StringBuilder( String.valueOf( t.getMessage() ) ).append( System.lineSeparator() );
+            sb.append( "Initially written:         " ).append( written ).append( System.lineSeparator() );
+            sb.append( "Read back:                 " ).append( read ).append( System.lineSeparator() );
+            sb.append( "Wrote and read back again: " ).append( read2 ).append( System.lineSeparator() );
+            sb.append( "Seed:                      " ).append( random.seed() ).append( System.lineSeparator() );
+            sb.append( "Iteration:                 " ).append( i ).append( System.lineSeparator() );
+            withMessage( t, sb.toString() );
+            throw t;
+        }
+    }
 
-    private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format,
-        RecordKey<R> key, PageCursor cursor, int recordSize, boolean assertPostReadOffset ) throws IOException
+    private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format, RecordKey<R> key, PageCursor cursor,
+            int recordSize, boolean assertPostReadOffset ) throws IOException
     {
         read.setId( written.getId() );
 
@@ -214,8 +210,8 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PageCursor cursor,
-            int recordSize, BatchingIdSequence idSequence, boolean prepare ) throws IOException
+    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PageCursor cursor, int recordSize, BatchingIdSequence idSequence,
+            boolean prepare ) throws IOException
     {
         if ( prepare && record.inUse() )
         {
