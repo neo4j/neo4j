@@ -540,13 +540,29 @@ public class CachingExpandInto
         }
     }
 
-    public static class RelationshipCache
+    static class RelationshipCache
     {
+        private static final int DEFAULT_CAPACITY = 100000;
+
         private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
+        private final int capacity;
+
+        RelationshipCache()
+        {
+            this( DEFAULT_CAPACITY );
+        }
+
+        RelationshipCache( int capacity )
+        {
+            this.capacity = capacity;
+        }
 
         public void add( long start, long end, Direction direction, List<Relationship> relationships )
         {
-            map.put( key( start, end, direction ), relationships );
+            if ( map.size() < capacity )
+            {
+                map.put( key( start, end, direction ), relationships );
+            }
         }
 
         public List<Relationship> get( long start, long end, Direction direction )
