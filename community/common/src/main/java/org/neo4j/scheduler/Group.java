@@ -45,7 +45,9 @@ public enum Group
     /** Terminates kernel transactions that have timed out. */
     TRANSACTION_TIMEOUT_MONITOR( "TransactionTimeoutMonitor" ),
     /** Background index population. */
-    INDEX_POPULATION( "IndexPopulation" ),
+    INDEX_POPULATION( "IndexPopulationMain" ),
+    /** Background index population work. */
+    INDEX_POPULATION_WORK( "IndexPopulationWork" ),
     /** Background index sampling */
     INDEX_SAMPLING( "IndexSampling" ),
     /** Background index update applier, for eventually consistent indexes. */

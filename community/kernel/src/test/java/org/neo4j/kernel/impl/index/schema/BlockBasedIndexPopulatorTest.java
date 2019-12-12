@@ -449,7 +449,7 @@ class BlockBasedIndexPopulatorTest
                 public <T> JobHandle<T> schedule( Group group, Callable<T> job )
                 {
                     called.setTrue();
-                    assertThat( group ).isSameAs( Group.INDEX_POPULATION );
+                    assertThat( group ).isSameAs( Group.INDEX_POPULATION_WORK );
                     return super.schedule( group, job );
                 }
             };

@@ -207,7 +207,8 @@ public class BatchingMultipleIndexPopulatorTest
         IndexStoreView storeView = newStoreView( update1, update2, update3, update42 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                sameThreadExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ), mock( JobScheduler.class ) );
+                sameThreadExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                mock( JobScheduler.class ) );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexPopulator populator42 = addPopulator( batchingPopulator, index42 );
@@ -229,7 +230,8 @@ public class BatchingMultipleIndexPopulatorTest
         IndexStoreView storeView = newStoreView( update1, update2, update3 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                sameThreadExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ), mock( JobScheduler.class ) );
+                sameThreadExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                mock( JobScheduler.class ) );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
 
@@ -287,7 +289,8 @@ public class BatchingMultipleIndexPopulatorTest
         RuntimeException batchFlushError = new RuntimeException( "Batch failed" );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                sameThreadExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ), mock( JobScheduler.class ) );
+                sameThreadExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                mock( JobScheduler.class ) );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         doThrow( batchFlushError ).when( populator ).add( forUpdates( index1, update3, update4 ) );

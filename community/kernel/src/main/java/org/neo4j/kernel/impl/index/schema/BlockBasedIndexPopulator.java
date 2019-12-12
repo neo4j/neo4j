@@ -322,7 +322,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             BlockStorage<KEY,VALUE> scanUpdates = part.blockStorage;
             // Call doneAdding here so that the buffer it allocates if it needs to flush something will be shared with other indexes
             scanUpdates.doneAdding();
-            mergeFutures.add( jobScheduler.schedule( Group.INDEX_POPULATION, () ->
+            mergeFutures.add( jobScheduler.schedule( Group.INDEX_POPULATION_WORK, () ->
             {
                 scanUpdates.merge( mergeFactor, cancellation );
                 return null;

@@ -363,6 +363,8 @@ public class GlobalModule
     {
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler( globalClock );
         jobScheduler.setParallelism( Group.INDEX_SAMPLING, globalConfig.get( GraphDatabaseSettings.index_sampling_parallelism ) );
+        jobScheduler.setParallelism( Group.INDEX_POPULATION, globalConfig.get( GraphDatabaseSettings.index_population_workers ) );
+        jobScheduler.setParallelism( Group.INDEX_POPULATION_WORK, globalConfig.get( GraphDatabaseSettings.index_population_workers ) );
         return jobScheduler;
     }
 
