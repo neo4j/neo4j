@@ -37,7 +37,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
       val skip = skipNumber.doubleValue()
       throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")
     }
-    val skip = skipNumber.longValue().toInt
+    val skip = skipNumber.longValue()
 
     if (skip < 0) {
       throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")
@@ -46,6 +46,18 @@ case class SkipPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
-    input.drop(skip)
+    SkipPipe.drop(skip, input)
+  }
+
+}
+
+object SkipPipe {
+  def drop[T](n: Long, iterator: Iterator[T]): Iterator[T] = {
+    var j = 0L
+    while (j < n && iterator.hasNext) {
+      iterator.next()
+      j += 1
+    }
+    iterator
   }
 }

@@ -245,6 +245,17 @@ Feature: SkipLimitAcceptance
       | name     |
     And no side effects
 
+  Scenario: Skipping more than Integer.Max rows should be allowed
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p
+      SKIP 9223372036854775807 // Long.Max
+      """
+    Then the result should be, in any order:
+      | p |
+    And no side effects
+
   Scenario: Combining LIMIT and aggregation
     And having executed:
       """
