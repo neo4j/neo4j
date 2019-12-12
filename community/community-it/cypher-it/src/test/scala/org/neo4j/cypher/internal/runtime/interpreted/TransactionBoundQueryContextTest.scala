@@ -191,7 +191,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     tx.close()
   }
 
-  test("provide access to kernel statement page cache tracer") {
+  ignore("provide access to kernel statement page cache tracer") {
     val creator = graphOps.beginTx()
     creator.createNode()
     creator.createNode()

@@ -40,15 +40,17 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     private int faults;
     private PageCacheTracer tracer;
 
-    public RecordingPageCursorTracer()
+    public RecordingPageCursorTracer( PageCacheTracer tracer )
     {
         super( Pin.class, Fault.class );
+        this.tracer = tracer;
     }
 
     @SafeVarargs
-    public RecordingPageCursorTracer( Class<? extends Event>... eventTypesToTrace )
+    public RecordingPageCursorTracer( PageCacheTracer tracer, Class<? extends Event>... eventTypesToTrace )
     {
         super( eventTypesToTrace );
+        this.tracer = tracer;
     }
 
     @Override

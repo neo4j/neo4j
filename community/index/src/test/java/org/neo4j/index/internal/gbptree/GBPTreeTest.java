@@ -1589,7 +1589,7 @@ class GBPTreeTest
     @Test
     void skipFlushingPageFileOnCloseWhenPageFileMarkForDeletion() throws IOException
     {
-        DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
+        DefaultPageCacheTracer defaultPageCacheTracer = DefaultPageCacheTracer.TRACER;
         PageCacheConfig config = config().withTracer( defaultPageCacheTracer );
         try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config );
               GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
