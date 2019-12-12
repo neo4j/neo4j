@@ -269,8 +269,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         readOnly,
         cardinalities,
         providedOrders,
-        executionPlan.runtimeName,
-        executionPlan.metadata)
+        executionPlan)
 
     private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String]) = {
       val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.RuntimeName
+import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
@@ -36,16 +36,15 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              readOnly: Boolean,
                              cardinalities: Cardinalities,
                              providedOrders: ProvidedOrders,
-                             runtimeName: RuntimeName,
-                             metadata: Seq[Argument]) {
+                             executionPlan: ExecutionPlan) {
 
   def explain(): InternalPlanDescription = {
     val description =
-      LogicalPlan2PlanDescription(logicalPlan, plannerName, cypherVersion, readOnly, cardinalities, providedOrders)
-        .addArgument(Runtime(runtimeName.toTextOutput))
-        .addArgument(RuntimeImpl(runtimeName.name))
+      LogicalPlan2PlanDescription(logicalPlan, plannerName, cypherVersion, readOnly, cardinalities, providedOrders, executionPlan)
+        .addArgument(Runtime(executionPlan.runtimeName.toTextOutput))
+        .addArgument(RuntimeImpl(executionPlan.runtimeName.name))
 
-    metadata.foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
+    executionPlan.metadata.foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
   }
 
   def profile(queryProfile: QueryProfile): InternalPlanDescription = {

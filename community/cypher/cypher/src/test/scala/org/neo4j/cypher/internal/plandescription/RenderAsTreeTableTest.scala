@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.plandescription
 
 import java.util.Locale
 
+import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -32,7 +33,6 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
-import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -57,12 +57,12 @@ import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.Expression
 import org.neo4j.cypher.internal.plandescription.Arguments.Index
+import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
-import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -381,7 +381,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
     providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")), ProvidedOrder.Desc(varFor("bar")))))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+----------------+-------------------+-----------+---------------------+
@@ -397,7 +397,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
     providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("  FRESHID42")))))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+--------------+-----------+---------------------+
@@ -532,7 +532,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
     providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")))))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(seekPlan)) should equal(
       """+-----------------------+----------------+---------+-----------+-------------------+
@@ -551,7 +551,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
     providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")))))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(seekPlan)) should equal(
       """+-----------------------+----------------+---------+-----------+---------------------------------+
@@ -580,7 +580,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
     providedOrders.set(seekPlan.id, ProvidedOrder.empty)
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(seekPlan)) should equal(
       """+-----------------------+----------------+-----------+-----------------------------------------+

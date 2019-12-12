@@ -54,3 +54,18 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[IndexSeekLeafPlan])
   override def idNames: Set[String] =
     nodeIndexSeeks.map(_.idName).toSet
 }
+
+/**
+ * This is only used in plan descriptions to visualize rewritten plan trees
+ */
+case class ErasedTwoChildrenPlan()(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+  override val lhs: Option[LogicalPlan] = Some(ErasedLeaf())
+  override val rhs: Option[LogicalPlan] = Some(ErasedLeaf())
+  override val availableSymbols: Set[String] = Set.empty
+}
+
+case class ErasedLeaf()(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+  override val lhs: Option[LogicalPlan] = None
+  override val rhs: Option[LogicalPlan] = None
+  override val availableSymbols: Set[String] = Set.empty
+}

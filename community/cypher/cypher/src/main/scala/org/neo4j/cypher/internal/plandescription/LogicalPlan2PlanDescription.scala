@@ -20,6 +20,12 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.plandescription.Arguments._
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -229,8 +235,9 @@ object LogicalPlan2PlanDescription {
             cypherVersion: CypherVersion,
             readOnly: Boolean,
             cardinalities: Cardinalities,
-            providedOrders: ProvidedOrders): InternalPlanDescription = {
-    new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders).create(input)
+            providedOrders: ProvidedOrders,
+            executionPlan: ExecutionPlan): InternalPlanDescription = {
+    new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders, executionPlan).create(input)
       .addArgument(Version("CYPHER " + cypherVersion.name))
       .addArgument(RuntimeVersion("4.1"))
       .addArgument(Planner(plannerName.toTextOutput))
@@ -239,15 +246,16 @@ object LogicalPlan2PlanDescription {
   }
 }
 
-case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, providedOrders: ProvidedOrders)
+case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, providedOrders: ProvidedOrders, executionPlan: ExecutionPlan)
   extends LogicalPlans.Mapper[InternalPlanDescription] {
 
   def create(plan: LogicalPlan): InternalPlanDescription =
     LogicalPlans.map(plan, this)
 
-  override def onLeaf(plan: LogicalPlan): InternalPlanDescription = {
-    checkOnlyWhenAssertionsAreEnabled(plan.isLeaf)
+  override def onLeaf(logicalPlan: LogicalPlan): InternalPlanDescription = {
+    checkOnlyWhenAssertionsAreEnabled(logicalPlan.isLeaf)
 
+    val plan = executionPlan.mapPlan(logicalPlan)
     val id = plan.id
     val variables = plan.availableSymbols
 
@@ -561,12 +569,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
 
     addPlanningAttributes(result, plan)
+    addRuntimeAttributes(result, plan)
   }
 
-  override def onOneChildPlan(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
-    checkOnlyWhenAssertionsAreEnabled(plan.lhs.nonEmpty)
-    checkOnlyWhenAssertionsAreEnabled(plan.rhs.isEmpty)
+  override def onOneChildPlan(logicalPlan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
+    checkOnlyWhenAssertionsAreEnabled(logicalPlan.lhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(logicalPlan.rhs.isEmpty)
 
+    val plan = executionPlan.mapPlan(logicalPlan)
     val id = plan.id
     val variables = plan.availableSymbols
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
@@ -609,17 +619,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case NodeCountFromCountStore(idName, labelName, _) =>
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren,
-          Seq(CountNodesExpression(idName, labelName.map(l => l.map(_.name)))), variables)
+                            Seq(CountNodesExpression(idName, labelName.map(l => l.map(_.name)))), variables)
 
       case RelationshipCountFromCountStore(idName, start, types, end, _) =>
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren,
-          Seq(
-            CountRelationshipsExpression(idName, start.map(_.name), types.map(_.name), end.map(_.name))),
-          variables)
-
-//      case p@NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
-//        PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
-//          Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
+                            Seq(
+                              CountRelationshipsExpression(idName, start.map(_.name), types.map(_.name), end.map(_.name))),
+                            variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -897,13 +903,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
 
     addPlanningAttributes(result, plan)
+    addRuntimeAttributes(result, plan)
   }
 
-  override def onTwoChildPlan(plan: LogicalPlan, lhs: InternalPlanDescription,
+  override def onTwoChildPlan(logicalPlan: LogicalPlan, lhs: InternalPlanDescription,
                               rhs: InternalPlanDescription): InternalPlanDescription = {
-    checkOnlyWhenAssertionsAreEnabled(plan.lhs.nonEmpty)
-    checkOnlyWhenAssertionsAreEnabled(plan.rhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(logicalPlan.lhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(logicalPlan.rhs.nonEmpty)
 
+    val plan = executionPlan.mapPlan(logicalPlan)
     val id = plan.id
     val variables = plan.availableSymbols
     val children = TwoChildren(lhs, rhs)
@@ -984,10 +992,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           variables
         )
 
+      case _: MultiNodeIndexSeek =>
+        PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", children, Seq.empty, variables)
+
+      case _: ErasedTwoChildrenPlan =>
+        PlanDescriptionImpl(id = plan.id, "", children, Seq.empty, Set.empty)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
     addPlanningAttributes(result, plan)
+    addRuntimeAttributes(result, plan)
   }
 
   private def addPlanningAttributes(description: InternalPlanDescription, plan: LogicalPlan): InternalPlanDescription = {
@@ -1000,6 +1015,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       withEstRows.addArgument(Order(providedOrders(plan.id)))
     else
       withEstRows
+  }
+
+  private def addRuntimeAttributes(description: InternalPlanDescription, plan: LogicalPlan): InternalPlanDescription = {
+    executionPlan.operatorMetadata(plan.id).foldLeft(description)((acc, x) => acc.addArgument(x))
   }
 
   private def buildPredicatesDescription(maybeNodePredicate: Option[VariablePredicate],

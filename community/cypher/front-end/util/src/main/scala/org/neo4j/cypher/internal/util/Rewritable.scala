@@ -278,3 +278,47 @@ object bottomUpWithArgs {
   def apply(rewriter: RewriterWithArgs, stopper: AnyRef => Boolean = _ => false): RewriterWithArgs =
     new BottomUpWithArgsRewriter(rewriter, stopper)
 }
+
+object bottomUpWithRecorder {
+
+  private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean, val recorder: (AnyRef, AnyRef) => Unit)
+    extends Rewriter {
+    override def apply(that: AnyRef): AnyRef = {
+      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
+
+    @tailrec
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          val (job :: jobs, doneJobs) = stack.pop()
+          val doneJob = Rewritable.dupAny(job, newChildren)
+          val rewrittenDoneJob = doneJob.rewrite(rewriter)
+          if (!(doneJob eq rewrittenDoneJob))
+            recorder(doneJob, rewrittenDoneJob)
+          stack.push((jobs, doneJobs += rewrittenDoneJob))
+          rec(stack)
+        }
+      } else {
+        val next = currentJobs.head
+        if (stopper(next)) {
+          val (job :: jobs, doneJobs) = stack.pop()
+          stack.push((jobs, doneJobs += job))
+        } else {
+          stack.push((next.children.toList, new mutable.MutableList()))
+        }
+        rec(stack)
+      }
+    }
+  }
+
+  def apply(rewriter: Rewriter, stopper: AnyRef => Boolean = _ => false, recorder: (AnyRef, AnyRef) => Unit = (_, _) => ()): Rewriter =
+    new BottomUpRewriter(rewriter, stopper, recorder)
+}
