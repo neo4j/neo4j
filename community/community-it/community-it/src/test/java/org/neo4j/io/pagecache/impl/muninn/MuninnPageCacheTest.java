@@ -558,9 +558,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel write( File fileName ) throws IOException
+                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                 {
-                    return new DelegatingStoreChannel( super.write( fileName ) )
+                    return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException

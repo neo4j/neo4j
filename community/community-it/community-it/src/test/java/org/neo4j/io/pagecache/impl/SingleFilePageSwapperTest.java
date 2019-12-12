@@ -77,6 +77,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
@@ -731,7 +732,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.tryLock() ).thenReturn( mock( FileLock.class ) );
-        when( fs.write( any( File.class ) ) ).thenReturn( channel ).thenReturn( channel );
+        when( fs.open( any( File.class ), any() ) ).thenReturn( channel ).thenReturn( channel );
 
         // when
         PageSwapperFactory factory = createSwapperFactory( fs );
@@ -739,7 +740,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try
         {
             // then
-            verify( fs, times( 1 ) ).write( eq( file ) );
+            verify( fs, times( 1 ) ).open( eq( file ), eq( WRITE_OPTIONS ) );
         }
         finally
         {

@@ -29,7 +29,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.OpenOption;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Set;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -117,6 +118,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private final FileSystemAbstraction fs;
     private final File file;
     private final int filePageSize;
+    private final Set<OpenOption> openOptions;
     private volatile PageEvictionCallback onEviction;
     private final StoreChannel[] channels;
     private FileLock fileLock;
@@ -150,11 +152,17 @@ public class SingleFilePageSwapper implements PageSwapper
             validateDirectIOPossibility( file, filePageSize );
         }
         this.channels = new StoreChannel[channelStripeCount];
+
+        var options = new ArrayList<>( WRITE_OPTIONS );
+        if ( useDirectIO )
+        {
+            options.add( ExtendedOpenOption.DIRECT );
+        }
+        openOptions = Set.copyOf( options );
+
         for ( int i = 0; i < channelStripeCount; i++ )
         {
-            var openOptions = new HashSet<>( WRITE_OPTIONS );
-            openOptions.add( ExtendedOpenOption.DIRECT );
-            channels[i] = getStoreChannel( file, fs, useDirectIO, openOptions );
+            channels[i] = createStoreChannel();
         }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
@@ -171,9 +179,9 @@ public class SingleFilePageSwapper implements PageSwapper
         hasPositionLock = channels[0].hasPositionLock();
     }
 
-    private StoreChannel getStoreChannel( File file, FileSystemAbstraction fs, boolean useDirectIO, HashSet<OpenOption> openOptions ) throws IOException
+    private StoreChannel createStoreChannel() throws IOException
     {
-        var storeChannel = useDirectIO ? fs.open( file, openOptions ) : fs.write( file );
+        var storeChannel = fs.open( file, openOptions );
         storeChannel.tryMakeUninterruptible();
         return storeChannel;
     }
@@ -604,7 +612,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
         try
         {
-            channels[stripe] = fs.write( file );
+            channels[stripe] = createStoreChannel();
             if ( stripe == TOKEN_CHANNEL_STRIPE )
             {
                 // The closing of a FileChannel also releases all associated file locks.

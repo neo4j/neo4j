@@ -638,9 +638,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         return new DelegatingFileSystemAbstraction( fs )
         {
             @Override
-            public StoreChannel write( File fileName ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
-                return new DelegatingStoreChannel( super.write( fileName ) )
+                return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3745,9 +3745,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                 @Override
-                public StoreChannel write( File fileName ) throws IOException
+                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                 {
-                    StoreChannel channel = new DelegatingStoreChannel( super.write( fileName ) )
+                    StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3811,9 +3811,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                     @Override
-                    public StoreChannel write( File fileName ) throws IOException
+                    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                     {
-                        StoreChannel channel = new DelegatingStoreChannel( super.write( fileName ) )
+                        StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
                         {
                             @Override
                             public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3887,9 +3887,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel write( File fileName ) throws IOException
+                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                 {
-                    return new DelegatingStoreChannel( super.write( fileName ) )
+                    return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3946,9 +3946,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel write( File fileName ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
-                return new DelegatingStoreChannel( super.write( fileName ) )
+                return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
