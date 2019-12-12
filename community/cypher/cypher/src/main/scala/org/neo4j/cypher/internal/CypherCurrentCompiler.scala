@@ -242,17 +242,16 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     override def notifications: Set[InternalNotification] = planningNotifications
 
     override def execute(transactionalContext: TransactionalContext,
-                         shouldCloseTransaction: Boolean,
+                         isOutermostQuery: Boolean,
                          queryOptions: QueryOptions,
                          params: MapValue,
                          prePopulateResults: Boolean,
                          input: InputDataStream,
-                         subscriber: QuerySubscriber,
-                         enableQueryExecutionMonitor: Boolean): QueryExecution = {
+                         subscriber: QuerySubscriber): QueryExecution = {
 
       val taskCloser = new TaskCloser
       val queryContext = getQueryContext(transactionalContext, queryOptions.debugOptions)
-      if (shouldCloseTransaction) taskCloser.addTask(success => {
+      if (isOutermostQuery) taskCloser.addTask(success => {
         val context = queryContext.transactionalContext
         if (!success) {
           context.rollback()
@@ -262,7 +261,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       })
       taskCloser.addTask(_ => queryContext.resources.close())
       try {
-        innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber, enableQueryExecutionMonitor)
+        innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber, isOutermostQuery)
       } catch {
         case e: Throwable =>
           QuerySubscriber.safelyOnError(subscriber, e)
@@ -280,7 +279,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                              prePopulateResults: Boolean,
                              input: InputDataStream,
                              subscriber: QuerySubscriber,
-                             enableQueryExecutionMonitor: Boolean): InternalExecutionResult = {
+                             isOutermostQuery: Boolean): InternalExecutionResult = {
 
       val innerExecutionMode = queryOptions.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
@@ -288,7 +287,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case CypherExecutionMode.normal => NormalMode
       }
 
-      val monitor = if (enableQueryExecutionMonitor) kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]) else QueryExecutionMonitor.NO_OP
+      val monitor = if (isOutermostQuery) kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]) else QueryExecutionMonitor.NO_OP
       monitor.start( transactionalContext.executingQuery() )
 
       val inner = if (innerExecutionMode == ExplainMode) {
@@ -305,7 +304,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
         val runtimeResult = executionPlan.run(queryContext, innerExecutionMode, params, prePopulateResults, input, subscriber)
 
-        transactionalContext.executingQuery().executionStarted(runtimeResult)
+        if (isOutermostQuery)
+          transactionalContext.executingQuery().onExecutionStarted(runtimeResult)
 
         taskCloser.addTask(_ => runtimeResult.close())
 

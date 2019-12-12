@@ -52,6 +52,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
@@ -87,13 +88,13 @@ class ExecutingQueryTest
         assertEquals( "planning", query.snapshot().status() );
 
         // when
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
 
         // then
         assertEquals( "planned", query.snapshot().status() );
 
         // when
-        query.executionStarted( new FakeMemoryTracker() );
+        query.onExecutionStarted( new FakeMemoryTracker() );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -120,7 +121,7 @@ class ExecutingQueryTest
 
         // when
         clock.forward( 16, TimeUnit.MICROSECONDS );
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
         clock.forward( 200, TimeUnit.MICROSECONDS );
 
         // then
@@ -133,8 +134,8 @@ class ExecutingQueryTest
     void shouldReportWaitTime()
     {
         // given
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
-        query.executionStarted( new FakeMemoryTracker() );
+        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+        query.onExecutionStarted( new FakeMemoryTracker() );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -331,6 +332,41 @@ class ExecutingQueryTest
         assertThat( exeQuery3.queryText(), equalTo( queryPart + "$old TO '******'" ) );
         assertThat( exeQuery3.queryParameters(), equalTo( obfuscatedParams3 ) );
 
+    }
+
+    @Test
+    void shouldNotAllowCompletingCompilationMultipleTimes()
+    {
+        query.onCompilationCompleted( null, null, null );
+        assertThrows( IllegalStateException.class, () -> query.onCompilationCompleted( null, null, null ) );
+    }
+
+    @Test
+    void shouldNotAllowStartingExecutionWithoutCompilation()
+    {
+        assertThrows( IllegalStateException.class, () -> query.onExecutionStarted( null ) );
+    }
+
+    @Test
+    void shouldAllowRetryingAfterStartingExecutiong()
+    {
+        assertEquals( "planning", query.snapshot().status() );
+
+        query.onCompilationCompleted( null, null, null );
+        assertEquals( "planned", query.snapshot().status() );
+
+        query.onExecutionStarted( new FakeMemoryTracker() );
+        assertEquals( "running", query.snapshot().status() );
+
+        query.onRetryAttempted();
+        assertEquals( "planning", query.snapshot().status() );
+    }
+
+    @Test
+    void shouldNotAllowRetryingWithoutStartingExecuting()
+    {
+        query.onCompilationCompleted( null, null, null );
+        assertThrows( IllegalStateException.class, query::onRetryAttempted );
     }
 
     private void testPasswordObfuscation( String startOfQuery )

@@ -84,6 +84,12 @@ public class SnapshotExecutionEngine extends ExecutionEngine
                 throw new QueryExecutionKernelException( new UnstableSnapshotException( "Unable to get clean data snapshot for query '%s' after %d attempts.",
                                                                                         query, attempt ) );
             }
+
+            if ( attempt > 0 )
+            {
+                context.executingQuery().onRetryAttempted();
+            }
+
             attempt++;
             versionContext.initRead();
 
