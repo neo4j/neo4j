@@ -211,7 +211,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override protected def close(): Unit = cursor.closeInternal()
+    override protected def close(): Unit = cursor.close()
   }
 
 

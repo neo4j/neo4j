@@ -29,6 +29,7 @@ import java.util.List;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -414,7 +415,7 @@ public class CachingExpandInto
         }
     }
 
-    private class ExpandIntoSelectionCursor implements RelationshipSelectionCursor
+    private class ExpandIntoSelectionCursor extends DefaultCloseListenable implements RelationshipSelectionCursor
     {
         private final RelationshipSelectionCursor allRelationships;
         private final long otherNode;
@@ -513,30 +514,6 @@ public class CachingExpandInto
         public boolean isClosed()
         {
             return allRelationships.isClosed();
-        }
-
-        @Override
-        public void setCloseListener( CloseListener closeListener )
-        {
-            allRelationships.setCloseListener( closeListener );
-        }
-
-        @Override
-        public CloseListener getCloseListener()
-        {
-            return allRelationships.getCloseListener();
-        }
-
-        @Override
-        public void setToken( int token )
-        {
-            allRelationships.setToken( token );
-        }
-
-        @Override
-        public int getToken()
-        {
-            return allRelationships.getToken();
         }
     }
 
