@@ -190,7 +190,7 @@ public abstract class AbstractRecordFormatTest
         do
         {
             cursor.setOffset( 0 );
-            format.read( read, cursor, NORMAL, recordSize );
+            format.read( read, cursor, NORMAL, recordSize, 1 );
         }
         while ( cursor.shouldRetry() );
         assertWithinBounds( written, cursor, "reading" );
@@ -219,7 +219,7 @@ public abstract class AbstractRecordFormatTest
         }
 
         cursor.setOffset( 0 );
-        format.write( record, cursor, recordSize );
+        format.write( record, cursor, recordSize, 1 );
         assertWithinBounds( record, cursor, "writing" );
     }
 
