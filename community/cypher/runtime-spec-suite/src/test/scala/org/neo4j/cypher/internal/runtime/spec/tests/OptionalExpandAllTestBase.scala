@@ -340,6 +340,40 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
 
+  test("should optional expand when not possible to fully fuse") {
+    // given
+    val n = sizeHint
+    val relTuples = (for(i <- 0 until n by 2) yield {
+      Seq(
+        (i, (2 * i) % n, "OTHER"),
+        (i, (i + 1) % n, "NEXT")
+        )
+    }).reduce(_ ++ _)
+
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .optional()//this is here to prevent fusing
+      .optionalExpandAll("(x)-[r]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relTuples.zip(rels).map {
+      case ((f, t, _), rel) => Array(nodes(f), nodes(t), rel)
+    } ++ (for (i <- 1 until n + 1 by 2) yield Array(nodes(i), null, null))
+
+    runtimeResult should beColumns("x", "y", "r").withRows(expected)
+  }
+
   test("should expand and handle self loops") {
     // given
     val n = sizeHint
@@ -619,6 +653,40 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a", "b").withRows(expected)
   }
 
+  test("should support undirected expandInto on RHS of apply II") {
+    // given
+    val size = sizeHint / 16
+    val (as, bs, as2, bs2, moreAs) = given {
+      val (as, bs) = bipartiteGraph(size, "A", "B", "R")
+      val (bs2, as2) = bipartiteGraph(size, "B", "A", "R2")
+      // Some not connected nodes as well
+      val moreAs = nodeGraph(size, "A")
+      nodeGraph(size, "B")
+      (as, bs, as2, bs2, moreAs)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply()
+      .|.optional()
+      .|.optionalExpandAll("(a)--(b)")
+      .|.unwind("range(1, 5) AS ignored")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expectedSingle = (for {a <- as; b <- bs} yield Array(a, b)) ++
+      (for {a <- as2; b <- bs2} yield Array(a, b)) ++
+      (for {a <- moreAs} yield Array(a, null))
+    val expected = expectedSingle.flatMap(List.fill(5)(_))
+
+    // then
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
+
   test("should filter with a predicate") {
     // given
     val n = sizeHint
@@ -686,4 +754,43 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     val expected = nodes.map(Array(_, null, null))
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
+
+  test("should handle nested optional expands") {
+    // given
+    val n = sizeHint
+    val relTuples = (for(i <- 0 until n by 2) yield {
+      Seq(
+        (i, (2 * i) % n, "OTHER")
+        )
+    }).reduce(_ ++ _)
+
+    val (nodes, rels) = given {
+      val nodes = nodePropertyGraph(n, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .optionalExpandAll("(y)-[r2]->(z)", Some("z.num < 0"))
+      .optionalExpandAll("(x)-[r1]->(y)", Some("y.num > 20"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val xsConnectedToFilteredYs = relTuples.filter(_._2 <= 20).map(_._1).distinct
+    val expected = relTuples.zip(rels).collect {
+      case ((f, t, _), _) if t > 20 => Array(nodes(f), nodes(t), null)
+    } ++
+      (for (i <- 1 until n + 1 by 2) yield Array(nodes(i), null, null)) ++
+      (for (i <- 0 until n if xsConnectedToFilteredYs.contains(i)) yield Array(nodes(i), null, null))
+
+    runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
+
 }
