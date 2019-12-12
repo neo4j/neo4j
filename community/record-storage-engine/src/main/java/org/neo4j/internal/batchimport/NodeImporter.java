@@ -106,9 +106,10 @@ public class NodeImporter extends EntityImporter
     public boolean labels( String[] labels )
     {
         assert !hasLabelField;
-        if ( labelsCursor + labels.length > this.labels.length )
+        int requiredLength = labelsCursor + labels.length;
+        if ( requiredLength > this.labels.length )
         {
-            this.labels = copyOf( this.labels, this.labels.length * 2 );
+            this.labels = copyOf( this.labels, Integer.max( requiredLength, this.labels.length * 2 ) );
         }
         System.arraycopy( labels, 0, this.labels, labelsCursor, labels.length );
         labelsCursor += labels.length;
