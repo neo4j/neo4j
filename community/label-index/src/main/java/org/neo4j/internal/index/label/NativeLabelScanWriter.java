@@ -162,12 +162,7 @@ class NativeLabelScanWriter implements LabelScanWriter
     NativeLabelScanWriter( int batchSize, WriteMonitor monitor )
     {
         this.pendingUpdates = new NodeLabelUpdate[batchSize];
-        this.addMerger = ( existingKey, newKey, existingValue, newValue ) ->
-        {
-            monitor.mergeAdd( existingValue, newValue );
-            existingValue.add( newValue );
-            return ValueMerger.MergeResult.MERGED;
-        };
+        this.addMerger = new AddMerger( monitor );
         this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
         {
             monitor.mergeRemove( existingValue, newValue );
@@ -326,6 +321,11 @@ class NativeLabelScanWriter implements LabelScanWriter
     static long rangeOf( long nodeId )
     {
         return nodeId / RANGE_SIZE;
+    }
+
+    static int offsetOf( long nodeId )
+    {
+        return (int) (nodeId % RANGE_SIZE);
     }
 
     /**

@@ -29,6 +29,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.NativeLabelScanWriter.offsetOf;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
 
 /**
@@ -119,7 +120,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
                 if ( range == key.idRange )
                 {
                     // Only do this if we're in the idRange that fromId is in, otherwise there were no ids this time in this range
-                    long relativeStartId = fromId % RANGE_SIZE;
+                    long relativeStartId = offsetOf( fromId );
                     long mask = relativeStartId == RANGE_SIZE - 1 ? -1 : (1L << (relativeStartId + 1)) - 1;
                     bits &= ~mask;
                 }

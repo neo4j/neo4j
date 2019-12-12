@@ -124,6 +124,13 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
     LabelScanWriter newWriter();
 
     /**
+     * Acquire a writer which is specialized in bulk-append writing, e.g. building from initial data.
+     *
+     * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
+     */
+    LabelScanWriter newBulkAppendWriter();
+
+    /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.

@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.LongStream;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
@@ -340,7 +341,7 @@ public class NativeLabelScanStoreTest
         Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
-            updates.add( NodeLabelUpdate.labelChanges( i, new long[]{}, new long[]{labelId} ) );
+            updates.add( labelChanges( i, new long[]{}, new long[]{labelId} ) );
             nodes.add( (long) i );
         }
 
@@ -363,7 +364,7 @@ public class NativeLabelScanStoreTest
         Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
-            label0Updates.add( NodeLabelUpdate.labelChanges( i, new long[]{}, new long[]{label0Id} ) );
+            label0Updates.add( labelChanges( i, new long[]{}, new long[]{label0Id} ) );
             nodes.add( (long) i );
         }
 
@@ -384,7 +385,7 @@ public class NativeLabelScanStoreTest
         // given
         long labelId = 0;
         List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
-        labelUpdates.add( NodeLabelUpdate.labelChanges( 0L, new long[]{}, new long[]{labelId} ) );
+        labelUpdates.add( labelChanges( 0L, new long[]{}, new long[]{labelId} ) );
 
         start( labelUpdates );
 
@@ -500,6 +501,43 @@ public class NativeLabelScanStoreTest
                 closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2, labelId3} ) ) );
     }
 
+    @Test
+    void shouldWriteDataUsingBatchWriter() throws IOException
+    {
+        // given
+        start();
+        List<NodeLabelUpdate> updates = new ArrayList<>();
+        Long[] possibleLabelIds = new Long[]{0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L};
+        for ( long nodeId = 0; nodeId < 10_000; nodeId++ )
+        {
+            long[] longLabels = Arrays.stream( random.selection( possibleLabelIds, 0, 5, false ) ).mapToLong( Long::longValue ).sorted().toArray();
+            updates.add( labelChanges( nodeId, EMPTY_LONG_ARRAY, longLabels ) );
+        }
+
+        // when
+        try ( LabelScanWriter writer = store.newBulkAppendWriter() )
+        {
+            for ( NodeLabelUpdate update : updates )
+            {
+                writer.write( update );
+            }
+        }
+
+        // then
+        for ( Long labelId : possibleLabelIds )
+        {
+            PrimitiveLongResourceIterator nodesWithLabel = store.newReader().nodesWithLabel( labelId.intValue() );
+            Iterator<NodeLabelUpdate> expected =
+                    updates.stream().filter( update -> LongStream.of( update.getLabelsAfter() ).anyMatch( candidateId -> candidateId == labelId ) ).iterator();
+            while ( nodesWithLabel.hasNext() )
+            {
+                long node = nodesWithLabel.next();
+                assertEquals( expected.next().getNodeId(), node );
+            }
+            assertFalse( expected.hasNext() );
+        }
+    }
+
     private LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
                                                  FullStoreChangeStream fullStoreChangeStream, boolean readOnly,
                                                  LabelScanStore.Monitor monitor )
@@ -559,7 +597,7 @@ public class NativeLabelScanStoreTest
         start();
         try ( LabelScanWriter labelScanWriter = store.newWriter() )
         {
-            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{1} ) );
+            labelScanWriter.write( labelChanges( 1, new long[]{}, new long[]{1} ) );
         }
         store.shutdown();
     }

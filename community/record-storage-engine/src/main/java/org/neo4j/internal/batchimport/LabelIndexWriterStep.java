@@ -40,7 +40,7 @@ public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
             NodeStore nodeStore )
     {
         super( control, "LABEL INDEX", config, 1 );
-        this.writer = store.newWriter();
+        this.writer = store.newBulkAppendWriter();
         this.nodeStore = nodeStore;
     }
 

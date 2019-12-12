@@ -236,10 +236,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     @Override
     public LabelScanWriter newWriter()
     {
-        if ( readOnly )
-        {
-            throw new UnsupportedOperationException( "Can't create index writer in read only mode." );
-        }
+        assertWritable();
 
         try
         {
@@ -248,6 +245,36 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    /**
+     * Returns a {@link LabelScanWriter} like that from {@link #newWriter()}, but is specialized in bulk-writing new data.
+     *
+     * @return {@link LabelScanWriter} capable of making changes to this {@link LabelScanStore}.
+     * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
+     * called {@link LabelScanWriter#close()}.
+     */
+    @Override
+    public LabelScanWriter newBulkAppendWriter()
+    {
+        assertWritable();
+
+        try
+        {
+            return new BulkAppendNativeLabelScanWriter( index.writer() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void assertWritable()
+    {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can't create index writer in read only mode." );
         }
     }
 
@@ -451,7 +478,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
             long numberOfNodes;
 
             // Intentionally ignore read-only flag here when rebuilding.
-            try ( LabelScanWriter writer = writer() )
+            try ( LabelScanWriter writer = newBulkAppendWriter() )
             {
                 numberOfNodes = fullStoreChangeStream.applyTo( writer );
             }
