@@ -19,6 +19,10 @@
  */
 package org.neo4j.io.pagecache;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -34,7 +38,9 @@ import org.neo4j.internal.helpers.Exceptions;
  */
 public class ByteArrayPageCursor extends PageCursor
 {
-    private final ByteBuffer buffer;
+    private final MutableLongObjectMap<ByteBuffer> buffers;
+    private long pageId;
+    private ByteBuffer buffer;
     private CursorException cursorException;
 
     public static PageCursor wrap( byte[] array, int offset, int length )
@@ -64,7 +70,22 @@ public class ByteArrayPageCursor extends PageCursor
 
     public ByteArrayPageCursor( ByteBuffer buffer )
     {
+        this( 0, buffer );
+    }
+
+    public ByteArrayPageCursor( long pageId, ByteBuffer buffer )
+    {
+        buffers = LongObjectMaps.mutable.empty();
+        buffers.put( pageId, buffer );
+        this.pageId = pageId;
         this.buffer = buffer;
+    }
+
+    public ByteArrayPageCursor( MutableLongObjectMap<ByteBuffer> buffers, long pageId )
+    {
+        this.buffers = buffers;
+        this.pageId = pageId;
+        this.buffer = buffers.get( pageId );
     }
 
     @Override
@@ -222,7 +243,7 @@ public class ByteArrayPageCursor extends PageCursor
     @Override
     public long getCurrentPageId()
     {
-        throw new UnsupportedOperationException();
+        return pageId;
     }
 
     @Override
@@ -246,13 +267,23 @@ public class ByteArrayPageCursor extends PageCursor
     @Override
     public boolean next()
     {
-        throw new UnsupportedOperationException();
+        return next( pageId + 1 );
     }
 
     @Override
     public boolean next( long pageId )
     {
-        return pageId == 0;
+        this.pageId = pageId;
+        if ( buffers.containsKey( pageId ) )
+        {
+            buffer = buffers.get( pageId );
+        }
+        else
+        {
+            buffer = ByteBuffer.allocate( getCurrentPageSize() );
+            buffers.put( pageId, buffer );
+        }
+        return true;
     }
 
     @Override
@@ -332,7 +363,11 @@ public class ByteArrayPageCursor extends PageCursor
     @Override
     public PageCursor openLinkedCursor( long pageId )
     {
-        throw new UnsupportedOperationException();
+        if ( !buffers.containsKey( pageId ) )
+        {
+            buffers.put( pageId, ByteBuffer.allocate( getCurrentPageSize() ) );
+        }
+        return new ByteArrayPageCursor( buffers, pageId );
     }
 
     @Override
