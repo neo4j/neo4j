@@ -84,6 +84,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def relationshipIterator(cursor: RelationshipSelectionCursor): Iterator[RelationshipValue]
 
+  def primitiveRelationshipIterator(cursor: RelationshipSelectionCursor): RelationshipIterator
+
   def getOrCreateLabelId(labelName: String): Int
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int

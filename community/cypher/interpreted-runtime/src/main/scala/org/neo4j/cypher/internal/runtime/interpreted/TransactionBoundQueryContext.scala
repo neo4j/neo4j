@@ -214,6 +214,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override protected def close(): Unit = cursor.closeInternal()
   }
 
+
+  override def primitiveRelationshipIterator(cursor: RelationshipSelectionCursor): RelationshipIterator = new RelationshipCursorIterator(cursor)
+
   override def relationshipById(relationshipId: Long,
                                 startNodeId: Long,
                                 endNodeId: Long,

@@ -227,6 +227,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def relationshipIterator(cursor: RelationshipSelectionCursor): Iterator[RelationshipValue] =
     translateException(inner.relationshipIterator(cursor))
 
+  override def primitiveRelationshipIterator(cursor: RelationshipSelectionCursor): RelationshipIterator =
+    translateException(inner.primitiveRelationshipIterator(cursor))
+
   override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =
     translateException(inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId))
 
