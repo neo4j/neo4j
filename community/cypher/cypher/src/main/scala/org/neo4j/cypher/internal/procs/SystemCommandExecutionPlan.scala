@@ -57,7 +57,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
-      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber, enableQueryExecutionMonitor = false).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
       if (systemSubscriber.shouldIgnoreResult()) {

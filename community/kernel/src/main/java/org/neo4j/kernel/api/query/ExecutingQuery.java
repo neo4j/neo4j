@@ -118,10 +118,12 @@ public class ExecutingQuery
 
     // update state
 
-    public void compilationCompleted( CompilerInfo compilerInfo,
-                                      QueryExecutionType.QueryType queryType,
-                                      Supplier<ExecutionPlanDescription> planDescriptionSupplier )
+    public void onCompilationCompleted( CompilerInfo compilerInfo,
+                                        QueryExecutionType.QueryType queryType,
+                                        Supplier<ExecutionPlanDescription> planDescriptionSupplier )
     {
+        assertExpectedStatus( SimpleState.planning() );
+
         this.compilerInfo = compilerInfo;
         this.compilationCompletedNanos = clock.nanos();
         this.planDescriptionSupplier = planDescriptionSupplier;
@@ -129,10 +131,24 @@ public class ExecutingQuery
         this.status = SimpleState.planned(); // write barrier - must be last
     }
 
-    public void executionStarted( OptionalMemoryTracker memoryTracker )
+    public void onExecutionStarted( OptionalMemoryTracker memoryTracker )
     {
+        assertExpectedStatus( SimpleState.planned() );
+
         this.memoryTracker = memoryTracker;
         this.status = SimpleState.running(); // write barrier - must be last
+    }
+
+    public void onRetryAttempted()
+    {
+        assertExpectedStatus( SimpleState.running() );
+
+        this.compilerInfo = null;
+        this.compilationCompletedNanos = 0;
+        this.planDescriptionSupplier = null;
+        this.queryType = null;
+        this.memoryTracker = OptionalMemoryTracker.NONE;
+        this.status = SimpleState.planning();
     }
 
     public LockTracer lockTracer()
@@ -333,6 +349,14 @@ public class ExecutingQuery
                 this.obfuscatedQueryText = QueryObfuscation.obfuscateSystemCommand( obfuscatedQueryText, passwordParams );
             }
             this.obfuscatedQueryParameters = QueryObfuscation.obfuscateParams( rawQueryParameters, passwordParams );
+        }
+    }
+
+    private void assertExpectedStatus( ExecutingQueryStatus expectedStatus )
+    {
+        if ( status != expectedStatus )
+        {
+            throw new IllegalStateException( String.format( "Expected query in '%s' state, actual state is '%s'.", expectedStatus.name(), status.name() ) );
         }
     }
 }

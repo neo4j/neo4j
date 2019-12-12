@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import java.time.Clock
-import java.util.function.Supplier
 import java.{lang, util}
 
 import org.neo4j.cypher.CypherExecutionMode
@@ -137,7 +136,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               profile: Boolean,
               prePopulate: Boolean,
               subscriber: QuerySubscriber): QueryExecution = {
-    executeSubQuery(query, params, context, shouldCloseTransaction = true, profile, prePopulate, subscriber, enableQueryExecutionMonitor = true)
+    executeSubQuery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
   }
 
   /**
@@ -158,7 +157,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               subscriber: QuerySubscriber): QueryExecution = {
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
-      doExecute(query, params, context, shouldCloseTransaction = true, prePopulate, input, queryTracer, subscriber, enableQueryExecutionMonitor = true)
+      doExecute(query, params, context, isOutermostQuery = true, prePopulate, input, queryTracer, subscriber)
     }
   }
 
@@ -170,25 +169,23 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     * @param query the query to execute
     * @param params the parameters of the query
     * @param context the transactional context in which to run the query
-    * @param shouldCloseTransaction provide `true` if this is the outer-most query and should close the transaction when finished or error
+    * @param isOutermostQuery provide `true` if this is the outer-most query and should close the transaction when finished or error
     * @param profile if `true` run with profiling enabled
     * @param prePopulate if `true` pre populate all results
     * @param subscriber the subscriber where results will be streamed
-    * @param enableQueryExecutionMonitor if `true` enable query monitoring
     * @return a `QueryExecution` that controls the demand to the subscriber
     */
   def executeSubQuery(query: String,
                       params: MapValue,
                       context: TransactionalContext,
-                      shouldCloseTransaction: Boolean,
+                      isOutermostQuery: Boolean,
                       profile: Boolean,
                       prePopulate: Boolean,
-                      subscriber: QuerySubscriber,
-                      enableQueryExecutionMonitor: Boolean): QueryExecution = {
+                      subscriber: QuerySubscriber): QueryExecution = {
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
       val preParsedQuery = preParser.preParseQuery(query, profile)
-      doExecute(preParsedQuery, params, context, shouldCloseTransaction, prePopulate, NoInput, queryTracer, subscriber, enableQueryExecutionMonitor)
+      doExecute(preParsedQuery, params, context, isOutermostQuery, prePopulate, NoInput, queryTracer, subscriber)
     }
   }
 
@@ -202,20 +199,22 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def doExecute(query: InputQuery,
                         params: MapValue,
                         context: TransactionalContext,
-                        shouldCloseTransaction: Boolean,
+                        isOutermostQuery: Boolean,
                         prePopulate: Boolean,
                         input: InputDataStream,
                         tracer: QueryCompilationEvent,
-                        subscriber: QuerySubscriber,
-                        enableQueryExecutionMonitor: Boolean): QueryExecution = {
+                        subscriber: QuerySubscriber): QueryExecution = {
 
     val executableQuery = getOrCompile(context, query, tracer, params)
     if (query.options.executionMode.name != "explain") {
       checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
     }
     val combinedParams = params.updatedWith(executableQuery.extractedParams)
-    context.executingQuery().compilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, supplier(executableQuery.planDescription()))
-    executableQuery.execute(context, shouldCloseTransaction, query.options, combinedParams, prePopulate, input, subscriber, enableQueryExecutionMonitor)
+
+    if (isOutermostQuery)
+      context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, () => executableQuery.planDescription())
+
+    executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, subscriber)
   }
 
   /*
@@ -312,11 +311,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       i += 1
     }
   }
-
-  private def supplier[T](t: => T): Supplier[T] =
-    new Supplier[T] {
-      override def get(): T = t
-    }
 }
 
 case class FunctionWithInformation(f: FunctionInfo) extends FunctionInformation {
