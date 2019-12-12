@@ -170,7 +170,7 @@ public class BasicSystemGraphRealmTest
 
         assertThatThrownBy( () -> realm.login( map( AuthToken.SCHEME_KEY, "none" ) ) )
                 .isInstanceOf( InvalidAuthTokenException.class )
-                .hasMessage( "Unsupported authentication token, scheme 'none' is only allowed when auth is disabled" );
+                .hasMessage( "Unsupported authentication token, scheme 'none' is only allowed when auth is disabled." );
 
         assertThatThrownBy(
                 () -> realm.login( map( "key", "value" ) ) )
