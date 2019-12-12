@@ -22,12 +22,16 @@ package org.neo4j.scheduler;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Runtime.getRuntime;
@@ -120,6 +124,19 @@ interface ExecutorServiceFactory
                 threadCount = getRuntime().availableProcessors();
             }
             return new ForkJoinPool( threadCount, factory, null, true );
+        };
+    }
+
+    /**
+     * Execute jobs in fixed size pool of threads and if job queue fills up, the caller executes the job and thereby applying back pressure.
+     */
+    static ExecutorServiceFactory cachedWithBackPressure()
+    {
+        return ( group, factory, threadCount ) ->
+        {
+            BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( 2 * threadCount );
+            RejectedExecutionHandler callerRuns = new ThreadPoolExecutor.CallerRunsPolicy();
+            return new ThreadPoolExecutor( threadCount, threadCount, 0L, TimeUnit.MILLISECONDS, workQueue, factory, callerRuns );
         };
     }
 

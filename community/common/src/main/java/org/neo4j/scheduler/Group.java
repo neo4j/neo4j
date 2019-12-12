@@ -47,7 +47,7 @@ public enum Group
     /** Background index population. */
     INDEX_POPULATION( "IndexPopulationMain" ),
     /** Background index population work. */
-    INDEX_POPULATION_WORK( "IndexPopulationWork" ),
+    INDEX_POPULATION_WORK( "IndexPopulationWork", ExecutorServiceFactory.cachedWithBackPressure() ),
     /** Background index sampling */
     INDEX_SAMPLING( "IndexSampling" ),
     /** Background index update applier, for eventually consistent indexes. */

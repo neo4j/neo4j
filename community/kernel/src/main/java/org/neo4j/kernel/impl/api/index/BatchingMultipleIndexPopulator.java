@@ -20,12 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,14 +33,13 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.FeatureToggles;
 
-import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
-import static org.neo4j.internal.helpers.NamedThreadFactory.daemon;
 
 /**
  * A {@link MultipleIndexPopulator} that gathers all incoming updates from the {@link IndexStoreView} in batches of
@@ -61,23 +55,12 @@ import static org.neo4j.internal.helpers.NamedThreadFactory.daemon;
  */
 public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 {
-    static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
-    public static final String MAXIMUM_NUMBER_OF_WORKERS_NAME = "population_workers_maximum";
 
     private static final String EOL = System.lineSeparator();
-    private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
-    // Maximum number of workers processing batches of updates from the scan. It is capped because there's only a single
-    // thread generating updates and it generally cannot saturate all the workers anyway.
-    private final int MAXIMUM_NUMBER_OF_WORKERS = FeatureToggles.getInteger( getClass(), MAXIMUM_NUMBER_OF_WORKERS_NAME,
-            min( 8, Runtime.getRuntime().availableProcessors() - 1 ) );
-    private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
-            getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
-
     private final AtomicLong activeTasks = new AtomicLong();
-    private final ExecutorService executor;
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -91,7 +74,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
     {
         super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler );
-        this.executor = createThreadPool();
     }
 
     /**
@@ -99,16 +81,14 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * <p>
      * <b>NOTE:</b> for testing only.
      * @param storeView the view of the store as a visitable of nodes
-     * @param executor the thread pool to use for batched index insertions
      * @param logProvider the log provider
      * @param schemaState the schema state
      * @param jobScheduler the job scheduler
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider, SchemaState schemaState,
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, SchemaState schemaState,
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
     {
         super( storeView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler );
-        this.executor = executor;
     }
 
     @Override
@@ -133,7 +113,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
                 .map( population -> population.batchedUpdatesFromScan.size() + " updates" )
                 .collect( joining( ", ", "[", "]" ) );
 
-        return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
+        return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", " +
                "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
     }
 
@@ -171,7 +151,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         activeTasks.incrementAndGet();
         List<IndexEntryUpdate<?>> batch = population.takeCurrentBatchFromScan();
 
-        executor.execute( () ->
+        jobScheduler.schedule( Group.INDEX_POPULATION_WORK, () ->
         {
             try
             {
@@ -201,60 +181,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         } );
     }
 
-    /**
-     * Shuts down the executor waiting {@link #AWAIT_TIMEOUT_MINUTES} minutes for it's termination.
-     * Restores the interrupted status and exits normally when interrupted during waiting.
-     *
-     * @param now <code>true</code> if {@link ExecutorService#shutdownNow()} should be used and <code>false</code> if
-     * {@link ExecutorService#shutdown()} should be used.
-     * @throws IllegalStateException if tasks did not complete in {@link #AWAIT_TIMEOUT_MINUTES} minutes.
-     */
-    private void shutdownExecutor( boolean now )
-    {
-        log.info( (now ? "Forcefully shutting" : "Shutting") + " down executor." + EOL + this );
-        if ( now )
-        {
-            executor.shutdownNow();
-        }
-        else
-        {
-            executor.shutdown();
-        }
-
-        try
-        {
-            boolean tasksCompleted = executor.awaitTermination( AWAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES );
-            if ( !tasksCompleted )
-            {
-                handleTimeout();
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            handleInterrupt();
-        }
-    }
-
     private void handleTimeout()
     {
         throw new IllegalStateException( "Index population tasks were not able to complete in " +
                                          AWAIT_TIMEOUT_MINUTES + " minutes." + EOL + this + EOL + allStackTraces() );
-    }
-
-    private void handleInterrupt()
-    {
-        Thread.currentThread().interrupt();
-        log.warn( "Interrupted while waiting for index population tasks to complete." + EOL + this );
-    }
-
-    private ExecutorService createThreadPool()
-    {
-        int threads = getNumberOfPopulationWorkers();
-        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( TASK_QUEUE_SIZE );
-        ThreadFactory threadFactory = daemon( FLUSH_THREAD_NAME_PREFIX );
-        RejectedExecutionHandler rejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
-        return new ThreadPoolExecutor( threads, threads, 0L, TimeUnit.MILLISECONDS, workQueue, threadFactory,
-                rejectedExecutionHandler );
     }
 
     /**
@@ -270,23 +200,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
                 .stream()
                 .map( entry -> Exceptions.stringify( entry.getKey(), entry.getValue() ) )
                 .collect( joining() );
-    }
-
-    /**
-     * Calculate number of workers that will perform index population
-     *
-     * @return number of threads that will be used for index population
-     */
-    private int getNumberOfPopulationWorkers()
-    {
-        return Math.max( 2, MAXIMUM_NUMBER_OF_WORKERS );
-    }
-
-    @Override
-    public void close( boolean populationCompletedSuccessfully )
-    {
-        super.close( populationCompletedSuccessfully );
-        shutdownExecutor( !populationCompletedSuccessfully );
     }
 
     /**

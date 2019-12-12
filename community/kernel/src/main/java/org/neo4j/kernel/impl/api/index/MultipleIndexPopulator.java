@@ -114,7 +114,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final SchemaState schemaState;
     private final IndexStatisticsStore indexStatisticsStore;
     private final PhaseTracker phaseTracker;
-    private final JobScheduler jobScheduler;
+    protected final JobScheduler jobScheduler;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
