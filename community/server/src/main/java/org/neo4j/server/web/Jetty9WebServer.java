@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -50,12 +49,8 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.Consumer;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.PortBindException;
@@ -72,7 +67,7 @@ import static java.lang.String.format;
 /**
  * This class handles the configuration and runtime management of a Jetty web server. The server is restartable.
  */
-public class Jetty9WebServer implements WebServer
+public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
 {
     private static final int JETTY_THREAD_POOL_IDLE_TIMEOUT = 60000;
 
@@ -80,7 +75,6 @@ public class Jetty9WebServer implements WebServer
 
     private boolean wadlEnabled;
     private ComponentsBinder binder;
-    private Consumer<Server> jettyCreatedCallback;
     private RequestLog requestLog;
 
     private Server jetty;
@@ -132,11 +126,6 @@ public class Jetty9WebServer implements WebServer
                 }
                 httpsConnector = sslSocketFactory.createConnector( jetty, sslPolicy, httpsAddress, jettyThreadCalculator );
                 jetty.addConnector( httpsConnector );
-            }
-
-            if ( jettyCreatedCallback != null )
-            {
-                jettyCreatedCallback.accept( jetty );
             }
         }
 
@@ -250,12 +239,6 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setJettyCreatedCallback( Consumer<Server> callback )
-    {
-        this.jettyCreatedCallback = callback;
-    }
-
-    @Override
     public void removeJAXRSPackages( List<String> packageNames, String serverMountPoint )
     {
         JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.get( serverMountPoint );
@@ -297,13 +280,6 @@ public class Jetty9WebServer implements WebServer
     public void removeStaticContent( String contentLocation, String serverMountPoint )
     {
         staticContent.remove( serverMountPoint );
-    }
-
-    @Override
-    public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
-            throws IOException, ServletException
-    {
-        jetty.handle( targetPath, (Request) request, request, response );
     }
 
     @Override
@@ -496,6 +472,26 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
+    @Override
+    public int allThreads()
+    {
+        if ( getJetty() != null )
+        {
+            return getJetty().getThreadPool().getThreads();
+        }
+        return -1;
+    }
+
+    @Override
+    public int idleThreads()
+    {
+        if ( getJetty() != null )
+        {
+            return getJetty().getThreadPool().getIdleThreads();
+        }
+        return -1;
+    }
+
     private static class FilterDefinition
     {
         private final Filter filter;
@@ -516,6 +512,7 @@ public class Jetty9WebServer implements WebServer
         {
             return filter;
         }
+
         String getPathSpec()
         {
             return pathSpec;

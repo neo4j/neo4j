@@ -28,6 +28,8 @@ import java.io.PrintStream;
 import java.net.URI;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -39,7 +41,6 @@ import org.neo4j.harness.Neo4j;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.NeoServer;
 
 @PublicApi
 public class InProcessNeo4j implements Neo4j
@@ -47,23 +48,26 @@ public class InProcessNeo4j implements Neo4j
     private final File serverFolder;
     private final File userLogFile;
     private final File internalLogFile;
-    private final NeoServer server;
+    private final DatabaseManagementService managementService;
+    private final Config config;
     private final Closeable additionalClosable;
     private ConnectorPortRegister connectorPortRegister;
 
-    public InProcessNeo4j( File serverFolder, File userLogFile, File internalLogFile, NeoServer server, Closeable additionalClosable )
+    public InProcessNeo4j( File serverFolder, File userLogFile, File internalLogFile, DatabaseManagementService managementService, Config config,
+            Closeable additionalClosable )
     {
         this.serverFolder = serverFolder;
         this.userLogFile = userLogFile;
         this.internalLogFile = internalLogFile;
-        this.server = server;
+        this.managementService = managementService;
+        this.config = config;
         this.additionalClosable = additionalClosable;
     }
 
     @Override
     public URI boltURI()
     {
-        if ( server.getConfig().get( BoltConnector.enabled ) )
+        if ( config.get( BoltConnector.enabled ) )
         {
             return connectorUri( "bolt", BoltConnector.NAME );
         }
@@ -73,7 +77,7 @@ public class InProcessNeo4j implements Neo4j
     @Override
     public URI httpURI()
     {
-        if ( server.getConfig().get( HttpConnector.enabled ) )
+        if ( config.get( HttpConnector.enabled ) )
         {
             return connectorUri( "http", HttpConnector.NAME );
         }
@@ -83,7 +87,7 @@ public class InProcessNeo4j implements Neo4j
     @Override
     public URI httpsURI()
     {
-        if ( server.getConfig().get( HttpsConnector.enabled ) )
+        if ( config.get( HttpsConnector.enabled ) )
         {
             return connectorUri( "https", HttpsConnector.NAME );
         }
@@ -92,14 +96,13 @@ public class InProcessNeo4j implements Neo4j
 
     public void start()
     {
-        this.server.start();
-        this.connectorPortRegister = connectorPortRegister( server );
+        this.connectorPortRegister = connectorPortRegister();
     }
 
     @Override
     public void close()
     {
-        server.stop();
+        managementService.shutdown();
         this.connectorPortRegister = null;
         try
         {
@@ -161,19 +164,19 @@ public class InProcessNeo4j implements Neo4j
     @Override
     public DatabaseManagementService databaseManagementService()
     {
-        return server.getDatabaseService().getDatabaseManagementService();
+        return managementService;
     }
 
     @Override
     public GraphDatabaseService defaultDatabaseService()
     {
-        return server.getDatabaseService().getDatabase();
+        return managementService.database( config.get( GraphDatabaseSettings.default_database ) );
     }
 
     @Override
     public Configuration config()
     {
-        return server.getConfig();
+        return config;
     }
 
     private URI connectorUri( String scheme, String connectorName )
@@ -182,8 +185,8 @@ public class InProcessNeo4j implements Neo4j
         return URI.create( scheme + "://" + hostPort + "/" );
     }
 
-    private static ConnectorPortRegister connectorPortRegister( NeoServer server )
+    private ConnectorPortRegister connectorPortRegister()
     {
-        return ((GraphDatabaseAPI) server.getDatabaseService().getDatabase()).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+        return ((GraphDatabaseAPI) defaultDatabaseService() ).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 }

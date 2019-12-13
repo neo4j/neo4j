@@ -29,8 +29,10 @@ Apache Software License, Version 2.0
   Apache Commons BeanUtils
   Apache Commons Collections
   Apache Commons Compress
+  Apache Commons Configuration
   Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
   Apache Commons Text
   Apache Shiro :: Cache
   Apache Shiro :: Configuration :: Core
@@ -42,7 +44,29 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
+  Commons Lang
+  fastinfoset
+  Jackson module: JAXB Annotations
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
+  Jackson-JAXRS-base
+  Jackson-JAXRS-JSON
+  Jakarta Bean Validation API
   Java Concurrency Tools Core Library
+  Javassist
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-core-common
+  jersey-core-server
+  jersey-inject-hk2
+  jersey-media-jaxb
+  Jetty :: Security
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
   jPowerShell
   jProcesses
   Lucene codecs
@@ -73,19 +97,67 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
+Common Development and Distribution License Version 1.0
+  JavaBeans(TM) Activation Framework
+
+Common Development and Distribution License Version 1.1
+  jaxb-api
+
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+  Extended StAX API
+  fastinfoset
+  istack common utility code runtime
+  jakarta.xml.bind-api
+  JavaBeans Activation Framework
+  JavaBeans Activation Framework API jar
+  JAXB Runtime
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-inject-hk2
+  jersey-media-jaxb
+  TXW2 Runtime
 
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
 
+Eclipse Public License v2.0
+  HK2 API module
+  HK2 Implementation Utilities
+  Jakarta Annotations API
+  jakarta.ws.rs-api
+  javax.inject:1 as OSGi bundle
+  javax.ws.rs-api
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-core-common
+  jersey-core-server
+  jersey-inject-hk2
+  jersey-media-jaxb
+  ServiceLocator Default Implementation
+
 GNU Lesser General Public License, Version 2.1
   Java Native Access
 
 MIT License
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-inject-hk2
+  jersey-media-jaxb
   SLF4J API Module
+
+Unlicense
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-core-common
+  jersey-inject-hk2
+  jersey-media-jaxb
 
 Dependencies with multiple licenses
 -----------------------------------
@@ -97,4 +169,52 @@ Eclipse Collections API
 Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
+
+fastinfoset
+  Apache Software License, Version 2.0
+  Eclipse Distribution License - v 1.0
+
+jersey-container-servlet
+  Apache Software License, Version 2.0
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License v2.0
+  MIT License
+  Unlicense
+
+jersey-container-servlet-core
+  Apache Software License, Version 2.0
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License v2.0
+  MIT License
+  Unlicense
+
+jersey-core-client
+  Apache Software License, Version 2.0
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License v2.0
+  MIT License
+  Unlicense
+
+jersey-core-common
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+  Unlicense
+
+jersey-core-server
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+jersey-inject-hk2
+  Apache Software License, Version 2.0
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License v2.0
+  MIT License
+  Unlicense
+
+jersey-media-jaxb
+  Apache Software License, Version 2.0
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License v2.0
+  MIT License
+  Unlicense
 

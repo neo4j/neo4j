@@ -28,11 +28,13 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons BeanUtils
   Apache Commons Collections
+  Apache Commons Configuration
   Apache Commons Logging
   Auto Common Libraries
   AutoService
   AutoService Processor
   AutoValue Annotations
+  Commons Lang
   error-prone annotations
   FindBugs-jsr305
   Guava InternalFutureFailureAccess and InternalFutures

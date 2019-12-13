@@ -24,11 +24,12 @@ import org.apache.commons.lang3.SystemUtils;
 import java.io.File;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.database.CommunityGraphFactory;
-import org.neo4j.server.database.GraphFactory;
+import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
+
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
 {
@@ -43,14 +44,9 @@ public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
     }
 
     @Override
-    protected GraphFactory createGraphFactory( Config config )
+    protected DatabaseManagementService createNeo( Config config, ExternalDependencies dependencies )
     {
-        return new CommunityGraphFactory();
-    }
-
-    @Override
-    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, ExternalDependencies dependencies )
-    {
-        return new CommunityNeoServer( config, graphFactory, dependencies );
+        DatabaseManagementServiceFactory facadeFactory = new DatabaseManagementServiceFactory( COMMUNITY, CommunityEditionModule::new );
+        return facadeFactory.build( config, dependencies );
     }
 }

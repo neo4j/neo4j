@@ -27,10 +27,9 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
-import org.neo4j.server.database.DatabaseService;
 import org.neo4j.server.web.WebServer;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -47,11 +46,9 @@ class ThirdPartyJAXRSModuleTest
         // Given
         WebServer webServer = mock( WebServer.class );
 
-        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
-        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
+        CommunityNeoWebServer neoServer = mock( CommunityNeoWebServer.class );
+        when( neoServer.getBaseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
-        DatabaseService database = mock( DatabaseService.class );
-        when( neoServer.getDatabaseService() ).thenReturn( database );
 
         Config config = mock( Config.class );
         List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<>();

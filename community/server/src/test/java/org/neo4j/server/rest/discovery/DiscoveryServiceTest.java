@@ -39,7 +39,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoWebServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
@@ -120,7 +120,7 @@ public class DiscoveryServiceTest
         return cases;
     }
 
-    private final NeoServer neoServer = mock( NeoServer.class, Answers.RETURNS_DEEP_STUBS );
+    private final NeoWebServer neoWebServer = mock( NeoWebServer.class, Answers.RETURNS_DEEP_STUBS );
     private final ConnectorPortRegister portRegistry = mock( ConnectorPortRegister.class );
 
     private URI baseUri;
@@ -157,7 +157,6 @@ public class DiscoveryServiceTest
 
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         when( dependencyResolver.resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegistry );
-        when( neoServer.getDatabaseService().getDatabase().getDependencyResolver() ).thenReturn( dependencyResolver );
     }
 
     private Config mockConfig()

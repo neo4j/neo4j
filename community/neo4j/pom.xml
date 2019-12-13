@@ -142,6 +142,11 @@
             <artifactId>neo4j-batch-insert</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j.app</groupId>
+            <artifactId>neo4j-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -35,7 +35,7 @@ import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.WebContainerTestUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -172,7 +172,7 @@ class ConfigLoaderTest
     void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
         // given
-        File file = ServerTestUtils.createTempConfigFile( testDirectory.homeDir() );
+        File file = WebContainerTestUtils.createTempConfigFile( testDirectory.homeDir() );
 
         try ( BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ) )
         {

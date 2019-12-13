@@ -45,7 +45,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public class RepresentationFormatRepositoryTest
 {
-    private final RepresentationFormatRepository repository = new RepresentationFormatRepository( null );
+    private final RepresentationFormatRepository repository = new RepresentationFormatRepository();
 
     @Test
     public void canProvideJsonFormat()

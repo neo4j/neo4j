@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.MapUtil;
-import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.WebContainerTestUtils;
 
 public class ConfigFileBuilder
 {
@@ -51,7 +51,7 @@ public class ConfigFileBuilder
     public File build()
     {
         File file = new File( directory, "config" );
-        ServerTestUtils.writeConfigToFile( config, file );
+        WebContainerTestUtils.writeConfigToFile( config, file );
         return file;
     }
 

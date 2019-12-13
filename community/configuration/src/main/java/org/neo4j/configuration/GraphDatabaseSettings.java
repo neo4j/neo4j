@@ -1162,8 +1162,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.storage.consistency_check_on_apply", BOOL, Boolean.FALSE ).build();
 
     /**
-     * Default settings for server. The default values are assumes to be default for embedded deployments through the code.
-     * This map contains default server settings that you can pass to the builders.
+     * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.
+     * This map contains default connector settings that you can pass to the builders.
      */
     public static final Map<Setting<?>, Object> SERVER_DEFAULTS = Map.of(
             HttpConnector.enabled, true,

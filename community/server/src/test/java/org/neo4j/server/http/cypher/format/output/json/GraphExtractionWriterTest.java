@@ -39,17 +39,17 @@ import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.Property;
+import org.neo4j.test.mockito.mock.Property;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.GraphMock.path;
 import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
+import static org.neo4j.test.mockito.mock.Property.property;
 
 class GraphExtractionWriterTest
 {

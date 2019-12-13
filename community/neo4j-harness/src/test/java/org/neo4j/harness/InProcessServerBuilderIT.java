@@ -82,7 +82,7 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.server.ServerTestUtils.verifyConnector;
+import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 
 @TestDirectoryExtension
 @ExtendWith( SuppressOutputExtension.class )
@@ -291,7 +291,6 @@ class InProcessServerBuilderIT
     @Test
     void shouldFailWhenProvidingANonDirectoryAsSource() throws IOException
     {
-
         File notADirectory = File.createTempFile( "prefix", "suffix" );
         assertFalse( notADirectory.isDirectory() );
 

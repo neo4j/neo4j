@@ -156,8 +156,8 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
+import static org.neo4j.test.mockito.mock.Property.property;
+import static org.neo4j.test.mockito.mock.Property.set;
 import static org.neo4j.util.Bits.bits;
 
 @PageCacheExtension

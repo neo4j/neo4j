@@ -24,15 +24,15 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoWebServer;
 
 public class ServerVersionAndEdition
 {
     private final Map<String, String> serverInfo;
 
-    ServerVersionAndEdition( NeoServer neoServer )
+    ServerVersionAndEdition( NeoWebServer neoWebServer )
     {
-        this( neoDatabaseVersion(), neoServerEdition( neoServer ) );
+        this( neoDatabaseVersion(), neoServerEdition( neoWebServer ) );
     }
 
     public ServerVersionAndEdition( String version, String edition )
@@ -52,22 +52,8 @@ public class ServerVersionAndEdition
         return Version.getKernel().getReleaseVersion();
     }
 
-    private static String neoServerEdition( NeoServer neoServer )
+    private static String neoServerEdition( NeoWebServer neoWebServer )
     {
-        String serverClassName = neoServer.getClass().getName().toLowerCase();
-
-        if ( serverClassName.contains( "enterpriseneoserver" ) )
-        {
-            return "enterprise";
-        }
-        else if ( serverClassName.contains( "communityneoserver" ) )
-        {
-            return "community";
-        }
-        else
-        {
-            throw new IllegalStateException( "The Neo Server running is of unknown type. Valid types are Community " +
-                    "and Enterprise." );
-        }
+        return neoWebServer.getDatabaseInfo().edition.toString();
     }
 }

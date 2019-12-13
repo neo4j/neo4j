@@ -38,6 +38,7 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -52,12 +53,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.DisabledNeoServer;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
-import org.neo4j.server.database.GraphFactory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
@@ -151,12 +148,9 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
             dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
 
-            GraphFactory graphFactory = createGraphFactory( dbConfig );
-            boolean httpAndHttpsDisabled = !dbConfig.get( HttpConnector.enabled ) && !dbConfig.get( HttpsConnector.enabled );
+            var managementService = createNeo( dbConfig, dependencies );
 
-            NeoServer server = startNeo4jServer( dependencies, dbConfig, graphFactory, httpAndHttpsDisabled );
-
-            InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, server, userLogOutputStream );
+            InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, managementService, dbConfig, userLogOutputStream );
             controls.start();
 
             try
@@ -176,9 +170,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         }
     }
 
-    protected abstract GraphFactory createGraphFactory( Config config );
-
-    protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, ExternalDependencies dependencies );
+    protected abstract DatabaseManagementService createNeo( Config config, ExternalDependencies dependencies );
 
     @Override
     public <T> Neo4jBuilder withConfig( Setting<T> setting, T value )
@@ -254,11 +246,6 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
         procedures.addAggregationFunction( functionClass );
         return this;
-    }
-
-    private NeoServer startNeo4jServer( GraphDatabaseDependencies dependencies, Config dbConfig, GraphFactory graphFactory, boolean httpAndHttpsDisabled )
-    {
-        return httpAndHttpsDisabled ? new DisabledNeoServer( graphFactory, dependencies, dbConfig ) : createNeoServer( graphFactory, dbConfig, dependencies );
     }
 
     private Iterable<ExtensionFactory<?>> buildExtensionList( GraphDatabaseDependencies dependencies )

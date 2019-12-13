@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
@@ -66,11 +67,13 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
+import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
@@ -196,6 +199,13 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public DatabaseStartupController getDatabaseStartupController()
     {
         return new GlobalAvailabilityGuardController( globalAvailabilityGuard );
+    }
+
+    @Override
+    public Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
+            LogProvider userLogProvider, DatabaseInfo databaseInfo )
+    {
+        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, databaseInfo );
     }
 
     @Override

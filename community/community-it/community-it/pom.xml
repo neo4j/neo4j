@@ -22,6 +22,9 @@
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.community.community.it</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
+        <test.runner.jvm.settings.additional>
+            -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
+        </test.runner.jvm.settings.additional>
     </properties>
 
     <scm>
@@ -136,6 +139,20 @@
             <groupId>org.neo4j</groupId>
             <artifactId>layout-test-utils</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.app</groupId>
+            <artifactId>neo4j-server</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-bolt</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
     </dependencies>

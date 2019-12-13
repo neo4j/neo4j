@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
@@ -30,21 +28,17 @@ import javax.ws.rs.core.MediaType;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class HttpHeaderUtils
 {
 
     public static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
 
-    public static final Map<String,String> CHARSET =
-            Collections.singletonMap( "charset", StandardCharsets.UTF_8.name() );
+    public static final Map<String,String> CHARSET = Map.of( "charset", UTF_8.name() );
 
     private HttpHeaderUtils()
     {
-    }
-
-    public static MediaType mediaTypeWithCharsetUtf8( String mediaType )
-    {
-        return new MediaType( mediaType, null, CHARSET );
     }
 
     public static MediaType mediaTypeWithCharsetUtf8( MediaType mediaType )

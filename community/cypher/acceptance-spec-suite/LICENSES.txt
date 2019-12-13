@@ -6,6 +6,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Apache Commons BeanUtils
   Apache Commons Collections
+  Apache Commons Configuration
   Apache Commons Lang
   Apache Commons Text
   Apache Shiro :: Cache
@@ -18,6 +19,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
+  Commons Lang
   Java Concurrency Tools Core Library
   Lucene codecs
   Lucene Common Analyzers

@@ -65,7 +65,6 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 public class BoltServer extends LifecycleAdapter
 {
-    // platform dependencies
     private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;

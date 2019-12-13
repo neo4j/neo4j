@@ -28,7 +28,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoWebServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -46,9 +46,9 @@ public class DiscoveryService
     private final ServerVersionAndEdition serverInfo;
 
     // Your IDE might tell you to make this less visible than public. Don't. JAX-RS demands is to be public.
-    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat, @Context DiscoverableURIs uris, @Context NeoServer neoServer )
+    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat, @Context DiscoverableURIs uris, @Context NeoWebServer neoWebServer )
     {
-        this( config, outputFormat, uris, new ServerVersionAndEdition( neoServer ) );
+        this( config, outputFormat, uris, new ServerVersionAndEdition( neoWebServer ) );
     }
 
     // Used in internal unit test to avoid providing a neo server

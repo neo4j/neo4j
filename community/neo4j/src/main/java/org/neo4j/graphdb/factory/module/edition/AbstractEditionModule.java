@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -46,11 +47,14 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
@@ -180,4 +184,7 @@ public abstract class AbstractEditionModule
     }
 
     public abstract DatabaseStartupController getDatabaseStartupController();
+
+    public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,
+            Config config, LogProvider userLogProvider, DatabaseInfo databaseInfo );
 }

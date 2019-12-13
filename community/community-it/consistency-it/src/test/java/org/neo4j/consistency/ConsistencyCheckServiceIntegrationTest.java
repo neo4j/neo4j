@@ -81,8 +81,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
+import static org.neo4j.test.mockito.mock.Property.property;
+import static org.neo4j.test.mockito.mock.Property.set;
 
 @PageCacheExtension
 @Neo4jLayoutExtension

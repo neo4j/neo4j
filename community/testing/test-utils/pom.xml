@@ -75,6 +75,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-graphdb-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
             <version>${asm.version}</version>

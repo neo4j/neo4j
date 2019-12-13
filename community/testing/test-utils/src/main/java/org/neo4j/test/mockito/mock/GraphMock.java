@@ -1,0 +1,147 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.test.mockito.mock;
+
+import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.neo4j.graphdb.Entity;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.internal.helpers.collection.Iterables;
+
+import static java.util.Arrays.asList;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.helpers.collection.Iterables.reverse;
+
+public class GraphMock
+{
+    private GraphMock()
+    {
+    }
+
+    public static Label[] labels( String... names )
+    {
+        Label[] labels = new Label[names.length];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            labels[i] = Label.label( names[i] );
+        }
+        return labels;
+    }
+
+    public static Node node( long id, Label[] labels, Property... properties )
+    {
+        return mockNode( id, labels, Properties.properties( properties ) );
+    }
+
+    public static Node node( long id, Properties properties, String... labels )
+    {
+        return mockNode( id, labels( labels ), properties );
+    }
+
+    public static Relationship relationship( long id, Properties properties, Node start, String type, Node end )
+    {
+        return mockRelationship( id, start, type, end, properties );
+    }
+
+    public static Relationship relationship( long id, Node start, String type, Node end, Property... properties )
+    {
+        return mockRelationship( id, start, type, end, Properties.properties( properties ) );
+    }
+
+    public static Link link( Relationship relationship, Node node )
+    {
+        return Link.link( relationship, node );
+    }
+
+    public static Path path( Node node, Link... links )
+    {
+        List<Node> nodes = new ArrayList<>( links.length + 1 );
+        List<Relationship> relationships = new ArrayList<>( links.length );
+        List<Entity> mixed = new ArrayList<>( links.length * 2 + 1 );
+        nodes.add( node );
+        mixed.add( node );
+        Path path = mock( Path.class );
+        when( path.startNode() ).thenReturn( node );
+        Relationship last = null;
+        for ( Link link : links )
+        {
+            last = link.relationship;
+            relationships.add( last );
+            mixed.add( last );
+
+            node = link.checkNode( node );
+            nodes.add( node );
+            mixed.add( node );
+        }
+        when( path.endNode() ).thenReturn( node );
+        when( path.iterator() ).thenAnswer( withIteratorOf( mixed ) );
+        when( path.nodes() ).thenReturn( nodes );
+        when( path.relationships() ).thenReturn( relationships );
+        when( path.lastRelationship() ).thenReturn( last );
+        when( path.length() ).thenReturn( links.length );
+        when( path.reverseNodes() ).thenReturn( reverse( nodes ) );
+        when( path.reverseRelationships() ).thenReturn( reverse( relationships ) );
+        return path;
+    }
+
+    private static <T> Answer<Iterator<T>> withIteratorOf( final Iterable<T> iterable )
+    {
+        return invocation -> iterable.iterator();
+    }
+
+    private static Node mockNode( long id, Label[] labels, Properties properties )
+    {
+        Node node = mockEntity( Node.class, properties );
+        when( node.getId() ).thenReturn( id );
+        when( node.getLabels() ).thenReturn( Iterables.asResourceIterable( asList( labels ) ) );
+        return node;
+    }
+
+    private static Relationship mockRelationship( long id, Node start, String type, Node end, Properties properties )
+    {
+        Relationship relationship = mockEntity( Relationship.class, properties );
+        when( relationship.getId() ).thenReturn( id );
+        when( relationship.getStartNode() ).thenReturn( start );
+        when( relationship.getEndNode() ).thenReturn( end );
+        when( relationship.getType() ).thenReturn( RelationshipType.withName( type ) );
+        return relationship;
+    }
+
+    private static <T extends Entity> T mockEntity( Class<T> type, Properties properties )
+    {
+        T container = mock( type );
+        when( container.getProperty( anyString() ) ).thenAnswer( properties );
+        when( container.getProperty( anyString(), any() ) ).thenAnswer( properties );
+        when( container.getPropertyKeys() ).thenReturn( properties );
+        when( container.getAllProperties() ).thenReturn( properties.getProperties() );
+        return container;
+    }
+}

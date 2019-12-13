@@ -24,13 +24,13 @@ import java.time.Duration;
 import java.util.Optional;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.server.database.DatabaseService;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Math.round;
@@ -42,12 +42,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class HttpTransactionManager
 {
     private final TransactionHandleRegistry transactionRegistry;
-    private final DatabaseService database;
+    private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
 
-    public HttpTransactionManager( DatabaseService database, JobScheduler jobScheduler, Clock clock, Duration transactionTimeout, LogProvider userLogProvider )
+    public HttpTransactionManager( DatabaseManagementService managementService, JobScheduler jobScheduler, Clock clock, Duration transactionTimeout,
+            LogProvider userLogProvider )
     {
-        this.database = database;
+        this.managementService = managementService;
         this.jobScheduler = jobScheduler;
 
         transactionRegistry = new TransactionHandleRegistry( clock, transactionTimeout, userLogProvider );
@@ -65,7 +66,7 @@ public class HttpTransactionManager
         Optional<GraphDatabaseFacade> graph;
         try
         {
-            graph = Optional.of( database.getDatabase( databaseName ) );
+            graph = Optional.of( (GraphDatabaseFacade) managementService.database( databaseName ) );
         }
         catch ( DatabaseNotFoundException e )
         {

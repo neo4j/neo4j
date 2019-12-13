@@ -20,17 +20,11 @@
 package org.neo4j.server.web;
 
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Server;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
 import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.bind.ComponentsBinder;
@@ -66,14 +60,9 @@ public interface WebServer
     void addStaticContent( String contentLocation, String serverMountPoint );
     void removeStaticContent( String contentLocation, String serverMountPoint );
 
-    void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
-        throws IOException, ServletException;
-
     void setWadlEnabled( boolean wadlEnabled );
 
     void setComponentsBinder( ComponentsBinder binder );
-
-    void setJettyCreatedCallback( Consumer<Server> callback );
 
     /**
      * @return local http connector bind port

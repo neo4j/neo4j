@@ -30,6 +30,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -62,7 +64,9 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
@@ -70,6 +74,7 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
 import org.neo4j.procedure.impl.ProcedureTransactionProvider;
 import org.neo4j.procedure.impl.TerminationGuardProvider;
+import org.neo4j.server.web.DisabledNeoWebServer;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -140,11 +145,25 @@ public class DatabaseManagementServiceFactory
         BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI = edition.createBoltDatabaseManagementServiceProvider( globalDependencies,
                 managementService, globalModule.getGlobalMonitors(), globalModule.getGlobalClock(), logService );
         globalLife.add( createBoltServer( globalModule, edition, boltGraphDatabaseManagementServiceSPI, databaseManager.databaseIdRepository() ) );
+        var webServer = createWebServer( edition, managementService, globalDependencies, config, globalModule.getLogService().getUserLogProvider() );
+        globalDependencies.satisfyDependency( webServer );
+        globalLife.add( webServer );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
 
         startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService );
 
         return managementService;
+    }
+
+    private Lifecycle createWebServer( AbstractEditionModule edition, DatabaseManagementService managementService,
+            Dependencies globalDependencies, Config config, LogProvider userLogProvider )
+    {
+        boolean webServerDisabled = !config.get( HttpConnector.enabled ) && !config.get( HttpsConnector.enabled );
+        if ( webServerDisabled )
+        {
+            return new DisabledNeoWebServer();
+        }
+        return edition.createWebServer( managementService, globalDependencies, config, userLogProvider, databaseInfo );
     }
 
     private static void startDatabaseServer( GlobalModule globalModule, LifeSupport globalLife, Log internalLog, DatabaseManager<?> databaseManager,
@@ -163,7 +182,7 @@ public class DatabaseManagementServiceFactory
         }
         catch ( Throwable throwable )
         {
-            String message = "Error starting database server at " + globalModule.getNeo4jLayout().databasesDirectory();
+            String message = "Error starting Neo4j database server at " + globalModule.getNeo4jLayout().databasesDirectory();
             startupException = new RuntimeException( message, throwable );
             internalLog.error( message, throwable );
         }

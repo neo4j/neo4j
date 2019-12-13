@@ -28,8 +28,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
-import org.neo4j.server.rest.web.NodeNotFoundException;
-import org.neo4j.server.rest.web.RelationshipNotFoundException;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.string.UTF8;
 
@@ -177,10 +175,6 @@ public class OutputFormat
             }
             catch ( Exception e )
             {
-                if ( e instanceof NodeNotFoundException || e instanceof RelationshipNotFoundException )
-                {
-                    throw new WebApplicationException( notFound( e ) );
-                }
                 if ( e instanceof BadInputException )
                 {
                     throw new WebApplicationException( badRequest( e ) );

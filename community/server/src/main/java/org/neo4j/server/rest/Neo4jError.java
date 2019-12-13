@@ -84,13 +84,7 @@ public class Neo4jError
 
     public boolean shouldSerializeStackTrace()
     {
-        switch ( status.code().classification() )
-        {
-        case ClientError:
-            return false;
-        default:
-            return true;
-        }
+        return status.code().classification() != Status.Classification.ClientError;
     }
 
     public String getStackTraceAsString()
