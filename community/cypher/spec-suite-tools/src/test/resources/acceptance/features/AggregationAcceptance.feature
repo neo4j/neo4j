@@ -130,6 +130,6 @@ Feature: AggregationAcceptance
     RETURN collect(sin(null)) AS c
     """
     Then the result should be, in any order:
-      | c |
-      | []     |
+      | c  |
+      | [] |
     And no side effects
