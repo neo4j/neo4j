@@ -360,11 +360,6 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should collect(n) where n is null") {
-    given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
-    }
     val input = inputValues(Array(Array[Any](null)):_*)
 
     // when
@@ -381,11 +376,6 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should collect(n) where n is null with grouping") {
-    given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
-    }
     val input = inputValues(Array(Array[Any](null)):_*)
 
     // when
