@@ -23,10 +23,12 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -111,7 +113,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 @ExtendWith( {TestDirectorySupportExtension.class, RandomExtension.class} )
-class DetectRandomSabotageIT
+public class DetectRandomSabotageIT
 {
     private static final int SOME_WAY_TOO_HIGH_ID = 10_000_000;
     private static final int NUMBER_OF_NODES = 10_000;
@@ -122,16 +124,21 @@ class DetectRandomSabotageIT
     TestDirectory directory;
 
     @Inject
-    RandomRule random;
+    protected RandomRule random;
 
     private DatabaseManagementService dbms;
     private NeoStores neoStores;
     private DependencyResolver resolver;
 
+    protected DatabaseManagementService getDbms( File home )
+    {
+        return new TestDatabaseManagementServiceBuilder( home ).build();
+    }
+
     @BeforeEach
     void setUp()
     {
-        dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+        dbms = getDbms( directory.homeDir() );
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
 
         // Create some nodes
@@ -167,6 +174,12 @@ class DetectRandomSabotageIT
 
         neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         resolver = db.getDependencyResolver();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        dbms.shutdown();
     }
 
     @Test
@@ -367,7 +380,7 @@ class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), PrimitiveRecord::getNextProp, PrimitiveRecord::setNextProp,
-                                () -> random.nextLong( SOME_WAY_TOO_HIGH_ID ) );
+                                () -> randomLargeSometimesNegative( random ) );
                     }
                 },
         NODE_REL
@@ -406,7 +419,7 @@ class DetectRandomSabotageIT
                             long existingLabelField = node.getLabelField();
                             do
                             {
-                                node.setLabelField( DynamicNodeLabels.dynamicPointer( random.nextLong( SOME_WAY_TOO_HIGH_ID ) ),
+                                node.setLabelField( DynamicNodeLabels.dynamicPointer( randomLargeSometimesNegative( random ) ),
                                         node.getDynamicLabelRecords() );
                             }
                             while ( existingLabelField == node.getLabelField() );
@@ -509,7 +522,7 @@ class DetectRandomSabotageIT
                                     PropertyRecord::setPrevProp );
                         }
                         return loadChangeUpdate( random, stores.getPropertyStore(), usedRecord(), PropertyRecord::getNextProp, PropertyRecord::setNextProp,
-                                () -> random.nextLong( SOME_WAY_TOO_HIGH_ID ) ); //can not detect chains split with next = -1
+                                () -> randomLargeSometimesNegative( random ) ); //can not detect chains split with next = -1
                     }
                 },
 //        PROPERTY_VALUE,
@@ -526,7 +539,7 @@ class DetectRandomSabotageIT
         STRING_LENGTH
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws CloneNotSupportedException
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getStringStore(),
                                 PropertyType.STRING, record -> record.setLength( random.nextInt( record.getLength() ) ), v -> true );
@@ -544,7 +557,7 @@ class DetectRandomSabotageIT
         ARRAY_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws CloneNotSupportedException
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record -> record.setLength( random.nextInt( record.getLength() ) ),
@@ -554,7 +567,7 @@ class DetectRandomSabotageIT
         ARRAY_LENGTH
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws CloneNotSupportedException
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record -> record.setLength( random.nextInt( record.getLength() ) ), v -> true );
@@ -576,7 +589,7 @@ class DetectRandomSabotageIT
                     {
                         // prev isn't stored in the record format
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getNext,
-                                RelationshipGroupRecord::setNext, () -> random.nextLong( SOME_WAY_TOO_HIGH_ID ) );
+                                RelationshipGroupRecord::setNext, () -> randomLargeSometimesNegative( random ) );
                     }
                 },
         RELATIONSHIP_GROUP_TYPE
@@ -612,7 +625,7 @@ class DetectRandomSabotageIT
                             break;
                         }
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), getter, setter,
-                                () -> random.nextLong( SOME_WAY_TOO_HIGH_ID ) );
+                                () -> randomLargeSometimesNegative( random ) );
                     }
                 },
         RELATIONSHIP_GROUP_IN_USE
@@ -817,7 +830,13 @@ class DetectRandomSabotageIT
 
         protected long randomIdOrSometimesDefault( RandomRule random, long defaultValue )
         {
-            return random.nextFloat() < 0.1 ? defaultValue : random.nextLong( SOME_WAY_TOO_HIGH_ID );
+            return random.nextFloat() < 0.1 ? defaultValue : randomLargeSometimesNegative( random );
+        }
+
+        protected long randomLargeSometimesNegative( RandomRule random )
+        {
+            long value = random.nextLong( SOME_WAY_TOO_HIGH_ID );
+            return random.nextFloat() < 0.2 ? -value : value;
         }
 
         protected <T extends AbstractBaseRecord> T randomRecord( RandomRule random, RecordStore<T> store, Predicate<T> filter )
