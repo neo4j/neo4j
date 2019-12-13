@@ -103,7 +103,7 @@ class NodeChecker implements Checker
         if ( context.consistencyFlags.isCheckIndexes() )
         {
             execution.run( getClass().getSimpleName() + "-checkIndexesVsNodes", smallIndexes.stream()
-                    .map( indexDescriptor -> (ParallelExecution.ThrowingRunnable) () -> checkIndexVsNodes( nodeIdRange, indexDescriptor ) )
+                    .map( indexDescriptor -> (ParallelExecution.ThrowingRunnable) () -> checkIndexVsNodes( nodeIdRange, indexDescriptor, lastRange ) )
                     .toArray( ParallelExecution.ThrowingRunnable[]::new ) );
         }
     }
@@ -409,7 +409,7 @@ class NodeChecker implements Checker
         }
     }
 
-    private void checkIndexVsNodes( LongRange range, IndexDescriptor descriptor ) throws Exception
+    private void checkIndexVsNodes( LongRange range, IndexDescriptor descriptor, boolean lastRange ) throws Exception
     {
         CacheAccess.Client client = context.cacheAccess.client();
         IndexAccessor accessor = context.indexAccessors.accessorFor( descriptor );
@@ -418,7 +418,7 @@ class NodeChecker implements Checker
         PropertySchemaType propertySchemaType = schema.propertySchemaType();
         long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
         indexEntityTokenIds = sortAndDeduplicate( indexEntityTokenIds );
-        try ( BoundedIterable<Long> allEntriesReader = accessor.newAllEntriesReader( range.from(), range.to() ) )
+        try ( BoundedIterable<Long> allEntriesReader = accessor.newAllEntriesReader( range.from(), lastRange ? Long.MAX_VALUE : range.to() ) )
         {
             for ( long entityId : allEntriesReader )
             {
