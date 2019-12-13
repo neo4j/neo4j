@@ -30,8 +30,7 @@ import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SkipThreadLeakageGuard;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -42,8 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.scheduler.Group.LOG_ROTATION;
 
-@SkipThreadLeakageGuard
-@TestDirectoryExtension
+@EphemeralTestDirectoryExtension
 class GlobalModuleTest
 {
     @Inject
@@ -74,9 +72,15 @@ class GlobalModuleTest
         assertThat( latch.getCount() ).isEqualTo( 1L );
 
         Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
-        new GlobalModule( cfg, DatabaseInfo.UNKNOWN, externalDependencies );
-
-        assertTrue( lock.tryAcquire( 1, MINUTES ) );
-        assertTrue( latch.await( 1, MINUTES ) );
+        var globalModule = new GlobalModule( cfg, DatabaseInfo.UNKNOWN, externalDependencies );
+        try
+        {
+            assertTrue( lock.tryAcquire( 1, MINUTES ) );
+            assertTrue( latch.await( 1, MINUTES ) );
+        }
+        finally
+        {
+            globalModule.getJobScheduler().shutdown();
+        }
     }
 }
