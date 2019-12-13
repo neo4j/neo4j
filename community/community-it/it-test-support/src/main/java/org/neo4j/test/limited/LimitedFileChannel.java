@@ -44,15 +44,15 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public long read( ByteBuffer[] byteBuffers, int i, int i1 ) throws IOException
+    public long read( ByteBuffer[] byteBuffers, int offset, int length ) throws IOException
     {
-        return inner.read( byteBuffers, i, i1 );
+        return inner.read( byteBuffers, offset, length );
     }
 
     @Override
-    public long read( ByteBuffer[] dsts )
+    public long read( ByteBuffer[] dsts ) throws IOException
     {
-        return 0;
+        return read( dsts, 0, dsts.length );
     }
 
     @Override
@@ -63,16 +63,16 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public long write( ByteBuffer[] byteBuffers, int i, int i1 ) throws IOException
+    public long write( ByteBuffer[] byteBuffers, int offset, int length ) throws IOException
     {
         fs.ensureHasSpace();
-        return inner.write( byteBuffers, i, i1 );
+        return inner.write( byteBuffers, offset, length );
     }
 
     @Override
-    public long write( ByteBuffer[] srcs )
+    public long write( ByteBuffer[] srcs ) throws IOException
     {
-        return 0;
+        return write( srcs, 0, srcs.length );
     }
 
     @Override
@@ -82,9 +82,9 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public LimitedFileChannel position( long l ) throws IOException
+    public LimitedFileChannel position( long newPosition ) throws IOException
     {
-        return new LimitedFileChannel( inner.position( l ), fs );
+        return new LimitedFileChannel( inner.position( newPosition ), fs );
     }
 
     @Override
@@ -94,9 +94,9 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public LimitedFileChannel truncate( long l ) throws IOException
+    public LimitedFileChannel truncate( long size ) throws IOException
     {
-        return new LimitedFileChannel( inner.truncate( l ), fs );
+        return new LimitedFileChannel( inner.truncate( size ), fs );
     }
 
     @Override
@@ -113,9 +113,9 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public int read( ByteBuffer byteBuffer, long l ) throws IOException
+    public int read( ByteBuffer byteBuffer, long position ) throws IOException
     {
-        return inner.read( byteBuffer, l );
+        return inner.read( byteBuffer, position );
     }
 
     @Override

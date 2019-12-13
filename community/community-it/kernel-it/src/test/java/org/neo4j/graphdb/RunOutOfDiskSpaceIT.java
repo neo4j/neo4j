@@ -53,9 +53,9 @@ class RunOutOfDiskSpaceIT
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
     @Inject
-    private FileSystemAbstraction fileSystem;
+    FileSystemAbstraction fileSystem;
     @Inject
-    private DatabaseLayout databaseLayout;
+    DatabaseLayout databaseLayout;
     private LimitedFilesystemAbstraction limitedFs;
     private GraphDatabaseAPI database;
     private DatabaseManagementService managementService;
@@ -129,7 +129,7 @@ class RunOutOfDiskSpaceIT
         // When
         assertThrows( TransactionFailureException.class, () ->
         {
-            try ( Transaction transaction = database.beginTx() )
+            try ( Transaction ignored = database.beginTx() )
             {
                 fail( "Expected tx begin to throw TransactionFailureException when tx manager breaks." );
             }
