@@ -21,162 +21,73 @@ package org.neo4j.test.limited;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 
+import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 
-public class LimitedFileChannel implements StoreChannel
+public class LimitedFileChannel extends DelegatingStoreChannel implements StoreChannel
 {
-    private final StoreChannel inner;
     private final LimitedFilesystemAbstraction fs;
 
     public LimitedFileChannel( StoreChannel inner, LimitedFilesystemAbstraction limitedFilesystemAbstraction )
     {
-        this.inner = inner;
+        super( inner );
         fs = limitedFilesystemAbstraction;
-    }
-
-    @Override
-    public int read( ByteBuffer byteBuffer ) throws IOException
-    {
-        return inner.read( byteBuffer );
-    }
-
-    @Override
-    public long read( ByteBuffer[] byteBuffers, int offset, int length ) throws IOException
-    {
-        return inner.read( byteBuffers, offset, length );
-    }
-
-    @Override
-    public long read( ByteBuffer[] dsts ) throws IOException
-    {
-        return read( dsts, 0, dsts.length );
     }
 
     @Override
     public int write( ByteBuffer byteBuffer ) throws IOException
     {
         fs.ensureHasSpace();
-        return inner.write( byteBuffer );
+        return super.write( byteBuffer );
     }
 
     @Override
     public long write( ByteBuffer[] byteBuffers, int offset, int length ) throws IOException
     {
         fs.ensureHasSpace();
-        return inner.write( byteBuffers, offset, length );
+        return super.write( byteBuffers, offset, length );
     }
 
     @Override
     public long write( ByteBuffer[] srcs ) throws IOException
     {
-        return write( srcs, 0, srcs.length );
-    }
-
-    @Override
-    public long position() throws IOException
-    {
-        return inner.position();
+        fs.ensureHasSpace();
+        return super.write( srcs );
     }
 
     @Override
     public LimitedFileChannel position( long newPosition ) throws IOException
     {
-        return new LimitedFileChannel( inner.position( newPosition ), fs );
-    }
-
-    @Override
-    public long size() throws IOException
-    {
-        return inner.size();
+        super.position( newPosition );
+        return this;
     }
 
     @Override
     public LimitedFileChannel truncate( long size ) throws IOException
     {
-        return new LimitedFileChannel( inner.truncate( size ), fs );
+        super.truncate( size );
+        return this;
     }
 
     @Override
-    public int getFileDescriptor()
-    {
-        return inner.getFileDescriptor();
-    }
-
-    @Override
-    public void force( boolean b ) throws IOException
+    public void force( boolean metaData ) throws IOException
     {
         fs.ensureHasSpace();
-        inner.force( b );
-    }
-
-    @Override
-    public int read( ByteBuffer byteBuffer, long position ) throws IOException
-    {
-        return inner.read( byteBuffer, position );
-    }
-
-    @Override
-    public void readAll( ByteBuffer dst ) throws IOException
-    {
-        inner.readAll( dst );
-    }
-
-    @Override
-    public FileLock tryLock() throws IOException
-    {
-        return inner.tryLock();
+        super.force( metaData );
     }
 
     @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         fs.ensureHasSpace();
-        inner.writeAll( src, position );
+        super.writeAll( src, position );
     }
 
     @Override
     public void writeAll( ByteBuffer src ) throws IOException
     {
         fs.ensureHasSpace();
-        inner.writeAll( src );
-    }
-
-    @Override
-    public boolean isOpen()
-    {
-        return inner.isOpen();
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        inner.close();
-    }
-
-    @Override
-    public void flush() throws IOException
-    {
-        inner.flush();
-    }
-
-    @Override
-    public boolean hasPositionLock()
-    {
-        return inner.hasPositionLock();
-    }
-
-    @Override
-    public Object getPositionLock()
-    {
-        return inner.getPositionLock();
-    }
-
-    @Override
-    public void tryMakeUninterruptible()
-    {
-        inner.tryMakeUninterruptible();
+        super.writeAll( src );
     }
 }

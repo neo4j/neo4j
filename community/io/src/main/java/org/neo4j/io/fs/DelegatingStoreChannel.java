@@ -21,12 +21,11 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 public class DelegatingStoreChannel implements StoreChannel
 {
-    public final StoreChannel delegate;
+    protected final StoreChannel delegate;
 
     public DelegatingStoreChannel( StoreChannel delegate )
     {
