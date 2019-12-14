@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -32,13 +33,15 @@ public class PreFetcher implements Runnable
     private final MuninnPageCursor observedCursor;
     private final CursorFactory cursorFactory;
     private final long prefetchDistance;
+    private final PageCursorTracer tracer;
     private long deadline;
 
-    public PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, long pageCount )
+    public PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, long pageCount, PageCursorTracer tracer )
     {
         this.observedCursor = observedCursor;
         this.cursorFactory = cursorFactory;
         this.prefetchDistance = Math.min( 1000, Math.max( pageCount / 5, 1 ) );
+        this.tracer = tracer;
     }
 
     @Override
@@ -78,7 +81,8 @@ public class PreFetcher implements Runnable
         long distance = initialPageId < secondPageId ? prefetchDistance : -prefetchDistance;
         long currentPageId;
         long nextPageId;
-        try ( PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK ) )
+        try ( PageCursorTracer cursorTracer = tracer.fork();
+              PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             currentPageId = getCurrentObservedPageId();
             while ( currentPageId != UNBOUND_PAGE_ID )
@@ -104,15 +108,10 @@ public class PreFetcher implements Runnable
                 }
                 currentPageId = nextPageId;
             }
-            System.err.println("Done");
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
-        }
-        finally
-        {
-            observedCursor.pagedFile.pageCache.reportEvents(); // todo this bit is ugly
+            e.printStackTrace(); // todo what can we do about this?
         }
     }
 
