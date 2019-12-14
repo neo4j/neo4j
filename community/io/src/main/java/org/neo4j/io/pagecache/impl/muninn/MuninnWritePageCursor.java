@@ -62,7 +62,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             boolean success = false;
             try
             {
-                success = pagedFile.flushLockedPage( pinnedPageRef, currentPageId );
+                success = pagedFile.flushLockedPage( pinnedPageRef, loadPlainCurrentPageId() );
             }
             finally
             {
@@ -78,12 +78,14 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
         if ( nextPageId < 0 )
         {
+            storeCurrentPageId( UNBOUND_PAGE_ID );
             return false;
         }
         if ( nextPageId > lastPageId )
         {
             if ( noGrow )
             {
+                storeCurrentPageId( UNBOUND_PAGE_ID );
                 return false;
             }
             else
@@ -91,9 +93,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 pagedFile.increaseLastPageIdTo( nextPageId );
             }
         }
-        currentPageId = nextPageId;
+        storeCurrentPageId( nextPageId );
         nextPageId++;
-        pin( currentPageId, true );
+        pin( loadPlainCurrentPageId(), true );
         return true;
     }
 

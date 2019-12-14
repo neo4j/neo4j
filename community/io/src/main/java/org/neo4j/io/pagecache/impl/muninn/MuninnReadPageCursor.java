@@ -53,11 +53,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
         if ( nextPageId > lastPageId || nextPageId < 0 )
         {
+            storeCurrentPageId( UNBOUND_PAGE_ID );
             return false;
         }
-        currentPageId = nextPageId;
+        storeCurrentPageId( nextPageId );
         nextPageId++;
-        pin( currentPageId, false );
+        pin( loadPlainCurrentPageId(), false );
         verifyContext();
         return true;
     }
@@ -128,7 +129,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still
         // the page we're actually interested in:
-        if ( !pagedFile.isBoundTo( pinnedPageRef, pagedFile.swapperId, currentPageId ) )
+        if ( !pagedFile.isBoundTo( pinnedPageRef, pagedFile.swapperId, loadPlainCurrentPageId() ) )
         {
             // This is no longer the page we're interested in, so we have
             // to redo the pinning.
@@ -143,7 +144,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             // this page.
             clearPageReference();
             // Then try pin again.
-            pin( currentPageId, false );
+            pin( loadPlainCurrentPageId(), false );
         }
     }
 

@@ -145,7 +145,7 @@ public class MuninnPageCache implements PageCache
     private static final AtomicInteger pageCacheIdCounter = new AtomicInteger();
 
     // Scheduler that runs all the background jobs for page cache.
-    private final JobScheduler scheduler;
+    final JobScheduler scheduler;
 
     private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );

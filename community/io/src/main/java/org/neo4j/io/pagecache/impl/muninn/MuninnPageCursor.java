@@ -51,6 +51,7 @@ public abstract class MuninnPageCursor extends PageCursor
 
     private static final int BYTE_ARRAY_BASE_OFFSET = UnsafeUtil.arrayBaseOffset( byte[].class );
     private static final int BYTE_ARRAY_INDEX_SCALE = UnsafeUtil.arrayIndexScale( byte[].class );
+    private static final long CURRENT_PAGE_ID = UnsafeUtil.getFieldOffset( MuninnPageCursor.class, "currentPageId" );
 
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
@@ -70,7 +71,7 @@ public abstract class MuninnPageCursor extends PageCursor
     protected boolean eagerFlush;
     protected boolean noFault;
     protected boolean noGrow;
-    protected long currentPageId;
+    private long currentPageId;
     protected long nextPageId;
     protected MuninnPageCursor linkedCursor;
     private long pointer;
@@ -80,7 +81,6 @@ public abstract class MuninnPageCursor extends PageCursor
     private int offset;
     private int mark;
     private boolean outOfBounds;
-    private boolean isLinkedCursor;
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
     // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
     // offending code.
@@ -112,11 +112,26 @@ public abstract class MuninnPageCursor extends PageCursor
         return (flagSet & flag) == flag;
     }
 
+    long loadPlainCurrentPageId()
+    {
+        return UnsafeUtil.getLong( this, CURRENT_PAGE_ID );
+    }
+
+    long loadVolatileCurrentPageId()
+    {
+        return UnsafeUtil.getLongVolatile( this, CURRENT_PAGE_ID );
+    }
+
+    void storeCurrentPageId( long pageId )
+    {
+        UnsafeUtil.putOrderedLong( this, CURRENT_PAGE_ID, pageId );
+    }
+
     @Override
     public final void rewind()
     {
         nextPageId = pageId;
-        currentPageId = UNBOUND_PAGE_ID;
+        storeCurrentPageId( UNBOUND_PAGE_ID );
     }
 
     public final void reset( long pageRef )
@@ -131,7 +146,7 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public final boolean next( long pageId ) throws IOException
     {
-        if ( currentPageId == pageId )
+        if ( loadPlainCurrentPageId() == pageId )
         {
             verifyContext();
             return true;
@@ -171,6 +186,7 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public final void close()
     {
+        storeCurrentPageId( UNBOUND_PAGE_ID );
         if ( pagedFile == null )
         {
             return; // already closed
@@ -216,7 +232,6 @@ public abstract class MuninnPageCursor extends PageCursor
         else
         {
             linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags, tracer );
-            linkedCursor.isLinkedCursor = true;
         }
         return linkedCursor;
     }
@@ -229,7 +244,6 @@ public abstract class MuninnPageCursor extends PageCursor
         // We don't need to clear the pointer field, because setting the page size to 0 will make all future accesses
         // go out of bounds, which in turn imply that they will always end up accessing the victim page anyway.
         clearPageReference();
-        currentPageId = UNBOUND_PAGE_ID;
         cursorException = null;
     }
 
@@ -244,19 +258,19 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public final long getCurrentPageId()
     {
-        return currentPageId;
+        return loadPlainCurrentPageId();
     }
 
     @Override
     public final int getCurrentPageSize()
     {
-        return currentPageId == UNBOUND_PAGE_ID ? UNBOUND_PAGE_SIZE : pagedFile.pageSize();
+        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? UNBOUND_PAGE_SIZE : pagedFile.pageSize();
     }
 
     @Override
     public final File getCurrentFile()
     {
-        return currentPageId == UNBOUND_PAGE_ID ? null : pagedFile.file();
+        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? null : pagedFile.file();
     }
 
     /**
@@ -327,7 +341,7 @@ public abstract class MuninnPageCursor extends PageCursor
         if ( noFault )
         {
             // The only page state that needs to be cleared is the currentPageId, since it was set prior to pin.
-            currentPageId = UNBOUND_PAGE_ID;
+            storeCurrentPageId( UNBOUND_PAGE_ID );
             return true;
         }
         // Looks like there's no mapping, so we'd like to do a page fault.

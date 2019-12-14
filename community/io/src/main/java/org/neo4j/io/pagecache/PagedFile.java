@@ -71,7 +71,7 @@ public interface PagedFile extends AutoCloseable
      * not in-memory. The current page id <em>must</em> be checked on every {@link PageCursor#shouldRetry()} loop
      * iteration, in case it (for a read cursor) was evicted concurrently with the page access.
      * <p>
-     * {@link #PF_NO_FAULT} implies {@link #PF_NO_GROW}, since a page fault is necessary to be able to extend a file.
+     * {@code PF_NO_FAULT} implies {@link #PF_NO_GROW}, since a page fault is necessary to be able to extend a file.
      */
     int PF_NO_FAULT = 1 << 4;
     /**

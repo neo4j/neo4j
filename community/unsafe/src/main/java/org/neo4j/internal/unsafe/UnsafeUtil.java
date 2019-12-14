@@ -913,6 +913,11 @@ public final class UnsafeUtil
         unsafe.putLongVolatile( obj, offset, value );
     }
 
+    public static void putOrderedLong( Object obj, long offset, long value )
+    {
+        unsafe.putOrderedLong( obj, offset, value );
+    }
+
     public static long getLongVolatile( Object obj, long offset )
     {
         return unsafe.getLongVolatile( obj, offset );
