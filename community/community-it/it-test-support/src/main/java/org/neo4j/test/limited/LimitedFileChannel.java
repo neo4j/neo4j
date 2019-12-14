@@ -100,9 +100,9 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public FileChannel fileChannel()
+    public int getFileDescriptor()
     {
-        return inner.fileChannel();
+        return inner.getFileDescriptor();
     }
 
     @Override

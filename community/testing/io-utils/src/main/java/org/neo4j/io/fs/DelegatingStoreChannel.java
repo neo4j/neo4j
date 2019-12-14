@@ -65,9 +65,9 @@ public class DelegatingStoreChannel implements StoreChannel
     }
 
     @Override
-    public FileChannel fileChannel()
+    public int getFileDescriptor()
     {
-        return delegate.fileChannel();
+        return delegate.getFileDescriptor();
     }
 
     @Override

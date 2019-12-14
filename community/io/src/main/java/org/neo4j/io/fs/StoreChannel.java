@@ -77,10 +77,10 @@ public interface StoreChannel extends Flushable, SeekableByteChannel, GatheringB
     StoreChannel truncate( long size ) throws IOException;
 
     /**
-     * Provide underlying file channel
-     * @return underlying file channel
+     * Get the OS file descriptor for this channel.
+     * @return the file descriptor.
      */
-    FileChannel fileChannel();
+    int getFileDescriptor();
 
     /**
      * Returns {@code true} if {@link #getPositionLock} returns a valid position lock object.

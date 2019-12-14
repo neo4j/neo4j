@@ -46,7 +46,6 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Default file system abstraction that creates files using the underlying file system.
@@ -240,8 +239,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public int getFileDescriptor( StoreChannel channel )
     {
-        requireNonNull( channel );
-        return FileUtils.getFileDescriptor( channel.fileChannel() );
+        return channel.getFileDescriptor();
     }
 
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )

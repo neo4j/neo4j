@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -28,8 +29,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapper;
 
+import static org.apache.commons.lang3.reflect.FieldUtils.getDeclaredField;
+import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 import static org.neo4j.util.FeatureToggles.flag;
 
 public class StoreFileChannel implements StoreChannel
@@ -38,6 +42,8 @@ public class StoreFileChannel implements StoreChannel
     private static final Class<?> CLS_FILE_CHANNEL_IMPL = getInternalFileChannelClass();
     private static final MethodHandle POSITION_LOCK_GETTER = getPositionLockGetter();
     private static final MethodHandle MAKE_CHANNEL_UNINTERRUPTIBLE = getUninterruptibleSetter();
+    private static final MethodHandle CHANNEL_GET_FD = getChannelFileDescriptorGetter();
+    private static final MethodHandle DESCRIPTOR_GET_FD = getFileDescriptorGetter();
 
     private static Class<?> getInternalFileChannelClass()
     {
@@ -56,15 +62,14 @@ public class StoreFileChannel implements StoreChannel
         return cls;
     }
 
-    private static MethodHandle getUninterruptibleSetter()
+    private static MethodHandle unreflect( ThrowingFunction<MethodHandles.Lookup, MethodHandle, Exception> unreflector )
     {
         try
         {
             if ( CLS_FILE_CHANNEL_IMPL != null )
             {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
-                Method uninterruptibleSetter = CLS_FILE_CHANNEL_IMPL.getMethod( "setUninterruptible" );
-                return lookup.unreflect( uninterruptibleSetter );
+                return unreflector.apply( lookup );
             }
             else
             {
@@ -81,30 +86,40 @@ public class StoreFileChannel implements StoreChannel
         }
     }
 
+    private static MethodHandle getUninterruptibleSetter()
+    {
+        return unreflect( lookup ->
+        {
+            Method uninterruptibleSetter = CLS_FILE_CHANNEL_IMPL.getMethod( "setUninterruptible" );
+            return lookup.unreflect( uninterruptibleSetter );
+        } );
+    }
+
     private static MethodHandle getPositionLockGetter()
     {
-        try
+        return unreflect( lookup ->
         {
-            if ( CLS_FILE_CHANNEL_IMPL != null )
-            {
-                MethodHandles.Lookup lookup = MethodHandles.lookup();
-                Field field = CLS_FILE_CHANNEL_IMPL.getDeclaredField( "positionLock" );
-                field.setAccessible( true );
-                return lookup.unreflectGetter( field );
-            }
-            else
-            {
-                return null;
-            }
-        }
-        catch ( Throwable e )
+            Field positionLock = getDeclaredField( CLS_FILE_CHANNEL_IMPL, "positionLock", true );
+            return lookup.unreflectGetter( positionLock );
+        } );
+    }
+
+    private static MethodHandle getChannelFileDescriptorGetter()
+    {
+        return unreflect( lookup ->
         {
-            if ( PRINT_REFLECTION_EXCEPTIONS )
-            {
-                e.printStackTrace();
-            }
-            return null;
-        }
+            Field fd = getDeclaredField( CLS_FILE_CHANNEL_IMPL, "fd", true );
+            return lookup.unreflectGetter( fd );
+        } );
+    }
+
+    private static MethodHandle getFileDescriptorGetter()
+    {
+        return unreflect( lookup ->
+        {
+            Field fd = getDeclaredField( FileDescriptor.class, "fd", true );
+            return lookup.unreflectGetter( fd );
+        } );
     }
 
     private final FileChannel channel;
@@ -168,9 +183,25 @@ public class StoreFileChannel implements StoreChannel
     }
 
     @Override
-    public FileChannel fileChannel()
+    public int getFileDescriptor()
     {
-        return channel;
+        if ( channel.getClass() != CLS_FILE_CHANNEL_IMPL || CHANNEL_GET_FD == null || DESCRIPTOR_GET_FD == null )
+        {
+            return INVALID_FILE_DESCRIPTOR;
+        }
+        try
+        {
+            FileDescriptor fd = (FileDescriptor) CHANNEL_GET_FD.invoke( channel );
+            return (int) DESCRIPTOR_GET_FD.invoke( fd );
+        }
+        catch ( Throwable throwable )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                throwable.printStackTrace();
+            }
+        }
+        return INVALID_FILE_DESCRIPTOR;
     }
 
     @Override

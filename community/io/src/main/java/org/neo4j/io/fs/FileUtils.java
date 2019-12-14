@@ -21,13 +21,10 @@ package org.neo4j.io.fs;
 
 import org.apache.commons.lang3.SystemUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,7 +33,6 @@ import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.io.Writer;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -69,10 +65,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.reflect.FieldUtils.getDeclaredField;
 import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
-import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * Set of utility methods to work with {@link File} and {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
@@ -83,59 +76,11 @@ import static org.neo4j.util.FeatureToggles.flag;
  */
 public final class FileUtils
 {
-    private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( FileUtils.class, "printReflectionExceptions", false );
     private static final int NUMBER_OF_RETRIES = 5;
-
-    private static final Field CHANNEL_FILE_DESCRIPTOR;
-    private static final Field FILE_DESCRIPTOR_FIELD;
-
-    static
-    {
-        Field channelFileDescriptor = null;
-        Field fileDescriptorField = null;
-        try
-        {
-            Class<?> fileChannelClass = Class.forName( "sun.nio.ch.FileChannelImpl" );
-            channelFileDescriptor = requireNonNull( getDeclaredField( fileChannelClass, "fd", true ) );
-            fileDescriptorField = getDeclaredField( FileDescriptor.class, "fd", true );
-        }
-        catch ( Exception e )
-        {
-            if ( PRINT_REFLECTION_EXCEPTIONS )
-            {
-                e.printStackTrace();
-            }
-
-        }
-        CHANNEL_FILE_DESCRIPTOR = channelFileDescriptor;
-        FILE_DESCRIPTOR_FIELD = fileDescriptorField;
-    }
 
     private FileUtils()
     {
         throw new AssertionError();
-    }
-
-    static int getFileDescriptor( FileChannel fileChannel )
-    {
-        requireNonNull( fileChannel );
-        try
-        {
-            if ( (FILE_DESCRIPTOR_FIELD == null) || (CHANNEL_FILE_DESCRIPTOR == null) )
-            {
-                return INVALID_FILE_DESCRIPTOR;
-            }
-            FileDescriptor fileDescriptor = (FileDescriptor) CHANNEL_FILE_DESCRIPTOR.get( fileChannel );
-            return FILE_DESCRIPTOR_FIELD.getInt( fileDescriptor );
-        }
-        catch ( IllegalAccessException | IllegalArgumentException e )
-        {
-            if ( PRINT_REFLECTION_EXCEPTIONS )
-            {
-                e.printStackTrace();
-            }
-            return INVALID_FILE_DESCRIPTOR;
-        }
     }
 
     public static void deleteRecursively( File directory ) throws IOException
@@ -268,7 +213,7 @@ public final class FileUtils
      *
      * @param toMove The File object to move.
      * @param target Target file to move to.
-     * @throws IOException
+     * @throws IOException if an IO error occurs.
      */
     public static void moveFile( File toMove, File target ) throws IOException
     {
@@ -310,7 +255,7 @@ public final class FileUtils
      * @param toMove The File object to move.
      * @param targetDirectory the destination directory
      * @return the new file, null iff the move was unsuccessful
-     * @throws IOException
+     * @throws IOException if an IO error occurs.
      */
     public static File moveFileToDirectory( File toMove, File targetDirectory ) throws IOException
     {
@@ -331,7 +276,7 @@ public final class FileUtils
      *
      * @param file file that needs to be copied.
      * @param targetDirectory the destination directory
-     * @throws IOException
+     * @throws IOException if an IO error occurs.
      */
     public static void copyFileToDirectory( File file, File targetDirectory ) throws IOException
     {
@@ -376,9 +321,8 @@ public final class FileUtils
         {
             Thread.sleep( 500 );
         }
-        catch ( InterruptedException ee )
+        catch ( InterruptedException ignored )
         {
-            Thread.interrupted();
         } // ok
         System.gc();
     }
@@ -644,23 +588,6 @@ public final class FileUtils
             }
         }
         throw requireNonNull( storedIoe );
-    }
-
-    public interface LineListener
-    {
-        void line( String line );
-    }
-
-    public static void readTextFile( File file, LineListener listener ) throws IOException
-    {
-        try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
-        {
-            String line;
-            while ( (line = reader.readLine()) != null )
-            {
-                listener.line( line );
-            }
-        }
     }
 
     private static void deleteFile( Path path ) throws IOException

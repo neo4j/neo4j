@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -104,9 +103,9 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public FileChannel fileChannel()
+    public int getFileDescriptor()
     {
-        return delegateChannel.fileChannel();
+        return delegateChannel.getFileDescriptor();
     }
 
     @Override
