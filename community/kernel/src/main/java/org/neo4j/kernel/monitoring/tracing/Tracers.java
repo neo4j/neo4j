@@ -131,6 +131,7 @@ public class Tracers
         return pageCacheTracer;
     }
 
+    @Deprecated
     public PageCursorTracerSupplier getPageCursorTracerSupplier()
     {
         return pageCursorTracerSupplier;

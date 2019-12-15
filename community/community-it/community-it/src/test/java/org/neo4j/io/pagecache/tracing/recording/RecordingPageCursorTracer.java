@@ -181,6 +181,12 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
         tracer.faults( faults );
     }
 
+    @Override
+    public String getTag()
+    {
+        return "RecordingTracer";
+    }
+
     private void pageFaulted( long filePageId, PageSwapper swapper )
     {
         faults++;

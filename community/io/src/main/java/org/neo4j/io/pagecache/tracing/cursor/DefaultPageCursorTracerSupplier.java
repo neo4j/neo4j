@@ -30,7 +30,7 @@ public class DefaultPageCursorTracerSupplier implements PageCursorTracerSupplier
 
     private DefaultPageCursorTracerSupplier( PageCacheTracer pageCacheTracer )
     {
-        this.tracer = ThreadLocal.withInitial( () -> new DefaultPageCursorTracer( pageCacheTracer ) );
+        this.tracer = ThreadLocal.withInitial( () -> new DefaultPageCursorTracer( pageCacheTracer, "default" ) );
     }
 
     @Override

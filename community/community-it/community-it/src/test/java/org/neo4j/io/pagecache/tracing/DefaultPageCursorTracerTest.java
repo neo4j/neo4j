@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DefaultPageCursorTracerTest
 {
+    private static final String TEST_TRACER = "testTracer";
     private PageSwapper swapper;
     private PageCursorTracer pageCursorTracer;
     private DefaultPageCacheTracer cacheTracer;
@@ -254,6 +255,12 @@ class DefaultPageCursorTracerTest
         assertEquals( 3.0 / 7, cacheTracer.hitRatio(), 0.0001 );
     }
 
+    @Test
+    void pageCursorTracerHasDefinedTag()
+    {
+        assertEquals( TEST_TRACER, pageCursorTracer.getTag() );
+    }
+
     private void generateEventSet()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );
@@ -278,7 +285,7 @@ class DefaultPageCursorTracerTest
 
     private PageCursorTracer createTracer()
     {
-        return new DefaultPageCursorTracer( cacheTracer );
+        return new DefaultPageCursorTracer( cacheTracer, TEST_TRACER );
     }
 
     private void pinAndHit()

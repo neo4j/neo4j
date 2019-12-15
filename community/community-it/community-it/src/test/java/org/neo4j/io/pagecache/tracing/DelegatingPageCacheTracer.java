@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.tracing;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * A PageCacheTracer that delegates all calls to a wrapped instance.
@@ -35,6 +36,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public DelegatingPageCacheTracer( PageCacheTracer delegate )
     {
         this.delegate = delegate;
+    }
+
+    @Override
+    public PageCursorTracer createPageCursorTracer( String tag )
+    {
+        return delegate.createPageCursorTracer( tag );
     }
 
     @Override

@@ -1791,7 +1791,7 @@ class GBPTreeTest
 
     private DefaultPageCursorTracer trackingPageCursorTracer( List<Long> trace, MutableBoolean onOffSwitch )
     {
-        return new DefaultPageCursorTracer( DefaultPageCacheTracer.TRACER )
+        return new DefaultPageCursorTracer( DefaultPageCacheTracer.TRACER, "tracking" )
         {
             @Override
             public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )

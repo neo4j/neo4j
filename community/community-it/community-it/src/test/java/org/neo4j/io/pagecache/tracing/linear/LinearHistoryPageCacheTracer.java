@@ -25,6 +25,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.io.pagecache.tracing.linear.HEvents.EvictionRunHEvent;
 import static org.neo4j.io.pagecache.tracing.linear.HEvents.MajorFlushHEvent;
@@ -46,6 +47,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     LinearHistoryPageCacheTracer( LinearHistoryTracer tracer )
     {
         this.tracer = tracer;
+    }
+
+    @Override
+    public PageCursorTracer createPageCursorTracer( String tag )
+    {
+        return PageCursorTracer.NULL;
     }
 
     @Override

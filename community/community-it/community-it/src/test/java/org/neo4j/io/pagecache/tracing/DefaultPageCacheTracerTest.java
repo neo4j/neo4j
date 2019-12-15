@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DefaultPageCacheTracerTest
 {
@@ -41,6 +42,36 @@ public class DefaultPageCacheTracerTest
     {
         tracer = new DefaultPageCacheTracer();
         swapper = new DummyPageSwapper( "filename", (int) ByteUnit.kibiBytes( 8 ) );
+    }
+
+    @Test
+    void independentCursorTracers()
+    {
+        var first = tracer.createPageCursorTracer( "first" );
+        var second = tracer.createPageCursorTracer( "second" );
+        var third = tracer.createPageCursorTracer( "third" );
+
+        assertEquals( "first", first.getTag() );
+        assertEquals( "second", second.getTag() );
+        assertEquals( "third", third.getTag() );
+
+        first.beginPin( false, 1, swapper ).done();
+        first.beginPin( false, 1, swapper ).done();
+
+        assertEquals( 2, first.pins() );
+        assertEquals( 0, second.pins() );
+        assertEquals( 0, third.pins() );
+
+        PinEvent secondPin = second.beginPin( true, 2, swapper );
+        secondPin.beginPageFault().done();
+
+        assertEquals( 2, first.pins() );
+        assertEquals( 1, second.pins() );
+        assertEquals( 0, third.pins() );
+
+        assertEquals( 0, first.faults() );
+        assertEquals( 1, second.faults() );
+        assertEquals( 0, third.faults() );
     }
 
     @Test

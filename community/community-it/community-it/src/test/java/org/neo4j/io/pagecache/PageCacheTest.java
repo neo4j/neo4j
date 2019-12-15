@@ -2564,7 +2564,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         final AtomicInteger readCount = new AtomicInteger();
 
         DefaultPageCacheTracer tracer = DefaultPageCacheTracer.TRACER;
-        DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer( tracer )
+        DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer( tracer, "test" )
         {
             @Override
             public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )

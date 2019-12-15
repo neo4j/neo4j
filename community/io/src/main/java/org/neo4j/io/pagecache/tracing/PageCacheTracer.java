@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * A PageCacheTracer receives a steady stream of events and data about what
@@ -36,6 +37,12 @@ public interface PageCacheTracer extends PageCacheCounters
      */
     PageCacheTracer NULL = new PageCacheTracer()
     {
+        @Override
+        public PageCursorTracer createPageCursorTracer( String tag )
+        {
+            return PageCursorTracer.NULL;
+        }
+
         @Override
         public void mappedFile( File file )
         {
@@ -198,6 +205,13 @@ public interface PageCacheTracer extends PageCacheCounters
             return PageCacheTracer.class.getName() + ".NULL";
         }
     };
+
+    /**
+     * Create page cursor tracer for underlying page cache with a specific tag.
+     * @param tag specific tag of underlying cursor tracer
+     * @return page cursor tracer.
+     */
+    PageCursorTracer createPageCursorTracer( String tag );
 
     /**
      * The given file has been mapped, where no existing mapping for that file existed.

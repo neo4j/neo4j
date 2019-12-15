@@ -24,6 +24,8 @@ import java.io.Closeable;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+
 /**
  * Event tracer for page cursors.
  *
@@ -35,7 +37,6 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
  */
 public interface PageCursorTracer extends PageCursorCounters, Closeable
 {
-
     PageCursorTracer NULL = new PageCursorTracer()
     {
         @Override
@@ -109,6 +110,12 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         {
 
         }
+
+        @Override
+        public String getTag()
+        {
+            return EMPTY;
+        }
     };
 
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
@@ -119,6 +126,11 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
      * about all of them except for accumulated counterparts.
      */
     void reportEvents();
+
+    /**
+     * @return page cursor tracer tag
+     */
+    String getTag();
 
     @Override
     default void close()

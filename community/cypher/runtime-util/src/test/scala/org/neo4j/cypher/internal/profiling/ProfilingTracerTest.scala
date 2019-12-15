@@ -138,7 +138,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("report page cache hits as part of profiling statistics") {
     val operatorId = id
-    val cursorTracer = new DefaultPageCursorTracer(DefaultPageCacheTracer.TRACER)
+    val cursorTracer = new DefaultPageCursorTracer(DefaultPageCacheTracer.TRACER, "test")
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
 
@@ -157,7 +157,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("report page cache misses as part of profiling statistics") {
     val operatorId = id
-    val cursorTracer = new DefaultPageCursorTracer(DefaultPageCacheTracer.TRACER)
+    val cursorTracer = new DefaultPageCursorTracer(DefaultPageCacheTracer.TRACER, "test")
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
 

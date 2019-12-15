@@ -111,4 +111,10 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     {
         // nothing to do
     }
+
+    @Override
+    public String getTag()
+    {
+        return "LinearHistoryTracer";
+    }
 }
