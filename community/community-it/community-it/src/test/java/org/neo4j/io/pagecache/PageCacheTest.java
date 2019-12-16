@@ -1022,7 +1022,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
             PagedFile pagedFile = pageCache.map( file( "a" ), pageCachePageSize );
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 for ( int i = 0; i < 20; i++ )
                 {
@@ -1032,7 +1032,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             pagedFile.close();
             try ( PagedFile b = pageCache.map( existingFile( "b" ), pageCachePageSize );
-                  PageCursor cursor = b.io( 0, PF_SHARED_WRITE_LOCK ) )
+                  PageCursor cursor = b.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 for ( int i = 0; i < 200; i++ )
                 {
