@@ -123,7 +123,7 @@ public class DefaultPageCacheTracerTest
     @Test
     void usageRatio()
     {
-        assertThat( tracer.usageRatio() ).isEqualTo( Double.NaN );
+        assertThat( tracer.usageRatio() ).isEqualTo( 0 );
         tracer.maxPages( 10 );
         assertThat( tracer.usageRatio() ).isCloseTo( 0d, within( 0.0001 ) );
         tracer.faults( 5 );
@@ -133,6 +133,9 @@ public class DefaultPageCacheTracerTest
         assertThat( tracer.usageRatio() ).isCloseTo( 0.5, within( 0.0001 ) );
         tracer.faults( 5 );
         assertThat( tracer.usageRatio() ).isCloseTo( 1d, within( 0.0001 ) );
+
+        tracer.evictions( 500 );
+        assertThat( tracer.usageRatio() ).isCloseTo( 0, within( 0.0001 ) );
     }
 
     private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions,
