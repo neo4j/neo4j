@@ -233,8 +233,10 @@ class RelationshipChainChecker implements Checker
                             long firstNode = relationship.getFirstNode();
                             long secondNode = relationship.getSecondNode();
                             // Intentionally not checking nodes outside highId of node store because RelationshipChecker will spot this inconsistency
-                            boolean processStartNode = firstNode % numberOfChainCheckers == threadId && nodeIdRange.isWithinRangeExclusiveTo( firstNode );
-                            boolean processEndNode = secondNode % numberOfChainCheckers == threadId && nodeIdRange.isWithinRangeExclusiveTo( secondNode );
+                            boolean processStartNode =
+                                    Math.abs( firstNode % numberOfChainCheckers ) == threadId && nodeIdRange.isWithinRangeExclusiveTo( firstNode );
+                            boolean processEndNode =
+                                    Math.abs( secondNode % numberOfChainCheckers ) == threadId && nodeIdRange.isWithinRangeExclusiveTo( secondNode );
                             if ( processStartNode )
                             {
                                 checkRelationshipLink( direction, SOURCE_PREV, relationship, client, otherRelationship, otherRelationshipCursor, store );
@@ -365,9 +367,9 @@ class RelationshipChainChecker implements Checker
     private void queueRelationshipCheck( ArrayBlockingQueue<BatchedRelationshipRecords>[] threadQueues, BatchedRelationshipRecords[] threadBatches,
             RelationshipRecord relationshipCursor ) throws InterruptedException
     {
-        int sourceThread = (int) (relationshipCursor.getFirstNode() % numberOfChainCheckers);
+        int sourceThread = (int) Math.abs( relationshipCursor.getFirstNode() % numberOfChainCheckers );
         queueRelationshipCheck( threadQueues, threadBatches, relationshipCursor, sourceThread );
-        int targetThread = (int) (relationshipCursor.getSecondNode() % numberOfChainCheckers);
+        int targetThread = (int) Math.abs( relationshipCursor.getSecondNode() % numberOfChainCheckers );
         if ( targetThread != sourceThread )
         {
             queueRelationshipCheck( threadQueues, threadBatches, relationshipCursor, targetThread );

@@ -211,6 +211,31 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
                 .andThatsAllFolks();
     }
 
+    @Test
+    void shouldHandleNegativeRelationshipNodePointers() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                tx.create( new RelationshipRecord( next.relationship(), -2, -3, C ) );
+
+                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 1 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 2 )
+                .andThatsAllFolks();
+    }
+
     @Disabled( "New checker checks the live graph, i.e. anything that can be reached from the used nodes/relationships" )
     @Test
     protected void shouldReportOrphanedNodeDynamicLabelAsNodeInconsistency() throws Exception
