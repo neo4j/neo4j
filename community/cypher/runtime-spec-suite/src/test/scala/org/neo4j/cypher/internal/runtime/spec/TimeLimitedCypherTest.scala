@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.concurrent.{Signaler, ThreadSignaler, TimeLimitedTests}
 import org.scalatest.time.{Minutes, Span}
 

@@ -23,8 +23,8 @@ import java.lang.reflect.Modifier
 
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, createNode}
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, TestName}
 
 import scala.collection.mutable
 import scala.tools.nsc.Settings
@@ -537,7 +537,7 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       interpreter.interpret(
         """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
           |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-          |import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
+          |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
           |import org.neo4j.cypher.internal.logical.plans._
           |import org.neo4j.cypher.internal.logical.builder.TestException
           |""".stripMargin)

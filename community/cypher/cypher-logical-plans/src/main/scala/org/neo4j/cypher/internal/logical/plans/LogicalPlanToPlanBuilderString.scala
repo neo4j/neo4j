@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.{PatternRelationship, ShortestPathPattern, SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, OUTGOING}
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, OUTGOING}
+import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 object LogicalPlanToPlanBuilderString {
   private val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)

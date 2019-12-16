@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.macros
 
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
-import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.ASSERTIONS_ENABLED
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.AssertionRunner.ASSERTIONS_ENABLED
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RequireTest extends CypherFunSuite {
 

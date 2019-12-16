@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.macros
 
-import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.ASSERTIONS_ENABLED
+import org.neo4j.cypher.internal.util.AssertionRunner.ASSERTIONS_ENABLED
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
@@ -50,7 +50,7 @@ object AssertMacros {
     //this is just a precaution to make clear that we are using this constant here
     assert(ASSERTIONS_ENABLED || !ASSERTIONS_ENABLED)
     q"""
-        if(org.neo4j.cypher.internal.v4_0.util.AssertionRunner.ASSERTIONS_ENABLED && !$condition) {
+        if(org.neo4j.cypher.internal.util.AssertionRunner.ASSERTIONS_ENABLED && !$condition) {
           throw new AssertionError("assertion failed")
         }
       """
@@ -61,7 +61,7 @@ object AssertMacros {
     //this is just a precaution to make clear that we are using this constant here
     assert(ASSERTIONS_ENABLED || !ASSERTIONS_ENABLED)
     q"""
-        if (org.neo4j.cypher.internal.v4_0.util.AssertionRunner.ASSERTIONS_ENABLED && !$condition) {
+        if (org.neo4j.cypher.internal.util.AssertionRunner.ASSERTIONS_ENABLED && !$condition) {
           throw new AssertionError($msg)
         }
       """

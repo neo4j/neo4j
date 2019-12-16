@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.v4_0.ast.semantics
+package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Add, UnaryAdd}
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols._
 
-class UnaryAddTest extends UnaryExpressionTestBase(UnaryAdd(_)(DummyPosition(0))) {
+class UnarySubtractTest extends UnaryExpressionTestBase(UnarySubtract(_)(DummyPosition(0))) {
 
   test("shouldHandleAllSpecializations") {
     testValidTypes(CTInteger)(CTInteger)

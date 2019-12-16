@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.logical.plans.{FieldSignature, LogicalPlan, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName, UserFunctionSignature}
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
-import org.neo4j.cypher.internal.v4_0.util.symbols.CTInteger
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 
 import scala.collection.mutable.ArrayBuffer
 

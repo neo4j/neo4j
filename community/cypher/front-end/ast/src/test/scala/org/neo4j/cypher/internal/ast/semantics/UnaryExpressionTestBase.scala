@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.v4_0.ast.semantics
+package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.v4_0.expressions.{DummyExpression, Expression}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.expressions.{DummyExpression, Expression}
+import org.neo4j.cypher.internal.util.symbols._
 import org.scalatest.Assertion
 
 abstract class UnaryExpressionTestBase(ctr: Expression => Expression) extends SemanticFunSuite {
