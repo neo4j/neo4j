@@ -74,12 +74,6 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsSeeLabelToken( long label )
-    {
-        return wrapping.allowsSeeLabelToken( label );
-    }
-
-    @Override
     public boolean disallowsTraverseLabel( long label )
     {
         return wrapping.disallowsTraverseLabel( label );

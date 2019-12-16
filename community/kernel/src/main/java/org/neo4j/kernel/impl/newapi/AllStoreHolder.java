@@ -250,9 +250,9 @@ public class AllStoreHolder extends Read
     public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
     {
         AccessMode mode = ktx.securityContext().mode();
-        if ( (typeId == TokenRead.ANY_RELATIONSHIP_TYPE && mode.allowsTraverseAllRelTypes() || mode.allowsTraverseRelType( typeId )) &&
-                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( startLabelId )) &&
-                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseAllNodesWithLabel( endLabelId )) )
+        if ( mode.allowsTraverseRelType( typeId ) &&
+             mode.allowsTraverseNode( startLabelId ) &&
+             mode.allowsTraverseNode( endLabelId ) )
         {
             return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
         }
