@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -78,7 +79,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread.get().state() ).isSameAs( WAITING );
+                waitUntilWaiting();
             }
         } );
 
@@ -102,12 +103,24 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread.get().state() ).isSameAs( WAITING );
+                waitUntilWaiting();
             }
         } );
 
         // then
         assertTrue( "Node creation should succeed", created.get() );
+    }
+
+    private void waitUntilWaiting()
+    {
+        try
+        {
+            otherThread.get().waitUntilWaiting();
+        }
+        catch ( TimeoutException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private Function<Transaction, Void> createUniquenessConstraint( final String label, final String propertyKey )
