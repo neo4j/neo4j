@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util.Objects
 
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalatest.matchers.Matcher
 

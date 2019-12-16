@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.v4_0.rewriting
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.v4_0.util.Rewriter
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.scalatest.FunSuite
 
 class InsertWithBetweenOptionalMatchAndMatchTest extends CypherFunSuite with RewriteTest {
   val rewriterUnderTest: Rewriter = insertWithBetweenOptionalMatchAndMatch

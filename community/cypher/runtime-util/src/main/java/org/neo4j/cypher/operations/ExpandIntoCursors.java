@@ -29,13 +29,9 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 
-import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countAllDense;
-import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncomingDense;
-import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoing;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoingDense;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allDenseCursor;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allSparseCursor;

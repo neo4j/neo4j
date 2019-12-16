@@ -33,7 +33,7 @@ public interface RuntimeResult extends AutoCloseable, QuerySubscription, Optiona
         NOT_STARTED,
         HAS_MORE,
         EXHAUSTED
-    };
+    }
 
     /**
      * Names of the returned fields of this result.

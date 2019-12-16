@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
-@SuppressWarnings( "WeakerAccess" )
 public final class Evaluator
 {
     private Evaluator()

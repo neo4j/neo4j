@@ -327,7 +327,7 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def close()
 
-  def rollback();
+  def rollback()
 
   def commitAndRestartTx()
 

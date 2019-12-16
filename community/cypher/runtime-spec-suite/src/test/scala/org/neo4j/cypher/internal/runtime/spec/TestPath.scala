@@ -50,10 +50,10 @@ case class TestPath(override val startNode: Node, _relationships: Seq[Relationsh
   override def iterator(): util.Iterator[Entity] = ???
 
   def take(n: Int): TestPath =
-    new TestPath(startNode, _relationships.take(n))
+    TestPath(startNode, _relationships.take(n))
 
   def reverse: TestPath =
-    new TestPath(endNode(), _relationships.reverse)
+    TestPath(endNode(), _relationships.reverse)
 
   def nodeAt(offset: Int): Node = _nodes(offset)
 }

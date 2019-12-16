@@ -74,7 +74,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
       val start = input(1)
       val end = input(2)
 
-      IndexedInclusiveLongRange(start, end, step).toIndexedSeq.map(_.toInt) should equal(start to end by step)
+      IndexedInclusiveLongRange(start, end, step).map(_.toInt) should equal(start to end by step)
     }
   }
 

@@ -284,7 +284,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       accessMode = ProcedureReadOnlyAccess(Array.empty),
       id = 42
     )
-    val exceptionFactory = new Neo4jCypherExceptionFactory(query, Some(pos))
+    val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(pos))
     val procs: QualifiedName => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: QualifiedName => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)

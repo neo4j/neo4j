@@ -35,7 +35,6 @@ import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.NumberValue;

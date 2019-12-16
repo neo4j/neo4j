@@ -40,7 +40,7 @@ case class ExactVariablesMatcher(expected: Set[String]) extends VariablesMatcher
     val vars = planVars(plan)
     MatchResult(
       matches = vars == expected,
-      rawFailureMessage = s"Expected ${plan.name} to have variables $expected but got ${vars}.",
+      rawFailureMessage = s"Expected ${plan.name} to have variables $expected but got $vars.",
       rawNegatedFailureMessage = s"Expected ${plan.name} not to have variables $expected."
     )
   }
@@ -54,7 +54,7 @@ case class ContainsVariablesMatcher(expected: Set[String]) extends VariablesMatc
     val vars = planVars(plan)
     MatchResult(
       matches = expected.subsetOf(vars),
-      rawFailureMessage = s"Expected ${plan.name} to contain variables $expected but got ${vars}.",
+      rawFailureMessage = s"Expected ${plan.name} to contain variables $expected but got $vars.",
       rawNegatedFailureMessage = s"Expected ${plan.name} not to contain variables $expected."
     )
   }
@@ -70,7 +70,7 @@ case class ContainsRegexVariablesMatcher(expectedRegexes: Set[Regex]) extends Va
     val vars = planVars(plan)
     MatchResult(
       matches = expectedRegexes.forall(regex => vars.exists(variable => regex.pattern.matcher(variable).matches())),
-      rawFailureMessage = s"Expected ${plan.name} to contain variables matching $expected but got ${vars}.",
+      rawFailureMessage = s"Expected ${plan.name} to contain variables matching $expected but got $vars.",
       rawNegatedFailureMessage = s"Expected ${plan.name} not to contain variables matching $expected."
     )
   }

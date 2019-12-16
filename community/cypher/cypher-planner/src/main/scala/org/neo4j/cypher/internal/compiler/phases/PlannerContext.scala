@@ -69,7 +69,7 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       innerVariableNamer: InnerVariableNamer,
                       params: MapValue
                      ): PlannerContext = {
-    val exceptionFactory = new Neo4jCypherExceptionFactory(queryText, offset)
+    val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
       null
