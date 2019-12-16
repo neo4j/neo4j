@@ -118,12 +118,6 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsSeeLabelToken( long label )
-        {
-            return read;
-        }
-
-        @Override
         public boolean disallowsTraverseLabel( long label )
         {
             return false;
@@ -203,17 +197,27 @@ public interface AccessMode
 
     /** true if all nodes can be traversed */
     boolean allowsTraverseAllLabels();
+
     /** true if all nodes with this label always can be traversed */
     boolean allowsTraverseAllNodesWithLabel( long label );
-    /** true if this label is visible */
-    boolean allowsSeeLabelToken( long label );
+
     /** true if this label is blacklisted for traversal */
     boolean disallowsTraverseLabel( long label );
 
-    /** true if a particular node with exactly these labels can be traversed */
+    /** true if a particular node with exactly these labels can be traversed.
+     * @param labels the labels on the node to be checked. If labels only contains {@link org.neo4j.token.api.TokenConstants#ANY_LABEL} it will work
+     *               the same as {@link #allowsTraverseAllLabels}
+     */
     boolean allowsTraverseNode( long... labels );
 
+    /** true if all relationships can be traversed */
     boolean allowsTraverseAllRelTypes();
+
+    /**
+     * true if the relType can be traversed.
+     * @param relType the relationship type to check access for. If relType is {@link org.neo4j.token.api.TokenConstants#ANY_RELATIONSHIP_TYPE} it will work
+     *               the same as {@link #allowsTraverseAllRelTypes}
+     */
     boolean allowsTraverseRelType( int relType );
 
     boolean allowsReadPropertyAllLabels( int propertyKey );

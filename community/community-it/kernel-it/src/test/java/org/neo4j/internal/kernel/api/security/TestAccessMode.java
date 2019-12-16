@@ -77,12 +77,6 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsSeeLabelToken( long label )
-    {
-        return allowRead;
-    }
-
-    @Override
     public boolean disallowsTraverseLabel( long label )
     {
         return !allowRead;
