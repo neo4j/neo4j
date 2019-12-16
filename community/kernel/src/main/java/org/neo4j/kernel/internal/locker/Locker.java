@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -94,10 +96,61 @@ public class Locker implements Closeable
                 throw storeLockException( message, null );
             }
         }
-        catch ( OverlappingFileLockException | IOException e )
+        catch ( OverlappingFileLockException e )
         {
             throw unableToObtainLockException();
         }
+        catch ( IOException e )
+        {
+            // This isn't your normal "locked by another process" error, it may be related to permissions or something else,
+            // so in this case try to figure out as much as possible about the state of the file and directory and include that
+            // in the error message given to the user.
+            throw unableToObtainLockException( tryCollectPermissionInformation(), e );
+        }
+    }
+
+    private String tryCollectPermissionInformation()
+    {
+        String processUserName = System.getProperty( "user.name" );
+        String additionalInformation = null;
+        if ( processUserName != null )
+        {
+            Path lockPath = lockFile.toPath();
+            try
+            {
+                String lockFileOwner = Files.getOwner( lockPath ).getName();
+                if ( !processUserName.equals( lockFileOwner ) )
+                {
+                    additionalInformation = String.format(
+                            "Owner of the lock file '%s' and user running this process '%s' differs, which means this could be a file permission problem. " +
+                            "Ensure that the lock file has the same owner, or at least has write access for the user running the Neo4j process " +
+                            "trying to lock it", lockFileOwner, processUserName );
+                }
+                // else no useful additional information can be provided
+            }
+            catch ( IOException fe )
+            {
+                // We tried to get the owner of the lock file, but we couldn't. Perhaps we couldn't even create the lock file, let's check the folder
+                try
+                {
+                    String lockDirectoryOwner = Files.getOwner( lockPath.getParent() ).getName();
+                    if ( !processUserName.equals( lockDirectoryOwner ) )
+                    {
+                        additionalInformation = String.format(
+                                "Owner of the directory of the lock file '%s' and user running this process '%s' differs, which means this could be a " +
+                                "file permission problem. Ensure that the lock file directory (and lock file it it exists) has the same owner, " +
+                                "or at least has write access for the user running the Neo4j process trying to lock it",
+                                lockDirectoryOwner, processUserName );
+                    }
+                    // else no useful additional information can be provided
+                }
+                catch ( IOException de )
+                {
+                    // We tried to get the owner of the lock directory, but couldn't. There's not much more we can do
+                }
+            }
+        }
+        return additionalInformation;
     }
 
     protected boolean haveLockAlready()
@@ -107,8 +160,13 @@ public class Locker implements Closeable
 
     FileLockException unableToObtainLockException()
     {
-        String message = "Unable to obtain lock on file: " + lockFile;
-        return storeLockException( message, null );
+        return unableToObtainLockException( null, null );
+    }
+
+    FileLockException unableToObtainLockException( String additionalInformation, Exception cause )
+    {
+        String message = String.format( "Unable to obtain lock on file: %s%s", lockFile, additionalInformation != null ? ": " + additionalInformation : "" );
+        return storeLockException( message, cause );
     }
 
     private static FileLockException storeLockException( String message, Exception e )
