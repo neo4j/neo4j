@@ -121,7 +121,8 @@ class RelationshipChecker implements Checker
                 // Start/end nodes
                 long startNode = relationshipCursor.getFirstNode();
                 boolean startNodeIsWithinRange = nodeIdRange.isWithinRangeExclusiveTo( startNode );
-                if ( startNodeIsWithinRange )
+                boolean startNodeIsNegativeOnFirstRound = startNode < 0 && firstRound;
+                if ( startNodeIsWithinRange || startNodeIsNegativeOnFirstRound )
                 {
                     checkRelationshipVsNode( client, relationshipCursor, startNode, relationshipCursor.isFirstInFirstChain(),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).sourceNodeNotInUse( node ),
@@ -132,7 +133,8 @@ class RelationshipChecker implements Checker
                 }
                 long endNode = relationshipCursor.getSecondNode();
                 boolean endNodeIsWithinRange = nodeIdRange.isWithinRangeExclusiveTo( endNode );
-                if ( endNodeIsWithinRange )
+                boolean endNodeIsNegativeOnFirstRound = endNode < 0 && firstRound;
+                if ( endNodeIsWithinRange || endNodeIsNegativeOnFirstRound )
                 {
                     checkRelationshipVsNode( client, relationshipCursor, endNode, relationshipCursor.isFirstInSecondChain(),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).targetNodeNotInUse( node ),
