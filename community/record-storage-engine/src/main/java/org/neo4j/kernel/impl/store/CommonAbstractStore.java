@@ -280,6 +280,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     }
                 }
             }
+            pagedFile.flushAndForce();
         }
 
         // Determine record size right after writing the header since some stores
