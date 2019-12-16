@@ -121,16 +121,14 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        if ( tryOpenCall( "force" ) )
+        openCall( "force" );
+        try
         {
-            try
-            {
-                super.force( ioLimiter );
-            }
-            finally
-            {
-                closeCall();
-            }
+            super.force( ioLimiter );
+        }
+        finally
+        {
+            closeCall();
         }
     }
 
@@ -207,22 +205,6 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         {
             throw new IllegalStateException( "Cannot call " + name + "() when index state is " + state.get() );
         }
-    }
-
-    private boolean tryOpenCall( String name )
-    {
-        // do not open call unless we are in STARTED
-        if ( State.STARTED == state.get() )
-        {
-            // increment openCalls for closers to see
-            openCalls.incrementAndGet();
-            if ( State.STARTED == state.get() )
-            {
-                return true;
-            }
-            openCalls.decrementAndGet();
-        }
-        return false;
     }
 
     private void closeCall()
