@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
@@ -168,226 +167,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 1
   }
 
-  test("should profile dbHits of NodeCountFromCountStore") {
-    given { nodeGraph(10, "LabelA") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeCountFromCountStore("x", List(None))
-      .build()
-
-    val result = profile(logicalQuery, runtime)
-    consume(result)
-
-    // then
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 1 // node count from count store
-  }
-
-  test("should profile dbHits of RelationshipFromCountStore") {
-    given { bipartiteGraph(10, "LabelA", "LabelB", "RelType") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .relationshipCountFromCountStore("x", None, List("RelType"), Some("LabelB"))
-      .build()
-
-    val result = profile(logicalQuery, runtime)
-    consume(result)
-
-    // then
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 1 + costOfRelationshipTypeLookup // relationship count from count store
-  }
-
-  test("should profile dbHits of input + produce results") {
-    // given
-    val nodes = given { nodeGraph(sizeHint) }
-    val input = inputColumns(sizeHint / 4, 4, i => nodes(i % nodes.size))
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .input(Seq("x"))
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime, input)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).dbHits() shouldBe 0 // produce results
-    queryProfile.operatorProfile(1).dbHits() shouldBe 0 // input
-  }
-
-  test("should profile dbHits of sort + filter") {
-    given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
-    }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .filter(s"x.prop >= ${sizeHint / 2}")
-      .sort(Seq(Ascending("x")))
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // sort
-  }
-
-  test("should profile dbHits of limit") {
-    given { nodeGraph(sizeHint) }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(10)
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(2).dbHits() shouldBe >= (1+10L) // all node scan
-  }
-
-  test("should profile dbHits with limit + expand") {
-    // given
-    val SIZE = sizeHint / 4
-    given { bipartiteGraph(SIZE, "A", "B", "R") }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .expand("(x)-->(y)")
-      .limit(SIZE / 2)
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * (costOfExpandGetRelCursor + costOfExpandOneRel)) // expand
-    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() shouldBe >= (SIZE / 2L) // node by label scan
-  }
-
-  test("should profile dbHits with limit + optional expand all") {
-    // given
-    val SIZE = sizeHint / 4
-    given { bipartiteGraph(SIZE, "A", "B", "R") }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .optionalExpandAll("(x)-->(y)", Some("true"))
-      .limit(SIZE / 2)
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel)) // optional expand all (uses legacy pipe)
-    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() shouldBe >= (SIZE / 2L) // node by label scan
-  }
-
-  test("should profile dbHits with var-expand") {
-    // given
-    val SIZE = sizeHint / 4
-    given { circleGraph(SIZE) }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .expand("(x)-[*1..3]->(y)")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val matchesPerVarExpand = 3
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel) * matchesPerVarExpand) or be (SIZE * (costOfExpandGetRelCursor + costOfExpandOneRel + 1) * matchesPerVarExpand)) // var expand
-    queryProfile.operatorProfile(2).dbHits() should (be (SIZE) or be (SIZE + 1)) // all node scan
-  }
-
-  test("should profile dbHits with pruning var-expand") {
-    // given
-    val SIZE = sizeHint / 4
-    given { circleGraph(SIZE) }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .pruningVarExpand("(x)-[*1..3]->(y)")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should be > 0L
-  }
-
-  test("should profile dbHits with shortest path") {
-    // given
-    val nodesPerLabel = 10
-    given {
-      for(_ <- 0 until nodesPerLabel)
-        sineGraph()
-    }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .shortestPath("(x)-[r*]-(y)", Some("path"))
-      .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should be > 0L
-  }
-
-  test("should profile dbhits with expand all") {
-    // given
-    given { starGraph(sizeHint, "Center", "Ring") }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .expandAll("(x)-->(y)")
-      .nodeByLabelScan("x", "Ring")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (costOfExpandGetRelCursor + costOfExpandOneRel)) // expand
-    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint + 1 + costOfLabelLookup) // label scan
-  }
-
   test("should profile dbhits with expand into") {
     // given
     given { circleGraph(sizeHint) }
@@ -404,9 +183,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    // expand into (uses legacy pipe). If no node is in the input twice the rel cache does not help and then you get
+    // expand into. If no node is in the input twice the rel cache does not help and then you get
     // 2 (check start and end for `isDense`) + costOfExpand per row.
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (2L + (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel)))
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)))
     // No assertion on the expand because db hits can vary, given that the nodes have 2 relationships.
   }
 
@@ -470,9 +249,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     // optional expand into (uses legacy pipe). If no node is in the input twice the rel cache does not help and then you get
-    // 2 (check start and end for `isDense`) + get rel cursor for each row and costOfExpand for each relationship on top.
-    queryProfile.operatorProfile(1).dbHits() shouldBe ((n + extraNodes) * (2 + LegacyDbHitsTestBase.costOfExpandGetRelCursor) + n * LegacyDbHitsTestBase.costOfExpandOneRel) // optional expand into
-    queryProfile.operatorProfile(2).dbHits() shouldBe (0) // apply
+    // 2 (check start and end for `isDense`) + costOfExpand for each relationship on top.
+    queryProfile.operatorProfile(1).dbHits() shouldBe ((n + extraNodes) * 2 + n * costOfExpandOneRel) // optional expand into
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
     queryProfile.operatorProfile(3).dbHits() shouldBe ((n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)) // filter (reads 2 properties))
     queryProfile.operatorProfile(4).dbHits() shouldBe  ((n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup) // label scan OK
     queryProfile.operatorProfile(5).dbHits() shouldBe (n + extraNodes + 1 + costOfLabelLookup) // label scan OK

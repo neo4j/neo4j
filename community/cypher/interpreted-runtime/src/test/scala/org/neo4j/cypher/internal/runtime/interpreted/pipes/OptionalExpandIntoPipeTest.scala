@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntity
 import org.neo4j.values.AnyValue
 
 class OptionalExpandIntoPipeTest extends CypherFunSuite {
@@ -39,7 +38,6 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
   test("should register owning pipe") {
     // given
-    mockRelationships(relationship1)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1))
 
@@ -49,11 +47,6 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     pred.owningPipe should equal(pipe)
-  }
-
-  private def mockRelationships(rels: Relationship*) {
-    when(query.relationshipIterator(any())).thenAnswer(
-      _ => rels.iterator.map(fromRelationshipEntity))
   }
 
   private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)

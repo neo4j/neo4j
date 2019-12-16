@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.KernelTransaction
@@ -82,9 +81,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator
 
-  def relationshipIterator(cursor: RelationshipSelectionCursor): Iterator[RelationshipValue]
+  def nodeCursor(): NodeCursor
 
-  def primitiveRelationshipIterator(cursor: RelationshipSelectionCursor): RelationshipIterator
+  def groupCursor(): RelationshipGroupCursor
+
+  def traversalCursor(): RelationshipTraversalCursor
 
   def getOrCreateLabelId(labelName: String): Int
 

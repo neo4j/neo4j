@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.{getRowNode, relationshipIterator}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -47,8 +47,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
     val expandInto = new org.neo4j.internal.kernel.api.helpers.CachingExpandInto(query.transactionalContext.dataRead,
                                                                                  kernelDirection,
                                                                                  types.types(query))
-    val nodeCursor = state.cursors.nodeCursor
-
+    val nodeCursor = query.nodeCursor()
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -61,8 +60,14 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 row.set(relName, Values.NO_VALUE)
                 Iterator.single(row)
               case n: NodeValue =>
+                val groupCursor = query.groupCursor()
+                val traversalCursor = query.traversalCursor()
                 val relationships =
-                  query.relationshipIterator(expandInto.connectingRelationships(query.transactionalContext.cursors, nodeCursor, fromNode.id(), n.id()))
+                  relationshipIterator(expandInto.connectingRelationships(nodeCursor,
+                                                                          groupCursor,
+                                                                          traversalCursor,
+                                                                          fromNode.id(),
+                                                                          n.id()), query)
                 val filteredRows = ListBuffer.empty[ExecutionContext]
                 while (relationships.hasNext) {
                   val candidateRow = executionContextFactory.copyWith(row, relName, relationships.next())

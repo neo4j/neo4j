@@ -52,6 +52,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits(value: RelationshipIterator): RelationshipIterator = value
   protected def manyDbHits(value: RelationshipSelectionCursor): RelationshipSelectionCursor = value
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
+  protected def manyDbHits(value: RelationshipGroupCursor): RelationshipGroupCursor = value
+  protected def manyDbHits(value: RelationshipTraversalCursor): RelationshipTraversalCursor = value
+  protected def manyDbHits(value: NodeCursor): NodeCursor = value
   protected def manyDbHits(count: Int): Int = count
 
   override def resources: ResourceManager = inner.resources
@@ -90,9 +93,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator =
   manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
-  override def relationshipIterator(cursor: RelationshipSelectionCursor): Iterator[RelationshipValue] = manyDbHits(inner.relationshipIterator(cursor))
+  override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
 
-  override def primitiveRelationshipIterator(cursor: RelationshipSelectionCursor): RelationshipIterator = manyDbHits(inner.primitiveRelationshipIterator(cursor))
+  override def groupCursor(): RelationshipGroupCursor = manyDbHits(inner.groupCursor())
+
+  override def traversalCursor(): RelationshipTraversalCursor = manyDbHits(inner.traversalCursor())
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =  singleDbHit(inner.singleRelationship(id, cursor))
 

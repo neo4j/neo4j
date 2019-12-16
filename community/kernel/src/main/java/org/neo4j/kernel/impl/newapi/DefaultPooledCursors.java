@@ -74,6 +74,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             nodeCursor.release();
         }
+        cursor.removeTracer();
         nodeCursor = cursor;
     }
 
@@ -101,6 +102,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             fullAccessNodeCursor.release();
         }
+        cursor.removeTracer();
         fullAccessNodeCursor = (FullAccessNodeCursor) cursor;
     }
 
@@ -128,6 +130,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             relationshipScanCursor.release();
         }
+        cursor.removeTracer();
         relationshipScanCursor = cursor;
     }
 
@@ -155,6 +158,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             fullAccessRelationshipScanCursor.release();
         }
+        cursor.removeTracer();
         fullAccessRelationshipScanCursor = cursor;
     }
 
@@ -182,6 +186,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             relationshipTraversalCursor.release();
         }
+        cursor.removeTracer();
         relationshipTraversalCursor = cursor;
     }
 
@@ -209,6 +214,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             propertyCursor.release();
         }
+        cursor.removeTracer();
         propertyCursor = cursor;
     }
 
@@ -236,6 +242,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             fullAccessPropertyCursor.release();
         }
+        cursor.removeTracer();
         fullAccessPropertyCursor = (FullAccessPropertyCursor) cursor;
     }
 
@@ -263,6 +270,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             relationshipGroupCursor.release();
         }
+        cursor.removeTracer();
         relationshipGroupCursor = cursor;
     }
 
@@ -290,6 +298,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             nodeValueIndexCursor.release();
         }
+        cursor.removeTracer();
         nodeValueIndexCursor = cursor;
     }
 
@@ -317,6 +326,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             nodeLabelIndexCursor.release();
         }
+        cursor.removeTracer();
         nodeLabelIndexCursor = cursor;
     }
 
@@ -344,6 +354,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             relationshipIndexCursor.release();
         }
+        cursor.removeTracer();
         relationshipIndexCursor = cursor;
     }
 

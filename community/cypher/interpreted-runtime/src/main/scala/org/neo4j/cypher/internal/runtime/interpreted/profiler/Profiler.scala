@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.common.Edition
-import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
+import org.neo4j.cypher.internal.profiling.{KernelStatisticProvider, OperatorProfileEvent}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext}
@@ -134,6 +134,11 @@ trait Counter {
       _count += 1L
   }
 
+  def increment(hits: Int): Unit = {
+    if (count != OperatorProfile.NO_DATA)
+      _count += hits
+  }
+
   def invalidate(): Unit = {
     _count = OperatorProfile.NO_DATA
   }
@@ -183,7 +188,14 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def hasNext: Boolean = inner.hasNext
   }
 
-  override protected def manyDbHits(inner: NodeValueIndexCursor): NodeValueIndexCursor = new NodeValueIndexCursor {
+  override protected def manyDbHits(nodeCursor: NodeCursor): NodeCursor = {
+
+    val tracer = new PipeTracer
+    nodeCursor.setTracer(tracer)
+    nodeCursor
+  }
+
+   override protected def manyDbHits(inner: NodeValueIndexCursor): NodeValueIndexCursor =  new ProfilingCursor(inner) with NodeValueIndexCursor {
 
     override def numberOfProperties(): Int = inner.numberOfProperties()
 
@@ -197,6 +209,23 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
 
     override def nodeReference(): Long = inner.nodeReference()
 
+    override def score(): Float = inner.score()
+  }
+
+  override protected def manyDbHits(inner: RelationshipGroupCursor): RelationshipGroupCursor = {
+    val tracer = new PipeTracer
+    inner.setTracer(tracer)
+    inner
+  }
+
+  override protected def manyDbHits(inner: RelationshipTraversalCursor): RelationshipTraversalCursor = {
+    val tracer = new PipeTracer
+    inner.setTracer(tracer)
+    inner
+  }
+
+  abstract class ProfilingCursor(inner: Cursor) extends Cursor {
+
     override def next(): Boolean = {
       increment()
       inner.next()
@@ -207,12 +236,9 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
       // We do not call getCloseListener.onClosed(inner) here since
       // that will already happen in closeInternal.
     }
-
     override def closeInternal(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
-
-    override def score(): Float = inner.score()
 
     override def setTracer(tracer: KernelReadTracer): Unit = inner.setTracer(tracer)
 
@@ -225,6 +251,26 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def setToken(token: Int): Unit = inner.setToken(token)
 
     override def getToken: Int = inner.getToken
+  }
+
+  class PipeTracer() extends OperatorProfileEvent {
+
+    override def dbHit(): Unit = {
+      increment()
+    }
+
+    override def dbHits(hits: Int): Unit = {
+      increment(hits)
+    }
+
+    override def row(): Unit = {}
+
+    override def row(hasRow: Boolean): Unit = {}
+
+    override def rows(n: Int): Unit = {}
+
+    override def close(): Unit = {
+    }
   }
 
   class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {

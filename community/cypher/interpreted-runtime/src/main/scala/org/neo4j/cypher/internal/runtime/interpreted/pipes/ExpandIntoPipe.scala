@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.{getRowNode, relationshipIterator}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+
+import scala.collection.Iterator
 
 /**
  * Expand when both end-points are known, find all relationships of the given
@@ -58,7 +62,7 @@ case class ExpandIntoPipe(source: Pipe,
     val expandInto = new org.neo4j.internal.kernel.api.helpers.CachingExpandInto(query.transactionalContext.dataRead,
                                                                                  kernelDirection,
                                                                                  lazyTypes.types(query))
-    val nodeCursor = state.cursors.nodeCursor
+    val nodeCursor = query.nodeCursor()
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -68,8 +72,13 @@ case class ExpandIntoPipe(source: Pipe,
             toNode match {
               case IsNoValue() => Iterator.empty
               case n: NodeValue =>
-                val relationships = query.relationshipIterator(expandInto.connectingRelationships(query.transactionalContext.cursors, nodeCursor, fromNode.id(), n.id()))
-
+                val groupCursor = query.groupCursor()
+                val traversalCursor = query.traversalCursor()
+                val relationships = relationshipIterator(expandInto.connectingRelationships(nodeCursor,
+                                                                       groupCursor,
+                                                                       traversalCursor,
+                                                                       fromNode.id(),
+                                                                       n.id()), query)
                 if (relationships.isEmpty) Iterator.empty
                 else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
               case value => throw new ParameterWrongTypeException(
@@ -83,6 +92,24 @@ case class ExpandIntoPipe(source: Pipe,
 }
 
 object ExpandIntoPipe {
+
+  def relationshipIterator(cursor: RelationshipSelectionCursor,
+                           query: QueryContext): Iterator[RelationshipValue] = {
+    new CursorIterator[RelationshipValue] {
+
+      override protected def fetchNext(): RelationshipValue = {
+        if (cursor.next()) {
+          query.relationshipById(cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.targetNodeReference(),
+                           cursor.`type`())
+        } else {
+          null
+        }
+      }
+
+      override protected def close(): Unit = cursor.close()
+    }
+  }
+
   @inline
   def getRowNode(row: ExecutionContext, col: String): AnyValue = {
     row.getByName(col) match {
