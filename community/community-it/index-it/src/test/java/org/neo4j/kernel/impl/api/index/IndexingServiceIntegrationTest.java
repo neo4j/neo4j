@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -54,7 +55,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -74,7 +75,7 @@ public class IndexingServiceIntegrationTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     @Rule
-    public TestDirectory directory = TestDirectory.testDirectory();
+    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
@@ -90,7 +91,8 @@ public class IndexingServiceIntegrationTest
     @Before
     public void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).impermanent()
+        EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).impermanent()
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         createData( database );
