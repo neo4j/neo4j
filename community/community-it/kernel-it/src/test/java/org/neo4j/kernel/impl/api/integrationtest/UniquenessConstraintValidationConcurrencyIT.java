@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -33,10 +34,8 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.rule.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationConcurrencyIT
 {
@@ -78,7 +77,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread, isWaiting() );
+                waitUntilWaiting();
             }
         } );
 
@@ -102,7 +101,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread, isWaiting() );
+                waitUntilWaiting();
             }
         } );
 
@@ -110,8 +109,19 @@ public class UniquenessConstraintValidationConcurrencyIT
         assertTrue( "Node creation should succeed", created.get() );
     }
 
-    private Function<Transaction, Void> createUniquenessConstraint(
-            final String label, final String propertyKey )
+    private void waitUntilWaiting()
+    {
+        try
+        {
+            otherThread.get().waitUntilWaiting();
+        }
+        catch ( TimeoutException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private Function<Transaction, Void> createUniquenessConstraint( final String label, final String propertyKey )
     {
         return transaction ->
         {
