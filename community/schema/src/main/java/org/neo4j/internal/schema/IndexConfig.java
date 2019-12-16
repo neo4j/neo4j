@@ -24,25 +24,13 @@ import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Maps;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.graphdb.schema.IndexSetting;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.unmodifiableMap;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_3D_MAX;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_3D_MIN;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MAX;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MIN;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MAX;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MIN;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX;
-import static org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN;
 
 /**
  * The index configuration is an immutable map from Strings to Values.
@@ -80,59 +68,6 @@ public final class IndexConfig
         return new IndexConfig( Maps.immutable.withAll( map ) );
     }
 
-    public static IndexConfig from( Map<IndexSetting,Object> map )
-    {
-        Map<String,Value> collectingMap = new HashMap<>();
-        for ( Map.Entry<IndexSetting,Object> entry : map.entrySet() )
-        {
-            IndexSetting setting = entry.getKey();
-            Class<?> type = setting.getType();
-            Object value = entry.getValue();
-            if ( value == null || !type.isAssignableFrom( value.getClass() ) )
-            {
-                throw new IllegalArgumentException( "Invalid value type for '" + setting.getSettingName() + "' setting. " +
-                        "Expected a value of type " + type.getName() + ", " +
-                        "but got value '" + value + "' of type " + (value == null ? "null" : value.getClass().getName()) + "." );
-            }
-            collectingMap.put( setting.getSettingName(), Values.of( value ) );
-        }
-        return with( collectingMap );
-    }
-
-    public static IndexSetting spatialMinSettingForCrs( CoordinateReferenceSystem crs )
-    {
-        switch ( crs.getName() )
-        {
-        case "cartesian":
-            return SPATIAL_CARTESIAN_MIN;
-        case "cartesian-3d":
-            return SPATIAL_CARTESIAN_3D_MIN;
-        case "wgs-84":
-            return SPATIAL_WGS84_MIN;
-        case "wgs-84-3d":
-            return SPATIAL_WGS84_3D_MIN;
-        default:
-            throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
-        }
-    }
-
-    public static IndexSetting spatialMaxSettingForCrs( CoordinateReferenceSystem crs )
-    {
-        switch ( crs.getName() )
-        {
-        case "cartesian":
-            return SPATIAL_CARTESIAN_MAX;
-        case "cartesian-3d":
-            return SPATIAL_CARTESIAN_3D_MAX;
-        case "wgs-84":
-            return SPATIAL_WGS84_MAX;
-        case "wgs-84-3d":
-            return SPATIAL_WGS84_3D_MAX;
-        default:
-            throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
-        }
-    }
-
     private static void validate( Value value )
     {
         ValueCategory category = value.valueGroup().category();
@@ -164,11 +99,6 @@ public final class IndexConfig
     public <T extends Value> T get( String key )
     {
         return (T) map.get( key );
-    }
-
-    public <T extends Value> T get( IndexSetting indexSetting )
-    {
-        return get( indexSetting.getSettingName() );
     }
 
     public <T extends Value> T getOrDefault( String key, T defaultValue )

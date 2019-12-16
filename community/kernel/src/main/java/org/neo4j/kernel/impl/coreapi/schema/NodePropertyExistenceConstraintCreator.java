@@ -29,6 +29,8 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+
 public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCreator
 {
     private final List<String> propertyKeys;
@@ -79,7 +81,8 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
     @Override
     public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
     {
-        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType, IndexConfig.from( indexConfiguration ) );
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys, indexType,
+                toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
     }
 
     @Override

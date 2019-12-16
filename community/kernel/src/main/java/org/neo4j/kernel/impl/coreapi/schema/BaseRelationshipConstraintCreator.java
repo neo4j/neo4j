@@ -27,6 +27,8 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+
 public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
 {
     protected final RelationshipType type;
@@ -70,6 +72,6 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
     @Override
     public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
     {
-        return new BaseRelationshipConstraintCreator( actions, name, type, indexType, IndexConfig.from( indexConfiguration ) );
+        return new BaseRelationshipConstraintCreator( actions, name, type, indexType, toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
     }
 }

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -55,8 +56,8 @@ class SpatialIndexConfigTest
             SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
             SpatialIndexConfig.addSpatialConfig( map, crs, spaceFillingCurveSettings );
 
-            assertNotNull( map.remove( IndexConfig.spatialMinSettingForCrs( crs ).getSettingName() ) );
-            assertNotNull( map.remove( IndexConfig.spatialMaxSettingForCrs( crs ).getSettingName() ) );
+            assertNotNull( map.remove( IndexSettingUtil.spatialMinSettingForCrs( crs ).getSettingName() ) );
+            assertNotNull( map.remove( IndexSettingUtil.spatialMaxSettingForCrs( crs ).getSettingName() ) );
             assertTrue( map.isEmpty() );
         }
     }

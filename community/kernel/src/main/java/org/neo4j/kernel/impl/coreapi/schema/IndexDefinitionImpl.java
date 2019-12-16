@@ -19,11 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.eclipse.collections.api.tuple.Pair;
-import org.eclipse.collections.impl.factory.Maps;
-
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -36,7 +32,6 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
@@ -216,17 +211,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     public Map<IndexSetting,Object> getIndexConfiguration()
     {
         IndexConfig indexConfig = indexReference.getIndexConfig();
-        Map<IndexSetting,Object> asMap = Maps.mutable.of();
-        for ( Pair<String,Value> entry : indexConfig.entries() )
-        {
-            IndexSetting key = IndexSettingUtil.fromString( entry.getOne() );
-            if ( key != null )
-            {
-                Object value = entry.getTwo().asObjectCopy();
-                asMap.put( key, value );
-            }
-        }
-        return Collections.unmodifiableMap( asMap );
+        return IndexSettingUtil.toIndexSettingObjectMapFromIndexConfig( indexConfig );
     }
 
     @Override

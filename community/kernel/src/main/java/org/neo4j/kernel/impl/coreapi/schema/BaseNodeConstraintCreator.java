@@ -28,6 +28,8 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+
 public class BaseNodeConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
 {
     protected final Label label;
@@ -73,6 +75,6 @@ public class BaseNodeConstraintCreator extends AbstractConstraintCreator impleme
     @Override
     public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
     {
-        return new BaseNodeConstraintCreator( actions, name, label, indexType, IndexConfig.from( indexConfiguration ) );
+        return new BaseNodeConstraintCreator( actions, name, label, indexType, toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
     }
 }

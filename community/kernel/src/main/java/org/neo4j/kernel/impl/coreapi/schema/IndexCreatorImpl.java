@@ -32,6 +32,8 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+
 public class IndexCreatorImpl implements IndexCreator
 {
     private final Collection<String> propertyKeys;
@@ -91,7 +93,7 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, IndexConfig.from( indexConfiguration ) );
+        return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
     }
 
     @Override
