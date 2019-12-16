@@ -17,34 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.impl.api.index.AbstractIndexKeyLengthValidator;
-import org.neo4j.values.storable.TextValue;
+import java.util.Arrays;
+
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
-/**
- * Validates {@link TextValue text values} so that they are within a certain length, byte-wise.
- */
-public class IndexTextValueLengthValidator extends AbstractIndexKeyLengthValidator
+import static java.lang.String.format;
+
+public interface IndexValueValidator
 {
-    IndexTextValueLengthValidator( int maxByteLength )
-    {
-        super( maxByteLength );
-    }
+    void validate( Value... values );
 
-    @Override
-    protected int indexKeyLength( Value value )
+    static void throwSizeViolationException( IndexDescriptor descriptor, int size, Value... values )
     {
-        return ((TextValue)value).stringValue().getBytes().length;
-    }
-
-    public void validate( byte[] encodedValue )
-    {
-        if ( encodedValue == null )
+        String valueString = Arrays.toString( values );
+        if ( valueString.length() > 100 )
         {
-            throw new IllegalArgumentException( "Null value" );
+            valueString = valueString.substring( 0, 100 ) + "...";
         }
-        validateLength( encodedValue.length );
+        throw new IllegalArgumentException( format(
+                "Property value is too large to index into %s. Please see index documentation for limitations. Size=%d, value=%s.",
+                descriptor, size, valueString ) );
     }
 }

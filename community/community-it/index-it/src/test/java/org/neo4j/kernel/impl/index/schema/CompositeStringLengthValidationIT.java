@@ -149,8 +149,7 @@ class CompositeStringLengthValidationIT
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage() ).contains(
-                    "Property value is too large to index into this particular index. Please see index documentation for limitations. " );
+            assertThat( e.getMessage() ).contains( "Property value is too large to index into" );
         }
     }
 

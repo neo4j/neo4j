@@ -19,37 +19,38 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Arrays;
-
-import org.neo4j.common.Validator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 
-import static java.lang.String.format;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_STATIC_SIZE;
 
 /**
  * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link CompositeGenericKey}.
  * Most values won't even be serialized to {@link CompositeGenericKey}, values that fit well within the margin.
  */
-class GenericIndexKeyValidator implements Validator<Value[]>
+class GenericIndexKeyValidator implements IndexValueValidator
 {
+    private final IndexDescriptor descriptor;
     private final int maxLength;
     private final Layout<GenericKey,NativeIndexValue> layout;
 
-    GenericIndexKeyValidator( int maxLength, Layout<GenericKey,NativeIndexValue> layout )
+    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<GenericKey,NativeIndexValue> layout )
     {
         this.maxLength = maxLength;
+        this.descriptor = descriptor;
         this.layout = layout;
     }
 
     @Override
-    public void validate( Value[] values )
+    public void validate( Value... values )
     {
         int worstCaseSize = worstCaseLength( values );
         if ( worstCaseSize > maxLength )
@@ -57,9 +58,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
             int size = actualLength( values );
             if ( size > maxLength )
             {
-                throw new IllegalArgumentException( format(
-                        "Property value is too large to index into this particular index. Please see index documentation for limitations. Size=%d, value=%s.",
-                        size, Arrays.toString( values ) ) );
+                IndexValueValidator.throwSizeViolationException( descriptor, size, values );
             }
         }
     }
@@ -103,15 +102,13 @@ class GenericIndexKeyValidator implements Validator<Value[]>
         }
         else
         {
-            switch ( ((Value) value).valueGroup().category() )
+            if ( ((Value) value).valueGroup().category() == ValueCategory.TEXT )
             {
-            case TEXT:
                 // For text, which is very dynamic in its nature do a worst-case off of number of characters in it
                 return stringWorstCaseLength( ((TextValue) value).length() );
-            default:
-                // For all else then use the biggest possible value for a non-dynamic, non-array value a state can occupy
-                return BIGGEST_STATIC_SIZE;
             }
+            // For all else then use the biggest possible value for a non-dynamic, non-array value a state can occupy
+            return BIGGEST_STATIC_SIZE;
         }
     }
 

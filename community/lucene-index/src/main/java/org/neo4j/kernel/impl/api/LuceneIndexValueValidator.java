@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.common.Validator;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexValueValidator;
+import org.neo4j.util.Preconditions;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -27,10 +30,8 @@ import org.neo4j.values.storable.Values;
  * Validates {@link Value values} that are about to get indexed into a Lucene index.
  * Values passing this validation are OK to commit and apply to a Lucene index.
  */
-public class LuceneIndexValueValidator implements Validator<Value>
+public class LuceneIndexValueValidator implements IndexValueValidator
 {
-    public static final LuceneIndexValueValidator INSTANCE = new LuceneIndexValueValidator();
-
     // Maximum bytes value length that supported by indexes.
     // Absolute hard maximum length for a term, in bytes once
     // encoded as UTF8.  If a term arrives from the analyzer
@@ -38,24 +39,46 @@ public class LuceneIndexValueValidator implements Validator<Value>
     // when lucene writer trying to add or update document
     public static final int MAX_TERM_LENGTH = (1 << 15) - 2;
 
-    private final IndexTextValueLengthValidator textValueValidator = new IndexTextValueLengthValidator( MAX_TERM_LENGTH );
+    private final IndexDescriptor descriptor;
+    private final int checkThreshold;
 
-    private LuceneIndexValueValidator()
+    public LuceneIndexValueValidator( IndexDescriptor descriptor )
     {
+        this.descriptor = descriptor;
+        // This check threshold is for not having to check every value that comes in, only those that may have a chance to exceed the max length.
+        // The value 5 comes from a safer 4, which is the number of bytes that a max size UTF-8 code point needs.
+        this.checkThreshold = MAX_TERM_LENGTH / 5;
     }
 
     @Override
-    public void validate( Value value )
+    public void validate( Value... values )
     {
-        textValueValidator.validate( value );
-        if ( Values.isArrayValue( value ) )
+        // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their fields individually.
+        for ( Value value : values )
         {
-            textValueValidator.validate( ArrayEncoder.encode( value ).getBytes() );
+            validate( value );
         }
     }
 
-    public void validate( byte[] encodedValue )
+    private void validate( Value value )
     {
-        textValueValidator.validate( encodedValue );
+        Preconditions.checkArgument( value != null && value != Values.NO_VALUE, "Null value" );
+        if ( Values.isTextValue( value ) && ((TextValue)value).length() >= checkThreshold )
+        {
+            int length = ((TextValue)value).stringValue().getBytes().length;
+            validateActualLength( value, length );
+        }
+        if ( Values.isArrayValue( value ) )
+        {
+            validateActualLength( value, ArrayEncoder.encode( value ).getBytes().length );
+        }
+    }
+
+    private void validateActualLength( Value value, int length )
+    {
+        if ( length > MAX_TERM_LENGTH )
+        {
+            IndexValueValidator.throwSizeViolationException( descriptor, length, value );
+        }
     }
 }

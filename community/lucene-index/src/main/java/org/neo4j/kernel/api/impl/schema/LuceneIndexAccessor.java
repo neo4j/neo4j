@@ -35,9 +35,12 @@ import org.neo4j.values.storable.Value;
 
 public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader,SchemaIndex>
 {
+    private final LuceneIndexValueValidator valueValidator;
+
     public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
     {
         super( luceneIndex, descriptor );
+        this.valueValidator = new LuceneIndexValueValidator( descriptor );
     }
 
     @Override
@@ -69,11 +72,7 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
     @Override
     public void validateBeforeCommit( Value[] tuple )
     {
-        // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their fields individually.
-        for ( Value value : tuple )
-        {
-            LuceneIndexValueValidator.INSTANCE.validate( value );
-        }
+        valueValidator.validate( tuple );
     }
 
     private class LuceneSchemaIndexUpdater extends AbstractLuceneIndexUpdater
