@@ -82,8 +82,8 @@ public class CommunitySecurityModule extends SecurityModule
         return authManager;
     }
 
-    public static final String USER_STORE_FILENAME = "auth";
-    public static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
+    private static final String USER_STORE_FILENAME = "auth";
+    private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 
     public static FileUserRepository getUserRepository( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem )
