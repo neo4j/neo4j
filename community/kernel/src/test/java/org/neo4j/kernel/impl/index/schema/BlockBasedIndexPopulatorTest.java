@@ -62,7 +62,7 @@ import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.scheduler.DelegatingJobScheduler;
+import org.neo4j.test.scheduler.JobSchedulerAdapter;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -443,14 +443,14 @@ class BlockBasedIndexPopulatorTest
 
             // when
             MutableBoolean called = new MutableBoolean();
-            DelegatingJobScheduler trackingJobScheduler = new DelegatingJobScheduler( jobScheduler )
+            JobScheduler trackingJobScheduler = new JobSchedulerAdapter()
             {
                 @Override
                 public <T> JobHandle<T> schedule( Group group, Callable<T> job )
                 {
                     called.setTrue();
                     assertThat( group ).isSameAs( Group.INDEX_POPULATION_WORK );
-                    return super.schedule( group, job );
+                    return jobScheduler.schedule( group, job );
                 }
             };
             populator.scanCompleted( nullInstance, trackingJobScheduler );

@@ -641,8 +641,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> index_sampling_parallelism =
             newBuilder( "unsupported.dbms.index_sampling.parallelism", INT, 4 ).addConstraint( min( 0 ) ).build();
 
-    @Description( "Set the maximum number of threads used to drive an index population. " +
-            "This is the maximum number of concurrent index populations across dbms. " +
+    @Description( "Set the maximum number of concurrent index populations across system. " +
+            "This also limit the number of threads used to scan store. " +
             "Note that multiple indexes can be populated by a single index population if they were created in the same transaction. " +
             "Zero means unrestricted. " )
     @Internal

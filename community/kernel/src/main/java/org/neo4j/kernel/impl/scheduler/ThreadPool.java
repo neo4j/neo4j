@@ -85,21 +85,15 @@ final class ThreadPool
 
     public JobHandle submit( Runnable job )
     {
-        Object registryKey = new Object();
-        Runnable registeredJob = () ->
-        {
-            try
-            {
-                job.run();
-            }
-            finally
-            {
-                registry.remove( registryKey );
-            }
+        return submit( asCallable( job ) );
+    }
+
+    private Callable<?> asCallable( Runnable job )
+    {
+        return () -> {
+            job.run();
+            return null;
         };
-        Future<?> future = executor.submit( registeredJob );
-        registry.put( registryKey, future );
-        return new PooledJobHandle<>( future, registryKey, registry );
     }
 
     int activeThreadCount()
