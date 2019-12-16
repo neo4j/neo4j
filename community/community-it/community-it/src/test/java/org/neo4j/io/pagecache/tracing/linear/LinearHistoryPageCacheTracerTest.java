@@ -34,7 +34,7 @@ public class LinearHistoryPageCacheTracerTest
     @Test
     void makeSomeTestOutput() throws Exception
     {
-        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
+        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer( "makeSomeTestOutput" );
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
             harness.setUseAdversarialIO( true );

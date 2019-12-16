@@ -34,10 +34,12 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 public class LinearHistoryPageCursorTracer implements PageCursorTracer
 {
     private LinearHistoryTracer tracer;
+    private final String tag;
 
-    LinearHistoryPageCursorTracer( LinearHistoryTracer tracer )
+    LinearHistoryPageCursorTracer( LinearHistoryTracer tracer, String tag )
     {
         this.tracer = tracer;
+        this.tag = tag;
     }
 
     @Override
@@ -115,6 +117,6 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     @Override
     public String getTag()
     {
-        return "LinearHistoryTracer";
+        return tag;
     }
 }

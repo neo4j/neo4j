@@ -43,7 +43,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.resources.Profiler;
 import org.neo4j.test.extension.Inject;
@@ -60,7 +59,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-
+import static org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory.pageCacheTracer;
 
 @ExtendWith( {VerboseExceptionExtension.class, ProfilerExtension.class} )
 public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTestSupport<T>
@@ -516,7 +515,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
             // Because our test failures are non-deterministic, we use this tracer to capture a full history of the
             // events leading up to any given failure.
-            LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
+            LinearTracers linearTracers = pageCacheTracer( "pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures" );
             getPageCache( fs, maxPages, linearTracers.getPageCacheTracer() );
 
             try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );

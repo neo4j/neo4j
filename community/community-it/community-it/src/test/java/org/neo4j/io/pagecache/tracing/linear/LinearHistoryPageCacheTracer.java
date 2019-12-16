@@ -52,7 +52,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     @Override
     public PageCursorTracer createPageCursorTracer( String tag )
     {
-        return PageCursorTracer.NULL;
+        return new LinearHistoryPageCursorTracer( tracer, tag );
     }
 
     @Override

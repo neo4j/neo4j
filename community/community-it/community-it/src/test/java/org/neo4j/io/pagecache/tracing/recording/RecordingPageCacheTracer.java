@@ -45,7 +45,7 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     @Override
     public PageCursorTracer createPageCursorTracer( String tag )
     {
-        return PageCursorTracer.NULL;
+        return new RecordingPageCursorTracer( this, tag );
     }
 
     @Override
