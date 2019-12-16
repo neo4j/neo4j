@@ -266,7 +266,7 @@ public class BatchingMultipleIndexPopulatorTest
         JobScheduler jobScheduler = new JobSchedulerAdapter()
         {
             @Override
-            public JobHandle schedule( Group group, Runnable job )
+            public JobHandle<?> schedule( Group group, Runnable job )
             {
                 scheduleCount.incrementAndGet();
                 job.run();

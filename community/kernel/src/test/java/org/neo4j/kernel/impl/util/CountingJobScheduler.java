@@ -82,21 +82,21 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         counter.getAndIncrement();
         return delegate.schedule( group, job );
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
         counter.getAndIncrement();
         return delegate.schedule( group, runnable, initialDelay, timeUnit );
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long period,
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period,
                                         TimeUnit timeUnit )
     {
         counter.getAndIncrement();
@@ -104,7 +104,7 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period,
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period,
                                         TimeUnit timeUnit )
     {
         counter.getAndIncrement();

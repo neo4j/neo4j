@@ -201,7 +201,7 @@ class IndexSamplingControllerTest
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
         indexMap.putIndexProxy( anotherIndexProxy );
-        JobHandle jobHandle = new JobHandle()
+        JobHandle<Object> jobHandle = new JobHandle<>()
         {
             @Override
             public void cancel()

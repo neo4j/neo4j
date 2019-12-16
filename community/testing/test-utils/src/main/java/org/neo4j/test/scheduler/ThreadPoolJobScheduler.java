@@ -101,25 +101,25 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         return new FutureJobHandle<>( executor.submit( job ) );
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
     {
         throw new UnsupportedOperationException();
     }

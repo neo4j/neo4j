@@ -137,7 +137,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public JobTrigger schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         JobTrigger handle = schedule( job, now() );
         processSchedule();
@@ -145,7 +145,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public JobTrigger schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
+    public JobHandle<?> schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
     {
         JobTrigger handle = schedule( job, now() + timeUnit.toMillis( initialDelay ) );
         if ( initialDelay <= 0 )
@@ -156,7 +156,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public JobTrigger scheduleRecurring( Group group, Runnable job, long period, TimeUnit timeUnit )
+    public JobHandle<?> scheduleRecurring( Group group, Runnable job, long period, TimeUnit timeUnit )
     {
         JobTrigger handle = scheduleRecurring( job, now(), timeUnit.toMillis( period ) );
         processSchedule();
@@ -164,7 +164,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public JobTrigger scheduleRecurring( Group group, Runnable job, long initialDelay, long period, TimeUnit timeUnit )
+    public JobHandle<?> scheduleRecurring( Group group, Runnable job, long initialDelay, long period, TimeUnit timeUnit )
     {
         JobTrigger handle = scheduleRecurring( job, now() + timeUnit.toMillis( initialDelay ), timeUnit.toMillis( period ) );
         if ( initialDelay <= 0 )

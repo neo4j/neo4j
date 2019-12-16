@@ -21,6 +21,7 @@ package org.neo4j.scheduler;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -37,6 +38,14 @@ public interface JobHandle<T>
 
     void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException;
 
+    /**
+     * Waits if necessary for the computation to complete, and then
+     * retrieves its result, similar to {@link Future#get()}.
+     *
+     * @return the computed result
+     * @throws ExecutionException if the computation threw an exception
+     * @throws InterruptedException if the current thread was interrupted while waiting
+     */
     T get() throws ExecutionException, InterruptedException;
 
     default void registerCancelListener( CancelListener listener )
@@ -44,9 +53,9 @@ public interface JobHandle<T>
         throw new UnsupportedOperationException( "Unsupported in this implementation" );
     }
 
-    JobHandle nullInstance = new NullJobHandle();
+    JobHandle<?> nullInstance = new NullJobHandle<>();
 
-    class NullJobHandle implements JobHandle<Void>
+    class NullJobHandle<T> implements JobHandle<T>
     {
         @Override
         public void cancel()
@@ -64,7 +73,7 @@ public interface JobHandle<T>
         }
 
         @Override
-        public Void get()
+        public T get()
         {
             return null;
         }

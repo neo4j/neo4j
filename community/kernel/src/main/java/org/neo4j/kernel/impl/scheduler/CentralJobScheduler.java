@@ -147,7 +147,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         if ( !started )
         {
@@ -157,13 +157,13 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
+    public JobHandle<?> scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
     {
         return scheduleRecurring( group, runnable, 0, period, timeUnit );
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit unit )
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit unit )
     {
         return scheduler.submit(
                 group, runnable, unit.toNanos( initialDelay ), unit.toNanos( period ) );
@@ -195,7 +195,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public JobHandle schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit unit )
+    public JobHandle<?> schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit unit )
     {
         return scheduler.submit( group, runnable, unit.toNanos( initialDelay ), 0 );
     }

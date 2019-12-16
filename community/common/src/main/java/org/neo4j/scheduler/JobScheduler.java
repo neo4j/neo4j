@@ -87,16 +87,16 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     <T> JobHandle<T> schedule( Group group, Callable<T> job );
 
     /** Schedule a new job in the specified group. */
-    JobHandle schedule( Group group, Runnable job );
+    JobHandle<?> schedule( Group group, Runnable job );
 
     /** Schedule a new job in the specified group with the given delay */
-    JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit );
+    JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit );
 
     /** Schedule a recurring job */
-    JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
+    JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
 
     /** Schedule a recurring job where the first invocation is delayed the specified time */
-    JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
+    JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
 
     /**
      * Return a stream of all active scheduling groups.

@@ -52,28 +52,28 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         jobs.add( job );
         return new OnDemandJobHandle();
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
+    public JobHandle<?> schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
     {
         jobs.add( job );
         return new OnDemandJobHandle();
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
     {
         jobs.add( runnable );
         return new OnDemandJobHandle();
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay,
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay,
             long period, TimeUnit timeUnit )
     {
         jobs.add( runnable );
@@ -97,7 +97,7 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
         }
     }
 
-    private class OnDemandJobHandle implements JobHandle
+    private class OnDemandJobHandle<T> implements JobHandle<T>
     {
         @Override
         public void cancel()
@@ -118,7 +118,7 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
         }
 
         @Override
-        public Object get() throws ExecutionException, InterruptedException
+        public T get() throws ExecutionException, InterruptedException
         {
             // on demand
             return null;

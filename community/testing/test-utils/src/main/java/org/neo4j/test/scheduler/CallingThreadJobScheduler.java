@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 public class CallingThreadJobScheduler extends JobSchedulerAdapter
 {
     @Override
-    public JobHandle schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         job.run();
         return mock( JobHandle.class );

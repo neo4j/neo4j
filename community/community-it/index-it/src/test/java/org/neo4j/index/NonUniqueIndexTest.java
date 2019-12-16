@@ -138,7 +138,7 @@ class NonUniqueIndexTest
         return new CentralJobScheduler( Clocks.nanoClock() )
         {
             @Override
-            public JobHandle schedule( Group group, Runnable job )
+            public JobHandle<?> schedule( Group group, Runnable job )
             {
                 return super.schedule( group, slowRunnable( job ) );
             }

@@ -69,27 +69,27 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         return null;
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable runnable, long initialDelay,
+    public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay,
             TimeUnit timeUnit )
     {
         return null;
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long period,
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period,
             TimeUnit timeUnit )
     {
         return null;
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay,
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay,
             long period, TimeUnit timeUnit )
     {
         return null;

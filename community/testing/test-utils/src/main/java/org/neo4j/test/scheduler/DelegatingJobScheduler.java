@@ -71,23 +71,23 @@ public class DelegatingJobScheduler implements JobScheduler
         return delegate.schedule( group, job );
     }
 
-    public JobHandle schedule( Group group, Runnable job )
+    public JobHandle<?> schedule( Group group, Runnable job )
     {
         return delegate.schedule( group, job );
     }
 
-    public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
         return delegate.schedule( group, runnable, initialDelay, timeUnit );
     }
 
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long period,
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period,
             TimeUnit timeUnit )
     {
         return delegate.scheduleRecurring( group, runnable, period, timeUnit );
     }
 
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period,
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period,
             TimeUnit timeUnit )
     {
         return delegate.scheduleRecurring( group, runnable, initialDelay, period, timeUnit );

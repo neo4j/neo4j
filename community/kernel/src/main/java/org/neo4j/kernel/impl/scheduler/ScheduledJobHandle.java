@@ -48,7 +48,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
  * otherwise its rescheduled for next execution.</li>
  * </ul>
  */
-final class ScheduledJobHandle implements JobHandle
+final class ScheduledJobHandle<T> implements JobHandle<T>
 {
     // We extend AtomicInteger to inline our state field.
     // These are the possible state values:
@@ -182,7 +182,7 @@ final class ScheduledJobHandle implements JobHandle
     }
 
     @Override
-    public Object get()
+    public T get()
     {
         throw new UnsupportedOperationException( "Not supported for repeating tasks." );
     }

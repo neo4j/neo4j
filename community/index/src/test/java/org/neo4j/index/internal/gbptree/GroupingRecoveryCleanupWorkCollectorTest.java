@@ -195,11 +195,11 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public JobHandle schedule( Group group, Runnable job )
+        public JobHandle<?> schedule( Group group, Runnable job )
         {
             assertGroup( group );
             Future<?> future = executorService.submit( job );
-            return new JobHandle()
+            return new JobHandle<>()
             {
                 @Override
                 public void cancel()
