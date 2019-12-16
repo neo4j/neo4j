@@ -351,7 +351,7 @@ public class CachingExpandInto
         @Override
         public void setCloseListener( CloseListener closeListener )
         {
-            //noting close, nothing to listen to
+            //nothing close, nothing to listen to
         }
 
         @Override
