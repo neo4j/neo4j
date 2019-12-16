@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -96,7 +95,6 @@ class IndexSamplingJobTrackerTest
     }
 
     @Test
-    @Timeout( 5 )
     void shouldDoNothingWhenUsedAfterBeingStopped()
     {
         // Given
@@ -112,7 +110,6 @@ class IndexSamplingJobTrackerTest
     }
 
     @Test
-    @Timeout( 5 )
     void shouldStopAndWaitForAllJobsToFinish() throws Exception
     {
         // Given
