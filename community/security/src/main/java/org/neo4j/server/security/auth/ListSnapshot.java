@@ -25,13 +25,11 @@ public class ListSnapshot<T>
 {
     private final long timestamp;
     private final List<T> values;
-    private final boolean fromPersisted;
 
-    public ListSnapshot( long timestamp, List<T> values, boolean fromPersisted )
+    public ListSnapshot( long timestamp, List<T> values )
     {
         this.timestamp = timestamp;
         this.values = values;
-        this.fromPersisted = fromPersisted;
     }
 
     public long timestamp()
@@ -43,12 +41,4 @@ public class ListSnapshot<T>
     {
         return values;
     }
-
-    public boolean fromPersisted()
-    {
-        return fromPersisted;
-    }
-
-    public static final boolean FROM_PERSISTED = true;
-    public static final boolean FROM_MEMORY = false;
 }

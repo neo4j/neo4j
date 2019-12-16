@@ -158,7 +158,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 
     protected boolean doMigrateUsers( Transaction tx, UserRepository userRepository ) throws Exception
     {
-        ListSnapshot<User> users = userRepository.getPersistedSnapshot();
+        ListSnapshot<User> users = userRepository.getSnapshot();
 
         if ( !users.values().isEmpty() )
         {

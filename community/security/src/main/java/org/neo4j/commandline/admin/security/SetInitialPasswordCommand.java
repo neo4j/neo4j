@@ -116,7 +116,7 @@ public class SetInitialPasswordCommand extends AbstractCommand
             FileUserRepository userRepository = new FileUserRepository( ctx.fs(), authFile, NullLogProvider.getInstance() );
             try ( Lifespan life = new Lifespan( userRepository ) )
             {
-                ListSnapshot<User> users = userRepository.getPersistedSnapshot();
+                ListSnapshot<User> users = userRepository.getSnapshot();
                 if ( users.values().size() == 1 )
                 {
                     User user = users.values().get( 0 );

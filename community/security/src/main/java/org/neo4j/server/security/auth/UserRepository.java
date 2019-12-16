@@ -92,11 +92,11 @@ public interface UserRepository extends Lifecycle
     Set<String> getAllUsernames();
 
     /**
-     * Returns a snapshot of the current persisted user repository
-     * @return a snapshot of the current persisted user repository
+     * Returns a snapshot of the current user repository
+     * @return a snapshot of the current user repository
      * @throws IOException
      */
-    ListSnapshot<User> getPersistedSnapshot() throws IOException;
+    ListSnapshot<User> getSnapshot() throws IOException;
 
     /**
      * Permanently deletes all data in this repository
