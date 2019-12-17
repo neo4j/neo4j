@@ -42,6 +42,6 @@ public class GenericStringLengthIndexValidationIT extends StringLengthIndexValid
     @Override
     protected String expectedPopulationFailureMessage()
     {
-        return "Index key-value size it to large. Please see index documentation for limitations.";
+        return "Property value is too large to index into";
     }
 }

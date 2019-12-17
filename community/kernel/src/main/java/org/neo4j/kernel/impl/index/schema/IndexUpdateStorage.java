@@ -44,7 +44,6 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends N
     private final VALUE value;
 
     IndexUpdateStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,VALUE> layout )
-            throws IOException
     {
         super( fs, file, byteBufferFactory, blockSize );
         this.layout = layout;

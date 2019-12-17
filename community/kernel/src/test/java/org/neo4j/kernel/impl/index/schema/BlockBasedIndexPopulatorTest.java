@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -34,20 +35,25 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
@@ -63,10 +69,13 @@ import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
+import org.neo4j.values.storable.Value;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -82,6 +91,7 @@ class BlockBasedIndexPopulatorTest
 {
     private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabel( 1, 1 );
     private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
+    public static final int SUFFICIENTLY_LARGE_BUFFER_SIZE = (int) ByteUnit.kibiBytes( 50 );
 
     @Inject
     Actor merger;
@@ -467,6 +477,125 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
+    @Test
+    void shouldAcceptBatchAddedMaxSizeValue() throws IndexEntryConflictException, IOException
+    {
+        // given
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        try
+        {
+            int size = populator.tree.keyValueSizeCap();
+            GenericLayout layout = layout();
+            Value value = generateStringResultingInSize( layout, size );
+            Collection<? extends IndexEntryUpdate<?>> data = singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value ) );
+            populator.add( data );
+            populator.scanCompleted( nullInstance, jobScheduler );
+
+            // when
+            try ( Seeker<GenericKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
+            {
+                // then
+                assertTrue( seek.next() );
+                assertEquals( value, seek.key().asValue() );
+                assertFalse( seek.next() );
+            }
+        }
+        finally
+        {
+            populator.close( true );
+        }
+    }
+
+    @Test
+    void shouldFailOnBatchAddedTooLargeValue()
+    {
+        /// given
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        try
+        {
+            int size = populator.tree.keyValueSizeCap() + 1;
+            assertThrows( IllegalArgumentException.class, () -> populator.add( singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR,
+                    generateStringResultingInSize( layout(), size ) ) ) ) );
+        }
+        finally
+        {
+            populator.close( false );
+        }
+    }
+
+    @Test
+    void shouldAcceptUpdatedMaxSizeValue() throws IndexEntryConflictException, IOException
+    {
+        // given
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        try
+        {
+            int size = populator.tree.keyValueSizeCap();
+            GenericLayout layout = layout();
+            Value value = generateStringResultingInSize( layout, size );
+            IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value );
+            try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+            {
+                updater.process( update );
+            }
+            populator.scanCompleted( nullInstance, jobScheduler );
+
+            // when
+            try ( Seeker<GenericKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
+            {
+                // then
+                assertTrue( seek.next() );
+                assertEquals( value, seek.key().asValue() );
+                assertFalse( seek.next() );
+            }
+        }
+        finally
+        {
+            populator.close( true );
+        }
+    }
+
+    @Test
+    void shouldFailOnUpdatedTooLargeValue()
+    {
+        /// given
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        try
+        {
+            int size = populator.tree.keyValueSizeCap() + 1;
+            assertThrows( IllegalArgumentException.class, () ->
+            {
+                try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+                {
+                    updater.process( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, generateStringResultingInSize( layout(), size ) ) );
+                }
+            } );
+        }
+        finally
+        {
+            populator.close( false );
+        }
+    }
+
+    private Seeker<GenericKey,NativeIndexValue> seek( GBPTree<GenericKey,NativeIndexValue> tree, Layout<GenericKey,NativeIndexValue> layout ) throws IOException
+    {
+        GenericKey low = layout.newKey();
+        low.initialize( Long.MIN_VALUE );
+        low.initValuesAsLowest();
+        GenericKey high = layout.newKey();
+        high.initialize( Long.MAX_VALUE );
+        high.initValuesAsHighest();
+        return tree.seek( low, high, PageCursorTracer.NULL );
+    }
+
     private void externalUpdates( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, int firstId, int lastId )
             throws IndexEntryConflictException
     {
@@ -487,8 +616,7 @@ class BlockBasedIndexPopulatorTest
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, GBPTree.Monitor treeMonitor,
             ByteBufferFactory bufferFactory )
     {
-        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-        GenericLayout layout = new GenericLayout( 1, spatialSettings );
+        GenericLayout layout = layout();
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
                 new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory, 2, monitor, treeMonitor )
                 {
@@ -497,9 +625,21 @@ class BlockBasedIndexPopulatorTest
                     {
                         throw new UnsupportedOperationException( "Not needed in this test" );
                     }
+
+                    @Override
+                    protected IndexValueValidator instantiateValueValidator()
+                    {
+                        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout );
+                    }
                 };
         populator.create();
         return populator;
+    }
+
+    private GenericLayout layout()
+    {
+        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+        return new GenericLayout( 1, spatialSettings );
     }
 
     private static Collection<IndexEntryUpdate<?>> batchOfUpdates()
@@ -515,6 +655,22 @@ class BlockBasedIndexPopulatorTest
     private static IndexEntryUpdate<IndexDescriptor> add( int i )
     {
         return IndexEntryUpdate.add( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
+    }
+
+    static Value generateStringResultingInSize( Layout<GenericKey,?> layout, int size )
+    {
+        Value value;
+        GenericKey key = layout.newKey();
+        key.initialize( 0 );
+        int stringLength = size;
+        do
+        {
+            value = stringValue( "A".repeat( stringLength-- ) );
+            key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
+        }
+        while ( layout.keySize( key ) > size );
+        assertEquals( size, layout.keySize( key ) );
+        return value;
     }
 
     private static class TrappingMonitor extends BlockStorage.Monitor.Adapter

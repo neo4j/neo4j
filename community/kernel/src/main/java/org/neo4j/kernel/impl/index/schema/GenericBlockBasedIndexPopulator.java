@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 
@@ -55,5 +55,11 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKe
         Map<String,Value> map = new HashMap<>();
         spatialSettings.visitIndexSpecificSettings( new SpatialConfigVisitor( map ) );
         return map;
+    }
+
+    @Override
+    protected IndexValueValidator instantiateValueValidator()
+    {
+        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout );
     }
 }

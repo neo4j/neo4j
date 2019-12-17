@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,6 @@ import java.util.Collection;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -240,26 +238,20 @@ class GenericBlockBasedIndexPopulatorTest
     void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException
     {
         // given
-        int sizeOfEntityId = NativeIndexKey.ENTITY_ID_SIZE;
-        int sizeOfType = GenericKey.TYPE_ID_SIZE;
-        int sizeOfStringLength = GenericKey.SIZE_STRING_LENGTH;
-        int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
-        int stringKeyOverhead = sizeOfEntityId + sizeOfType + sizeOfStringLength;
-
-        String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead );
-        TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<IndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
-
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
         {
+            int maxKeyValueSize = populator.tree.keyValueSizeCap();
+            IndexEntryUpdate<IndexDescriptor> update =
+                    add( 1, INDEX_DESCRIPTOR, BlockBasedIndexPopulatorTest.generateStringResultingInSize( populator.layout, maxKeyValueSize ) );
+
             // when
             Collection<IndexEntryUpdate<?>> updates = singleton( update );
             populator.add( updates );
             populator.scanCompleted( nullInstance, jobScheduler );
 
             // then
-            assertHasEntry( populator, largestStringValue, 1 );
+            assertHasEntry( populator, update.values()[0], 1 );
         }
         finally
         {
@@ -268,22 +260,15 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldThrowForEntriesLargerThanMaxSize() throws IndexEntryConflictException
+    void shouldThrowForEntriesLargerThanMaxSize()
     {
         // given
-        int sizeOfEntityId = NativeIndexKey.ENTITY_ID_SIZE;
-        int sizeOfType = GenericKey.TYPE_ID_SIZE;
-        int sizeOfStringLength = GenericKey.SIZE_STRING_LENGTH;
-        int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
-        int stringKeyOverhead = sizeOfEntityId + sizeOfType + sizeOfStringLength;
-
-        String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead + 1 );
-        TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<IndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
-
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
         {
+            int maxKeyValueSize = populator.tree.keyValueSizeCap();
+            IndexEntryUpdate<IndexDescriptor> update =
+                    add( 1, INDEX_DESCRIPTOR, BlockBasedIndexPopulatorTest.generateStringResultingInSize( populator.layout, maxKeyValueSize + 1 ) );
             assertThrows( IllegalArgumentException.class, () ->
             {
                 Collection<IndexEntryUpdate<?>> updates = singleton( update );

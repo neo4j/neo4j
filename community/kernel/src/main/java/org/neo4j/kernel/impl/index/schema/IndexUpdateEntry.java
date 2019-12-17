@@ -49,7 +49,7 @@ public class IndexUpdateEntry
         }
     }
 
-    public static <KEY,VALUE> void write( PageCursor cursor, Layout<KEY,VALUE> layout, UpdateMode updateMode, KEY key1, KEY key2, VALUE value )
+    public static <KEY, VALUE> void write( PageCursor cursor, Layout<KEY,VALUE> layout, UpdateMode updateMode, KEY key1, KEY key2, VALUE value )
     {
         switch ( updateMode )
         {

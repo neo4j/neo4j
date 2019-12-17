@@ -82,8 +82,10 @@ class BlockEntryTest
         int offset = pageCursor.getOffset();
         for ( int i = 0; i < nbrOfEntries; i++ )
         {
-            BlockEntry<MutableLong,MutableLong> entry = new BlockEntry<>( layout.key( rnd.nextLong() ), layout.value( rnd.nextLong() ) );
-            BlockEntry.write( pageCursor, layout, entry );
+            MutableLong key = layout.key( rnd.nextLong() );
+            MutableLong value = layout.value( rnd.nextLong() );
+            BlockEntry<MutableLong,MutableLong> entry = new BlockEntry<>( key, value );
+            BlockEntry.write( pageCursor, layout, key, value );
             expectedEntries.add( entry );
         }
 

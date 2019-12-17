@@ -95,11 +95,6 @@ class BlockEntry<KEY,VALUE>
         layout.readKey( pageCursor, key, extractKeySize( entrySize ) );
     }
 
-    static <KEY, VALUE> void write( PageCursor pageCursor, Layout<KEY,VALUE> layout, BlockEntry<KEY,VALUE> entry )
-    {
-        write( pageCursor, layout, entry.key(), entry.value() );
-    }
-
     static <KEY, VALUE> void write( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key, VALUE value )
     {
         int keySize = layout.keySize( key );

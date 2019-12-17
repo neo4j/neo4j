@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
@@ -54,6 +55,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
@@ -104,6 +106,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private volatile CountDownLatch mergeOngoingLatch;
     private IndexSample nonUniqueIndexSample;
     private final AtomicLong numberOfIndexUpdatesSinceSample = new AtomicLong();
+    private IndexValueValidator validator;
 
     // progress state
     private volatile long numberOfAppliedScanUpdates;
@@ -172,17 +175,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             indexFiles.archiveIndex();
         }
         super.create();
-        try
-        {
-            File storeFile = indexFiles.getStoreFile();
-            File externalUpdatesFile = new File( storeFile.getParent(), storeFile.getName() + ".ext" );
-            externalUpdates = new IndexUpdateStorage<>( fileSystem, externalUpdatesFile, bufferFactory.globalAllocator(), smallerBufferSize(), layout );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        File storeFile = indexFiles.getStoreFile();
+        File externalUpdatesFile = new File( storeFile.getParent(), storeFile.getName() + ".ext" );
+        validator = instantiateValueValidator();
+        externalUpdates = new IndexUpdateStorage<>( fileSystem, externalUpdatesFile, bufferFactory.globalAllocator(), smallerBufferSize(), layout );
     }
+
+    protected abstract IndexValueValidator instantiateValueValidator();
 
     private int smallerBufferSize()
     {
@@ -206,6 +205,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try
         {
+            validator.validate( values );
             KEY key = layout.newKey();
             VALUE value = layout.newValue();
             initializeKeyFromUpdate( key, entityId, values );
@@ -444,6 +444,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 @Override
                 public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
                 {
+                    validateUpdate( update );
                     numberOfIndexUpdatesSinceSample.incrementAndGet();
                     super.process( update );
                 }
@@ -460,6 +461,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 assertOpen();
                 try
                 {
+                    validateUpdate( update );
                     externalUpdates.add( update );
                 }
                 catch ( IOException e )
@@ -482,6 +484,14 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 }
             }
         };
+    }
+
+    private void validateUpdate( IndexEntryUpdate<?> update )
+    {
+        if ( update.updateMode() != UpdateMode.REMOVED )
+        {
+            validator.validate( update.values() );
+        }
     }
 
     @Override
