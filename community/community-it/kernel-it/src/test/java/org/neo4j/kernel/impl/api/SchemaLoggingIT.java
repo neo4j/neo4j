@@ -58,7 +58,7 @@ class SchemaLoggingIT
     }
 
     @Test
-    void shouldLogUserReadableLabelAndPropertyNames() throws Exception
+    void shouldLogUserReadableLabelAndPropertyNames()
     {
         String labelName = "User";
         String property = "name";
@@ -72,7 +72,7 @@ class SchemaLoggingIT
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
         logProvider.assertAtLeastOnce( match.info( containsString( "Index population started: [%s]" ),
-                ":User(name) [provider: {key=" + providerDescriptor.getKey() + ", version=" + providerDescriptor.getVersion() + "}]" ) );
+                "Index( 1, 'index_a908f819', GENERAL BTREE, :User(name), " + providerDescriptor.name() + " )" ) );
 
         assertEventually( () -> null, new LogMessageMatcher( match, providerDescriptor ), 1, TimeUnit.MINUTES );
     }
@@ -108,7 +108,7 @@ class SchemaLoggingIT
         public boolean matches( Object item )
         {
             return logProvider.containsMatchingLogCall( match.info( containsString( CREATION_FINISHED ),
-                    ":User(name) [provider: {key=" + descriptor.getKey() + ", version=" + descriptor.getVersion() + "}]", "ONLINE" ) );
+                    "Index( 1, 'index_a908f819', GENERAL BTREE, :User(name), " + descriptor.name() + " )", "ONLINE" ) );
         }
 
         @Override

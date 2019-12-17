@@ -31,8 +31,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
-
 /**
  * Helper class of {@link IndexingService}. Used mainly as factory of index proxies.
  */
@@ -62,7 +60,7 @@ class IndexProxyCreator
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
-        final String indexUserDescription = indexUserDescription( index );
+        final String indexUserDescription = index.userDescription( tokenNameLookup );
         IndexPopulator populator = populatorFromProvider( index, samplingConfig, populationJob.bufferFactory() );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( index,
@@ -123,7 +121,7 @@ class IndexProxyCreator
         // Note about the buffer factory instantiation here. Question is why an index populator is instantiated for a failed index proxy to begin with.
         // The byte buffer factory should not be used here anyway so the buffer size doesn't actually matter.
         IndexDropper indexDropper = dropperFromProvider( descriptor );
-        String indexUserDescription = indexUserDescription( descriptor );
+        String indexUserDescription = descriptor.userDescription( tokenNameLookup );
         IndexProxy proxy;
         proxy = new FailedIndexProxy( descriptor,
                 indexUserDescription,
@@ -133,12 +131,6 @@ class IndexProxyCreator
                 logProvider );
         proxy = new ContractCheckingIndexProxy( proxy, true );
         return proxy;
-    }
-
-    private String indexUserDescription( IndexDescriptor descriptor )
-    {
-        return format( "%s [provider: %s]",
-                descriptor.schema().userDescription( tokenNameLookup ), descriptor.getIndexProvider().toString() );
     }
 
     private IndexPopulator populatorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )

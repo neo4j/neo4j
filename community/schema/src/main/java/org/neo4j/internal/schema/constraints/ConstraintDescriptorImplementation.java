@@ -25,9 +25,9 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaUserDescription;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 
 /**
@@ -94,7 +94,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return format( "Constraint( %s, %s )", type.name(), schema().userDescription( tokenNameLookup ) );
+        return SchemaUserDescription.forConstraint( tokenNameLookup, id, name, type, schema(), ownedIndex );
     }
 
     @Override

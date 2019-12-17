@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.schema.Schema;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -34,13 +35,17 @@ public class SchemaAcceptanceTestBase
     protected Label otherLabel = Labels.MY_OTHER_LABEL;
     protected RelationshipType relType = RelationshipType.withName( "relType" );
 
-    protected <EXCEPTION extends Throwable, CAUSE extends Throwable> void assertExpectedException( Class<CAUSE> expectedCause, String expectedMessage,
-            EXCEPTION exception )
+    protected <EXCEPTION extends Throwable, CAUSE extends Throwable> void assertExpectedException( EXCEPTION exception, Class<CAUSE> expectedCause,
+            String... expectedMessageParts )
     {
         final Throwable cause = exception.getCause();
         assertEquals( expectedCause, cause.getClass(),
                 "Expected cause to be of type " + expectedCause + " but was " + cause.getClass() );
-        assertEquals( expectedMessage, exception.getMessage() );
+        String message = exception.getMessage();
+        for ( String messagePart : expectedMessageParts )
+        {
+            assertThat( message ).contains( messagePart );
+        }
     }
 
     protected enum Labels implements Label

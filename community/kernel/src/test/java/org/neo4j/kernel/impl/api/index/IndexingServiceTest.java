@@ -1020,11 +1020,11 @@ class IndexingServiceTest
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
         internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
-                "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
+                "Failed to populate index: [Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )]" ),
                 causedBy( exception ) ) );
         internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
                 "Index population completed. Index is now online: [%s]",
-                ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+                "Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )" ) );
     }
 
     @Test
@@ -1053,11 +1053,11 @@ class IndexingServiceTest
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
         internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
-                "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
+                "Failed to populate index: [Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )]" ),
                 causedBy( exception ) ) );
         internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
                 "Index population completed. Index is now online: [%s]",
-                ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+                "Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )" ) );
     }
 
     @Test

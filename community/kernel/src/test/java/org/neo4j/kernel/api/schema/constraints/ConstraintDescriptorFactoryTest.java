@@ -109,11 +109,11 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldGiveNiceUserDescriptions()
     {
-        assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
-                "Constraint( EXISTS, :Label1(property2) )" );
-        assertThat( ConstraintDescriptorFactory.existsForRelType( 1, 3 ).userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
-                "Constraint( EXISTS, -[:RelType1(property3)]- )" );
-        assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
-                "Constraint( UNIQUE, :Label2(property4) )" );
+        assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).withId( 1 ).withName( "Constraint 1" ).userDescription( SIMPLE_NAME_LOOKUP ) )
+                .isEqualTo( "Constraint( 1, 'Constraint 1', NODE PROPERTY EXISTENCE, :Label1(property2) )" );
+        assertThat( ConstraintDescriptorFactory.existsForRelType( 1, 3 ).withId( 2 ).withName( "Constraint 2" ).userDescription( SIMPLE_NAME_LOOKUP ) )
+                .isEqualTo( "Constraint( 2, 'Constraint 2', RELATIONSHIP PROPERTY EXISTENCE, -[:RelType1(property3)]- )" );
+        assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).withId( 3 ).withName( "Constraint 3" ).userDescription( SIMPLE_NAME_LOOKUP ) )
+                .isEqualTo( "Constraint( 3, 'Constraint 3', UNIQUENESS, :Label2(property4) )" );
     }
 }
