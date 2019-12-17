@@ -47,6 +47,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static java.util.Locale.ROOT;
+import static org.neo4j.configuration.ExternalSettings.additionalJvm;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
@@ -263,6 +264,10 @@ class MemoryRecommendationsCommand extends AbstractCommand
         {
             print( tx_state_max_off_heap_memory.name() + "=" + txState );
         }
+        print( "#" );
+        print( "# It is also recommended turning out-of-memory errors into full crashes," );
+        print( "# instead of allowing a partially crashed database to continue running:" );
+        print( "#" + additionalJvm.name() + "=-XX:+ExitOnOutOfMemoryError" );
         print( "#" );
         print( "# The numbers below have been derived based on your current databases located at: '" + databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );
