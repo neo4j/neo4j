@@ -20,32 +20,28 @@ import org.neo4j.cypher.internal.v4_0.expressions.{DummyExpression, Expression}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.scalatest.Assertion
 
-abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends SemanticFunSuite {
+abstract class UnaryExpressionTestBase(ctr: Expression => Expression) extends SemanticFunSuite {
 
-  protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec, useCypher9ComparisonSemantics: Boolean = false)(expected: TypeSpec): Assertion = {
-    val (result, expression) = evaluateWithTypes(lhsTypes, rhsTypes, useCypher9ComparisonSemantics)
+  protected def testValidTypes(lhsTypes: TypeSpec)(expected: TypeSpec): Assertion =  {
+    val (result, expression) = evaluateWithTypes(lhsTypes)
     result.errors shouldBe empty
     types(expression)(result.state) should equal(expected)
   }
 
-  protected def testInvalidApplication(lhsTypes: TypeSpec, rhsTypes: TypeSpec, useCypher9ComparisonSemantics: Boolean = false)(message: String): Assertion = {
-    val (result, _) = evaluateWithTypes(lhsTypes, rhsTypes, useCypher9ComparisonSemantics)
+  protected def testInvalidApplication(lhsTypes: TypeSpec)(message: String): Assertion =  {
+    val (result, _) = evaluateWithTypes(lhsTypes)
     result.errors should not be empty
     result.errors.head.msg should equal(message)
   }
 
-  protected def evaluateWithTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec, useCypher9ComparisonSemantics: Boolean): (SemanticCheckResult, Expression) = {
+  protected def evaluateWithTypes(lhsTypes: TypeSpec): (SemanticCheckResult, Expression) = {
     val lhs = DummyExpression(lhsTypes)
-    val rhs = DummyExpression(rhsTypes)
 
-    val expression = ctr(lhs, rhs)
+    val expression = ctr(lhs)
 
-    val initialState = if (useCypher9ComparisonSemantics)
-      SemanticState.clean.withFeature(SemanticFeature.Cypher9Comparability)
-    else
-      SemanticState.clean
+    val initialState = SemanticState.clean
 
-    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs))(initialState).state
+    val state = SemanticExpressionCheck.simple(lhs)(initialState).state
     (SemanticExpressionCheck.simple(expression)(state), expression)
   }
 }
