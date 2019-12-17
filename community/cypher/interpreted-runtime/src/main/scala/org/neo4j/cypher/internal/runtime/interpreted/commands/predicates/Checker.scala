@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util
 
-import org.neo4j.cypher.internal.macros.Require.require
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.{AnyValue, Equality}
@@ -38,7 +38,7 @@ trait Checker {
 
 class BuildUp(list: ListValue) extends Checker {
   val iterator: util.Iterator[AnyValue] = list.iterator()
-  require(iterator.hasNext)
+  checkOnlyWhenAssertionsAreEnabled(iterator.hasNext)
   private val cachedSet: mutable.Set[AnyValue] = new mutable.HashSet[AnyValue]
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value eq Values.NO_VALUE) (None, this)
@@ -87,7 +87,7 @@ case object NullListChecker extends Checker {
 // This is the final form for this cache.
 class SetChecker(cachedSet: mutable.Set[AnyValue], falseResult: Option[Boolean]) extends Checker {
 
-  require(cachedSet.nonEmpty)
+  checkOnlyWhenAssertionsAreEnabled(cachedSet.nonEmpty)
 
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value eq Values.NO_VALUE)

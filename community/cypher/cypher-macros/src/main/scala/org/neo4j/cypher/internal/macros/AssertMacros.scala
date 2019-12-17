@@ -30,20 +30,20 @@ import scala.reflect.macros.blackbox
   * As with `assert`, `require` should not be used for checking input on public methods or similar, only to be used
   * for checking internal invariants. We should always assume that these checks are not running in production code.
   */
-object Require {
+object AssertMacros {
 
   /**
     * Require that the given condition is `true`
     * @param condition the condition that is required to be true
     */
-  def require(condition: Boolean): Unit = macro requireImpl
+  def checkOnlyWhenAssertionsAreEnabled(condition: Boolean): Unit = macro requireImpl
 
   /**
     * Require that the given condition is `true`
     * @param condition the condition that is required to be true
     * @param msg the error message shown if requirement fails
     */
-  def require(condition: Boolean, msg: String): Unit = macro requireWithMsgImpl
+  def checkOnlyWhenAssertionsAreEnabled(condition: Boolean, msg: String): Unit = macro requireWithMsgImpl
 
   def requireImpl(c: blackbox.Context)(condition: c.Expr[Boolean]): c.universe.Tree = {
     import c.universe._

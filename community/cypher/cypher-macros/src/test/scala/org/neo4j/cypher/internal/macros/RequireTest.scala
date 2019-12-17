@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.macros
 
-import org.neo4j.cypher.internal.macros.Require.require
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.ASSERTIONS_ENABLED
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -34,13 +34,13 @@ class RequireTest extends CypherFunSuite {
   test("require without message") {
     assume(ASSERTIONS_ENABLED)
 
-    the [AssertionError] thrownBy require(false) should have message "assertion failed"
+    the [AssertionError] thrownBy checkOnlyWhenAssertionsAreEnabled(false) should have message "assertion failed"
   }
 
   test("require should not throw if assertions are disabled message") {
     assume(!ASSERTIONS_ENABLED)
 
-    noException should be thrownBy require(false)
+    noException should be thrownBy checkOnlyWhenAssertionsAreEnabled(false)
   }
 
 

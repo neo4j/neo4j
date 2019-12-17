@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.macros.Require.require
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.exceptions.InternalException
 
 object OwningPipeAsserter {
 
-  def assertAllExpressionsHaveAnOwningPipe(pipe: Pipe): Unit = require(hasOwningPipe(pipe))
+  def assertAllExpressionsHaveAnOwningPipe(pipe: Pipe): Unit = checkOnlyWhenAssertionsAreEnabled(hasOwningPipe(pipe))
 
   private def hasOwningPipe(pipe: Pipe): Boolean = {
     pipe.treeFold(()) {

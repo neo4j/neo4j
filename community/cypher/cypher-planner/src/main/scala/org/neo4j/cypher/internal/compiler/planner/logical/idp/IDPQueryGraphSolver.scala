@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.macros.Require.require
 
 import scala.annotation.tailrec
 

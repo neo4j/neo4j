@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.macros.Require.require
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.Prettifier
@@ -55,7 +55,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     LogicalPlans.map(plan, this)
 
   override def onLeaf(plan: LogicalPlan): InternalPlanDescription = {
-    require(plan.isLeaf)
+    checkOnlyWhenAssertionsAreEnabled(plan.isLeaf)
 
     val id = plan.id
     val variables = plan.availableSymbols
@@ -367,8 +367,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   override def onOneChildPlan(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
-    require(plan.lhs.nonEmpty)
-    require(plan.rhs.isEmpty)
+    checkOnlyWhenAssertionsAreEnabled(plan.lhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(plan.rhs.isEmpty)
 
     val id = plan.id
     val variables = plan.availableSymbols
@@ -707,8 +707,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   override def onTwoChildPlan(plan: LogicalPlan, lhs: InternalPlanDescription,
                               rhs: InternalPlanDescription): InternalPlanDescription = {
-    require(plan.lhs.nonEmpty)
-    require(plan.rhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(plan.lhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(plan.rhs.nonEmpty)
 
     val id = plan.id
     val variables = plan.availableSymbols
@@ -831,7 +831,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
     val (name, indexDesc) = valueExpr match {
       case e: RangeQueryExpression[_] =>
-        require(propertyKeys.size == 1)
+        checkOnlyWhenAssertionsAreEnabled(propertyKeys.size == 1)
         val propertyKey = propertyKeys.head.name
         val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
         e.expression match {

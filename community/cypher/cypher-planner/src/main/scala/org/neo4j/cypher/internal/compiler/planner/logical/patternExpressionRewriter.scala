@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
-import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.v4_0.util.Foldable._

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeIndexSeek, NodeUniqueIndexSeek}
-import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.v4_0.expressions.{Equals, Expression}
 
 trait JoinDisconnectedQueryGraphComponents {

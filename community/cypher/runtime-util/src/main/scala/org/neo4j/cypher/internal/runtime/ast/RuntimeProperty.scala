@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.ast
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.macros.Require.require
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalProperty, PropertyKeyName}
 import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewritable}
