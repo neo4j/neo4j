@@ -293,4 +293,25 @@ public class KernelToken implements Token
             throw new TokenCapacityExceededKernelException( e, tokenType );
         }
     }
+
+    @Override
+    public String labelGetName( int labelId )
+    {
+        ktx.assertOpen();
+        return tokenHolders.labelGetName( labelId );
+    }
+
+    @Override
+    public String relationshipTypeGetName( int relationshipTypeId )
+    {
+        ktx.assertOpen();
+        return tokenHolders.relationshipTypeGetName( relationshipTypeId );
+    }
+
+    @Override
+    public String propertyKeyGetName( int propertyKeyId )
+    {
+        ktx.assertOpen();
+        return tokenHolders.propertyKeyGetName( propertyKeyId );
+    }
 }

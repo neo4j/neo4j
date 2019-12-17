@@ -65,7 +65,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -731,8 +730,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         catch ( ConstraintValidationException | CreateConstraintFailureException e )
         {
-            throw new ConstraintViolationTransactionFailureException(
-                    e.getUserMessage( new SilentTokenNameLookup( tokenRead() ) ), e );
+            throw new ConstraintViolationTransactionFailureException( e.getUserMessage( tokenRead() ), e );
         }
         finally
         {

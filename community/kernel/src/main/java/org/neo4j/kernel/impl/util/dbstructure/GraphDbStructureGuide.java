@@ -38,7 +38,6 @@ import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -120,8 +119,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showSchema( DbStructureVisitor visitor, KernelTransaction ktx ) throws IndexNotFoundKernelException
     {
-        TokenNameLookup nameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
-
+        TokenNameLookup nameLookup = ktx.tokenRead();
         showIndices( visitor, ktx, nameLookup );
         showUniqueConstraints( visitor, ktx, nameLookup );
     }

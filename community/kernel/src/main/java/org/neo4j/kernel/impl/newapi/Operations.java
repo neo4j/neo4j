@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -68,7 +67,6 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -133,7 +131,6 @@ public class Operations implements Write, SchemaWrite
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final KernelToken token;
-    private final TokenNameLookup tokenNameLookup;
     private final IndexTxStateUpdater updater;
     private final DefaultPooledCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -154,7 +151,6 @@ public class Operations implements Write, SchemaWrite
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
         this.token = token;
-        this.tokenNameLookup = new SilentTokenNameLookup( token );
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
         this.updater = updater;
@@ -517,7 +513,7 @@ public class Operations implements Write, SchemaWrite
                 throw new UnableToValidateConstraintException( constraint, new AssertionError(
                         format( "Constraint indexes are not expected to be multi-token indexes, " +
                                         "but the constraint %s was referencing an index with the following schema: %s.",
-                                constraint.userDescription( tokenNameLookup ), schema.userDescription( tokenNameLookup ) ) ) );
+                                constraint.userDescription( token ), schema.userDescription( token ) ) ) );
             }
 
             //Take a big fat lock, and check for existing node in index
@@ -916,7 +912,7 @@ public class Operations implements Write, SchemaWrite
             if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
             {
                 IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException( index.schema() );
-                throw new DropIndexFailureException( "Unable to drop index: " + cause.getUserMessage( tokenNameLookup ), cause );
+                throw new DropIndexFailureException( "Unable to drop index: " + cause.getUserMessage( token ), cause );
             }
         }
         ktx.txState().indexDoDrop( index );
@@ -930,7 +926,7 @@ public class Operations implements Write, SchemaWrite
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new DropIndexFailureException( "Unable to drop index: " + e.getUserMessage( tokenNameLookup ), e );
+            throw new DropIndexFailureException( "Unable to drop index: " + e.getUserMessage( token ), e );
         }
     }
 
@@ -944,7 +940,7 @@ public class Operations implements Write, SchemaWrite
 
         if ( !iterator.hasNext() )
         {
-            String description = schema.userDescription( tokenNameLookup );
+            String description = schema.userDescription( token );
             throw new DropIndexFailureException( "Unable to drop index on " + description + ". There is no such index." );
         }
 
@@ -972,7 +968,7 @@ public class Operations implements Write, SchemaWrite
             if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
             {
                 IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException( indexName, index.schema() );
-                throw new DropIndexFailureException( "Unable to drop index: " + cause.getUserMessage( tokenNameLookup ), cause );
+                throw new DropIndexFailureException( "Unable to drop index: " + cause.getUserMessage( token ), cause );
             }
         }
         ktx.txState().indexDoDrop( index );
@@ -1032,7 +1028,7 @@ public class Operations implements Write, SchemaWrite
             indexWithSameSchema = indexesWithSameSchema.next();
             if ( indexWithSameSchema.getName().equals( name ) && indexWithSameSchema.isUnique() == prototype.isUnique() )
             {
-                throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchema, INDEX_CREATION, tokenNameLookup );
+                throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchema, INDEX_CREATION, token );
             }
         }
 
@@ -1046,7 +1042,7 @@ public class Operations implements Write, SchemaWrite
             final ConstraintDescriptor constraint = constraintWithSameSchema.next();
             if ( constraint.type() != ConstraintType.EXISTS )
             {
-                throw new AlreadyConstrainedException( constraint, INDEX_CREATION, tokenNameLookup );
+                throw new AlreadyConstrainedException( constraint, INDEX_CREATION, token );
             }
         }
 
@@ -1074,7 +1070,7 @@ public class Operations implements Write, SchemaWrite
             if ( constraint.equals( constraintWithSameSchema ) &&
                  constraint.getName().equals( constraintWithSameSchema.getName() ) )
             {
-                throw new EquivalentSchemaRuleAlreadyExistsException( constraintWithSameSchema, CONSTRAINT_CREATION, tokenNameLookup );
+                throw new EquivalentSchemaRuleAlreadyExistsException( constraintWithSameSchema, CONSTRAINT_CREATION, token );
             }
         }
 
@@ -1088,7 +1084,7 @@ public class Operations implements Write, SchemaWrite
             final boolean existingIsExistenceConstraint = constraintWithSameSchema.type() == ConstraintType.EXISTS;
             if ( creatingExistenceConstraint == existingIsExistenceConstraint )
             {
-                throw new AlreadyConstrainedException( constraintWithSameSchema, CONSTRAINT_CREATION, tokenNameLookup );
+                throw new AlreadyConstrainedException( constraintWithSameSchema, CONSTRAINT_CREATION, token );
             }
         }
         // Already indexed
@@ -1232,8 +1228,8 @@ public class Operations implements Write, SchemaWrite
             }
             else
             {
-                String schemaDescription = schema.userDescription( tokenNameLookup );
-                String constraintDescription = constraints.next().userDescription( tokenNameLookup );
+                String schemaDescription = schema.userDescription( token );
+                String constraintDescription = constraints.next().userDescription( token );
                 throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
                         "More than one " + type + " constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription +
                                 ", please drop constraint by name instead." ) );
@@ -1241,7 +1237,7 @@ public class Operations implements Write, SchemaWrite
         }
         else
         {
-            throw new DropConstraintFailureException( schema, new NoSuchConstraintException( schema, tokenNameLookup ) );
+            throw new DropConstraintFailureException( schema, new NoSuchConstraintException( schema, token ) );
         }
     }
 
@@ -1370,7 +1366,7 @@ public class Operations implements Write, SchemaWrite
     {
         if ( !allStoreHolder.constraintExists( constraint ) )
         {
-            throw new NoSuchConstraintException( constraint, tokenNameLookup );
+            throw new NoSuchConstraintException( constraint, token );
         }
     }
 
@@ -1405,7 +1401,7 @@ public class Operations implements Write, SchemaWrite
         {
             if ( allStoreHolder.constraintExists( constraint ) )
             {
-                throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, tokenNameLookup );
+                throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, token );
             }
             if ( prototype.getIndexType() != IndexType.BTREE )
             {
@@ -1415,17 +1411,17 @@ public class Operations implements Write, SchemaWrite
             if ( prototype.schema().isFulltextSchemaDescriptor() )
             {
                 throw new CreateConstraintFailureException( constraint, "Cannot create backing constraint index using a full-text schema: " +
-                        prototype.schema().userDescription( tokenNameLookup ) );
+                        prototype.schema().userDescription( token ) );
             }
             if ( prototype.schema().isRelationshipTypeSchemaDescriptor() )
             {
                 throw new CreateConstraintFailureException( constraint, "Cannot create backing constraint index using a relationship type schema: " +
-                        prototype.schema().userDescription( tokenNameLookup ) );
+                        prototype.schema().userDescription( token ) );
             }
             if ( !prototype.isUnique() )
             {
                 throw new CreateConstraintFailureException( constraint,
-                        "Cannot create index backed constraint using an index prototype that is not unique: " + prototype.userDescription( tokenNameLookup ) );
+                        "Cannot create index backed constraint using an index prototype that is not unique: " + prototype.userDescription( token ) );
             }
 
             IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, constraint, prototype );

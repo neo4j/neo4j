@@ -39,7 +39,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -224,7 +223,7 @@ public class IndexProcedures
         catch ( TimeoutException e )
         {
             throw new ProcedureException( Status.Procedure.ProcedureTimedOut, "Index on '%s' did not come online within %s %s",
-                    index.userDescription( new SilentTokenNameLookup( ktx.tokenRead() ) ), timeout, timeoutUnits );
+                    index.userDescription( ktx.tokenRead() ), timeout, timeoutUnits );
         }
     }
 

@@ -698,7 +698,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         val indexReference = ktx.schemaRead().index(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)).next()
         if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
           val message = ktx.schemaRead().indexGetFailure(indexReference)
-          throw new FailedIndexException(indexReference.userDescription(tokenNameLookup), message)
+          throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)
         }
         throw e
     }
@@ -755,8 +755,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         case error: URLAccessValidationError => Left(error.getMessage)
       }
   }
-
-  private lazy val tokenNameLookup = new SilentTokenNameLookup(transactionalContext.kernelTransaction.tokenRead())
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(realNode: Long,

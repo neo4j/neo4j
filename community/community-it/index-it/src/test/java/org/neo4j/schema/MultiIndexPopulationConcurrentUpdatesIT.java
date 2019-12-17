@@ -39,7 +39,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -60,7 +59,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -324,11 +322,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
             IndexProviderMap providerMap = getIndexProviderMap();
             JobScheduler scheduler = getJobScheduler();
-            TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
-                    providerMap, storeView, tokenNameLookup, initialSchemaRulesLoader( storageEngine ),
+                    providerMap, storeView, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
                     mock( IndexStatisticsStore.class ), false );
             indexService.start();

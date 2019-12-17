@@ -37,7 +37,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -104,8 +103,7 @@ public class ConstraintIndexCreator
         SchemaRead schemaRead = transaction.schemaRead();
         try
         {
-            SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( transaction.tokenRead() );
-            index = checkAndCreateConstraintIndex( schemaRead, tokenLookup, constraint, prototype );
+            index = checkAndCreateConstraintIndex( schemaRead, transaction.tokenRead(), constraint, prototype );
         }
         catch ( AlreadyConstrainedException e )
         {

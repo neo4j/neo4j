@@ -64,7 +64,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -161,7 +160,7 @@ public class SchemaImpl implements Schema
             SchemaDescriptor schema = index.schema();
             int[] entityTokenIds = schema.getEntityTokenIds();
             boolean constraintIndex = index.isUnique();
-            String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenRead, index.schema().getPropertyIds() );
+            String[] propertyNames = PropertyNameUtils.getPropertyKeysOrThrow( tokenRead, index.schema().getPropertyIds() );
             switch ( schema.entityType() )
             {
             case NODE:
@@ -579,7 +578,6 @@ public class SchemaImpl implements Schema
         // constraint type introduced to mimic the public ConstraintType, but that would be a duplicate of it
         // essentially. Checking instanceof here is OK-ish since the objects it checks here are part of the
         // internal storage engine API.
-        SilentTokenNameLookup lookup = new SilentTokenNameLookup( tokenRead );
         if ( constraint.isNodePropertyExistenceConstraint() ||
              constraint.isNodeKeyConstraint() ||
              constraint.isUniquenessConstraint() )
@@ -589,9 +587,9 @@ public class SchemaImpl implements Schema
             Label[] labels = new Label[entityTokenIds.length];
             for ( int i = 0; i < entityTokenIds.length; i++ )
             {
-                labels[i] = label( lookup.labelGetName( entityTokenIds[i] ) );
+                labels[i] = label( tokenRead.labelGetName( entityTokenIds[i] ) );
             }
-            String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() ).mapToObj( lookup::propertyKeyGetName ).toArray( String[]::new );
+            String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() ).mapToObj( tokenRead::propertyKeyGetName ).toArray( String[]::new );
             if ( constraint.isNodePropertyExistenceConstraint() )
             {
                 return new NodePropertyExistenceConstraintDefinition( actions, constraint, labels[0], propertyKeys );
@@ -609,8 +607,8 @@ public class SchemaImpl implements Schema
         {
             RelationTypeSchemaDescriptor descriptor = constraint.schema().asRelationshipTypeSchemaDescriptor();
             return new RelationshipPropertyExistenceConstraintDefinition( actions, constraint,
-                    withName( lookup.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
-                    lookup.propertyKeyGetName( descriptor.getPropertyId() ) );
+                    withName( tokenRead.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
+                    tokenRead.propertyKeyGetName( descriptor.getPropertyId() ) );
         }
         throw new IllegalArgumentException( "Unknown constraint " + constraint );
     }
@@ -658,8 +656,7 @@ public class SchemaImpl implements Schema
             }
             catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
             {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( KernelException e )
             {
@@ -696,8 +693,7 @@ public class SchemaImpl implements Schema
             }
             catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
             {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( KernelException e )
             {
@@ -728,8 +724,7 @@ public class SchemaImpl implements Schema
             }
             catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
             {
-                throw new ConstraintViolationException( e.getUserMessage(
-                        new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
             {
@@ -763,8 +758,7 @@ public class SchemaImpl implements Schema
             catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
                     RepeatedSchemaComponentException e )
             {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( IllegalTokenNameException e )
             {
@@ -817,8 +811,7 @@ public class SchemaImpl implements Schema
             catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
                     RepeatedSchemaComponentException e )
             {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( IllegalTokenNameException e )
             {
@@ -853,8 +846,7 @@ public class SchemaImpl implements Schema
             catch ( AlreadyConstrainedException | CreateConstraintFailureException |
                     RepeatedSchemaComponentException e )
             {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( IllegalTokenNameException e )
             {
@@ -889,8 +881,7 @@ public class SchemaImpl implements Schema
             catch ( AlreadyConstrainedException | CreateConstraintFailureException |
                     RepeatedSchemaComponentException e )
             {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( IllegalTokenNameException e )
             {
@@ -915,8 +906,7 @@ public class SchemaImpl implements Schema
             }
             catch ( DropConstraintFailureException e )
             {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
             }
             catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
             {
@@ -927,7 +917,7 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserMessage( KernelException e )
         {
-            return e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) );
+            return e.getUserMessage( transaction.tokenRead() );
         }
 
         @Override

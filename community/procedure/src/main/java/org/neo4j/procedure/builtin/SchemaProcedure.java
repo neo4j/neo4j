@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,7 +45,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 
@@ -74,7 +72,6 @@ public class SchemaProcedure
         {
             Read dataRead = kernelTransaction.dataRead();
             TokenRead tokenRead = kernelTransaction.tokenRead();
-            TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( tokenRead );
             SchemaRead schemaRead = kernelTransaction.schemaRead();
 
             List<Pair<String,Integer>> labelNamesAndIds = new ArrayList<>();
@@ -101,7 +98,7 @@ public class SchemaProcedure
                         IndexDescriptor index = indexReferences.next();
                         if ( !index.isUnique() )
                         {
-                            String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenNameLookup, index.schema().getPropertyIds() );
+                            String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenRead, index.schema().getPropertyIds() );
                             indexes.add( String.join( ",", propertyNames ) );
                         }
                     }
@@ -112,7 +109,7 @@ public class SchemaProcedure
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {
                         ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
-                        constraints.add( constraint.userDescription( tokenNameLookup ) );
+                        constraints.add( constraint.userDescription( tokenRead ) );
                     }
                     properties.put( "constraints", constraints );
 

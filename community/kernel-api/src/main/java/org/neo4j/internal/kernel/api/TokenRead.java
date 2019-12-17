@@ -21,13 +21,14 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Iterator;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenConstants;
 
-public interface TokenRead
+public interface TokenRead extends TokenNameLookup
 {
     /**
      * Value indicating the a token does not exist in the graph.

@@ -54,7 +54,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKern
 import org.neo4j.internal.kernel.api.helpers.Nodes;
 import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.storable.Values;
 
@@ -235,8 +234,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         }
         catch ( ConstraintValidationException e )
         {
-            throw new ConstraintViolationException(
-                    e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
         }
         catch ( IllegalArgumentException e )
         {
@@ -557,8 +555,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         }
         catch ( ConstraintValidationException e )
         {
-            throw new ConstraintViolationException(
-            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
         }
         catch ( EntityNotFoundException e )
         {

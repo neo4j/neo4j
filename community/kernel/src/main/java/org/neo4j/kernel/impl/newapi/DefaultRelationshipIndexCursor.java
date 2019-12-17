@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -72,8 +71,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
 
         if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() )
         {
-            SilentTokenNameLookup tokenNameLookup = new SilentTokenNameLookup( read.ktx.tokenRead() );
-            String index = descriptor.userDescription( tokenNameLookup );
+            String index = descriptor.userDescription( read.ktx.tokenRead() );
             throw new IllegalStateException( "There is transaction state in this transaction, and the index (" + index + ") does not take transaction " +
                     "state into account. This means that the relationship index cursor has to account for the transaction state, but this has not been " +
                     "implemented." );

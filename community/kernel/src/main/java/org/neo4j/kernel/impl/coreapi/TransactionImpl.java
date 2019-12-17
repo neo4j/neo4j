@@ -73,7 +73,6 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
@@ -803,10 +802,9 @@ public class TransactionImpl implements InternalTransaction
             int curr = propertyIds[i];
             if ( curr == prev )
             {
-                SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
                 throw new IllegalArgumentException(
                         format( "Provided two queries for property %s. Only one query per property key can be performed",
-                                tokenLookup.propertyKeyGetName( curr ) ) );
+                                tokenRead.propertyKeyGetName( curr ) ) );
             }
             prev = curr;
         }

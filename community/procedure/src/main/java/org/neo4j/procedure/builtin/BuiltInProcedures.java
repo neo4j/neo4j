@@ -51,7 +51,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -171,7 +170,6 @@ public class BuiltInProcedures
         }
 
         TokenRead tokenRead = kernelTransaction.tokenRead();
-        TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
         SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
@@ -181,7 +179,7 @@ public class BuiltInProcedures
         for ( IndexDescriptor index : indexes )
         {
             IndexResult indexResult;
-            indexResult = asIndexResult( tokenLookup, schemaRead, index );
+            indexResult = asIndexResult( tokenRead, schemaRead, index );
             result.add( indexResult );
         }
         result.sort( Comparator.comparing( r -> r.name ) );
@@ -199,7 +197,6 @@ public class BuiltInProcedures
         }
 
         TokenRead tokenRead = kernelTransaction.tokenRead();
-        TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
         SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
@@ -218,7 +215,7 @@ public class BuiltInProcedures
             throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with name \"" + indexName + "\"" );
         }
 
-        final IndexDetailResult indexDetailResult = asIndexDetails( tokenLookup, schemaRead, index );
+        final IndexDetailResult indexDetailResult = asIndexDetails( tokenRead, schemaRead, index );
         return Stream.of( indexDetailResult );
     }
 
@@ -444,13 +441,12 @@ public class BuiltInProcedures
         }
 
         SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        TokenNameLookup tokens = new SilentTokenNameLookup( kernelTransaction.tokenRead() );
 
         List<ConstraintResult> result = new ArrayList<>();
         final List<ConstraintDescriptor> constraintDescriptors = asList( schemaRead.constraintsGetAll() );
         for ( ConstraintDescriptor constraint : constraintDescriptors )
         {
-            result.add( new ConstraintResult( constraint.getName(), constraint.userDescription( tokens ) ) );
+            result.add( new ConstraintResult( constraint.getName(), constraint.userDescription( kernelTransaction.tokenRead() ) ) );
         }
         result.sort( Comparator.comparing( r -> r.name ) );
         return result.stream();

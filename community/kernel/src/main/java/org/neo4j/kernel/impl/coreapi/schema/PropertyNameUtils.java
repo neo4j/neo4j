@@ -36,7 +36,7 @@ public class PropertyNameUtils
     {
     }
 
-    public static String[] getPropertyKeys( TokenRead tokenRead, int...properties )
+    public static String[] getPropertyKeysOrThrow( TokenRead tokenRead, int...properties )
             throws PropertyKeyIdNotFoundKernelException
     {
         String[] propertyKeys = new String[properties.length];
