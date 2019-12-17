@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabasePageCache;
@@ -97,7 +96,6 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 
@@ -289,7 +287,6 @@ public final class Recovery
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE ) );
-        TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler, STORAGE_MAINTENANCE );
         DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
@@ -311,7 +308,7 @@ public final class Recovery
                 new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
-                config, scheduler, indexProviderMap, tokenNameLookup, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ), false );
+                config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ), false );
 
         TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
         LogVersionRepository logVersionRepository = storageEngine.logVersionRepository();

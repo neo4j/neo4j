@@ -24,7 +24,6 @@ import java.util.function.LongFunction;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;
@@ -68,7 +67,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
@@ -80,7 +78,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final IdGeneratorFactory idGeneratorFactory;
     private final DatabaseLogService databaseLogService;
     private final JobScheduler scheduler;
-    private final TokenNameLookup tokenNameLookup;
     private final DependencyResolver globalDependencies;
     private final TokenHolders tokenHolders;
     private final Locks locks;
@@ -130,7 +127,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
         this.tokenHolders = editionComponents.getTokenHolders();
-        this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = editionComponents.getLocks();
         this.statementLocksFactory = editionComponents.getStatementLocksFactory();
         this.transactionEventListeners = globalModule.getTransactionEventListeners();
@@ -202,12 +198,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public JobScheduler getScheduler()
     {
         return scheduler;
-    }
-
-    @Override
-    public TokenNameLookup getTokenNameLookup()
-    {
-        return tokenNameLookup;
     }
 
     @Override

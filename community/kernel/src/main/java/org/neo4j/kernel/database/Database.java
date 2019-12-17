@@ -180,7 +180,6 @@ public class Database extends LifecycleAdapter
     private final DatabaseLogService databaseLogService;
     private final DatabaseLogProvider internalLogProvider;
     private final DatabaseLogProvider userLogProvider;
-    private final TokenNameLookup tokenNameLookup;
     private final TokenHolders tokenHolders;
     private final StatementLocksFactory statementLocksFactory;
     private final GlobalTransactionEventListeners transactionEventListeners;
@@ -239,7 +238,6 @@ public class Database extends LifecycleAdapter
         this.databaseLayout = context.getDatabaseLayout();
         this.databaseConfig = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
-        this.tokenNameLookup = context.getTokenNameLookup();
         this.globalDependencies = context.getGlobalDependencies();
         this.scheduler = context.getScheduler();
         this.databaseLogService = context.getDatabaseLogService();
@@ -502,7 +500,7 @@ public class Database extends LifecycleAdapter
             IndexStatisticsStore indexStatisticsStore )
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
-                indexProviderMap, tokenNameLookup, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
+                indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
                 readOnly ) );
     }
 

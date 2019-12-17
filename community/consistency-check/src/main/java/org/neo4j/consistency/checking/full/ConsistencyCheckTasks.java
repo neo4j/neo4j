@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.format;
@@ -205,7 +204,7 @@ class ConsistencyCheckTasks
         }
         if ( checkIndexes )
         {
-            TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders, true /*include token ids too*/ );
+            TokenNameLookup tokenNameLookup = tokenHolders.lookupWithIds();
             for ( IndexDescriptor indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),

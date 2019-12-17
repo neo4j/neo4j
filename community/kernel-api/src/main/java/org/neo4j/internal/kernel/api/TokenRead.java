@@ -116,17 +116,17 @@ public interface TokenRead
      * Returns the number of labels in the database
      * @return the number of labels in the database
      */
-    int labelCount( );
+    int labelCount();
 
     /**
      * Returns the number of properties in the database
      * @return the number of properties in the database
      */
-    int propertyKeyCount( );
+    int propertyKeyCount();
 
     /**
      * Returns the number of relationship types in the database
      * @return the number of relationship types in the database
      */
-    int relationshipTypeCount( );
+    int relationshipTypeCount();
 }

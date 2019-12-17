@@ -332,12 +332,6 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public TokenNameLookup getTokenNameLookup()
-        {
-            return tokenNameLookup;
-        }
-
-        @Override
         public DependencyResolver getGlobalDependencies()
         {
             return dependencyResolver;

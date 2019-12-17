@@ -162,7 +162,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -551,7 +550,7 @@ public class BatchInserterImpl implements BatchInserter
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), false );
         IndexingService indexingService = IndexingServiceFactory
-                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, new NonTransactionalTokenNameLookup( tokenHolders ),
+                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders,
                         emptyList(), logProvider, userLogProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, false );
         life.add( indexingService );
         try

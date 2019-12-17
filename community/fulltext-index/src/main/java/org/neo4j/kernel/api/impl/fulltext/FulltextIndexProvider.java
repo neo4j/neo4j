@@ -61,7 +61,6 @@ import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -227,9 +226,8 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         try
         {
             PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-            NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-            Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
-            String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
+            Analyzer analyzer = createAnalyzer( descriptor, tokenHolders );
+            String[] propertyNames = createPropertyNames( descriptor, tokenHolders );
             DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
                     .create( descriptor, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                     .withFileSystem( fileSystem )
@@ -254,9 +252,8 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
-        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        Analyzer analyzer = createAnalyzer( index, tokenNameLookup );
-        String[] propertyNames = createPropertyNames( index, tokenNameLookup );
+        Analyzer analyzer = createAnalyzer( index, tokenHolders );
+        String[] propertyNames = createPropertyNames( index, tokenHolders );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
                 .create( index, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                 .withFileSystem( fileSystem )

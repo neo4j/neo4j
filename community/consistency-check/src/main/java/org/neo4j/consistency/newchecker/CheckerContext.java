@@ -38,7 +38,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.time.Stopwatch;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.internal.helpers.Format.duration;
@@ -117,7 +116,7 @@ class CheckerContext
         this.limiter = limiter;
         this.progress = progress;
         this.cancelled = cancelled;
-        this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders, true );
+        this.tokenNameLookup = tokenHolders.lookupWithIds();
         this.pageCache = pageCache;
     }
 

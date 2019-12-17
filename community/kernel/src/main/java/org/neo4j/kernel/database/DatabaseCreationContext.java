@@ -77,8 +77,6 @@ public interface DatabaseCreationContext
 
     JobScheduler getScheduler();
 
-    TokenNameLookup getTokenNameLookup();
-
     DependencyResolver getGlobalDependencies();
 
     TokenHolders getTokenHolders();
