@@ -94,7 +94,7 @@ class CheckConsistencyCommandIT
                 "%n" +
                 "USAGE%n" +
                 "%n" +
-                "check-consistency ([--database=<database>] | [--backup=<path>]) [--verbose]%n" +
+                "check-consistency (--database=<database> | --backup=<path>) [--verbose]%n" +
                 "                  [--additional-config=<path>] [--check-graph=<true/false>]%n" +
                 "                  [--check-index-structure=<true/false>]%n" +
                 "                  [--check-indexes=<true/false>]%n" +

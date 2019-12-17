@@ -21,7 +21,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Cryptography :: Hashing
   Apache Shiro :: Event
   Apache Shiro :: Lang
-  Bean Validation API
   Caffeine cache
   Commons Lang
   fastinfoset
@@ -31,6 +30,7 @@ Apache Software License, Version 2.0
   jackson-databind
   Jackson-JAXRS-base
   Jackson-JAXRS-JSON
+  Jakarta Bean Validation API
   Java Concurrency Tools Core Library
   Javassist
   jersey-container-servlet
@@ -1266,7 +1266,8 @@ This Agreement is governed by the laws of the State of New York and the intellec
 Eclipse Public License v2.0
   HK2 API module
   HK2 Implementation Utilities
-  jakarta.annotation API
+  Jakarta Annotations API
+  jakarta.ws.rs-api
   javax.inject:1 as OSGi bundle
   javax.ws.rs-api
   jersey-container-servlet

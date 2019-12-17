@@ -101,9 +101,9 @@
     <scala.version>2.12.7</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
     <asm.version>7.2</asm.version>
-    <metrics.version>4.1.1</metrics.version>
+    <metrics.version>4.1.2</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
-    <jersey.version>2.29</jersey.version>
+    <jersey.version>2.29.1</jersey.version>
     <junit.version>5.5.2</junit.version>
     <junit.platform.version>1.5.2</junit.platform.version>
     <currentYear>2019</currentYear>
@@ -741,7 +741,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.26</version>
+            <version>8.27</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -989,7 +989,7 @@
       <dependency>
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-core</artifactId>
-        <version>1.4.1</version>
+        <version>1.4.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
@@ -1026,7 +1026,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>4.0.0-rc1</version>
+        <version>4.0.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1106,7 +1106,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.1.0</version>
+        <version>3.2.4</version>
         <scope>test</scope>
       </dependency>
 
@@ -1217,7 +1217,7 @@
       <dependency>
         <groupId>org.eclipse.collections</groupId>
         <artifactId>eclipse-collections</artifactId>
-        <version>10.0.0</version>
+        <version>10.1.0</version>
       </dependency>
       <dependency>
         <groupId>org.jctools</groupId>
@@ -1361,6 +1361,10 @@
           <exclusion>
             <groupId>org.glassfish.hk2.external</groupId>
             <artifactId>javax.inject</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
