@@ -112,7 +112,7 @@ public class SchemaProcedure
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {
                         ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
-                        constraints.add( constraint.prettyPrint( tokenNameLookup ) );
+                        constraints.add( constraint.userDescription( tokenNameLookup ) );
                     }
                     properties.put( "constraints", constraints );
 

@@ -145,7 +145,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         while ( constraints.hasNext() )
         {
             ConstraintDescriptor constraint = constraints.next();
-            String userDescription = constraint.prettyPrint( nameLookup );
+            String userDescription = constraint.userDescription( nameLookup );
 
             if ( constraint.isUniquenessConstraint() )
             {

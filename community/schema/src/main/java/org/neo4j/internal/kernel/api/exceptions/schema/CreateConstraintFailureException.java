@@ -52,7 +52,7 @@ public class CreateConstraintFailureException extends SchemaKernelException
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        String message = "Unable to create " + constraint.prettyPrint( tokenNameLookup );
+        String message = "Unable to create " + constraint.userDescription( tokenNameLookup );
         if ( cause != null )
         {
             message = String.format( "%s:%n%s", message, cause );

@@ -450,7 +450,7 @@ public class BuiltInProcedures
         final List<ConstraintDescriptor> constraintDescriptors = asList( schemaRead.constraintsGetAll() );
         for ( ConstraintDescriptor constraint : constraintDescriptors )
         {
-            result.add( new ConstraintResult( constraint.getName(), constraint.prettyPrint( tokens ) ) );
+            result.add( new ConstraintResult( constraint.getName(), constraint.userDescription( tokens ) ) );
         }
         result.sort( Comparator.comparing( r -> r.name ) );
         return result.stream();
@@ -475,7 +475,7 @@ public class BuiltInProcedures
     @Description( "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). " +
             "Yield: name, labels, properties, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
+    public Stream<SchemaIndexInfo> createUniquePropertyConstraint(
             @Name( "constraintName" ) String constraintName,
             @Name( "labels" ) List<String> labels,
             @Name( "properties" ) List<String> properties,

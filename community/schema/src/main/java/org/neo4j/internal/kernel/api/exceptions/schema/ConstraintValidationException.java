@@ -64,14 +64,14 @@ public abstract class ConstraintValidationException extends KernelException
     protected ConstraintValidationException( ConstraintDescriptor constraint, Phase phase, String subject )
     {
         super( phase.getStatus(), "%s does not satisfy %s.",
-                subject, constraint.prettyPrint( TokenNameLookup.idTokenNameLookup ) );
+                subject, constraint.userDescription( TokenNameLookup.idTokenNameLookup ) );
         this.constraint = constraint;
     }
 
     protected ConstraintValidationException( ConstraintDescriptor constraint, Phase phase, String subject, Throwable failure )
     {
         super( phase.getStatus(), failure, "%s does not satisfy %s: %s",
-                subject, constraint.prettyPrint( TokenNameLookup.idTokenNameLookup ), failure.getMessage() );
+                subject, constraint.userDescription( TokenNameLookup.idTokenNameLookup ), failure.getMessage() );
         this.constraint = constraint;
     }
 

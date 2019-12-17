@@ -103,6 +103,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -513,9 +514,10 @@ public class Operations implements Write, SchemaWrite
             long[] labelIds = schema.lockingKeys();
             if ( labelIds.length != 1 )
             {
-                throw new UnableToValidateConstraintException( constraint, new AssertionError( "Constraint indexes are not expected to be multi-token " +
-                        "indexes, but the constraint " + constraint.prettyPrint( tokenNameLookup ) + " was referencing an index with the following schema: " +
-                        schema.userDescription( tokenNameLookup ) + "." ) );
+                throw new UnableToValidateConstraintException( constraint, new AssertionError(
+                        format( "Constraint indexes are not expected to be multi-token indexes, " +
+                                        "but the constraint %s was referencing an index with the following schema: %s.",
+                                constraint.userDescription( tokenNameLookup ), schema.userDescription( tokenNameLookup ) ) ) );
             }
 
             //Take a big fat lock, and check for existing node in index

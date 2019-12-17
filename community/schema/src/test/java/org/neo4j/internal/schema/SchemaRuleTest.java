@@ -162,7 +162,8 @@ class SchemaRuleTest
         assertUserDescription( "Index( 8, 'nodeFtsIndex2Named', GENERAL FULLTEXT, :`La:bel`,Label1(`prop:erty`, prop1), Undecided-0 )", nodeFtsIndex2Named );
 
         assertUserDescription( "Constraint( 1, 'uniqueLabelConstraintNamed', UNIQUENESS, :Label1(prop2, prop3), ownedIndex=1 )", uniqueLabelConstraintNamed );
-        assertUserDescription( "Constraint( 2, 'existsLabelConstraintNamed', NODE PROPERTY EXISTENCE, :Label1(prop2, prop3), ownedIndex=2 )", existsLabelConstraintNamed );
+        assertUserDescription( "Constraint( 2, 'existsLabelConstraintNamed', NODE PROPERTY EXISTENCE, :Label1(prop2, prop3), ownedIndex=2 )",
+                existsLabelConstraintNamed );
         assertUserDescription( "Constraint( 3, 'nodeKeyConstraintNamed', NODE KEY, :Label1(prop2, prop3), ownedIndex=3 )", nodeKeyConstraintNamed );
         assertUserDescription( "Constraint( 4, 'existsRelTypeConstraintNamed', RELATIONSHIP PROPERTY EXISTENCE, -[:Type1(prop2, prop3)]-, ownedIndex=4 )",
                 existsRelTypeConstraintNamed );

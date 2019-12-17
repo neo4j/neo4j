@@ -29,10 +29,11 @@ import org.neo4j.internal.schema.SchemaUserDescription;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.schema.ConstraintType.EXISTS;
 
 /**
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
- * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
+ * and how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
 public class ConstraintDescriptorImplementation implements ConstraintDescriptor, NodeExistenceConstraintDescriptor, NodeKeyConstraintDescriptor,
         RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor
@@ -89,7 +90,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of this constraint.
+     * @return a user-friendly description of this constraint.
      */
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
@@ -98,44 +99,9 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     }
 
     @Override
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
-    {
-        int[] entityTokenIds = schema().getEntityTokenIds();
-        if ( entityTokenIds.length != 1 )
-        {
-            throw new IllegalArgumentException( "Cannot pretty-print multi-token constraints: " + userDescription( tokenNameLookup ) );
-        }
-        String entityTypeName = schema.entityType() == NODE ? tokenNameLookup.labelGetName( entityTokenIds[0] ) :
-                                tokenNameLookup.relationshipTypeGetName( entityTokenIds[0] );
-        entityTypeName = escapeLabelOrRelTyp( entityTypeName );
-        String entityName = entityTypeName.toLowerCase();
-        String properties = formatProperties( schema().getPropertyIds(), tokenNameLookup, entityName );
-
-        switch ( type() )
-        {
-        case EXISTS:
-            switch ( schema.entityType() )
-            {
-            case NODE:
-                return "CONSTRAINT ON ( " + entityName + ":" + entityTypeName + " ) ASSERT exists" + properties;
-            case RELATIONSHIP:
-                return "CONSTRAINT ON ()-[ " + entityName + ":" + entityTypeName + " ]-() ASSERT exists" + properties;
-            default:
-                throw new IllegalStateException( "Unknown schema entity type: " + schema.entityType() + "." );
-            }
-        case UNIQUE:
-            return "CONSTRAINT ON ( " + entityName + ":" + entityTypeName + " ) ASSERT " + properties + " IS UNIQUE";
-        case UNIQUE_EXISTS:
-            return "CONSTRAINT ON ( " + entityName + ":" + entityTypeName + " ) ASSERT " + properties + " IS NODE KEY";
-        default:
-            throw new IllegalStateException( "Unknown constraint type: " + type() + "." );
-        }
-    }
-
-    @Override
     public boolean isRelationshipPropertyExistenceConstraint()
     {
-        return schema.entityType() == EntityType.RELATIONSHIP && type == ConstraintType.EXISTS;
+        return schema.entityType() == EntityType.RELATIONSHIP && type == EXISTS;
     }
 
     @Override
@@ -151,7 +117,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     @Override
     public boolean isNodePropertyExistenceConstraint()
     {
-        return schema.entityType() == NODE && type == ConstraintType.EXISTS;
+        return schema.entityType() == NODE && type == EXISTS;
     }
 
     @Override
