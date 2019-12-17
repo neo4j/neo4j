@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.14-SNAPSHOT</version>
+    <version>3.5.15-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>neo4j-community</artifactId>
-  <version>3.5.14-SNAPSHOT</version>
+  <version>3.5.15-SNAPSHOT</version>
 
   <name>Neo4j - Community (Bill of Materials)</name>
   <packaging>pom</packaging>
