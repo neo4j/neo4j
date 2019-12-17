@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.graphdb.Direction
+import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
@@ -44,9 +45,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val query = state.query
-    val expandInto = new org.neo4j.internal.kernel.api.helpers.CachingExpandInto(query.transactionalContext.dataRead,
-                                                                                 kernelDirection,
-                                                                                 types.types(query))
+    val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection)
     val nodeCursor = query.nodeCursor()
     input.flatMap {
       row =>
@@ -67,6 +66,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                                                                           groupCursor,
                                                                           traversalCursor,
                                                                           fromNode.id(),
+                                                                          types.types(query),
                                                                           n.id()), query)
                 val filteredRows = ListBuffer.empty[ExecutionContext]
                 while (relationships.hasNext) {

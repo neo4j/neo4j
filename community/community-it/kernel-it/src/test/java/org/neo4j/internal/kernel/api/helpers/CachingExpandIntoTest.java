@@ -49,12 +49,12 @@ import org.neo4j.test.extension.Inject;
 import static java.util.Arrays.stream;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @DbmsExtension( configurationCallback = "config" )
@@ -224,27 +224,30 @@ class CachingExpandIntoTest
               RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor() )
         {
 
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, null );
-
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING );
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     start,
+                    null,
                     end ) ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     end,
+                    null,
                     start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     start,
+                    null,
                     end ) ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     end,
+                    null,
                     start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
         }
     }
@@ -276,27 +279,32 @@ class CachingExpandIntoTest
               RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor() )
         {
 
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, new int[]{t1, t3} );
+            int[] types = {t1, t3};
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING );
 
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     start,
+                    types,
                     end ) ), equalTo( LongSets.immutable.of( r1 ) ) );
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     end,
+                    types,
                     start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     start,
+                    types,
                     end ) ), equalTo( LongSets.immutable.of( r1 ) ) );
             assertThat( toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     end,
+                    types,
                     start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
         }
     }
@@ -334,11 +342,12 @@ class CachingExpandIntoTest
               PropertyCursor properties = tx.cursors().allocatePropertyCursor() )
         {
 
+            int[] types = {t2, t3};
             CachingExpandInto expandInto =
-                    new CachingExpandInto( tx.dataRead(), INCOMING, new int[]{t2, t3} );
+                    new CachingExpandInto( tx.dataRead(), INCOMING );
 
             //Find r3 first time
-            RelationshipSelectionCursor cursor = expandInto.connectingRelationships( nodes, group, traversal, start, end );
+            RelationshipSelectionCursor cursor = expandInto.connectingRelationships( nodes, group, traversal, start, types, end );
             assertTrue( cursor.next() );
             assertThat( cursor.relationshipReference(), equalTo( r3 ));
             assertThat( cursor.sourceNodeReference(), equalTo( end ) );
@@ -352,7 +361,7 @@ class CachingExpandIntoTest
             assertFalse( cursor.next() );
 
             //Find r3 second time
-            cursor = expandInto.connectingRelationships( nodes, group, traversal, start, end );
+            cursor = expandInto.connectingRelationships( nodes, group, traversal, start, types, end );
             assertTrue( cursor.next() );
             assertThat( cursor.relationshipReference(), equalTo( r3 ));
             assertThat( cursor.sourceNodeReference(), equalTo( end ) );
@@ -366,7 +375,7 @@ class CachingExpandIntoTest
             assertFalse( cursor.next() );
 
             //Find r2 first time
-            cursor = expandInto.connectingRelationships( nodes, group, traversal, end, start );
+            cursor = expandInto.connectingRelationships( nodes, group, traversal, end, types, start );
             assertTrue( cursor.next() );
             assertThat( cursor.relationshipReference(), equalTo( r2 ));
             assertThat( cursor.sourceNodeReference(), equalTo( start ) );
@@ -380,7 +389,7 @@ class CachingExpandIntoTest
             assertFalse( cursor.next() );
 
             //Find r2 second time
-            cursor = expandInto.connectingRelationships( nodes, group, traversal, end, start );
+            cursor = expandInto.connectingRelationships( nodes, group, traversal, end, types, start );
             assertTrue( cursor.next() );
             assertThat( cursor.relationshipReference(), equalTo( r2 ));
             assertThat( cursor.sourceNodeReference(), equalTo( start ) );
@@ -419,7 +428,7 @@ class CachingExpandIntoTest
             try ( NodeCursor nodes = cursors.allocateNodeCursor();
                   RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor() )
             {
-                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, null );
+                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING );
 
                 read.singleNode( node, nodes );
                 assertThat( nodes.next(), equalTo( true ) );
@@ -460,7 +469,7 @@ class CachingExpandIntoTest
             try ( NodeCursor nodes = cursors.allocateNodeCursor();
                   RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor() )
             {
-                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, new int[]{out, in, loop} );
+                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING );
                 read.singleNode( node, nodes );
                 assertThat( nodes.next(), equalTo( true ) );
                 assertThat( nodes.isDense(), equalTo( true ) );
@@ -489,11 +498,12 @@ class CachingExpandIntoTest
         {
             int[] typeIds = types.length == 0 ? null : stream( types ).mapToInt( tx.tokenRead()::relationshipType ).toArray( );
 
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction, typeIds );
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction );
             return toSet( expandInto.connectingRelationships(
                     nodeCursor, groupCursor,
                     traversalCursor,
                     start,
+                    typeIds,
                     end ) );
         }
     }

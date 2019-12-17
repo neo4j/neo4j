@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.helpers.{CachingExpandInto, RelationshipSelectionCursor}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
@@ -59,9 +59,8 @@ case class ExpandIntoPipe(source: Pipe,
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val query = state.query
-    val expandInto = new org.neo4j.internal.kernel.api.helpers.CachingExpandInto(query.transactionalContext.dataRead,
-                                                                                 kernelDirection,
-                                                                                 lazyTypes.types(query))
+
+    val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection)
     val nodeCursor = query.nodeCursor()
     input.flatMap {
       row =>
@@ -75,10 +74,11 @@ case class ExpandIntoPipe(source: Pipe,
                 val groupCursor = query.groupCursor()
                 val traversalCursor = query.traversalCursor()
                 val relationships = relationshipIterator(expandInto.connectingRelationships(nodeCursor,
-                                                                       groupCursor,
-                                                                       traversalCursor,
-                                                                       fromNode.id(),
-                                                                       n.id()), query)
+                                                                                            groupCursor,
+                                                                                            traversalCursor,
+                                                                                            fromNode.id(),
+                                                                                            lazyTypes.types(query),
+                                                                                            n.id()), query)
                 if (relationships.isEmpty) Iterator.empty
                 else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
               case value => throw new ParameterWrongTypeException(

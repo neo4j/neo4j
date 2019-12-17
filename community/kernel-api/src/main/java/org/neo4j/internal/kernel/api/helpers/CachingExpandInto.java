@@ -66,13 +66,11 @@ public class CachingExpandInto
 
     private final Read read;
     private final Direction direction;
-    private final int[] types;
 
-    public CachingExpandInto( Read read, Direction direction, int[] types )
+    public CachingExpandInto( Read read, Direction direction )
     {
         this.read = read;
         this.direction = direction;
-        this.types = types;
     }
 
     /**
@@ -90,6 +88,7 @@ public class CachingExpandInto
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor traversalCursor,
             long fromNode,
+            int[] types,
             long toNode )
     {
         assert this.fromNode < 0L && this.toNode < 0L;
@@ -104,7 +103,7 @@ public class CachingExpandInto
         }
         Direction reverseDirection = direction.reverse();
         //Check toNode, will position nodeCursor at toNode
-        int toDegree = calculateTotalDegreeIfDense( read, toNode, nodeCursor, reverseDirection, groupCursor );
+        int toDegree = calculateTotalDegreeIfDense( read, toNode, nodeCursor, reverseDirection, groupCursor, types );
         if ( toDegree == 0 )
         {
             return RelationshipSelectionCursor.EMPTY;
@@ -122,7 +121,7 @@ public class CachingExpandInto
         if ( fromNodeIsDense && toNodeIsDense )
         {
             //Note that we have already position the cursor at fromNode
-            int fromDegree = calculateTotalDegreeDense( nodeCursor, direction, groupCursor );
+            int fromDegree = calculateTotalDegreeDense( nodeCursor, direction, groupCursor, types );
             long startNode;
             long endNode;
             Direction relDirection;
@@ -175,10 +174,11 @@ public class CachingExpandInto
             CursorFactory cursors,
             NodeCursor nodeCursor,
             long fromNode,
+            int[] types,
             long toNode )
     {
         return connectingRelationships( nodeCursor, cursors.allocateRelationshipGroupCursor(),
-                cursors.allocateRelationshipTraversalCursor(), fromNode, toNode );
+                cursors.allocateRelationshipTraversalCursor(), fromNode, types, toNode );
     }
 
     int nodeGetDegreeDense( NodeCursor nodeCursor, RelationshipGroupCursor group, Direction direction )
@@ -212,7 +212,7 @@ public class CachingExpandInto
     }
 
     private int calculateTotalDegreeIfDense( Read read, long node, NodeCursor nodeCursor, Direction direction,
-            RelationshipGroupCursor groupCursor )
+            RelationshipGroupCursor groupCursor, int[] types )
     {
         if ( !singleNode( read, nodeCursor, node ) )
         {
@@ -222,10 +222,10 @@ public class CachingExpandInto
         {
             return NOT_DENSE_DEGREE;
         }
-        return calculateTotalDegreeDense( nodeCursor, direction, groupCursor );
+        return calculateTotalDegreeDense( nodeCursor, direction, groupCursor, types );
     }
 
-    private int calculateTotalDegreeDense( NodeCursor nodeCursor, Direction direction, RelationshipGroupCursor groupCursor )
+    private int calculateTotalDegreeDense( NodeCursor nodeCursor, Direction direction, RelationshipGroupCursor groupCursor, int[] types )
     {
         if ( types == null )
         {
