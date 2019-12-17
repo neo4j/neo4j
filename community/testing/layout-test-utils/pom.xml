@@ -5,12 +5,12 @@
     <parent>
         <artifactId>testing-parent</artifactId>
         <groupId>org.neo4j</groupId>
-        <version>4.0.0-SNAPSHOT</version>
+        <version>4.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>layout-test-utils</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>4.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>

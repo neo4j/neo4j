@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>4.0.0-SNAPSHOT</version>
+        <version>4.0.1-SNAPSHOT</version>
 
         <relativePath>..</relativePath>
     </parent>
@@ -12,7 +12,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.build</groupId>
     <artifactId>packaging-build</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>4.0.1-SNAPSHOT</version>
 
     <name>Neo4j - Packaging Build</name>
     <packaging>pom</packaging>
