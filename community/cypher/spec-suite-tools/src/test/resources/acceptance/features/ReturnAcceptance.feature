@@ -220,3 +220,25 @@ Feature: ReturnAcceptance
       | result |
       | 100.0  |
     And no side effects
+
+  Scenario: Positive range with negative step should be empty
+    Given any graph
+    When executing query:
+      """
+      RETURN range(2, 8, -1) AS result
+      """
+    Then the result should be:
+      | result |
+      | []   |
+    And no side effects
+
+  Scenario: Negative range with positive step should be empty
+    Given any graph
+    When executing query:
+      """
+      RETURN range(8, 2, 1) AS result
+      """
+    Then the result should be:
+      | result |
+      | []   |
+    And no side effects

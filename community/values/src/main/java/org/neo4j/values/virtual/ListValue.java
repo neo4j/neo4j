@@ -452,7 +452,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                     throw new OutOfMemoryError( "Cannot index an collection of size " + l );
                 }
                 length = (int) l;
-                return length;
+                return Math.max( length, 0 );
             }
         }
 
