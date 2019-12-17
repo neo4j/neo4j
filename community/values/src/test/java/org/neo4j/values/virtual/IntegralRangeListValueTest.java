@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.range;
 
@@ -57,6 +58,28 @@ class IntegralRangeListValueTest
         ListValue range = range( 11L, 5L, -3L );
 
         ListValue expected = list( longValue( 11L ), longValue( 8L ), longValue( 5L ) );
+
+        assertEquals( range, expected );
+        assertEquals( range.hashCode(), expected.hashCode() );
+    }
+
+    @Test
+    void shouldHandleNegativeStepWithPositiveRange()
+    {
+        ListValue range = range( 2L, 8L, -1L );
+
+        ListValue expected = EMPTY_LIST;
+
+        assertEquals( range, expected );
+        assertEquals( range.hashCode(), expected.hashCode() );
+    }
+
+    @Test
+    void shouldHandlePositiveStepWithNegativeRange()
+    {
+        ListValue range = range( 8L, 2L, 1L );
+
+        ListValue expected = EMPTY_LIST;
 
         assertEquals( range, expected );
         assertEquals( range.hashCode(), expected.hashCode() );
