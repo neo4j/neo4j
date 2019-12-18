@@ -49,6 +49,10 @@ object IndexSeek {
   private val LESS_THAN_OR_EQ = s"$ID ?<= ?$VALUE".r
   private val GREATER_THAN = s"$ID ?> ?$VALUE".r
   private val GREATER_THAN_OR_EQ = s"$ID ?>= ?$VALUE".r
+  private val GREATER_THAN_LESS_THAN = s"$VALUE ?< $ID ?< $VALUE".r
+  private val GREATER_THAN_EQ_LESS_THAN = s"$VALUE ?<= $ID ?< $VALUE".r
+  private val GREATER_THAN_LESS_THAN_EQ = s"$VALUE ?< $ID ?<= $VALUE".r
+  private val GREATER_THAN_EQ_LESS_THAN_EQ = s"$VALUE ?<= $ID ?<= $VALUE".r
   private val STARTS_WITH = s"$ID STARTS WITH $VALUE".r
   private val ENDS_WITH = s"$ID ENDS WITH $VALUE".r
   private val CONTAINS = s"$ID CONTAINS $VALUE".r
@@ -150,6 +154,34 @@ object IndexSeek {
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
+        case GREATER_THAN_LESS_THAN(firstValueStr, propStr, secondValueStr) =>
+          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
+            RangeBetween(
+              RangeGreaterThan(NonEmptyList(ExclusiveBound(value(firstValueStr)))),
+              RangeLessThan(NonEmptyList(ExclusiveBound(value(secondValueStr))))))(pos))
+          createSeek(List(prop(propStr)), valueExpr)
+
+        case GREATER_THAN_EQ_LESS_THAN(firstValueStr, propStr, secondValueStr) =>
+          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
+            RangeBetween(
+              RangeGreaterThan(NonEmptyList(InclusiveBound(value(firstValueStr)))),
+              RangeLessThan(NonEmptyList(ExclusiveBound(value(secondValueStr))))))(pos))
+          createSeek(List(prop(propStr)), valueExpr)
+
+        case GREATER_THAN_LESS_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
+          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
+            RangeBetween(
+              RangeGreaterThan(NonEmptyList(ExclusiveBound(value(firstValueStr)))),
+              RangeLessThan(NonEmptyList(InclusiveBound(value(secondValueStr))))))(pos))
+          createSeek(List(prop(propStr)), valueExpr)
+
+        case GREATER_THAN_EQ_LESS_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
+          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
+            RangeBetween(
+              RangeGreaterThan(NonEmptyList(InclusiveBound(value(firstValueStr)))),
+              RangeLessThan(NonEmptyList(InclusiveBound(value(secondValueStr))))))(pos))
+          createSeek(List(prop(propStr)), valueExpr)
+
         case STARTS_WITH(propStr, string) =>
           val valueExpr = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(value(string)))(pos))
           createSeek(List(prop(propStr)), valueExpr)
@@ -216,7 +248,7 @@ object IndexSeek {
           case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
         }
 
-      for(predicate <- restOfPred)
+      for (predicate <- restOfPred)
         predicate match {
           case EXACT_TWO(propStr, _, _) =>
             valueExprs += ExistenceQueryExpression()
