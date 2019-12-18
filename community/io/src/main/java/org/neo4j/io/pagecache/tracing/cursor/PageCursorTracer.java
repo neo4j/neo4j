@@ -100,12 +100,6 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         }
 
         @Override
-        public PageCursorTracer fork()
-        {
-            return NULL;
-        }
-
-        @Override
         public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
         {
             return PinEvent.NULL;
@@ -123,12 +117,6 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
             return EMPTY;
         }
     };
-
-    /**
-     * Create a new independent page cursor tracer of the same implementation.
-     * @return An new page cursor tracer.
-     */
-    PageCursorTracer fork();
 
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
 

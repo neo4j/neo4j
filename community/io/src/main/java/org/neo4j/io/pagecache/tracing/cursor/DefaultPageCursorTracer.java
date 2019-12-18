@@ -174,12 +174,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     }
 
     @Override
-    public PageCursorTracer fork()
-    {
-        return new DefaultPageCursorTracer( pageCacheTracer );
-    }
-
-    @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         pins++;
