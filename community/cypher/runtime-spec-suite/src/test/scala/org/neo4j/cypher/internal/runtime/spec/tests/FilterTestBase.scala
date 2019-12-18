@@ -77,4 +77,26 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("i").withNoRows()
   }
+
+  test("should filter on cached property predicate") {
+    // given
+    nodePropertyGraph(sizeHint, {
+      case i: Int => Map("prop" -> i)
+    })
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("cache[n.prop] AS prop")
+      .filter(s"cache[n.prop] < ${sizeHint / 2}")
+      .cacheProperties("cache[n.prop]")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = 0 until sizeHint/2
+    runtimeResult should beColumns("prop").withRows(singleColumn(expected))
+  }
 }

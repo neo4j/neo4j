@@ -551,4 +551,33 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       } yield row
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
+
+  test("should filter on cached relationship property") {
+    // given
+    val rels = given {
+      val (_,rs) = circleGraph(sizeHint)
+      rs.indices.foreach(i => rs(i).setProperty("prop", i))
+      rs
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .filter("r2.prop = cacheR[r1.prop]")
+      .expandInto("(x)-[r2]-(y)")
+      .cacheProperties("cacheR[r1.prop]")
+      .expandAll("(x)<-[r1]-(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        r <- rels
+        row <- List(Array(r.getEndNode, r.getStartNode))
+      } yield row
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
 }

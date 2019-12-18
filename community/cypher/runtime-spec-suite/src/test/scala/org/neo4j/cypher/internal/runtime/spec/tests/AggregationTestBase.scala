@@ -792,4 +792,106 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("key", "sum").withRows(expected)
   }
+
+  test("should count(cache[n.prop]) with nulls") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(cache[x.num]) AS c"))
+      .cacheProperties("cache[x.num]")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(sizeHint / 2)
+  }
+
+  test("should count(cache[n.prop]) will nulls and limit") {
+    // given
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i)
+      }, "Honey")
+    }
+    val limit = sizeHint / 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(cache[x.num]) AS c"))
+      .limit(limit)
+      .cacheProperties("cache[x.num]")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withRows(singleRow(limit/2))
+  }
+
+  test("should count(*) on cache[n.prop] grouping column with nulls") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
+        case i: Int if i % 2 == 1 => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("name", "c")
+      .aggregation(Seq("cache[x.name] AS name"), Seq("count(*) AS c"))
+      .cacheProperties("cache[x.name]")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("name", "c").withRows((for (i <- 0 until 10 by 2) yield {
+      Array(s"bob$i", sizeHint / 10)
+    }) :+ Array(null, sizeHint / 2))
+  }
+
+  test("should count(*) on cache[n.prop] grouping column under apply") {
+    val nodesPerLabel = 100
+    val (aNodes, _) = given {
+      bipartiteGraph(
+        nodesPerLabel,
+        "A",
+        "B",
+        "R",
+        aProperties = {
+          case i: Int => Map("name" -> s"bob$i")
+        })
+    }
+    val limit = nodesPerLabel / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("name", "c")
+      .apply()
+      .|.aggregation(Seq("cache[a.name] AS name"), Seq("count(*) AS c"))
+      .|.limit(limit)
+      .|.expandAll("(a)-->(b)")
+      .|.argument("a")
+      .cacheProperties("cache[a.name]")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = aNodes.map(a => Array[Any](a.getProperty("name"), limit))
+
+    runtimeResult should beColumns("name", "c").withRows(expected)
+  }
 }

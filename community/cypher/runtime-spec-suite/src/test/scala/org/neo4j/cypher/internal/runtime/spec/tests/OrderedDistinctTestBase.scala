@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.logical.plans.{GetValue, IndexOrderAscending}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.graphdb.Node
@@ -247,5 +248,27 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("y")
       .withRows(inOrder((0 until sizeHint).map(f).distinct.sorted.map(Array[Any](_))))
+  }
+
+  test("should work on cached property") {
+    val nodes = given {
+      index("A", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "A")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .orderedDistinct(Seq(varFor("cache[x.prop]")), "cache[x.prop] AS prop")
+      .nodeIndexOperator(s"x:A(prop > ${sizeHint / 2})", GetValue, indexOrder = IndexOrderAscending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = ((sizeHint / 2 + 1) until sizeHint).distinct.sorted
+    runtimeResult should beColumns("prop").withRows(singleColumn(expected))
   }
 }

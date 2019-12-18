@@ -865,6 +865,46 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
+  test("should handle var expand + predicate on cached property") {
+    // given
+    val n = sizeHint / 6
+    val paths = given {
+      val ps = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+      // set incrementing node property values along chain
+      for {
+        p <- ps
+        i <- 0 until p.length()
+        n = p.nodeAt(i)
+      } n.setProperty("prop", i)
+      // set property of last node to lowest value, so VarLength predicate fails
+      for {
+        p <- ps
+        n = p.nodeAt(p.length())
+      } n.setProperty("prop", -1)
+      ps
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b", "c")
+      .expand("(b)-[*]->(c)", nodePredicate = Predicate("n", "n.prop > cache[a.prop]"))
+      .expandAll("(a)-[:TO]->(b)")
+      .nodeByLabelScan("a", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 0 to 3
+        p = path.slice(1, 1 + length)
+      } yield Array(p.startNode, p.endNode())
+
+    runtimeResult should beColumns("b", "c").withRows(expected)
+  }
+
   // HELPERS
 
   private def closestMultipleOf(sizeHint: Int, div: Int) = (sizeHint / div) * div

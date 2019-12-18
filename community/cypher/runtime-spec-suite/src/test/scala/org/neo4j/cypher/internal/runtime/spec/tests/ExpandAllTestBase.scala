@@ -481,4 +481,87 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       } yield row
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
+
+  test("should handle expand + filter on cached property") {
+    // given
+    val size = 100
+
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(
+        size,
+        "A",
+        "B",
+        "R",
+        aProperties = {
+          case i: Int => Map("prop" -> i)
+        })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .filter("cache[a.prop] < 10")
+      .expandAll("(a)-[:R]->(b)")
+      .cacheProperties("cache[a.prop]")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected: Seq[Array[Node]] =
+      for {
+        a <- aNodes
+        if a.getProperty("prop").asInstanceOf[Int] < 10
+        b <- bNodes
+        row <- List(Array(a, b))
+      } yield row
+
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
+
+  test("should handle chained expands + filters on cached properties") {
+    // given
+    val size = 100
+
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(
+        size,
+        "A",
+        "B",
+        "R",
+        aProperties = {
+          case i: Int => Map("prop" -> i)
+        },
+        bProperties = {
+          case i: Int => Map("prop" -> i)
+        })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a2", "b")
+      .filter("cache[b.prop] < 10 AND cache[a2.prop] < 10")
+      .expandAll("(b)<-[:R]-(a2)")
+      .filter("cache[a1.prop] < 10 AND cache[b.prop] >= 0")
+      .expandAll("(a1)-[:R]->(b)")
+      .cacheProperties("cache[a1.prop]")
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected: Seq[Array[Node]] =
+      for {
+        a1 <- aNodes
+        if a1.getProperty("prop").asInstanceOf[Int] < 10
+        b <- bNodes
+        a2 <- aNodes
+        if a2.getProperty("prop").asInstanceOf[Int] < 10 && b.getProperty("prop").asInstanceOf[Int] < 10
+        row <- List(Array(a2, b))
+      } yield row
+
+    runtimeResult should beColumns("a2", "b").withRows(expected)
+  }
 }

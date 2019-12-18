@@ -285,9 +285,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   // GRAPHS
 
-  def bipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relType: String): (Seq[Node], Seq[Node]) = {
-    val aNodes = nodeGraph(nNodes, aLabel)
-    val bNodes = nodeGraph(nNodes, bLabel)
+  def bipartiteGraph(nNodes: Int,
+                     aLabel: String,
+                     bLabel: String,
+                     relType: String,
+                     aProperties: PartialFunction[Int, Map[String, Any]] = PartialFunction.empty[Int, Map[String, Any]],
+                     bProperties: PartialFunction[Int, Map[String, Any]] = PartialFunction.empty[Int, Map[String, Any]]): (Seq[Node], Seq[Node]) = {
+    val aNodes = nodePropertyGraph(nNodes, aProperties, aLabel)
+    val bNodes = nodePropertyGraph(nNodes, bProperties, bLabel)
     val relationshipType = RelationshipType.withName(relType)
     for {a <- aNodes; b <- bNodes} {
       a.createRelationshipTo(b, relationshipType)

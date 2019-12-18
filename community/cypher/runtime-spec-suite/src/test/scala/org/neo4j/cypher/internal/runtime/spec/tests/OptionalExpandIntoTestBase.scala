@@ -694,4 +694,34 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
+
+  test("should filter with a predicate on cached relationship property") {
+    // given
+    val rels = given {
+      val (_,rs) = circleGraph(sizeHint)
+      rs.indices.foreach(i => rs(i).setProperty("prop", i))
+      rs
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r2", "y")
+      .optionalExpandInto("(x)-[r2]-(y)", Some("r2.prop = cacheR[r1.prop] AND cacheR[r1.prop] % 2 = 0"))
+      .expandAll("(x)<-[r1]-(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        r <- rels
+        x = r.getEndNode
+        r2 = if (r.getProperty("prop").asInstanceOf[Int] % 2 == 0) r else null
+        y = r.getStartNode
+        row <- List(Array(x, r2, y))
+      } yield row
+    runtimeResult should beColumns("x", "r2", "y").withRows(expected)
+  }
 }

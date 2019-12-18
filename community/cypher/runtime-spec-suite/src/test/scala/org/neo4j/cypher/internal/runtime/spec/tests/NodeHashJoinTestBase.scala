@@ -499,4 +499,32 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // then
     runtimeResult should beColumns("x1").withRows(rowCount(limitCount))
   }
+
+  test("should pass cached properties through after join") {
+    val nodes = given {
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("cache[a.prop] AS prop")
+      .nodeHashJoin("a")
+      .|.filter("cache[a.prop] % 10 = 0")
+      .|.cacheProperties("cache[a.prop]")
+      .|.allNodeScan("a")
+      .filter("cache[a.prop] < 100")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedResultRows = for {n <- nodes
+                                  i = n.getProperty("prop").asInstanceOf[Int]
+                                  if i % 10 == 0 && i < 100
+                                  } yield Array(i)
+
+    runtimeResult should beColumns("prop").withRows(expectedResultRows)
+  }
 }

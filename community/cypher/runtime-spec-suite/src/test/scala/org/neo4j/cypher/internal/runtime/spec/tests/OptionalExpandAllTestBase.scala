@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Label.label
-import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.{Node, RelationshipType}
 
 abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -792,6 +792,42 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       (for (i <- 0 until n if xsConnectedToFilteredYs.contains(i)) yield Array(nodes(i), null, null))
 
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
+
+  test("should handle expand + predicate on cached property") {
+    // given
+    val size = 100
+
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(
+        size,
+        "A",
+        "B",
+        "R",
+        aProperties = {
+          case i: Int => Map("prop" -> i)
+        })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .optionalExpandAll("(a)-[:R]->(b)", Some("cache[a.prop] < 10"))
+      .cacheProperties("cache[a.prop]")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected: Seq[Array[Node]] =
+      for {
+        a <- aNodes
+        b <- if (a.getProperty("prop").asInstanceOf[Int] < 10) bNodes else Seq(null)
+        row <- List(Array(a, b))
+      } yield row
+
+    runtimeResult should beColumns("a", "b").withRows(expected)
   }
 
   test("should handle relationship property predicate") {

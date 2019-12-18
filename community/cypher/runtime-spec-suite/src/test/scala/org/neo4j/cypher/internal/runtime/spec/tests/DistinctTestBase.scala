@@ -177,4 +177,26 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x").withRows(aNodes.map(a => Array(a)))
   }
+
+  test("should work on cached property, one column") {
+    // given
+    val nodes = nodePropertyGraph(sizeHint, properties = {
+      case i: Int => Map("foo" -> s"bar${i % 10}")
+    })
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("bar")
+      .distinct("cache[n.foo] AS bar")
+      .cacheProperties("cache[n.foo]")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => n.getProperty("foo")).distinct
+
+    // then
+    runtimeResult should beColumns("bar").withRows(singleColumn(expected))
+  }
 }
