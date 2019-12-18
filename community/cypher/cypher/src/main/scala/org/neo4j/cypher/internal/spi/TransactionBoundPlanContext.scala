@@ -54,7 +54,7 @@ object TransactionBoundPlanContext {
     val handle = procedures.procedureGet(kn)
     val signature = handle.signature()
     val input = signature.inputSignature().asScala
-      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue), sensitive = s.isSensitive))
       .toIndexedSeq
     val output = if (signature.isVoid) None else Some(
       signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)

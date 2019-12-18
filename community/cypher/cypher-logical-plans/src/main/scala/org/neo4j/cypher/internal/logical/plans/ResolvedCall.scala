@@ -35,18 +35,24 @@ object ResolvedCall {
     val signature = signatureLookup(QualifiedName(unresolved))
     val implicitArguments = signature.inputSignature.map(s => s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d.value)).getOrElse(Parameter(s.name, s.typ)(position)))
     val callArguments = declaredArguments.getOrElse(implicitArguments)
+    val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
+    val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {
+      case (p: Parameter, true) => new Parameter(p.name, p.parameterType)(p.position) with SensitiveParameter
+      case (p: StringLiteral, true) => new StringLiteral(p.value)(p.position) with SensitiveStringLiteral
+      case (p, _) => p
+    }
     val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
     val callFilter = declaredResult.flatMap(_.where)
     if (callFilter.nonEmpty)
       throw new IllegalArgumentException(s"Expected no unresolved call with WHERE but got: $unresolved")
     else
-      ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResult.nonEmpty)(position)
+      ResolvedCall(signature, callArgumentsWithSensitivityMarkers, callResults, declaredArguments.nonEmpty, declaredResult.nonEmpty)(position)
   }
 
   private def signatureResults(signature: ProcedureSignature, position: InputPosition): IndexedSeq[ProcedureResultItem] =
     signature.outputSignature.getOrElse(Seq.empty).filter(!_.deprecated).map {
       field => ProcedureResultItem(Variable(field.name)(position))(position)
-  }.toIndexedSeq
+    }.toIndexedSeq
 }
 
 case class ResolvedCall(signature: ProcedureSignature,
