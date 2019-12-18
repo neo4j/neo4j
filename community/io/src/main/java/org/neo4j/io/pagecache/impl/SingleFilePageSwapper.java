@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl;
 
 import com.sun.nio.file.ExtendedOpenOption;
-import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,8 +41,6 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
-import static org.neo4j.util.FeatureToggles.getInteger;
-import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * A simple PageSwapper implementation that directs all page swapping to a
@@ -54,40 +51,8 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  */
 public class SingleFilePageSwapper implements PageSwapper
 {
-
-    // Exponent of 2 of how many channels we open per file:
-    private static final int GLOBAL_CHANNEL_STRIPE_POWER = getInteger( SingleFilePageSwapper.class, "channelStripePower", defaultChannelStripePower() );
-
-    // Exponent of 2 of how many consecutive pages go to the same stripe
-    private static final int CHANNEL_STRIPE_SHIFT = getInteger( SingleFilePageSwapper.class, "channelStripeShift", 4 );
-
-    private static final int GLOBAL_CHANNEL_STRIPE_COUNT = 1 << GLOBAL_CHANNEL_STRIPE_POWER;
-    private static final int GLOBAL_CHANNEL_STRIPE_MASK = stripeMask( GLOBAL_CHANNEL_STRIPE_COUNT );
-
-    private static final int TOKEN_CHANNEL_STRIPE = 0;
-    private static final long TOKEN_FILE_PAGE_ID = 0;
-
     private static final long FILE_SIZE_OFFSET = UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
-
     private static final ThreadLocal<ByteBuffer> PROXY_CACHE = new ThreadLocal<>();
-
-    private static int defaultChannelStripePower()
-    {
-        if ( !SystemUtils.IS_OS_WINDOWS )
-        {
-            return 0;
-        }
-        int vcores = Runtime.getRuntime().availableProcessors();
-        // Find the lowest 2's exponent that can accommodate 'vcores'
-        int stripePower = 32 - Integer.numberOfLeadingZeros( vcores - 1 );
-        return Math.min( 64, Math.max( 1, stripePower ) );
-    }
-
-    private static int stripeMask( int count )
-    {
-        requirePowerOfTwo( count );
-        return count - 1;
-    }
 
     private static ByteBuffer proxy( long buffer, int bufferLength ) throws IOException
     {
@@ -120,10 +85,9 @@ public class SingleFilePageSwapper implements PageSwapper
     private final int filePageSize;
     private final Set<OpenOption> openOptions;
     private volatile PageEvictionCallback onEviction;
-    private final StoreChannel[] channels;
+    private StoreChannel channel;
     private FileLock fileLock;
     private final boolean hasPositionLock;
-    private final int channelStripeMask;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -136,37 +100,19 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         this.fs = fs;
         this.file = file;
-        int channelStripeCount;
-        if ( noChannelStriping )
-        {
-            channelStripeCount = 1;
-            this.channelStripeMask = stripeMask( channelStripeCount );
-        }
-        else
-        {
-            channelStripeCount = GLOBAL_CHANNEL_STRIPE_COUNT;
-            this.channelStripeMask = GLOBAL_CHANNEL_STRIPE_MASK;
-        }
-        if ( useDirectIO )
-        {
-            validateDirectIOPossibility( file, filePageSize );
-        }
-        this.channels = new StoreChannel[channelStripeCount];
 
         var options = new ArrayList<>( WRITE_OPTIONS );
         if ( useDirectIO )
         {
+            validateDirectIOPossibility( file, filePageSize );
             options.add( ExtendedOpenOption.DIRECT );
         }
         openOptions = Set.copyOf( options );
+        channel = createStoreChannel();
 
-        for ( int i = 0; i < channelStripeCount; i++ )
-        {
-            channels[i] = createStoreChannel();
-        }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
-        increaseFileSizeTo( channels[TOKEN_CHANNEL_STRIPE].size() );
+        increaseFileSizeTo( channel.size() );
 
         try
         {
@@ -174,9 +120,17 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( IOException e )
         {
-            closeAndCollectExceptions( 0, e );
+            try
+            {
+                channel.close();
+            }
+            catch ( IOException ioe )
+            {
+                e.addSuppressed( ioe );
+            }
+            throw e;
         }
-        hasPositionLock = channels[0].hasPositionLock();
+        hasPositionLock = channel.hasPositionLock();
     }
 
     private StoreChannel createStoreChannel() throws IOException
@@ -224,20 +178,9 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private void acquireLock() throws IOException
     {
-        if ( SystemUtils.IS_OS_WINDOWS )
-        {
-            // We don't take file locks on the individual store files on Windows, because once you've taking
-            // a file lock on a channel, you can only do IO on that file through that channel. This would
-            // mean that we can't stripe our FileChannels on Windows, which is the platform that needs striped
-            // channels the most because of lack of pwrite and pread support.
-            // This is generally fine, because the StoreLocker and the lock file will protect the store from
-            // being opened by multiple instances at the same time anyway.
-            return;
-        }
-
         try
         {
-            fileLock = channels[TOKEN_CHANNEL_STRIPE].tryLock();
+            fileLock = channel.tryLock();
             if ( fileLock == null )
             {
                 throw new FileLockException( file );
@@ -249,18 +192,7 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private StoreChannel channel( long filePageId )
-    {
-        int stripe = stripe( filePageId );
-        return channels[stripe];
-    }
-
-    private int stripe( long filePageId )
-    {
-        return (int) (filePageId >>> CHANNEL_STRIPE_SHIFT) & channelStripeMask;
-    }
-
-    private int swapIn( StoreChannel channel, long bufferAddress, long fileOffset, int filePageSize ) throws IOException
+    private int swapIn( long bufferAddress, long fileOffset ) throws IOException
     {
         int readTotal = 0;
         try
@@ -291,12 +223,12 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private String formatSwapInErrorMessage( long fileOffset, int filePageSize, int readTotal )
+    private static String formatSwapInErrorMessage( long fileOffset, int filePageSize, int readTotal )
     {
         return "Read failed after " + readTotal + " of " + filePageSize + " bytes from fileOffset " + fileOffset + ".";
     }
 
-    private int swapOut( long bufferAddress, long fileOffset, StoreChannel channel ) throws IOException
+    private int swapOut( long bufferAddress, long fileOffset ) throws IOException
     {
         try
         {
@@ -327,7 +259,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             if ( fileOffset < getCurrentFileSize() )
             {
-                return swapIn( channel( filePageId ), bufferAddress, fileOffset, filePageSize );
+                return swapIn( bufferAddress, fileOffset );
             }
             else
             {
@@ -336,7 +268,7 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( filePageId, e );
+            tryReopen( e );
             throw new IOException( "IO failed due to interruption", e );
         }
         return 0;
@@ -356,13 +288,11 @@ public class SingleFilePageSwapper implements PageSwapper
         return readPositionedVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
-    private long readPositionedVectoredToFileChannel(
-            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    private long readPositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
-        StoreChannel channel = channel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
-        long bytesRead = lockPositionReadVector( startFilePageId, channel, fileOffset, srcs );
+        long bytesRead = lockPositionReadVector( fileOffset, srcs );
         if ( bytesRead == -1 )
         {
             for ( long address : bufferAddresses )
@@ -391,7 +321,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return bytesRead;
     }
 
-    private long lockPositionReadVector( long filePageId, StoreChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
+    private long lockPositionReadVector( long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
         {
@@ -400,7 +330,7 @@ public class SingleFilePageSwapper implements PageSwapper
             long readTotal = 0;
             synchronized ( channel.getPositionLock() )
             {
-                setPositionUnderLock( channel, fileOffset );
+                setPositionUnderLock( fileOffset );
                 do
                 {
                     read = channel.read( srcs );
@@ -411,7 +341,7 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( filePageId, e );
+            tryReopen( e );
             throw new IOException( "IO failed due to interruption", e );
         }
     }
@@ -434,12 +364,11 @@ public class SingleFilePageSwapper implements PageSwapper
         increaseFileSizeTo( fileOffset + filePageSize );
         try
         {
-            StoreChannel channel = channel( filePageId );
-            return swapOut( bufferAddress, fileOffset, channel );
+            return swapOut( bufferAddress, fileOffset );
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( filePageId, e );
+            tryReopen( e );
             throw new IOException( "IO failed due to interruption", e );
         }
     }
@@ -458,14 +387,12 @@ public class SingleFilePageSwapper implements PageSwapper
         return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
-    private long writePositionedVectoredToFileChannel(
-            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    private long writePositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
         increaseFileSizeTo( fileOffset + (((long) filePageSize) * length) );
-        StoreChannel channel = channel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
-        return lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
+        return lockPositionWriteVector( fileOffset, srcs );
     }
 
     private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int arrayOffset, int length )
@@ -486,7 +413,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return buffers;
     }
 
-    private long lockPositionWriteVector( long filePageId, StoreChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
+    private long lockPositionWriteVector( long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
         {
@@ -494,7 +421,7 @@ public class SingleFilePageSwapper implements PageSwapper
             long bytesWritten = 0;
             synchronized ( channel.getPositionLock() )
             {
-                setPositionUnderLock( channel, fileOffset );
+                setPositionUnderLock( fileOffset );
                 do
                 {
                     bytesWritten += channel.write( srcs );
@@ -505,12 +432,12 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( filePageId, e );
+            tryReopen( e );
             throw new IOException( "IO failed due to interruption", e );
         }
     }
 
-    private void setPositionUnderLock( StoreChannel channel, long fileOffset ) throws IOException
+    private void setPositionUnderLock( long fileOffset ) throws IOException
     {
         try
         {
@@ -572,7 +499,6 @@ public class SingleFilePageSwapper implements PageSwapper
         SingleFilePageSwapper that = (SingleFilePageSwapper) o;
 
         return file.equals( that.file );
-
     }
 
     @Override
@@ -593,10 +519,8 @@ public class SingleFilePageSwapper implements PageSwapper
      * then that exception is added as a suppressed exception to the passed in
      * ClosedChannelException, and the CCE is then rethrown.
      */
-    private synchronized void tryReopen( long filePageId, ClosedChannelException closedException ) throws ClosedChannelException
+    private synchronized void tryReopen( ClosedChannelException closedException ) throws ClosedChannelException
     {
-        int stripe = stripe( filePageId );
-        StoreChannel channel = channels[stripe];
         if ( channel.isOpen() )
         {
             // Someone got ahead of us, presumably. Nothing to do.
@@ -612,12 +536,9 @@ public class SingleFilePageSwapper implements PageSwapper
 
         try
         {
-            channels[stripe] = createStoreChannel();
-            if ( stripe == TOKEN_CHANNEL_STRIPE )
-            {
-                // The closing of a FileChannel also releases all associated file locks.
-                acquireLock();
-            }
+            channel = createStoreChannel();
+            // The closing of a FileChannel also releases all associated file locks.
+            acquireLock();
         }
         catch ( IOException e )
         {
@@ -632,7 +553,7 @@ public class SingleFilePageSwapper implements PageSwapper
         closed = true;
         try
         {
-            closeAndCollectExceptions( 0, null );
+            channel.close();
         }
         finally
         {
@@ -643,35 +564,6 @@ public class SingleFilePageSwapper implements PageSwapper
             // the striped translation table, which can be a rather large structure.
             onEviction = null;
         }
-    }
-
-    private void closeAndCollectExceptions( int channelIndex, IOException exception ) throws IOException
-    {
-        if ( channelIndex == channels.length )
-        {
-            if ( exception != null )
-            {
-                throw exception;
-            }
-            return;
-        }
-
-        try
-        {
-            channels[channelIndex].close();
-        }
-        catch ( IOException e )
-        {
-            if ( exception == null )
-            {
-                exception = e;
-            }
-            else
-            {
-                exception.addSuppressed( e );
-            }
-        }
-        closeAndCollectExceptions( channelIndex + 1, exception );
     }
 
     @Override
@@ -686,11 +578,11 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         try
         {
-            channel( TOKEN_FILE_PAGE_ID ).force( false );
+            channel.force( false );
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( TOKEN_FILE_PAGE_ID, e );
+            tryReopen( e );
             throw new IOException( "IO failed due to interruption", e );
         }
     }
@@ -714,11 +606,11 @@ public class SingleFilePageSwapper implements PageSwapper
         setCurrentFileSize( 0 );
         try
         {
-            channel( TOKEN_FILE_PAGE_ID ).truncate( 0 );
+            channel.truncate( 0 );
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( TOKEN_FILE_PAGE_ID, e );
+            tryReopen( e );
             throw new IOException( "IO failed due to interruption", e );
         }
     }
