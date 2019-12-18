@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.parser.{Expressions, Statement}
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition}
+import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition, ObfuscationMetadata}
 import org.parboiled.scala.{EOI, Parser, Rule1, group}
 
 case object InputDataStreamTestParsing extends Phase[BaseContext, BaseState, BaseState] {
@@ -52,7 +52,8 @@ case class InputDataStreamTestInitialState(idsQueryText: String,
                                            maybeExtractedParams: Option[Map[String, Any]] = None,
                                            maybeSemanticTable: Option[SemanticTable] = None,
                                            accumulatedConditions: Set[Condition] = Set.empty,
-                                           maybeReturnColumns: Option[Seq[String]] = None) extends BaseState {
+                                           maybeReturnColumns: Option[Seq[String]] = None,
+                                           maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
 
 
   override def withStatement(s: ast.Statement): InputDataStreamTestInitialState = {
@@ -72,6 +73,8 @@ case class InputDataStreamTestInitialState(idsQueryText: String,
   override def withParams(p: Map[String, Any]): InputDataStreamTestInitialState = copy(maybeExtractedParams = Some(p))
 
   override def withReturnColumns(cols: Seq[String]): InputDataStreamTestInitialState = copy(maybeReturnColumns = Some(cols))
+
+  override def withObfuscationMetadata(o: ObfuscationMetadata): InputDataStreamTestInitialState = copy(maybeObfuscationMetadata = Some(o))
 }
 
 class InputDataStreamTestCypherParser extends Parser

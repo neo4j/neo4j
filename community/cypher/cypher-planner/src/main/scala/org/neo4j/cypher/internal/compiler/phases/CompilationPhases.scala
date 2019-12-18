@@ -72,7 +72,8 @@ object CompilationPhases {
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
     RewriteProcedureCalls andThen
       ProcedureDeprecationWarnings andThen
-      ProcedureWarnings
+      ProcedureWarnings andThen
+      ObfuscationMetadataCollection
 
   // Phase 3
   def planPipeLine(sequencer: String => RewriterStepSequencer, pushdownPropertyReads: Boolean = true): Transformer[PlannerContext, BaseState, LogicalPlanState] =

@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases._
+import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 //noinspection TypeAnnotation
@@ -44,6 +45,8 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
 
   override def maybeSemanticTable = None
 
+  override def maybeObfuscationMetadata: Option[ObfuscationMetadata] = None
+
   override def accumulatedConditions = Set.empty
 
   override def withStatement(s: ast.Statement) = copy(Some(s))
@@ -55,6 +58,8 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
   override def withSemanticState(s: SemanticState) = fail("not implemented")
 
   override def withParams(p: Map[String, Any]) = fail("not implemented")
+
+  override def withObfuscationMetadata(o: ObfuscationMetadata) = fail("not implemented")
 
   override def initialFields: Map[String, CypherType] = Map.empty
 }

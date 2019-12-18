@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.{InputPosition, ObfuscationMetadata}
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /*
@@ -51,7 +51,8 @@ case class LogicalPlanState(queryText: String,
                             accumulatedConditions: Set[Condition] = Set.empty,
                             initialFields: Map[String, CypherType] = Map.empty,
                             hasLoadCSV: Boolean = false,
-                            maybeReturnColumns: Option[Seq[String]] = None) extends BaseState {
+                            maybeReturnColumns: Option[Seq[String]] = None,
+                            maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
 
   def query: PlannerQuery = maybeQuery getOrElse fail("The planner query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
@@ -63,6 +64,7 @@ case class LogicalPlanState(queryText: String,
   override def withSemanticTable(s: SemanticTable): LogicalPlanState = copy(maybeSemanticTable = Some(s))
   override def withSemanticState(s: SemanticState): LogicalPlanState = copy(maybeSemantics = Some(s))
   override def withParams(p: Map[String, Any]): LogicalPlanState = copy(maybeExtractedParams = Some(p))
+  override def withObfuscationMetadata(o: ObfuscationMetadata): LogicalPlanState = copy(maybeObfuscationMetadata = Some(o))
 
   def withMaybeLogicalPlan(p: Option[LogicalPlan]): LogicalPlanState = copy(maybeLogicalPlan = p)
 }
@@ -79,7 +81,8 @@ object LogicalPlanState {
                      maybeExtractedParams = state.maybeExtractedParams,
                      maybeSemanticTable = state.maybeSemanticTable,
                      accumulatedConditions = state.accumulatedConditions,
-                     maybeReturnColumns =  state.maybeReturnColumns)
+                     maybeReturnColumns =  state.maybeReturnColumns,
+                     maybeObfuscationMetadata = state.maybeObfuscationMetadata)
 }
 
 
