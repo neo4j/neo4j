@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.ast.semantics.{SemanticAnalysisTooling, SemanticCheck, SemanticCheckResult, SemanticError, SemanticFeature, SemanticState}
-import org.neo4j.cypher.internal.expressions.{LogicalVariable, Parameter, Variable}
+import org.neo4j.cypher.internal.expressions.{LogicalVariable, Parameter, SensitiveStringLiteral, Variable}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols._
 
@@ -41,6 +41,8 @@ sealed trait MultiGraphDDL extends CatalogDDL {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
+final case class PasswordString(value: String)(val position: InputPosition) extends SensitiveStringLiteral
+
 trait IfExistsDo
 final case class IfExistsReplace() extends IfExistsDo
 final case class IfExistsDoNothing() extends IfExistsDo
@@ -57,7 +59,7 @@ final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseA
 }
 
 final case class CreateUser(userName: String,
-                            initialStringPassword: Option[String],
+                            initialStringPassword: Option[PasswordString],
                             initialParameterPassword: Option[Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
@@ -88,7 +90,7 @@ final case class DropUser(userName: String, ifExists: Boolean)(val position: Inp
 }
 
 final case class AlterUser(userName: String,
-                           initialStringPassword: Option[String],
+                           initialStringPassword: Option[PasswordString],
                            initialParameterPassword: Option[Parameter],
                            requirePasswordChange: Option[Boolean],
                            suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
@@ -102,9 +104,9 @@ final case class AlterUser(userName: String,
       SemanticState.recordCurrentScope(this)
 }
 
-final case class SetOwnPassword(newStringPassword: Option[String],
+final case class SetOwnPassword(newStringPassword: Option[PasswordString],
                                 newParameterPassword: Option[Parameter],
-                                currentStringPassword: Option[String],
+                                currentStringPassword: Option[PasswordString],
                                 currentParameterPassword: Option[Parameter])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
   assert(newStringPassword.isDefined || newParameterPassword.isDefined)
   assert(!(newStringPassword.isDefined && newParameterPassword.isDefined))

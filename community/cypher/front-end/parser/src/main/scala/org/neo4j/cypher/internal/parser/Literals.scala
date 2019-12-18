@@ -108,10 +108,15 @@ trait Literals extends Parser
     ) ~~>> ((a, b) => pos => ast.MapProjection(a, b)(pos, None))
   }
 
-  def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
-    ((ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
-  }
+  def Parameter: Rule1[ast.Parameter] =
+    parameterName ~~>> (ast.Parameter(_, CTAny))
 
+  def SensitiveParameter: Rule1[ast.Parameter] =
+    parameterName ~~>> (name => pos => new ast.Parameter(name, CTAny)(pos) with ast.SensitiveParameter)
+
+  private def parameterName: Rule1[String] = rule("a parameter") {
+    (ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches
+  }
   def OldParameter: Rule1[ast.ParameterWithOldSyntax] = rule("a parameter (old syntax)") {
     ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.ParameterWithOldSyntax(_, CTAny))
   }

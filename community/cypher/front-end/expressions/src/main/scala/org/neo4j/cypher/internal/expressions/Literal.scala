@@ -67,6 +67,11 @@ case class StringLiteral(value: String)(val position: InputPosition) extends Lit
   override def asCanonicalStringVal = value
 }
 
+trait SensitiveStringLiteral {
+  val value: String
+  val position: InputPosition
+}
+
 case class Null()(val position: InputPosition) extends Literal {
   val value = null
 

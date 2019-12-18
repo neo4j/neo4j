@@ -40,7 +40,7 @@ import org.neo4j.string.UTF8
   */
 case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
-  val prettifier = Prettifier(ExpressionStringifier())
+  val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
@@ -120,7 +120,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         Some(plans.ShowUsers(Some(plans.AssertDbmsAdmin(ShowUserAction))))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
-      case c@CreateUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended, ifExistsDo) =>
+      case c@CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended, ifExistsDo) =>
         NameValidator.assertValidUsername(userName)
         val admin = Some(plans.AssertDbmsAdmin(CreateUserAction))
         val source = ifExistsDo match {
@@ -129,20 +129,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case _ => admin
         }
         Some(plans.LogSystemCommand(
-          plans.CreateUser(source, userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended),
-          prettifier.asString(c)))
-
-      // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD $password
-      case c@CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, ifExistsDo) =>
-        NameValidator.assertValidUsername(userName)
-        val admin = Some(plans.AssertDbmsAdmin(CreateUserAction))
-        val source = ifExistsDo match {
-          case _: IfExistsReplace => Some(plans.DropUser(admin, userName))
-          case _: IfExistsDoNothing => Some(plans.DoNothingIfExists(admin, "User", userName))
-          case _ => admin
-        }
-        Some(plans.LogSystemCommand(
-          plans.CreateUser(source, userName, None, initialParameterPassword, requirePasswordChange, suspended),
+          plans.CreateUser(source, userName, initialStringPassword.map(p => UTF8.encode(p.value)), initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
@@ -155,7 +142,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // ALTER USER foo
       case c@AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
-        val initialPasswordString = initialStringPassword.map(UTF8.encode)
+        val initialPasswordString = initialStringPassword.map(p => UTF8.encode(p.value))
         val admin = plans.AssertDbmsAdmin(AlterUserAction)
         val assertionSubPlan =
           if(suspended.isDefined) plans.AssertNotCurrentUser(Some(admin), userName, s"Failed to alter the specified user '$userName': Changing your own activation status is not allowed.")
@@ -166,8 +153,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c@SetOwnPassword(newStringPassword, newParameterPassword, currentStringPassword, currentParameterPassword) =>
-        val newPasswordString = newStringPassword.map(UTF8.encode)
-        val currentPasswordString = currentStringPassword.map(UTF8.encode)
+        val newPasswordString = newStringPassword.map(p => UTF8.encode(p.value))
+        val currentPasswordString = currentStringPassword.map(p => UTF8.encode(p.value))
         Some(plans.LogSystemCommand(
           plans.SetOwnPassword(newPasswordString, newParameterPassword, currentPasswordString, currentParameterPassword),
           prettifier.asString(c)))

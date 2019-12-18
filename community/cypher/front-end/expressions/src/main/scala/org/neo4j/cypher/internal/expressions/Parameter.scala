@@ -37,6 +37,11 @@ case class Parameter(name: String,
   override def parameterName: String = name
 }
 
+trait SensitiveParameter {
+  val name: String
+  val position: InputPosition
+}
+
 case class ParameterWithOldSyntax(name: String,
                                   parameterType: CypherType)(val position: InputPosition)
   extends Expression with Param {
