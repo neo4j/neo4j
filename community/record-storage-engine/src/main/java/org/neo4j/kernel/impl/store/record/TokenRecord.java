@@ -38,6 +38,18 @@ public abstract class TokenRecord extends AbstractBaseRecord
         super( id );
     }
 
+    public TokenRecord( TokenRecord other )
+    {
+        super( other );
+        this.nameId = other.nameId;
+        this.nameRecords = new ArrayList<>( other.nameRecords.size() );
+        for ( DynamicRecord record : other.nameRecords )
+        {
+            this.nameRecords.add( new DynamicRecord( record ) );
+        }
+        this.internal = other.internal;
+    }
+
     public TokenRecord initialize( boolean inUse, int nameId )
     {
         super.initialize( inUse );
@@ -143,17 +155,5 @@ public abstract class TokenRecord extends AbstractBaseRecord
     protected void additionalToString( StringBuilder buf )
     {
         // default: nothing additional
-    }
-
-    @Override
-    public TokenRecord clone()
-    {
-        TokenRecord clone = (TokenRecord) super.clone();
-        clone.nameRecords = new ArrayList<>( nameRecords.size() );
-        for ( DynamicRecord record : nameRecords )
-        {
-            nameRecords.add( record.clone() );
-        }
-        return clone;
     }
 }

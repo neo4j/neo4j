@@ -98,6 +98,6 @@ public interface RecordAccess<RECORD,ADDITIONAL>
 
         void ensureHeavy( RECORD record );
 
-        RECORD clone( RECORD record );
+        RECORD copy( RECORD record );
     }
 }

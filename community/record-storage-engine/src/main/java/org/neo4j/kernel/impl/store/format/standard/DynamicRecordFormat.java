@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.store.record.DynamicRecord.NO_DATA;
 
 public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
 {
@@ -64,7 +63,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
         {
             int dataSize = recordSize - getRecordHeaderSize();
             int nrOfBytes = (int) (firstInteger & 0xFFFFFF);
-            if ( nrOfBytes > recordSize )
+            if ( nrOfBytes > dataSize )
             {
                 // We must have performed an inconsistent read,
                 // because this many bytes cannot possibly fit in a record!
@@ -79,15 +78,13 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             long nextModifier = (firstInteger & 0xF000000L) << 8;
 
             long longNextBlock = BaseRecordFormat.longFromIntAndMod( nextBlock, nextModifier );
-            record.initialize( inUse, isStartRecord, longNextBlock, -1, nrOfBytes );
-            if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
-                    && nrOfBytes < dataSize || nrOfBytes > dataSize )
+            record.initialize( inUse, isStartRecord, longNextBlock, -1 );
+            readData( record, cursor, nrOfBytes );
+            if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue() && nrOfBytes != dataSize )
             {
+                // If we have a next block, but don't use the whole current block
                 cursor.setCursorException( illegalBlockSizeMessage( record, dataSize ) );
-                return;
             }
-
-            readData( record, cursor );
         }
         else
         {
@@ -108,15 +105,8 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
                 record.getNextBlock(), record.getLength(), dataSize );
     }
 
-    public static void readData( DynamicRecord record, PageCursor cursor )
+    public static void readData( DynamicRecord record, PageCursor cursor, int len )
     {
-        int len = record.getLength();
-        if ( len == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
-        {
-            record.setData( NO_DATA );
-            return;
-        }
-
         byte[] data = record.getData();
         if ( data == null || data.length != len )
         {

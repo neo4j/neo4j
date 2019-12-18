@@ -196,7 +196,7 @@ class NodeCheckerTest extends CheckerTestBase
         // (N)────>(L1)─...─>(LN)
         //                    *empty
         testDynamicRecordChain( node ->
-                last( node.getDynamicLabelRecords() ).setLength( 0 ), DynamicConsistencyReport.class,
+                last( node.getDynamicLabelRecords() ).setData( DynamicRecord.NO_DATA ), DynamicConsistencyReport.class,
                 DynamicConsistencyReport::emptyBlock );
     }
 
@@ -208,7 +208,7 @@ class NodeCheckerTest extends CheckerTestBase
         testDynamicRecordChain( node ->
         {
             DynamicRecord first = first( node.getDynamicLabelRecords() );
-            first.setLength( first.getLength() / 2 );
+            first.setData( Arrays.copyOf( first.getData(), first.getLength() / 2 ) );
         }, DynamicConsistencyReport.class, DynamicConsistencyReport::recordNotFullReferencesNext );
     }
 

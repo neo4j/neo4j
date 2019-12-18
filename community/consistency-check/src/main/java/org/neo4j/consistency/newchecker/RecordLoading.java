@@ -86,7 +86,7 @@ class RecordLoading
         ConsistencyReport.Reporter reporter = context.reporter;
         RecordLoading recordLoader = context.recordLoader;
         int nodeLabelBlockSize = context.neoStores.getNodeStore().getDynamicLabelStore().getRecordDataSize();
-        if ( safeLoadDynamicRecordChain( record -> records.add( record.clone() ), labelReader, seenRecordIds,
+        if ( safeLoadDynamicRecordChain( record -> records.add( record.copy() ), labelReader, seenRecordIds,
                 NodeLabelsField.firstDynamicLabelRecordId( labelField ), nodeLabelBlockSize,
                 ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId ) ).dynamicRecordChainCycle( labelRecord ),
                 ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId ) ).dynamicLabelRecordNotInUse( labelRecord ),
@@ -201,7 +201,7 @@ class RecordLoading
                 if ( record.inUse() )
                 {
                     String name;
-                    if ( !NULL_REFERENCE.is( record.getNameId() ) && safeLoadDynamicRecordChain( r -> nameRecords.add( r.clone() ),
+                    if ( !NULL_REFERENCE.is( record.getNameId() ) && safeLoadDynamicRecordChain( r -> nameRecords.add( r.copy() ),
                             nameReader, seenRecordIds, record.getNameId(), nameBlockSize ) )
                     {
                         record.addNameRecords( nameRecords );

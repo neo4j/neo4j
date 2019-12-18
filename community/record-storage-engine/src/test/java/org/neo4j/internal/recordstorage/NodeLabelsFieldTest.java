@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -592,7 +591,7 @@ class NodeLabelsFieldTest
 
     private static <T extends AbstractBaseRecord> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
-        return Iterables.map( obj -> itemClass.cast( obj.clone() ), items );
+        return Iterables.map( obj -> itemClass.cast( obj.copy() ), items );
     }
 
     private static LongSet idsOf( Set<DynamicRecord> records )

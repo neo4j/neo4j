@@ -68,6 +68,18 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
         super( id );
     }
 
+    public RelationshipGroupRecord( RelationshipGroupRecord other )
+    {
+        super( other );
+        this.type = other.type;
+        this.next = other.next;
+        this.firstOut = other.firstOut;
+        this.firstIn = other.firstIn;
+        this.firstLoop = other.firstLoop;
+        this.owningNode = other.owningNode;
+        this.prev = other.prev;
+    }
+
     public RelationshipGroupRecord initialize( boolean inUse, int type,
             long firstOut, long firstIn, long firstLoop, long owningNode, long next )
     {
@@ -188,9 +200,9 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     }
 
     @Override
-    public RelationshipGroupRecord clone()
+    public RelationshipGroupRecord copy()
     {
-        return (RelationshipGroupRecord) super.clone();
+        return new RelationshipGroupRecord( this );
     }
 
     @Override

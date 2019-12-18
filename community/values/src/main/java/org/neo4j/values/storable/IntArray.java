@@ -111,7 +111,7 @@ public final class IntArray extends IntegralArray
     @Override
     public int[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

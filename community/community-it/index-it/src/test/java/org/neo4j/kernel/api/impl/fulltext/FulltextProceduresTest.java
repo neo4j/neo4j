@@ -2432,7 +2432,7 @@ public class FulltextProceduresTest
         FulltextProcedures.NodeOutput h = new FulltextProcedures.NodeOutput( null, -1.0f );
         FulltextProcedures.NodeOutput i = new FulltextProcedures.NodeOutput( null, Float.NEGATIVE_INFINITY );
         FulltextProcedures.NodeOutput[] expectedOrder = new FulltextProcedures.NodeOutput[] {a, b, c, d, e, f, g, h, i};
-        FulltextProcedures.NodeOutput[] array = expectedOrder.clone();
+        FulltextProcedures.NodeOutput[] array = Arrays.copyOf( expectedOrder, expectedOrder.length );
 
         for ( int counter = 0; counter < 10; counter++ )
         {
@@ -2455,7 +2455,7 @@ public class FulltextProceduresTest
         FulltextProcedures.RelationshipOutput h = new FulltextProcedures.RelationshipOutput( null, -1.0f );
         FulltextProcedures.RelationshipOutput i = new FulltextProcedures.RelationshipOutput( null, Float.NEGATIVE_INFINITY );
         FulltextProcedures.RelationshipOutput[] expectedOrder = new FulltextProcedures.RelationshipOutput[] {a, b, c, d, e, f, g, h, i};
-        FulltextProcedures.RelationshipOutput[] array = expectedOrder.clone();
+        FulltextProcedures.RelationshipOutput[] array = Arrays.copyOf( expectedOrder, expectedOrder.length );
 
         for ( int counter = 0; counter < 10; counter++ )
         {

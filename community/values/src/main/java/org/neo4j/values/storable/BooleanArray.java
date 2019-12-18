@@ -95,7 +95,7 @@ public final class BooleanArray extends ArrayValue
     @Override
     public boolean[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

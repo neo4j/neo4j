@@ -111,7 +111,7 @@ public class ShortArray extends IntegralArray
     @Override
     public short[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

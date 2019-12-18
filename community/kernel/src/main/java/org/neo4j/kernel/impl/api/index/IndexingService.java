@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
@@ -862,7 +862,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
     }
 
-    private final class IndexPopulationStarter implements Function<IndexMap,IndexMap>
+    private final class IndexPopulationStarter implements UnaryOperator<IndexMap>
     {
         private final boolean verifyBeforeFlipping;
         private final IndexDescriptor[] descriptors;

@@ -43,7 +43,7 @@ public class RecordMessage implements ResponseMessage
     @Override
     public ResponseMessage copy()
     {
-        return new RecordMessage( fields.clone() );
+        return new RecordMessage( Arrays.copyOf( fields, fields.length ) );
     }
 
     @Override

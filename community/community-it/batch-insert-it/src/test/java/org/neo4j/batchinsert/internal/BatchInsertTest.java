@@ -79,8 +79,8 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -1196,7 +1196,7 @@ class BatchInsertTest
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
         long[] labelIds = labels.get( nodeStore );
-        long[] sortedLabelIds = labelIds.clone();
+        long[] sortedLabelIds = Arrays.copyOf( labelIds, labelIds.length );
         Arrays.sort( sortedLabelIds );
         assertArrayEquals( sortedLabelIds, labelIds );
         inserter.shutdown();

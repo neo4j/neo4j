@@ -148,9 +148,9 @@ public class Loaders
             }
 
             @Override
-            public NodeRecord clone( NodeRecord nodeRecord )
+            public NodeRecord copy( NodeRecord nodeRecord )
             {
-                return nodeRecord.clone();
+                return new NodeRecord( nodeRecord );
             }
         };
     }
@@ -193,9 +193,9 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord clone( PropertyRecord propertyRecord )
+            public PropertyRecord copy( PropertyRecord propertyRecord )
             {
-                return propertyRecord.clone();
+                return new PropertyRecord( propertyRecord );
             }
         };
     }
@@ -223,9 +223,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord clone( RelationshipRecord relationshipRecord )
+            public RelationshipRecord copy( RelationshipRecord relationshipRecord )
             {
-                return relationshipRecord.clone();
+                return new RelationshipRecord( relationshipRecord );
             }
         };
     }
@@ -255,9 +255,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipGroupRecord clone( RelationshipGroupRecord record )
+            public RelationshipGroupRecord copy( RelationshipGroupRecord record )
             {
-                return record.clone();
+                return new RelationshipGroupRecord( record );
             }
         };
     }
@@ -284,9 +284,9 @@ public class Loaders
             }
 
             @Override
-            public SchemaRecord clone( SchemaRecord record )
+            public SchemaRecord copy( SchemaRecord record )
             {
-                return record.clone();
+                return new SchemaRecord( record );
             }
         };
     }
@@ -315,9 +315,9 @@ public class Loaders
             }
 
             @Override
-            public PropertyKeyTokenRecord clone( PropertyKeyTokenRecord record )
+            public PropertyKeyTokenRecord copy( PropertyKeyTokenRecord record )
             {
-                return record.clone();
+                return new PropertyKeyTokenRecord( record );
             }
         };
     }
@@ -346,9 +346,9 @@ public class Loaders
             }
 
             @Override
-            public LabelTokenRecord clone( LabelTokenRecord record )
+            public LabelTokenRecord copy( LabelTokenRecord record )
             {
-                return record.clone();
+                return new LabelTokenRecord( record );
             }
         };
     }
@@ -377,9 +377,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipTypeTokenRecord clone( RelationshipTypeTokenRecord record )
+            public RelationshipTypeTokenRecord copy( RelationshipTypeTokenRecord record )
             {
-                return record.clone();
+                return new RelationshipTypeTokenRecord( record );
             }
         };
     }

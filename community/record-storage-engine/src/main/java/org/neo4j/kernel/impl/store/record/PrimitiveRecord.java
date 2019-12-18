@@ -37,6 +37,12 @@ public abstract class PrimitiveRecord extends AbstractBaseRecord
         this.nextProp = nextProp;
     }
 
+    public PrimitiveRecord( PrimitiveRecord other )
+    {
+        super( other );
+        this.nextProp = other.nextProp;
+    }
+
     @Override
     public void clear()
     {

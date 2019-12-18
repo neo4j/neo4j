@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.util.Arrays;
 import java.util.StringJoiner;
 
 class RawBytes
@@ -74,6 +75,6 @@ class RawBytes
 
     void copyFrom( RawBytes source )
     {
-        bytes = source.bytes.clone();
+        bytes = Arrays.copyOf( source.bytes, source.bytes.length );
     }
 }

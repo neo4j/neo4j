@@ -19,6 +19,8 @@
  */
 package org.neo4j.util.concurrent;
 
+import java.util.Arrays;
+
 /**
  * A crude, synchronized implementation of OutOfOrderSequence. Please implement a faster one if need be.
  */
@@ -36,8 +38,8 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     {
         this.highestGapFreeNumber = startingNumber;
         this.highestEverSeen = startingNumber;
-        this.highestGapFreeMeta = initialMeta.clone();
-        this.metaArray = initialMeta.clone();
+        this.highestGapFreeMeta = Arrays.copyOf( initialMeta, initialMeta.length );
+        this.metaArray = Arrays.copyOf( initialMeta, initialMeta.length );
         this.outOfOrderQueue = new SequenceArray( initialMeta.length + 1, initialArraySize );
     }
 
@@ -49,7 +51,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         {
             version++;
             highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number, metaArray );
-            highestGapFreeMeta = highestGapFreeNumber == number ? meta : metaArray.clone();
+            highestGapFreeMeta = highestGapFreeNumber == number ? meta : Arrays.copyOf( metaArray, metaArray.length );
             version++;
             return true;
         }

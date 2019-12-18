@@ -260,9 +260,9 @@ public class RecordBuilders
 
         @SuppressWarnings( "unchecked" )
         @Override
-        public T clone( T record )
+        public T copy( T record )
         {
-            return (T)record.clone();
+            return (T)record.copy();
         }
     }
 }

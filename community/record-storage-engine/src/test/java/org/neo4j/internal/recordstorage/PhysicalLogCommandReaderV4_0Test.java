@@ -53,7 +53,7 @@ class PhysicalLogCommandReaderV4_0Test
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
-        PropertyKeyTokenRecord after = before.clone();
+        PropertyKeyTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
         new Command.PropertyKeyTokenCommand( before, after ).serialize( channel );
@@ -75,7 +75,7 @@ class PhysicalLogCommandReaderV4_0Test
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
-        PropertyKeyTokenRecord after = before.clone();
+        PropertyKeyTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
         after.setInternal( true );
@@ -98,7 +98,7 @@ class PhysicalLogCommandReaderV4_0Test
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         LabelTokenRecord before = new LabelTokenRecord( 42 );
-        LabelTokenRecord after = before.clone();
+        LabelTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
         new Command.LabelTokenCommand( before, after ).serialize( channel );
@@ -120,7 +120,7 @@ class PhysicalLogCommandReaderV4_0Test
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         LabelTokenRecord before = new LabelTokenRecord( 42 );
-        LabelTokenRecord after = before.clone();
+        LabelTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
         after.setInternal( true );
@@ -143,7 +143,7 @@ class PhysicalLogCommandReaderV4_0Test
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
-        RelationshipTypeTokenRecord after = before.clone();
+        RelationshipTypeTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
         new Command.RelationshipTypeTokenCommand( before, after ).serialize( channel );
@@ -165,7 +165,7 @@ class PhysicalLogCommandReaderV4_0Test
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
-        RelationshipTypeTokenRecord after = before.clone();
+        RelationshipTypeTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
         after.setInternal( true );

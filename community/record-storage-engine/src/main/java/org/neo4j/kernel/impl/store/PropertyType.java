@@ -29,7 +29,6 @@ import org.neo4j.values.storable.Values;
 /**
  * Defines valid property types.
  */
-@SuppressWarnings( "UnnecessaryBoxing" )
 public enum PropertyType
 {
     BOOL( 1 )

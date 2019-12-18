@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.apache.commons.lang3.exception.CloneFailedException;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,13 +26,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.values.storable.Value;
 
-public class PropertyBlock implements Cloneable
+public class PropertyBlock
 {
     /**
      * Size of one property block in a property record. One property may be composed by one or more property blocks
@@ -47,6 +46,26 @@ public class PropertyBlock implements Cloneable
     private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
     private List<DynamicRecord> valueRecords;
     private long[] valueBlocks;
+
+    public PropertyBlock()
+    {
+    }
+
+    public PropertyBlock( PropertyBlock other )
+    {
+        if ( other.valueBlocks != null )
+        {
+            this.valueBlocks = Arrays.copyOf( other.valueBlocks, other.valueBlocks.length );
+        }
+        if ( other.valueRecords != null )
+        {
+            this.valueRecords = new ArrayList<>( other.valueRecords.size() );
+            for ( DynamicRecord valueRecord : other.valueRecords )
+            {
+                this.valueRecords.add( new DynamicRecord( valueRecord ) );
+            }
+        }
+    }
 
     public PropertyType getType()
     {
@@ -229,32 +248,6 @@ public class PropertyBlock implements Cloneable
         return result.toString();
     }
 
-    @Override
-    public PropertyBlock clone()
-    {
-        try
-        {
-            PropertyBlock clone = (PropertyBlock) super.clone();
-            if ( valueBlocks != null )
-            {
-                clone.valueBlocks = valueBlocks.clone();
-            }
-            if ( valueRecords != null )
-            {
-                clone.valueRecords = new ArrayList<>( valueRecords.size() );
-                for ( DynamicRecord valueRecord : valueRecords )
-                {
-                    clone.valueRecords.add( valueRecord.clone() );
-                }
-            }
-            return clone;
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            throw new CloneFailedException( e );
-        }
-    }
-
     public boolean hasSameContentsAs( PropertyBlock other )
     {
         // Assumption (which happens to be true) that if a heavy (long string/array) property
@@ -303,5 +296,29 @@ public class PropertyBlock implements Cloneable
     {
         // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         return (valueBlock & 0x10000000L) > 0;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        PropertyBlock that = (PropertyBlock) o;
+        return Objects.equals( valueRecords, that.valueRecords ) &&
+                Arrays.equals( valueBlocks, that.valueBlocks );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = Objects.hash( valueRecords );
+        result = 31 * result + Arrays.hashCode( valueBlocks );
+        return result;
     }
 }

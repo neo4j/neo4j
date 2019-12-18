@@ -201,7 +201,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId )
     {
         RelationshipRecord before = store.getRecord( id, store.newRecord(), RecordLoad.NORMAL );
-        RelationshipRecord after = before.clone();
+        RelationshipRecord after = before.copy();
 
         boolean sabotageSourceChain = random.nextBoolean(); // otherwise target chain
         boolean sabotageNodeId = random.nextBoolean();

@@ -34,6 +34,12 @@ public class SchemaRecord extends PrimitiveRecord
         super( id );
     }
 
+    public SchemaRecord( SchemaRecord other )
+    {
+        super( other );
+        this.constraint = other.constraint;
+    }
+
     @Override
     public void setIdTo( PropertyRecord property )
     {
@@ -48,9 +54,9 @@ public class SchemaRecord extends PrimitiveRecord
     }
 
     @Override
-    public SchemaRecord clone()
+    public SchemaRecord copy()
     {
-        return (SchemaRecord) super.clone();
+        return new SchemaRecord( this );
     }
 
     @Override

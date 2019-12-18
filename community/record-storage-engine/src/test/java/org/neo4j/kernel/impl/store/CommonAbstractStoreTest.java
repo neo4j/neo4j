@@ -253,9 +253,9 @@ class CommonAbstractStoreTest
         }
 
         @Override
-        public TheRecord clone()
+        public AbstractBaseRecord copy()
         {
-            return (TheRecord) super.clone();
+            return super.copy();
         }
     }
 }

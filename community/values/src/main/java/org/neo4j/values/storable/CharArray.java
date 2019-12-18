@@ -93,7 +93,7 @@ public final class CharArray extends TextArray
     @Override
     public char[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

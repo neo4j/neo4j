@@ -20,6 +20,7 @@
 package org.neo4j.gis.spatial.index.curves;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.gis.spatial.index.Envelope;
@@ -260,8 +261,8 @@ public abstract class SpaceFillingCurve
 
     public List<LongRange> getTilesIntersectingEnvelope( double[] fromOrNull, double[] toOrNull, SpaceFillingCurveConfiguration config )
     {
-        double[] from = fromOrNull == null ? range.getMin() : fromOrNull.clone();
-        double[] to = toOrNull == null ? range.getMax() : toOrNull.clone();
+        double[] from = fromOrNull == null ? range.getMin() : Arrays.copyOf( fromOrNull, fromOrNull.length );
+        double[] to = toOrNull == null ? range.getMax() : Arrays.copyOf( toOrNull, toOrNull.length );
 
         for ( int i = 0; i < from.length; i++ )
         {

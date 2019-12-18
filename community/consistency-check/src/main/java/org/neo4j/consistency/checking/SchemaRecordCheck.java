@@ -161,7 +161,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
             if ( rule.isUnique() && rule.getOwningConstraintId().isPresent() )
             {
-                SchemaRecord previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(), cloneRecord( record ) );
+                SchemaRecord previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(), record.copy() );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -178,7 +178,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             if ( constraint.isIndexBackedConstraint() )
             {
                 IndexBackedConstraintDescriptor indexBacked = constraint.asIndexBackedConstraint();
-                SchemaRecord previousObligation = indexObligations.put( indexBacked.ownedIndexId(), cloneRecord( record ) );
+                SchemaRecord previousObligation = indexObligations.put( indexBacked.ownedIndexId(), record.copy() );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -269,11 +269,6 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
         checkNamesAndDuplicates( rule, record, engine );
     }
 
-    private SchemaRecord cloneRecord( SchemaRecord record )
-    {
-        return record.clone();
-    }
-
     static class CheckSchema implements SchemaProcessor
     {
         private final CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine;
@@ -336,7 +331,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private void checkNamesAndDuplicates( SchemaRule rule, SchemaRecord record,
             CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
-        SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( rule ), cloneRecord( record ) );
+        SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( rule ), record.copy() );
         if ( previousContentRecord != null )
         {
             engine.report().duplicateRuleContent( previousContentRecord );

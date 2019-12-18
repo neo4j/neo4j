@@ -66,6 +66,20 @@ public class RelationshipRecord extends PrimitiveRecord
         super( id );
     }
 
+    public RelationshipRecord( RelationshipRecord other )
+    {
+        super( other );
+        this.firstNode = other.firstNode;
+        this.secondNode = other.secondNode;
+        this.type = other.type;
+        this.firstPrevRel = other.firstPrevRel;
+        this.firstNextRel = other.firstNextRel;
+        this.secondPrevRel = other.secondPrevRel;
+        this.secondNextRel = other.secondNextRel;
+        this.firstInFirstChain = other.firstInFirstChain;
+        this.firstInSecondChain = other.firstInSecondChain;
+    }
+
     public RelationshipRecord initialize( boolean inUse, long nextProp, long firstNode, long secondNode,
             int type, long firstPrevRel, long firstNextRel, long secondPrevRel, long secondNextRel,
             boolean firstInFirstChain, boolean firstInSecondChain )
@@ -207,9 +221,9 @@ public class RelationshipRecord extends PrimitiveRecord
     }
 
     @Override
-    public RelationshipRecord clone()
+    public RelationshipRecord copy()
     {
-        return (RelationshipRecord) super.clone();
+        return new RelationshipRecord( this );
     }
 
     @Override

@@ -587,35 +587,35 @@ public final class Values
         }
         if ( value instanceof byte[] )
         {
-            return byteArray( ((byte[]) value).clone() );
+            return byteArray( Arrays.copyOf( (byte[]) value, ((byte[]) value).length) );
         }
         if ( value instanceof long[] )
         {
-            return longArray( ((long[]) value).clone() );
+            return longArray( Arrays.copyOf( (long[]) value, ((long[]) value).length) );
         }
         if ( value instanceof int[] )
         {
-            return intArray( ((int[]) value).clone() );
+            return intArray( Arrays.copyOf( (int[]) value, ((int[]) value).length) );
         }
         if ( value instanceof double[] )
         {
-            return doubleArray( ((double[]) value).clone() );
+            return doubleArray( Arrays.copyOf( (double[]) value, ((double[]) value).length) );
         }
         if ( value instanceof float[] )
         {
-            return floatArray( ((float[]) value).clone() );
+            return floatArray( Arrays.copyOf( (float[]) value, ((float[]) value).length) );
         }
         if ( value instanceof boolean[] )
         {
-            return booleanArray( ((boolean[]) value).clone() );
+            return booleanArray( Arrays.copyOf( (boolean[]) value, ((boolean[]) value).length) );
         }
         if ( value instanceof char[] )
         {
-            return charArray( ((char[]) value).clone() );
+            return charArray( Arrays.copyOf( (char[]) value, ((char[]) value).length) );
         }
         if ( value instanceof short[] )
         {
-            return shortArray( ((short[]) value).clone() );
+            return shortArray( Arrays.copyOf( (short[]) value, ((short[]) value).length) );
         }
         if ( value == null )
         {

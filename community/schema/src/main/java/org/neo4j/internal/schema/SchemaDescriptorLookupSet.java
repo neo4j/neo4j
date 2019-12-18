@@ -429,7 +429,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         if ( tokenIds.length > 1 )
         {
             // Clone it because we don't know if the array was an internal array that the descriptor handed out
-            tokenIds = tokenIds.clone();
+            tokenIds = Arrays.copyOf( tokenIds, tokenIds.length );
             Arrays.sort( tokenIds );
         }
         return tokenIds;

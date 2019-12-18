@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -47,7 +47,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
      *
      * @param modifier the function modifying the snapshot.
      */
-    public synchronized void modify( Function<IndexMap,IndexMap> modifier )
+    public synchronized void modify( UnaryOperator<IndexMap> modifier )
     {
         IndexMap snapshot = indexMapSnapshot();
         indexMap = modifier.apply( snapshot );

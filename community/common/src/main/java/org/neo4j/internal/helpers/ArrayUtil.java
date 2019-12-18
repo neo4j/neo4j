@@ -318,7 +318,7 @@ public final class ArrayUtil
     @SafeVarargs
     public static <T> T[] without( T[] source, T... toRemove )
     {
-        T[] result = source.clone();
+        T[] result = Arrays.copyOf( source, source.length );
         int length = result.length;
         for ( T candidate : toRemove )
         {

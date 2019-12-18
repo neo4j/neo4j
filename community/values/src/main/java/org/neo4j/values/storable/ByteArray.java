@@ -111,7 +111,7 @@ public final class ByteArray extends IntegralArray
     @Override
     public byte[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

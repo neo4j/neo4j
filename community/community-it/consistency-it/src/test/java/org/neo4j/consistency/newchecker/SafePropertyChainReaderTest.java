@@ -22,6 +22,7 @@ package org.neo4j.consistency.newchecker;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -233,7 +234,11 @@ class SafePropertyChainReaderTest extends CheckerTestBase
     void shouldReportDynamicStringRecordNotFullReferencesNext() throws Exception
     {
         testPropertyValueInconsistency( stringValueOfLength( 160 ),
-                block -> block.getValueRecords().get( 0 ).setLength( block.getValueRecords().get( 0 ).getLength() / 2 ),
+                block ->
+                {
+                    byte[] data = block.getValueRecords().get( 0 ).getData();
+                    block.getValueRecords().get( 0 ).setData( Arrays.copyOf( data, data.length / 2 ) );
+                },
                 DynamicConsistencyReport.class, DynamicConsistencyReport::recordNotFullReferencesNext );
     }
 
@@ -262,7 +267,11 @@ class SafePropertyChainReaderTest extends CheckerTestBase
     void shouldReportDynamicArrayRecordNotFullReferencesNext() throws Exception
     {
         testPropertyValueInconsistency( intArrayValueOfLength( 80 ),
-                block -> block.getValueRecords().get( 0 ).setLength( block.getValueRecords().get( 0 ).getLength() / 2 ),
+                block ->
+                {
+                    byte[] data = block.getValueRecords().get( 0 ).getData();
+                    block.getValueRecords().get( 0 ).setData( Arrays.copyOf( data, data.length / 2 ) );
+                },
                 DynamicConsistencyReport.class, DynamicConsistencyReport::recordNotFullReferencesNext );
     }
 

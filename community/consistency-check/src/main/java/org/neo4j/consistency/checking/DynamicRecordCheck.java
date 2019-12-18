@@ -51,10 +51,6 @@ public class DynamicRecordCheck
         {
             engine.report().emptyBlock();
         }
-        else if ( record.getLength() < 0 )
-        {
-            engine.report().invalidLength();
-        }
         if ( !Record.NO_NEXT_BLOCK.is( record.getNextBlock() ) )
         {
             if ( record.getNextBlock() == record.getId() )

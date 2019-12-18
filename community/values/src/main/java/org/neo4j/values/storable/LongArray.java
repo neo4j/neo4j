@@ -111,7 +111,7 @@ public final class LongArray extends IntegralArray
     @Override
     public long[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

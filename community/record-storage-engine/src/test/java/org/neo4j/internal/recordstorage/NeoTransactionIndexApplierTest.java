@@ -90,7 +90,7 @@ class NeoTransactionIndexApplierTest
         IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
         SchemaRecord before = new SchemaRecord( 1 );
-        SchemaRecord after = before.clone().initialize( true, 39 );
+        SchemaRecord after = before.copy().initialize( true, 39 );
         after.setCreated();
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, indexRule );
 

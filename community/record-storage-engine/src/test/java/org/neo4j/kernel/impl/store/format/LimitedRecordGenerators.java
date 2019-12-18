@@ -52,19 +52,13 @@ public class LimitedRecordGenerators implements RecordGenerators
     public LimitedRecordGenerators( RandomValues random, int entityBits, int propertyBits, int nodeLabelBits,
             int tokenBits, long nullValue )
     {
-        this( random, entityBits, propertyBits, nodeLabelBits, tokenBits, nullValue, 0.2f );
-    }
-
-    public LimitedRecordGenerators( RandomValues random, int entityBits, int propertyBits, int nodeLabelBits,
-            int tokenBits, long nullValue, float fractionNullValues )
-    {
         this.random = random;
         this.entityBits = entityBits;
         this.propertyBits = propertyBits;
         this.nodeLabelBits = nodeLabelBits;
         this.tokenBits = tokenBits;
         this.nullValue = nullValue;
-        this.fractionNullValues = fractionNullValues;
+        this.fractionNullValues = 0.2f;
     }
 
     @Override
@@ -115,12 +109,11 @@ public class LimitedRecordGenerators implements RecordGenerators
         return ( recordSize, format, recordId ) ->
         {
             PropertyRecord record = new PropertyRecord( recordId );
-            int maxProperties = random.intBetween( 1, 4 );
             StandaloneDynamicRecordAllocator stringAllocator = new StandaloneDynamicRecordAllocator();
             StandaloneDynamicRecordAllocator arrayAllocator = new StandaloneDynamicRecordAllocator();
             record.setInUse( true );
             int blocksOccupied = 0;
-            for ( int i = 0; i < maxProperties && blocksOccupied < 4; )
+            while ( blocksOccupied < 4 )
             {
                 PropertyBlock block = new PropertyBlock();
                 // Dynamic records will not be written and read by the property record format,
@@ -172,8 +165,8 @@ public class LimitedRecordGenerators implements RecordGenerators
             int length = random.nextBoolean() ? dataSize : random.nextInt( dataSize );
             long next = length == dataSize ? randomLong( propertyBits ) : nullValue;
             DynamicRecord record = new DynamicRecord( max( 1, recordId ) ).initialize( random.nextBoolean(),
-                    random.nextBoolean(), next, random.nextInt( PropertyType.values().length ), length );
-            byte[] bytes = random.nextByteArray( record.getLength(), record.getLength() ).asObjectCopy();
+                    random.nextBoolean(), next, random.nextInt( PropertyType.values().length ) );
+            byte[] bytes = random.nextByteArray( length, length ).asObjectCopy();
             record.setData( bytes );
             return record;
         };

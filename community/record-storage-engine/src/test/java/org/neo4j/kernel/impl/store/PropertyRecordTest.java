@@ -94,6 +94,7 @@ class PropertyRecordTest
         for ( int i = 0; i < 4; i++ )
         {
             PropertyBlock block = new PropertyBlock();
+            block.setValueBlocks( new long[]{i} );
             record.addPropertyBlock( block );
             blocks.add( block );
         }

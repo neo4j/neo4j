@@ -2589,7 +2589,7 @@ public class FullCheckIntegrationTest
     @SuppressWarnings( "unchecked" )
     private <T extends AbstractBaseRecord> T cloneRecord( T record )
     {
-        return (T) record.clone();
+        return (T) record.copy();
     }
 
     private PropertyRecord newInitialisedPropertyRecord( IdGenerator next, SchemaRule rule )

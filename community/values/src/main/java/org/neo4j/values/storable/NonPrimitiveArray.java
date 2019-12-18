@@ -131,7 +131,8 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
     @Override
     public final T[] asObjectCopy()
     {
-        return value().clone();
+        T[] value = value();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

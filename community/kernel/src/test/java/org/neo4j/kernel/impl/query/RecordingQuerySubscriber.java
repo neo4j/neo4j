@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.query;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.graphdb.QueryStatistics;
@@ -52,7 +53,7 @@ public class RecordingQuerySubscriber implements QuerySubscriber
     @Override
     public void onRecordCompleted()
     {
-        all.add( current.clone() );
+        all.add( Arrays.copyOf( current, current.length ) );
     }
 
     @Override

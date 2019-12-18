@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.apache.commons.lang3.exception.CloneFailedException;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
@@ -252,9 +251,9 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     }
 
     @Override
-    public RelationshipGroupRecord clone()
+    public RelationshipGroupRecord copy()
     {
-        throw new CloneFailedException( "Record cursors are not cloneable." );
+        throw new UnsupportedOperationException( "Record cursors are not copyable." );
     }
 
     @Override

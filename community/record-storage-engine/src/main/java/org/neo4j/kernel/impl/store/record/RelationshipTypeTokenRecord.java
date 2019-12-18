@@ -26,6 +26,11 @@ public class RelationshipTypeTokenRecord extends TokenRecord
         super( id );
     }
 
+    public RelationshipTypeTokenRecord( RelationshipTypeTokenRecord other )
+    {
+        super( other );
+    }
+
     @Override
     public RelationshipTypeTokenRecord initialize( boolean inUse, int nameId )
     {
@@ -40,8 +45,8 @@ public class RelationshipTypeTokenRecord extends TokenRecord
     }
 
     @Override
-    public RelationshipTypeTokenRecord clone()
+    public RelationshipTypeTokenRecord copy()
     {
-        return (RelationshipTypeTokenRecord) super.clone();
+        return new RelationshipTypeTokenRecord( this );
     }
 }

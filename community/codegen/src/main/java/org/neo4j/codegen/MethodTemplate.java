@@ -21,6 +21,7 @@ package org.neo4j.codegen;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,7 +132,7 @@ public class MethodTemplate
             }
             else
             {
-                this.parameters = parameters.clone();
+                this.parameters = Arrays.copyOf( parameters, parameters.length );
             }
             for ( int i = 0; i < this.parameters.length; i++ )
             {

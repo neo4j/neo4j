@@ -48,7 +48,7 @@ public final class IndexMap
 
     IndexMap( IndexMap other )
     {
-        indexesById = LongObjectHashMap.newMap( other.indexesById );
+        this( LongObjectHashMap.newMap( other.indexesById ) );
     }
 
     public IndexProxy getIndexProxy( IndexDescriptor index )

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
 import static java.util.Collections.emptyList;
@@ -39,6 +38,27 @@ public class NodeRecord extends PrimitiveRecord
     public NodeRecord( long id )
     {
         super( id );
+    }
+
+    public NodeRecord( NodeRecord other )
+    {
+        super( other );
+        this.nextRel = other.nextRel;
+        this.labels = other.labels;
+        if ( other.dynamicLabelRecords.isEmpty() )
+        {
+            this.dynamicLabelRecords = emptyList();
+        }
+        else
+        {
+            this.dynamicLabelRecords = new ArrayList<>( other.dynamicLabelRecords.size() );
+            for ( DynamicRecord labelRecord : other.dynamicLabelRecords )
+            {
+                this.dynamicLabelRecords.add( new DynamicRecord( labelRecord ) );
+            }
+        }
+        this.isLight = other.isLight;
+        this.dense = other.dense;
     }
 
     public NodeRecord initialize( boolean inUse, long nextProp, boolean dense, long nextRel, long labels )
@@ -165,23 +185,9 @@ public class NodeRecord extends PrimitiveRecord
     }
 
     @Override
-    public NodeRecord clone()
+    public NodeRecord copy()
     {
-        NodeRecord clone = (NodeRecord) super.clone();
-        if ( !dynamicLabelRecords.isEmpty() )
-        {
-            List<DynamicRecord> clonedLabelRecords = new ArrayList<>( dynamicLabelRecords.size() );
-            for ( DynamicRecord labelRecord : dynamicLabelRecords )
-            {
-                clonedLabelRecords.add( labelRecord.clone() );
-            }
-            clone.dynamicLabelRecords = clonedLabelRecords;
-        }
-        else
-        {
-            clone.dynamicLabelRecords = emptyList();
-        }
-        return clone;
+        return new NodeRecord( this );
     }
 
     @Override

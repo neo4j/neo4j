@@ -111,7 +111,7 @@ public final class DoubleArray extends FloatingPointArray
     @Override
     public double[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

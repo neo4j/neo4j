@@ -145,11 +145,11 @@ public abstract class DynamicRecordCheckTest
     public void shouldReportInvalidDataLength()
     {
         // given
-        DynamicRecord property = inUse( record( 42 ) );
-        property.setLength( -1 );
+        DynamicRecord record = mock( DynamicRecord.class );
+        when( record.getLength() ).thenReturn( -1 );
 
         // when
-        ConsistencyReport.DynamicConsistencyReport report = check( property );
+        ConsistencyReport.DynamicConsistencyReport report = check( record );
 
         // then
         verify( report ).invalidLength();
@@ -235,7 +235,7 @@ public abstract class DynamicRecordCheckTest
         @Override
         DynamicRecord fill( DynamicRecord record, int size )
         {
-            record.setLength( size );
+            record.setData( new byte[size] );
             return record;
         }
     }
@@ -257,7 +257,7 @@ public abstract class DynamicRecordCheckTest
         @Override
         DynamicRecord fill( DynamicRecord record, int size )
         {
-            record.setLength( size );
+            record.setData( new byte[size] );
             return record;
         }
     }

@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -434,7 +435,11 @@ class SchemaCheckerTest extends CheckerTestBase
     @Test
     void shouldReportDynamicLabelStringRecordNotFullReferencesNext() throws Exception
     {
-        testDynamicLabelTokenChainInconsistency( record -> first( record.getNameRecords() ).setLength( first( record.getNameRecords() ).getLength() / 2 ),
+        testDynamicLabelTokenChainInconsistency( record ->
+                {
+                    DynamicRecord first = first( record.getNameRecords() );
+                    first( record.getNameRecords() ).setData( Arrays.copyOf( first.getData(), first.getLength() / 2 ) );
+                },
                 DynamicConsistencyReport.class, DynamicConsistencyReport::recordNotFullReferencesNext );
     }
 
@@ -462,7 +467,11 @@ class SchemaCheckerTest extends CheckerTestBase
     @Test
     void shouldReportDynamicPropertyKeyStringRecordNotFullReferencesNext() throws Exception
     {
-        testDynamicPropertyKeyTokenChainInconsistency( record -> first( record.getNameRecords() ).setLength( first( record.getNameRecords() ).getLength() / 2 ),
+        testDynamicPropertyKeyTokenChainInconsistency( record ->
+                {
+                    DynamicRecord first = first( record.getNameRecords() );
+                    first( record.getNameRecords() ).setData( Arrays.copyOf( first.getData(), first.getLength() / 2 ) );
+                },
                 DynamicConsistencyReport.class, DynamicConsistencyReport::recordNotFullReferencesNext );
     }
 
@@ -491,7 +500,11 @@ class SchemaCheckerTest extends CheckerTestBase
     void shouldReportDynamicRelationshipTypeStringRecordNotFullReferencesNext() throws Exception
     {
         testDynamicRelationshipTypeTokenChainInconsistency(
-                record -> first( record.getNameRecords() ).setLength( first( record.getNameRecords() ).getLength() / 2 ),
+                record ->
+                {
+                    DynamicRecord first = first( record.getNameRecords() );
+                    first( record.getNameRecords() ).setData( Arrays.copyOf( first.getData(), first.getLength() / 2 ) );
+                },
                 DynamicConsistencyReport.class, DynamicConsistencyReport::recordNotFullReferencesNext );
     }
 

@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
-import org.apache.commons.lang3.exception.CloneFailedException;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -51,9 +49,9 @@ public class IndexEntry extends AbstractBaseRecord
     }
 
     @Override
-    public final AbstractBaseRecord clone()
+    public IndexEntry copy()
     {
-        throw new CloneFailedException( "Synthetic records cannot be cloned." );
+        throw new UnsupportedOperationException( "Synthetic records cannot be copied." );
     }
 
     @Override

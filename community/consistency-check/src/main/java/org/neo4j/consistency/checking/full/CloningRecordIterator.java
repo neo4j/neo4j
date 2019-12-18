@@ -40,8 +40,7 @@ public class CloningRecordIterator<R extends AbstractBaseRecord> extends Prefetc
     {
         if ( actualIterator.hasNext() )
         {
-            R next = actualIterator.next();
-            return (R) next.clone();
+            return (R) actualIterator.next().copy();
         }
         else
         {

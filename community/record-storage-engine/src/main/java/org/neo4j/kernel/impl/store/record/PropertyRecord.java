@@ -30,6 +30,7 @@ import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.PropertyType;
 
+import static java.lang.System.arraycopy;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 
@@ -55,15 +56,14 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     // by ensureBlocksLoaded().
     // Modifications to a property record are still done on the PropertyBlock abstraction and so it's also
     // that data that gets written to the log and record when it's time to do so.
-    private long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
+    private final long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
     private int blocksCursor;
 
     // These MUST ONLY be populated if we're accessing PropertyBlocks. On just loading this record only the
     // next/prev and blocks should be filled.
-    private PropertyBlock[] blockRecords =
-            new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
-    private boolean blocksLoaded;
+    private final PropertyBlock[] blockRecords = new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
     private int blockRecordsCursor;
+    private boolean blocksLoaded;
     private long entityId;
     private byte entityType;
     private List<DynamicRecord> deletedRecords;
@@ -77,6 +77,32 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     {
         super( id );
         primitive.setIdTo( this );
+    }
+
+    public PropertyRecord( PropertyRecord other )
+    {
+        super( other );
+        this.nextProp = other.nextProp;
+        this.prevProp = other.prevProp;
+        arraycopy( other.blocks, 0, this.blocks, 0, other.blocks.length );
+        this.blocksCursor = other.blocksCursor;
+        this.blockRecordsCursor = other.blockRecordsCursor;
+        this.blocksLoaded = other.blocksLoaded;
+        this.entityId = other.entityId;
+        this.entityType = other.entityType;
+
+        for ( int i = 0; i < blockRecordsCursor; i++ )
+        {
+            this.blockRecords[i] = new PropertyBlock( other.blockRecords[i] );
+        }
+        if ( other.deletedRecords != null )
+        {
+            this.deletedRecords = new ArrayList<>( other.deletedRecords.size() );
+            for ( DynamicRecord deletedRecord : other.deletedRecords )
+            {
+                this.deletedRecords.add( new DynamicRecord( deletedRecord ) );
+            }
+        }
     }
 
     public PropertyRecord initialize( boolean inUse, long prevProp, long nextProp )
@@ -393,24 +419,9 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     }
 
     @Override
-    public PropertyRecord clone()
+    public PropertyRecord copy()
     {
-        PropertyRecord clone = (PropertyRecord) super.clone();
-        clone.blocks = blocks.clone();
-        clone.blockRecords = blockRecords.clone();
-        for ( int i = 0; i < blockRecordsCursor; i++ )
-        {
-            clone.blockRecords[i] = clone.blockRecords[i].clone();
-        }
-        if ( deletedRecords != null )
-        {
-            clone.deletedRecords = new ArrayList<>( deletedRecords.size() );
-            for ( DynamicRecord deletedRecord : deletedRecords )
-            {
-                clone.deletedRecords.add( deletedRecord.clone() );
-            }
-        }
-        return clone;
+        return new PropertyRecord( this );
     }
 
     public long[] getBlocks()

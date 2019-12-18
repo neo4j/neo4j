@@ -20,6 +20,7 @@
 package org.neo4j.cypher.result;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.kernel.impl.query.QuerySubscriber;
@@ -80,7 +81,8 @@ public abstract class NaiveQuerySubscription extends EagerQuerySubscription impl
             try
             {
                 accept( record -> {
-                    materializedResult.add( record.fields().clone() );
+                    AnyValue[] fields = record.fields();
+                    materializedResult.add( Arrays.copyOf( fields, fields.length ) );
                     record.release();
                     return true;
                 } );

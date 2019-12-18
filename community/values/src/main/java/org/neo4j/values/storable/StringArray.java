@@ -93,7 +93,7 @@ public class StringArray extends TextArray
     @Override
     public String[] asObjectCopy()
     {
-        return value.clone();
+        return Arrays.copyOf( value, value.length );
     }
 
     @Override

@@ -41,9 +41,9 @@ public class Envelope
      */
     public Envelope( double[] min, double[] max )
     {
-        this.min = min.clone();
-        this.max = max.clone();
-        if ( !isValid() )
+        this.min = Arrays.copyOf( min, min.length );
+        this.max = Arrays.copyOf( max, max.length );
+        if ( !isValid( min, max ) )
         {
             throw new IllegalArgumentException( "Invalid envelope created " + toString() );
         }
@@ -319,7 +319,7 @@ public class Envelope
         return ans;
     }
 
-    private boolean isValid()
+    private static boolean isValid( double[] min, double[] max )
     {
         boolean valid = min != null && max != null && min.length == max.length;
         for ( int i = 0; valid && i < min.length; i++ )

@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
-import org.apache.commons.lang3.exception.CloneFailedException;
-
 /**
  * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
  * and initialized with the public {@code initialize} method exposed by the specific record implementations,
@@ -39,7 +37,7 @@ import org.apache.commons.lang3.exception.CloneFailedException;
  *     and wasn't there when it was loaded from the store</li>
  * </ul>
  */
-public abstract class AbstractBaseRecord implements Cloneable
+public abstract class AbstractBaseRecord
 {
     public static final int NO_ID = -1;
     private long id;
@@ -62,6 +60,17 @@ public abstract class AbstractBaseRecord implements Cloneable
     {
         this.id = id;
         clear();
+    }
+
+    public AbstractBaseRecord( AbstractBaseRecord other )
+    {
+        this.id = other.id;
+        this.secondaryUnitId = other.secondaryUnitId;
+        this.requiresSecondaryUnit = other.requiresSecondaryUnit;
+        this.inUse = other.inUse;
+        this.created = other.created;
+        this.createdSecondaryUnit = other.createdSecondaryUnit;
+        this.useFixedReferences = other.useFixedReferences;
     }
 
     protected AbstractBaseRecord initialize( boolean inUse )
@@ -88,6 +97,11 @@ public abstract class AbstractBaseRecord implements Cloneable
         requiresSecondaryUnit = false;
         createdSecondaryUnit = false;
         useFixedReferences = false;
+    }
+
+    public AbstractBaseRecord copy()
+    {
+        throw new UnsupportedOperationException( getClass().getSimpleName() + " is not copyable." );
     }
 
     public long getId()
@@ -212,18 +226,5 @@ public abstract class AbstractBaseRecord implements Cloneable
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
         // Don't compare 'created' flag because it isn't properly set on reading a record from the store
         return id == other.id && inUse == other.inUse;
-    }
-
-    @Override
-    public AbstractBaseRecord clone()
-    {
-        try
-        {
-            return (AbstractBaseRecord) super.clone();
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            throw new CloneFailedException( e );
-        }
     }
 }

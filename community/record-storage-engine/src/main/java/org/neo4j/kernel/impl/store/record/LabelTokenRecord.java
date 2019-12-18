@@ -26,6 +26,11 @@ public class LabelTokenRecord extends TokenRecord
         super( id );
     }
 
+    public LabelTokenRecord( LabelTokenRecord other )
+    {
+        super( other );
+    }
+
     @Override
     public LabelTokenRecord initialize( boolean inUse, int nameId )
     {
@@ -40,8 +45,8 @@ public class LabelTokenRecord extends TokenRecord
     }
 
     @Override
-    public LabelTokenRecord clone()
+    public LabelTokenRecord copy()
     {
-        return (LabelTokenRecord) super.clone();
+        return new LabelTokenRecord( this );
     }
 }

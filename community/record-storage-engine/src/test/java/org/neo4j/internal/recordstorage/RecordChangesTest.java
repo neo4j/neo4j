@@ -47,7 +47,7 @@ class RecordChangesTest
         }
 
         @Override
-        public Object clone( Object o )
+        public Object copy( Object o )
         {
             return o.toString();
         }

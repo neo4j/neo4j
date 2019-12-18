@@ -542,7 +542,8 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getStringStore(),
-                                PropertyType.STRING, record -> record.setLength( random.nextInt( record.getLength() ) ), v -> true );
+                                PropertyType.STRING, record ->
+                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true );
                     }
                 },
 //        STRING_DATA - format doesn't allow us to detect these
@@ -560,7 +561,8 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
-                                PropertyType.ARRAY, record -> record.setLength( random.nextInt( record.getLength() ) ),
+                                PropertyType.ARRAY, record ->
+                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ),
                                 v -> v.asObjectCopy() instanceof String[] );
                     }
                 },
@@ -570,7 +572,8 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
-                                PropertyType.ARRAY, record -> record.setLength( random.nextInt( record.getLength() ) ), v -> true );
+                                PropertyType.ARRAY, record ->
+                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true );
                     }
                 },
 //        ARRAY_DATA?
@@ -739,7 +742,7 @@ public class DetectRandomSabotageIT
                                 else
                                 {
                                     // Remove a label from an existing node (in the label index only)
-                                    MutableLongList labels = LongLists.mutable.of( labelsBefore.clone() );
+                                    MutableLongList labels = LongLists.mutable.of( Arrays.copyOf( labelsBefore, labelsBefore.length ) );
                                     labelId = (int) labels.removeAtIndex( random.nextInt( labels.size() ) );
                                     long[] labelsAfter = labels.toSortedArray(); // With one of the labels removed
                                     writer.write( NodeLabelUpdate.labelChanges( nodeRecord.getId(), labelsBefore, labelsAfter ) );

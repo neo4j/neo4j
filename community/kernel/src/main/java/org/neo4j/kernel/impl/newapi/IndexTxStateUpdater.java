@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -160,7 +161,7 @@ public class IndexTxStateUpdater
                         Value[] valuesAfter = getValueTuple( node, propertyCursor, propertyKeyId, afterValue, propertyIds, materializedProperties );
 
                         // The valuesBefore tuple is just like valuesAfter, except is has the afterValue instead of the beforeValue
-                        Value[] valuesBefore = valuesAfter.clone();
+                        Value[] valuesBefore = Arrays.copyOf( valuesAfter, valuesAfter.length );
                         int k = ArrayUtils.indexOf( propertyIds, propertyKeyId );
                         valuesBefore[k] = beforeValue;
 

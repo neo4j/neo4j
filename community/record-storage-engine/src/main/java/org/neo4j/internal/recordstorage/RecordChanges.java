@@ -239,7 +239,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         {
             if ( before == null )
             {
-                this.before = loader.clone( record );
+                this.before = loader.copy( record );
             }
         }
 

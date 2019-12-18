@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -31,34 +32,35 @@ public class DynamicRecord extends AbstractBaseRecord
     private static final int MAX_CHARS_IN_TO_STRING = 16;
 
     private byte[] data;
-    private int length;
     private long nextBlock;
     private int type;
     private boolean startRecord;
 
+    public DynamicRecord( DynamicRecord other )
+    {
+        super( other );
+        this.data = Arrays.copyOf( other.data, other.data.length );
+        this.nextBlock = other.nextBlock;
+        this.type = other.type;
+        this.startRecord = other.startRecord;
+    }
+
     /**
-     * @deprecated use {@link #initialize(boolean, boolean, long, int, int)} instead.
+     * @deprecated use {@link #initialize(boolean, boolean, long, int)} instead.
      */
     @Deprecated
     public static DynamicRecord dynamicRecord( long id, boolean inUse )
     {
-        DynamicRecord record = new DynamicRecord( id );
-        record.setInUse( inUse );
-        return record;
+        return new DynamicRecord( id ).initialize( inUse, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
     }
 
     /**
-     * @deprecated use {@link #initialize(boolean, boolean, long, int, int)} instead.
+     * @deprecated use {@link #initialize(boolean, boolean, long, int)} instead.
      */
     @Deprecated
-    public static DynamicRecord dynamicRecord( long id, boolean inUse, boolean isStartRecord, long nextBlock, int type,
-                                               byte [] data )
+    public static DynamicRecord dynamicRecord( long id, boolean inUse, boolean isStartRecord, long nextBlock, int type, byte[] data )
     {
-        DynamicRecord record = new DynamicRecord( id );
-        record.setInUse( inUse );
-        record.setStartRecord( isStartRecord );
-        record.setNextBlock( nextBlock );
-        record.setType( type );
+        DynamicRecord record = new DynamicRecord( id ).initialize( inUse, isStartRecord, nextBlock, type );
         record.setData( data );
         return record;
     }
@@ -68,22 +70,20 @@ public class DynamicRecord extends AbstractBaseRecord
         super( id );
     }
 
-    public DynamicRecord initialize( boolean inUse, boolean isStartRecord, long nextBlock,
-            int type, int length )
+    public DynamicRecord initialize( boolean inUse, boolean isStartRecord, long nextBlock, int type )
     {
         super.initialize( inUse );
         this.startRecord = isStartRecord;
         this.nextBlock = nextBlock;
         this.type = type;
         this.data = NO_DATA;
-        this.length = length;
         return this;
     }
 
     @Override
     public void clear()
     {
-        initialize( false, true, Record.NO_NEXT_BLOCK.intValue(), -1, 0 );
+        initialize( false, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
     }
 
     public void setStartRecord( boolean startRecord )
@@ -106,7 +106,7 @@ public class DynamicRecord extends AbstractBaseRecord
 
     /**
      * @return The {@link #type} field of this record, as set by previous invocations to {@link #setType(int)} or
-     * {@link #initialize(boolean, boolean, long, int, int)}
+     * {@link #initialize(boolean, boolean, long, int)}
      */
     public int getTypeAsInt()
     {
@@ -118,11 +118,6 @@ public class DynamicRecord extends AbstractBaseRecord
         this.type = type;
     }
 
-    public void setLength( int length )
-    {
-        this.length = length;
-    }
-
     public void setInUse( boolean inUse, int type )
     {
         this.type = type;
@@ -131,13 +126,12 @@ public class DynamicRecord extends AbstractBaseRecord
 
     public void setData( byte[] data )
     {
-        this.length = data.length;
         this.data = data;
     }
 
     public int getLength()
     {
-        return length;
+        return data.length;
     }
 
     public byte[] getData()
@@ -162,7 +156,7 @@ public class DynamicRecord extends AbstractBaseRecord
         buf.append( "DynamicRecord[" )
                 .append( getId() )
                 .append( ",used=" ).append( inUse() ).append( ',' )
-                .append( '(' ).append( length ).append( "),type=" );
+                .append( '(' ).append( data.length ).append( "),type=" );
         PropertyType type = getType();
         if ( type == null )
         {
@@ -205,31 +199,38 @@ public class DynamicRecord extends AbstractBaseRecord
     }
 
     @Override
-    public DynamicRecord clone()
+    public DynamicRecord copy()
     {
-        DynamicRecord clone = (DynamicRecord) super.clone();
-        if ( data != null )
-        {
-            clone.setData( data.clone() );
-        }
-        return clone;
+        return new DynamicRecord( this );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( super.hashCode(), length, nextBlock, type, startRecord );
+        int result = Objects.hash( super.hashCode(), nextBlock, type, startRecord );
+        result = 31 * result + Arrays.hashCode( data );
+        return result;
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        if ( !super.equals( obj ) )
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
-
-        DynamicRecord other = (DynamicRecord) obj;
-        return length == other.length && nextBlock == other.nextBlock && type == other.type && startRecord == other.startRecord;
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        DynamicRecord that = (DynamicRecord) o;
+        return nextBlock == that.nextBlock &&
+                type == that.type &&
+                startRecord == that.startRecord &&
+                Arrays.equals( data, that.data );
     }
 }

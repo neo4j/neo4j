@@ -28,6 +28,12 @@ public class PropertyKeyTokenRecord extends TokenRecord
         super( id );
     }
 
+    public PropertyKeyTokenRecord( PropertyKeyTokenRecord other )
+    {
+        super( other );
+        this.propCount = other.propCount;
+    }
+
     public PropertyKeyTokenRecord initialize( boolean inUse, int nameId, int propertyCount )
     {
         super.initialize( inUse, nameId );
@@ -65,8 +71,8 @@ public class PropertyKeyTokenRecord extends TokenRecord
     }
 
     @Override
-    public PropertyKeyTokenRecord clone()
+    public PropertyKeyTokenRecord copy()
     {
-        return (PropertyKeyTokenRecord) super.clone();
+        return new PropertyKeyTokenRecord( this );
     }
 }
