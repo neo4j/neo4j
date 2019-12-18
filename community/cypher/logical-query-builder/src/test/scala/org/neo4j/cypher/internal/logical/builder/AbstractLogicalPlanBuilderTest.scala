@@ -20,18 +20,14 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class AbstractLogicalPlanBuilderTest extends CypherFunSuite with TestName
-{
+class AbstractLogicalPlanBuilderTest extends CypherFunSuite {
   test("should allocate sequential logical plan ids") {
-    val x = new TestBuilder
-
     // when
-    val plan =
-      x.produceResults("x")
+    val plan = new TestPlanBuilder()
+      .produceResults("x")
       .filter("x = 1")
       .filter("x >= 1")
       .filter("x < 2")
@@ -48,11 +44,5 @@ class AbstractLogicalPlanBuilderTest extends CypherFunSuite with TestName
       id += 1
       nextOperator = operator.lhs
     }
-  }
-
-  class TestBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, TestBuilder](null) {
-    override def newNode(node: Variable): Unit = {}
-    override def newRelationship(relationship: Variable): Unit = {}
-    override def build(readOnly: Boolean): LogicalPlan = buildLogicalPlan()
   }
 }
