@@ -42,7 +42,6 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -58,12 +57,11 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.lock.LockTracer;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -109,9 +107,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final Config config;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
-    private final TransactionTracer transactionTracer;
-    private final PageCursorTracerSupplier pageCursorTracerSupplier;
-    private final LockTracer lockTracer;
     private final LeaseService leaseService;
 
     /**
@@ -151,8 +146,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
             SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
-            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, TransactionTracer transactionTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, LockTracer lockTracer, LeaseService leaseService )
+            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, Tracers tracers, LeaseService leaseService )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -179,11 +173,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.collectionsFactorySupplier = collectionsFactorySupplier;
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
-        this.transactionTracer = transactionTracer;
-        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
-        this.lockTracer = lockTracer;
         this.leaseService = leaseService;
-        this.factory = new KernelTransactionImplementationFactory( allTransactions );
+        this.factory = new KernelTransactionImplementationFactory( allTransactions, tracers );
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
         doBlockNewTransactions();
@@ -381,10 +372,12 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private class KernelTransactionImplementationFactory implements Factory<KernelTransactionImplementation>
     {
         private final Set<KernelTransactionImplementation> transactions;
+        private final Tracers tracers;
 
-        KernelTransactionImplementationFactory( Set<KernelTransactionImplementation> transactions )
+        KernelTransactionImplementationFactory( Set<KernelTransactionImplementation> transactions, Tracers tracers )
         {
             this.transactions = transactions;
+            this.tracers = tracers;
         }
 
         @Override
@@ -394,7 +387,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                     new KernelTransactionImplementation( config, eventListeners,
                             constraintIndexCreator, globalProcedures,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
-                            transactionTracer, lockTracer, pageCursorTracerSupplier, storageEngine, accessCapability,
+                            tracers, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService );

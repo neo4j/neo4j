@@ -56,7 +56,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -141,7 +140,6 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.RecoveryStartupChecker;
 import org.neo4j.lock.LockService;
-import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ReentrantLockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -205,8 +203,7 @@ public class Database extends LifecycleAdapter
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
     private final DatabaseTracer databaseTracer;
-    private final PageCursorTracerSupplier pageCursorTracerSupplier;
-    private final LockTracer lockTracer;
+    private final Tracers globalTracers;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final LeaseService leaseService;
 
@@ -286,10 +283,8 @@ public class Database extends LifecycleAdapter
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
         this.databaseFacade = new GraphDatabaseFacade( this, databaseConfig, databaseInfo, databaseAvailabilityGuard );
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory( databaseConfig, databaseFacade );
-        Tracers globalTracers = context.getTracers();
+        this.globalTracers = context.getTracers();
         this.databaseTracer = globalTracers.getDatabaseTracer();
-        this.pageCursorTracerSupplier = globalTracers.getPageCursorTracerSupplier();
-        this.lockTracer = globalTracers.getLockTracer();
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
@@ -336,13 +331,11 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( idController );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
-            databaseDependencies.satisfyDependency( databaseTracer );
-            databaseDependencies.satisfyDependency( lockTracer );
 
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
-            life.add( new PageCacheStopMetricsReporter( pageCursorTracerSupplier ) );
+            life.add( new PageCacheStopMetricsReporter( globalTracers.getPageCursorTracerSupplier() ) );
             life.add( new PageCacheLifecycle( databasePageCache ) );
             life.add( initializeExtensions( databaseDependencies ) );
 
@@ -455,7 +448,7 @@ public class Database extends LifecycleAdapter
             life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
-            life.add( new PageCacheStartMetricsReporter( pageCursorTracerSupplier ) );
+            life.add( new PageCacheStartMetricsReporter( globalTracers.getPageCursorTracerSupplier() ) );
             life.setLast( checkpointerLifecycle );
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
@@ -646,7 +639,7 @@ public class Database extends LifecycleAdapter
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
-                        databaseDependencies, databaseTracer, pageCursorTracerSupplier, lockTracer, leaseService ) );
+                        databaseDependencies, globalTracers, leaseService ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

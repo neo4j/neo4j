@@ -63,7 +63,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -100,6 +99,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionListenersState;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -133,6 +133,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // default values for not committed tx id and tx commit time
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
+    private static final String TRANSACTION_TAG = "transaction";
 
     private final CollectionsFactory collectionsFactory;
 
@@ -146,7 +147,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // For committing
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
-    private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
     private final LeaseService leaseService;
     private final StorageReader storageReader;
@@ -155,6 +155,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
     private final ConstraintSemantics constraintSemantics;
+    private final PageCursorTracer pageCursorTracer;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -197,14 +198,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * instances are pooled.
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
-    private PageCursorTracer pageCursorTracer;
 
     public KernelTransactionImplementation( Config config,
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
             TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool, SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
-            LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
+            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, Tracers tracers,
+            StorageEngine storageEngine, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
@@ -220,11 +220,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageEngine = storageEngine;
         this.pool = pool;
         this.clocks = new ClockContext( clock );
-        this.transactionTracer = transactionTracer;
-        this.cursorTracerSupplier = cursorTracerSupplier;
+        this.transactionTracer = tracers.getDatabaseTracer();
         this.versionContextSupplier = versionContextSupplier;
         this.leaseService = leaseService;
-        this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId );
+        this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
+        this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = emptyMap();
@@ -279,7 +279,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
-        this.pageCursorTracer = cursorTracerSupplier.get();
         this.statistics.init( currentThread().getId(), pageCursorTracer );
         this.currentStatement.initialize( statementLocks, pageCursorTracer, startTimeMillis );
         this.operations.initialize();
@@ -463,13 +462,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public long pageHits()
     {
-        return cursorTracerSupplier.get().hits();
+        return pageCursorTracer.hits();
     }
 
     @Override
     public long pageFaults()
     {
-        return cursorTracerSupplier.get().faults();
+        return pageCursorTracer.faults();
     }
 
     Optional<ExecutingQuery> executingQuery()
