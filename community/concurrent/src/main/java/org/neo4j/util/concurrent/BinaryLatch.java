@@ -34,6 +34,8 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
  */
 public class BinaryLatch
 {
+    private static final int MAX_SPINS = Runtime.getRuntime().availableProcessors() < 2 ? 1 : 1 << 8;
+
     private static class Node
     {
         volatile Node next;
@@ -116,11 +118,20 @@ public class BinaryLatch
                 // assign a non-null value to our next pointer, so other threads will know that we have been properly
                 // enqueued. We use the 'end' sentinel as a marker when there's otherwise no other next node.
                 waiter.next = state == null ? end : state;
+                int count = 0;
                 do
                 {
                     // Park may wake up spuriously, so we have to loop on it until we observe from the state of the
                     // stack, that the latch has been released.
-                    LockSupport.park( this );
+                    if ( count < MAX_SPINS )
+                    {
+                        Thread.onSpinWait();
+                        count++;
+                    }
+                    else
+                    {
+                        LockSupport.park( this );
+                    }
                 }
                 while ( !isReleased( waiter ) );
             }
