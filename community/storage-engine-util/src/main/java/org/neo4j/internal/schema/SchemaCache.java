@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.schema;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
@@ -40,14 +40,6 @@ import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexConfigCompleter;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorLookupSet;
-import org.neo4j.internal.schema.SchemaDescriptorPredicates;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 
@@ -88,7 +80,7 @@ public class SchemaCache
         return schemaCacheState.constraints();
     }
 
-    boolean hasConstraintRule( Long constraintRuleId )
+    public boolean hasConstraintRule( Long constraintRuleId )
     {
         return schemaCacheState.hasConstraintRule( constraintRuleId );
     }
@@ -108,22 +100,22 @@ public class SchemaCache
         return schemaCacheState.hasIndex( descriptor );
     }
 
-    Iterator<ConstraintDescriptor> constraintsForLabel( final int label )
+    public Iterator<ConstraintDescriptor> constraintsForLabel( final int label )
     {
         return Iterators.filter( SchemaDescriptorPredicates.hasLabel( label ), constraints().iterator() );
     }
 
-    Iterator<ConstraintDescriptor> constraintsForRelationshipType( final int relTypeId )
+    public Iterator<ConstraintDescriptor> constraintsForRelationshipType( final int relTypeId )
     {
         return Iterators.filter( SchemaDescriptorPredicates.hasRelType( relTypeId ), constraints().iterator() );
     }
 
-    Iterator<ConstraintDescriptor> constraintsForSchema( SchemaDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsForSchema( SchemaDescriptor descriptor )
     {
         return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints().iterator() );
     }
 
-    <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
+    public <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
     {
         return schemaCacheState.getOrCreateDependantState( type, factory, parameter );
     }
@@ -158,7 +150,7 @@ public class SchemaCache
         }
     }
 
-    void removeSchemaRule( long id )
+    public void removeSchemaRule( long id )
     {
         cacheUpdateLock.lock();
         try
@@ -183,22 +175,22 @@ public class SchemaCache
         return schemaCacheState.indexesForSchema( descriptor );
     }
 
-    Iterator<IndexDescriptor> indexesForLabel( int labelId )
+    public Iterator<IndexDescriptor> indexesForLabel( int labelId )
     {
         return schemaCacheState.indexesForLabel( labelId );
     }
 
-    Iterator<IndexDescriptor> indexesForRelationshipType( int relationshipType )
+    public Iterator<IndexDescriptor> indexesForRelationshipType( int relationshipType )
     {
         return schemaCacheState.indexesForRelationshipType( relationshipType );
     }
 
-    IndexDescriptor indexForName( String name )
+    public IndexDescriptor indexForName( String name )
     {
         return schemaCacheState.indexForName( name );
     }
 
-    ConstraintDescriptor constraintForName( String name )
+    public ConstraintDescriptor constraintForName( String name )
     {
         return schemaCacheState.constraintForName( name );
     }
@@ -210,23 +202,23 @@ public class SchemaCache
         return schemaCacheState.getIndexesRelatedTo( entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
     }
 
-    Collection<IndexBackedConstraintDescriptor> getUniquenessConstraintsRelatedTo( long[] changedLabels, long[] unchangedLabels, int[] properties,
+    public Collection<IndexBackedConstraintDescriptor> getUniquenessConstraintsRelatedTo( long[] changedLabels, long[] unchangedLabels, int[] properties,
             boolean propertyListIsComplete, EntityType entityType )
     {
         return schemaCacheState.getUniquenessConstraintsRelatedTo( entityType, changedLabels, unchangedLabels, properties, propertyListIsComplete );
     }
 
-    IndexDescriptor getTokenIndex( EntityType entityType )
+    public IndexDescriptor getTokenIndex( EntityType entityType )
     {
         return schemaCacheState.getTokenIndex( entityType );
     }
 
-    boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
+    public boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
     {
         return schemaCacheState.hasRelatedSchema( tokens, propertyKey, entityType );
     }
 
-    boolean hasRelatedSchema( int token, EntityType entityType )
+    public boolean hasRelatedSchema( int token, EntityType entityType )
     {
         return schemaCacheState.hasRelatedSchema( token, entityType );
     }

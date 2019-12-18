@@ -31,6 +31,7 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;

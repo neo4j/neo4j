@@ -53,6 +53,7 @@ import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;

@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.token.TokenHolders;

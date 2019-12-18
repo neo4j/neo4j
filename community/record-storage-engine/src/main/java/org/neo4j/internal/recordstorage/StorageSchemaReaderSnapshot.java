@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 

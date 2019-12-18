@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.IdUpdateListener;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.schema;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
@@ -30,17 +30,6 @@ import java.util.Set;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.ConstraintType;
-import org.neo4j.internal.schema.FulltextSchemaDescriptor;
-import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexConfigCompleter;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexValueCapability;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.Race;
