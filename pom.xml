@@ -1021,6 +1021,11 @@
         <artifactId>airline</artifactId>
         <version>0.8</version>
       </dependency>
+      <dependency>
+        <groupId>org.hdrhistogram</groupId>
+        <artifactId>HdrHistogram</artifactId>
+        <version>2.1.12</version>
+      </dependency>
 
       <!-- testing -->
       <dependency>
