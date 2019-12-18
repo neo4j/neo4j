@@ -22,7 +22,8 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 case class ExpressionStringifier(
   extender: Expression => String = failingExtender,
   alwaysParens: Boolean = false,
-  alwaysBacktick: Boolean = false
+  alwaysBacktick: Boolean = false,
+  preferSingleQuotes: Boolean = false
 ) {
 
   val patterns = PatternStringifier(this)
@@ -314,7 +315,7 @@ case class ExpressionStringifier(
     val containsDouble = str.contains('"')
     if (containsDouble && containsSingle)
       "\"" + str.replaceAll("\"", "\\\\\"") + "\""
-    else if (containsDouble)
+    else if (containsDouble || preferSingleQuotes)
       "'" + str + "'"
     else
       "\"" + str + "\""
