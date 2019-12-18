@@ -23,19 +23,21 @@ import org.neo4j.cypher.internal.v4_0.ast.UnresolvedCall
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.parser.{Expressions, ProcedureCalls}
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Rewriter, topDown}
-import org.parboiled.scala.{ReportingParseRunner, Rule1}
+import org.parboiled.scala.{ParsingResult, ReportingParseRunner, Rule1}
 
 object Parser {
-  val injectCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
-    case ContainerIndex(Variable("cache"), Property(v@Variable(node), pkn:PropertyKeyName)) =>
+  val injectCachedProperties: Rewriter = topDown(Rewriter.lift {
+    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "cache" || name == "cacheN" =>
       CachedProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable("cacheR"), Property(v@Variable(relationship), pkn:PropertyKeyName)) =>
+      CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
   })
   val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
     case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
   def cleanup[T <: ASTNode](in: T): T =
-    injectCachedNodeProperties.andThen(invalidateInputPositions)(in).asInstanceOf[T]
+    injectCachedProperties.andThen(invalidateInputPositions)(in).asInstanceOf[T]
 
   private val regex = s"(.+) [Aa][Ss] ([a-zA-Z0-9` @]+)".r
   private val parser = new Parser
@@ -59,7 +61,7 @@ private class Parser extends Expressions with ProcedureCalls {
   private val procedureCallParser: Rule1[UnresolvedCall] = Call
 
   def parseExpression(text: String): Expression = {
-    val res = ReportingParseRunner(expressionParser).run(text)
+    val res: ParsingResult[Expression] = ReportingParseRunner(expressionParser).run(text)
     res.result match {
       case Some(e) => Parser.cleanup(e)
       case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors.map(e => e.getErrorMessage + "@" + e.getStartIndex)}")
