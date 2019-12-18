@@ -161,7 +161,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def shortestPath(pattern: String, pathName: Option[String] = None, all: Boolean = false, predicates: Seq[String] = Seq.empty): IMPL = {
+  def shortestPath(pattern: String,
+                   pathName: Option[String] = None,
+                   all: Boolean = false,
+                   predicates: Seq[String] = Seq.empty,
+                   withFallback: Boolean = false,
+                   disallowSameNode: Boolean = true): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
 
@@ -180,7 +185,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             )(pos),
             NodePattern(Some(varFor(p.to)), Seq.empty, None)(pos) // labels and properties are not used at runtime
           )(pos), !all)(pos)),
-          predicates.map(Parser.parseExpression)
+          predicates.map(Parser.parseExpression),
+          withFallback,
+          disallowSameNode
         )(_)))
     }
   }
@@ -238,7 +245,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def projectEndpoints(pattern: String, startInScope: Boolean, endInScope: Boolean): IMPL = {
     val p = patternParser.parse(pattern)
     val relTypesAsNonEmptyOption = if (p.relTypes.isEmpty) None else Some(p.relTypes)
-    val directed = p.dir != SemanticDirection.BOTH
+    val directed = p.dir match {
+      case SemanticDirection.INCOMING => throw new IllegalArgumentException("Please turn your pattern around. ProjectEndpoints does not accept INCOMING.")
+      case SemanticDirection.OUTGOING => true
+      case SemanticDirection.BOTH => false
+    }
     appendAtCurrentIndent(UnaryOperator(lp => ProjectEndpoints(lp, p.relName, p.from, startInScope, p.to, endInScope,
                                                                relTypesAsNonEmptyOption, directed, p.length)(_)))
   }
@@ -257,19 +268,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => Top(lp, sortItems, literalInt(limit))(_)))
     self
   }
-
-  def top(sortItems: Seq[ColumnOrder], limitVariable: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Top(lp, sortItems, varFor(limitVariable))(_)))
-    self
-  }
-
   def partialTop(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limit: Long): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit))(_)))
-    self
-  }
-
-  def partialTop(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limitVariable: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, varFor(limitVariable))(_)))
     self
   }
 
@@ -285,12 +285,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def detachDeleteNode(node: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, varFor(node))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, Parser.parseExpression(node))(_)))
     self
   }
 
-  def deleteRel(rel: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, varFor(rel))(_)))
+  def deleteRelationship(rel: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, Parser.parseExpression(rel))(_)))
     self
   }
 
@@ -312,9 +312,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def orderedDistinct(orderToLeverage: Seq[Expression], projectionStrings: String*): IMPL = {
+  def orderedDistinct(orderToLeverage: Seq[String], projectionStrings: String*): IMPL = {
+    val order = orderToLeverage.map(Parser.parseExpression)
     val projections = Parser.parseProjections(projectionStrings: _*)
-    appendAtCurrentIndent(UnaryOperator(lp => OrderedDistinct(lp, projections, orderToLeverage)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => OrderedDistinct(lp, projections, order)(_)))
     self
   }
 
@@ -334,7 +335,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByLabelScan(n, labelName(label), args.toSet)(_)))
   }
 
-  def nodeByIdSeek(node: String, ids: AnyVal*): IMPL = {
+  def nodeByIdSeek(node: String, args: Set[String], ids: AnyVal*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     val idExpressions = ids.map {
@@ -349,10 +350,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         ManySeekableArgs(ListLiteral(idExpressions)(pos))
       }
 
-    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, Set.empty)(_)))
+    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, args)(_)))
   }
 
-  def directedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: AnyVal*): IMPL = {
+  def directedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
     val idExpressions = ids.map {
       case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
@@ -366,10 +367,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         ManySeekableArgs(ListLiteral(idExpressions)(pos))
       }
 
-    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, Set.empty)(_)))
+    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }
 
-  def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: AnyVal*): IMPL = {
+  def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
     val idExpressions = ids.map {
       case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
@@ -383,19 +384,19 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         ManySeekableArgs(ListLiteral(idExpressions)(pos))
       }
 
-    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, Set.empty)(_)))
+    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }
 
-  def nodeCountFromCountStore(node: String, labels: List[Option[String]]): IMPL = {
-    val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName))
-    appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(node, labelNames, Set.empty)(_)))
+  def nodeCountFromCountStore(node: String, labels: Seq[Option[String]], args: String*): IMPL = {
+    val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName)).toList
+    appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(node, labelNames, args.map(VariableParser.unescaped).toSet)(_)))
   }
 
-  def relationshipCountFromCountStore(name: String, maybeStartLabel: Option[String], relTypes: List[String], maybeEndLabel: Option[String]): IMPL = {
+  def relationshipCountFromCountStore(name: String, maybeStartLabel: Option[String], relTypes: Seq[String], maybeEndLabel: Option[String], args: String*): IMPL = {
     val startLabel = maybeStartLabel.map(labelName)
     val relTypeNames = relTypes.map(relTypeName)
     val endLabel = maybeEndLabel.map(labelName)
-    appendAtCurrentIndent(LeafOperator(RelationshipCountFromCountStore(name, startLabel, relTypeNames, endLabel, Set.empty)(_)))
+    appendAtCurrentIndent(LeafOperator(RelationshipCountFromCountStore(name, startLabel, relTypeNames, endLabel, args.map(VariableParser.unescaped).toSet)(_)))
   }
 
   def nodeIndexOperator(indexSeekString: String,
@@ -423,11 +424,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def orderedAggregation(groupingExpressions: Seq[String],
                          aggregationExpression: Seq[String],
-                         orderToLeverage: Seq[Expression]): IMPL =
+                         orderToLeverage: Seq[String]): IMPL = {
+    val order = orderToLeverage.map(Parser.parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => OrderedAggregation(lp,
       Parser.parseProjections(groupingExpressions: _*),
       Parser.parseProjections(aggregationExpression: _*),
-      orderToLeverage)(_)))
+      order)(_)))
+  }
 
   def apply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)(_)))
@@ -520,17 +523,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   /**
     * Called everytime a new node is introduced by some logical operator.
     */
-  def newNode(node: Variable): Unit
+  protected def newNode(node: Variable): Unit
 
   /**
     * Called everytime a new relationship is introduced by some logical operator.
     */
-  def newRelationship(relationship: Variable): Unit
+  protected def newRelationship(relationship: Variable): Unit
 
   /**
     * Returns the finalized output of the builder.
     */
-  def build(readOnly: Boolean = true): T
+  protected def build(readOnly: Boolean = true): T
 
   // HELPERS
 
@@ -568,9 +571,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   // AST construction
   protected def varFor(name: String): Variable = Variable(name)(pos)
-  protected def labelName(s: String): LabelName = LabelName(s)(pos)
-  protected def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
-  protected def literalInt(value: Long): SignedDecimalIntegerLiteral =
+  private def labelName(s: String): LabelName = LabelName(s)(pos)
+  private def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
+  private def literalInt(value: Long): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(pos)
 
 }

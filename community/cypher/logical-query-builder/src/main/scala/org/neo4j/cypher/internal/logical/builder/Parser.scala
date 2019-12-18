@@ -62,7 +62,7 @@ private class Parser extends Expressions with ProcedureCalls {
     val res = ReportingParseRunner(expressionParser).run(text)
     res.result match {
       case Some(e) => Parser.cleanup(e)
-      case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors}")
+      case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors.map(e => e.getErrorMessage + "@" + e.getStartIndex)}")
     }
   }
 

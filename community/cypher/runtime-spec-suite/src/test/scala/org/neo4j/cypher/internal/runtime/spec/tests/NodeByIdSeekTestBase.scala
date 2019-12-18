@@ -40,7 +40,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByIdSeek("x", toFind.getId)
+      .nodeByIdSeek("x", Set.empty, toFind.getId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -56,7 +56,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByIdSeek("x", node.getId.toDouble)
+      .nodeByIdSeek("x", Set.empty, node.getId.toDouble)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -72,7 +72,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByIdSeek("x", toNotFind)
+      .nodeByIdSeek("x", Set.empty, toNotFind)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -89,7 +89,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByIdSeek("x", toFind.map(_.getId):_*)
+      .nodeByIdSeek("x", Set.empty, toFind.map(_.getId):_*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -109,7 +109,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByIdSeek("x", nodesToLookFor:_*)
+      .nodeByIdSeek("x", Set.empty, nodesToLookFor:_*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -127,7 +127,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .filter(s"id(x) = ${toFind.getId}")
-      .nodeByIdSeek("x", toSeekFor.map(_.getId):_*)
+      .nodeByIdSeek("x", Set.empty, toSeekFor.map(_.getId):_*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -147,7 +147,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n", "x")
       .apply()
       .|.filter(s"id(x) = ${toFind.getId}")
-      .|.nodeByIdSeek("x", toSeekFor.map(_.getId):_*)
+      .|.nodeByIdSeek("x", Set.empty, toSeekFor.map(_.getId):_*)
       .allNodeScan("n")
       .build()
 

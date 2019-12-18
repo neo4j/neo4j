@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
 
-class ParserTest extends CypherFunSuite with TestName
-{
+class ParserTest extends CypherFunSuite with TestName {
   private val pos = InputPosition.NONE
 
   test("a AS b") {
@@ -52,6 +51,18 @@ class ParserTest extends CypherFunSuite with TestName
 
   test("`  n@31`") {
     Parser.parseExpression(testName) should be(Variable("  n@31")(pos))
+  }
+
+  test("All(rel in relationships(path) WHERE id(rel) <> 5)") {
+    Parser.parseExpression(testName) should be(
+      AllIterablePredicate(
+        FilterScope(
+          Variable("rel")(pos),
+          Some(NotEquals(
+            FunctionInvocation(Namespace(List())(pos), FunctionName("id")(pos), distinct = false, IndexedSeq(Variable("rel")(pos)))(pos),
+            SignedDecimalIntegerLiteral("5")(pos))(pos)))(pos),
+        FunctionInvocation(Namespace(List())(pos), FunctionName("relationships")(pos), distinct = false, IndexedSeq(Variable("path")(pos)))(pos)
+      )(pos))
   }
 
   test("CALL") {

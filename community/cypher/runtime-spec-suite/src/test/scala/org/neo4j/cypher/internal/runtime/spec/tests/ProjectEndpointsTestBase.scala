@@ -148,7 +148,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .apply()
       .|.nodeHashJoin("x")
-      .|.|.projectEndpoints("(x)<-[r]-(y)", startInScope = false, endInScope = false)
+      .|.|.projectEndpoints("(x)-[r]->(y)", startInScope = false, endInScope = false)
       .|.|.argument("r")
       .|.projectEndpoints("(x)-[r]->(y)", startInScope = false, endInScope = false)
       .|.argument("r")
@@ -182,7 +182,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .apply()
       .|.nodeHashJoin("x", "y")
-      .|.|.projectEndpoints("(x)<-[r]-(y)", startInScope = false, endInScope = false)
+      .|.|.projectEndpoints("(x)-[r]->(y)", startInScope = false, endInScope = false)
       .|.|.argument("r")
       .|.projectEndpoints("(x)-[r]-(y)", startInScope = false, endInScope = false)
       .|.argument("r")
@@ -248,7 +248,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .projectEndpoints("(x)<-[r]-(y)", startInScope = true, endInScope = true)   // chained middle
+      .projectEndpoints("(x)-[r]->(y)", startInScope = true, endInScope = true)   // chained middle
       .projectEndpoints("(x)-[r]->(y)", startInScope = false, endInScope = false) // middle
       .input(relationships = Seq("r"), nullable = false)
       .build()
@@ -278,7 +278,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .projectEndpoints("(x)<-[r]-(y)", startInScope = false, endInScope = true) // chained middle
+      .projectEndpoints("(y)-[r]->(x)", startInScope = false, endInScope = true) // chained middle
       .projectEndpoints("(x)-[r]-(y)", startInScope = false, endInScope = false) // head
       .input(relationships = Seq("r"), nullable = false)
       .build()

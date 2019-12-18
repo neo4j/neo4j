@@ -38,7 +38,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
-      .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq(varFor("x")))
+      .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq("x"))
       .input(variables = Seq("x"))
       .build()
 
@@ -57,7 +57,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
-      .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq(varFor("x")))
+      .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq("x"))
       .sort(Seq(Ascending("x")))
       .expand("(x)--(y)")
       .allNodeScan("x")
@@ -82,7 +82,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
-      .orderedAggregation(Seq("name AS name"), Seq("count(*) AS c"), Seq(varFor("name")))
+      .orderedAggregation(Seq("name AS name"), Seq("count(*) AS c"), Seq("name"))
       .sort(Seq(Ascending("name")))
       .projection("x.name AS name")
       .allNodeScan("x")
@@ -105,7 +105,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
-      .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq(varFor("x")))
+      .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq("x"))
       .sort(Seq(Ascending("x")))
       .expand("(x)--(y)")
       .input(nodes = Seq("x"))
@@ -125,7 +125,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "c")
-      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq(varFor("x")))
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -146,7 +146,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "c")
-      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq(varFor("x"), varFor("y")))
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x", "y"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -169,7 +169,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
-      .orderedAggregation(Seq("x AS x", "x2 AS x2"), Seq("count(*) AS c"), Seq(varFor("x")))
+      .orderedAggregation(Seq("x AS x", "x2 AS x2"), Seq("count(*) AS c"), Seq("x"))
       .sort(Seq(Ascending("x")))
       .projection("x AS x2")
       .expand("(x)--(y)")
@@ -192,7 +192,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
-      .orderedAggregation(Seq("x AS x", "x2 AS x2"), Seq("count(*) AS c"), Seq(varFor("x"), varFor("x2")))
+      .orderedAggregation(Seq("x AS x", "x2 AS x2"), Seq("count(*) AS c"), Seq("x", "x2"))
       .sort(Seq(Ascending("x")))
       .projection("x AS x2")
       .expand("(x)--(y)")
@@ -213,7 +213,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z", "c")
-      .orderedAggregation(Seq("x AS x", "y AS y", "z AS z"), Seq("count(*) AS c"), Seq(varFor("x")))
+      .orderedAggregation(Seq("x AS x", "y AS y", "z AS z"), Seq("count(*) AS c"), Seq("x"))
       .input(variables = Seq("x", "y", "z"))
       .build()
 
@@ -234,7 +234,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z", "c")
-      .orderedAggregation(Seq("x AS x", "y AS y", "z AS z"), Seq("count(*) AS c"), Seq(varFor("x"), varFor("y")))
+      .orderedAggregation(Seq("x AS x", "y AS y", "z AS z"), Seq("count(*) AS c"), Seq("x", "y"))
       .input(variables = Seq("x", "y", "z"))
       .build()
 
@@ -256,7 +256,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z", "c")
-      .orderedAggregation(Seq("x AS x", "y AS y", "z AS z"), Seq("count(*) AS c"), Seq(varFor("x"), varFor("y"), varFor("z")))
+      .orderedAggregation(Seq("x AS x", "y AS y", "z AS z"), Seq("count(*) AS c"), Seq("x", "y", "z"))
       .input(variables = Seq("x", "y", "z"))
       .build()
 
@@ -278,7 +278,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "c")
-      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("sum(z) AS c"), Seq(varFor("x"), varFor("y")))
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("sum(z) AS c"), Seq("x", "y"))
       .input(variables = Seq("x", "y", "z"))
       .build()
 
@@ -307,7 +307,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
         "min(x.num) AS min",
         "sum(x.num) AS sum",
       ),
-        Seq(varFor("x")))
+        Seq("x"))
       .input(variables = Seq("x"))
       .build()
 
@@ -333,7 +333,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
         "min(x) AS min",
         "sum(x) AS sum",
       ),
-        Seq(varFor("x")))
+        Seq("x"))
       .input(variables = Seq("x"))
       .build()
 
@@ -351,7 +351,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("i", "count")
-      .orderedAggregation(Seq("i AS i"), Seq("count(i) AS count"), Seq(varFor("i")))
+      .orderedAggregation(Seq("i AS i"), Seq("count(i) AS count"), Seq("i"))
       .input(variables = Seq("i"))
       .build()
 

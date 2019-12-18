@@ -36,7 +36,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedDistinct(Seq(varFor("x")), "x AS x")
+      .orderedDistinct(Seq("x"), "x AS x")
       .input(variables = Seq("x"))
       .build()
 
@@ -53,7 +53,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedDistinct(Seq(varFor("x")), "x AS x")
+      .orderedDistinct(Seq("x"), "x AS x")
       .input(variables = Seq("x"))
       .build()
 
@@ -71,7 +71,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedDistinct(Seq(varFor("x")), "x AS x")
+      .orderedDistinct(Seq("x"), "x AS x")
       .input(nodes = Seq("x"), nullable = false)
       .build()
 
@@ -88,7 +88,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .orderedDistinct(Seq(varFor("x")), "x AS y")
+      .orderedDistinct(Seq("x"), "x AS y")
       .input(variables = Seq("x"))
       .build()
 
@@ -105,7 +105,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq(varFor("x")),"x AS x1", "1 + y AS y1")
+      .orderedDistinct(Seq("x"),"x AS x1", "1 + y AS y1")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -123,7 +123,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq(varFor("x"),varFor("y")),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x","y"),"x AS x1", "y AS y1")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -142,7 +142,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq(varFor("x")),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x"),"x AS x1", "y AS y1")
       .input(nodes = Seq("x", "y"), nullable = false)
       .build()
 
@@ -161,7 +161,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq(varFor("x"),varFor("y")),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x","y"),"x AS x1", "y AS y1")
       .input(nodes = Seq("x", "y"), nullable = false)
       .build()
 
@@ -181,7 +181,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1", "z1")
-      .orderedDistinct(Seq(varFor("x")),"x AS x1", "y AS y1", "z AS z1")
+      .orderedDistinct(Seq("x"),"x AS x1", "y AS y1", "z AS z1")
       .input(nodes = Seq("x", "y", "z"), nullable = false)
       .build()
 
@@ -201,7 +201,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1", "z1", "w1")
-      .orderedDistinct(Seq(varFor("x"), varFor("w")),"x AS x1", "y AS y1", "z AS z1", "w AS w1")
+      .orderedDistinct(Seq("x", "w"),"x AS x1", "y AS y1", "z AS z1", "w AS w1")
       .input(nodes = Seq("x", "y", "z", "w"), nullable = false)
       .build()
 
@@ -219,7 +219,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq(varFor("x"),varFor("y")),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x","y"),"x AS x1", "y AS y1")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -238,7 +238,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .orderedDistinct(Seq(varFor("x")),"x AS x", "y AS y")
+      .orderedDistinct(Seq("x"),"x AS x", "y AS y")
       .input(variables = Seq("x", "y"))
       .build()
 

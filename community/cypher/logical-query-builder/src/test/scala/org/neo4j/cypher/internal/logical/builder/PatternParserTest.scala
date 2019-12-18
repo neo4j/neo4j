@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOM
 import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
 
-class PatternParserTest extends CypherFunSuite with TestName
-{
+class PatternParserTest extends CypherFunSuite with TestName {
   val patternParser = new PatternParser
 
   test("(a)--(b)") {

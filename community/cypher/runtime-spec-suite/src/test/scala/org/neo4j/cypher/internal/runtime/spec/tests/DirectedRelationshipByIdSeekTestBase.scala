@@ -40,7 +40,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .directedRelationshipByIdSeek("r", "x", "y", relToFind.getId)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, relToFind.getId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -56,7 +56,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .directedRelationshipByIdSeek("r", "x", "y", rel.getId.toDouble)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, rel.getId.toDouble)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -73,7 +73,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .directedRelationshipByIdSeek("r", "x", "y", toNotFind)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, toNotFind)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -90,7 +90,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .directedRelationshipByIdSeek("r", "x", "y", toFind.map(_.getId):_*)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, toFind.map(_.getId):_*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -111,7 +111,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .directedRelationshipByIdSeek("r", "x", "y", relationshipsToLookFor:_*)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, relationshipsToLookFor:_*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -130,7 +130,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
       .filter(s"id(r) = ${toFind.getId}")
-      .directedRelationshipByIdSeek("r", "x", "y", toSeekFor.map(_.getId):_*)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, toSeekFor.map(_.getId):_*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
