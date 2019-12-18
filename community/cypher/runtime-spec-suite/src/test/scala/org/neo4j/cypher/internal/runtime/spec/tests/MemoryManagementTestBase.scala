@@ -168,7 +168,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
                                                                   )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
     GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
-    GraphDatabaseSettings.query_max_memory -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
+    GraphDatabaseSettings.query_max_memory -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] with TimeLimitedCypherTest {
 
   test("should kill sort query before it runs out of memory") {
     // given
