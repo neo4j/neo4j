@@ -28,7 +28,7 @@ class RequireTest extends CypherFunSuite {
   test("require with message") {
     assume(ASSERTIONS_ENABLED)
 
-    the [AssertionError] thrownBy require(false, "wut!") should have message "wut!"
+    the [AssertionError] thrownBy checkOnlyWhenAssertionsAreEnabled(false, "wut!") should have message "wut!"
   }
 
   test("require without message") {

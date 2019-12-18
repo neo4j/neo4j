@@ -36,16 +36,16 @@ object AssertMacros {
     * Require that the given condition is `true`
     * @param condition the condition that is required to be true
     */
-  def checkOnlyWhenAssertionsAreEnabled(condition: Boolean): Unit = macro requireImpl
+  def checkOnlyWhenAssertionsAreEnabled(condition: Boolean): Unit = macro checkOnlyWhenAssertionsAreEnabledImpl
 
   /**
     * Require that the given condition is `true`
     * @param condition the condition that is required to be true
     * @param msg the error message shown if requirement fails
     */
-  def checkOnlyWhenAssertionsAreEnabled(condition: Boolean, msg: String): Unit = macro requireWithMsgImpl
+  def checkOnlyWhenAssertionsAreEnabled(condition: Boolean, msg: String): Unit = macro checkOnlyWhenAssertionsAreEnabledWithMsgImpl
 
-  def requireImpl(c: blackbox.Context)(condition: c.Expr[Boolean]): c.universe.Tree = {
+  def checkOnlyWhenAssertionsAreEnabledImpl(c: blackbox.Context)(condition: c.Expr[Boolean]): c.universe.Tree = {
     import c.universe._
     //this is just a precaution to make clear that we are using this constant here
     assert(ASSERTIONS_ENABLED || !ASSERTIONS_ENABLED)
@@ -56,7 +56,7 @@ object AssertMacros {
       """
   }
 
-  def requireWithMsgImpl(c: blackbox.Context)(condition: c.Expr[Boolean], msg: c.Expr[String]): c.universe.Tree = {
+  def checkOnlyWhenAssertionsAreEnabledWithMsgImpl(c: blackbox.Context)(condition: c.Expr[Boolean], msg: c.Expr[String]): c.universe.Tree = {
     import c.universe._
     //this is just a precaution to make clear that we are using this constant here
     assert(ASSERTIONS_ENABLED || !ASSERTIONS_ENABLED)
