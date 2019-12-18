@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -53,6 +52,7 @@ import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.util.Bits.bitFlag;
 
 class LogCommandSerializationV4_0 extends LogCommandSerialization
@@ -329,7 +329,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         Map<String,Value> ruleMap = readStringValueMap( channel );
         try
         {
-            return SchemaStore.unmapifySchemaRule( id, ruleMap );
+            return unmapifySchemaRule( id, ruleMap );
         }
         catch ( MalformedSchemaRuleException e )
         {

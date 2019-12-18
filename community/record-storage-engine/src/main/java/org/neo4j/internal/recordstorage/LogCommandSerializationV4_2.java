@@ -29,10 +29,10 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaRuleMapifier;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -345,7 +345,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
 
     private static void writeSchemaRule( WritableChannel channel, SchemaRule schemaRule ) throws IOException
     {
-        Map<String,Value> ruleMap = SchemaStore.mapifySchemaRule( schemaRule );
+        Map<String,Value> ruleMap = SchemaRuleMapifier.mapifySchemaRule( schemaRule );
         writeStringValueMap( channel, ruleMap );
     }
 
