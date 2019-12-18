@@ -82,12 +82,12 @@ public class PageCacheSupportExtension extends StatefullFieldExtension<PageCache
 
     public PageCache getPageCache( FileSystemAbstraction fs )
     {
-        return new PageCacheRule().getPageCache( fs, config() );
+        return new PageCacheRule().getPageCache( fs, config );
     }
 
     public PageCache getPageCache( PageSwapperFactory factory )
     {
-        return new PageCacheRule().getPageCache( factory, config() );
+        return new PageCacheRule().getPageCache( factory, config );
     }
 
     @Override
