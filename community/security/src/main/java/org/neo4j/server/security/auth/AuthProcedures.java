@@ -34,6 +34,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.kernel.api.procedure.Sensitive;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
@@ -59,7 +60,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.createUser", mode = DBMS, deprecatedBy = "Administration command: CREATE USER" )
     public void createUser(
             @Name( "username" ) String username,
-            @Name( "password" ) String password,
+            @Name( "password" ) @Sensitive String password,
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws ProcedureException
     {
@@ -82,7 +83,7 @@ public class AuthProcedures
     @Deprecated
     @Description( "Change the current user's password." )
     @Procedure( name = "dbms.security.changePassword", mode = DBMS, deprecatedBy = "Administration command: ALTER CURRENT USER SET PASSWORD" )
-    public void changePassword( @Name( "password" ) String password ) throws ProcedureException
+    public void changePassword( @Name( "password" ) @Sensitive String password ) throws ProcedureException
     {
         throw new ProcedureException( FeatureDeprecationWarning, "This procedure is no longer available, use: 'ALTER CURRENT USER SET PASSWORD'" );
     }

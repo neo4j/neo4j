@@ -97,6 +97,20 @@ class FieldSignatureTest
     }
 
     @Test
+    void equalsShouldConsiderSensitivity()
+    {
+        assertEquals(
+                inputField( "name", Neo4jTypes.NTString, true ),
+                inputField( "name", Neo4jTypes.NTString, true ) );
+        assertEquals(
+                inputField( "name", Neo4jTypes.NTString, false ),
+                inputField( "name", Neo4jTypes.NTString, false ) );
+        assertNotEquals(
+                inputField( "name", Neo4jTypes.NTString, true ),
+                inputField( "name", Neo4jTypes.NTString, false ) );
+    }
+
+    @Test
     void equalsShouldConsiderDeprecation()
     {
         assertEquals(

@@ -32,12 +32,22 @@ public final class FieldSignature
 {
     public static FieldSignature inputField( String name, Neo4jTypes.AnyType type )
     {
-        return new FieldSignature( name, type, null, false );
+        return inputField( name, type, false );
     }
 
     public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue )
     {
-        return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false );
+        return inputField( name, type, defaultValue, false );
+    }
+
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, boolean sensitive )
+    {
+        return new FieldSignature( name, type, null, false, sensitive );
+    }
+
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, boolean sensitive )
+    {
+        return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false, sensitive );
     }
 
     public static FieldSignature outputField( String name, Neo4jTypes.AnyType type )
@@ -47,20 +57,22 @@ public final class FieldSignature
 
     public static FieldSignature outputField( String name, Neo4jTypes.AnyType type, boolean deprecated )
     {
-        return new FieldSignature( name, type, null, deprecated );
+        return new FieldSignature( name, type, null, deprecated, false );
     }
 
     private final String name;
     private final Neo4jTypes.AnyType type;
     private final DefaultParameterValue defaultValue;
     private final boolean deprecated;
+    private final boolean sensitive;
 
-    private FieldSignature( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, boolean deprecated )
+    private FieldSignature( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, boolean deprecated, boolean sensitive )
     {
         this.name = requireNonNull( name, "name" );
         this.type = requireNonNull( type, "type" );
         this.defaultValue = defaultValue;
         this.deprecated = deprecated;
+        this.sensitive = sensitive;
         if ( defaultValue != null && !type.equals( defaultValue.neo4jType() ) )
         {
             throw new IllegalArgumentException( String.format(
@@ -100,6 +112,11 @@ public final class FieldSignature
         return deprecated;
     }
 
+    public boolean isSensitive()
+    {
+        return sensitive;
+    }
+
     @Override
     public String toString()
     {
@@ -125,6 +142,7 @@ public final class FieldSignature
         }
         FieldSignature that = (FieldSignature) o;
         return this.deprecated == that.deprecated &&
+                sensitive == that.sensitive &&
                 name.equals( that.name ) &&
                 type.equals( that.type ) &&
                 Objects.equals( this.defaultValue, that.defaultValue );

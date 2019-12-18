@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Name;
+import org.neo4j.kernel.api.procedure.Sensitive;
 import org.neo4j.procedure.impl.TypeCheckers.DefaultValueConverter;
 
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
@@ -93,18 +94,10 @@ class MethodSignatureCompiler
 
                 seenDefault = defaultValue.isPresent();
 
-                // Currently only byte[] is not supported as a Cypher type, so we have specific conversion here.
-                // Should we add more unsupported types we should generalize this.
-                if ( type == byte[].class )
-                {
-                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue ) ).orElseGet(
-                            () -> inputField( name, valueConverter.type() ) ) );
-                }
-                else
-                {
-                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue ) ).orElseGet(
-                            () -> inputField( name, valueConverter.type() ) ) );
-                }
+                boolean isSensitive = param.isAnnotationPresent( Sensitive.class );
+
+                signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue, isSensitive ) ).orElseGet(
+                        () -> inputField( name, valueConverter.type(), isSensitive ) ) );
             }
             catch ( ProcedureException e )
             {
