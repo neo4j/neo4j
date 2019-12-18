@@ -74,18 +74,18 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case ConstraintManagementAction =>
             planActions(source, action, roleName, CreateConstraintAction, DropConstraintAction)
           case SchemaManagementAction =>
-            val constraints = planActions(source, ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction)
+            val schema = planActions(source, SchemaManagementAction, roleName)
+            val constraints = planActions(schema, ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction)
             val indexes = planActions(constraints, IndexManagementAction, roleName, CreateIndexAction, DropIndexAction)
-            val schema = planActions(indexes, SchemaManagementAction, roleName)
-            schema
+            indexes
           case TokenManagementAction =>
             planActions(source, action, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
           case AllDatabaseAction =>
             val dbx = planActions(source, AllDatabaseAction, roleName, AccessDatabaseAction, StartDatabaseAction, StopDatabaseAction)
-            val constraints = planActions(dbx, ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction)
+            val schema = planActions(dbx, SchemaManagementAction, roleName)
+            val constraints = planActions(schema, ConstraintManagementAction, roleName, CreateConstraintAction, DropConstraintAction)
             val indexes = planActions(constraints, IndexManagementAction, roleName, CreateIndexAction, DropIndexAction)
-            val schema = planActions(indexes, SchemaManagementAction, roleName)
-            val tokens = planActions(schema, TokenManagementAction, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
+            val tokens = planActions(indexes, TokenManagementAction, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
             tokens
           case _ => planAction(source, roleName, action)
         }
