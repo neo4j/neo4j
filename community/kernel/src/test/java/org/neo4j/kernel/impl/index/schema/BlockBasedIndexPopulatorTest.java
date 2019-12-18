@@ -23,6 +23,8 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -81,6 +83,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -481,8 +484,7 @@ class BlockBasedIndexPopulatorTest
     void shouldAcceptBatchAddedMaxSizeValue() throws IndexEntryConflictException, IOException
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
         try
         {
@@ -512,8 +514,7 @@ class BlockBasedIndexPopulatorTest
     void shouldFailOnBatchAddedTooLargeValue()
     {
         /// given
-        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
         try
         {
@@ -527,12 +528,12 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    @Test
-    void shouldAcceptUpdatedMaxSizeValue() throws IndexEntryConflictException, IOException
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldAcceptUpdatedMaxSizeValue( boolean updateBeforeScanCompleted ) throws Throwable
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
         try
         {
@@ -540,11 +541,23 @@ class BlockBasedIndexPopulatorTest
             GenericLayout layout = layout();
             Value value = generateStringResultingInSize( layout, size );
             IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value );
-            try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+            Race.ThrowingRunnable updateAction = () ->
             {
-                updater.process( update );
+                try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+                {
+                    updater.process( update );
+                }
+            };
+            if ( updateBeforeScanCompleted )
+            {
+                updateAction.run();
+                populator.scanCompleted( nullInstance, jobScheduler );
             }
-            populator.scanCompleted( nullInstance, jobScheduler );
+            else
+            {
+                populator.scanCompleted( nullInstance, jobScheduler );
+                updateAction.run();
+            }
 
             // when
             try ( Seeker<GenericKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
@@ -561,16 +574,20 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    @Test
-    void shouldFailOnUpdatedTooLargeValue()
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldFailOnUpdatedTooLargeValue( boolean updateBeforeScanCompleted ) throws IndexEntryConflictException
     {
         /// given
-        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
+            if ( !updateBeforeScanCompleted )
+            {
+                populator.scanCompleted( nullInstance, jobScheduler );
+            }
             assertThrows( IllegalArgumentException.class, () ->
             {
                 try ( IndexUpdater updater = populator.newPopulatingUpdater() )
@@ -657,10 +674,10 @@ class BlockBasedIndexPopulatorTest
         return IndexEntryUpdate.add( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
     }
 
-    static Value generateStringResultingInSize( Layout<GenericKey,?> layout, int size )
+    static <KEY extends NativeIndexKey<KEY>> Value generateStringResultingInSize( Layout<KEY,?> layout, int size )
     {
         Value value;
-        GenericKey key = layout.newKey();
+        KEY key = layout.newKey();
         key.initialize( 0 );
         int stringLength = size;
         do
