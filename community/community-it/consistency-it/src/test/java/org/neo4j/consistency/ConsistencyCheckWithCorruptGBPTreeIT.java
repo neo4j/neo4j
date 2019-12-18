@@ -656,21 +656,23 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private void assertResultContainsMessage( FileSystemAbstraction fs, ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
     {
-        final Reader reader = fs.openAsReader( result.reportFile(), Charset.defaultCharset() );
-        final BufferedReader bufferedReader = new BufferedReader( reader );
-        final List<String> lines = bufferedReader.lines().collect( Collectors.toList() );
-        boolean reportContainExpectedMessage = false;
-        for ( String line : lines )
+        try ( Reader reader = fs.openAsReader( result.reportFile(), Charset.defaultCharset() );
+                BufferedReader bufferedReader = new BufferedReader( reader ) )
         {
-            if ( line.contains( expectedMessage ) )
+            final List<String> lines = bufferedReader.lines().collect( Collectors.toList() );
+            boolean reportContainExpectedMessage = false;
+            for ( String line : lines )
             {
-                reportContainExpectedMessage = true;
-                break;
+                if ( line.contains( expectedMessage ) )
+                {
+                    reportContainExpectedMessage = true;
+                    break;
+                }
             }
+            String errorMessage = format( "Expected consistency report to contain message `%s'. Real result was: %s%n",
+                    expectedMessage, String.join( System.lineSeparator(), lines ) );
+            assertTrue( reportContainExpectedMessage, errorMessage );
         }
-        String errorMessage = format("Expected consistency report to contain message `%s'. Real result was: %s%n",
-                expectedMessage, String.join( System.lineSeparator(), lines ) );
-        assertTrue( reportContainExpectedMessage, errorMessage );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException

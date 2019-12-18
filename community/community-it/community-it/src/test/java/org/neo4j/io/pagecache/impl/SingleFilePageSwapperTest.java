@@ -62,10 +62,10 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -287,11 +287,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, channelStriping );
         swapper.write( 0, page );
 
-        InputStream stream = getFs().openAsInputStream( getFile() );
-        byte[] actual = new byte[expected.length];
+        try ( InputStream stream = getFs().openAsInputStream( getFile() ) )
+        {
+            byte[] actual = new byte[expected.length];
 
-        assertThat( stream.read( actual ) ).isEqualTo( actual.length );
-        assertThat( actual ).containsExactly( expected );
+            assertThat( stream.read( actual ) ).isEqualTo( actual.length );
+            assertThat( actual ).containsExactly( expected );
+        }
     }
 
     private long createPage( byte[] expected )
@@ -332,11 +334,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, channelStriping );
         swapper.write( 1, page );
 
-        InputStream stream = getFs().openAsInputStream( getFile() );
-        byte[] actual = new byte[(int) getFs().getFileSize( getFile() )];
+        try ( InputStream stream = getFs().openAsInputStream( getFile() ) )
+        {
+            byte[] actual = new byte[(int) getFs().getFileSize( getFile() )];
 
-        assertThat( stream.read( actual ) ).isEqualTo( actual.length );
-        assertThat( actual ).containsExactly( finalData );
+            assertThat( stream.read( actual ) ).isEqualTo( actual.length );
+            assertThat( actual ).containsExactly( finalData );
+        }
     }
 
     /**
