@@ -17,24 +17,32 @@
 package org.neo4j.cypher.internal.ast.generator
 
 import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.generator.AstGenerator._
 import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.functions.{Avg, Collect, Count, Max, Min, PercentileCont, PercentileDisc, StdDev, StdDevP, Sum}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.scalacheck.Gen._
 import org.scalacheck.util.Buildable
 import org.scalacheck.{Arbitrary, Gen}
 
-/**
-  * Random query generation
-  * Implements instances of Gen[T] for all query ast nodes
-  * Generated queries are syntactically (but not semantically) valid
-  */
-case class AstGenerator(simpleStrings: Boolean = true) {
+object AstGenerator {
+  def zeroOrMore[T](gen: Gen[T]): Gen[List[T]] =
+    choose(0, 3).flatMap(listOfN(_, gen))
 
-  // HELPERS
-  // ==========================================================================
+  def zeroOrMore[T](seq: Seq[T]): Gen[Seq[T]] =
+    choose(0, Math.min(3, seq.size)).flatMap(pick(_, seq))
 
-  private val pos : InputPosition = InputPosition.NONE
+  def oneOrMore[T](gen: Gen[T]): Gen[List[T]] =
+    choose(1, 3).flatMap(listOfN(_, gen))
+
+  def oneOrMore[T](seq: Seq[T]): Gen[Seq[T]] =
+    choose(1, Math.min(3, seq.size)).flatMap(pick(_, seq))
+
+  def tuple[A, B](ga: Gen[A], gb: Gen[B]): Gen[(A, B)] = for {
+    a <- ga
+    b <- gb
+  } yield (a, b)
 
   def boolean: Gen[Boolean] =
     Arbitrary.arbBool.arbitrary
@@ -63,20 +71,25 @@ case class AstGenerator(simpleStrings: Boolean = true) {
     }
   }
 
+}
+
+/**
+  * Random query generation
+  * Implements instances of Gen[T] for all query ast nodes
+  * Generated queries are syntactically (but not semantically) valid
+  */
+case class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[String]] = None) {
+
+  // HELPERS
+  // ==========================================================================
+
+  protected var paramCount = 0
+  protected val pos : InputPosition = InputPosition.NONE
+
   def string: Gen[String] =
     if (simpleStrings) alphaLowerChar.map(_.toString)
     else listOf(char).map(_.mkString)
 
-  def zeroOrMore[T](gen: Gen[T]): Gen[List[T]] =
-    choose(0, 3).flatMap(listOfN(_, gen))
-
-  def oneOrMore[T](gen: Gen[T]): Gen[List[T]] =
-    choose(1, 3).flatMap(listOfN(_, gen))
-
-  def tuple[A, B](ga: Gen[A], gb: Gen[B]): Gen[(A, B)] = for {
-    a <- ga
-    b <- gb
-  } yield (a, b)
 
   // IDENTIFIERS
   // ==========================================================================
@@ -144,9 +157,16 @@ case class AstGenerator(simpleStrings: Boolean = true) {
   def _parameter: Gen[Parameter] =
     _identifier.map(Parameter(_, AnyType.instance)(pos))
 
-  def _variable: Gen[Variable] = for {
-    name <- _identifier
-  } yield Variable(name)(pos)
+  def _variable: Gen[Variable] = {
+    val nameGen = allowedVarNames match {
+      case None => _identifier
+      case Some(Seq()) => const("").suchThat(_ => false)
+      case Some(names) =>  oneOf(names)
+    }
+    for {
+      name <- nameGen
+    } yield Variable(name)(pos)
+  }
 
   // Predicates
   // ----------------------------------
