@@ -20,7 +20,6 @@
 package org.neo4j.resources;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -31,18 +30,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.resources.HeapAllocation.HEAP_ALLOCATION;
 import static org.neo4j.resources.HeapAllocation.NOT_AVAILABLE;
 
 class SunManagementHeapAllocationTest
 {
-    @BeforeEach
-    void onlyOnSupportedJvms()
-    {
-        assumeFalse( HEAP_ALLOCATION == NOT_AVAILABLE );
-    }
-
     @Test
     void shouldLoadHeapAllocation()
     {
