@@ -49,7 +49,8 @@
                 <module>acceptance-spec-suite</module>
                 <module>compatibility-spec-suite</module>
                 <module>spec-suite-tools</module>
-                <module>logical-query-builder</module>
+                <module>logical-plan-builder</module>
+                <module>logical-plan-generator</module>
                 <module>runtime-spec-suite</module>
                 <module>expression-evaluator</module>
             </modules>

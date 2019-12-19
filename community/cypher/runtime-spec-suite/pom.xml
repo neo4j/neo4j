@@ -114,7 +114,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-logical-query-builder</artifactId>
+      <artifactId>neo4j-cypher-logical-plan-builder</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

@@ -24,7 +24,7 @@ trait TreeElem[E <: TreeElem[E]] {
 
   def children: Seq[E]
   def updateChildren(newChildren: Seq[E]): E
-  def location(implicit zipper: TreeZipper[E]) = zipper(self)
+  def location(implicit zipper: TreeZipper[E]): zipper.Location = zipper(self)
 }
 
 abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {

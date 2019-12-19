@@ -126,7 +126,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def limit(count: Int): IMPL = {
+  def limit(count: Long): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, literalInt(count), DoNotIncludeTies)(_)))
     self
   }
