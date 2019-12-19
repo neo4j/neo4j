@@ -29,7 +29,7 @@ import static java.lang.Thread.currentThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.resources.HeapAllocation.HEAP_ALLOCATION;
 import static org.neo4j.resources.HeapAllocation.NOT_AVAILABLE;
 
@@ -38,7 +38,7 @@ class SunManagementHeapAllocationTest
     @BeforeEach
     void onlyOnSupportedJvms()
     {
-        assumeFalse( HEAP_ALLOCATION == NOT_AVAILABLE );
+        assumeTrue( System.getProperties().getProperty( "java.vendor" ).equals( "Oracle Corporation") );
     }
 
     @Test

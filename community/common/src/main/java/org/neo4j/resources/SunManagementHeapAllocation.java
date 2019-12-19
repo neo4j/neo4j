@@ -21,7 +21,10 @@ package org.neo4j.resources;
 
 import com.sun.management.ThreadMXBean;
 
-class SunManagementHeapAllocation extends HeapAllocation
+import static org.neo4j.util.Preconditions.checkArgument;
+import static org.neo4j.util.Preconditions.checkState;
+
+final class SunManagementHeapAllocation extends HeapAllocation
 {
     /**
      * Invoked from {@link HeapAllocation#load(java.lang.management.ThreadMXBean)} through reflection.
@@ -29,11 +32,10 @@ class SunManagementHeapAllocation extends HeapAllocation
     @SuppressWarnings( "unused" )
     static HeapAllocation load( java.lang.management.ThreadMXBean bean )
     {
-        if ( bean instanceof ThreadMXBean )
-        {
-            return new SunManagementHeapAllocation( (ThreadMXBean) bean );
-        }
-        return NOT_AVAILABLE;
+        checkArgument( bean instanceof ThreadMXBean, "The ThreadMXBean must be an instance of '" + ThreadMXBean.class.getName() + "'." );
+        ThreadMXBean threadMXBean = (ThreadMXBean) bean;
+        checkState( threadMXBean.isThreadAllocatedMemorySupported(), "Thread allocations not supported." );
+        return new SunManagementHeapAllocation( threadMXBean );
     }
 
     private final ThreadMXBean threadMXBean;
@@ -41,19 +43,15 @@ class SunManagementHeapAllocation extends HeapAllocation
     private SunManagementHeapAllocation( ThreadMXBean threadMXBean )
     {
         this.threadMXBean = threadMXBean;
+        if ( !threadMXBean.isThreadAllocatedMemoryEnabled() )
+        {
+            threadMXBean.setThreadAllocatedMemoryEnabled( true );
+        }
     }
 
     @Override
     public long allocatedBytes( long threadId )
     {
-        if ( !threadMXBean.isThreadAllocatedMemorySupported() )
-        {
-            return -1;
-        }
-        if ( !threadMXBean.isThreadAllocatedMemoryEnabled() )
-        {
-            threadMXBean.setThreadAllocatedMemoryEnabled( true );
-        }
         return threadMXBean.getThreadAllocatedBytes( threadId );
     }
 }
