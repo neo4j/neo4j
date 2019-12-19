@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
 
 abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
@@ -793,4 +794,25 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
 
+  test("should handle relationship property predicate") {
+    // given
+    val node = given {
+      val person = tx.createNode(label("START"))
+      val r = person.createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+      r.setProperty("prop", 100)
+      person
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .optionalExpandAll("(x)-[r]->(y)", Some("r.prop > 100"))
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y").withSingleRow(node, null)
+  }
 }
