@@ -114,6 +114,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
+  protected def expectFailureInParallel(reason: String): Unit = {
+    assume(runtime.name != "parallel", reason)
+  }
+
   override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
     super.test(testName, Tag(runtime.name) +: testTags: _*)(testFun)
   }

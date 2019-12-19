@@ -453,6 +453,8 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     // NOTE: This is a specific test for pipelined runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 
+    expectFailureInParallel("this test is not expected to succeed with 'parallel' runtime, because it requires preserving of argument order")
+
     val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }
 
     // when
