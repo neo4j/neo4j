@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl;
 
 import com.sun.nio.file.ExtendedOpenOption;
+import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -178,6 +179,13 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private void acquireLock() throws IOException
     {
+        if ( SystemUtils.IS_OS_WINDOWS )
+        {
+            // We don't take file locks on the individual store files on Windows, because once you've taking
+            // a file lock on a channel, you can only do IO on that file through that channel.
+            return;
+        }
+
         try
         {
             fileLock = channel.tryLock();
