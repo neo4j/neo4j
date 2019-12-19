@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * Convenient builder for a {@link GBPTree}. Either created using zero-argument constructor for maximum
@@ -121,6 +122,6 @@ public class GBPTreeBuilder<KEY,VALUE>
     public GBPTree<KEY,VALUE> build()
     {
         return new GBPTree<>( pageCache, file, layout, tentativeIndexPageSize, monitor, headerReader, headerWriter,
-                recoveryCleanupWorkCollector, readOnly, openOptions );
+                recoveryCleanupWorkCollector, readOnly, NULL, openOptions );
     }
 }

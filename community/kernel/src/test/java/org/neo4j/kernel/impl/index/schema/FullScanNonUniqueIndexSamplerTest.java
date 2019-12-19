@@ -38,6 +38,7 @@ import org.neo4j.values.storable.ValueType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
@@ -86,7 +87,7 @@ public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<Gener
     {
         try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
         {
-            try ( Writer<GenericKey,NativeIndexValue> writer = gbpTree.writer() )
+            try ( Writer<GenericKey,NativeIndexValue> writer = gbpTree.writer( NULL ) )
             {
                 GenericKey key = layout.newKey();
                 NativeIndexValue value = layout.newValue();
@@ -100,7 +101,7 @@ public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<Gener
                     nodeId++;
                 }
             }
-            gbpTree.checkpoint( IOLimiter.UNLIMITED );
+            gbpTree.checkpoint( IOLimiter.UNLIMITED, NULL );
         }
     }
 

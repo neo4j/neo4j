@@ -61,6 +61,7 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.util.concurrent.Runnables.runAll;
@@ -344,7 +345,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      */
     private void writeExternalUpdatesToTree( RecordingConflictDetector<KEY,VALUE> recordingConflictDetector ) throws IOException, IndexEntryConflictException
     {
-        try ( Writer<KEY,VALUE> writer = tree.writer();
+        try ( Writer<KEY,VALUE> writer = tree.writer( TRACER_SUPPLIER.get() );
               IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
         {
             while ( updates.next() && !cancellation.cancelled() )
@@ -375,7 +376,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         {
             KEY key = allConflictingKeys.key();
             key.setCompareId( false );
-            verifyUniqueSeek( tree.seek( key, key ) );
+            verifyUniqueSeek( tree.seek( key, key, TRACER_SUPPLIER.get() ) );
         }
     }
 
@@ -421,7 +422,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             }
 
             int asMuchAsPossibleToTheLeft = 1;
-            try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft ) )
+            try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft, TRACER_SUPPLIER.get() ) )
             {
                 while ( allEntries.next() && !cancellation.cancelled() )
                 {

@@ -54,6 +54,8 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.util.FeatureToggles.flag;
 
 /**
@@ -380,7 +382,7 @@ public class IndexedIdGenerator implements IdGenerator
         {
             final HeaderWriter headerWriter = new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry );
             return new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
-                    readOnly, openOptions );
+                    readOnly, NULL, openOptions );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -481,7 +483,7 @@ public class IndexedIdGenerator implements IdGenerator
         commitAndReuseLock.lock();
         try
         {
-            return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock,
+            return new IdRangeMarker( idsPerEntry, layout, tree.writer( TRACER_SUPPLIER.get() ), commitAndReuseLock,
                     started ? defaultMerger : recoveryMerger,
                     started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps, monitor );
         }
@@ -552,7 +554,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void checkpoint( IOLimiter ioLimiter )
     {
-        tree.checkpoint( ioLimiter, new HeaderWriter( highId::get, highestWrittenId::get, generation, idsPerEntry ) );
+        tree.checkpoint( ioLimiter, new HeaderWriter( highId::get, highestWrittenId::get, generation, idsPerEntry ), TRACER_SUPPLIER.get() );
         monitor.checkpoint( highestWrittenId.get(), highId.get() );
     }
 
@@ -628,7 +630,7 @@ public class IndexedIdGenerator implements IdGenerator
         try
         {
             HeaderReader headerReader = new HeaderReader();
-            GBPTree.readHeader( pageCache, file, headerReader );
+            GBPTree.readHeader( pageCache, file, headerReader, TRACER_SUPPLIER.get() );
             return Optional.of( headerReader );
         }
         catch ( NoSuchFileException e )
@@ -654,7 +656,7 @@ public class IndexedIdGenerator implements IdGenerator
         HeaderReader header = readHeader( pageCache, file ).orElseThrow( () -> new NoSuchFileException( file.getAbsolutePath() ) );
         IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
         try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                immediate(), true ) )
+                immediate(), true, NULL ) )
         {
             tree.visit( new GBPTreeVisitor.Adaptor<>()
             {
@@ -671,7 +673,7 @@ public class IndexedIdGenerator implements IdGenerator
                 {
                     System.out.println( format( "%s [%d]", value.toString(), key.getIdRangeIdx() ) );
                 }
-            } );
+            }, TRACER_SUPPLIER.get() );
             System.out.println( header );
         }
     }
@@ -686,7 +688,7 @@ public class IndexedIdGenerator implements IdGenerator
     {
         try
         {
-            return tree.consistencyCheck( visitor );
+            return tree.consistencyCheck( visitor, TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {

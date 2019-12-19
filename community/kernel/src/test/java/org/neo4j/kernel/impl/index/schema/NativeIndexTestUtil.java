@@ -53,6 +53,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
@@ -148,7 +149,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         KEY highest = layout.newKey();
         highest.initialize( Long.MAX_VALUE );
         highest.initValueAsHighest( 0, ValueGroup.UNKNOWN );
-        return tree.seek( lowest, highest );
+        return tree.seek( lowest, highest, NULL );
     }
 
     private void assertSameHits( Pair<KEY, VALUE>[] expectedHits, Pair<KEY, VALUE>[] actualHits,

@@ -38,10 +38,12 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsValue.EMPTY_STATISTICS;
 
 /**
@@ -88,7 +90,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         try
         {
             tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnly );
+                    recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -158,7 +160,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
             // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
             clearTree();
             writeCacheContentsIntoTree();
-            tree.checkpoint( ioLimiter );
+            tree.checkpoint( ioLimiter, TRACER_SUPPLIER.get() );
         }
     }
 
@@ -172,7 +174,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     {
         try
         {
-            return tree.consistencyCheck( visitor );
+            return tree.consistencyCheck( visitor, TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {
@@ -182,7 +184,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     private void scanTree( BiConsumer<IndexStatisticsKey,IndexStatisticsValue> consumer ) throws IOException
     {
-        try ( Seeker<IndexStatisticsKey,IndexStatisticsValue> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY ) )
+        try ( Seeker<IndexStatisticsKey,IndexStatisticsValue> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY, TRACER_SUPPLIER.get() ) )
         {
             while ( seek.next() )
             {
@@ -200,7 +202,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         scanTree( ( key, value ) -> keys.add( key ) );
 
         // Remove all those read keys
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer() )
+        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer( TRACER_SUPPLIER.get() ) )
         {
             for ( IndexStatisticsKey key : keys )
             {
@@ -212,7 +214,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     private void writeCacheContentsIntoTree() throws IOException
     {
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer() )
+        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer( TRACER_SUPPLIER.get() ) )
         {
             for ( Map.Entry<IndexStatisticsKey,IndexStatisticsValue> entry : cache.entrySet() )
             {

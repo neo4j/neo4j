@@ -34,7 +34,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
 
 /**
- * Use together with {@link GBPTree#unsafe(GBPTreeUnsafe)}
+ * Use together with {@link GBPTree#unsafe(GBPTreeUnsafe, PageCursorTracer)}
  */
 public final class GBPTreeCorruption
 {

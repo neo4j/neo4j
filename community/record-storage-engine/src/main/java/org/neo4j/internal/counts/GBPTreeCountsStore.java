@@ -63,6 +63,8 @@ import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.CountsKey.strayTxId;
 import static org.neo4j.internal.counts.TreeWriter.merge;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 /**
@@ -123,7 +125,7 @@ public class GBPTreeCountsStore implements CountsStore
     {
         try
         {
-            return new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly );
+            return new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly, NULL );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -145,7 +147,7 @@ public class GBPTreeCountsStore implements CountsStore
             }
             Lock lock = lock( this.lock.writeLock() );
             long txId = initialCountsBuilder.lastCommittedTxId();
-            try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer(), idSequence, txId ), lock ) )
+            try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer( TRACER_SUPPLIER.get() ), idSequence, txId ), lock ) )
             {
                 initialCountsBuilder.initialize( updater );
             }
@@ -227,7 +229,7 @@ public class GBPTreeCountsStore implements CountsStore
         updateTxIdInformationInTree( txIdSnapshot );
 
         // Good, check-point all these changes
-        tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ) );
+        tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ), TRACER_SUPPLIER.get() );
     }
 
     private void writeCountsChanges( ConcurrentHashMap<CountsKey,AtomicLong> changes ) throws IOException
@@ -235,7 +237,7 @@ public class GBPTreeCountsStore implements CountsStore
         // Sort the entries in the natural tree order to get more performance in the writer
         List<Map.Entry<CountsKey,AtomicLong>> changeList = new ArrayList<>( changes.entrySet() );
         changeList.sort( ( e1, e2 ) -> layout.compare( e1.getKey(), e2.getKey() ) );
-        try ( Writer<CountsKey,CountsValue> writer = tree.writer() )
+        try ( Writer<CountsKey,CountsValue> writer = tree.writer( TRACER_SUPPLIER.get() ) )
         {
             CountsValue value = new CountsValue();
             for ( Map.Entry<CountsKey,AtomicLong> entry : changeList )
@@ -251,7 +253,7 @@ public class GBPTreeCountsStore implements CountsStore
         PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
         visitStrayTxIdsInTree( strayIds::enqueue );
 
-        try ( Writer<CountsKey,CountsValue> writer = tree.writer() )
+        try ( Writer<CountsKey,CountsValue> writer = tree.writer( TRACER_SUPPLIER.get() ) )
         {
             // First clear all the stray ids from the previous checkpoint
             CountsValue value = new CountsValue();
@@ -300,7 +302,7 @@ public class GBPTreeCountsStore implements CountsStore
         }
 
         // Then visit the remaining stored changes from the last check-point
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT ) )
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT, TRACER_SUPPLIER.get() ) )
         {
             while ( seek.next() )
             {
@@ -337,7 +339,7 @@ public class GBPTreeCountsStore implements CountsStore
      */
     private long readCountFromTree( CountsKey key )
     {
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( key, key ) )
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( key, key, TRACER_SUPPLIER.get() ) )
         {
             return seek.next() ? seek.value().count : 0;
         }
@@ -349,7 +351,7 @@ public class GBPTreeCountsStore implements CountsStore
 
     private void visitStrayTxIdsInTree( LongConsumer visitor ) throws IOException
     {
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( MIN_STRAY_TX_ID, MAX_STRAY_TX_ID ) )
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( MIN_STRAY_TX_ID, MAX_STRAY_TX_ID, TRACER_SUPPLIER.get() ) )
         {
             while ( seek.next() )
             {
@@ -381,7 +383,7 @@ public class GBPTreeCountsStore implements CountsStore
     {
         try
         {
-            return tree.consistencyCheck( visitor );
+            return tree.consistencyCheck( visitor, TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {
@@ -406,11 +408,11 @@ public class GBPTreeCountsStore implements CountsStore
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );
-        GBPTree.readHeader( pageCache, file, header );
+        GBPTree.readHeader( pageCache, file, header, TRACER_SUPPLIER.get() );
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), 0, GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), true ) )
+                RecoveryCleanupWorkCollector.ignore(), true, NULL ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()
@@ -428,7 +430,7 @@ public class GBPTreeCountsStore implements CountsStore
                 {
                     out.printf( "%s = %d%n", key, value.count );
                 }
-            } );
+            }, TRACER_SUPPLIER.get() );
         }
     }
 }

@@ -31,7 +31,6 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -39,6 +38,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 
 public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndex<KEY,VALUE>
@@ -68,7 +68,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer() );
+            return singleUpdater.initialize( tree.writer( TRACER_SUPPLIER.get() ) );
         }
         catch ( IOException e )
         {
@@ -79,7 +79,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     @Override
     public void force( IOLimiter ioLimiter )
     {
-        tree.checkpoint( ioLimiter );
+        tree.checkpoint( ioLimiter, TRACER_SUPPLIER.get() );
     }
 
     @Override
@@ -110,7 +110,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 
@@ -119,7 +119,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     {
         try
         {
-            return tree.estimateNumberOfEntriesInTree();
+            return tree.estimateNumberOfEntriesInTree( TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {

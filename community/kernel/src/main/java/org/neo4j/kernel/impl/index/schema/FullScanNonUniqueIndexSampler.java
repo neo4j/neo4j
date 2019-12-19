@@ -27,6 +27,8 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * {@link NonUniqueIndexSampler} which performs a full scans of a {@link GBPTree} in {@link #result()}.
  *
@@ -55,7 +57,7 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE exten
         highest.initialize( Long.MAX_VALUE );
         highest.initValuesAsHighest();
         KEY prev = layout.newKey();
-        try ( Seeker<KEY,VALUE> seek = gbpTree.seek( lowest, highest ) )
+        try ( Seeker<KEY,VALUE> seek = gbpTree.seek( lowest, highest, TRACER_SUPPLIER.get() ) )
         {
             long sampledValues = 0;
             long uniqueValues = 0;

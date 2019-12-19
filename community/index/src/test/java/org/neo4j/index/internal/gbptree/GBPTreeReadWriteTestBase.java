@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )
@@ -70,7 +71,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = index() )
         {
             int count = 1000;
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
@@ -78,7 +79,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 }
             }
 
-            try ( Seeker<KEY,VALUE> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ), NULL ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
@@ -96,7 +97,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = index() )
         {
             int count = 1000;
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
@@ -106,7 +107,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 
             for ( int i = 0; i < count; i++ )
             {
-                try ( Seeker<KEY,VALUE> cursor = index.seek( key( i ), key( i ) ) )
+                try ( Seeker<KEY,VALUE> cursor = index.seek( key( i ), key( i ), NULL ) )
                 {
                     assertTrue( cursor.next() );
                     assertEqualsKey( key( i ), cursor.key() );
@@ -127,7 +128,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
             // WHEN
             int count = 1_000;
             List<KEY> seen = new ArrayList<>( count );
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
@@ -144,7 +145,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
             }
 
             // THEN
-            try ( Seeker<KEY,VALUE> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ), NULL ) )
             {
                 long prev = -1;
                 while ( cursor.next() )

@@ -27,6 +27,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -41,12 +42,14 @@ public class GBPTreeBootstrapper
     private final PageCache pageCache;
     private final LayoutBootstrapper layoutBootstrapper;
     private final boolean readOnly;
+    private final PageCacheTracer pageCacheTracer;
 
-    public GBPTreeBootstrapper( PageCache pageCache, LayoutBootstrapper layoutBootstrapper, boolean readOnly )
+    public GBPTreeBootstrapper( PageCache pageCache, LayoutBootstrapper layoutBootstrapper, boolean readOnly, PageCacheTracer pageCacheTracer )
     {
         this.pageCache = pageCache;
         this.layoutBootstrapper = layoutBootstrapper;
         this.readOnly = readOnly;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     public Bootstrap bootstrapTree( File file )
@@ -62,8 +65,8 @@ public class GBPTreeBootstrapper
 
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
-            GBPTree<?,?> tree =
-                    new GBPTree<>( pageCache, file, layout, meta.getPageSize(), NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly );
+            GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, meta.getPageSize(), NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
+                    pageCacheTracer );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )

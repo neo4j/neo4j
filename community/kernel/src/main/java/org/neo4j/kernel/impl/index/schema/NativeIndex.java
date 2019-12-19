@@ -36,6 +36,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ConsistencyCheckable
 {
@@ -68,7 +70,8 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         File storeFile = indexFiles.getStoreFile();
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly );
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
+                readOnly, NULL );
         afterTreeInstantiation( tree );
     }
 
@@ -110,7 +113,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     {
         try
         {
-            return tree.consistencyCheck( visitor );
+            return tree.consistencyCheck( visitor, TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {

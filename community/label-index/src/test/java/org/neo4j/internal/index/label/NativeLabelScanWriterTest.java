@@ -50,6 +50,8 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.flipRandom;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.getLabels;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.nodesWithLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
@@ -86,7 +88,7 @@ class NativeLabelScanWriterTest
         long[] expected = new long[NODE_COUNT];
         try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
         {
-            writer.initialize( tree.writer() );
+            writer.initialize( tree.writer( NULL ) );
 
             // WHEN
             for ( int i = 0; i < NODE_COUNT * 3; i++ )
@@ -100,7 +102,8 @@ class NativeLabelScanWriterTest
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new LabelScanValueIterator( tree.seek( new LabelScanKey( i, 0 ), new LabelScanKey( i, Long.MAX_VALUE ) ), NO_ID ) );
+            long[] actualNodeIds = asArray( new LabelScanValueIterator(
+                    tree.seek( new LabelScanKey( i, 0 ), new LabelScanKey( i, Long.MAX_VALUE ), NULL ), NO_ID ) );
             assertArrayEquals( expectedNodeIds, actualNodeIds, "For label " + i );
         }
     }
@@ -113,7 +116,7 @@ class NativeLabelScanWriterTest
         {
             try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1, NativeLabelScanWriter.EMPTY ) )
             {
-                writer.initialize( tree.writer() );
+                writer.initialize( tree.writer( NULL ) );
 
                 // WHEN
                 writer.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
@@ -134,7 +137,7 @@ class NativeLabelScanWriterTest
         long[] labels = {labelId};
         try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
         {
-            writer.initialize( tree.writer() );
+            writer.initialize( tree.writer( NULL ) );
 
             // a couple of entries with a couple of entries each
             // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
@@ -153,7 +156,7 @@ class NativeLabelScanWriterTest
         int treeEntryToRemoveFrom = 1;
         try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
         {
-            writer.initialize( tree.writer() );
+            writer.initialize( tree.writer( NULL ) );
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
             for ( int i = 0; i < numberOfNodesInEach; i++ )
             {
@@ -193,7 +196,7 @@ class NativeLabelScanWriterTest
                     assertTrue( expected.remove( labelScanKey.idRange ) );
                 }
             }
-        } );
+        }, TRACER_SUPPLIER.get() );
         assertTrue( expected.isEmpty() );
     }
 

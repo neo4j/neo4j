@@ -42,6 +42,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -235,18 +236,19 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private void markTreeAsFailed()
     {
         Preconditions.checkState( failureBytes != null, "markAsFailed hasn't been called, populator not actually failed?" );
-        tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ) );
+        tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ), TRACER_SUPPLIER.get() );
     }
 
     void flushTreeAndMarkAs( byte state )
     {
-        tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( state, additionalHeaderWriter ) );
+        tree.checkpoint( IOLimiter.UNLIMITED,
+                new NativeIndexHeaderWriter( state, additionalHeaderWriter ), TRACER_SUPPLIER.get() );
     }
 
     private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetector )
             throws IndexEntryConflictException
     {
-        try ( Writer<KEY,VALUE> writer = tree.writer() )
+        try ( Writer<KEY,VALUE> writer = tree.writer( TRACER_SUPPLIER.get() ) )
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {

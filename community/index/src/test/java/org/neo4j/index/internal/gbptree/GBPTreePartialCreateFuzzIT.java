@@ -43,6 +43,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Tests functionality around process crashing, or similar, when having started, but not completed creation of an index file,
@@ -76,7 +77,7 @@ class GBPTreePartialCreateFuzzIT
         // check readHeader
         try
         {
-            GBPTree.readHeader( pageCache, file, NO_HEADER_READER );
+            GBPTree.readHeader( pageCache, file, NO_HEADER_READER, NULL );
         }
         catch ( MetadataMismatchException | IOException e )
         {

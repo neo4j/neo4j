@@ -30,15 +30,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * {@link LabelScanReader} for reading data from {@link NativeLabelScanStore}.
  * Each {@link LongIterator} returned from each of the methods is backed by {@link Seeker}
- * directly from {@link GBPTree#seek(Object, Object)}.
+ * directly from {@link GBPTree#seek(Object, Object, PageCursorTracer)}.
  */
 class NativeLabelScanReader implements LabelScanReader
 {
@@ -92,7 +94,7 @@ class NativeLabelScanReader implements LabelScanReader
     private long highestNodeIdForLabel( int labelId ) throws IOException
     {
         try ( Seeker<LabelScanKey,LabelScanValue> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
-                new LabelScanKey( labelId, Long.MIN_VALUE ) ) )
+                new LabelScanKey( labelId, Long.MIN_VALUE ), NULL ) )
         {
             return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
         }
@@ -120,7 +122,7 @@ class NativeLabelScanReader implements LabelScanReader
     {
         LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
         LabelScanKey to = new LabelScanKey( labelId, Long.MAX_VALUE );
-        return index.seek( from, to );
+        return index.seek( from, to, NULL );
     }
 
     private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, long stopId, int labelId ) throws IOException
@@ -128,7 +130,7 @@ class NativeLabelScanReader implements LabelScanReader
         LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
         LabelScanKey to = new LabelScanKey( labelId, rangeOf( stopId ) );
 
-        return index.seek( from, to );
+        return index.seek( from, to, NULL );
     }
 
     private class NativeLabelScan implements LabelScan

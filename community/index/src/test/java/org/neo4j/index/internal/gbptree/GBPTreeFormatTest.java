@@ -44,6 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @RunWith( Parameterized.class )
 public class GBPTreeFormatTest extends FormatCompatibilityVerifier
@@ -104,14 +105,14 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
         try ( GBPTree<MutableLong,MutableLong> tree =
                       new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
-            try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
             {
                 for ( Long key : initialKeys )
                 {
                     put( writer, key );
                 }
             }
-            tree.checkpoint( IOLimiter.UNLIMITED );
+            tree.checkpoint( IOLimiter.UNLIMITED, NULL );
         }
     }
 
@@ -143,8 +144,8 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
             {
                 // WHEN reading from the tree
                 // THEN initial keys should be there
-                tree.consistencyCheck();
-                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( Long.MAX_VALUE ) ) )
+                tree.consistencyCheck( NULL );
+                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( Long.MAX_VALUE ), NULL ) )
                 {
                     for ( Long expectedKey : initialKeys )
                     {
@@ -157,7 +158,7 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
             {
                 // WHEN writing more to the tree
                 // THEN we should not see any format conflicts
-                try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
+                try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
                 {
                     while ( keysToAdd.size() > 0 )
                     {
@@ -171,8 +172,8 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
             {
                 // WHEN reading from the tree again
                 // THEN all keys including newly added should be there
-                tree.consistencyCheck();
-                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ) ) )
+                tree.consistencyCheck( NULL );
+                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
                 {
                     for ( Long expectedKey : allKeys )
                     {
@@ -185,7 +186,7 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
             {
                 // WHEN randomly removing half of tree content
                 // THEN we should not see any format conflicts
-                try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
+                try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
                 {
                     int size = allKeys.size();
                     while ( allKeys.size() > size / 2 )
@@ -201,8 +202,8 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
             {
                 // WHEN reading from the tree after remove
                 // THEN we should see everything that is left in the tree
-                tree.consistencyCheck();
-                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ) ) )
+                tree.consistencyCheck( NULL );
+                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
                 {
                     for ( Long expectedKey : allKeys )
                     {

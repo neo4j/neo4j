@@ -44,6 +44,7 @@ import static java.lang.Math.abs;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( RandomExtension.class )
@@ -71,7 +72,7 @@ class PartitionedSeekTest
             assertEquals( 0, depthOf( tree ) );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4 );
+            Collection<Seeker<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL );
 
             // then
             assertEquals( 1, seekers.size() );
@@ -111,7 +112,7 @@ class PartitionedSeekTest
 
             // when
             Collection<Seeker<MutableLong,MutableLong>> seekers =
-                    tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions );
+                    tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
             IntList counts = assertEntries( from, to, seekers );
@@ -154,7 +155,7 @@ class PartitionedSeekTest
                 AtomicReference<Collection<Seeker<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
                 Race race = new Race();
                 race.addContestant( throwing( () -> insertEntries( tree, offset, count, stride ) ) );
-                race.addContestant( throwing( () -> partitions.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ) ) ) ) );
+                race.addContestant( throwing( () -> partitions.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL ) ) ) );
                 race.goUnchecked();
 
                 // then
@@ -181,7 +182,7 @@ class PartitionedSeekTest
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
-            assertThrows( IllegalArgumentException.class, () -> tree.partitionedSeek( layout.key( 10 ), layout.key( 0 ), 5 ) );
+            assertThrows( IllegalArgumentException.class, () -> tree.partitionedSeek( layout.key( 10 ), layout.key( 0 ), 5, NULL ) );
         }
     }
 
@@ -199,7 +200,7 @@ class PartitionedSeekTest
 
             // when
             Collection<Seeker<MutableLong,MutableLong>> seekers =
-                    tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions );
+                    tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
             assertEquals( expectedNumberOfPartitions, seekers.size() );
@@ -244,7 +245,7 @@ class PartitionedSeekTest
     private int insertEntries( GBPTree<MutableLong,MutableLong> tree, int startId, int count, int stride ) throws IOException
     {
         int id = startId;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
+        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
         {
             MutableLong value = layout.value( 0 );
             for ( int i = 0; i < count; i++, id += stride )
@@ -278,7 +279,7 @@ class PartitionedSeekTest
                     rootChildCount.setValue( keyCount + 1 );
                 }
             }
-        } );
+        }, NULL );
         return rootChildCount.getValue();
     }
 
@@ -292,7 +293,7 @@ class PartitionedSeekTest
             {
                 highestLevel.setValue( Integer.max( highestLevel.getValue(), level ) );
             }
-        } );
+        }, NULL );
         return highestLevel.getValue();
     }
 }

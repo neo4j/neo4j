@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.PageCache;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
@@ -39,7 +40,7 @@ public class NativeIndexes
     public static InternalIndexState readState( PageCache pageCache, File indexFile ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( NO_HEADER_READER );
-        GBPTree.readHeader( pageCache, indexFile, headerReader );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, TRACER_SUPPLIER.get() );
         switch ( headerReader.state )
         {
         case BYTE_FAILED:
@@ -57,7 +58,7 @@ public class NativeIndexes
             throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( NO_HEADER_READER );
-        GBPTree.readHeader( pageCache, indexFile, headerReader );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, TRACER_SUPPLIER.get() );
         return headerReader.failureMessage;
     }
 }

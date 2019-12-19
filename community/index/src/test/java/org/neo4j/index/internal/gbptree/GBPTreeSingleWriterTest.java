@@ -43,6 +43,8 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralTestDirectoryExtension
@@ -82,7 +84,7 @@ class GBPTreeSingleWriterTest
         try ( GBPTree<MutableLong,MutableLong> gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout )
                 .with( treeHeightTracker )
                 .build();
-              Writer<MutableLong,MutableLong> writer = gbpTree.writer( 0 ) )
+              Writer<MutableLong,MutableLong> writer = gbpTree.writer( 0, NULL ) )
         {
             MutableLong dontCare = layout.value( 0 );
 
@@ -95,7 +97,7 @@ class GBPTreeSingleWriterTest
             // We now have a tree with height 6.
             // The leftmost node on all levels should have only a single key.
             KeyCountingVisitor keyCountingVisitor = new KeyCountingVisitor();
-            gbpTree.visit( keyCountingVisitor );
+            gbpTree.visit( keyCountingVisitor, TRACER_SUPPLIER.get() );
             for ( Integer leftmostKeyCount : keyCountingVisitor.keyCountOnLeftmostPerLevel )
             {
                 assertEquals( 1, leftmostKeyCount.intValue() );
@@ -110,7 +112,7 @@ class GBPTreeSingleWriterTest
         try ( GBPTree<MutableLong,MutableLong> gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout )
                 .with( treeHeightTracker )
                 .build();
-              Writer<MutableLong,MutableLong> writer = gbpTree.writer( 1 ) )
+              Writer<MutableLong,MutableLong> writer = gbpTree.writer( 1, TRACER_SUPPLIER.get() ) )
         {
             MutableLong dontCare = layout.value( 0 );
 
@@ -123,7 +125,7 @@ class GBPTreeSingleWriterTest
             // We now have a tree with height 6.
             // The rightmost node on all levels should have either one or zero key (zero for internal nodes).
             KeyCountingVisitor keyCountingVisitor = new KeyCountingVisitor();
-            gbpTree.visit( keyCountingVisitor );
+            gbpTree.visit( keyCountingVisitor, TRACER_SUPPLIER.get() );
             for ( Integer rightmostKeyCount : keyCountingVisitor.keyCountOnRightmostPerLevel )
             {
                 assertTrue( rightmostKeyCount == 0 || rightmostKeyCount == 1 );

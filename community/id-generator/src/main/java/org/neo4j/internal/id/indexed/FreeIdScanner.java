@@ -32,6 +32,7 @@ import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
 import static org.neo4j.internal.id.indexed.IdRange.IdState;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Responsible for starting and managing scans of a {@link GBPTree}, populating a cache with free ids that gets discovered in the scan.
@@ -184,7 +185,7 @@ class FreeIdScanner implements Closeable
         boolean startedNow = false;
         if ( scanner == null )
         {
-            scanner = tree.seek( LOW_KEY, HIGH_KEY );
+            scanner = tree.seek( LOW_KEY, HIGH_KEY, TRACER_SUPPLIER.get() );
             startedNow = true;
         }
 

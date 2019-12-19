@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
@@ -100,7 +101,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom.initFromValue( i, propertyValues[i], NEUTRAL );
             treeKeyTo.initFromValue( i, propertyValues[i], NEUTRAL );
         }
-        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo ) )
+        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo, TRACER_SUPPLIER.get() ) )
         {
             long count = 0;
             while ( seeker.next() )
@@ -151,7 +152,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         highest.initValuesAsHighest();
         try
         {
-            Seeker<KEY,VALUE> seeker = tree.seek( lowest, highest );
+            Seeker<KEY,VALUE> seeker = tree.seek( lowest, highest, TRACER_SUPPLIER.get() );
             client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, layout, layout::compareValue ),
                     new IndexQuery[0], IndexOrder.NONE, needsValues, false );
         }
@@ -196,7 +197,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom = treeKeyTo;
             treeKeyTo = tmpKey;
         }
-        return tree.seek( treeKeyFrom, treeKeyTo );
+        return tree.seek( treeKeyFrom, treeKeyTo, TRACER_SUPPLIER.get() );
     }
 
     private IndexProgressor getIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client, boolean needFilter, IndexQuery[] query )

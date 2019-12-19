@@ -29,6 +29,8 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements BoundedIterable<Long>
 {
     private final GBPTree<KEY,VALUE> tree;
@@ -57,7 +59,7 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
         try
         {
             closeSeeker();
-            seeker = tree.seek( from, to );
+            seeker = tree.seek( from, to, TRACER_SUPPLIER.get() );
             return new PrefetchingIterator<>()
             {
                 @Override

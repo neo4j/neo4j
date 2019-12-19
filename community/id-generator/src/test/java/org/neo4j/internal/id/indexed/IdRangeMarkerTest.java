@@ -54,6 +54,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
 class IdRangeMarkerTest
@@ -95,7 +97,7 @@ class IdRangeMarkerTest
 
         // then
         verifyNoMoreInteractions( merger );
-        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( 1 ) ) )
+        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( 1 ), NULL ) )
         {
             assertTrue( seek.next() );
             assertEquals( 0, seek.key().getIdRangeIdx() );
@@ -120,7 +122,7 @@ class IdRangeMarkerTest
 
         // then
         verify( merger ).merge( any(), any(), any(), any() );
-        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( 1 ) ) )
+        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( 1 ), NULL ) )
         {
             assertTrue( seek.next() );
             assertEquals( 0, seek.key().getIdRangeIdx() );
@@ -142,7 +144,7 @@ class IdRangeMarkerTest
 
         // then
         verifyNoMoreInteractions( merger );
-        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( Long.MAX_VALUE ) ) )
+        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( Long.MAX_VALUE ), NULL ) )
         {
             assertFalse( seek.next() );
         }
@@ -176,7 +178,7 @@ class IdRangeMarkerTest
                     exists.set( true );
                 }
             }
-        } );
+        }, TRACER_SUPPLIER.get() );
 
         // when
         try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), IdRangeMerger.DEFAULT ) )
@@ -195,7 +197,7 @@ class IdRangeMarkerTest
             {
                 assertFalse( isLeaf, "Should not have any key still in the tree, but got: " + key );
             }
-        } );
+        }, TRACER_SUPPLIER.get() );
     }
 
     @Test
@@ -237,7 +239,7 @@ class IdRangeMarkerTest
 
         // when
         MutableLongSet expectedIds = LongSets.mutable.empty();
-        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
+        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer( NULL ), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
                 new AtomicBoolean(), 1, new AtomicLong( reservedId - 1 ), true, NO_MONITOR ) )
         {
             for ( long id = reservedId - 1; id <= reservedId + 1; id++ )
@@ -273,7 +275,7 @@ class IdRangeMarkerTest
                     }
                 }
             }
-        } );
+        }, TRACER_SUPPLIER.get() );
         assertEquals( expectedIds, deletedIdsInTree );
     }
 
@@ -306,6 +308,6 @@ class IdRangeMarkerTest
 
     private IdRangeMarker instantiateMarker( Lock lock, ValueMerger merger ) throws IOException
     {
-        return new IdRangeMarker( idsPerEntry, layout, tree.writer(), lock, merger, true, new AtomicBoolean(), 1, highestWritternId, true, NO_MONITOR );
+        return new IdRangeMarker( idsPerEntry, layout, tree.writer( NULL ), lock, merger, true, new AtomicBoolean(), 1, highestWritternId, true, NO_MONITOR );
     }
 }

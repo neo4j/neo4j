@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
 {
@@ -79,7 +80,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     public void force( IOLimiter ioLimiter )
     {
         // This accessor needs to use the header writer here because coordinate reference systems may have changed since last checkpoint.
-        tree.checkpoint( ioLimiter, headerWriter );
+        tree.checkpoint( ioLimiter, headerWriter, TRACER_SUPPLIER.get() );
     }
 
     @Override
@@ -101,7 +102,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions );
+            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, TRACER_SUPPLIER.get() );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
             for ( Seeker<GenericKey,NativeIndexValue> seeker : seekers )
             {

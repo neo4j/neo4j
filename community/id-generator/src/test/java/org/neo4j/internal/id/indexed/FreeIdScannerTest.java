@@ -60,6 +60,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
 @PageCacheExtension
@@ -582,8 +583,8 @@ class FreeIdScannerTest
     {
         return handler ->
         {
-            try ( IdRangeMarker marker = new IdRangeMarker( IDS_PER_ENTRY, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT,
-                    true, atLeastOneFreeId, generation, new AtomicLong(), false, NO_MONITOR ) )
+            try ( IdRangeMarker marker = new IdRangeMarker( IDS_PER_ENTRY, layout, tree.writer( NULL ),
+                    mock( Lock.class ), IdRangeMerger.DEFAULT, true, atLeastOneFreeId, generation, new AtomicLong(), false, NO_MONITOR ) )
             {
                 for ( Range range : ranges )
                 {

@@ -36,6 +36,7 @@ import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
@@ -74,7 +75,7 @@ class SizeEstimationTest
         {
             // given
             int count = random.nextInt( 100_000, 1_000_000 );
-            try ( Writer<KEY,VALUE> writer = tree.writer() )
+            try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
@@ -90,7 +91,7 @@ class SizeEstimationTest
     private void assertEstimateWithinMargin( GBPTree<?,?> tree, int actualCount ) throws IOException
     {
         // when
-        int estimate = toIntExact( tree.estimateNumberOfEntriesInTree() );
+        int estimate = toIntExact( tree.estimateNumberOfEntriesInTree( NULL ) );
 
         // then
         int diff = abs( actualCount - estimate );

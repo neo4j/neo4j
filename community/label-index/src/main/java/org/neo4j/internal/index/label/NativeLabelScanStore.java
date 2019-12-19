@@ -45,11 +45,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * {@link LabelScanStore} which is implemented using {@link GBPTree} atop a {@link PageCache}.
@@ -262,7 +264,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
 
         try
         {
-            return new BulkAppendNativeLabelScanWriter( index.writer() );
+            return new BulkAppendNativeLabelScanWriter( index.writer( NULL ) );
         }
         catch ( IOException e )
         {
@@ -304,7 +306,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     @Override
     public void force( IOLimiter limiter )
     {
-        index.checkpoint( limiter );
+        index.checkpoint( limiter, NULL );
         writeMonitor.force();
     }
 
@@ -323,7 +325,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
             {
                 return index.seek(
                         new LabelScanKey().set( labelId, fromNodeId / RANGE_SIZE ),
-                        new LabelScanKey().set( labelId, (toNodeId - 1) / RANGE_SIZE + 1 ) );
+                        new LabelScanKey().set( labelId, (toNodeId - 1) / RANGE_SIZE + 1 ), NULL );
             }
             catch ( IOException e )
             {
@@ -334,7 +336,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         int highestLabelId = -1;
         try ( Seeker<LabelScanKey,LabelScanValue> cursor = index.seek(
                 new LabelScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
-                new LabelScanKey().set( 0, -1 ) ) )
+                new LabelScanKey().set( 0, -1 ), NULL ) )
         {
             if ( cursor.next() )
             {
@@ -425,7 +427,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         try
         {
             index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
-                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly );
+                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL );
             return isRebuilding.getValue();
         }
         catch ( TreeFileNotFoundException e )
@@ -483,7 +485,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
                 numberOfNodes = fullStoreChangeStream.applyTo( writer );
             }
 
-            index.checkpoint( IOLimiter.UNLIMITED, writeClean );
+            index.checkpoint( IOLimiter.UNLIMITED, writeClean, NULL );
 
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
@@ -492,7 +494,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
 
     private NativeLabelScanWriter writer() throws IOException
     {
-        return singleWriter.initialize( index.writer() );
+        return singleWriter.initialize( index.writer( NULL ) );
     }
 
     @Override
@@ -500,7 +502,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     {
         try ( Seeker<LabelScanKey,LabelScanValue> cursor = index.seek(
                 new LabelScanKey( 0, 0 ),
-                new LabelScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ) ) )
+                new LabelScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ), NULL ) )
         {
             return !cursor.next();
         }
@@ -543,7 +545,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     {
         try
         {
-            return index.consistencyCheck( visitor );
+            return index.consistencyCheck( visitor, NULL );
         }
         catch ( IOException e )
         {

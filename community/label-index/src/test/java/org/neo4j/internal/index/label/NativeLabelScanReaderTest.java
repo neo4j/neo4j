@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Execution( CONCURRENT )
 class NativeLabelScanReaderTest
@@ -61,7 +62,7 @@ class NativeLabelScanReaderTest
                 value( 0b0000_0010__0000_1000L ),
                 value( 0b0010_0000__1010_0001L ),
                 null );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) )
                 .thenReturn( cursor );
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
@@ -89,7 +90,7 @@ class NativeLabelScanReaderTest
         when( cursor1.next() ).thenReturn( false );
         Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
@@ -125,7 +126,7 @@ class NativeLabelScanReaderTest
         when( cursor1.next() ).thenReturn( false );
         Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
@@ -160,7 +161,7 @@ class NativeLabelScanReaderTest
                 //                     ^--fromId, i.e. ids after this id should be visible
                 value( 0b0010_0000__1010_0001L ),
                 null );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) )
                 .thenReturn( cursor );
 
         // when

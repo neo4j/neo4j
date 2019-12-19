@@ -36,6 +36,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.storemigration.IndexConfigExtractorUtil.logExtractionFailure;
 
 /**
@@ -55,7 +56,7 @@ final class GenericConfigExtractor
         {
             try
             {
-                GBPTree.readHeader( pageCache, genericFile, new GenericConfig( indexConfig, genericFile, log ) );
+                GBPTree.readHeader( pageCache, genericFile, new GenericConfig( indexConfig, genericFile, log ), TRACER_SUPPLIER.get() );
             }
             catch ( MetadataMismatchException e )
             {

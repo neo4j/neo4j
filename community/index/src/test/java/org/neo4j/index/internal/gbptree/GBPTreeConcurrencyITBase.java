@@ -62,6 +62,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 /**
@@ -111,7 +112,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     void consistencyCheckAndClose() throws IOException
     {
         threadPool.shutdownNow();
-        index.consistencyCheck();
+        index.consistencyCheck( NULL );
         index.close();
     }
 
@@ -288,7 +289,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         {
             List<Long> fullRange = LongStream.range( minRange, maxRange ).boxed().collect( Collectors.toList() );
             List<Long> rangeOutOfOrder = shuffleToNewList( fullRange, random );
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
             {
                 for ( Long key : rangeOutOfOrder )
                 {
@@ -492,7 +493,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         Iterator<UpdateOperation> toWriteIterator = toWrite.iterator();
         while ( toWriteIterator.hasNext() )
         {
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
             {
                 int inBatch = 0;
                 while ( toWriteIterator.hasNext() && inBatch < batchSize )
@@ -619,7 +620,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             {
                 try
                 {
-                    index.checkpoint( IOLimiter.UNLIMITED );
+                    index.checkpoint( IOLimiter.UNLIMITED, NULL );
                     // Sleep a little in between checkpoints
                     MILLISECONDS.sleep( 20L );
                 }
@@ -668,11 +669,11 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             KEY to = key( end() );
             if ( partitionedSeek )
             {
-                Collection<Seeker<KEY,VALUE>> partitions = tree.partitionedSeek( from, to, 10 );
-                return new PartitionBridgingSeeker<KEY,VALUE>( partitions );
+                Collection<Seeker<KEY,VALUE>> partitions = tree.partitionedSeek( from, to, 10, NULL );
+                return new PartitionBridgingSeeker<>( partitions );
             }
 
-            return tree.seek( from, to );
+            return tree.seek( from, to, NULL );
         }
     }
 

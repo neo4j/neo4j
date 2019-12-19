@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 @EphemeralTestDirectoryExtension
@@ -76,7 +78,6 @@ abstract class GBPTreeITBase<KEY,VALUE>
     }
 
     private GBPTree<KEY,VALUE> createIndex()
-            throws IOException
     {
         int pageSize = 512;
         layout = getLayout( random, pageSize );
@@ -86,7 +87,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
 
     private Writer<KEY,VALUE> createWriter( GBPTree<KEY,VALUE> index ) throws IOException
     {
-        return index.writer( ratioToKeepInLeftOnSplit );
+        return index.writer( ratioToKeepInLeftOnSplit, NULL );
     }
 
     abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
@@ -137,7 +138,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
                         to = first;
                     }
                     Map<KEY,VALUE> expectedHits = expectedHits( data, from, to, keyComparator );
-                    try ( Seeker<KEY,VALUE> result = index.seek( from, to ) )
+                    try ( Seeker<KEY,VALUE> result = index.seek( from, to, NULL ) )
                     {
                         while ( result.next() )
                         {
@@ -161,12 +162,12 @@ abstract class GBPTreeITBase<KEY,VALUE>
                     }
                 }
 
-                index.checkpoint( IOLimiter.UNLIMITED );
+                index.checkpoint( IOLimiter.UNLIMITED, NULL );
                 randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
             }
 
             // and finally
-            index.consistencyCheck();
+            index.consistencyCheck( NULL );
         }
     }
 
@@ -215,19 +216,19 @@ abstract class GBPTreeITBase<KEY,VALUE>
             }
 
             // then
-            try ( Seeker<KEY,VALUE> seek = index.seek( key( 0 ), key( numberOfNodes ) ) )
+            try ( Seeker<KEY,VALUE> seek = index.seek( key( 0 ), key( numberOfNodes ), NULL ) )
             {
                 assertFalse( seek.next() );
             }
 
             // and finally
-            index.consistencyCheck();
+            index.consistencyCheck( NULL );
         }
     }
 
     // Timeout because test verify no infinite loop
     @Test
-    void shouldHandleDescendingWithEmptyRange() throws IOException
+    void shouldHandleDescendingWithEmptyRange()
     {
         assertTimeoutPreemptively( ofSeconds( 10 ), () ->
         {
@@ -247,11 +248,11 @@ abstract class GBPTreeITBase<KEY,VALUE>
 
                 KEY from = layout.key( 3 );
                 KEY to = layout.key( 1 );
-                try ( Seeker<KEY,VALUE> seek = index.seek( from, to ) )
+                try ( Seeker<KEY,VALUE> seek = index.seek( from, to, NULL ) )
                 {
                     assertFalse( seek.next() );
                 }
-                index.checkpoint( IOLimiter.UNLIMITED );
+                index.checkpoint( IOLimiter.UNLIMITED, NULL );
             }
         } );
     }
@@ -336,12 +337,12 @@ abstract class GBPTreeITBase<KEY,VALUE>
     @SuppressWarnings( "unused" )
     private void printTree() throws IOException
     {
-        index.printTree( PrintConfig.defaults() );
+        index.printTree( PrintConfig.defaults(), NULL );
     }
 
     @SuppressWarnings( "unused" )
     private void printNode( @SuppressWarnings( "SameParameterValue" ) int id ) throws IOException
     {
-        index.printNode( id );
+        index.printNode( id, TRACER_SUPPLIER.get() );
     }
 }
