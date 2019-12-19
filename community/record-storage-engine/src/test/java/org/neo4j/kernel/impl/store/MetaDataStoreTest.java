@@ -29,6 +29,7 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -81,7 +82,7 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 class MetaDataStoreTest
 {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( new AtomicBoolean() ) );
     @Inject
     private EphemeralFileSystemAbstraction fs;
     @Inject
@@ -249,7 +250,7 @@ class MetaDataStoreTest
     }
 
     @Test
-    void setLastClosedTransactionOverridesLastClosedTransactionInformation() throws IOException
+    void setLastClosedTransactionOverridesLastClosedTransactionInformation()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.resetLastClosedTransaction( 3, 4, 5, true );
@@ -261,7 +262,7 @@ class MetaDataStoreTest
     }
 
     @Test
-    void setLastClosedTransactionOverridesLastClosedTransactionInformationWithoutMissingLogsUpdate() throws IOException
+    void setLastClosedTransactionOverridesLastClosedTransactionInformationWithoutMissingLogsUpdate()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.resetLastClosedTransaction( 3, 4, 5, false );
