@@ -57,7 +57,7 @@ public class ReadOnlyIT extends ExclusiveWebContainerTestBase
     {
         if ( readOnlyContainer != null )
         {
-            readOnlyContainer.stop();
+            readOnlyContainer.shutdown();
         }
     }
 

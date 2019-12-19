@@ -26,6 +26,7 @@ import org.junit.Rule;
 import java.util.concurrent.Callable;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.server.helpers.WebContainerHelper;
@@ -55,6 +56,8 @@ public class SharedWebContainerTestBase
         suppressAll().call( (Callable<Void>) () ->
         {
             setWebContainerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), TRUE );
+            setWebContainerBuilderProperty( BoltConnector.enabled.name(), TRUE );
+            setWebContainerBuilderProperty( BoltConnector.listen_address.name(), "localhost:0" );
             setWebContainerBuilderProperty( GraphDatabaseSettings.transaction_timeout.name(), "300s" );
             setWebContainerBuilderProperty( ServerSettings.transaction_idle_timeout.name(), "300s" );
             testWebContainer = WebContainerHolder.allocate();

@@ -61,7 +61,7 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
     public void tearDown()
     {
         HttpsURLConnection.setDefaultSSLSocketFactory( originalSslSocketFactory );
-        testWebContainer.stop();
+        testWebContainer.shutdown();
     }
 
     @Test

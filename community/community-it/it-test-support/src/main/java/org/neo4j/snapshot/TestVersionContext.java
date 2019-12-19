@@ -126,6 +126,11 @@ public class TestVersionContext extends TransactionVersionContext
         threadFilter = t -> t.equals( threadToFilterOn );
     }
 
+    public static TestVersionContext testCursorContext( LongSupplier idSupplier )
+    {
+        return new TestVersionContext( idSupplier );
+    }
+
     public static TestVersionContext testCursorContext( DatabaseManagementService managementService,  String databaseName )
     {
         TransactionIdStore transactionIdStore = getTransactionIdStore( managementService, databaseName );

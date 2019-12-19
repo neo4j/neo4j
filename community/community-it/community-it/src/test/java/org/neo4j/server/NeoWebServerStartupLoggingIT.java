@@ -55,7 +55,7 @@ public class NeoWebServerStartupLoggingIT extends ExclusiveWebContainerTestBase
     @AfterClass
     public static void stopServer()
     {
-        webContainer.stop();
+        webContainer.shutdown();
     }
 
     @Test

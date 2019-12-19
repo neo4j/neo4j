@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -51,6 +52,8 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     private TestTransactionVersionContextSupplier testContextSupplier;
     private TestVersionContext testCursorContext;
     private TestWebContainer testWebContainer;
+    private LongSupplier lastTransactionIdSource;
+    private LongSupplier idSupplier = () -> lastTransactionIdSource.getAsLong();
 
     @Before
     public void setUp() throws Exception
@@ -68,8 +71,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
 
     private void prepareCursorContext()
     {
-        testCursorContext = testCursorContext( testWebContainer.getDatabaseManagementService(),
-                testWebContainer.getDefaultDatabase().databaseId().name() );
+        testCursorContext = testCursorContext( idSupplier );
         testContextSupplier.setCursorContext( testCursorContext );
     }
 
@@ -89,13 +91,14 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     {
         if ( testWebContainer != null )
         {
-            testWebContainer.stop();
+            testWebContainer.shutdown();
         }
     }
 
     @Test
     public void executeQueryWithSingleRetry()
     {
+        lastTransactionIdSource = new ArrayBasedLongSupplier();
         HTTP.Response response = executeOverHTTP( "MATCH (n) RETURN n.c" );
         assertThat( response.status(), equalTo( 200 ) );
         Map<String,List<Map<String,List<Map<String,List<String>>>>>> content = response.content();
@@ -106,6 +109,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     @Test
     public void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
     {
+        lastTransactionIdSource = () -> 1;
         HTTP.Response response = executeOverHTTP( "MATCH (n:toRetry) CREATE () RETURN n.c" );
         Map<String,List<Map<String,String>>> content = response.content();
         assertEquals( "Unable to get clean data snapshot for query 'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.",
@@ -118,5 +122,17 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
         HTTP.Response transactionStart = httpClientBuilder.POST( txEndpoint() );
         assertThat( transactionStart.status(), equalTo( 201 ) );
         return httpClientBuilder.POST( transactionStart.location(), quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
+    }
+
+    private static class ArrayBasedLongSupplier implements LongSupplier
+    {
+        private final long[] values = new long[] {1, Long.MAX_VALUE};
+        private int index;
+
+        @Override
+        public long getAsLong()
+        {
+            return index >= values.length ? values[values.length - 1] : values[index++];
+        }
     }
 }

@@ -89,7 +89,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
         }
         finally
         {
-            server.stop();
+            server.shutdown();
         }
     }
 
@@ -113,7 +113,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
         }
         finally
         {
-            server.stop();
+            server.shutdown();
         }
     }
 
@@ -137,7 +137,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
         }
         finally
         {
-            server.stop();
+            server.shutdown();
         }
     }
 

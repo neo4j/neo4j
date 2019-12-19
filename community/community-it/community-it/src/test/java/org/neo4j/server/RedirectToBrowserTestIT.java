@@ -54,7 +54,7 @@ public class RedirectToBrowserTestIT extends ExclusiveWebContainerTestBase
     {
         if ( webContainer != null )
         {
-            webContainer.stop();
+            webContainer.shutdown();
         }
     }
 

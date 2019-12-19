@@ -38,7 +38,7 @@ public class AcceptorConfigurationIT extends ExclusiveWebContainerTestBase
     @After
     public void stopTheServer()
     {
-        testWebContainer.stop();
+        testWebContainer.shutdown();
     }
 
     @Test

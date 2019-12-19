@@ -57,7 +57,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
     {
         if ( testWebContainer != null )
         {
-            testWebContainer.stop();
+            testWebContainer.shutdown();
         }
     }
 

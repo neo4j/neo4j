@@ -62,7 +62,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
             {
                 if ( testWebContainer != null )
                 {
-                    testWebContainer.stop();
+                    testWebContainer.shutdown();
                 }
             }
 
@@ -103,7 +103,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
             {
                 if ( testWebContainer != null )
                 {
-                    testWebContainer.stop();
+                    testWebContainer.shutdown();
                 }
             }
 

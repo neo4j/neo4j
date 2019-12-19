@@ -51,6 +51,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.WebContainerTestUtils.addDefaultRelativeProperties;
 import static org.neo4j.server.WebContainerTestUtils.asOneLine;
 import static org.neo4j.server.WebContainerTestUtils.writeConfigToFile;
+import static org.neo4j.util.Preconditions.checkState;
 
 public class CommunityWebContainerBuilder
 {
@@ -93,10 +94,7 @@ public class CommunityWebContainerBuilder
 
     public TestWebContainer build() throws IOException
     {
-        if ( dataDir == null && persistent )
-        {
-            throw new IllegalStateException( "Must specify path" );
-        }
+        checkState( dataDir != null || !persistent, "Must specify path" );
         final File configFile = createConfigFiles();
 
         Log log = logProvider.getLog( getClass() );
@@ -111,7 +109,7 @@ public class CommunityWebContainerBuilder
     private DatabaseManagementService build( Config config )
     {
         var managementServiceBuilder = createManagementServiceBuilder();
-        if ( !isPersistent() )
+        if ( !persistent )
         {
             managementServiceBuilder = managementServiceBuilder.impermanent();
         }
@@ -129,7 +127,7 @@ public class CommunityWebContainerBuilder
         return new TestDatabaseManagementServiceBuilder();
     }
 
-    public File createConfigFiles() throws IOException
+    private File createConfigFiles() throws IOException
     {
         File testFolder = persistent ? new File( dataDir ) : WebContainerTestUtils.createTempDir();
         File temporaryConfigFile = WebContainerTestUtils.createTempConfigFile( testFolder );
@@ -137,11 +135,6 @@ public class CommunityWebContainerBuilder
         writeConfigToFile( createConfiguration( testFolder ), temporaryConfigFile );
 
         return temporaryConfigFile;
-    }
-
-    public boolean isPersistent()
-    {
-        return persistent;
     }
 
     public Map<String, String> createConfiguration( File temporaryFolder )

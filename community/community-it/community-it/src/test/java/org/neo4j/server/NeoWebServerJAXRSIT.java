@@ -51,7 +51,7 @@ public class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
     {
         if ( testWebContainer != null )
         {
-            testWebContainer.stop();
+            testWebContainer.shutdown();
         }
     }
 

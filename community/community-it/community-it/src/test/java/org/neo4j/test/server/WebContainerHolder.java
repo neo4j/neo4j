@@ -88,7 +88,7 @@ final class WebContainerHolder extends Thread
         {
             if ( testWebContainer != null )
             {
-                testWebContainer.stop();
+                testWebContainer.shutdown();
             }
         }
         finally
@@ -110,15 +110,5 @@ final class WebContainerHolder extends Thread
     public void run()
     {
         shutdown();
-    }
-
-    static
-    {
-        Runtime.getRuntime().addShutdownHook( new WebContainerHolder() );
-    }
-
-    private WebContainerHolder()
-    {
-        super( WebContainerHolder.class.getName() );
     }
 }

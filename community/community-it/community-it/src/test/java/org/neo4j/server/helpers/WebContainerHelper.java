@@ -30,9 +30,8 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.logging.LogProvider;
 
-public class WebContainerHelper
+public final class WebContainerHelper
 {
-
     private WebContainerHelper()
     {
     }
@@ -64,7 +63,7 @@ public class WebContainerHelper
     {
         CommunityWebContainerBuilder builder = CommunityWebContainerBuilder.builder();
         builder.withProperty( "dbms.connector.bolt.listen_address", ":0" );
-        createContainer( builder, true, path ).stop();
+        createContainer( builder, true, path ).shutdown();
         builder.withProperty( GraphDatabaseSettings.read_only.name(), "true" );
         return createContainer( builder, true, path );
     }

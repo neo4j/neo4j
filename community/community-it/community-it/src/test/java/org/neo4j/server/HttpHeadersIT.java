@@ -60,7 +60,7 @@ public class HttpHeadersIT extends ExclusiveWebContainerTestBase
     {
         if ( testWebContainer != null )
         {
-            testWebContainer.stop();
+            testWebContainer.shutdown();
         }
     }
 

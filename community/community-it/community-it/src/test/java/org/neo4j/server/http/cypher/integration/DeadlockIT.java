@@ -59,7 +59,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         }
 
         // When I lock node:First
-        HTTP.Response begin = http.POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ));
+        HTTP.Response begin = http.POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ) );
 
         // and I lock node:Second, and wait for a lock on node:First in another transaction
         otherThread.execute( writeToFirstAndSecond() );
@@ -69,7 +69,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         Thread.sleep( 1000 );
 
         // and I then try and lock node:Second in the first transaction
-        HTTP.Response deadlock = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ));
+        HTTP.Response deadlock = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
 
         // Then
         assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( DeadlockDetected.code().serialize() ) );
@@ -79,11 +79,9 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
     {
         return state ->
         {
-            HTTP.Response post = http.POST( txUri(),
-                    quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
+            HTTP.Response post = http.POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
             secondNodeLocked.countDown();
-            http.POST( post.location(),
-                    quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ) );
+            http.POST( post.location(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ) );
             return null;
         };
     }

@@ -61,7 +61,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     @After
     public void stopTheServer()
     {
-        testWebContainer.stop();
+        testWebContainer.shutdown();
     }
 
     @Test

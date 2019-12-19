@@ -47,14 +47,14 @@ public class NeoWebServerDirectoryListingTestIT extends ExclusiveWebContainerTes
         testWebContainer = builderOnRandomPorts().build();
 
         // When
-        Response okResource = HTTP.GET( testWebContainer.getBaseUri().resolve( "/test/index.html" ).toString() );
-        Response illegalResource = HTTP.GET( testWebContainer.getBaseUri().resolve( "/test/files/" ).toString() );
+        Response okResource = HTTP.GET( testWebContainer.getBaseUri().resolve( "/browser/index.html" ).toString() );
+        Response illegalResource = HTTP.GET( testWebContainer.getBaseUri().resolve( "/browser/files/" ).toString() );
 
         // Then
         // Depends on specific resources exposed by the browser module; if this test starts to fail,
         // check whether the structure of the browser module has changed and adjust accordingly.
         assertEquals( 200, okResource.status() );
-        assertEquals( 403, illegalResource.status() );
+        assertEquals( 404, illegalResource.status() );
     }
 
     @After
@@ -62,7 +62,7 @@ public class NeoWebServerDirectoryListingTestIT extends ExclusiveWebContainerTes
     {
         if ( testWebContainer != null )
         {
-            testWebContainer.stop();
+            testWebContainer.shutdown();
         }
     }
 

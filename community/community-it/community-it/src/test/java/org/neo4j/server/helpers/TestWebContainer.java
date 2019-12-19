@@ -59,7 +59,7 @@ public class TestWebContainer
         return neoWebServer.httpsUri();
     }
 
-    public void stop()
+    public void shutdown()
     {
         managementService.shutdown();
     }
