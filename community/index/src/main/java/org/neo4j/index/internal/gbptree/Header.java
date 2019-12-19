@@ -86,4 +86,23 @@ public class Header
          */
         void read( ByteBuffer headerBytes );
     }
+
+    /**
+     * Simple utility header reader to simply know whether or not the tree file was created or not in the constructor.
+     */
+    public static class TreeCreationChecker implements Header.Reader
+    {
+        private boolean wasCreated = true;
+
+        @Override
+        public void read( ByteBuffer headerBytes )
+        {
+            wasCreated = false;
+        }
+
+        public boolean wasCreated()
+        {
+            return wasCreated;
+        }
+    }
 }
