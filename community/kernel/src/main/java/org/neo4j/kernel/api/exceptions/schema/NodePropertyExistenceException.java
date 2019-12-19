@@ -32,10 +32,10 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
     private final long nodeId;
     private final LabelSchemaDescriptor schema;
 
-    public NodePropertyExistenceException( LabelSchemaDescriptor schema,
-            ConstraintValidationException.Phase phase, long nodeId )
+    public NodePropertyExistenceException( LabelSchemaDescriptor schema, ConstraintValidationException.Phase phase, long nodeId,
+            TokenNameLookup tokenNameLookup )
     {
-        super( ConstraintDescriptorFactory.existsForSchema( schema ), phase, format( "Node(%d)", nodeId ) );
+        super( ConstraintDescriptorFactory.existsForSchema( schema ), phase, format( "Node(%d)", nodeId ), tokenNameLookup );
         this.schema = schema;
         this.nodeId = nodeId;
     }

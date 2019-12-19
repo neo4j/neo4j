@@ -523,12 +523,12 @@ public class SchemaImpl implements Schema
         Iterator<IndexDescriptor> iterator = schemaRead.index( schema );
         if ( !iterator.hasNext() )
         {
-            throw new SchemaRuleNotFoundException( schema );
+            throw new SchemaRuleNotFoundException( schema, tokenRead );
         }
         reference = iterator.next();
         if ( iterator.hasNext() )
         {
-            throw new DuplicateSchemaRuleException( schema );
+            throw new DuplicateSchemaRuleException( schema, tokenRead );
         }
 
         return reference;

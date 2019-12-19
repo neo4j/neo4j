@@ -32,7 +32,6 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -84,6 +83,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
+import org.neo4j.test.InMemoryTokens;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Value;
@@ -1150,7 +1150,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).contains( "FULLTEXT" );
+        assertThat( e.getUserMessage( new InMemoryTokens() ) ).contains( "FULLTEXT" );
     }
 
     @Test
@@ -1173,7 +1173,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).contains( "full-text schema" );
+        assertThat( e.getUserMessage( tokenHolders ) ).contains( "full-text schema" );
     }
 
     @Test
@@ -1196,7 +1196,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).contains( "relationship type schema" );
+        assertThat( e.getUserMessage( tokenHolders ) ).contains( "relationship type schema" );
     }
 
     @Test
@@ -1218,7 +1218,7 @@ class OperationsTest
 
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
-        assertThat( e.getUserMessage( TokenNameLookup.idTokenNameLookup ) ).containsIgnoringCase( "index prototype" ).containsIgnoringCase( "not unique" );
+        assertThat( e.getUserMessage( tokenHolders ) ).containsIgnoringCase( "index prototype" ).containsIgnoringCase( "not unique" );
     }
 
     private static Iterator<ConstraintDescriptor> asIterator( ConstraintDescriptor constraint )

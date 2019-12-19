@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class RepeatedRelationshipTypeInSchemaException extends RepeatedSchemaComponentException
 {
-    public RepeatedRelationshipTypeInSchemaException( SchemaDescriptor schema, OperationContext context )
+    public RepeatedRelationshipTypeInSchemaException( SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup )
     {
-        super( Status.Schema.RepeatedRelationshipTypeInSchema, schema, context, SchemaComponent.RELATIONSHIP_TYPE );
+        super( Status.Schema.RepeatedRelationshipTypeInSchema, schema, context, SchemaComponent.RELATIONSHIP_TYPE, tokenNameLookup );
     }
 }

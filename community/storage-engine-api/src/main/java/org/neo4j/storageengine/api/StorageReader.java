@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -161,4 +162,10 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * @return a snapshot of the current schema.
      */
     StorageSchemaReader schemaSnapshot();
+
+    /**
+     * Get a non-transactional {@link TokenNameLookup} instance.
+     * @return a token name lookup instance.
+     */
+    TokenNameLookup tokenNameLookup();
 }

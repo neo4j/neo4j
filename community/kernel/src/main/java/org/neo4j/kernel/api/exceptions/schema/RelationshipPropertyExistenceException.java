@@ -31,11 +31,11 @@ public class RelationshipPropertyExistenceException extends ConstraintValidation
     private final RelationTypeSchemaDescriptor schema;
     private final long relationshipId;
 
-    public RelationshipPropertyExistenceException(
-            RelationTypeSchemaDescriptor schema, ConstraintValidationException.Phase phase, long relationshipId )
+    public RelationshipPropertyExistenceException( RelationTypeSchemaDescriptor schema, ConstraintValidationException.Phase phase, long relationshipId,
+            TokenNameLookup tokenNameLookup )
     {
         super( ConstraintDescriptorFactory.existsForSchema( schema ),
-                phase, format( "Relationship(%s)", relationshipId ) );
+                phase, format( "Relationship(%s)", relationshipId ), tokenNameLookup );
         this.schema = schema;
         this.relationshipId = relationshipId;
     }

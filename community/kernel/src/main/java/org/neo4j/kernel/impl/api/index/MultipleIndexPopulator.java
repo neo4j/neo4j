@@ -116,9 +116,10 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final PhaseTracker phaseTracker;
     protected final JobScheduler jobScheduler;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
+    private TokenNameLookup tokenNameLookup;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
     {
         this.storeView = storeView;
         this.propertyAccessor = storeView.newPropertyAccessor();
@@ -129,6 +130,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.indexStatisticsStore = indexStatisticsStore;
         this.phaseTracker = new LoggingPhaseTracker( logProvider.getLog( IndexPopulationJob.class ) );
         this.jobScheduler = jobScheduler;
+        this.tokenNameLookup = tokenNameLookup;
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
@@ -428,7 +430,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                     if ( PRINT_DEBUG )
                     {
-                        log.info( "Applied %s from queue" + update );
+                        log.info( "Applied %s from queue" + (update == null ? null : update.describe( tokenNameLookup ) ) );
                     }
                 }
                 while ( !concurrentUpdateQueue.isEmpty() );

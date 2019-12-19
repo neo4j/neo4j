@@ -49,6 +49,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -70,9 +71,9 @@ class MultipleIndexPopulatorUpdatesTest
         when( reader.allocateNodeCursor() ).thenReturn( mock( StorageNodeCursor.class ) );
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, () -> reader );
-        MultipleIndexPopulator indexPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                        mock( JobScheduler.class ) );
+        InMemoryTokens tokens = new InMemoryTokens();
+        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator(
+                storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore, mock( JobScheduler.class ), tokens );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 

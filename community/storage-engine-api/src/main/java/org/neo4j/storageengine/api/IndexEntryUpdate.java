@@ -21,11 +21,11 @@ package org.neo4j.storageengine.api;
 
 import java.util.Arrays;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 /**
  * Subclasses of this represent events related to property changes due to property or label addition, deletion or
@@ -127,11 +127,10 @@ public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
         return result;
     }
 
-    @Override
-    public String toString()
+    public String describe( TokenNameLookup tokenNameLookup )
     {
         return String.format( "IndexEntryUpdate[id=%d, mode=%s, %s, beforeValues=%s, values=%s]", entityId, updateMode,
-                indexKey().schema().userDescription( idTokenNameLookup ),
+                indexKey().schema().userDescription( tokenNameLookup ),
                 Arrays.toString( before ), Arrays.toString( values ) );
     }
 

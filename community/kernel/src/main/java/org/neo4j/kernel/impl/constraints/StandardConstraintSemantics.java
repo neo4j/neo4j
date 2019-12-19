@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.constraints;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -64,22 +65,22 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     }
 
     @Override
-    public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
-            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
+    public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
     {
         throw nodeKeyConstraintsNotAllowed( descriptor );
     }
 
     @Override
-    public void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
-            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
+    public void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( descriptor );
     }
 
     @Override
-    public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
-            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )  throws CreateConstraintFailureException
+    public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup )  throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( descriptor );
     }

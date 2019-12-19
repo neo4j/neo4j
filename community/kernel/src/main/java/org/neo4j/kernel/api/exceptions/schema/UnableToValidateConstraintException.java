@@ -24,18 +24,17 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 /**
- * Attempting to validate constraints but the apparatus for validation was not available. For example,
+ * Attempting to validate constraints, but the apparatus for validation was not available. For example,
  * this exception is thrown when an index required to implement a uniqueness constraint is not available.
  */
 public class UnableToValidateConstraintException extends ConstraintValidationException
 {
-    public UnableToValidateConstraintException( ConstraintDescriptor constraint, Throwable cause )
+    public UnableToValidateConstraintException( ConstraintDescriptor constraint, Throwable cause, TokenNameLookup tokenNameLookup )
     {
         super( constraint, Phase.VERIFICATION,
-                format( "Unable to validate constraint %s", constraint.userDescription( idTokenNameLookup ) ), cause );
+                format( "Unable to validate constraint %s", constraint.userDescription( tokenNameLookup ) ), cause, tokenNameLookup );
     }
 
     @Override

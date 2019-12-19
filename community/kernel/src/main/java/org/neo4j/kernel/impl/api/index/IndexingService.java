@@ -204,7 +204,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             Iterable<IndexDescriptor> indexDescriptors,
             IndexSamplingController samplingController,
             TokenNameLookup tokenNameLookup,
-            JobScheduler jobScheduler,
+            JobScheduler scheduler,
             SchemaState schemaState,
             MultiPopulatorFactory multiPopulatorFactory,
             LogProvider internalLogProvider,
@@ -220,12 +220,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.indexDescriptors = indexDescriptors;
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
-        this.jobScheduler = jobScheduler;
+        this.jobScheduler = scheduler;
         this.schemaState = schemaState;
         this.multiPopulatorFactory = multiPopulatorFactory;
         this.internalLogProvider = internalLogProvider;
         this.monitor = monitor;
-        this.populationJobController = new IndexPopulationJobController( jobScheduler );
+        this.populationJobController = new IndexPopulationJobController( scheduler );
         this.internalLog = internalLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
         this.indexStatisticsStore = indexStatisticsStore;
@@ -798,8 +798,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
-        MultipleIndexPopulator multiPopulator =
-                multiPopulatorFactory.create( storeView, internalLogProvider, type, schemaState, indexStatisticsStore, jobScheduler );
+        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create(
+                storeView, internalLogProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
         return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping );
     }
 

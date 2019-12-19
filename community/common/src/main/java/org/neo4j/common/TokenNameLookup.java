@@ -21,8 +21,6 @@ package org.neo4j.common;
 
 import java.util.function.IntFunction;
 
-import static java.lang.String.format;
-
 /**
  * Lookup of names from token ids. Tokens are mostly referred to by ids throughout several abstractions.
  * Sometimes token names are required, this is a way to lookup names in those cases.
@@ -68,25 +66,4 @@ public interface TokenNameLookup
         }
         return tokenNames;
     }
-
-    TokenNameLookup idTokenNameLookup = new TokenNameLookup()
-    {
-        @Override
-        public String labelGetName( int labelId )
-        {
-            return format( "label[%d]", labelId );
-        }
-
-        @Override
-        public String relationshipTypeGetName( int relationshipTypeId )
-        {
-            return format( "relType[%d]", relationshipTypeId );
-        }
-
-        @Override
-        public String propertyKeyGetName( int propertyKeyId )
-        {
-            return format( "property[%d]", propertyKeyId );
-        }
-    };
 }

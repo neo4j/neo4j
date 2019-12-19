@@ -155,7 +155,7 @@ public class ConstraintIndexCreator
         }
         catch ( IndexEntryConflictException e )
         {
-            throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e );
+            throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e, transaction.tokenRead() );
         }
         catch ( InterruptedException | IOException e )
         {
@@ -220,11 +220,12 @@ public class ConstraintIndexCreator
             Throwable cause = e.getCause();
             if ( cause instanceof IndexEntryConflictException )
             {
-                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, (IndexEntryConflictException) cause );
+                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, (IndexEntryConflictException) cause,
+                        transaction.tokenRead() );
             }
             else
             {
-                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e );
+                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e, transaction.tokenRead() );
             }
         }
     }
@@ -242,7 +243,7 @@ public class ConstraintIndexCreator
                 throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, tokenLookup );
             }
             // There's already an index for the schema of this constraint, which isn't of the type we're after.
-            throw new AlreadyIndexedException( constraint.schema(), CONSTRAINT_CREATION );
+            throw new AlreadyIndexedException( constraint.schema(), CONSTRAINT_CREATION, tokenLookup );
         }
         return createConstraintIndex( prototype );
     }

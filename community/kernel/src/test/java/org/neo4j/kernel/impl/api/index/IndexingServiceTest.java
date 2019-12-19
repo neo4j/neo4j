@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -50,7 +49,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
@@ -94,6 +92,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.Values;
@@ -132,7 +131,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -183,7 +181,7 @@ class IndexingServiceTest
     private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
     private final NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
-    private final InMemoryNameLookup nameLookup = new InMemoryNameLookup();
+    private final InMemoryTokens nameLookup = new InMemoryTokens();
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
@@ -417,8 +415,8 @@ class IndexingServiceTest
 
         nameLookup.label( 1, "LabelOne" );
         nameLookup.label( 2, "LabelTwo" );
-        nameLookup.property( 1, "propertyOne" );
-        nameLookup.property( 2, "propertyTwo" );
+        nameLookup.propertyKey( 1, "propertyOne" );
+        nameLookup.propertyKey( 2, "propertyTwo" );
 
         // when
         life.init();
@@ -456,8 +454,8 @@ class IndexingServiceTest
 
         nameLookup.label( 1, "LabelOne" );
         nameLookup.label( 2, "LabelTwo" );
-        nameLookup.property( 1, "propertyOne" );
-        nameLookup.property( 2, "propertyTwo" );
+        nameLookup.propertyKey( 1, "propertyOne" );
+        nameLookup.propertyKey( 2, "propertyTwo" );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100L, 32L, 32L ) );
 
         internalLogProvider.clear();
@@ -990,7 +988,7 @@ class IndexingServiceTest
 
         IOException exception = new IOException( "Expected failure" );
         nameLookup.label( labelId, "TheLabel" );
-        nameLookup.property( propertyKeyId, "propertyKey" );
+        nameLookup.propertyKey( propertyKeyId, "propertyKey" );
 
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenThrow( exception );
@@ -1024,7 +1022,7 @@ class IndexingServiceTest
 
         IOException exception = new IOException( "Expected failure" );
         nameLookup.label( labelId, "TheLabel" );
-        nameLookup.property( propertyKeyId, "propertyKey" );
+        nameLookup.propertyKey( propertyKeyId, "propertyKey" );
 
         when( indexProvider.getInitialState( index ) ).thenReturn( POPULATING );
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
@@ -1168,7 +1166,7 @@ class IndexingServiceTest
                 mock( IndexStoreView.class ), nameLookup, indexes, internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
                 schemaState, indexStatisticsStore, false ) );
 
-        nameLookup.property( 1, "prop" );
+        nameLookup.propertyKey( 1, "prop" );
 
         // when
         life.init();
@@ -1214,7 +1212,7 @@ class IndexingServiceTest
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup, indexes,
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, false );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100, 32, 32 ) );
-        nameLookup.property( 1, "prop" );
+        nameLookup.propertyKey( 1, "prop" );
 
         // when
         indexingService.init();
@@ -1363,8 +1361,7 @@ class IndexingServiceTest
         IndexingService.Monitor monitor = mock( IndexingService.Monitor.class );
         IndexingService indexingService =
                 new IndexingService( indexProxyCreator, indexProviderMap, indexMapReference, mock( IndexStoreView.class ), schemaRules, samplingController,
-                        idTokenNameLookup, scheduler, null, multiPopulatorFactory, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),
-                        false );
+                        nameLookup, scheduler, null, multiPopulatorFactory, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ), false );
         // and where index population starts
         indexingService.init();
 
@@ -1682,41 +1679,5 @@ class IndexingServiceTest
     {
         logProviderAction.accept( internalLogProvider );
         logProviderAction.accept( userLogProvider );
-    }
-
-    private static class InMemoryNameLookup implements TokenNameLookup
-    {
-        private static final String DEFAULT_LABEL = "label";
-        private static final String DEFAULT_PROPERTY = "property";
-        private final HashMap<Integer,String> labels = new HashMap<>();
-        private final HashMap<Integer,String> properties = new HashMap<>();
-
-        @Override
-        public String labelGetName( int labelId )
-        {
-            return labels.getOrDefault( labelId, DEFAULT_LABEL );
-        }
-
-        @Override
-        public String relationshipTypeGetName( int relationshipTypeId )
-        {
-            return null;
-        }
-
-        @Override
-        public String propertyKeyGetName( int propertyKeyId )
-        {
-            return properties.getOrDefault( propertyKeyId, DEFAULT_PROPERTY );
-        }
-
-        void label( int labelId, String label )
-        {
-            labels.put( labelId, label );
-        }
-
-        void property( int propertyId, String property )
-        {
-            properties.put( propertyId, property );
-        }
     }
 }

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.schema.SchemaState;
@@ -69,26 +70,29 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param type entity type to populate
      * @param schemaState the schema state
      * @param jobScheduler the job scheduler
+     * @param tokenNameLookup token lookup
      */
     BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
     {
-        super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler );
+        super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
     }
 
     /**
      * Creates a new multi-threaded populator with the specified thread pool.
      * <p>
      * <b>NOTE:</b> for testing only.
+     *
      * @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
      * @param schemaState the schema state
      * @param jobScheduler the job scheduler
+     * @param tokenNameLookup token lookup
      */
     BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
     {
-        super( storeView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler );
+        super( storeView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
     }
 
     @Override

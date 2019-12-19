@@ -28,7 +28,6 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 /**
  * Represent something gone wrong related to SchemaRules
@@ -39,13 +38,14 @@ public class SchemaRuleException extends SchemaKernelException
     private final String messageTemplate;
 
     /**
-     * @param messageTemplate Template for String.format. Must match two strings representing the schema kind and the
-     *                        descriptor
+     * @param messageTemplate Template for {@code String.format}. Must match two strings representing the schema kind and the descriptor.
+     * @param schemaThing schema element relevant to this exception.
+     * @param tokenNameLookup how to look up tokens for describing the given {@code schemaThing}.
      */
-    SchemaRuleException( Status status, String messageTemplate, SchemaDescriptorSupplier schemaThing )
+    SchemaRuleException( Status status, String messageTemplate, SchemaDescriptorSupplier schemaThing, TokenNameLookup tokenNameLookup )
     {
         super( status, format( messageTemplate, describe( schemaThing ),
-                schemaThing.schema().userDescription( idTokenNameLookup ) ) );
+                schemaThing.schema().userDescription( tokenNameLookup ) ) );
         this.schemaThing = schemaThing;
         this.messageTemplate = messageTemplate;
     }

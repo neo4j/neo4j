@@ -165,12 +165,6 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     }
 
     @Override
-    public String toString()
-    {
-        return userDescription( TokenNameLookup.idTokenNameLookup );
-    }
-
-    @Override
     public IndexType getIndexType()
     {
         return indexType;

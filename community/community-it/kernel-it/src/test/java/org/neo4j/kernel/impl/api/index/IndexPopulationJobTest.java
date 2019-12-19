@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -117,6 +118,7 @@ class IndexPopulationJobTest
     private static final RelationshipType knows = RelationshipType.withName( "knows" );
 
     private Kernel kernel;
+    private TokenNameLookup tokens;
     private IndexStoreView indexStoreView;
     private DatabaseSchemaState stateHolder;
     private int labelId;
@@ -130,6 +132,7 @@ class IndexPopulationJobTest
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        tokens = db.getDependencyResolver().resolveDependency( TokenNameLookup.class );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
         indexStatisticsStore = db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
@@ -524,7 +527,7 @@ class IndexPopulationJobTest
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
-                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler );
+                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
         IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
 
         // when
@@ -572,7 +575,7 @@ class IndexPopulationJobTest
             }
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
-                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler );
+                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
         IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
 
         // when
@@ -778,7 +781,8 @@ class IndexPopulationJobTest
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
-        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler );
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator(
+                storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         job.addPopulator( populator, descriptor, format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
@@ -850,9 +854,9 @@ class IndexPopulationJobTest
         private volatile boolean closed;
 
         TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
+                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokens )
         {
-            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler );
+            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens );
         }
 
         @Override

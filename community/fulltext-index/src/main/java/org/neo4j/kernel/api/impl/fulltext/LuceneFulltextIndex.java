@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -35,13 +34,9 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
-
 public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
 {
     private final Analyzer analyzer;
-    private final String identifier;
-    private final EntityType type;
     private final TokenHolder propertyKeyTokenHolder;
     private final String[] propertyNames;
     private final File transactionsFolder;
@@ -54,8 +49,6 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
         this.descriptor = descriptor;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
-        this.identifier = descriptor.getName();
-        this.type = descriptor.schema().entityType();
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         File indexFolder = storage.getIndexFolder();
         transactionsFolder = new File( indexFolder, indexFolder.getName() + ".tx" );
@@ -73,17 +66,6 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     {
         super.close();
         indexStorage.cleanupFolder( transactionsFolder );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "LuceneFulltextIndex{" +
-               "analyzer=" + analyzer.getClass().getSimpleName() +
-               ", identifier='" + identifier + '\'' +
-               ", type=" + type +
-               ", descriptor=" + descriptor.userDescription( idTokenNameLookup ) +
-               '}';
     }
 
     @Override

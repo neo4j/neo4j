@@ -263,7 +263,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                     committedValues.remove( update.getEntityId() );
                     break;
                 default:
-                    throw new IllegalArgumentException( "Unknown update mode of " + update );
+                    throw new IllegalArgumentException( "Unknown update mode " + update.updateMode() );
                 }
             }
         }

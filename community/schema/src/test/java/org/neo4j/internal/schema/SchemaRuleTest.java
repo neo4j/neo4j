@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.test.InMemoryTokens;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,29 +82,10 @@ class SchemaRuleTest
             existsRelTypeConstraint.withName( "existsRelTypeConstraintNamed" ).withId( 4 ).withOwnedIndexId( 4 );
     private ConstraintDescriptor uniqueLabelConstraint2Named =
             uniqueLabelConstraint2.withName( "uniqueLabelConstraint2Named" ).withId( 5 ).withOwnedIndexId( 5 );
-    private List<String> labels = List.of( "La:bel", "Label1", "Label2" );
-    private List<String> types = List.of( "Ty:pe", "Type1", "Type2" );
-    private List<String> properties = List.of( "prop:erty", "prop1", "prop2", "prop3" );
-    private TokenNameLookup lookup = new TokenNameLookup()
-    {
-        @Override
-        public String labelGetName( int labelId )
-        {
-            return labels.get( labelId );
-        }
-
-        @Override
-        public String relationshipTypeGetName( int relationshipTypeId )
-        {
-            return types.get( relationshipTypeId );
-        }
-
-        @Override
-        public String propertyKeyGetName( int propertyKeyId )
-        {
-            return properties.get( propertyKeyId );
-        }
-    };
+    private InMemoryTokens lookup = new InMemoryTokens()
+            .label( 0, "La:bel" ).label( 1, "Label1" ).label( 2, "Label2" )
+            .relationshipType( 0, "Ty:pe" ).relationshipType( 1, "Type1" ).relationshipType( 2, "Type2" )
+            .propertyKey( 0, "prop:erty" ).propertyKey( 1, "prop1" ).propertyKey( 2, "prop2" ).propertyKey( 3, "prop3" );
 
     /**
      * There are many tests throughout the code base that end up relying on indexes getting specific names.

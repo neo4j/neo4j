@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.test.InMemoryTokens;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
@@ -86,7 +87,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -387,7 +387,7 @@ public class ConsistencyReporterTest
             if ( type == IndexEntry.class )
             {
                 return new IndexEntry( IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) )
-                        .withName( "index" ).materialise( 1L ), idTokenNameLookup, 0 );
+                        .withName( "index" ).materialise( 1L ), new InMemoryTokens(), 0 );
             }
             if ( type == CountsEntry.class )
             {

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -44,6 +45,7 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -63,9 +65,10 @@ class IndexPopulationTest
         OnlineIndexProxy onlineProxy = onlineIndexProxy( indexStatisticsStore );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
+        InMemoryTokens tokens = new InMemoryTokens();
         MultipleIndexPopulator multipleIndexPopulator =
                 new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                        mock( JobScheduler.class ) );
+                        mock( JobScheduler.class ), tokens );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );

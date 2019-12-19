@@ -70,7 +70,7 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
                 writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
                 break;
             default:
-                throw new IllegalStateException( "Unknown update mode " + Arrays.toString( update.values() ) );
+                throw new IllegalStateException( "Unknown update mode " + update.updateMode() + " for values " + Arrays.toString( update.values() ) );
             }
         }
         catch ( IOException e )

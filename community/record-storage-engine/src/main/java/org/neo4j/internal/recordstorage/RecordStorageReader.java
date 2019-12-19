@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -340,6 +341,12 @@ public class RecordStorageReader implements StorageReader
     public StorageSchemaReader schemaSnapshot()
     {
         return new StorageSchemaReaderSnapshot( schemaCache.snapshot() );
+    }
+
+    @Override
+    public TokenNameLookup tokenNameLookup()
+    {
+        return tokenHolders;
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -34,14 +35,14 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 public interface ConstraintValidator
 {
-    void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
-            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
+    void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException;
 
-    void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
-            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
+    void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException;
 
-    void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
-            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )
+    void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup )
             throws CreateConstraintFailureException;
 
     TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory,

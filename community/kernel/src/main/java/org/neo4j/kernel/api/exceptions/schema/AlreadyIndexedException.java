@@ -24,8 +24,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
-
 public class AlreadyIndexedException extends SchemaKernelException
 {
     private static final String NO_CONTEXT_FORMAT = "Already indexed %s.";
@@ -37,9 +35,9 @@ public class AlreadyIndexedException extends SchemaKernelException
     private final SchemaDescriptor descriptor;
     private final OperationContext context;
 
-    public AlreadyIndexedException( SchemaDescriptor descriptor, OperationContext context )
+    public AlreadyIndexedException( SchemaDescriptor descriptor, OperationContext context, TokenNameLookup tokenNameLookup )
     {
-        super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, idTokenNameLookup, descriptor ) );
+        super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, tokenNameLookup, descriptor ) );
 
         this.descriptor = descriptor;
         this.context = context;

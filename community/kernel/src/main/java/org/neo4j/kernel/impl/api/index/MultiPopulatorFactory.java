@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.SchemaState;
@@ -40,7 +41,7 @@ public abstract class MultiPopulatorFactory
     }
 
     public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler );
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup );
 
     public static MultiPopulatorFactory forConfig( Config config )
     {
@@ -52,9 +53,9 @@ public abstract class MultiPopulatorFactory
     {
         @Override
         public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
+                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
         {
-            return new MultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler );
+            return new MultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
         }
     }
 
@@ -62,9 +63,9 @@ public abstract class MultiPopulatorFactory
     {
         @Override
         public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler )
+                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
         {
-            return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler );
+            return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
         }
     }
 }

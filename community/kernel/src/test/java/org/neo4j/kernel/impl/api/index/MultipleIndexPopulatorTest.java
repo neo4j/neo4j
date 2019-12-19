@@ -28,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -46,6 +47,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.test.InMemoryTokens;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,6 +75,7 @@ class MultipleIndexPopulatorTest
     private SchemaState schemaState;
     private MultipleIndexPopulator multipleIndexPopulator;
     private IndexStatisticsStore indexStatisticsStore;
+    private InMemoryTokens tokens;
 
     @BeforeEach
     void before()
@@ -83,8 +86,9 @@ class MultipleIndexPopulatorTest
         when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
-        multipleIndexPopulator =
-            new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler );
+        tokens = new InMemoryTokens();
+        multipleIndexPopulator = new MultipleIndexPopulator(
+                indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler, tokens );
     }
 
     @Test

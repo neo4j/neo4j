@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -26,8 +27,8 @@ public class DuplicateSchemaRuleException extends SchemaRuleException
 {
     private static final String MULTIPLE_FOUND_MESSAGE_TEMPLATE = "Multiple %ss found for %s.";
 
-    public DuplicateSchemaRuleException( SchemaDescriptorSupplier schemaThing )
+    public DuplicateSchemaRuleException( SchemaDescriptorSupplier schemaThing, TokenNameLookup tokenNameLookup )
     {
-        super( Status.Schema.SchemaRuleDuplicateFound, MULTIPLE_FOUND_MESSAGE_TEMPLATE, schemaThing );
+        super( Status.Schema.SchemaRuleDuplicateFound, MULTIPLE_FOUND_MESSAGE_TEMPLATE, schemaThing, tokenNameLookup );
     }
 }

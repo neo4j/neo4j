@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.InMemoryTokens;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
@@ -66,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
@@ -260,7 +260,7 @@ class IndexIT extends KernelIntegrationTest
         assertEquals(
                 "Unable to drop index: Index does not exist: Index( id=1, name='my index', type='GENERAL BTREE', schema=(:Label {prop}), " +
                         "indexProvider='native-btree-1.0' )",
-                e.getUserMessage( idTokenNameLookup ) );
+                e.getUserMessage( new InMemoryTokens() ) );
         commit();
     }
 

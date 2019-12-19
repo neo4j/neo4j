@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
@@ -66,8 +65,7 @@ public class ConstraintDescriptorFactory
         {
             return constraint.asRelationshipPropertyExistenceConstraint();
         }
-        throw new UnsupportedOperationException(
-                "Cannot create existence constraint for schema '" + schema.userDescription( TokenNameLookup.idTokenNameLookup ) + "'." );
+        throw new UnsupportedOperationException( "Cannot create existence constraint for the given schema." );
     }
 
     public static NodeExistenceConstraintDescriptor existsForSchema( LabelSchemaDescriptor schema )

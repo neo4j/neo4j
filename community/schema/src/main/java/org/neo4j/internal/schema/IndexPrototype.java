@@ -103,12 +103,6 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     }
 
     @Override
-    public String toString()
-    {
-        return userDescription( TokenNameLookup.idTokenNameLookup );
-    }
-
-    @Override
     public IndexType getIndexType()
     {
         return indexType;

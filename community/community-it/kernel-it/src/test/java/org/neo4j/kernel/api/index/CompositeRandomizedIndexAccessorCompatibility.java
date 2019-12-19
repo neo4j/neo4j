@@ -31,11 +31,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueTuple;
@@ -96,6 +98,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             updateAndCommit( updates );
 
             // when
+            TokenNameLookup tokens = new InMemoryTokens();
             for ( IndexEntryUpdate<?> update : updates )
             {
                 // then
@@ -104,7 +107,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                         exact( 101, update.values()[1] ),
                         exact( 102, update.values()[2] ),
                         exact( 103, update.values()[3] ) );
-                assertEquals( update + " " + hits.toString(), 1, hits.size() );
+                assertEquals( update.describe( tokens ) + " " + hits.toString(), 1, hits.size() );
                 assertThat( single( hits ), equalTo( update.getEntityId() ) );
             }
         }

@@ -34,16 +34,16 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
 {
     private final Set<IndexEntryConflictException> conflicts;
 
-    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
-            ConstraintValidationException.Phase phase, IndexEntryConflictException conflict )
+    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint, ConstraintValidationException.Phase phase,
+            IndexEntryConflictException conflict, TokenNameLookup tokenNameLookup )
     {
-        this( constraint, phase, Collections.singleton( conflict ) );
+        this( constraint, phase, Collections.singleton( conflict ), tokenNameLookup );
     }
 
-    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
-            ConstraintValidationException.Phase phase, Set<IndexEntryConflictException> conflicts )
+    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint, ConstraintValidationException.Phase phase,
+            Set<IndexEntryConflictException> conflicts, TokenNameLookup tokenNameLookup )
     {
-        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", buildCauseChain( conflicts ) );
+        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", buildCauseChain( conflicts ), tokenNameLookup );
         this.conflicts = conflicts;
     }
 
@@ -57,10 +57,10 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
         return chainedConflicts;
     }
 
-    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
-            ConstraintValidationException.Phase phase, Throwable cause )
+    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint, ConstraintValidationException.Phase phase, Throwable cause,
+            TokenNameLookup tokenNameLookup )
     {
-        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", cause );
+        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", cause, tokenNameLookup );
         this.conflicts = Collections.emptySet();
     }
 

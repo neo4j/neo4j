@@ -513,7 +513,7 @@ public class Operations implements Write, SchemaWrite
                 throw new UnableToValidateConstraintException( constraint, new AssertionError(
                         format( "Constraint indexes are not expected to be multi-token indexes, " +
                                         "but the constraint %s was referencing an index with the following schema: %s.",
-                                constraint.userDescription( token ), schema.userDescription( token ) ) ) );
+                                constraint.userDescription( token ), schema.userDescription( token ) ) ), token );
             }
 
             //Take a big fat lock, and check for existing node in index
@@ -527,12 +527,12 @@ public class Operations implements Write, SchemaWrite
             {
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,
                         new IndexEntryConflictException( valueCursor.nodeReference(), NO_SUCH_NODE,
-                                IndexQuery.asValueTuple( propertyValues ) ) );
+                                IndexQuery.asValueTuple( propertyValues ) ), token );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
         {
-            throw new UnableToValidateConstraintException( constraint, e );
+            throw new UnableToValidateConstraintException( constraint, e, token );
         }
     }
 
@@ -1049,7 +1049,7 @@ public class Operations implements Write, SchemaWrite
         // Already indexed
         if ( indexWithSameSchema != IndexDescriptor.NO_INDEX )
         {
-            throw new AlreadyIndexedException( prototype.schema(), INDEX_CREATION );
+            throw new AlreadyIndexedException( prototype.schema(), INDEX_CREATION, token );
         }
     }
 
@@ -1094,7 +1094,7 @@ public class Operations implements Write, SchemaWrite
             if ( existingIndexes.hasNext() )
             {
                 IndexDescriptor existingIndex = existingIndexes.next();
-                throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION );
+                throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION, token );
             }
         }
     }
@@ -1151,7 +1151,7 @@ public class Operations implements Write, SchemaWrite
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
             allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
-            constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor() );
+            constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
         }
 
         //create constraint
@@ -1168,7 +1168,7 @@ public class Operations implements Write, SchemaWrite
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
             allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
-            constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema );
+            constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema, token );
         }
 
         //create constraint
@@ -1183,7 +1183,7 @@ public class Operations implements Write, SchemaWrite
 
         //enforce constraints
         allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipCursor );
-        constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, schema );
+        constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, schema, token );
 
         //Create
         ktx.txState().constraintDoAdd( constraint );
@@ -1370,7 +1370,7 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private static void assertValidDescriptor( SchemaDescriptor descriptor, SchemaKernelException.OperationContext context )
+    private void assertValidDescriptor( SchemaDescriptor descriptor, SchemaKernelException.OperationContext context )
             throws RepeatedSchemaComponentException
     {
         long numUniqueProp = Arrays.stream( descriptor.getPropertyIds() ).distinct().count();
@@ -1378,17 +1378,17 @@ public class Operations implements Write, SchemaWrite
 
         if ( numUniqueProp != descriptor.getPropertyIds().length )
         {
-            throw new RepeatedPropertyInSchemaException( descriptor, context );
+            throw new RepeatedPropertyInSchemaException( descriptor, context, token );
         }
         if ( numUniqueEntityTokens != descriptor.getEntityTokenIds().length )
         {
             if ( descriptor.entityType() == NODE )
             {
-                throw new RepeatedLabelInSchemaException( descriptor, context );
+                throw new RepeatedLabelInSchemaException( descriptor, context, token );
             }
             else
             {
-                throw new RepeatedRelationshipTypeInSchemaException( descriptor, context );
+                throw new RepeatedRelationshipTypeInSchemaException( descriptor, context, token );
             }
         }
     }

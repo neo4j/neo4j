@@ -24,13 +24,14 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.test.InMemoryTokens;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 class IndexPopulationFailedKernelExceptionTest
 {
-    private static final TokenNameLookup TOKEN_NAME_LOOKUP = idTokenNameLookup;
+    private static final TokenNameLookup TOKEN_NAME_LOOKUP = new InMemoryTokens()
+            .label( 0, "label0" ).propertyKey( 42, "p42" ).propertyKey( 43, "p43" ).propertyKey( 44, "p44" );
 
     @Test
     void shouldHandleMultiplePropertiesInConstructor1()
@@ -43,7 +44,7 @@ class IndexPopulationFailedKernelExceptionTest
                 descriptor.userDescription( TOKEN_NAME_LOOKUP ), new RuntimeException() );
 
         // Then
-        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo( "Failed to populate index (:label[0] {property[42], property[43], property[44]})" );
+        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo( "Failed to populate index (:label0 {p42, p43, p44})" );
     }
 
     @Test
@@ -58,6 +59,6 @@ class IndexPopulationFailedKernelExceptionTest
 
         // Then
         assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo(
-                "Failed to populate index (:label[0] {property[42], property[43], property[44]}), due to an act of pure evil occurred" );
+                "Failed to populate index (:label0 {p42, p43, p44}), due to an act of pure evil occurred" );
     }
 }

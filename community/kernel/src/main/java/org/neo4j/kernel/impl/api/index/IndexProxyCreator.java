@@ -83,7 +83,7 @@ class IndexProxyCreator
             OnlineIndexProxy onlineProxy = new OnlineIndexProxy( index, accessor, indexStatisticsStore, true );
             if ( flipToTentative )
             {
-                return new TentativeConstraintIndexProxy( flipper, onlineProxy );
+                return new TentativeConstraintIndexProxy( flipper, onlineProxy, tokenNameLookup );
             }
             return onlineProxy;
         } );

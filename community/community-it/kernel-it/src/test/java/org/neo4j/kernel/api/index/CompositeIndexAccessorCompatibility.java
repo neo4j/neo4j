@@ -48,6 +48,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -662,11 +663,12 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         updateAndCommit( updates );
 
         // when
+        InMemoryTokens tokenNameLookup = new InMemoryTokens();
         for ( IndexEntryUpdate<?> update : updates )
         {
             // then
             List<Long> hits = query( exact( 0, update.values()[0] ), exact( 1, update.values()[1] ) );
-            assertEquals( update + " " + hits.toString(), 1, hits.size() );
+            assertEquals( update.describe( tokenNameLookup ) + " " + hits.toString(), 1, hits.size() );
             assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
         }
     }

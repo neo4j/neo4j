@@ -212,12 +212,6 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     }
 
     @Override
-    public String toString()
-    {
-        return "SchemaDescriptor[" + userDescription( TokenNameLookup.idTokenNameLookup ) + "]";
-    }
-
-    @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return SchemaUserDescription.forSchema( tokenNameLookup, entityType, entityTokens, propertyKeyIds );

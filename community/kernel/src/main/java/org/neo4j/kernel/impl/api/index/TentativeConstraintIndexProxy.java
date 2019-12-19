@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -64,11 +65,13 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     private final FlippableIndexProxy flipper;
     private final OnlineIndexProxy target;
     private final Collection<IndexEntryConflictException> failures = new CopyOnWriteArrayList<>();
+    private TokenNameLookup tokenNameLookup;
 
-    TentativeConstraintIndexProxy( FlippableIndexProxy flipper, OnlineIndexProxy target )
+    TentativeConstraintIndexProxy( FlippableIndexProxy flipper, OnlineIndexProxy target, TokenNameLookup tokenNameLookup )
     {
         this.flipper = flipper;
         this.target = target;
+        this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
@@ -165,8 +168,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
             throw new UniquePropertyValueValidationException(
                     ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
                     ConstraintValidationException.Phase.VERIFICATION,
-                    new HashSet<>( failures )
-                );
+                    new HashSet<>( failures ), tokenNameLookup );
         }
     }
 

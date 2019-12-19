@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -336,6 +337,12 @@ public class StubStorageCursors implements StorageReader
 
     @Override
     public StorageSchemaReader schemaSnapshot()
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
+    public TokenNameLookup tokenNameLookup()
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

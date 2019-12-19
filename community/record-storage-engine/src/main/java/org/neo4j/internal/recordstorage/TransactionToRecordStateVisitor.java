@@ -225,11 +225,11 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         {
             throw new IllegalStateException(
                     "Constraint to be removed should exist, since its existence should have been validated earlier " +
-                            "and the schema should have been locked." );
+                            "and the schema should have been locked.", e );
         }
         catch ( DuplicateSchemaRuleException e )
         {
-            throw new IllegalStateException( "Multiple constraints found for specified label and property." );
+            throw new IllegalStateException( "Multiple constraints found for specified label and property.", e );
         }
     }
 

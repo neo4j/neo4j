@@ -43,6 +43,7 @@ import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -695,9 +696,11 @@ public class DetectRandomSabotageIT
                             }
                         }
 
+                        TokenNameLookup tokenNameLookup = otherDependencies.resolveDependency( TokenNameLookup.class );
+                        String userDescription = indexProxy.getDescriptor().userDescription( tokenNameLookup );
                         return new Sabotage( String.format( "%s entityId:%d values:%s index:%s", add ? "Add" : "Remove", selectedEntityId,
-                                Arrays.toString( selectedValues ), indexProxy.getDescriptor().toString() ),
-                                indexProxy.getDescriptor().toString() ); // TODO more specific
+                                Arrays.toString( selectedValues ), userDescription ),
+                                userDescription ); // TODO more specific
                     }
                 },
         LABEL_INDEX_ENTRY
