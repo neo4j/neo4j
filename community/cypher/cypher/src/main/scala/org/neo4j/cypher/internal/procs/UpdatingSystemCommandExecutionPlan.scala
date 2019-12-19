@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, Profil
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.graphdb.TransientFailureException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -116,7 +117,10 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = parent.onNoResults()
 
   def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onError(t: Throwable): Throwable = f(t)
+    override def onError(t: Throwable): Throwable = t match {
+      case t: TransientFailureException => t
+      case _ => f(t)
+    }
   }
 
   def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
