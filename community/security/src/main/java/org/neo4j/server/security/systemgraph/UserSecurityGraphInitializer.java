@@ -44,6 +44,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
 public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 {
@@ -164,7 +165,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         {
             for ( User user : users.values() )
             {
-                addUser( tx, user.name(), user.credentials(), user.passwordChangeRequired(), user.hasFlag( BasicSystemGraphRealm.IS_SUSPENDED ) );
+                addUser( tx, user.name(), user.credentials(), user.passwordChangeRequired(), user.hasFlag( IS_SUSPENDED ) );
             }
 
             // Log what happened to the security log

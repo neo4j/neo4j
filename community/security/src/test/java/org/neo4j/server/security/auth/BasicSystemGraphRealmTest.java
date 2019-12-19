@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,13 +59,15 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 public class BasicSystemGraphRealmTest
 {
     private AuthenticationStrategy authStrategy;
+    private SystemGraphRealmHelper realmHelper;
     private BasicSystemGraphRealm realm;
 
     @BeforeEach
     void setUp()
     {
         authStrategy = mock( AuthenticationStrategy.class );
-        realm = spy( new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, null, new SecureHasher(), authStrategy, true ) );
+        realmHelper = spy( new SystemGraphRealmHelper( null, new SecureHasher() ) );
+        realm = new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, realmHelper, authStrategy );
     }
 
     @Test
@@ -72,7 +75,7 @@ public class BasicSystemGraphRealmTest
     {
         // Given
         User user = new User.Builder( "jake", credentialFor( "abc123" ) ).build();
-        doReturn( user ).when( realm ).getUser( "jake" );
+        doReturn( user ).when( realmHelper ).getUser( "jake" );
 
         // When
         setMockAuthenticationStrategyResult( user, "abc123", SUCCESS );
@@ -86,7 +89,7 @@ public class BasicSystemGraphRealmTest
     {
         // Given
         User user = new User.Builder( "jake", credentialFor( "abc123" ) ).build();
-        doReturn( user ).when( realm ).getUser( "jake" );
+        doReturn( user ).when( realmHelper ).getUser( "jake" );
 
         // When
         setMockAuthenticationStrategyResult( user, "abc123", TOO_MANY_ATTEMPTS );
@@ -100,7 +103,7 @@ public class BasicSystemGraphRealmTest
     {
         // Given
         User user = new User.Builder( "jake", credentialFor( "abc123" ) ).withRequiredPasswordChange( true ).build();
-        doReturn( user ).when( realm ).getUser( "jake" );
+        doReturn( user ).when( realmHelper ).getUser( "jake" );
 
         // When
         setMockAuthenticationStrategyResult( user, "abc123", SUCCESS );
@@ -113,7 +116,7 @@ public class BasicSystemGraphRealmTest
     void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
-        doThrow( new InvalidArgumentsException( "User 'unknown' does not exist." ) ).when( realm ).getUser( "unknown" );
+        doThrow( new InvalidArgumentsException( "User 'unknown' does not exist." ) ).when( realmHelper ).getUser( "unknown" );
 
         // Then
         assertLoginGivesResult( "unknown", "abc123", FAILURE );
@@ -126,7 +129,7 @@ public class BasicSystemGraphRealmTest
         when( authStrategy.authenticate( any(), any() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         User user = new User.Builder( "jake", credentialFor( "abc123" ) ).withRequiredPasswordChange( true ).build();
-        doReturn( user ).when( realm ).getUser( "jake" );
+        doReturn( user ).when( realmHelper ).getUser( "jake" );
 
         byte[] password = password( "abc123" );
         Map<String,Object> authToken = AuthToken.newBasicAuthToken( "jake", password );

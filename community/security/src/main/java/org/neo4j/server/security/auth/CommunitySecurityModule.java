@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.time.Clocks;
 
@@ -136,10 +137,8 @@ public class CommunitySecurityModule extends SecurityModule
 
         return new BasicSystemGraphRealm(
                 securityGraphInitializer, // always init on start in community
-                databaseManager,
-                secureHasher,
-                createAuthenticationStrategy( config ),
-                true // native authentication in always enabled in community
+                new SystemGraphRealmHelper( databaseManager, secureHasher ),
+                createAuthenticationStrategy( config )
         );
     }
 

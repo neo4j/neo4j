@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
@@ -134,22 +135,22 @@ public class BasicSystemGraphRealmTestHelper
         return authToken;
     }
 
-    public static void assertAuthenticationSucceeds( BasicSystemGraphRealm realm, String username, String password ) throws Exception
+    public static void assertAuthenticationSucceeds( SystemGraphRealmHelper realmHelper, String username, String password ) throws Exception
     {
-        assertAuthenticationSucceeds( realm, username, password, false );
+        assertAuthenticationSucceeds( realmHelper, username, password, false );
     }
 
-    public static void assertAuthenticationSucceeds( BasicSystemGraphRealm realm, String username, String password, boolean changeRequired )
+    public static void assertAuthenticationSucceeds( SystemGraphRealmHelper realmHelper, String username, String password, boolean changeRequired )
             throws Exception
     {
-        var user = realm.getUser( username );
+        var user = realmHelper.getUser( username );
         assertTrue( user.credentials().matchesPassword( password( password ) ) );
         assertEquals( changeRequired, user.passwordChangeRequired() );
     }
 
-    public static void assertAuthenticationFails( BasicSystemGraphRealm realm, String username, String password ) throws Exception
+    public static void assertAuthenticationFails( SystemGraphRealmHelper realmHelper, String username, String password ) throws Exception
     {
-        var user = realm.getUser( username );
+        var user = realmHelper.getUser( username );
         assertFalse( user.credentials().matchesPassword( password( password ) ) );
     }
 

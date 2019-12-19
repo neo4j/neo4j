@@ -39,6 +39,7 @@ import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -58,6 +59,8 @@ import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 class BasicSystemGraphRealmIT
 {
     private BasicSystemGraphRealmTestHelper.TestDatabaseManager dbManager;
+    private SystemGraphRealmHelper realmHelper;
+    private SecureHasher secureHasher;
     private Config defaultConfig;
 
     @Inject
@@ -70,6 +73,8 @@ class BasicSystemGraphRealmIT
     void setUp()
     {
         dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseManager( testDirectory );
+        secureHasher = new SecureHasher();
+        realmHelper = new SystemGraphRealmHelper( dbManager, secureHasher );
         defaultConfig = Config.defaults();
         oldUsers = new InMemoryUserRepository();
         initialPassword = new InMemoryUserRepository();
@@ -84,16 +89,16 @@ class BasicSystemGraphRealmIT
     @Test
     void shouldCreateDefaultUserIfNoneExist() throws Throwable
     {
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
-        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
+        startSystemGraphRealm();
+        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
     }
 
     @Test
     void shouldLoadInitialUserWithInitialPassword() throws Throwable
     {
         initialPassword.create( createUser( INITIAL_USER_NAME, "123", false ) );
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
-        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "123" );
+        startSystemGraphRealm();
+        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "123" );
     }
 
     @Test
@@ -102,7 +107,7 @@ class BasicSystemGraphRealmIT
         // Given
         BasicSystemGraphRealm realm = startSystemGraphRealm();
 
-        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
+        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
 
         realm.stop();
 
@@ -112,8 +117,8 @@ class BasicSystemGraphRealmIT
         realm.start();
 
         // Then
-        assertAuthenticationFails( realm, INITIAL_USER_NAME, INITIAL_PASSWORD );
-        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "abc" );
+        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD );
+        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "abc" );
     }
 
     @Test
@@ -132,9 +137,9 @@ class BasicSystemGraphRealmIT
         realm.start();
 
         // Then
-        assertAuthenticationFails( realm, INITIAL_USER_NAME, INITIAL_PASSWORD );
-        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "neo4j2" );
-        assertAuthenticationFails( realm, INITIAL_USER_NAME, "abc" );
+        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD );
+        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "neo4j2" );
+        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, "abc" );
     }
 
     @Test
@@ -142,12 +147,12 @@ class BasicSystemGraphRealmIT
     {
         initialPassword.create( createUser( INITIAL_USER_NAME, "123", false ) );
         oldUsers.create( createUser( "oldUser", "321", false ) );
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
+        startSystemGraphRealm();
 
         User initUser;
         try
         {
-            initUser = realm.getUser( INITIAL_USER_NAME );
+            initUser = realmHelper.getUser( INITIAL_USER_NAME );
         }
         catch ( InvalidArgumentsException | FormatException e )
         {
@@ -155,7 +160,7 @@ class BasicSystemGraphRealmIT
         }
 
         assertNull( initUser );
-        assertAuthenticationSucceeds( realm, "oldUser", "321" );
+        assertAuthenticationSucceeds( realmHelper, "oldUser", "321" );
     }
 
     @Test
@@ -164,9 +169,8 @@ class BasicSystemGraphRealmIT
         oldUsers.create( createUser( INITIAL_USER_NAME, "oldPassword", true ) );
         initialPassword.create( createUser( INITIAL_USER_NAME, "newPassword", false ) );
 
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
-
-        assertAuthenticationSucceeds( realm, INITIAL_USER_NAME, "oldPassword", true );
+        startSystemGraphRealm();
+        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "oldPassword", true );
     }
 
     @Test
@@ -178,7 +182,7 @@ class BasicSystemGraphRealmIT
         BasicSystemGraphRealm realm = startSystemGraphRealm();
 
         // First make sure one of the users will have a cached successful authentication result for variation
-        assertAuthenticationSucceeds( realm, "alice", "correct" );
+        assertAuthenticationSucceeds( realmHelper, "alice", "correct" );
 
         assertAuthenticationFailsWithTooManyAttempts( realm, "alice", "bad", maxFailedAttempts + 1 );
         assertAuthenticationFailsWithTooManyAttempts( realm, "bob", "worse", maxFailedAttempts + 1 );
@@ -190,8 +194,8 @@ class BasicSystemGraphRealmIT
         defaultConfig.set( default_database, "foo" );
         oldUsers.create( createUser( "alice", "foo", false ) );
 
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
-        assertAuthenticationSucceeds( realm, "alice", "foo" );
+        startSystemGraphRealm();
+        assertAuthenticationSucceeds( realmHelper, "alice", "foo" );
     }
 
     @Test
@@ -200,7 +204,7 @@ class BasicSystemGraphRealmIT
         oldUsers.create( createUser( "alice", "bar", false ) );
         BasicSystemGraphRealm realm = startSystemGraphRealm();
 
-        assertAuthenticationSucceeds( realm, "alice", "bar" );
+        assertAuthenticationSucceeds( realmHelper, "alice", "bar" );
 
         realm.stop();
 
@@ -210,7 +214,7 @@ class BasicSystemGraphRealmIT
         realm.start();
 
         // Alice should still be able to authenticate
-        assertAuthenticationSucceeds( realm, "alice", "bar" );
+        assertAuthenticationSucceeds( realmHelper, "alice", "bar" );
 
         realm.stop();
 
@@ -220,20 +224,19 @@ class BasicSystemGraphRealmIT
         realm.start();
 
         // Alice should still be able to authenticate
-        assertAuthenticationSucceeds( realm, "alice", "bar" );
+        assertAuthenticationSucceeds( realmHelper, "alice", "bar" );
     }
 
     private BasicSystemGraphRealm startSystemGraphRealm() throws Exception
     {
         Config config = Config.defaults( DatabaseManagementSystemSettings.auth_store_directory, testDirectory.directory( "data/dbms" ).toPath() );
-        SecureHasher secureHasher = new SecureHasher();
         DefaultSystemGraphInitializer systemGraphInitializer = new DefaultSystemGraphInitializer( dbManager, config );
 
         UserSecurityGraphInitializer securityGraphInitializer =
                 new UserSecurityGraphInitializer( dbManager, systemGraphInitializer, Mockito.mock( Log.class ), oldUsers, initialPassword, secureHasher );
 
         RateLimitedAuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( Clock.systemUTC(), config );
-        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( securityGraphInitializer, dbManager, secureHasher, authStrategy, true );
+        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( securityGraphInitializer, realmHelper, authStrategy );
         realm.start();
         return realm;
     }

@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,10 +50,11 @@ class SecurityContextDescriptionTest
     @BeforeEach
     void setup() throws Throwable
     {
-        BasicSystemGraphRealm realm = spy( new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, null, new SecureHasher(),
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), Config.defaults() ), true ) );
+        SystemGraphRealmHelper realmHelper = spy( new SystemGraphRealmHelper( null, new SecureHasher() ) );
+        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, realmHelper,
+                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), Config.defaults() ) );
         User user =  new User.Builder( "johan", credentialFor( "bar" ) ).build();
-        doReturn( user ).when( realm ).getUser( "johan" );
+        doReturn( user ).when( realmHelper ).getUser( "johan" );
         context = realm.login( authToken( "johan", "bar" ) ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
@@ -100,5 +102,4 @@ class SecurityContextDescriptionTest
                 disabled.withMode( new RestrictedAccessMode( disabled.mode(), AccessMode.Static.READ ) );
         assertThat( restricted.description(), equalTo( "AUTH_DISABLED with FULL restricted to READ" ) );
     }
-
 }
