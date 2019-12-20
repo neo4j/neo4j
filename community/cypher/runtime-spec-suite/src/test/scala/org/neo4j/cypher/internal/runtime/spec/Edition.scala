@@ -63,7 +63,7 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
 
   private def runtimeConfig(): CypherRuntimeConfiguration = {
-    cypherConfig.toCypherRuntimeConfiguration
+    cypherConfig().toCypherRuntimeConfiguration
   }
 
   def cypherConfig(): CypherConfiguration = {

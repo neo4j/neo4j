@@ -14,13 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.v4_0.ast.generator
+package org.neo4j.cypher.internal.ast.generator
 
-import org.neo4j.cypher.internal.v4_0.ast.generator.AstGenerator.boolean
-import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, Namespace}
-import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Max, Min, PercentileCont, PercentileDisc, StdDev, StdDevP, Sum}
+import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
+import org.neo4j.cypher.internal.expressions.functions.Avg
+import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.expressions.functions.Max
+import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.PercentileCont
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
+import org.neo4j.cypher.internal.expressions.functions.StdDev
+import org.neo4j.cypher.internal.expressions.functions.StdDevP
+import org.neo4j.cypher.internal.expressions.functions.Sum
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.scalacheck.Gen
-import org.scalacheck.Gen.{listOfN, oneOf}
+import org.scalacheck.Gen.listOfN
+import org.scalacheck.Gen.oneOf
 
 /**
  * Prototype of a generator that generates semantically valid expressions/ASTs.
