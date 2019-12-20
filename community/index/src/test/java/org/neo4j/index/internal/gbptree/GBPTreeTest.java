@@ -1592,8 +1592,11 @@ class GBPTreeTest
     {
         DefaultPageCacheTracer defaultPageCacheTracer = DefaultPageCacheTracer.TRACER;
         PageCacheConfig config = config().withTracer( defaultPageCacheTracer );
+        long initialPins = defaultPageCacheTracer.pins();
         try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config );
-              GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
+              GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() )
+                      .with( defaultPageCacheTracer )
+                      .build() )
         {
             List<PagedFile> pagedFiles = pageCache.listExistingMappings();
             assertThat( pagedFiles ).hasSize( 1 );
@@ -1605,6 +1608,9 @@ class GBPTreeTest
             tree.close();
 
             assertEquals( flushesBefore, defaultPageCacheTracer.flushes() );
+            assertEquals( defaultPageCacheTracer.pins(), defaultPageCacheTracer.unpins() );
+            assertThat( defaultPageCacheTracer.pins() ).isGreaterThan( initialPins );
+            assertThat( defaultPageCacheTracer.pins() ).isGreaterThan( 1 );
         }
     }
 

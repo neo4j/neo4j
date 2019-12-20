@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
@@ -94,7 +95,7 @@ class NativeLabelScanReader implements LabelScanReader
     private long highestNodeIdForLabel( int labelId ) throws IOException
     {
         try ( Seeker<LabelScanKey,LabelScanValue> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
-                new LabelScanKey( labelId, Long.MIN_VALUE ), NULL ) )
+                new LabelScanKey( labelId, Long.MIN_VALUE ), TRACER_SUPPLIER.get() ) )
         {
             return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
         }

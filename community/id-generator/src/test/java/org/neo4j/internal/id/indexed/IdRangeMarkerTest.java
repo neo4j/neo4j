@@ -54,7 +54,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
@@ -178,7 +177,7 @@ class IdRangeMarkerTest
                     exists.set( true );
                 }
             }
-        }, TRACER_SUPPLIER.get() );
+        }, NULL );
 
         // when
         try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), IdRangeMerger.DEFAULT ) )
@@ -197,7 +196,7 @@ class IdRangeMarkerTest
             {
                 assertFalse( isLeaf, "Should not have any key still in the tree, but got: " + key );
             }
-        }, TRACER_SUPPLIER.get() );
+        }, NULL );
     }
 
     @Test
@@ -275,7 +274,7 @@ class IdRangeMarkerTest
                     }
                 }
             }
-        }, TRACER_SUPPLIER.get() );
+        }, NULL );
         assertEquals( expectedIds, deletedIdsInTree );
     }
 

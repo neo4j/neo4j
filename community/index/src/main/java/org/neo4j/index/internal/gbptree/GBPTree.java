@@ -459,7 +459,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     private final boolean readOnly;
 
+    /**
+     * Underlying page cache tracer. Should be used to create page cursors tracers
+     * only for cases where work is performed by tree itself: construction or shutdown, otherwise tracers caller
+     * should provide correct context related tracer that should be used
+     */
     private final PageCacheTracer pageCacheTracer;
+
     /**
      * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(File, int, OpenOption...)}
      * at open/create. When initially creating the file an array consisting of {@link StandardOpenOption#CREATE}

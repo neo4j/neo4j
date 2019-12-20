@@ -50,7 +50,6 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.flipRandom;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.getLabels;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.nodesWithLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
@@ -196,7 +195,7 @@ class NativeLabelScanWriterTest
                     assertTrue( expected.remove( labelScanKey.idRange ) );
                 }
             }
-        }, TRACER_SUPPLIER.get() );
+        }, NULL );
         assertTrue( expected.isEmpty() );
     }
 

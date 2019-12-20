@@ -32,6 +32,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -62,7 +63,7 @@ class NativeLabelScanReaderTest
                 value( 0b0000_0010__0000_1000L ),
                 value( 0b0010_0000__1010_0001L ),
                 null );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) )
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) )
                 .thenReturn( cursor );
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
@@ -90,7 +91,7 @@ class NativeLabelScanReaderTest
         when( cursor1.next() ).thenReturn( false );
         Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) ).thenReturn( cursor1, cursor2 );
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
@@ -126,7 +127,7 @@ class NativeLabelScanReaderTest
         when( cursor1.next() ).thenReturn( false );
         Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) ).thenReturn( cursor1, cursor2 );
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
@@ -161,7 +162,7 @@ class NativeLabelScanReaderTest
                 //                     ^--fromId, i.e. ids after this id should be visible
                 value( 0b0010_0000__1010_0001L ),
                 null );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), NULL ) )
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) )
                 .thenReturn( cursor );
 
         // when

@@ -66,6 +66,7 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -88,7 +89,6 @@ import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCor
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
@@ -157,7 +157,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyFlags flags = new ConsistencyFlags( true, false, false, true, true );
@@ -174,7 +174,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyFlags flags = new ConsistencyFlags( true, false, true, true, true );
@@ -191,7 +191,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
-            tree.unsafe( GBPTreeCorruption.addFreelistEntry( 5 ), TRACER_SUPPLIER.get() );
+            tree.unsafe( GBPTreeCorruption.addFreelistEntry( 5 ), PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyFlags flags = new ConsistencyFlags( true, true, false, true, true );
@@ -219,7 +219,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -236,7 +236,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.unknownTreeNodeType() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -253,7 +253,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getLeafNodes().get( 0 ) );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.rightSiblingPointToNonExisting() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -269,7 +269,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             final long root = inspection.getRootNode();
             tree.unsafe( pageSpecificCorruption( root, GBPTreeCorruption.setPointer( GBPTreePointerType.rightSibling(), 10 ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -287,7 +287,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe(
                     pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setPointer( GBPTreePointerType.successor(), 6 ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -307,7 +307,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             targetNode.setValue( leafNodes.get( 0 ) );
             rightSibling.setValue( leafNodes.get( 1 ) );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -327,7 +327,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             targetNode.setValue( inspection.getLeafNodes().get( 0 ) );
             int keyCount = inspection.getKeyCounts().get( targetNode.getValue() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.swapKeyOrderLeaf( 0, 1, keyCount ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -344,7 +344,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             final long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 0 );
             int keyCount = inspection.getKeyCounts().get( internalNode );
             tree.unsafe( pageSpecificCorruption( internalNode, GBPTreeCorruption.swapChildOrder( 0, 1, keyCount ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -361,7 +361,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             final long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 0 );
             int keyCount = inspection.getKeyCounts().get( internalNode );
             tree.unsafe( pageSpecificCorruption( internalNode,GBPTreeCorruption.setKeyCount( keyCount - 1 ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -375,7 +375,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> tree.unsafe( GBPTreeCorruption.decrementFreelistWritePos(),
-                TRACER_SUPPLIER.get() ), indexFiles );
+                PageCursorTracer.NULL ), indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
@@ -389,7 +389,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             tree.unsafe( pageSpecificCorruption( inspection.getRootNode(), GBPTreeCorruption.decrementAllocOffsetInDynamicNode() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -405,7 +405,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
-            tree.unsafe( GBPTreeCorruption.addFreelistEntry( targetNode.getValue() ), TRACER_SUPPLIER.get() );
+            tree.unsafe( GBPTreeCorruption.addFreelistEntry( targetNode.getValue() ), PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -424,7 +424,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( false, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.crashed( GBPTreePointerType.rightSibling() ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -441,7 +441,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -458,7 +458,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setKeyCount( Integer.MAX_VALUE ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -474,7 +474,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
             tree.unsafe( pageSpecificCorruption( rootNode, GBPTreeCorruption.setChild( 0, rootNode ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -490,7 +490,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
             tree.unsafe( pageSpecificCorruption( rootNode, GBPTreeCorruption.setHighestReasonableKeyCount() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -506,7 +506,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
-            tree.unsafe( GBPTreeCorruption.makeDirty(), TRACER_SUPPLIER.get() );
+            tree.unsafe( GBPTreeCorruption.makeDirty(), PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -527,7 +527,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         List<File> corruptedFiles = corruptIndexes( true, ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
             tree.unsafe( pageSpecificCorruption( rootNode, GBPTreeCorruption.notATreeNode() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -546,11 +546,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             internalNode.setValue( inspection.getNodesPerLevel().get( 1 ).get( 0 ) );
             final Integer internalNodeKeyCount = inspection.getKeyCounts().get( internalNode.getValue() );
             tree.unsafe( pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
             tree.unsafe( pageSpecificCorruption( internalNode.getValue(), GBPTreeCorruption.swapChildOrder( 0, 1, internalNodeKeyCount ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
             tree.unsafe( pageSpecificCorruption( internalNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -570,7 +570,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             rootNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, labelScanStoreFile );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -587,7 +587,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> {
             rootNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, indexStatisticsStoreFile );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -605,7 +605,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( fs, true, ( tree, inspection ) -> {
             rootNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, countsLayoutBootstrapper, countsStoreFile );
 
         ConsistencyFlags flags = new ConsistencyFlags( false, false, true, false, false );
@@ -624,7 +624,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( fs, true, ( tree, inspection ) -> {
             rootNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
-                    TRACER_SUPPLIER.get() );
+                    PageCursorTracer.NULL );
         }, idStoreFiles );
 
         ConsistencyFlags flags = new ConsistencyFlags( false, false, true, false, false );
@@ -660,9 +660,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                 long leafNode = inspection.getLeafNodes().get( 1 );
                 long internalNode = inspection.getInternalNodes().get( 0 );
                 tree.unsafe( pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ),
-                        TRACER_SUPPLIER.get() );
+                        PageCursorTracer.NULL );
                 tree.unsafe( pageSpecificCorruption( internalNode, GBPTreeCorruption.setChild( 0, internalNode ) ),
-                        TRACER_SUPPLIER.get() );
+                        PageCursorTracer.NULL );
             }, indexFiles );
 
             assertTrue( files.size() > 0, "Expected number of corrupted files to be more than one." );
@@ -824,7 +824,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     treeFiles.add( file );
                     try ( GBPTree<?,?> gbpTree = bootstrap.getTree() )
                     {
-                        InspectingVisitor<?,?> visitor = gbpTree.visit( new InspectingVisitor<>(), TRACER_SUPPLIER.get() );
+                        InspectingVisitor<?,?> visitor = gbpTree.visit( new InspectingVisitor<>(), PageCursorTracer.NULL );
                         corruptionInject.corrupt( gbpTree, visitor.get() );
                     }
                 }
