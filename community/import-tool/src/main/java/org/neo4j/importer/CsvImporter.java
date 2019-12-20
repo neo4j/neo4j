@@ -134,8 +134,8 @@ class CsvImporter implements Importer
     @Override
     public void doImport() throws IOException
     {
-        OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( reportFile, false ) );
-        try ( Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
+        try ( OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( reportFile, false ) );
+                Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
         {
             // Extract the default time zone from the database configuration
             ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
