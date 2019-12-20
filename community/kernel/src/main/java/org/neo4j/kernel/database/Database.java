@@ -127,7 +127,6 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
@@ -135,7 +134,6 @@ import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.RecoveryStartupChecker;
@@ -202,8 +200,7 @@ public class Database extends LifecycleAdapter
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
-    private final DatabaseTracer databaseTracer;
-    private final Tracers globalTracers;
+    private final DatabaseTracers tracers;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final LeaseService leaseService;
 
@@ -283,8 +280,7 @@ public class Database extends LifecycleAdapter
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
         this.databaseFacade = new GraphDatabaseFacade( this, databaseConfig, databaseInfo, databaseAvailabilityGuard );
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory( databaseConfig, databaseFacade );
-        this.globalTracers = context.getTracers();
-        this.databaseTracer = globalTracers.getDatabaseTracer();
+        this.tracers = new DatabaseTracers( context.getTracers() );
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
@@ -331,12 +327,12 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( idController );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
-            databaseDependencies.satisfyDependency( databaseTracer );
+            databaseDependencies.satisfyDependency( tracers.getDatabaseTracer() );
 
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
-            life.add( new PageCacheStopMetricsReporter( globalTracers.getPageCursorTracerSupplier() ) );
+            life.add( new PageCacheStopMetricsReporter( tracers.getPageCursorTracerSupplier() ) );
             life.add( new PageCacheLifecycle( databasePageCache ) );
             life.add( initializeExtensions( databaseDependencies ) );
 
@@ -354,7 +350,7 @@ public class Database extends LifecycleAdapter
                     .withConfig( databaseConfig )
                     .withDependencies( databaseDependencies )
                     .withLogProvider( internalLogProvider )
-                    .withDatabaseTracer( databaseTracer )
+                    .withDatabaseTracer( tracers.getDatabaseTracer() )
                     .build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
@@ -449,7 +445,7 @@ public class Database extends LifecycleAdapter
             life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
-            life.add( new PageCacheStartMetricsReporter( globalTracers.getPageCursorTracerSupplier() ) );
+            life.add( new PageCacheStartMetricsReporter( tracers.getPageCursorTracerSupplier() ) );
             life.setLast( checkpointerLifecycle );
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
@@ -598,8 +594,8 @@ public class Database extends LifecycleAdapter
         CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
         final CheckPointerImpl checkPointer =
-                new CheckPointerImpl( transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider, databaseTracer,
-                        ioLimiter, storeCopyCheckPointMutex );
+                new CheckPointerImpl( transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider,
+                        tracers.getDatabaseTracer(), ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
@@ -640,7 +636,7 @@ public class Database extends LifecycleAdapter
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
-                        databaseDependencies, globalTracers, leaseService ) );
+                        databaseDependencies, tracers, leaseService ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

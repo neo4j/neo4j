@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -146,7 +146,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
             SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
-            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, Tracers tracers, LeaseService leaseService )
+            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -372,9 +372,9 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private class KernelTransactionImplementationFactory implements Factory<KernelTransactionImplementation>
     {
         private final Set<KernelTransactionImplementation> transactions;
-        private final Tracers tracers;
+        private final DatabaseTracers tracers;
 
-        KernelTransactionImplementationFactory( Set<KernelTransactionImplementation> transactions, Tracers tracers )
+        KernelTransactionImplementationFactory( Set<KernelTransactionImplementation> transactions, DatabaseTracers tracers )
         {
             this.transactions = transactions;
             this.tracers = tracers;

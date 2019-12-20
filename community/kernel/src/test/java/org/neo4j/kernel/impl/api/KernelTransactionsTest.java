@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -662,19 +663,19 @@ class KernelTransactionsTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
 
-        Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ),
-                clock );
+        Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ), clock );
+        final DatabaseTracers databaseTracers = new DatabaseTracers( tracers );
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
         KernelTransactions transactions;
         if ( testKernelTransactions )
         {
-            transactions = createTestTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
+            transactions = createTestTransactions( storageEngine, commitProcess, transactionIdStore, databaseTracers,
                     statementLocksFactory, clock, databaseAvailabilityGuard );
         }
         else
         {
-            transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
+            transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, databaseTracers,
                     statementLocksFactory, clock, databaseAvailabilityGuard, config );
         }
         transactions.start();
@@ -682,7 +683,7 @@ class KernelTransactionsTest
     }
 
     private static KernelTransactions createTransactions( StorageEngine storageEngine, TransactionCommitProcess commitProcess,
-            TransactionIdStore transactionIdStore, Tracers tracers, StatementLocksFactory statementLocksFactory,
+            TransactionIdStore transactionIdStore, DatabaseTracers tracers, StatementLocksFactory statementLocksFactory,
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config )
     {
         return new KernelTransactions( config, statementLocksFactory, null,
@@ -696,7 +697,7 @@ class KernelTransactionsTest
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
-            TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
+            TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, DatabaseTracers tracers,
             StatementLocksFactory statementLocksFactory,
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
@@ -740,8 +741,8 @@ class KernelTransactionsTest
                 ConstraintIndexCreator constraintIndexCreator,
                 TransactionCommitProcess transactionCommitProcess,
                 DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
-                Tracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-                AccessCapability accessCapability,
+                DatabaseTracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore,
+                SystemNanoClock clock, AccessCapability accessCapability,
                 VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies databaseDependencies )
         {
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator,
