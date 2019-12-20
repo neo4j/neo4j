@@ -150,9 +150,9 @@ public class GlobalModule
         globalMonitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
         globalDependencies.satisfyDependency( globalMonitors );
 
-        JobScheduler jobScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
-        this.jobScheduler = globalLife.add( globalDependencies.satisfyDependency( jobScheduler ) );
-        startDeferredExecutors( this.jobScheduler, externalDependencies.deferredExecutors() );
+        JobScheduler createdOrResolvedScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
+        jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createdOrResolvedScheduler ) );
+        startDeferredExecutors( jobScheduler, externalDependencies.deferredExecutors() );
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
@@ -167,7 +167,7 @@ public class GlobalModule
         new JvmChecker( logService.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), this.jobScheduler ) );
+        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler ) );
 
         globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock );
         globalDependencies.satisfyDependency( globalAvailabilityGuard );
@@ -178,13 +178,13 @@ public class GlobalModule
 
         String desiredImplementationName = globalConfig.get( GraphDatabaseSettings.tracer );
         tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
-                logService.getInternalLog( Tracers.class ), globalMonitors, this.jobScheduler, globalClock ) );
+                logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
         pageCache = tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, this.jobScheduler ) );
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
@@ -193,7 +193,7 @@ public class GlobalModule
 
         dbmsDiagnosticsManager.dumpSystemDiagnostics();
 
-        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, this.jobScheduler, globalConfig );
+        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, globalConfig );
         globalLife.add( fileSystemWatcher );
         globalDependencies.satisfyDependency( fileSystemWatcher );
 
@@ -368,12 +368,12 @@ public class GlobalModule
         return jobScheduler;
     }
 
-    protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,
-            Tracers tracers, JobScheduler jobScheduler )
+    protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers, JobScheduler jobScheduler,
+            SystemNanoClock clock )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
-                GuardVersionContextSupplier.INSTANCE, jobScheduler );
+                GuardVersionContextSupplier.INSTANCE, jobScheduler, clock );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )

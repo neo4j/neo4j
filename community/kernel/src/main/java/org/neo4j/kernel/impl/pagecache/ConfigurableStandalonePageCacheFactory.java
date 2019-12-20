@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -71,7 +72,7 @@ public final class ConfigurableStandalonePageCacheFactory
         ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler );
+                fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler, Clocks.nanoClock() );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

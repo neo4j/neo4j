@@ -80,6 +80,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
@@ -291,9 +292,9 @@ class BatchingNeoStoresTest
     {
         NullLog nullLog = NullLog.getInstance();
         try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
-                PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, nullLog,
-                        EmptyVersionContextSupplier.EMPTY, scheduler ).getOrCreatePageCache();
-                Lifespan life = new Lifespan() )
+              PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, nullLog,
+                        EmptyVersionContextSupplier.EMPTY, scheduler, Clocks.nanoClock() ).getOrCreatePageCache();
+              Lifespan life = new Lifespan() )
         {
             // TODO this little dance with TokenHolders is really annoying and must be solved with a better abstraction
             DeferredInitializedTokenCreator propertyKeyTokenCreator = new DeferredInitializedTokenCreator()

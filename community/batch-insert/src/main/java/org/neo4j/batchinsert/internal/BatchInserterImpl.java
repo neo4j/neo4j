@@ -21,7 +21,6 @@ package org.neo4j.batchinsert.internal;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -161,6 +160,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
@@ -259,7 +259,7 @@ public class BatchInserterImpl implements BatchInserter
             locker = tryLockStore( fileSystem, databaseLayout );
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, NullLog.getInstance(),
-                EmptyVersionContextSupplier.EMPTY, jobScheduler );
+                EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 
@@ -281,7 +281,7 @@ public class BatchInserterImpl implements BatchInserter
 
             if ( dump )
             {
-                dumpConfiguration( config, System.out );
+                dumpConfiguration( config );
             }
             msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
             life.start();
@@ -696,7 +696,6 @@ public class BatchInserterImpl implements BatchInserter
                 }
                 else
                 {
-                    assert schemaish instanceof SchemaRule;
                     schemaish = (T) ((SchemaRule) schemaish).withName( name );
                 }
             }
@@ -1178,9 +1177,9 @@ public class BatchInserterImpl implements BatchInserter
         return databaseLayout.databaseDirectory().getPath();
     }
 
-    private static void dumpConfiguration( Config config, PrintStream out )
+    private static void dumpConfiguration( Config config )
     {
-        out.print( config.toString() );
+        System.out.print( config.toString() );
     }
 
     @VisibleForTesting
@@ -1258,17 +1257,7 @@ public class BatchInserterImpl implements BatchInserter
         public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType,
                 IndexConfig indexConfig )
         {
-            if ( indexType != null )
-            {
-                throw unsupportedException();
-            }
-            if ( indexConfig != null )
-            {
-                throw unsupportedException();
-            }
-            int labelId = getOrCreateLabelId( single( indexDefinition.getLabels() ).name() );
-            int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
-            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
+            LabelSchemaDescriptor descriptor = indexDefinitionToLabelSchemaDescriptor( indexDefinition, indexType, indexConfig );
 
             validateUniquenessConstraintCanBeCreated( descriptor );
             IndexBackedConstraintDescriptor constraint = createUniquenessConstraintRule( descriptor, name );
@@ -1277,6 +1266,15 @@ public class BatchInserterImpl implements BatchInserter
 
         @Override
         public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig )
+        {
+            LabelSchemaDescriptor descriptor = indexDefinitionToLabelSchemaDescriptor( indexDefinition, indexType, indexConfig );
+
+            validateNodeKeyConstraintCanBeCreated( descriptor );
+            IndexBackedConstraintDescriptor constraint = createNodeKeyConstraintRule( descriptor, name );
+            return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
+        }
+
+        private LabelSchemaDescriptor indexDefinitionToLabelSchemaDescriptor( IndexDefinition indexDefinition, IndexType indexType, IndexConfig indexConfig )
         {
             if ( indexType != null )
             {
@@ -1288,11 +1286,7 @@ public class BatchInserterImpl implements BatchInserter
             }
             int labelId = getOrCreateLabelId( single( indexDefinition.getLabels() ).name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
-            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
-
-            validateNodeKeyConstraintCanBeCreated( descriptor );
-            IndexBackedConstraintDescriptor constraint = createNodeKeyConstraintRule( descriptor, name );
-            return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
+            return SchemaDescriptor.forLabel( labelId, propertyKeyIds );
         }
 
         @Override

@@ -95,6 +95,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.ReadOnlyTokenCreator;
@@ -455,7 +456,7 @@ public final class Recovery
     {
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(),
-                        EmptyVersionContextSupplier.EMPTY, jobScheduler );
+                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
         return pageCacheFactory.getOrCreatePageCache();
     }
 

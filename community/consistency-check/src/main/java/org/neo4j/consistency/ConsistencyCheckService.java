@@ -73,6 +73,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
@@ -150,7 +151,7 @@ public class ConsistencyCheckService
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fileSystem, config, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ),
-                        EmptyVersionContextSupplier.EMPTY, jobScheduler );
+                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try

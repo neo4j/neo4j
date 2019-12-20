@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -47,6 +48,7 @@ public class ConfiguringPageCacheFactory
     private final VersionContextSupplier versionContextSupplier;
     private PageCache pageCache;
     private final JobScheduler scheduler;
+    private final SystemNanoClock clock;
 
     /**
      * Construct configuring page cache factory
@@ -56,9 +58,10 @@ public class ConfiguringPageCacheFactory
      * @param log page cache factory log
      * @param versionContextSupplier cursor context factory
      * @param scheduler job scheduler to execute page cache jobs
+     * @param clock the clock source used by the page cache.
      */
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log,
-            VersionContextSupplier versionContextSupplier, JobScheduler scheduler )
+            VersionContextSupplier versionContextSupplier, JobScheduler scheduler, SystemNanoClock clock )
     {
         this.fs = fs;
         this.versionContextSupplier = versionContextSupplier;
@@ -66,6 +69,7 @@ public class ConfiguringPageCacheFactory
         this.pageCacheTracer = pageCacheTracer;
         this.log = log;
         this.scheduler = scheduler;
+        this.clock = clock;
     }
 
     public synchronized PageCache getOrCreatePageCache()
@@ -81,7 +85,7 @@ public class ConfiguringPageCacheFactory
     protected PageCache createPageCache()
     {
         MemoryAllocator memoryAllocator = buildMemoryAllocator( config );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler, clock );
     }
 
     private MemoryAllocator buildMemoryAllocator( Config config )

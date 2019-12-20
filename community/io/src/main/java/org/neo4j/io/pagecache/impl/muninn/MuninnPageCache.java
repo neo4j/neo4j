@@ -51,6 +51,8 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
@@ -146,6 +148,7 @@ public class MuninnPageCache implements PageCache
 
     // Scheduler that runs all the background jobs for page cache.
     final JobScheduler scheduler;
+    final SystemNanoClock clock;
 
     private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
@@ -212,8 +215,7 @@ public class MuninnPageCache implements PageCache
      * @param swapperFactory page cache swapper factory
      * @param maxPages maximum number of pages
      * @param pageCacheTracer global page cache tracer
-     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
-     * access to thread local version context
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
      */
     public MuninnPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer pageCacheTracer, VersionContextSupplier versionContextSupplier,
             JobScheduler jobScheduler )
@@ -223,7 +225,8 @@ public class MuninnPageCache implements PageCache
                 MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ), EmptyMemoryTracker.INSTANCE ),
                 PAGE_SIZE,
                 pageCacheTracer, versionContextSupplier,
-                jobScheduler );
+                jobScheduler,
+                Clocks.nanoClock() );
     }
 
     /**
@@ -235,9 +238,9 @@ public class MuninnPageCache implements PageCache
      *        access to thread local version context
      */
     public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock )
     {
-        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, versionContextSupplier, jobScheduler );
+        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, versionContextSupplier, jobScheduler, clock );
     }
 
     /**
@@ -247,7 +250,7 @@ public class MuninnPageCache implements PageCache
     @SuppressWarnings( "DeprecatedIsStillUsed" )
     @Deprecated
     public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, int cachePageSize, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -267,6 +270,7 @@ public class MuninnPageCache implements PageCache
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
         this.scheduler = jobScheduler;
+        this.clock = clock;
 
         setFreelistHead( new AtomicInteger() );
     }

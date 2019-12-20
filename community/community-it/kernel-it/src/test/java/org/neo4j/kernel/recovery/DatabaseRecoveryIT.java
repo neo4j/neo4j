@@ -108,6 +108,7 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.time.Clocks;
 
 import static java.lang.Long.max;
 import static java.util.Collections.singletonList;
@@ -468,9 +469,9 @@ class DatabaseRecoveryIT
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock() ).getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock() ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, immediate() ),
                         pageCache1, fs1, logProvider, NULL ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, immediate() ),

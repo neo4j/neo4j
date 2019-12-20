@@ -52,6 +52,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -116,9 +117,9 @@ class DatabaseShutdownTest
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
-                                JobScheduler jobScheduler )
+                                JobScheduler jobScheduler, SystemNanoClock clock )
                         {
-                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler );
+                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock );
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override

@@ -189,7 +189,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         cursor.rewind();
         if ( ( pf_flags & PF_READ_AHEAD ) == PF_READ_AHEAD && ( pf_flags & PF_NO_FAULT ) != PF_NO_FAULT )
         {
-            pageCache.scheduler.schedule( Group.PAGE_CACHE, new PreFetcher( cursor, cursorFactory, pageCacheTracer ) );
+            pageCache.scheduler.schedule( Group.PAGE_CACHE, new PreFetcher( cursor, cursorFactory, pageCacheTracer, pageCache.clock ) );
         }
         return cursor;
     }

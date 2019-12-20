@@ -40,12 +40,15 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 public class PageCacheRule extends ExternalResource
 {
     protected JobScheduler jobScheduler;
+    protected SystemNanoClock clock;
     protected PageCache pageCache;
     final PageCacheConfig baseConfig;
 
@@ -101,13 +104,17 @@ public class PageCacheRule extends ExternalResource
         MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
                 new LocalMemoryTracker() );
         initializeJobScheduler();
+        if ( clock == null )
+        {
+            clock = Clocks.nanoClock();
+        }
         if ( pageSize != null )
         {
-            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler );
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler, clock );
         }
         else
         {
-            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler );
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler, clock );
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;

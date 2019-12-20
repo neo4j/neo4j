@@ -35,6 +35,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.time.Clocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -70,7 +71,7 @@ class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
-            fs, config, PageCacheTracer.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
+            fs, config, PageCacheTracer.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )

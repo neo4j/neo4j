@@ -39,6 +39,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.time.Clocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,8 +65,7 @@ class GBPTreeSingleWriterTest
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
         MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB", new LocalMemoryTracker() );
         jobScheduler = new ThreadPoolJobScheduler();
-        pageCache =
-                new MuninnPageCache( factory, mman, 256, PageCacheTracer.NULL, EMPTY, jobScheduler );
+        pageCache = new MuninnPageCache( factory, mman, 256, PageCacheTracer.NULL, EMPTY, jobScheduler, Clocks.nanoClock() );
         layout = SimpleLongLayout.longLayout()
                 .withFixedSize( true )
                 .build();

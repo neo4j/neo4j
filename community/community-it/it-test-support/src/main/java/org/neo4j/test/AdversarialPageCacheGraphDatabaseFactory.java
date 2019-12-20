@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.SystemNanoClock;
 
 public class AdversarialPageCacheGraphDatabaseFactory
 {
@@ -67,10 +68,10 @@ public class AdversarialPageCacheGraphDatabaseFactory
                             }
 
                             @Override
-                            protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
-                                    LogService logging, Tracers tracers, JobScheduler jobScheduler )
+                            protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
+                                    JobScheduler jobScheduler, SystemNanoClock clock )
                             {
-                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler );
+                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock );
                                 return new AdversarialPageCache( pageCache, adversary );
                             }
                         };

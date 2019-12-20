@@ -24,29 +24,48 @@ import java.io.UncheckedIOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
-public class PreFetcher implements Runnable
+/**
+ * An adaptive page pre-fetcher for sequential scans, for either forwards (increasing page id order) or backwards (decreasing page id order) scans.
+ *
+ * The given page cursor is being "weakly" observed from a background pre-fetcher thread, as it is progressing through its scan, and the pre-fetcher tries
+ * to touch pages ahead of the scanning cursor in order to move page fault overhead from the scanning thread to the pre-fetching thread.
+ *
+ * The pre-fetcher relies on {@link UnsafeUtil#putOrderedLong(Object, long, long) ordered stores} of the "current page id" from the scanner thread,
+ * and on {@link UnsafeUtil#getLongVolatile(long) volatile loads} in the pre-fetcher thread, in order to observe the progress of the scanner without placing
+ * too much synchronisation overhead on the scanner. Because this does not form a "synchronises-with" edge in Java Memory Model palace, we say that the
+ * scanning cursor is being "weakly" observed. Ordered stores have compiler barriers, but no CPU or cache coherence barriers beyond plain stores.
+ *
+ * The pre-fetcher is adaptive because the number of pages the pre-fetcher will move ahead of the scanning cursor, and the length of time the pre-fetcher
+ * will wait in between checking on the progress of the scanner, are dynamically computed and updated based on how fast the scanner appears to be.
+ * The pre-fetcher also automatically figures out if the scanner is scanning the file in a forward or backwards direction.
+ */
+class PreFetcher implements Runnable
 {
     private static final String TRACER_PRE_FETCHER_TAG = "Pre-fetcher";
     private final MuninnPageCursor observedCursor;
     private final CursorFactory cursorFactory;
     private final PageCacheTracer tracer;
+    private final SystemNanoClock clock;
     private long startTime;
     private long deadline;
     private long tripCount;
     private long pauseNanos = TimeUnit.MILLISECONDS.toNanos( 10 );
 
-    public PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, PageCacheTracer tracer )
+    public PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, PageCacheTracer tracer, SystemNanoClock clock )
     {
         this.observedCursor = observedCursor;
         this.cursorFactory = cursorFactory;
         this.tracer = tracer;
+        this.clock = clock;
     }
 
     @Override
@@ -86,22 +105,44 @@ public class PreFetcher implements Runnable
         long currentPageId;
         long cp;
         long nextPageId;
-        long jump = forward ? -1 : 1;
-        int offset = 1;
+        long fromPage;
+        long toPage;
+
+        // Offset is a fixed adjustment of the observed cursor position.
+        // This moves the start of the pre-fetch range forward for forward pre-fetching,
+        // or the end position backward for backward pre-fetching.
+        long offset = forward ? 1 : -1;
+
+        // Jump is the dynamically adjusted size of the prefetch range,
+        // with a sign component to indicate forwards or backwards pre-fetching.
+        // That is, jump is negative if we are pre-fetching backwards.
+        // This way, observed position + jump is the end or start of the pre-fetch range,
+        // for forwards or backwards pre-fetch respectively.
+        // The initial value don't matter so much. Just same as offset, so we initially fetch one page.
+        long jump = offset;
+
         try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( TRACER_PRE_FETCHER_TAG );
               PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             currentPageId = getCurrentObservedPageId();
             while ( currentPageId != UNBOUND_PAGE_ID )
             {
-                cp = forward ? currentPageId + offset : currentPageId - offset;
-                long fromPage = Math.min( cp, cp + jump );
-                long toPage = Math.max( cp, cp + jump );
+                cp = currentPageId + offset;
+                if ( forward )
+                {
+                    fromPage = cp;
+                    toPage = cp + jump;
+                }
+                else
+                {
+                    fromPage = Math.max( 0, cp + jump );
+                    toPage = cp;
+                }
                 while ( fromPage < toPage )
                 {
                     if ( !prefetchCursor.next( fromPage ) )
                     {
-                        return; // Reached end of file.
+                        return; // Reached the end of the file.
                     }
                     fromPage++;
                 }
@@ -111,7 +152,7 @@ public class PreFetcher implements Runnable
                 nextPageId = getCurrentObservedPageId();
                 if ( nextPageId == currentPageId )
                 {
-                    setDeadline( 1, TimeUnit.SECONDS );
+                    setDeadline( 10, TimeUnit.SECONDS );
                     while ( nextPageId == currentPageId )
                     {
                         pause();
@@ -138,7 +179,7 @@ public class PreFetcher implements Runnable
 
     private void setDeadline( long timeout, TimeUnit unit )
     {
-        startTime = System.nanoTime();
+        startTime = clock.nanos();
         deadline = unit.toNanos( timeout ) + startTime;
         if ( tripCount != 0 )
         {
@@ -161,7 +202,7 @@ public class PreFetcher implements Runnable
 
     private boolean pastDeadline()
     {
-        boolean past = System.nanoTime() > deadline;
+        boolean past = clock.nanos() > deadline;
         if ( past )
         {
             if ( tripCount != 0 )
@@ -175,7 +216,7 @@ public class PreFetcher implements Runnable
     private void madeProgress()
     {
         // Let our best guess of how long is good to pause, asymptotically approach how long we actually paused (this time).
-        long timeToProgressNanos = System.nanoTime() - startTime;
+        long timeToProgressNanos = clock.nanos() - startTime;
         long pause = (pauseNanos * 3 + timeToProgressNanos * 5) / 8;
         pauseNanos = Math.min( pause, TimeUnit.MILLISECONDS.toNanos( 10 ) );
     }
