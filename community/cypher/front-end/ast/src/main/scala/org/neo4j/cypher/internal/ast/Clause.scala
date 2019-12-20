@@ -716,38 +716,74 @@ sealed trait ProjectionClause extends HorizonClause {
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
     state =>
 
-      def runChecks: SemanticCheck = innerState => (
+      def runChecks(previousScope: Scope): SemanticCheck = innerState => (
         returnItems.declareVariables(previousScope) chain
           orderBy.semanticCheck chain
           checkSkip chain
           checkLimit chain
           where.semanticCheck) (innerState)
 
-      // The two clauses ORDER BY and WHERE, following a WITH clause where there is no DISTINCT or aggregation, have a special scope such that they
+      // The two clauses ORDER BY and WHERE, following a WITH clause where there is no DISTINCT nor aggregation, have a special scope such that they
       // can see both variables from before the WITH and variables introduced by the WITH
       // (SKIP and LIMIT clauses are not allowed to access variables anyway, so they do not need to be included in this condition even when they are standalone)
-      val specialScopeForSubClausesNeeded = (orderBy.isDefined || where.isDefined) && !(returnItems.containsAggregate || distinct)
+      val specialScopeForSubClausesNeeded = orderBy.isDefined || where.isDefined
+      val canSeePreviousScope = !(returnItems.containsAggregate | distinct)
 
-      if (specialScopeForSubClausesNeeded) {
+      if (specialScopeForSubClausesNeeded && canSeePreviousScope) {
+        /*
+         * We have `WITH ... WHERE` or `WITH ... ORDER BY` with no aggregation nor distinct meaning we can
+         *  see things from previous scopes when we are done here
+         *  (incoming-scope)
+         *        |      \
+         *        |     (child scope) <-  semantic checking of `ORDER BY` and `WHERE` discarded, only used for errors
+         *        |
+         *  (outgoing-scope)
+         *        |
+         *       ...
+         */
+
         // Special scope for ORDER BY and WHERE (SKIP and LIMIT are also checked in isolated scopes)
         val stateForSubClauses = state.newChildScope
 
-        val SemanticCheckResult(nextState, errors1) = runChecks(stateForSubClauses)
+        val SemanticCheckResult(nextState, errors1) = runChecks(state.currentScope.scope)(stateForSubClauses)
 
         // New sibling scope for the WITH/RETURN clause itself and onwards.
         // Re-declare projected variables in the new scope since the sub-scope is discarded
-        // (We do not need to check warnOnAccessToRetrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
+        // (We do not need to check warnOnAccessToRestrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
         val returnState = nextState.popScope.newSiblingScope
-        val SemanticCheckResult(finalState, errors2) = returnItems.declareVariables(previousScope)(returnState)
+        val SemanticCheckResult(finalState, errors2) = returnItems.declareVariables(state.currentScope.scope)(returnState)
+        val niceErrors = (errors1 ++ errors2).map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
+        SemanticCheckResult(finalState, niceErrors)
+      } else if (specialScopeForSubClausesNeeded) {
+        /*
+         *  We have `WITH ... WHERE` or `WITH ... ORDER BY` with an aggregation or a distinct meaning we cannot
+         *  see things from previous scopes after the aggregation (or distinct).
+         *
+         *  (incoming-scope)
+         *         |
+         *  (outgoing-scope)
+         *         |      \
+         *         |      (child-scope) <- semantic checking of `ORDER BY` and `WHERE` discarded only used for errors
+         *        ...
+         */
 
-        SemanticCheckResult(finalState, errors1 ++ errors2)
+        //Introduce a new sibling scope first, and then a new child scope from that one
+        //this child scope is used for errors only and will later be discarded.
+        val siblingState = state.newSiblingScope
+        val stateForSubClauses = siblingState.newChildScope
+        val SemanticCheckResult(nextState, errors1) = runChecks(siblingState.currentScope.scope)(stateForSubClauses)
+
+        //By popping the scope we will discard the special scope used for subclauses
+        val returnState = nextState.popScope
+
+        // Re-declare projected variables in the new scope since the sub-scope is discarded
+        val SemanticCheckResult(finalState, errors2) = returnItems.declareVariables(returnState.currentScope.scope)(returnState)
+        val niceErrors = (errors1 ++ errors2).map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
+        SemanticCheckResult(finalState, niceErrors)
       } else {
         val returnState = state.newSiblingScope
-        val SemanticCheckResult(finalState, errors) = runChecks(returnState)
-
-        val previousScopeVars = state.currentScope.symbolNames
-        val niceErrors = errors.map(warnOnAccessToRetrictedVariableInOrderByOrWhere(previousScopeVars))
-        SemanticCheckResult(finalState, niceErrors)
+        val SemanticCheckResult(finalState, errors) = runChecks(state.currentScope.scope)(returnState)
+        SemanticCheckResult(finalState, errors)
       }
   }
 
@@ -761,7 +797,7 @@ sealed trait ProjectionClause extends HorizonClause {
     * @param error the error
     * @return an error with a possibly better error message
     */
-  private def warnOnAccessToRetrictedVariableInOrderByOrWhere(previousScopeVars: Set[String])(error: SemanticErrorDef): SemanticErrorDef = {
+  private def warnOnAccessToRestrictedVariableInOrderByOrWhere(previousScopeVars: Set[String])(error: SemanticErrorDef): SemanticErrorDef = {
     previousScopeVars.collectFirst {
       case name if error.msg.equals(s"Variable `$name` not defined") => error.withMsg(
         s"In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: $name")
@@ -781,6 +817,26 @@ sealed trait ProjectionClause extends HorizonClause {
     if (!aggregationInProjection && aggregationInOrderBy)
       fail(s"Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding $name", position)
   }
+
+  private def createSpecialReturnItems( s: SemanticState): ReturnItemsDef = {
+    // ORDER BY lives in this special scope that has access to things in scope before the RETURN/WITH clause,
+    // but also to the variables introduced by RETURN/WITH. This is most easily done by turning
+    // RETURN a, b, c => RETURN *, a, b, c
+
+    // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
+    // projecting clause
+    val includePreviousScope = !(returnItems.containsAggregate || distinct)
+    val specialReturnItems = returnItems.withExisting(includePreviousScope)
+    specialReturnItems
+  }
+  private def ignoreErrors(inner: SemanticCheck): SemanticCheck =
+    s => {
+      // Make sure not to declare variables just to suppress errors since they are ignored anyways
+      val innerState = s.copy(declareVariablesToSuppressDuplicateErrors = false)
+      val innerResultState = inner.apply(innerState).state
+      // Switch back to previous declaration behavior
+      success(innerResultState.copy(declareVariablesToSuppressDuplicateErrors = s.declareVariablesToSuppressDuplicateErrors))
+    }
 }
 
 object With {
