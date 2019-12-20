@@ -41,7 +41,7 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -125,7 +125,7 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
 
     private void startServer( boolean httpEnabled, boolean httpsEnabled ) throws Exception
     {
-        CommunityWebContainerBuilder serverBuilder = builderOnRandomPorts().usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() );
+        CommunityWebContainerBuilder serverBuilder = serverOnRandomPorts().usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() );
         if ( !httpEnabled )
         {
             serverBuilder.withHttpDisabled();

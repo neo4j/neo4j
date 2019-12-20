@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
@@ -146,7 +146,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
         var directoryPrefix = testName.getMethodName();
         var logDirectory = testDirectory.directory( directoryPrefix + "-logdir" );
 
-        return builderOnRandomPorts().withDefaultDatabaseTuning().persistent()
+        return serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), httpLoggingEnabledValue )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
                 .withProperty( BoltConnector.listen_address.name(), ":0" )

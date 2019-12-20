@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
 {
@@ -42,7 +42,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
     {
         // Given
         assumeTrue( browserIsLoaded() );
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( auth_enabled.name(), TRUE ).build();
 
         // Then I should be able to access the browser
@@ -54,7 +54,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
     public void shouldNotWhitelistConsoleService() throws Exception
     {
         // Given
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( auth_enabled.name(), TRUE ).build();
 
         // Then I should not be able to access the console service
@@ -66,7 +66,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
     public void shouldNotWhitelistDB() throws Exception
     {
         // Given
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( auth_enabled.name(), TRUE ).build();
 
         // Then I should get a unauthorized response for access to the DB

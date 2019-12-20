@@ -43,7 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 public class BoltIT extends ExclusiveWebContainerTestBase
 {
@@ -109,7 +109,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
 
     private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost, int listenPort ) throws IOException
     {
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( BoltConnector.enabled.name(), TRUE )
                 .withProperty( BoltConnector.encryption_level.name(), "DISABLED" )
                 .withProperty( BoltConnector.advertised_address.name(), advertisedHost + ":" + advertisedPort )

@@ -22,6 +22,7 @@ package org.neo4j.server.helpers;
 import java.net.URI;
 import java.util.Optional;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -31,6 +32,7 @@ import org.neo4j.server.http.cypher.TransactionRegistry;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
 public class TestWebContainer
 {
@@ -42,11 +44,6 @@ public class TestWebContainer
         requireNonNull( managementService );
         this.managementService = managementService;
         this.neoWebServer = getNeoWebServer( managementService );
-    }
-
-    private NeoWebServer getNeoWebServer( DatabaseManagementService managementService )
-    {
-        return ((GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME )).getDependencyResolver().resolveDependency( NeoWebServer.class );
     }
 
     public URI getBaseUri()
@@ -71,12 +68,14 @@ public class TestWebContainer
 
     public GraphDatabaseFacade getDefaultDatabase()
     {
-        return neoWebServer.getDefaultDatabase();
+        var config = getDependencyResolver( managementService ).resolveDependency( Config.class );
+        var defaultDatabase = config.get( default_database );
+        return (GraphDatabaseFacade) managementService.database( defaultDatabase );
     }
 
     public <T> T resolveDependency( Class<T> clazz )
     {
-        return neoWebServer.getDefaultDatabase().getDependencyResolver().resolveDependency( clazz );
+        return getDependencyResolver( managementService ).resolveDependency( clazz );
     }
 
     public Config getConfig()
@@ -87,5 +86,15 @@ public class TestWebContainer
     public TransactionRegistry getTransactionRegistry()
     {
         return neoWebServer.getTransactionRegistry();
+    }
+
+    private NeoWebServer getNeoWebServer( DatabaseManagementService managementService )
+    {
+        return getDependencyResolver( managementService ).resolveDependency( NeoWebServer.class );
+    }
+
+    private DependencyResolver getDependencyResolver( DatabaseManagementService managementService )
+    {
+        return ((GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME )).getDependencyResolver();
     }
 }

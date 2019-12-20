@@ -87,7 +87,7 @@ public class CommunityWebContainerBuilder
         return new CommunityWebContainerBuilder( NullLogProvider.getInstance() );
     }
 
-    public static CommunityWebContainerBuilder builderOnRandomPorts()
+    public static CommunityWebContainerBuilder serverOnRandomPorts()
     {
         return builder().onRandomPorts();
     }

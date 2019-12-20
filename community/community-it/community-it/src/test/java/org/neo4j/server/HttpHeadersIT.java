@@ -47,7 +47,7 @@ import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 public class HttpHeadersIT extends ExclusiveWebContainerTestBase
 {
@@ -111,7 +111,7 @@ public class HttpHeadersIT extends ExclusiveWebContainerTestBase
 
     private TestWebContainer buildServer( String hstsValue ) throws Exception
     {
-        var builder = builderOnRandomPorts()
+        var builder = serverOnRandomPorts()
                 .withHttpsEnabled()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() );
 

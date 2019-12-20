@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.exceptions.Status.Security.CredentialsExpired;
 import static org.neo4j.kernel.api.exceptions.Status.Security.Forbidden;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
@@ -59,7 +59,7 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
 
     protected void startServer( boolean authEnabled ) throws IOException
     {
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
     }
@@ -67,7 +67,7 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
     @SuppressWarnings( "SameParameterValue" )
     void startServer( boolean authEnabled, String accessControlAllowOrigin ) throws IOException
     {
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .withProperty( ServerSettings.http_access_control_allow_origin.name(), accessControlAllowOrigin )
                 .build();

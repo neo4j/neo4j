@@ -27,7 +27,7 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.GET;
 
 public class AcceptorConfigurationIT extends ExclusiveWebContainerTestBase
@@ -44,7 +44,7 @@ public class AcceptorConfigurationIT extends ExclusiveWebContainerTestBase
     @Test
     public void serverShouldNotHangWithThreadPoolSizeSmallerThanCpuCount() throws Exception
     {
-        testWebContainer = builderOnRandomPorts().withMaxJettyThreads( 3 )
+        testWebContainer = serverOnRandomPorts().withMaxJettyThreads( 3 )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
 

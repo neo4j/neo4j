@@ -43,7 +43,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -61,7 +61,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
         testContextSupplier = new TestTransactionVersionContextSupplier();
         var dependencies = new Dependencies();
         dependencies.satisfyDependencies( testContextSupplier );
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.snapshot_query.name(), TRUE )
                 .withDependencies( dependencies )
                 .build();

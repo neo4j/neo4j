@@ -43,7 +43,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -70,7 +69,6 @@ import org.neo4j.time.Clocks;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
@@ -164,22 +162,9 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     }
 
     @Override
-    public DatabaseManagementService getDatabaseManagementService()
-    {
-        return databaseManagementService;
-    }
-
-    @Override
     public DatabaseInfo getDatabaseInfo()
     {
         return databaseInfo;
-    }
-
-    @Override
-    public GraphDatabaseFacade getDefaultDatabase()
-    {
-        var defaultDatabase = config.get( default_database );
-        return (GraphDatabaseFacade) databaseManagementService.database( defaultDatabase );
     }
 
     @Override

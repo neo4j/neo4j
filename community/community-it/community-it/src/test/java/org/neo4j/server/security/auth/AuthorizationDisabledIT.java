@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class AuthorizationDisabledIT extends ExclusiveWebContainerTestBase
@@ -43,7 +43,7 @@ public class AuthorizationDisabledIT extends ExclusiveWebContainerTestBase
     public void shouldAllowDisablingAuthorization() throws Exception
     {
         // Given
-        testWebContainer = builderOnRandomPorts()
+        testWebContainer = serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), FALSE ).build();
 
         // When

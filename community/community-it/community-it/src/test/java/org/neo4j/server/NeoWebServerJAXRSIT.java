@@ -71,7 +71,7 @@ public class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
     @Test
     public void shouldLoadThirdPartyJaxRsClasses() throws Exception
     {
-        testWebContainer = CommunityWebContainerBuilder.builderOnRandomPorts()
+        testWebContainer = CommunityWebContainerBuilder.serverOnRandomPorts()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )

@@ -28,7 +28,7 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builderOnRandomPorts;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 public class NeoWebServerDirectoryListingTestIT extends ExclusiveWebContainerTestBase
 {
@@ -44,7 +44,7 @@ public class NeoWebServerDirectoryListingTestIT extends ExclusiveWebContainerTes
     public void shouldDisallowDirectoryListings() throws Exception
     {
         // Given
-        testWebContainer = builderOnRandomPorts().build();
+        testWebContainer = serverOnRandomPorts().build();
 
         // When
         Response okResource = HTTP.GET( testWebContainer.getBaseUri().resolve( "/browser/index.html" ).toString() );
