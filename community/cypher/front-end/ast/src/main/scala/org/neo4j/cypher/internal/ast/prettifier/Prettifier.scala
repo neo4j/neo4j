@@ -176,19 +176,13 @@ case class Prettifier(expr: ExpressionStringifier) {
       s"${x.name} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
-      val (dbName, default) = Prettifier.extractDbScope(dbScope)
-      val db = if (default) s"$dbName DATABASE" else s"DATABASE $dbName"
-      s"${x.name} ON $db TO ${Prettifier.escapeNames(roleNames)}"
+      prettifyDatabasePrivilege(x.name, dbScope, "TO", roleNames)
 
     case x @ DenyPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
-      val (dbName, default) = Prettifier.extractDbScope(dbScope)
-      val db = if (default) s"$dbName DATABASE" else s"DATABASE $dbName"
-      s"${x.name} ON $db TO ${Prettifier.escapeNames(roleNames)}"
+      prettifyDatabasePrivilege(x.name, dbScope, "TO", roleNames)
 
     case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames, _) =>
-      val (dbName, default) = Prettifier.extractDbScope(dbScope)
-      val db = if (default) s"$dbName DATABASE" else s"DATABASE $dbName"
-      s"${x.name} ON $db FROM ${Prettifier.escapeNames(roleNames)}"
+      prettifyDatabasePrivilege(x.name, dbScope, "FROM", roleNames)
 
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
@@ -289,6 +283,15 @@ case class Prettifier(expr: ExpressionStringifier) {
       case ProjectingUnionDistinct(partA, partB, mappings) =>
         s"${queryPart(partA)}${NL}UNION mappings: (${mappings.map(asString).mkString(", ")})$NL${queryPart(partB)}"
     }
+
+  private def prettifyDatabasePrivilege(privilegeName: String,
+                                        dbScope: GraphScope,
+                                        preposition: String,
+                                        roleNames: Seq[String]): String = {
+    val (dbName, default) = Prettifier.extractDbScope(dbScope)
+    val db = if (default) s"DEFAULT DATABASE" else s"DATABASE $dbName"
+    s"$privilegeName ON $db $preposition ${Prettifier.escapeNames(roleNames)}"
+  }
 
   private def asString(u: UnionMapping): String = {
     s"${u.unionVariable.name}: [${u.variableInPart.name}, ${u.variableInQuery.name}]"
