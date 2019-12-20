@@ -147,8 +147,8 @@ public class MuninnPageCache implements PageCache
     private static final AtomicInteger pageCacheIdCounter = new AtomicInteger();
 
     // Scheduler that runs all the background jobs for page cache.
-    final JobScheduler scheduler;
-    final SystemNanoClock clock;
+    private final JobScheduler scheduler;
+    private final SystemNanoClock clock;
 
     private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
@@ -234,8 +234,7 @@ public class MuninnPageCache implements PageCache
      * @param swapperFactory page cache swapper factory
      * @param memoryAllocator the source of native memory the page cache should use
      * @param pageCacheTracer global page cache tracer
-     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
-     *        access to thread local version context
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
      */
     public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, PageCacheTracer pageCacheTracer,
             VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock )
@@ -595,7 +594,7 @@ public class MuninnPageCache implements PageCache
 
     private void flushAllPagesParallel( List<PagedFile> files, IOLimiter limiter ) throws IOException
     {
-        List<JobHandle> flushes = new ArrayList<>( files.size() );
+        List<JobHandle<?>> flushes = new ArrayList<>( files.size() );
 
         // Submit all flushes to the background thread
         for ( PagedFile file : files )
@@ -614,7 +613,7 @@ public class MuninnPageCache implements PageCache
         }
 
         // Wait for all to complete
-        for ( JobHandle flush : flushes )
+        for ( JobHandle<?> flush : flushes )
         {
             try
             {
@@ -1060,5 +1059,10 @@ public class MuninnPageCache implements PageCache
                 throw new UncheckedIOException( e );
             }
         } );
+    }
+
+    void startPreFetching( MuninnPageCursor cursor, CursorFactory cursorFactory )
+    {
+        scheduler.schedule( Group.PAGE_CACHE, new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock ) );
     }
 }

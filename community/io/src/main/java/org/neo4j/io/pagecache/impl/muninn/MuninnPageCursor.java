@@ -71,6 +71,7 @@ public abstract class MuninnPageCursor extends PageCursor
     protected boolean eagerFlush;
     protected boolean noFault;
     protected boolean noGrow;
+    @SuppressWarnings( "unused" ) // This field is accessed via Unsafe.
     private long currentPageId;
     protected long nextPageId;
     protected MuninnPageCursor linkedCursor;
