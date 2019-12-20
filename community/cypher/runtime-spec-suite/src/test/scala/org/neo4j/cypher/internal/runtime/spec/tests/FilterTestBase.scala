@@ -80,9 +80,11 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on cached property predicate") {
     // given
-    nodePropertyGraph(sizeHint, {
-      case i: Int => Map("prop" -> i)
-    })
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("prop" -> i)
+      })
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

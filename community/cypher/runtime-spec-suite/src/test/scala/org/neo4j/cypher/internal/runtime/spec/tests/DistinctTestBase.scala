@@ -180,9 +180,11 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on cached property, one column") {
     // given
-    val nodes = nodePropertyGraph(sizeHint, properties = {
-      case i: Int => Map("foo" -> s"bar${i % 10}")
-    })
+    val nodes = given {
+      nodePropertyGraph(sizeHint, properties = {
+        case i: Int => Map("foo" -> s"bar${i % 10}")
+      })
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
