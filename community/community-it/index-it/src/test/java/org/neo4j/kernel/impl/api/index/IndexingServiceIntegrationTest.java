@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -54,7 +53,7 @@ import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -74,7 +73,7 @@ public class IndexingServiceIntegrationTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     @Rule
-    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    public TestDirectory directory = TestDirectory.testDirectory();
     private GraphDatabaseService database;
 
     @Parameterized.Parameters( name = "{0}" )
@@ -89,10 +88,8 @@ public class IndexingServiceIntegrationTest
     @Before
     public void setUp()
     {
-        EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
         database = new TestGraphDatabaseFactory()
-                .setFileSystem( fileSystem )
-                .newImpermanentDatabaseBuilder()
+                .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
                 .newGraphDatabase();
         createData( database, 100 );
