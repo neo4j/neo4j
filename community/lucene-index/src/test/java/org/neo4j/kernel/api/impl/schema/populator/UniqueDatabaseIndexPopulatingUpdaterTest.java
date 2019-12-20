@@ -40,7 +40,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
@@ -62,7 +63,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( add( 1, descriptor, "bar" ) );
         updater.process( add( 1, descriptor, "baz" ) );
 
-        verifyZeroInteractions( index );
+        verifyNoInteractions( index );
 
         updater.close();
         verifyVerifyUniqueness( index, descriptor, "foo", "bar", "baz" );
@@ -78,7 +79,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( change( 1, descriptor, "bar1", "bar2" ) );
         updater.process( change( 1, descriptor, "baz1", "baz2" ) );
 
-        verifyZeroInteractions( index );
+        verifyNoMoreInteractions( index );
 
         updater.close();
 
@@ -97,7 +98,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( change( 4, descriptor, "before2", "after2" ) );
         updater.process( remove( 5, descriptor, "removed1" ) );
 
-        verifyZeroInteractions( index );
+        verifyNoInteractions( index );
 
         updater.close();
 

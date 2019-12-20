@@ -96,6 +96,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
@@ -184,10 +185,9 @@ public class DatabaseCompositeIndexAccessorTest
     }
 
     @After
-    public void after()
+    public void after() throws IOException
     {
-        accessor.close();
-        dirFactory.close();
+        closeAll( accessor, dirFactory );
     }
 
     @Test

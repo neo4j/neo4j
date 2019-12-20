@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.util.FeatureToggles;
 
 public interface DirectoryFactory extends AutoCloseable
@@ -70,25 +71,22 @@ public interface DirectoryFactory extends AutoCloseable
 
     final class InMemoryDirectoryFactory implements DirectoryFactory
     {
-        private final Map<File, RAMDirectory> directories = new HashMap<>();
+        private final Map<File, Directory> directories = new HashMap<>();
 
         @Override
         public synchronized Directory open( File dir )
         {
             if ( !directories.containsKey( dir ) )
             {
-                directories.put( dir, new RAMDirectory() );
+                directories.put( dir, new ByteBuffersDirectory() );
             }
             return new UncloseableDirectory( directories.get( dir ) );
         }
 
         @Override
-        public synchronized void close()
+        public synchronized void close() throws IOException
         {
-            for ( RAMDirectory ramDirectory : directories.values() )
-            {
-                ramDirectory.close();
-            }
+            IOUtils.closeAll( directories.values() );
             directories.clear();
         }
     }
