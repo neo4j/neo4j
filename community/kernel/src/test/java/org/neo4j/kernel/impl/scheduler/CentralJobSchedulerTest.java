@@ -43,6 +43,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.resources.Profiler;
+import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.SchedulerThreadFactory;
@@ -84,7 +85,7 @@ class CentralJobSchedulerTest
                 () -> scheduler.schedule( Group.TASK_SCHEDULER, () -> fail( "This task should not have been executed." ) ) );
     }
 
-    // Tests schedules a recurring job to run 5 times with 100ms in between.
+    // Tests scheduling a recurring job to run 5 times with 100ms in between.
     // The timeout of 10s should be enough.
     @Test
     void shouldRunRecurringJob()
@@ -114,7 +115,7 @@ class CentralJobSchedulerTest
         // Given
         long period = 2;
         life.start();
-        JobHandle jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, countInvocationsJob, period, MILLISECONDS );
+        JobHandle<?> jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, countInvocationsJob, period, MILLISECONDS );
         awaitFirstInvocation();
 
         // When
@@ -156,7 +157,7 @@ class CentralJobSchedulerTest
     {
         life.start();
 
-        List<JobHandle> handles = new ArrayList<>( 30 );
+        List<JobHandle<?>> handles = new ArrayList<>( 30 );
         AtomicLong startedCounter = new AtomicLong();
         BinaryLatch blockLatch = new BinaryLatch();
         Runnable task = () ->
@@ -185,7 +186,7 @@ class CentralJobSchedulerTest
             {
                 // All jobs got started. We're good!
                 blockLatch.release();
-                for ( JobHandle handle : handles )
+                for ( JobHandle<?> handle : handles )
                 {
                     handle.cancel();
                 }
@@ -212,7 +213,7 @@ class CentralJobSchedulerTest
                 LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
         };
-        JobHandle handle = scheduler.schedule( Group.INDEX_POPULATION, job );
+        JobHandle<?> handle = scheduler.schedule( Group.INDEX_POPULATION, job );
         handle.registerCancelListener( () -> halted.set( true ) );
         handle.cancel();
 
@@ -234,7 +235,7 @@ class CentralJobSchedulerTest
                 triggered.set( true );
             };
 
-            JobHandle handle = scheduler.schedule( Group.INDEX_POPULATION, job, 10, TimeUnit.MILLISECONDS );
+            JobHandle<?> handle = scheduler.schedule( Group.INDEX_POPULATION, job, 10, TimeUnit.MILLISECONDS );
 
             handle.waitTermination();
             assertTrue( triggered.get() );
@@ -267,7 +268,7 @@ class CentralJobSchedulerTest
             }
         };
 
-        JobHandle handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
+        JobHandle<?> handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
         handle.registerCancelListener( () -> canceled.set( true ) );
 
         latch.await();
@@ -311,7 +312,7 @@ class CentralJobSchedulerTest
             }
         };
 
-        JobHandle handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
+        JobHandle<?> handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
         handle.registerCancelListener( () -> canceled.set( true ) );
 
         startCounter.await();
@@ -346,7 +347,7 @@ class CentralJobSchedulerTest
             }
         };
 
-        final JobHandle jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, MILLISECONDS );
+        JobHandle<?> jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, MILLISECONDS );
         jobHandle.registerCancelListener( () -> canceled.set( true ) );
 
         triggerLatch.await();
@@ -418,12 +419,12 @@ class CentralJobSchedulerTest
             counter.getAndDecrement();
         };
 
-        List<JobHandle> handles = new ArrayList<>();
+        List<JobHandle<?>> handles = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
             handles.add( scheduler.schedule( Group.CYPHER_WORKER, runnable ) );
         }
-        for ( JobHandle handle : handles )
+        for ( JobHandle<?> handle : handles )
         {
             handle.waitTermination();
         }
@@ -477,11 +478,11 @@ class CentralJobSchedulerTest
         String printedProfile;
         do
         {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            PrintStream out = new PrintStream( baos );
+            ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
+            PrintStream out = new PrintStream( bufferOut );
             profiler.printProfile( out, "Test Title" );
             out.flush();
-            printedProfile = baos.toString();
+            printedProfile = bufferOut.toString();
         }
         while ( !printedProfile.contains( "BinaryLatch.await" ) );
 
@@ -497,6 +498,59 @@ class CentralJobSchedulerTest
         JobHandle<Boolean> jobHandle = scheduler.schedule( Group.INDEX_POPULATION, job );
 
         assertTrue( jobHandle.get() );
+    }
+
+    @Test
+    void scheduledTasksCanBeTheirOwnCancellationListeners()
+    {
+        life.start();
+        AtomicInteger cancelled = new AtomicInteger();
+        class CancelCallback implements CancelListener
+        {
+            @Override
+            public void cancelled()
+            {
+                cancelled.incrementAndGet();
+            }
+        }
+        class RunnableAndCancellable extends CancelCallback implements Runnable
+        {
+            @Override
+            public void run()
+            {
+            }
+        }
+        class CallableAndCancellable extends CancelCallback implements Callable<Void>
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                return null;
+            }
+        }
+
+        scheduler.schedule( Group.CHECKPOINT, new RunnableAndCancellable() ).cancel();
+        assertThat( cancelled ).hasValue( 1 );
+
+        cancelled.set( 0 );
+
+        scheduler.schedule( Group.CHECKPOINT, new RunnableAndCancellable(), 1, SECONDS ).cancel();
+        assertThat( cancelled ).hasValue( 1 );
+
+        cancelled.set( 0 );
+
+        scheduler.scheduleRecurring( Group.CHECKPOINT, new RunnableAndCancellable(), 1, SECONDS ).cancel();
+        assertThat( cancelled ).hasValue( 1 );
+
+        cancelled.set( 0 );
+
+        scheduler.scheduleRecurring( Group.CHECKPOINT, new RunnableAndCancellable(), 1, 1, SECONDS ).cancel();
+        assertThat( cancelled ).hasValue( 1 );
+
+        cancelled.set( 0 );
+
+        scheduler.schedule( Group.CHECKPOINT, new CallableAndCancellable() ).cancel();
+        assertThat( cancelled ).hasValue( 1 );
     }
 
     private void awaitFirstInvocation() throws InterruptedException

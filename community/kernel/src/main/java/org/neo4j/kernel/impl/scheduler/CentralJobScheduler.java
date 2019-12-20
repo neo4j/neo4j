@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.scheduler.ThreadPool.ThreadPoolParameters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
+import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -143,7 +144,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         {
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
-        return getThreadPool( group ).submit( job );
+        return tryRegisterCancelListener( job, getThreadPool( group ).submit( job ) );
     }
 
     @Override
@@ -153,11 +154,11 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         {
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
-        return getThreadPool( group ).submit( job );
+        return tryRegisterCancelListener( job, getThreadPool( group ).submit( job ) );
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
+    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
     {
         return scheduleRecurring( group, runnable, 0, period, timeUnit );
     }
@@ -165,8 +166,8 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit unit )
     {
-        return scheduler.submit(
-                group, runnable, unit.toNanos( initialDelay ), unit.toNanos( period ) );
+        return tryRegisterCancelListener( runnable, scheduler.submit(
+                group, runnable, unit.toNanos( initialDelay ), unit.toNanos( period ) ) );
     }
 
     @Override
@@ -195,9 +196,9 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit unit )
+    public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit unit )
     {
-        return scheduler.submit( group, runnable, unit.toNanos( initialDelay ), 0 );
+        return tryRegisterCancelListener( runnable, scheduler.submit( group, runnable, unit.toNanos( initialDelay ), 0 ) );
     }
 
     @Override
@@ -236,5 +237,14 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
             return e;
         }
         return null;
+    }
+
+    private <T> JobHandle<T> tryRegisterCancelListener( Object maybeCancelListener, JobHandle<T> handle )
+    {
+        if ( maybeCancelListener instanceof CancelListener )
+        {
+            handle.registerCancelListener( (CancelListener) maybeCancelListener );
+        }
+        return handle;
     }
 }

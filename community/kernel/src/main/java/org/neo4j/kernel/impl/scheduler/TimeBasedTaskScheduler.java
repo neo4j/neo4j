@@ -33,13 +33,13 @@ import org.neo4j.util.VisibleForTesting;
 final class TimeBasedTaskScheduler implements Runnable
 {
     private static final long NO_TASKS_PARK = TimeUnit.MINUTES.toNanos( 10 );
-    private static final Comparator<ScheduledJobHandle> DEADLINE_COMPARATOR =
+    private static final Comparator<ScheduledJobHandle<?>> DEADLINE_COMPARATOR =
             Comparator.comparingLong( handle -> handle.nextDeadlineNanos );
 
     private final SystemNanoClock clock;
     private final ThreadPoolManager pools;
-    private final PriorityBlockingQueue<ScheduledJobHandle> delayedTasks;
-    private final ConcurrentLinkedQueue<ScheduledJobHandle> canceledTasks;
+    private final PriorityBlockingQueue<ScheduledJobHandle<?>> delayedTasks;
+    private final ConcurrentLinkedQueue<ScheduledJobHandle<?>> canceledTasks;
     private volatile Thread timeKeeper;
     private volatile boolean stopped;
 
@@ -51,16 +51,16 @@ final class TimeBasedTaskScheduler implements Runnable
         canceledTasks = new ConcurrentLinkedQueue<>();
     }
 
-    public JobHandle submit( Group group, Runnable job, long initialDelayNanos, long reschedulingDelayNanos )
+    public JobHandle<?> submit( Group group, Runnable job, long initialDelayNanos, long reschedulingDelayNanos )
     {
         long now = clock.nanos();
         long nextDeadlineNanos = now + initialDelayNanos;
-        ScheduledJobHandle task = new ScheduledJobHandle( this, group, job, nextDeadlineNanos, reschedulingDelayNanos );
+        ScheduledJobHandle<?> task = new ScheduledJobHandle<>( this, group, job, nextDeadlineNanos, reschedulingDelayNanos );
         enqueueTask( task );
         return task;
     }
 
-    void enqueueTask( ScheduledJobHandle newTasks )
+    void enqueueTask( ScheduledJobHandle<?> newTasks )
     {
         delayedTasks.offer( newTasks );
         LockSupport.unpark( timeKeeper );
@@ -98,12 +98,12 @@ final class TimeBasedTaskScheduler implements Runnable
         }
         while ( !canceledTasks.isEmpty() )
         {
-            ScheduledJobHandle canceled = canceledTasks.poll();
+            ScheduledJobHandle<?> canceled = canceledTasks.poll();
             delayedTasks.remove( canceled );
         }
         while ( !stopped && !delayedTasks.isEmpty() && delayedTasks.peek().nextDeadlineNanos <= now )
         {
-            ScheduledJobHandle task = delayedTasks.poll();
+            ScheduledJobHandle<?> task = delayedTasks.poll();
             task.submitIfRunnable( pools );
         }
         return delayedTasks.isEmpty() ? NO_TASKS_PARK : delayedTasks.peek().nextDeadlineNanos - now;
@@ -121,7 +121,7 @@ final class TimeBasedTaskScheduler implements Runnable
         LockSupport.unpark( timeKeeper );
     }
 
-    void cancelTask( ScheduledJobHandle job )
+    void cancelTask( ScheduledJobHandle<?> job )
     {
         canceledTasks.add( job );
     }

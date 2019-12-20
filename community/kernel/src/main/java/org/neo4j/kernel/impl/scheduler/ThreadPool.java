@@ -83,7 +83,7 @@ final class ThreadPool
         return new PooledJobHandle<>( future, registryKey, registry );
     }
 
-    public JobHandle submit( Runnable job )
+    public JobHandle<?> submit( Runnable job )
     {
         return submit( asCallable( job ) );
     }

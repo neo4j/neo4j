@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -54,6 +55,6 @@ public final class StandalonePageCacheFactory
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB", EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( factory, memoryAllocator, cacheTracer, versionContextSupplier, jobScheduler );
+        return new MuninnPageCache( factory, memoryAllocator, cacheTracer, versionContextSupplier, jobScheduler, Clocks.nanoClock() );
     }
 }
