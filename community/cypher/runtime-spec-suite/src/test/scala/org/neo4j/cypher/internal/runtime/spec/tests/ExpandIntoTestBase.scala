@@ -449,36 +449,6 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x", "y", "r").withNoRows()
   }
 
-  test("should handle arguments spanning two morsels with sort") {
-    // NOTE: This is a specific test for pipelined runtime with morsel size _4_
-    // where an argument will span two morsels that are put into a MorselBuffer
-
-    expectFailureInParallel("this test is not expected to succeed with 'parallel' runtime, because it requires preserving of argument order")
-
-    val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b", "c")
-      .apply()
-      .|.sort(Seq(Ascending("a"), Ascending("b")))
-      .|.expandAll("(b)-[:R]->(c)")
-      .|.expandInto("(a)-[:R]->(b)")
-      .|.nodeByLabelScan("b", "B",  "a")
-      .nodeByLabelScan("a", "A")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    val expected = for {
-      a <- Seq(a1, a2)
-      b <- Seq(b1, b2, b3)
-    } yield Array(a, b, c)
-
-    // then
-    runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
-  }
-
   test("should handle node reference as input") {
     // given
     val n = sizeHint
@@ -581,5 +551,39 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
         row <- List(Array(r.getEndNode, r.getStartNode))
       } yield row
     runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+}
+
+// Supported by interpreted, slotted, pipelined
+// Not supported by parallel because it can not yet maintain argument order
+trait ExpandIntoArgumentOrderTestBase[CONTEXT <: RuntimeContext] {
+  self: ExpandIntoTestBase[CONTEXT] =>
+
+  test("should handle arguments spanning two morsels with sort") {
+    // NOTE: This is a specific test for pipelined runtime with morsel size _4_
+    // where an argument will span two morsels that are put into a MorselBuffer
+
+    val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.sort(Seq(Ascending("a"), Ascending("b")))
+      .|.expandAll("(b)-[:R]->(c)")
+      .|.expandInto("(a)-[:R]->(b)")
+      .|.nodeByLabelScan("b", "B",  "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = for {
+      a <- Seq(a1, a2)
+      b <- Seq(b1, b2, b3)
+    } yield Array(a, b, c)
+
+    // then
+    runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
 }

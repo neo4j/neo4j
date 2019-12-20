@@ -42,6 +42,7 @@ class InterpretedExpandAllTest extends ExpandAllTestBase(COMMUNITY.EDITION, Inte
                                with ExpandAllWithOtherOperatorsTestBase[CommunityRuntimeContext]
 class InterpretedExpandIntoTest extends ExpandIntoTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                                 with ExpandIntoWithOtherOperatorsTestBase[CommunityRuntimeContext]
+                                with ExpandIntoArgumentOrderTestBase[CommunityRuntimeContext]
 class InterpretedOptionalExpandAllTest extends OptionalExpandAllTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOptionalExpandIntoTest extends OptionalExpandIntoTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedVarExpandAllTest extends VarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
