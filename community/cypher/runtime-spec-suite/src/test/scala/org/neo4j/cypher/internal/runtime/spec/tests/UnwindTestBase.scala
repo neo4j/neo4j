@@ -144,7 +144,7 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
 
   test("should unwind a variable") {
     // given
-    val input: InputValues = inputValues(
+    val input = inputValues(
       Array(util.Arrays.asList(10, 20, 30)),
       Array(util.Arrays.asList(100, 200, 300)))
 

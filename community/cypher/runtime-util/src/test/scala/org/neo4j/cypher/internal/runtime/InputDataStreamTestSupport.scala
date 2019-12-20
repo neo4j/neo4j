@@ -26,6 +26,9 @@ import org.neo4j.values.AnyValue
 
 import scala.collection.mutable.ArrayBuffer
 
+/**
+ * Test support for creating input data streams.
+ */
 trait InputDataStreamTestSupport {
 
   val NO_INPUT = new InputValues
@@ -57,82 +60,82 @@ trait InputDataStreamTestSupport {
     new IteratorInputStream(batches: _*)
   }
 
-  class InputValues() {
-    val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
+}
 
-    def and(rows: Array[Any]*): InputValues = {
-      batches += rows.toIndexedSeq
-      this
-    }
+class InputValues() {
+  val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
 
-    def flatten: IndexedSeq[Array[Any]] =
-      batches.flatten
-
-    def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
+  def and(rows: Array[Any]*): InputValues = {
+    batches += rows.toIndexedSeq
+    this
   }
 
-  class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
-    private val batchIndex = new AtomicInteger(0)
+  def flatten: IndexedSeq[Array[Any]] =
+    batches.flatten
 
-    override def nextInputBatch(): InputCursor = {
-      val i = batchIndex.getAndIncrement()
-      if (i < data.size)
-        new BufferInputCursor(data(i))
-      else
-        null
-    }
+  def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
+}
 
-    def hasMore: Boolean = batchIndex.get() < data.size
+class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
+  private val batchIndex = new AtomicInteger(0)
+
+  override def nextInputBatch(): InputCursor = {
+    val i = batchIndex.getAndIncrement()
+    if (i < data.size)
+      new BufferInputCursor(data(i))
+    else
+      null
   }
 
-  class BufferInputCursor(data: IndexedSeq[Array[AnyValue]]) extends InputCursor {
-    private var i = -1
+  def hasMore: Boolean = batchIndex.get() < data.size
+}
 
-    override def next(): Boolean = {
-      i += 1
-      i < data.size
-    }
+class BufferInputCursor(data: IndexedSeq[Array[AnyValue]]) extends InputCursor {
+  private var i = -1
 
-    override def value(offset: Int): AnyValue =
-      data(i)(offset)
-
-    override def close(): Unit = {}
+  override def next(): Boolean = {
+    i += 1
+    i < data.size
   }
 
-  /**
-   * Input data stream that streams data from multiple iterators, where each iterator corresponds to a batch.
-   * It does not buffer any data.
-   *
-   * @param data the iterators
-   */
-  class IteratorInputStream(data: Iterator[Array[AnyValue]]*) extends InputDataStream {
-    private val batchIndex = new AtomicInteger(0)
-    override def nextInputBatch(): InputCursor = {
-      val i = batchIndex.getAndIncrement()
-      if (i < data.size) {
-        new IteratorInputCursor(data(i))
-      } else {
-        null
-      }
+  override def value(offset: Int): AnyValue =
+    data(i)(offset)
+
+  override def close(): Unit = {}
+}
+
+/**
+ * Input data stream that streams data from multiple iterators, where each iterator corresponds to a batch.
+ * It does not buffer any data.
+ *
+ * @param data the iterators
+ */
+class IteratorInputStream(data: Iterator[Array[AnyValue]]*) extends InputDataStream {
+  private val batchIndex = new AtomicInteger(0)
+  override def nextInputBatch(): InputCursor = {
+    val i = batchIndex.getAndIncrement()
+    if (i < data.size) {
+      new IteratorInputCursor(data(i))
+    } else {
+      null
+    }
+  }
+}
+
+class IteratorInputCursor(data: Iterator[Array[AnyValue]]) extends InputCursor {
+  private var _next: Array[AnyValue] = _
+
+  override def next(): Boolean = {
+    if (data.hasNext) {
+      _next = data.next()
+      true
+    } else {
+      _next = null
+      false
     }
   }
 
-  class IteratorInputCursor(data: Iterator[Array[AnyValue]]) extends InputCursor {
-    private var _next: Array[AnyValue] = _
+  override def value(offset: Int): AnyValue = _next(offset)
 
-    override def next(): Boolean = {
-      if (data.hasNext) {
-        _next = data.next()
-        true
-      } else {
-        _next = null
-        false
-      }
-    }
-
-    override def value(offset: Int): AnyValue = _next(offset)
-
-    override def close(): Unit = {}
-  }
-
+  override def close(): Unit = {}
 }

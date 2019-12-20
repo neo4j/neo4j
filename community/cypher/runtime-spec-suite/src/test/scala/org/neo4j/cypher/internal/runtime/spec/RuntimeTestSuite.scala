@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -33,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
+import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
@@ -88,7 +87,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                                            workloadMode: Boolean = false)
   extends CypherFunSuite
   with AstConstructionTestSupport
-  with InputDataStreamTestSupport
+  with RuntimeExecutionSupport[CONTEXT]
   with GraphCreation[CONTEXT]
   with BeforeAndAfterEach
   with Resolver {
@@ -171,101 +170,33 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   // EXECUTE
 
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              input: InputValues): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber, profile = false)
-    RecordingRuntimeResult(result, subscriber)
-  }
+  override def execute(logicalQuery: LogicalQuery,
+                       runtime: CypherRuntime[CONTEXT],
+                       input: InputDataStream,
+                       subscriber: QuerySubscriber): RuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, input, subscriber)
 
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              input: InputDataStream,
-              subscriber: QuerySubscriber): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, input, (_, result) => result, subscriber, profile = false)
+  override def execute(logicalQuery: LogicalQuery,
+                       runtime: CypherRuntime[CONTEXT],
+                       inputStream: InputDataStream): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, inputStream)
 
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              inputStream: InputDataStream): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result,subscriber, profile = false)
-    RecordingRuntimeResult(result, subscriber)
-  }
+  override def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
+                                                runtime: CypherRuntime[CONTEXT],
+                                                parameters: Map[String, Any] = Map.empty
+                                               ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime)
 
-  def profile(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              input: InputValues): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber, profile = true)
-    RecordingRuntimeResult(result, subscriber)
-  }
+  override def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = runtimeTestSupport.execute(executablePlan)
 
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT]
-             ): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber, profile = false)
+  override def buildPlan(logicalQuery: LogicalQuery,
+                         runtime: CypherRuntime[CONTEXT]): ExecutionPlan = runtimeTestSupport.buildPlan(logicalQuery, runtime)
 
-    RecordingRuntimeResult(result, subscriber)
-  }
+  override def profile(logicalQuery: LogicalQuery,
+                       runtime: CypherRuntime[CONTEXT],
+                       inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult = runtimeTestSupport.profile(logicalQuery, runtime, inputDataStream)
 
-  def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
-                                       runtime: CypherRuntime[CONTEXT]
-                                      ): IndexedSeq[Array[AnyValue]] = {
-    val subscriber = new RecordingQuerySubscriber
-    runtimeTestSupport.runTransactionally(logicalQuery, runtime, NoInput, (_, result) => {
-      val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
-      val seq = recordingRuntimeResult.awaitAll()
-      recordingRuntimeResult.runtimeResult.close()
-      seq
-    }, subscriber, profile = false)
-  }
-
-  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT],  subscriber: QuerySubscriber): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber, profile = false)
-
-  def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false)
-    RecordingRuntimeResult(result, subscriber)
-  }
-
-  def buildPlan(logicalQuery: LogicalQuery,
-                runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
-    runtimeTestSupport.compile(logicalQuery, runtime)
-
-  def profile(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
-    RecordingRuntimeResult(result, subscriber)
-  }
-
-  def executeAndContext(logicalQuery: LogicalQuery,
-                        runtime: CypherRuntime[CONTEXT],
-                        input: InputValues,
-                        profile: Boolean = false
-                       ): (RecordingRuntimeResult, CONTEXT) = {
-    val subscriber = new RecordingQuerySubscriber
-    val (result, context) = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context), subscriber, profile)
-    (RecordingRuntimeResult(result, subscriber), context)
-  }
-
-  def executeAndAssertCondition(logicalQuery: LogicalQuery,
-                                input: InputValues,
-                                condition: ContextCondition[CONTEXT]): Unit = {
-    val nAttempts = 100
-    for (_ <- 0 until nAttempts) {
-      val (result, context) = executeAndContext(logicalQuery, runtime, input)
-      //TODO here we should not materialize the result
-      result.awaitAll()
-      if (condition.test(context))
-        return
-    }
-    fail(s"${condition.errorMsg} in $nAttempts attempts!")
-  }
+  override def executeAndContext(logicalQuery: LogicalQuery,
+                                 runtime: CypherRuntime[CONTEXT],
+                                 input: InputValues
+                                ): (RecordingRuntimeResult, CONTEXT) = runtimeTestSupport.executeAndContext(logicalQuery, runtime, input)
 
   // PROCEDURES
 
