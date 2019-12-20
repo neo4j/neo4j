@@ -25,12 +25,17 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssert;
+
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class MessageConsistencyLoggerTest
 {
-    private static final AssertableLogProvider.LogMatcherBuilder INLOG = AssertableLogProvider.inLog( MessageConsistencyLoggerTest.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final InconsistencyMessageLogger logger = new InconsistencyMessageLogger( logProvider.getLog( getClass() ) );
+    private final LogAssert logMatcher = assertThat( logProvider ).forClass( MessageConsistencyLoggerTest.class );
 
     @Test
     void shouldFormatErrorForRecord()
@@ -39,9 +44,8 @@ class MessageConsistencyLoggerTest
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
 
         // then
-        logProvider.assertExactly(
-                INLOG.error( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) )
-        );
+        logMatcher.forLevel( ERROR )
+                .containsMessages( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
     }
 
     @Test
@@ -51,9 +55,8 @@ class MessageConsistencyLoggerTest
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2 );
 
         // then
-        logProvider.assertExactly(
-                INLOG.error( join( "multiple line message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) )
-        );
+        logMatcher.forLevel( ERROR )
+                .containsMessages( join( "multiple line message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
     }
 
     @Test
@@ -63,9 +66,8 @@ class MessageConsistencyLoggerTest
         logger.warning( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
 
         // then
-        logProvider.assertExactly(
-                INLOG.warn( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) )
-        );
+        logMatcher.forLevel( WARN )
+                .containsMessages( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
     }
 
     @Test
@@ -75,12 +77,11 @@ class MessageConsistencyLoggerTest
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), new NeoStoreRecord(), "sample message", 1, 2 );
 
         // then
-        logProvider.assertExactly(
-                INLOG.error( join( "sample message",
+        logMatcher.forLevel( ERROR )
+                .containsMessages( join( "sample message",
                         "- " + neoStoreRecord( true, -1 ),
                         "+ " + neoStoreRecord( true, -1 ),
-                        "Inconsistent with: 1 2" ) )
-        );
+                        "Inconsistent with: 1 2" ) );
     }
 
     private static String join( String firstLine, String... lines )

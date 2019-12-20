@@ -34,7 +34,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.AssertableLogProvider.inLog
+import org.neo4j.logging.AssertableLogProvider.Level
+import org.neo4j.logging.LogAssertions.assertThat
 import org.neo4j.logging.{AssertableLogProvider, Log, NullLog, NullLogProvider}
 
 import scala.collection.Map
@@ -288,9 +289,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should log on cache remove") {
     // given
     val logProvider = new AssertableLogProvider()
-    val logName = "testlog"
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(10000L), ZoneOffset.UTC)
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock, log = logProvider.getLog(logName))
+    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock, log = logProvider.getLog(getClass))
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
@@ -304,11 +304,10 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // then
     val dogId = graph.withTx(tx => tokenReader(tx, _.nodeLabel("Dog")))
 
-    logProvider.assertExactly(
-      inLog(logName).debug(s"Discarded stale plan from the plan cache after 0 seconds. " +
+    assertThat(logProvider).forClass(getClass).forLevel(Level.DEBUG)
+      .containsMessages(s"Discarded stale plan from the plan cache after 0 seconds. " +
                              s"Reason: NodesWithLabelCardinality(Some(LabelId($dogId))) changed from 10.0 to 1001.0, " +
                              s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Metadata: $query")
-    )
   }
 
   test("when running queries with debug options - never cache") {

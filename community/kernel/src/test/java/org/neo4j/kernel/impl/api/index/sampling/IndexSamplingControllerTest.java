@@ -58,6 +58,7 @@ import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.A
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.foregroundRebuildUpdated;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.util.FeatureToggles.clear;
 import static org.neo4j.util.FeatureToggles.set;
 
@@ -316,9 +317,8 @@ class IndexSamplingControllerTest
             controller.recoverIndexSamples();
 
             // then
-            final AssertableLogProvider.MessageMatcher messageMatcher = logProvider.formattedMessageMatcher();
-            messageMatcher.assertContains( "Index requires sampling, id=2, name=index_2." );
-            messageMatcher.assertContains( "Index does not require sampling, id=3, name=index_3." );
+            assertThat( logProvider ).containsMessages( "Index requires sampling, id=2, name=index_2.",
+                                                        "Index does not require sampling, id=3, name=index_3." );
         }
         finally
         {

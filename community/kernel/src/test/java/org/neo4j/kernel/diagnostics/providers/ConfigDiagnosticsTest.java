@@ -27,6 +27,7 @@ import org.neo4j.logging.Log;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class ConfigDiagnosticsTest
 {
@@ -44,10 +45,10 @@ class ConfigDiagnosticsTest
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
         configDiagnostics.dump( log.infoLogger() );
 
-        logProvider.formattedMessageMatcher().assertContains( "DBMS provided settings:" );
-        logProvider.formattedMessageMatcher().assertContains( max_concurrent_transactions.name() + "=400" );
-        logProvider.formattedMessageMatcher().assertContains( default_database.name() + "=testDb" );
-        logProvider.formattedMessageMatcher().assertNotContains( "No provided DBMS settings." );
+        assertThat( logProvider ).containsMessages( "DBMS provided settings:",
+                                                     max_concurrent_transactions.name() + "=400",
+                                                     default_database.name() + "=testDb" )
+                                 .doesNotContainMessage( "No provided DBMS settings." );
     }
 
     @Test
@@ -58,7 +59,7 @@ class ConfigDiagnosticsTest
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
         configDiagnostics.dump( log.infoLogger() );
 
-        logProvider.formattedMessageMatcher().assertContains( "No provided DBMS settings." );
-        logProvider.formattedMessageMatcher().assertNotContains( "DBMS provided settings" );
+        assertThat( logProvider ).containsMessages( "No provided DBMS settings." )
+                                 .doesNotContainMessage( "DBMS provided settings" );
     }
 }

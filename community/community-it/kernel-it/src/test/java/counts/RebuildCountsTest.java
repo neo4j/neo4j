@@ -48,7 +48,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -56,8 +55,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sam
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
-import static org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @EphemeralNeo4jLayoutExtension
 class RebuildCountsTest
@@ -202,7 +201,7 @@ class RebuildCountsTest
         return fileSystem.snapshot();
     }
 
-    private void restart( FileSystemAbstraction fs ) throws IOException
+    private void restart( FileSystemAbstraction fs )
     {
         if ( db != null )
         {
@@ -233,8 +232,7 @@ class RebuildCountsTest
 
     private void assertRebuildLogged()
     {
-        LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
-        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( containsString( "Missing counts store, rebuilding it." ) ) );
-        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( containsString( "Counts store rebuild completed." ) ) );
+        assertThat( internalLogProvider ).forClass( MetaDataStore.class ).forLevel( WARN )
+                .containsMessages( "Missing counts store, rebuilding it.", "Counts store rebuild completed." );
     }
 }

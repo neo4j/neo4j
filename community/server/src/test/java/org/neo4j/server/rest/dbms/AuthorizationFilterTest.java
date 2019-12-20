@@ -52,7 +52,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.AuthTokenUtil.authTokenArgumentMatcher;
 
@@ -185,8 +186,10 @@ class AuthorizationFilterTest
 
         // Then
         verifyNoMoreInteractions( filterChain );
-        logProvider.assertExactly( inLog( AuthorizationEnabledFilter.class )
-                .warn( "Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address" ) );
+        assertThat( logProvider )
+                .forClass( AuthorizationEnabledFilter.class )
+                .forLevel( WARN )
+                .containsMessages( "Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address" );
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
         assertThat( outputStream.toString( UTF_8.name() ),

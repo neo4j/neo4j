@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @ExtendWith( DefaultFileSystemExtension.class )
 @Neo4jLayoutExtension
@@ -75,7 +76,7 @@ class KernelDiagnosticsTest
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
-        logProvider.rawMessageMatcher().assertContains( "100 / 40 / 40" );
+        assertThat( logProvider ).containsMessages( "100 / 40 / 40" );
     }
 
     @Test
@@ -87,7 +88,7 @@ class KernelDiagnosticsTest
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
-        logProvider.rawMessageMatcher().assertContains( "Storage files stored on file store: " );
+        assertThat( logProvider ).containsMessages( "Storage files stored on file store: " );
     }
 
     @Test
@@ -108,8 +109,7 @@ class KernelDiagnosticsTest
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
-        logProvider.rawMessageMatcher().assertContains( "Total size of store: 4.000KiB" );
-        logProvider.rawMessageMatcher().assertContains( "Total size of mapped files: 3.000KiB" );
+        assertThat( logProvider ).containsMessages( "Total size of store: 4.000KiB", "Total size of mapped files: 3.000KiB" );
     }
 
     private File directory( File parent, String name ) throws IOException

@@ -30,7 +30,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -60,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
 class DatabaseStartupTest
@@ -225,27 +225,22 @@ class DatabaseStartupTest
         managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            logProvider.rawMessageMatcher().assertContains( "System diagnostics" );
-            logProvider.rawMessageMatcher().assertContains( "System memory information" );
-            logProvider.rawMessageMatcher().assertContains( "JVM memory information" );
-            logProvider.rawMessageMatcher().assertContains( "Operating system information" );
-            logProvider.rawMessageMatcher().assertContains( "JVM information" );
-            logProvider.rawMessageMatcher().assertContains( "Java classpath" );
-            logProvider.rawMessageMatcher().assertContains( "Library path" );
-            logProvider.rawMessageMatcher().assertContains( "System properties" );
-            logProvider.rawMessageMatcher().assertContains( "(IANA) TimeZone database version" );
-            logProvider.rawMessageMatcher().assertContains( "Network information" );
-            logProvider.rawMessageMatcher().assertContains( "DBMS config" );
+            assertThat( logProvider ).containsMessages( "System diagnostics",
+                                                        "System memory information",
+                                                        "JVM memory information",
+                                                        "Operating system information",
+                                                        "JVM information",
+                                                        "Java classpath",
+                                                        "Library path",
+                                                        "System properties",
+                                                        "(IANA) TimeZone database version",
+                                                        "Network information",
+                                                        "DBMS config" );
         }
         finally
         {
             managementService.shutdown();
         }
-    }
-
-    private static DatabaseManager<?> getDatabaseManager( GraphDatabaseAPI databaseService )
-    {
-        return databaseService.getDependencyResolver().resolveDependency( DatabaseManager.class );
     }
 
     private static class EphemeralCommunityManagementServiceFactory extends DatabaseManagementServiceFactory

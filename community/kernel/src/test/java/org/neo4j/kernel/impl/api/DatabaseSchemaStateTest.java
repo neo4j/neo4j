@@ -26,7 +26,8 @@ import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class DatabaseSchemaStateTest
 {
@@ -66,6 +67,7 @@ class DatabaseSchemaStateTest
         assertNull( result );
 
         // AND ALSO
-        logProvider.assertExactly( inLog( DatabaseSchemaState.class ).debug( "Schema state store has been cleared." ) );
+        assertThat( logProvider).forClass( DatabaseSchemaState.class )
+                .forLevel( DEBUG ).containsMessages( "Schema state store has been cleared." );
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -32,20 +30,19 @@ import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 class SchemaLoggingIT
 {
+    private static final String CREATION_FINISHED = "Index creation finished. Index [%s] is %s.";
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Inject
@@ -67,14 +64,16 @@ class SchemaLoggingIT
         createIndex( db, labelName, property );
 
         // then
-        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
+        var matcher = assertThat(logProvider).forClass( IndexPopulationJob.class ).forLevel( INFO );
         IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
-        logProvider.assertAtLeastOnce( match.info( containsString( "Index population started: [%s]" ),
-                "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )" ) );
-
-        assertEventually( () -> null, new LogMessageMatcher( match, providerDescriptor ), 1, TimeUnit.MINUTES );
+        assertThat( logProvider ).forLevel( INFO )
+                .containsMessageWithArguments( "Index population started: [%s]",
+            "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )" )
+                .containsMessageWithArguments( CREATION_FINISHED,
+            "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )",
+                        "ONLINE" );
     }
 
     private static void createIndex( GraphDatabaseAPI db, String labelName, String property )
@@ -89,34 +88,6 @@ class SchemaLoggingIT
         {
             tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
-        }
-    }
-
-    private class LogMessageMatcher extends BaseMatcher<Object>
-    {
-        private static final String CREATION_FINISHED = "Index creation finished. Index [%s] is %s.";
-        private final LogMatcherBuilder match;
-        private final IndexProviderDescriptor descriptor;
-
-        LogMessageMatcher( LogMatcherBuilder match, IndexProviderDescriptor descriptor )
-        {
-            this.match = match;
-            this.descriptor = descriptor;
-        }
-
-        @Override
-        public boolean matches( Object item )
-        {
-            return logProvider.containsMatchingLogCall( match.info( containsString( CREATION_FINISHED ),
-                    "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + descriptor.name() + "' )",
-                    "ONLINE" ) );
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( " expected log message containing: '" ).appendText( CREATION_FINISHED )
-                    .appendText( "', but not found. Messages was: '" ).appendText( logProvider.serialize() ).appendText( "." );
         }
     }
 }

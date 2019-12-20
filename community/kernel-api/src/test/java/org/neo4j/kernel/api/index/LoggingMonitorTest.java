@@ -26,6 +26,7 @@ import org.neo4j.logging.AssertableLogProvider;
 
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class LoggingMonitorTest
 {
@@ -38,7 +39,7 @@ class LoggingMonitorTest
                 .withName( "index" )
                 .materialise( 1 );
         monitor.failedToOpenIndex( index, "I'll do something about this.", new Exception( "Dammit Leroy!" ) );
-        logProvider.internalToStringMessageMatcher().assertNotContains( "java.lang.Exception: Dammit Leroy!" );
+        assertThat( logProvider ).doesNotContainMessage( "java.lang.Exception: Dammit Leroy!" );
     }
 
     @Test
@@ -50,6 +51,6 @@ class LoggingMonitorTest
                 .withName( "index" )
                 .materialise( 1 );
         monitor.failedToOpenIndex( index, "I'll do something about this.", new Exception( "Dammit Leroy!" ) );
-        logProvider.internalToStringMessageMatcher().assertContains( "java.lang.Exception: Dammit Leroy!" );
+        assertThat( logProvider ).doesNotContainMessage( "java.lang.Exception: Dammit Leroy!" );
     }
 }

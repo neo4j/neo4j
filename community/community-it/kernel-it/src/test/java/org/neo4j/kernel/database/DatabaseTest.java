@@ -60,8 +60,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -72,7 +70,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyVararg;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -84,7 +81,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 public class DatabaseTest
 {
@@ -378,7 +376,7 @@ public class DatabaseTest
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory )
-                .create( any(), any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyBoolean(), anyVararg() );
+                .create( any(), any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyBoolean(), any() );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
@@ -399,9 +397,9 @@ public class DatabaseTest
             assertSame( openStoresError, getRootCause( e ) );
         }
 
-        logProvider.assertAtLeastOnce( inLog( Database.class ).warn(
-                containsString( "Exception occurred while starting the database. Trying to stop already started components." ),
-                equalTo( openStoresError ) ) );
+        assertThat( logProvider ).forClass( Database.class ).forLevel( WARN )
+              .containsMessageWithException( "Exception occurred while starting the database. Trying to stop already started components.",
+                      openStoresError );
     }
 
     @Test

@@ -117,7 +117,7 @@ public class DatabaseCompositeIndexAccessorTest
     private static final CleanupRule cleanup = new CleanupRule();
     private static final AssertableLogProvider logProvider = new AssertableLogProvider();
     @ClassRule
-    public static final RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( dir ).around( cleanup ).around( logProvider );
+    public static final RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( dir ).around( cleanup );
 
     @Parameterized.Parameter( 0 )
     public String testName;

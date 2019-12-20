@@ -34,7 +34,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class FailedIndexProxyTest
 {
@@ -72,8 +73,7 @@ class FailedIndexProxyTest
                               indexStatisticsStore, logProvider ).drop();
 
         // then
-        logProvider.assertAtLeastOnce(
-                inLog( FailedIndexProxy.class ).info( "FailedIndexProxy#drop index on foo dropped due to:\nit broke" )
-        );
+        assertThat( logProvider ).forClass( FailedIndexProxy.class ).forLevel( INFO )
+                .containsMessages( "FailedIndexProxy#drop index on foo dropped due to:\nit broke" );
     }
 }

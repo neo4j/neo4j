@@ -22,14 +22,10 @@ package org.neo4j.test.matchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.platform.commons.util.ExceptionUtils;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import static java.util.stream.Collectors.joining;
 
 public final class CommonMatchers
 {
@@ -45,61 +41,6 @@ public final class CommonMatchers
     public static <T> Matcher<? super Iterable<T>> matchesOneToOneInAnyOrder( Matcher<? super T>... expectedMatchers )
     {
         return new MatchesOneToOneInAnyOrder<>( expectedMatchers );
-    }
-
-    /**
-     * Checks that an exception message matches given matcher
-     *
-     * @param matcher
-     * @return
-     */
-    public static Matcher<Throwable> matchesExceptionMessage( Matcher<? super String> matcher )
-    {
-        return new ExceptionMessageMatcher( matcher );
-    }
-
-    public static Matcher<Throwable> throwableWithMessage( Class<? extends Throwable> expectedType, Matcher<String> messageMatcher )
-    {
-        return new ThrowableWithMessageMatcher( expectedType, messageMatcher );
-    }
-
-    /**
-     * Checks that exception has expected array or suppressed exceptions.
-     *
-     * @param expectedSuppressedErrors expected suppressed exceptions.
-     * @return new matcher.
-     */
-    public static Matcher<Throwable> hasSuppressed( Throwable... expectedSuppressedErrors )
-    {
-        return new TypeSafeMatcher<>()
-        {
-            @Override
-            protected boolean matchesSafely( Throwable item )
-            {
-                return Arrays.equals( item.getSuppressed(), expectedSuppressedErrors );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "a throwable with suppressed:\n" );
-
-                if ( expectedSuppressedErrors.length == 0 )
-                {
-                    description.appendText( "a throwable without suppressed" );
-                }
-                else
-                {
-                    description.appendText( "a throwable with suppressed:\n" );
-
-                    String expectedSuppressedAsString = Arrays.stream( expectedSuppressedErrors )
-                                                              .map( ExceptionUtils::readStackTrace )
-                                                              .collect( joining( "\n", "[\n", "]" ) );
-
-                    description.appendText( expectedSuppressedAsString );
-                }
-            }
-        };
     }
 
     private static class MatchesOneToOneInAnyOrder<T> extends TypeSafeMatcher<Iterable<T>>

@@ -49,12 +49,12 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.text.StringContainsInOrder.stringContainsInOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 
 @EphemeralTestDirectoryExtension
@@ -104,11 +104,10 @@ class TestReadOnlyNeo4j
         managementService = dbmsReadOnly( logProvider );
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         assertFalse( db.isAvailable( 1L ), "Did not expect db to start" );
-        logProvider.internalToStringMessageMatcher().assertContains( stringContainsInOrder(
-                "[neo4j] Exception occurred while starting the database. Trying to stop already started components.",
-                "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in " +
-                        "writable mode to rebuild indexes. Indexes needing rebuild: "
-        ) );
+        assertThat( logProvider )
+                .assertExceptionForLogMessage( "[neo4j] Exception occurred while starting the database. Trying to stop already started components." )
+                .hasMessageContaining( "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in " +
+                        "writable mode to rebuild indexes. Indexes needing rebuild: ");
     }
 
     @Test

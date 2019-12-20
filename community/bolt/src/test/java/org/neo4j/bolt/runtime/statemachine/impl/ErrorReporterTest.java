@@ -30,6 +30,7 @@ import org.neo4j.logging.LogProvider;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class ErrorReporterTest
 {
@@ -48,8 +49,8 @@ class ErrorReporterTest
                 Neo4jError error = Neo4jError.from( () -> code, "Database error" );
                 reporter.report( error );
 
-                userLog.assertNoLoggingOccurred();
-                internalLog.assertNoLoggingOccurred();
+                assertThat( userLog ).doesNotHaveAnyLogs();
+                assertThat( internalLog ).doesNotHaveAnyLogs();
             }
         }
     }
@@ -69,12 +70,11 @@ class ErrorReporterTest
         reporter.report( error );
 
         // then
-        userLog.rawMessageMatcher().assertContains( "Client triggered an unexpected error" );
-        userLog.rawMessageMatcher().assertContains( reference.toString() );
-        userLog.rawMessageMatcher().assertContains( "Database error" );
+        assertThat( userLog ).containsMessages( "Client triggered an unexpected error",
+                                                reference.toString(),
+                                                "Database error" );
 
-        internalLog.rawMessageMatcher().assertContains( reference.toString() );
-        internalLog.rawMessageMatcher().assertContains( "Database error" );
+        assertThat( internalLog ).containsMessages( reference.toString(), "Database error" );
     }
 
     private static ErrorReporter newErrorReporter( LogProvider userLog, LogProvider internalLog )

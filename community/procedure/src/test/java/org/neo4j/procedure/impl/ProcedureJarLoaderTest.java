@@ -72,6 +72,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @SuppressWarnings( "WeakerAccess" )
 @TestDirectoryExtension
@@ -247,7 +248,7 @@ public class ProcedureJarLoaderTest
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
-        logProvider.internalToStringMessageMatcher().assertContains(
+        assertThat( logProvider ).containsMessages(
                 escapeJava( String.format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) ) );
     }
 
@@ -267,7 +268,7 @@ public class ProcedureJarLoaderTest
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
-        logProvider.internalToStringMessageMatcher().assertContains(
+        assertThat( logProvider ).containsMessages(
                 escapeJava( String.format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) ) );
     }
 

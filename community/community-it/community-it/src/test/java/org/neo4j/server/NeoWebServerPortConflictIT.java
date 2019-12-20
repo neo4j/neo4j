@@ -34,7 +34,8 @@ import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builder;
 
 public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
@@ -66,13 +67,9 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
                 }
             }
 
-            logProvider.assertAtLeastOnce(
-                    inLog( containsString( "CommunityNeoWebServer" ) ).error(
-                            "Failed to start Neo4j on %s: %s",
-                            contestedAddress,
-                            format( "Address %s is already in use, cannot bind to it.", contestedAddress )
-                    )
-            );
+            assertThat( logProvider ).forClass( CommunityNeoWebServer.class ).forLevel( ERROR )
+                    .containsMessageWithArguments( "Failed to start Neo4j on %s: %s",
+                            contestedAddress, format( "Address %s is already in use, cannot bind to it.", contestedAddress ) );
         }
     }
 
@@ -107,14 +104,10 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
                 }
             }
 
-            logProvider.assertAtLeastOnce(
-                    inLog( containsString( "CommunityNeoWebServer" ) ).error(
-                            "Failed to start Neo4j on %s: %s",
+            assertThat( logProvider ).forClass( CommunityNeoWebServer.class ).forLevel( ERROR )
+                    .containsMessageWithArguments( "Failed to start Neo4j on %s: %s",
                             unContestedAddress,
-                            format( "At least one of the addresses %s or %s is already in use, cannot bind to it.",
-                                    unContestedAddress, httpsAddress )
-                    )
-            );
+                            format( "At least one of the addresses %s or %s is already in use, cannot bind to it.", unContestedAddress, httpsAddress ) );
         }
     }
 }

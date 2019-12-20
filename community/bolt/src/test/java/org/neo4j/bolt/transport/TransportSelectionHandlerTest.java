@@ -27,12 +27,12 @@ import java.io.IOException;
 
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class TransportSelectionHandlerTest
 {
@@ -50,8 +50,8 @@ class TransportSelectionHandlerTest
 
         // Then
         verify( context ).close();
-        logging.assertExactly( inLog( TransportSelectionHandler.class )
-                .error( equalTo( "Fatal error occurred when initialising pipeline: " + context.channel() ), sameInstance( cause ) ) );
+        assertThat( logging ).forClass( TransportSelectionHandler.class ).forLevel( ERROR )
+                .containsMessageWithException( "Fatal error occurred when initialising pipeline: " + context.channel(), cause );
     }
 
     @Test
@@ -69,9 +69,9 @@ class TransportSelectionHandlerTest
 
         // Then
         verify( context ).close();
-        logging.assertExactly( inLog( TransportSelectionHandler.class )
-                .warn( "Fatal error occurred when initialising pipeline, " +
-                        "remote peer unexpectedly closed connection: %s", context.channel() ) );
+        assertThat( logging ).forClass( TransportSelectionHandler.class ).forLevel( WARN )
+                .containsMessageWithArguments( "Fatal error occurred when initialising pipeline, " +
+                        "remote peer unexpectedly closed connection: %s", context.channel() );
     }
 
     private static ChannelHandlerContext channelHandlerContextMock()

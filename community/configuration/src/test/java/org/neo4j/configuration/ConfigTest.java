@@ -60,6 +60,7 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @TestDirectoryExtension
 class ConfigTest
@@ -470,7 +471,7 @@ class ConfigTest
 
         config.setLogger( log );
 
-        logProvider.rawMessageMatcher().assertContains( "Unable to load config file [%s]" );
+        assertThat( logProvider ).containsMessages( "Unable to load config file [%s]" );
     }
 
     @Test
@@ -611,7 +612,7 @@ class ConfigTest
         var logProvider = new AssertableLogProvider();
         config.setLogger( logProvider.getLog( Config.class ) );
 
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     private static final class TestSettings implements SettingsDeclaration

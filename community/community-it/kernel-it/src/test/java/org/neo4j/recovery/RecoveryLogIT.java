@@ -39,8 +39,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.matchesPattern;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
 class RecoveryLogIT
@@ -102,7 +102,6 @@ class RecoveryLogIT
                 .build();
         managementService.database( DEFAULT_DATABASE_NAME );
 
-        //Check for 'Recovery completed' log containing 'time spent' entry
-        provider.rawMessageMatcher().assertContains( matchesPattern( ".*Recovery completed.*time\\sspent.*" ) );
+        assertThat( provider ).containsMessages( "Recovery completed", "time spent" );
     }
 }

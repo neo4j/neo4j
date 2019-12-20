@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,13 +33,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltServer;
+import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.testing.Jobs;
-import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -50,18 +48,14 @@ import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isA;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -69,6 +63,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @ActorsExtension
 class DefaultBoltConnectionTest
@@ -299,8 +296,7 @@ class DefaultBoltConnectionTest
         } );
         connection.processNextBatch();
         verify( stateMachine ).close();
-        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).warn(
-                containsString( "inner error" ) ) );
+        assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( WARN ).containsMessages( "inner error" );
     }
 
     @Test
@@ -316,8 +312,7 @@ class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertNone(
-                AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).warn( CoreMatchers.any( String.class ) ) );
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -334,8 +329,8 @@ class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
-                containsString( "Protocol breach detected in bolt session" ), is( exception ) ) );
+        assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )
+                .containsMessageWithException( "Protocol breach detected in bolt session", exception );
     }
 
     @Test
@@ -352,8 +347,8 @@ class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
-                containsString( "Unexpected error detected in bolt session" ), is( exception ) ) );
+        assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )
+                .containsMessageWithException( "Unexpected error detected in bolt session", exception );
     }
 
     @Test
@@ -368,8 +363,8 @@ class DefaultBoltConnectionTest
 
         connection.processNextBatch();
 
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( DefaultBoltConnection.class.getName() ).error( startsWith( "Unexpected error" ), isA( AssertionError.class ) ) );
+        assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )
+                .assertExceptionForLogMessage( "Unexpected error" ).isInstanceOf( AssertionError.class );
     }
 
     @Test
@@ -385,8 +380,7 @@ class DefaultBoltConnectionTest
         connection.stop();
         connection.processNextBatch();
 
-        logProvider.assertNone(
-                AssertableLogProvider.inLog( DefaultBoltConnection.class.getName() ).error( startsWith( "Unexpected error" ), isA( AssertionError.class ) ) );
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test

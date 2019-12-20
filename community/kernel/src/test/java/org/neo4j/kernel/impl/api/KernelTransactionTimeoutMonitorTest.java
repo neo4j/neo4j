@@ -38,6 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class KernelTransactionTimeoutMonitorTest
 {
@@ -76,21 +77,21 @@ class KernelTransactionTimeoutMonitorTest
 
         verify( tx1, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
         verify( tx2, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
-        logProvider.rawMessageMatcher().assertNotContains( "timeout" );
+        assertThat( logProvider ).doesNotContainMessage( "timeout" );
 
         fakeClock.forward( 2, TimeUnit.MILLISECONDS );
         transactionMonitor.run();
 
         verify( tx1 ).markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut );
         verify( tx2, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
-        logProvider.rawMessageMatcher().assertContains( "timeout" );
+        assertThat( logProvider ).containsMessages( "timeout" );
 
         logProvider.clear();
         fakeClock.forward( 10, TimeUnit.MILLISECONDS );
         transactionMonitor.run();
 
         verify( tx2 ).markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut );
-        logProvider.rawMessageMatcher().assertContains( "timeout" );
+        assertThat( logProvider ).containsMessages( "timeout" );
     }
 
     @Test
@@ -113,7 +114,7 @@ class KernelTransactionTimeoutMonitorTest
 
         verify( tx1, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
         verify( tx2, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
-        logProvider.rawMessageMatcher().assertNotContains( "timeout" );
+        assertThat( logProvider ).doesNotContainMessage( "timeout" );
     }
 
     private KernelTransactionMonitor buildTransactionMonitor()

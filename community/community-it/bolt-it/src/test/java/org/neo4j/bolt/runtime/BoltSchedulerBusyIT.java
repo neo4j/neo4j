@@ -45,12 +45,11 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.isA;
-import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @RunWith( Parameterized.class )
 public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
@@ -118,13 +117,11 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
             assertThat( connection3, util.eventuallyReceives(
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
-            userLogProvider.rawMessageMatcher().assertContains(
+            assertThat( userLogProvider ).containsMessages(
                     "since there are no available threads to serve it at the moment. You can retry at a later time" );
-            internalLogProvider.assertAtLeastOnce( AssertableLogProvider
-                    .inLog( startsWith( BoltConnection.class.getPackage().getName() ) )
-                    .error(
-                        containsString( "since there are no available threads to serve it at the moment. You can retry at a later time" ),
-                        isA( RejectedExecutionException.class ) ) );
+            assertThat( internalLogProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )
+                    .assertExceptionForLogMessage( "since there are no available threads to serve it at the moment. You can retry at a later time" )
+                    .isInstanceOf( RejectedExecutionException.class );
         }
         finally
         {
@@ -153,9 +150,9 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         server.shutdownDatabase();
 
         // Expect no scheduling error logs
-        userLogProvider.rawMessageMatcher().assertNotContains(
+        assertThat( userLogProvider ).doesNotContainMessage(
                 "since there are no available threads to serve it at the moment. You can retry at a later time" );
-        internalLogProvider.rawMessageMatcher().assertNotContains(
+        assertThat( internalLogProvider ).doesNotContainMessage(
                 "since there are no available threads to serve it at the moment. You can retry at a later time" );
     }
 

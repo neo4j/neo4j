@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class EntryCountThresholdTest
 {
@@ -190,7 +191,7 @@ class EntryCountThresholdTest
         EntryCountThreshold threshold = createThreshold( 0 );
 
         assertFalse( threshold.reached( file, 1, info ) );
-        logProvider.rawMessageMatcher().assertContains( "Fail to get id of the first entry in the next transaction log file. Requested version: 2" );
+        assertThat( logProvider ).containsMessages( "Fail to get id of the first entry in the next transaction log file. Requested version: 2" );
     }
 
     @Test
@@ -200,7 +201,7 @@ class EntryCountThresholdTest
         EntryCountThreshold threshold = createThreshold( 0 );
 
         assertFalse( threshold.reached( file, 1, info ) );
-        logProvider.rawMessageMatcher().assertContains( "Error on attempt to get entry ids from transaction log files. Checked version: 1" );
+        assertThat( logProvider ).containsMessages( "Error on attempt to get entry ids from transaction log files. Checked version: 1" );
     }
 
     private EntryCountThreshold createThreshold( int maxTxCount )

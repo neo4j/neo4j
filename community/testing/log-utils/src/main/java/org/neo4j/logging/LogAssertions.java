@@ -17,31 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.matchers;
+package org.neo4j.logging;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
+import org.assertj.core.api.Assertions;
 
-public class ExceptionMessageMatcher extends TypeSafeMatcher<Throwable>
+public class LogAssertions extends Assertions
 {
-    private final Matcher<? super String> matcher;
-
-    public ExceptionMessageMatcher( Matcher<? super String> matcher )
+    private LogAssertions()
     {
-        this.matcher = matcher;
     }
 
-    @Override
-    protected boolean matchesSafely( Throwable throwable )
+    public static LogAssert assertThat( AssertableLogProvider logProvider )
     {
-        return matcher.matches( throwable.getMessage() );
+        return new LogAssert( logProvider );
     }
-
-    @Override
-    public void describeTo( Description description )
-    {
-        description.appendText( "expect message to be " ).appendDescriptionOf( matcher );
-    }
-
 }

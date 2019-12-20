@@ -19,37 +19,22 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
+@ImpermanentDbmsExtension
 public class CypherLoggingTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    @Inject
     private GraphDatabaseService database;
-    private DatabaseManagementService managementService;
-
-    @Before
-    public void setUp()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().setUserLogProvider( logProvider ).impermanent().build();
-        database = managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    @After
-    public void tearDown()
-    {
-        managementService.shutdown();
-    }
 
     @Test
     public void shouldNotLogQueries()
@@ -62,7 +47,6 @@ public class CypherLoggingTest
         }
 
         // then
-        inLog( org.neo4j.cypher.internal.ExecutionEngine.class );
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 }

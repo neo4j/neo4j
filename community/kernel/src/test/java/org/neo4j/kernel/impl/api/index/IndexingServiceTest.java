@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,7 +85,6 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -133,8 +129,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
@@ -157,7 +153,9 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.MultiPopulatorFactory.forConfig;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
@@ -165,7 +163,6 @@ class IndexingServiceTest
 {
     private final LifeSupport life = new LifeSupport();
 
-    private static final LogMatcherBuilder logMatch = inLog( IndexingService.class );
     private static final IndexProviderDescriptor native30Descriptor = new IndexProviderDescriptor( NATIVE30.providerKey(), NATIVE30.providerVersion() );
     private static final IndexProviderDescriptor nativeBtree10Descriptor =
             new IndexProviderDescriptor( NATIVE_BTREE10.providerKey(), NATIVE_BTREE10.providerVersion() );
@@ -212,7 +209,7 @@ class IndexingServiceTest
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
         indexingService.start();
 
-        internalLogProvider.assertNoLoggingOccurred();
+        assertThat( internalLogProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -336,7 +333,7 @@ class IndexingServiceTest
         verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );
 
-        verifyZeroInteractions( accessor );
+        verifyNoInteractions( accessor );
     }
 
     @Test
@@ -426,11 +423,10 @@ class IndexingServiceTest
         life.init();
 
         // then
-        internalLogProvider.assertAtLeastOnce(
-                logMatch.debug( "IndexingService.init: index 1 on (:LabelOne {propertyOne}) is ONLINE" ),
-                logMatch.debug( "IndexingService.init: index 2 on (:LabelOne {propertyTwo}) is POPULATING" ),
-                logMatch.debug( "IndexingService.init: index 3 on (:LabelTwo {propertyTwo}) is FAILED" )
-        );
+        assertThat( internalLogProvider ).forLevel( DEBUG ).containsMessages(
+                "IndexingService.init: index 1 on (:LabelOne {propertyOne}) is ONLINE",
+                "IndexingService.init: index 2 on (:LabelOne {propertyTwo}) is POPULATING",
+                "IndexingService.init: index 3 on (:LabelTwo {propertyTwo}) is FAILED" );
     }
 
     @Test
@@ -470,11 +466,10 @@ class IndexingServiceTest
 
         // then
         verify( provider ).getPopulationFailure( failedIndex );
-        internalLogProvider.assertAtLeastOnce(
-                logMatch.debug( "IndexingService.start: index 1 on (:LabelOne {propertyOne}) is ONLINE" ),
-                logMatch.debug( "IndexingService.start: index 2 on (:LabelOne {propertyTwo}) is POPULATING" ),
-                logMatch.debug( "IndexingService.start: index 3 on (:LabelTwo {propertyTwo}) is FAILED" )
-        );
+        assertThat( internalLogProvider ).forLevel( DEBUG ).containsMessages(
+                "IndexingService.start: index 1 on (:LabelOne {propertyOne}) is ONLINE",
+                "IndexingService.start: index 2 on (:LabelOne {propertyTwo}) is POPULATING",
+                "IndexingService.start: index 3 on (:LabelTwo {propertyTwo}) is FAILED" );
     }
 
     @Test
@@ -506,10 +501,9 @@ class IndexingServiceTest
         indexingService.init();
 
         // then
-        onBothLogProviders(
-                logProvider -> logProvider.rawMessageMatcher().assertNotContains( "IndexingService.init: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( "IndexingService.init: Deprecated index providers in use:" ) );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( fulltextDescriptor.name() ) );
     }
 
     @Test
@@ -544,10 +538,9 @@ class IndexingServiceTest
         indexingService.start();
 
         // then
-        AssertableLogProvider.MessageMatcher messageMatcher = internalLogProvider.rawMessageMatcher();
-        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( "IndexingService.start: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( fulltextDescriptor.name() ) );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( "IndexingService.start: Deprecated index providers in use:" ) );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( fulltextDescriptor.name() ) );
     }
 
     @Test
@@ -584,15 +577,11 @@ class IndexingServiceTest
         indexingService.start();
 
         // then
-        userLogProvider.rawMessageMatcher().assertContainsSingle(
-                Matchers.allOf(
-                        Matchers.containsString( "Deprecated index providers in use:" ),
-                        Matchers.containsString( native30Descriptor.name() + " (2 indexes)" ),
-                        Matchers.containsString( "Use procedure 'db.indexes()' to see what indexes use which index provider." )
-                )
-        );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
+        assertThat( userLogProvider ).containsMessages( "Deprecated index providers in use:",
+                                            native30Descriptor.name() + " (2 indexes)",
+                                            "Use procedure 'db.indexes()' to see what indexes use which index provider." );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( provider -> assertThat( provider ).doesNotContainMessage( fulltextDescriptor.name() ) );
     }
 
     @Test
@@ -698,9 +687,8 @@ class IndexingServiceTest
         indexingService.triggerIndexSampling( mode );
 
         // then
-        internalLogProvider.assertAtLeastOnce(
-                logMatch.info( "Manual trigger for sampling all indexes [" + mode + "]" )
-        );
+        assertThat( internalLogProvider ).forLevel( INFO )
+                .containsMessages( "Manual trigger for sampling all indexes [" + mode + "]" );
     }
 
     @Test
@@ -721,9 +709,8 @@ class IndexingServiceTest
 
         // then
         String userDescription = index.userDescription( nameLookup );
-        internalLogProvider.assertAtLeastOnce(
-                logMatch.info( "Manual trigger for sampling index " + userDescription + " [" + mode + "]" )
-        );
+        assertThat( internalLogProvider ).forLevel( INFO )
+                .containsMessages( "Manual trigger for sampling index " + userDescription + " [" + mode + "]" );
     }
 
     @Test
@@ -1019,13 +1006,13 @@ class IndexingServiceTest
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
-        internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
-                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
-                        "indexProvider='quantum-dex-25.0' )]" ),
-                causedBy( exception ) ) );
-        internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
-                "Index population completed. Index is now online: [%s]",
-                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
+//        LogAssertions.assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR ).containsMessages(
+//                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
+//                        "indexProvider='quantum-dex-25.0' )]" ),
+//                causedBy( exception ) ) );
+//        internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
+//                "Index population completed. Index is now online: [%s]",
+//                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
     }
 
     @Test
@@ -1053,13 +1040,13 @@ class IndexingServiceTest
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
-        internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
-                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
-                        "indexProvider='quantum-dex-25.0' )]" ),
-                causedBy( exception ) ) );
-        internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
-                "Index population completed. Index is now online: [%s]",
-                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
+//        internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
+//                                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
+//                        "indexProvider='quantum-dex-25.0' )]" ),
+//                causedBy( exception ) ) );
+//        internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
+//                "Index population completed. Index is now online: [%s]",
+//                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
     }
 
     @Test
@@ -1140,8 +1127,8 @@ class IndexingServiceTest
             barrier.release();
             exceptionBarrier.await();
 
-            internalLogProvider.rawMessageMatcher().assertContains( expectedCause.getMessage() );
-            internalLogProvider.rawMessageMatcher().assertContains( format( "Index %s entered %s state ", indexRule.toString(), FAILED ) );
+            assertThat( internalLogProvider ).containsMessages( expectedCause.getMessage() )
+                    .containsMessages( format( "Index %s entered %s state ", indexRule.toString(), FAILED ) );
         }
         finally
         {
@@ -1186,12 +1173,12 @@ class IndexingServiceTest
         life.init();
 
         // then
-        internalLogProvider.assertAtLeastOnce(
-                logMatch.info( "IndexingService.init: index 1 on (:Label1 {prop}) is POPULATING" ),
-                logMatch.info( "IndexingService.init: index 2 on (:Label2 {prop}) is FAILED" ),
-                logMatch.info( "IndexingService.init: indexes not specifically mentioned above are ONLINE" )
-        );
-        internalLogProvider.assertNone( logMatch.info( "IndexingService.init: index 3 on :Label3(prop) is ONLINE" ) );
+        assertThat( internalLogProvider ).forLevel( INFO )
+                .containsMessages(
+                        "IndexingService.init: index 1 on (:Label1 {prop}) is POPULATING",
+                        "IndexingService.init: index 2 on (:Label2 {prop}) is FAILED",
+                        "IndexingService.init: indexes not specifically mentioned above are ONLINE" )
+                .doesNotContainMessage( "IndexingService.init: index 3 on :Label3(prop) is ONLINE" );
     }
 
     @Test
@@ -1234,12 +1221,12 @@ class IndexingServiceTest
         indexingService.start();
 
         // then
-        internalLogProvider.assertAtLeastOnce(
-                logMatch.info( "IndexingService.start: index 1 on (:Label1 {prop}) is POPULATING" ),
-                logMatch.info( "IndexingService.start: index 2 on (:Label2 {prop}) is FAILED" ),
-                logMatch.info( "IndexingService.start: indexes not specifically mentioned above are ONLINE" )
-        );
-        internalLogProvider.assertNone( logMatch.info( "IndexingService.start: index 3 on :Label3(prop) is ONLINE" ) );
+        assertThat( internalLogProvider ).forLevel( INFO )
+                .containsMessages(
+                        "IndexingService.start: index 1 on (:Label1 {prop}) is POPULATING",
+                        "IndexingService.start: index 2 on (:Label2 {prop}) is FAILED",
+                        "IndexingService.start: indexes not specifically mentioned above are ONLINE" )
+                .doesNotContainMessage( "IndexingService.start: index 3 on :Label3(prop) is ONLINE" );
     }
 
     @Test
@@ -1412,32 +1399,6 @@ class IndexingServiceTest
         IndexDescriptor descriptor = storeIndex( indexId, 1, 2, PROVIDER_DESCRIPTOR );
         when( proxy.getDescriptor() ).thenReturn( descriptor );
         return proxy;
-    }
-
-    private static Matcher<? extends Throwable> causedBy( final Throwable exception )
-    {
-        return new TypeSafeMatcher<>()
-        {
-            @Override
-            protected boolean matchesSafely( Throwable item )
-            {
-                while ( item != null )
-                {
-                    if ( item == exception )
-                    {
-                        return true;
-                    }
-                    item = item.getCause();
-                }
-                return false;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "exception caused by " ).appendValue( exception );
-            }
-        };
     }
 
     private String storedFailure()

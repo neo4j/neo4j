@@ -35,6 +35,8 @@ import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class TracersTest
 {
@@ -97,13 +99,12 @@ class TracersTest
 
     private void assertNoWarning()
     {
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
-    private void assertWarning( String implementationName )
+    private void assertWarning( String tracerName )
     {
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( getClass() ).warn( "Using default tracer implementations instead of '%s'", implementationName )
-        );
+        assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
+                .containsMessageWithArguments( "Using default tracer implementations instead of '%s'", tracerName );
     }
 }

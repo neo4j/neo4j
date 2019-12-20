@@ -36,7 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class TransactionHandleRegistryTest
 {
@@ -54,7 +55,7 @@ class TransactionHandleRegistryTest
 
         // then
         assertNotEquals( id1, id2 );
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -73,7 +74,7 @@ class TransactionHandleRegistryTest
 
         // Then
         assertSame( handle, acquiredHandle );
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -92,11 +93,11 @@ class TransactionHandleRegistryTest
         assertThrows( InvalidConcurrentTransactionAccess.class, () -> registry.acquire( id ) );
 
         // then
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
-    void acquiringANonExistentTransactionShouldThrowErrorInvalidTransactionId() throws Exception
+    void acquiringANonExistentTransactionShouldThrowErrorInvalidTransactionId()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -108,7 +109,7 @@ class TransactionHandleRegistryTest
         assertThrows( InvalidTransactionId.class, () -> registry.acquire( madeUpTransactionId ) );
 
         // then
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -139,10 +140,9 @@ class TransactionHandleRegistryTest
         // And then the other should have been evicted
         assertThrows( InvalidTransactionId.class, () -> registry.acquire( txId1 ) );
 
-        logProvider.assertExactly(
-                inLog( TransactionHandleRegistry.class ).info( "Transaction with id 1 has been automatically rolled " +
-                        "back due to transaction timeout." )
-        );
+        assertThat( logProvider ).forClass( TransactionHandleRegistry.class )
+                .forLevel( INFO ).containsMessages( "Transaction with id 1 has been automatically rolled " +
+                        "back due to transaction timeout." );
     }
 
     @Test

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.eclipse.collections.api.tuple.Pair;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -51,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.test.Unzip.unzip;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 
@@ -101,7 +102,7 @@ class SpatialConfigExtractorTest
         // given
         unzip( getClass(), ZIP_FAILED_SPATIAL_35_DIR, directory.homeDir() );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log myLog = logProvider.getLog( "myLog" );
+        Log myLog = logProvider.getLog( getClass() );
 
         // and
         File spatialDirectory = new File( directory.homeDir(), FAILED_SPATIAL_35_DIR );
@@ -114,8 +115,7 @@ class SpatialConfigExtractorTest
 
         // then
         String reason = "Index is in FAILED state.";
-        AssertableLogProvider.LogMatcher logEntry = getExpectedLogEntry( spatialFiles.get( 0 ).getIndexFile(), reason );
-        logProvider.assertExactly( logEntry );
+        assertContainsLogEntry( logProvider, spatialFiles.get( 0 ).getIndexFile(), reason );
     }
 
     @Test
@@ -123,7 +123,7 @@ class SpatialConfigExtractorTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log myLog = logProvider.getLog( "myLog" );
+        Log myLog = logProvider.getLog( getClass() );
         SpatialFile spatialFile = new SpatialFile( CoordinateReferenceSystem.WGS84, directory.file( "spatialFile" ) );
         corruptFile( fs, spatialFile.getIndexFile() );
 
@@ -132,8 +132,7 @@ class SpatialConfigExtractorTest
 
         // then
         String reason = "Index meta data is corrupt and can not be parsed.";
-        AssertableLogProvider.LogMatcher logEntry = getExpectedLogEntry( spatialFile.getIndexFile(), reason );
-        logProvider.assertExactly( logEntry );
+        assertContainsLogEntry( logProvider, spatialFile.getIndexFile(), reason );
     }
 
     @Test
@@ -154,15 +153,11 @@ class SpatialConfigExtractorTest
         assertExpectedIndexConfig( indexConfig );
     }
 
-    private static AssertableLogProvider.LogMatcher getExpectedLogEntry( File spatialFile, String reason )
+    private void assertContainsLogEntry( AssertableLogProvider logProvider, File genericFile, String reason )
     {
-        return AssertableLogProvider.inLog( "myLog" )
-                .warn( Matchers.allOf(
-                        Matchers.containsString( "Could not extract index configuration from migrating index file." ),
-                        Matchers.containsString( reason ),
-                        Matchers.containsString(
-                                "Index will be recreated with currently configured settings instead, indexFile=" + spatialFile.getAbsolutePath() )
-                ) );
+        assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
+                .containsMessages( "Could not extract index configuration from migrating index file. " + reason +
+                        " Index will be recreated with currently configured settings instead, indexFile=" + genericFile.getAbsolutePath() );
     }
 
     private static void corruptFile( FileSystemAbstraction fs, File spatialFile ) throws IOException

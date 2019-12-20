@@ -33,6 +33,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class DefaultFileDeletionEventListenerTest
 {
@@ -47,9 +48,8 @@ class DefaultFileDeletionEventListenerTest
         listener.fileDeleted( key, "testFile" );
         listener.fileDeleted( key, "anotherDirectory" );
 
-        internalLogProvider.formattedMessageMatcher().assertContains(
-                "'testFile' which belongs to the 'testdatabase' database was deleted while it was running." );
-        internalLogProvider.formattedMessageMatcher().assertContains(
+        assertThat( internalLogProvider ).containsMessages(
+                "'testFile' which belongs to the 'testdatabase' database was deleted while it was running.",
                 "'anotherDirectory' which belongs to the 'testdatabase' database was deleted while it was running." );
     }
 
@@ -61,7 +61,7 @@ class DefaultFileDeletionEventListenerTest
         listener.fileDeleted( key, TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
         listener.fileDeleted( key, TransactionLogFilesHelper.DEFAULT_NAME + ".1" );
 
-        internalLogProvider.assertNoLoggingOccurred();
+        assertThat( internalLogProvider ).doesNotHaveAnyLogs();
     }
 
     private DefaultFileDeletionEventListener buildListener( AssertableLogProvider internalLogProvider )

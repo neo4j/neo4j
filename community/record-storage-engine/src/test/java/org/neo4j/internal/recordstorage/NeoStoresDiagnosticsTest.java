@@ -29,6 +29,7 @@ import org.neo4j.logging.Logger;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class NeoStoresDiagnosticsTest
 {
@@ -53,9 +54,7 @@ class NeoStoresDiagnosticsTest
 
         idUsage.dump( logger );
 
-        AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
-        messageMatcher.assertContains( "Diagnostics not available" );
-        messageMatcher.assertContains( errorMessage );
-        messageMatcher.assertNotContains( "Exception" );
+        assertThat( logProvider ).containsMessages( "Diagnostics not available", errorMessage )
+                                 .doesNotContainMessage( "Exception" );
     }
 }

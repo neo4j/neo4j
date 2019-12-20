@@ -50,13 +50,13 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class IndexStatisticsIT
@@ -116,9 +116,9 @@ class IndexStatisticsIT
 
     private void assertLogExistsForRecoveryOn( String labelAndProperty )
     {
-        logProvider.assertAtLeastOnce(
-                inLog( IndexSamplingController.class ).debug( containsString( "Recovering index sampling for index %s" ), labelAndProperty )
-        );
+        assertThat( logProvider ).forClass( IndexSamplingController.class )
+                .forLevel( DEBUG )
+                .containsMessages( "Recovering index sampling for index %s", labelAndProperty );
     }
 
     private int labelId( Label alien )

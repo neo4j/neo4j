@@ -387,7 +387,7 @@ public class TransportTestUtil
 
     public static Matcher<TransportConnection> eventuallyDisconnects()
     {
-        return new TypeSafeMatcher<TransportConnection>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( TransportConnection connection )
@@ -396,7 +396,7 @@ public class TransportTestUtil
                 {
                     try
                     {
-                        connection.send( new byte[]{0,0});
+                        connection.send( new byte[]{0, 0} );
                         connection.recv( 1 );
                     }
                     catch ( Exception e )

@@ -19,8 +19,6 @@
  */
 package org.neo4j.recovery;
 
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,9 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,7 +41,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -66,6 +61,7 @@ import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 
 @TestDirectoryExtension
@@ -142,14 +138,14 @@ class RecoveryCleanupIT
         managementService.shutdown();
 
         // then
-        logProvider.rawMessageMatcher().assertContains( "Label index cleanup job registered" );
-        logProvider.rawMessageMatcher().assertContains( "Label index cleanup job started" );
-        logProvider.rawMessageMatcher().assertContains( Matchers.stringContainsInOrder( Iterables.asIterable(
+        assertThat( logProvider ).containsMessages( "Label index cleanup job registered",
+                                                    "Label index cleanup job started",
+                                                    "Label index cleanup job closed" );
+        assertThat( logProvider ).containsMessages(
                 "Label index cleanup job finished",
                 "Number of pages visited",
                 "Number of cleaned crashed pointers",
-                "Time spent" ) ) );
-        logProvider.rawMessageMatcher().assertContains( "Label index cleanup job closed" );
+                "Time spent" );
     }
 
     @Test
@@ -177,39 +173,30 @@ class RecoveryCleanupIT
         managementService.shutdown();
 
         // then
-        List<Matcher<String>> matchers = new ArrayList<>();
         for ( String subType : subTypes )
         {
-            matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job registered", subType ) );
-            matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job started", subType ) );
-            matchers.add( indexRecoveryFinishedLogMatcher( subType ) );
-            matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
+            assertThat( logProvider )
+                    .containsMessages( indexRecoveryLogMatcher( "Schema index cleanup job registered", subType ) )
+                    .containsMessages( indexRecoveryLogMatcher( "Schema index cleanup job started", subType ) )
+                    .containsMessages( indexRecoveryFinishedLogMatcher( subType ) )
+                    .containsMessages( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
         }
-        AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
-        matchers.forEach( messageMatcher::assertContainsSingle );
     }
 
-    private static Matcher<String> indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
+    private static String[] indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
     {
-        return Matchers.stringContainsInOrder( Iterables.asIterable(
-                logMessage,
-                "descriptor",
-                "indexFile=",
-                File.separator + subIndexProviderKey ) );
+        return new String[] { logMessage, "descriptor", "indexFile=", File.separator + subIndexProviderKey };
     }
 
-    private static Matcher<String> indexRecoveryFinishedLogMatcher( String subIndexProviderKey )
+    private static String[] indexRecoveryFinishedLogMatcher( String subIndexProviderKey )
     {
-
-        return Matchers.stringContainsInOrder( Iterables.asIterable(
-                "Schema index cleanup job finished",
+        return new String[] { "Schema index cleanup job finished",
                 "descriptor",
                 "indexFile=",
                 File.separator + subIndexProviderKey,
                 "Number of pages visited",
                 "Number of cleaned crashed pointers",
-                "Time spent" )
-        );
+                "Time spent" };
     }
 
     private void dirtyDatabase() throws IOException

@@ -49,10 +49,11 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @TestDirectoryExtension
 class IndexPopulationIT
@@ -167,7 +168,7 @@ class IndexPopulationIT
             transaction.commit();
         }
         managementService.shutdown();
-        assertableLogProvider.assertNone( AssertableLogProvider.inLog( IndexPopulationJob.class ).anyError() );
+        assertThat( assertableLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -199,8 +200,7 @@ class IndexPopulationIT
             nodes.close();
             tx.commit();
         }
-        AssertableLogProvider.LogMatcher matcher = inLog( IndexPopulationJob.class ).info( containsString( "TIME/PHASE Final:" ) );
-        logProvider.assertAtLeastOnce( matcher );
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages( "TIME/PHASE Final:" );
     }
 
     private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )

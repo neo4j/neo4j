@@ -68,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -144,7 +145,7 @@ public class DetectAllRelationshipInconsistenciesIT
             int relationshipInconsistencies = summary.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
 
             assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );
-            logProvider.rawMessageMatcher().assertContains( sabotage.after.toString() );
+            assertThat( logProvider ).containsMessages( sabotage.after.toString() );
         }
         finally
         {

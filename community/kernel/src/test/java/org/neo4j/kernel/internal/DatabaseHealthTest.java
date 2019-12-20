@@ -29,13 +29,12 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class DatabaseHealthTest
 {
@@ -71,13 +70,9 @@ class DatabaseHealthTest
         databaseHealth.panic( exception );
 
         // THEN
-        logProvider.assertAtLeastOnce(
-                inLog( DatabaseHealth.class ).error(
-                        is( "Database panic: The database has encountered a critical error, " +
-                                "and needs to be restarted. Please see database logs for more details." ),
-                        sameInstance( exception )
-                )
-        );
+        assertThat( logProvider ).forClass( DatabaseHealth.class ).forLevel( ERROR )
+                .containsMessageWithException( "Database panic: The database has encountered a critical error, " +
+                                "and needs to be restarted. Please see database logs for more details.", exception );
     }
 
     @Test
@@ -93,8 +88,8 @@ class DatabaseHealthTest
 
         assertFalse( databaseHealth.isHealthy() );
         assertTrue( databaseHealth.healed() );
-        logProvider.rawMessageMatcher().assertContains( "Database health set to OK" );
-        logProvider.rawMessageMatcher().assertNotContains( "Database encountered a critical error and can't be healed. Restart required." );
+        assertThat( logProvider ).containsMessages( "Database health set to OK" )
+                .doesNotContainMessage( "Database encountered a critical error and can't be healed. Restart required." );
     }
 
     @Test
@@ -111,8 +106,7 @@ class DatabaseHealthTest
 
         assertFalse( databaseHealth.isHealthy() );
         assertFalse( databaseHealth.healed() );
-        logProvider.rawMessageMatcher().assertNotContains( "Database health set to OK" );
-        logProvider.rawMessageMatcher().assertContains(
-                "Database encountered a critical error and can't be healed. Restart required." );
+        assertThat( logProvider ).doesNotContainMessage( "Database health set to OK" )
+                .containsMessages( "Database encountered a critical error and can't be healed. Restart required." );
     }
 }

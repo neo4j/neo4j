@@ -39,8 +39,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.messaging.ResponseMessage;
+import org.neo4j.bolt.runtime.DefaultBoltConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -75,7 +75,8 @@ import static org.neo4j.bolt.testing.TransportTestUtil.ResponseMatcherOptionalit
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AuthenticationIT extends AbstractBoltTransportsTest
@@ -151,9 +152,16 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     private boolean authFailureLoggedToUserLog()
     {
-        String boltPackageName = BoltServer.class.getPackage().getName();
-        return logProvider.containsMatchingLogCall( inLog( containsString( boltPackageName ) )
-                .warn( containsString( "The client is unauthorized due to authentication failure." ) ) );
+        try
+        {
+            assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( WARN )
+                    .containsMessages( "The client is unauthorized due to authentication failure." );
+            return true;
+        }
+        catch ( AssertionError e )
+        {
+            return false;
+        }
     }
 
     @Test

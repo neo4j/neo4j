@@ -77,7 +77,9 @@ import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.testing.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -140,7 +142,8 @@ public class ShutdownSequenceIT
         assertThat( connection, util.eventuallyReceives( msgRecord( eqRecord( equalTo( stringValue( "0" ) ) ) ) ) );
         assertThat( connection, util.eventuallyReceives( msgFailure() ) );
         assertThat( connection, eventuallyDisconnects() );
-        internalLogProvider.assertAtLeastOnce( inLog( ExecutorBoltScheduler.class ).debug( "Thread pool shut down" ) );
+        assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
+                .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
     }
 
     @Test
@@ -154,7 +157,8 @@ public class ShutdownSequenceIT
 
         // Expect the connection to be silently closed.
         assertThat( connection, eventuallyDisconnects() );
-        internalLogProvider.assertAtLeastOnce( inLog( ExecutorBoltScheduler.class ).debug( "Thread pool shut down" ) );
+        assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
+                .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
     }
 
     @Test
@@ -201,9 +205,10 @@ public class ShutdownSequenceIT
 
         // Expect the connection to be terminated but the thread pool shutdown to time out
         assertThat( connection, eventuallyDisconnects() );
-        internalLogProvider.assertAtLeastOnce( inLog( ExecutorBoltScheduler.class ).warn(
+        assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
+                .forLevel( WARN ).containsMessageWithArguments(
                 "Waited %s for the thread pool to shutdown cleanly, but timed out waiting for existing work to finish cleanly",
-                THREAD_POOL_SHUTDOWN_WAIT_TIME ) );
+                THREAD_POOL_SHUTDOWN_WAIT_TIME );
 
         // Also the streaming thread should have been failed
         try

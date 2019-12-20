@@ -126,6 +126,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -205,8 +206,7 @@ class DatabaseRecoveryIT
         {
             assertEquals( 10, count( tx.getAllNodes() ) );
         }
-        logProvider.rawMessageMatcher().assertContains( "10% completed" );
-        logProvider.rawMessageMatcher().assertContains( "100% completed" );
+        assertThat( logProvider ).containsMessages( "10% completed", "100% completed" );
 
         recoveredService.shutdown();
     }

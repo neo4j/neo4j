@@ -35,6 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.api.index.LoggingPhaseTracker.PERIOD_INTERVAL;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class LoggingPhaseTrackerTest
 {
@@ -147,12 +150,11 @@ class LoggingPhaseTrackerTest
         phaseTracker.stop();
 
         // then
-        AssertableLogProvider.LogMatcher logMatcher = AssertableLogProvider.inLog( IndexPopulationJob.class ).info(
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages(
                 "TIME/PHASE Final: " +
                         "SCAN[totalTime=200ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=2], " +
                         "WRITE[totalTime=200ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=2], " +
                         "MERGE[totalTime=100ms], BUILD[totalTime=100ms], APPLY_EXTERNAL[totalTime=100ms], FLIP[totalTime=100ms]" );
-        logProvider.assertAtLeastOnce( logMatcher );
     }
 
     @Test
@@ -169,32 +171,29 @@ class LoggingPhaseTrackerTest
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
 
         // then
-        AssertableLogProvider.LogMatcher firstEntry =
-                AssertableLogProvider.inLog( IndexPopulationJob.class ).debug( "TIME/PHASE Total: SCAN[totalTime=1s], Last 1 sec: SCAN[totalTime=1s]" );
-        logProvider.assertExactly( firstEntry );
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( DEBUG ).containsMessages(
+                "TIME/PHASE Total: SCAN[totalTime=1s], Last 1 sec: SCAN[totalTime=1s]" );
 
         // when
         sleep( 1000 );
         phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
 
         // then
-        AssertableLogProvider.LogMatcher secondEntry =
-                AssertableLogProvider.inLog( IndexPopulationJob.class )
-                        .debug( "TIME/PHASE Total: SCAN[totalTime=1s], WRITE[totalTime=1s], Last 1 sec: WRITE[totalTime=1s]" );
-        logProvider.assertExactly( firstEntry, secondEntry );
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( DEBUG ).containsMessages(
+                        "TIME/PHASE Total: SCAN[totalTime=1s], WRITE[totalTime=1s], Last 1 sec: WRITE[totalTime=1s]" );
+//        logProvider.assertExactly( firstEntry, secondEntry );
 
         // when
         sleep( 1000 );
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
 
         // then
-        AssertableLogProvider.LogMatcher thirdEntry =
-                AssertableLogProvider.inLog( IndexPopulationJob.class )
-                        .debug( "TIME/PHASE Total: " +
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( DEBUG ).containsMessages(
+                                "TIME/PHASE Total: " +
                                 "SCAN[totalTime=2s, avgTime=1s, minTime=0ns, maxTime=1s, nbrOfReports=2], " +
                                 "WRITE[totalTime=1s], " +
                                 "Last 1 sec: SCAN[totalTime=1s]" );
-        logProvider.assertExactly( firstEntry, secondEntry, thirdEntry );
+//        logProvider.assertExactly( firstEntry, secondEntry, thirdEntry );
     }
 
     private LoggingPhaseTracker getPhaseTracker()

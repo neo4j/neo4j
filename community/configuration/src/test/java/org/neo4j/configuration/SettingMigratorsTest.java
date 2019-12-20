@@ -54,7 +54,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @TestDirectoryExtension
 class SettingMigratorsTest
@@ -110,7 +111,9 @@ class SettingMigratorsTest
 
         for ( String setting : legacySettings.keySet() )
         {
-            logProvider.assertAtLeastOnce( inLog( Config.class ).warn("Use of deprecated setting %s. Legacy ssl policy is no longer supported.", setting ) );
+            assertThat( logProvider ).forClass( Config.class )
+                    .forLevel( WARN )
+                    .containsMessageWithArguments( "Use of deprecated setting %s. Legacy ssl policy is no longer supported.", setting );
         }
 
     }
@@ -164,11 +167,12 @@ class SettingMigratorsTest
         assertTrue( config.get( HttpConnector.enabled ) );
         assertTrue( config.get( HttpsConnector.enabled ) );
 
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. Type is no longer required", "dbms.connector.bolt.type" ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
-                "dbms.connector.bolt2.type" ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
-                "dbms.connector.bolt2.listen_address" ) );
+        var warnConfigMatcher = assertThat( logProvider ).forClass( Config.class ).forLevel( WARN );
+        warnConfigMatcher.containsMessageWithArguments( "Use of deprecated setting %s. Type is no longer required", "dbms.connector.bolt.type" )
+                         .containsMessageWithArguments( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
+                "dbms.connector.bolt2.type" )
+                         .containsMessageWithArguments( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
+                "dbms.connector.bolt2.listen_address" );
     }
 
     @Test
@@ -181,8 +185,9 @@ class SettingMigratorsTest
         var logProvider = new AssertableLogProvider();
         config.setLogger( logProvider.getLog( Config.class ) );
 
-        logProvider.assertAtLeastOnce( inLog( Config.class )
-                .warn( "Setting %s is removed. It's no longer possible to disable verbose kill query logging.", "dbms.procedures.kill_query_verbose" ) );
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessageWithArguments( "Setting %s is removed. It's no longer possible to disable verbose kill query logging.",
+                        "dbms.procedures.kill_query_verbose" );
     }
 
     @Test
@@ -207,7 +212,7 @@ class SettingMigratorsTest
             {
                 expectedWarning += " Value migrated from " + oldSchemaProvider + " to " + migrationMap.get( oldSchemaProvider ) + ".";
             }
-            logProvider.assertAtLeastOnce( inLog( Config.class ).warn( expectedWarning ) );
+            assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages( expectedWarning );
         }
     }
 
@@ -244,7 +249,8 @@ class SettingMigratorsTest
         assertEquals( newValue, config.get( setting ) );
 
         String msg = "Use of deprecated setting value %s=%s. It is replaced by %s=%s";
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, setting.name(), oldValue.toString(), setting.name(), newValue.name() ) );
+        assertThat(logProvider).forClass( Config.class ).forLevel( WARN )
+                .containsMessageWithArguments( msg, setting.name(), oldValue.toString(), setting.name(), newValue.name() );
     }
 
     private static void testAddrMigration( Setting<SocketAddress> listenAddr, Setting<SocketAddress> advertisedAddr )
@@ -273,13 +279,14 @@ class SettingMigratorsTest
 
         String msg = "Use of deprecated setting port propagation. port %s is migrated from %s to %s.";
 
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 111, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 222, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 333, listenAddr.name(), advertisedAddr.name() ) );
+        var logAssertion = assertThat( logProvider ).forLevel( WARN ).forClass( Config.class );
+        logAssertion.containsMessageWithArguments( msg, 111, listenAddr.name(), advertisedAddr.name() )
+                    .containsMessageWithArguments( msg, 222, listenAddr.name(), advertisedAddr.name() )
+                    .containsMessageWithArguments( msg, 333, listenAddr.name(), advertisedAddr.name() );
 
-        logProvider.assertNone( inLog( Config.class ).warn( msg, 444, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertNone( inLog( Config.class ).warn( msg, 555, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertNone( inLog( Config.class ).warn( msg, 666, listenAddr.name(), advertisedAddr.name() ) );
+        logAssertion.doesNotContainMessageWithArguments( msg, 444, listenAddr.name(), advertisedAddr.name() )
+                    .doesNotContainMessageWithArguments( msg, 555, listenAddr.name(), advertisedAddr.name() )
+                    .doesNotContainMessageWithArguments( msg, 666, listenAddr.name(), advertisedAddr.name() );
     }
 
     private static void testMigrateSslPolicy( String oldGroupnameSetting, SslPolicyConfig policyConfig )
@@ -292,9 +299,9 @@ class SettingMigratorsTest
 
         assertTrue( config.get( policyConfig.trust_all ) );
 
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s.", oldGroupnameSetting ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class )
-                .warn( "Use of deprecated setting %s. It is replaced by %s", oldFormatSetting, policyConfig.trust_all.name() ) );
+        assertThat( logProvider ).forLevel( WARN ).forClass( Config.class )
+                .containsMessageWithArguments(  "Use of deprecated setting %s.", oldGroupnameSetting )
+                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s", oldFormatSetting, policyConfig.trust_all.name() );
     }
 
     private void shouldRemoveAllowKeyGeneration( String toRemove, String value )
@@ -306,7 +313,8 @@ class SettingMigratorsTest
 
         assertThrows( IllegalArgumentException.class, () -> config.getSetting( toRemove ) );
 
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Setting %s is removed. A valid key and certificate are required " +
-                "to be present in the key and certificate path configured in this ssl policy.", toRemove ) );
+        assertThat( logProvider ).forLevel( WARN ).forClass( Config.class )
+                .containsMessageWithArguments( "Setting %s is removed. A valid key and certificate are required " +
+                        "to be present in the key and certificate path configured in this ssl policy.", toRemove );
     }
 }

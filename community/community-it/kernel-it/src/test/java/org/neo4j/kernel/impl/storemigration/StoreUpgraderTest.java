@@ -88,6 +88,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 @PageCacheExtension
@@ -292,10 +293,7 @@ public class StoreUpgraderTest
             new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout );
 
         // Then
-        AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
-        messageMatcher.assertContains( "Store files" );
-        messageMatcher.assertContains( "Indexes" );
-        messageMatcher.assertContains( "Successfully finished" );
+        assertThat( logProvider ).containsMessages( "Store files", "Indexes", "Successfully finished" );
     }
 
     @ParameterizedTest
@@ -354,8 +352,7 @@ public class StoreUpgraderTest
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
             .migrateIfNeeded( migrationLayout );
 
-        logProvider.rawMessageMatcher().assertContains( "Starting transaction logs migration." );
-        logProvider.rawMessageMatcher().assertContains( "Transaction logs migration completed." );
+        assertThat( logProvider ).containsMessages( "Starting transaction logs migration.", "Transaction logs migration completed." );
         assertThat( getLogFiles( migrationLayout.databaseDirectory() ) ).isEmpty();
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
         assertTrue( fileSystem.fileExists( databaseTransactionLogsHome ) );

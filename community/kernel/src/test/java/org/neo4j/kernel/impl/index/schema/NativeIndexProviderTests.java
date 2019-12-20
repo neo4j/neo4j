@@ -59,6 +59,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @EphemeralPageCacheExtension
 abstract class NativeIndexProviderTests
@@ -248,13 +249,14 @@ abstract class NativeIndexProviderTests
 
         // then
         assertEquals( expectedStateOnNonExistingSubIndex, state );
+        var logAssert = assertThat( logging );
         if ( InternalIndexState.POPULATING == expectedStateOnNonExistingSubIndex )
         {
-            logging.rawMessageMatcher().assertContains( "Failed to open index" );
+            logAssert.containsMessages( "Failed to open index" );
         }
         else
         {
-            logging.rawMessageMatcher().assertNotContains( "Failed to open index" );
+            logAssert.doesNotContainMessage( "Failed to open index" );
         }
     }
 

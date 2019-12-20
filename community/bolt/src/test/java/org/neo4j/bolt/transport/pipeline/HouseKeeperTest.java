@@ -41,14 +41,14 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 
 import static io.netty.buffer.ByteBufUtil.writeUtf8;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 public class HouseKeeperTest
 {
@@ -108,8 +108,8 @@ public class HouseKeeperTest
         channel.pipeline().fireExceptionCaught( exception );
 
         verify( connection ).stop();
-        logProvider.assertExactly(
-                inLog( HouseKeeper.class ).error( startsWith( "Fatal error occurred when handling a client connection" ), equalTo( exception ) ) );
+        assertThat( logProvider ).forClass( HouseKeeper.class ).forLevel( ERROR )
+                .containsMessageWithException( "Fatal error occurred when handling a client connection", exception );
     }
 
     @Test
@@ -155,7 +155,7 @@ public class HouseKeeperTest
             bootstrap.config().group().shutdownGracefully().sync();
         }
 
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -189,12 +189,12 @@ public class HouseKeeperTest
             bootstrap.config().group().shutdownGracefully().sync();
         }
 
-        logProvider.assertExactly(
-                inLog( HouseKeeper.class ).error( startsWith( "Fatal error occurred when handling a client connection" ), equalTo( error1 ) ) );
+        assertThat( logProvider ).forClass( HouseKeeper.class ).forLevel( ERROR )
+                .containsMessageWithException( "Fatal error occurred when handling a client connection", error1 );
     }
 
     @Test
-    void shouldNotLogConnectionResetErrors() throws Exception
+    void shouldNotLogConnectionResetErrors()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -210,8 +210,8 @@ public class HouseKeeperTest
         keeper.exceptionCaught( ctx, connResetError );
 
         // Then
-        logProvider.assertExactly( AssertableLogProvider.inLog( HouseKeeper.class ).warn(
-                "Fatal error occurred when handling a client connection, " + "remote peer unexpectedly closed connection: %s", channel ) );
+        assertThat( logProvider ).forClass( HouseKeeper.class ).forLevel( WARN ).containsMessageWithArguments(
+                "Fatal error occurred when handling a client connection, " + "remote peer unexpectedly closed connection: %s", channel );
     }
 
     private static Bootstrap newBootstrap( HouseKeeper houseKeeper )

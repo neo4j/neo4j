@@ -92,6 +92,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -192,7 +194,7 @@ class RecordStorageMigratorIT
                 databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider(), NULL );
         storeFactory.openAllNeoStores().close();
-        logProvider.rawMessageMatcher().assertNotContains( "ERROR" );
+        assertThat( logProvider ).forLevel( ERROR ).doesNotHaveAnyLogs();
     }
 
     @ParameterizedTest

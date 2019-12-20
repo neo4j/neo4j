@@ -53,6 +53,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @EphemeralTestDirectoryExtension
 class FileUserRepositoryTest
@@ -224,12 +226,10 @@ class FileUserRepositoryTest
         assertThat( e.getMessage(), startsWith( "Failed to read authentication file: " ) );
 
         assertThat( users.numberOfUsers(), equalTo( 0 ) );
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( FileUserRepository.class ).error(
+        assertThat( logProvider ).forClass( FileUserRepository.class ).forLevel( ERROR )
+                .containsMessageWithArguments(
                         "Failed to read authentication file \"%s\" (%s)", authFile.getAbsolutePath(),
-                        "wrong number of line fields, expected 3, got 4 [line 2]"
-                )
-        );
+                        "wrong number of line fields, expected 3, got 4 [line 2]" );
     }
 
     @Test

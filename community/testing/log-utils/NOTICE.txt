@@ -28,14 +28,10 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
+  AssertJ fluent assertions
   Byte Buddy (without dependencies)
   Byte Buddy agent
   Objenesis
-  org.apiguardian:apiguardian-api
-  org.opentest4j:opentest4j
-
-BSD License
-  Hamcrest
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -44,11 +40,6 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-
-Eclipse Public License v2.0
-  JUnit Platform Commons
-  JUnit Platform Engine API
-  JUnit Vintage Engine
 
 MIT License
   mockito-core

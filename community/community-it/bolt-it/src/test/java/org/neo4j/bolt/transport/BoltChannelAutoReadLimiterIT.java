@@ -53,11 +53,11 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.AnyValue;
 
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.anything;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 public class BoltChannelAutoReadLimiterIT
 {
@@ -125,12 +125,8 @@ public class BoltChannelAutoReadLimiterIT
             assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
         }
 
-        logProvider.assertAtLeastOnce(
-                AssertableLogProvider.inLog( BoltConnectionReadLimiter.class ).warn( containsString( "disabled" ), anything(),
-                        anything() ) );
-        logProvider.assertAtLeastOnce(
-                AssertableLogProvider.inLog( BoltConnectionReadLimiter.class ).warn( containsString( "enabled" ), anything(),
-                        anything() ) );
+        assertThat( logProvider ).forClass( BoltConnectionReadLimiter.class )
+                .forLevel( WARN ).containsMessages( "disabled", "enabled" );
     }
 
     private static void installSleepProcedure( GraphDatabaseService db ) throws ProcedureException

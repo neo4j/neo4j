@@ -32,15 +32,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.test.matchers.CommonMatchers.hasSuppressed;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 public class MessageProcessingHandlerTest
 {
@@ -105,19 +103,20 @@ public class MessageProcessingHandlerTest
         AssertableLogProvider logProvider = emulateFailureWritingError( txTerminated, outputClosed );
 
         // Then
-        logProvider.assertExactly( inLog( "Test" ).warn( equalTo(
+        assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
+                .containsMessageWithArguments(
                 "Client %s disconnected while query was running. Session has been cleaned up. " +
                         "This can be caused by temporary network problems, but if you see this often, ensure your " +
-                        "applications are properly waiting for operations to complete before exiting." ),
-                equalTo( "<client>" ) ) );
+                        "applications are properly waiting for operations to complete before exiting.",
+                 "<client>" );
     }
 
     private static void testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError original ) throws Exception
     {
         PackOutputClosedException outputClosed = new PackOutputClosedException( "Output closed", "<client>" );
         AssertableLogProvider logProvider = emulateFailureWritingError( original, outputClosed );
-        logProvider.assertExactly( inLog( "Test" ).warn( startsWith( "Unable to send error back to the client" ),
-                equalTo( original.cause() ) ) );
+        assertThat( logProvider ).forClass( MessageProcessingHandlerTest.class ).forLevel( WARN )
+                .containsMessageWithException( "Unable to send error back to the client", original.cause() );
     }
 
     private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( Neo4jError original )
@@ -125,8 +124,9 @@ public class MessageProcessingHandlerTest
     {
         RuntimeException outputError = new RuntimeException( "Output failed" );
         AssertableLogProvider logProvider = emulateFailureWritingError( original, outputError );
-        logProvider.assertExactly( inLog( "Test" ).error( startsWith( "Unable to send error back to the client" ),
-                both( equalTo( outputError ) ).and( hasSuppressed( original.cause() ) ) ) );
+        assertThat( logProvider ).forClass( MessageProcessingHandlerTest.class ).forLevel( ERROR )
+                .containsMessageWithException( "Unable to send error back to the client", outputError );
+        assertThat( outputError ).hasSuppressedException( original.cause() );
     }
 
     private static AssertableLogProvider emulateFailureWritingError( Neo4jError error, Throwable errorDuringWrite )
@@ -137,7 +137,7 @@ public class MessageProcessingHandlerTest
 
         MessageProcessingHandler handler =
                 new MessageProcessingHandler( responseHandler, mock( BoltConnection.class ),
-                        logProvider.getLog( "Test" ) );
+                        logProvider.getLog( MessageProcessingHandlerTest.class ) );
 
         handler.markFailed( error );
         handler.onFinish();

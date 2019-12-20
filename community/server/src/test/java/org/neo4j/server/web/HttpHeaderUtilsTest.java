@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.web.HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 import static org.neo4j.server.web.HttpHeaderUtils.isValidHttpHeaderName;
@@ -48,7 +49,7 @@ public class HttpHeaderUtilsTest
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( 100, transactionTimeout, "Transaction timeout should be retrieved." );
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -57,7 +58,7 @@ public class HttpHeaderUtilsTest
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( 0, transactionTimeout, "Transaction timeout not specified." );
-        logProvider.assertNoLoggingOccurred();
+        assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -67,7 +68,7 @@ public class HttpHeaderUtilsTest
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( 0, transactionTimeout, "Transaction timeout not specified." );
-        logProvider.rawMessageMatcher().assertContains("Fail to parse `max-execution-time` " +
+        assertThat( logProvider ).containsMessages( "Fail to parse `max-execution-time` " +
                 "header with value: 'aa'. Should be a positive number.");
     }
 

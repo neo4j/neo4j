@@ -28,7 +28,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.time.FakeClock;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class VisibleMigrationProgressMonitorTest
 {
@@ -73,8 +74,8 @@ class VisibleMigrationProgressMonitorTest
         monitor.startTransactionLogsMigration();
         monitor.completeTransactionLogsMigration();
 
-        logProvider.rawMessageMatcher().assertContains( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_STARTED );
-        logProvider.rawMessageMatcher().assertContains( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_COMPLETED );
+        assertThat( logProvider ).containsMessages( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_STARTED,
+                VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_COMPLETED );
     }
 
     @Test
@@ -92,18 +93,19 @@ class VisibleMigrationProgressMonitorTest
         monitor.completed();
 
         // then
-        logProvider.formattedMessageMatcher().assertContains( "took 1s 500ms" );
+        assertThat( logProvider ).containsMessages( "took 1s 500ms" );
     }
 
     private void verifySectionReportedCorrectly( AssertableLogProvider logProvider )
     {
-        logProvider.formattedMessageMatcher().assertContains( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
+        var messageMatcher = assertThat( logProvider );
+        messageMatcher.containsMessages( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
         for ( int i = 10; i <= 100; i += 10 )
         {
-            logProvider.formattedMessageMatcher().assertContains( i + "%" );
+            messageMatcher.containsMessages( i + "%" );
         }
-        logProvider.assertNone( AssertableLogProvider.inLog( VisibleMigrationProgressMonitor.class ).info( containsString( "110%" ) ) );
-        logProvider.formattedMessageMatcher().assertContains( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
+        messageMatcher.containsMessages( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
+        messageMatcher.forClass( VisibleMigrationProgressMonitor.class ).forLevel( INFO ).doesNotContainMessage( "110%" );
     }
 
     private void monitorSection( VisibleMigrationProgressMonitor monitor, String name, int max, int... steps )

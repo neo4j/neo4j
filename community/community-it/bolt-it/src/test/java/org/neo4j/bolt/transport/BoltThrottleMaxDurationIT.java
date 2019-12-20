@@ -20,7 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,7 +37,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.DefaultBoltConnection;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.SocketConnection;
@@ -56,17 +55,14 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 @RunWith( Parameterized.class )
 public class BoltThrottleMaxDurationIT
@@ -143,7 +139,7 @@ public class BoltThrottleMaxDurationIT
         assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
-        Future sender = otherThread.execute( state ->
+        Future<?> sender = otherThread.execute( state ->
         {
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {
@@ -164,11 +160,9 @@ public class BoltThrottleMaxDurationIT
             assertThat( getRootCause( e ), instanceOf( SocketException.class ) );
         }
 
-        logProvider.assertAtLeastOnce( inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error(
-                startsWith( "Unexpected error detected in bolt session" ),
-                hasProperty( "cause",
-                        matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) )
-        ) );
+        assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )
+                .assertExceptionForLogMessage( "Unexpected error detected in bolt session" )
+                .hasStackTraceContaining( "will be closed because the client did not consume outgoing buffers for " );
     }
 
 }

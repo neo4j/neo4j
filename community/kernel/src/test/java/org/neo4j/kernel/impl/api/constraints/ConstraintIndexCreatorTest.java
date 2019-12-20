@@ -73,10 +73,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class ConstraintIndexCreatorTest
 {
@@ -168,7 +169,7 @@ class ConstraintIndexCreatorTest
         // then
         assertEquals( 1, kernel.transactions.size() );
         verify( kernel.transactions.get( 0 ) ).addIndexDoDropToTxState( index );
-        verifyZeroInteractions( indexingService );
+        verifyNoInteractions( indexingService );
     }
 
     @Test
@@ -327,9 +328,9 @@ class ConstraintIndexCreatorTest
 
         creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
-        logProvider.rawMessageMatcher().assertContains( "Starting constraint creation: %s." );
-        logProvider.rawMessageMatcher().assertContains( "Constraint %s populated, starting verification." );
-        logProvider.rawMessageMatcher().assertContains( "Constraint %s verified." );
+        assertThat( logProvider ).containsMessages( "Starting constraint creation: %s.",
+                                                    "Constraint %s populated, starting verification.",
+                                                    "Constraint %s verified." );
     }
 
     private class StubKernel implements Kernel

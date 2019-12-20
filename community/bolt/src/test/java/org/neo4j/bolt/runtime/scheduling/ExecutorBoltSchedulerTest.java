@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.function.Predicates;
@@ -63,7 +62,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class ExecutorBoltSchedulerTest
 {
@@ -196,7 +196,8 @@ class ExecutorBoltSchedulerTest
         AtomicBoolean stopped = new AtomicBoolean();
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
-        doThrow( new RuntimeException( "some unexpected error" ) ).when( connection ).processNextBatch();
+        var unexpectedError = new RuntimeException( "some unexpected error" );
+        doThrow( unexpectedError ).when( connection ).processNextBatch();
         doAnswer( inv -> stopped.getAndSet( true ) ).when( connection ).stop();
 
         boltScheduler.init();
@@ -210,9 +211,9 @@ class ExecutorBoltSchedulerTest
         verify( connection ).processNextBatch();
         verify( connection ).stop();
 
-        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
-                containsString( "Unexpected error during job scheduling for session" ),
-                matchesExceptionMessage( containsString( "some unexpected error" ) ) ) );
+        assertThat( logProvider ).forClass( ExecutorBoltScheduler.class ).forLevel( ERROR )
+                .assertExceptionForLogMessage( "Unexpected error during job scheduling for session")
+                .hasCause( unexpectedError );
     }
 
     @Test

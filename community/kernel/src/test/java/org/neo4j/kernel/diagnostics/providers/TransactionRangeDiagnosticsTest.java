@@ -36,6 +36,7 @@ import org.neo4j.logging.Logger;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 class TransactionRangeDiagnosticsTest
 {
@@ -51,8 +52,9 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
-        logProvider.rawMessageMatcher().assertContains( "Transaction log files stored on file store:" );
-        logProvider.rawMessageMatcher().assertContains( "No transactions" );
+        assertThat( logProvider )
+                .containsMessages( "Transaction log files stored on file store:" )
+                .containsMessages( "No transactions" );
     }
 
     @Test
@@ -70,8 +72,8 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
-        logProvider.rawMessageMatcher().assertContains( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.rawMessageMatcher().assertContains( "version " + logVersion );
+        assertThat( logProvider ).containsMessages( "transaction " + (prevLogLastTxId + 1),
+                                                    "version " + logVersion );
     }
 
     @Test
@@ -89,8 +91,7 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
-        logProvider.rawMessageMatcher().assertContains( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.rawMessageMatcher().assertContains( "version " + (logVersion + 1) );
+        assertThat( logProvider ).containsMessages( "transaction " + (prevLogLastTxId + 1), "version " + (logVersion + 1) );
     }
 
     private static Database databaseWithLogFilesContainingLowestTxId( LogFiles files )

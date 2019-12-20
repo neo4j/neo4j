@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobHandle;
@@ -78,9 +77,6 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -104,7 +100,9 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 class IndexPopulationJobTest
@@ -419,10 +417,10 @@ class IndexPopulationJobTest
             job.run();
 
             // Then
-            LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-            logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                    match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" ),
-                    match.info( containsString( "TIME/PHASE Final: SCAN[" ) ) );
+            var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
+            matcher.containsMessageWithArguments( "Index population started: [%s]", ":FIRST(name)" )
+                   .containsMessageWithArguments( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
+                    .containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
         {
@@ -448,10 +446,10 @@ class IndexPopulationJobTest
             job.run();
 
             // Then
-            LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-            logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                    match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" ),
-                    match.info( containsString( "TIME/PHASE Final: SCAN[" ) ));
+            var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
+            matcher.containsMessageWithArguments( "Index population started: [%s]", ":FIRST(name)" )
+                    .containsMessageWithArguments( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" )
+                    .containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
         {
@@ -476,10 +474,8 @@ class IndexPopulationJobTest
         job.run();
 
         // Then
-        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        logProvider.assertAtLeastOnce(
-                match.error( is( "Failed to populate index: [:FIRST(name)]" ), sameInstance( failure ) )
-        );
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR )
+                .containsMessageWithException( "Failed to populate index: [:FIRST(name)]", failure );
     }
 
     @Test
