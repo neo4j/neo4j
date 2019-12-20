@@ -27,7 +27,7 @@ import static org.neo4j.util.Preconditions.checkState;
 final class SunManagementHeapAllocation extends HeapAllocation
 {
     /**
-     * Invoked from {@link HeapAllocation#load(java.lang.management.ThreadMXBean)} through reflection.
+     * Invoked from {@code HeapAllocation#load(java.lang.management.ThreadMXBean)} through reflection.
      */
     @SuppressWarnings( "unused" )
     static HeapAllocation load( java.lang.management.ThreadMXBean bean )

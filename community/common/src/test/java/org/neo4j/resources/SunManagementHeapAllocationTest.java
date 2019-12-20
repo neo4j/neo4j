@@ -19,7 +19,6 @@
  */
 package org.neo4j.resources;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -29,18 +28,11 @@ import static java.lang.Thread.currentThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.resources.HeapAllocation.HEAP_ALLOCATION;
 import static org.neo4j.resources.HeapAllocation.NOT_AVAILABLE;
 
 class SunManagementHeapAllocationTest
 {
-    @BeforeEach
-    void onlyOnSupportedJvms()
-    {
-        assumeTrue( System.getProperties().getProperty( "java.vendor" ).equals( "Oracle Corporation") );
-    }
-
     @Test
     void shouldLoadHeapAllocation()
     {
