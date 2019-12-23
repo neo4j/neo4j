@@ -46,7 +46,9 @@ object Selection {
 }
 
 object SelectionMatcher {
-  def unapply(arg: Selection): Option[(Seq[Expression], LogicalPlan)] = Some(
-  (arg.predicate.exprs.toSeq, arg.source)
-  )
+  def unapply(arg: Selection): Option[(Seq[Expression], LogicalPlan)] = {
+    Some(
+      (arg.predicate.exprs.toSeq, arg.source)
+      )
+  }
 }

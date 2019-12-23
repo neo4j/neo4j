@@ -99,9 +99,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "MATCH (n) RETURN n, count(*) AS c order by c",
-      """MATCH (n)
-        |RETURN n AS n, count(*) AS c ORDER BY c""".stripMargin,
-      List(varFor("n"))
+      """MATCH (`  n@7`)
+        |RETURN `  n@7` AS n, count(*) AS c ORDER BY c""".stripMargin,
+      List(varFor("  n@7"))
     ),
     TestCase(
       "WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng",

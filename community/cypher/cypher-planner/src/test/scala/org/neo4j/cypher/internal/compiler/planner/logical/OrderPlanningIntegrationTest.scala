@@ -238,11 +238,11 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   test("ORDER BY column that isn't referenced in WITH DISTINCT") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name")._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("a", "name")
+    val labelScan = NodeByLabelScan("  a@7", labelName("A"), Set.empty)
+    val ageProperty = prop("  a@43", "age")
+    val nameProperty = prop("  a@43", "name")
 
-    val distinct = Distinct(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")))
+    val distinct = Distinct(labelScan, Map("name" -> nameProperty, "  a@43" -> varFor("  a@7")))
     val projection = Projection(distinct, Map("a.age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("a.age")))
 
@@ -280,13 +280,13 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   test("ORDER BY column that isn't referenced in WITH GROUP BY") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age")._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("a", "name")
-    val fooProperty = prop("a", "foo")
+    val labelScan = NodeByLabelScan("  a@7", labelName("A"), Set.empty)
+    val ageProperty = prop("  a@7", "age")
+    val nameProperty = prop("  a@7", "name")
+    val fooProperty = prop("  a@34", "foo")
     val ageSum = sum(ageProperty)
 
-    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")), Map("age" -> ageSum))
+    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, "  a@34" -> varFor("  a@7")), Map("age" -> ageSum))
     val projection = Projection(aggregation, Map("a.foo" -> fooProperty))
     val sort = Sort(projection, Seq(Ascending("a.foo")))
 

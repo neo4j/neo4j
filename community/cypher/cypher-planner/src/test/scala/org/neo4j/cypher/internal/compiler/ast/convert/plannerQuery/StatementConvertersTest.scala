@@ -868,20 +868,20 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // (owner)-[`  REL62`]-(`  NODE64`)
     val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("owner")), Seq.empty, None)(pos),
+      NodePattern(Some(varFor("  owner@20")), Seq.empty, None)(pos),
       RelationshipPattern(Some(varFor("  REL62")), Seq.empty, None, None, BOTH)(pos),
       NodePattern(Some(varFor("  NODE64")), Seq.empty, None)(pos))(pos))(pos))
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("owner")),
       horizon = AggregatingQueryProjection(
-        groupingExpressions = Map("owner" -> varFor("owner")),
+        groupingExpressions = Map("  owner@20" -> Variable("  owner@7")),
         aggregationExpressions = Map("collected" -> CountStar()(pos)),
-        selections = Selections(Set(Predicate(Set("owner", "  REL62", "  NODE64"),
+        selections = Selections(Set(Predicate(Set("  owner@20", "  REL62", "  NODE64"),
                                               exists(patternExpression))))),
       tail = Some(RegularSinglePlannerQuery(
-        queryGraph = QueryGraph(argumentIds = Set("collected", "owner")),
-        horizon = RegularQueryProjection(projections = Map("owner" -> varFor("owner")))
+        queryGraph = QueryGraph(argumentIds = Set("collected", "  owner@20")),
+        horizon = RegularQueryProjection(projections = Map("owner" -> varFor("  owner@20")))
       ))
     )
 
