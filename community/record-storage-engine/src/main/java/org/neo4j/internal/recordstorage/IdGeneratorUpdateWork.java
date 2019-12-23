@@ -26,6 +26,8 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.util.concurrent.Work;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdateWork>
 {
     private final List<ChangedIds> changeList = new ArrayList<>();
@@ -45,7 +47,7 @@ public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdate
     @Override
     public void apply( IdGenerator idGenerator )
     {
-        try ( Marker marker = idGenerator.marker() )
+        try ( Marker marker = idGenerator.marker( TRACER_SUPPLIER.get() ) )
         {
             for ( ChangedIds changes : this.changeList )
             {

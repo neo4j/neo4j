@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -79,6 +80,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -101,10 +103,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
-            JobScheduler jobScheduler, LogService logService )
+            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer )
     {
-        RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler );
-        IdGeneratorMigrator idGeneratorMigrator = new IdGeneratorMigrator( fs, pageCache, config );
+        RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler, cacheTracer );
+        IdGeneratorMigrator idGeneratorMigrator = new IdGeneratorMigrator( fs, pageCache, config, cacheTracer );
         return List.of( recordStorageMigrator, idGeneratorMigrator );
     }
 
@@ -112,10 +114,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider logProvider,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean createStoreIfNotExists )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists )
     {
         return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
-                indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector, createStoreIfNotExists );
+                indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector, cacheTracer,
+                createStoreIfNotExists );
     }
 
     @Override
@@ -151,11 +154,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache )
+    public TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
+            PageCacheTracer cacheTracer )
     {
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance() );
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, recordFormats,
-                NullLogProvider.getInstance() )
+                NullLogProvider.getInstance(), cacheTracer )
                 .openNeoStores( META_DATA ).getMetaDataStore();
     }
 
@@ -168,15 +172,15 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            LogService logService, String recordFormats )
+            LogService logService, String recordFormats, PageCacheTracer cacheTracer )
     {
         RecordFormats formats = selectForVersion( recordFormats );
         StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, formats,
-                logService.getInternalLogProvider() );
+                logService.getInternalLogProvider(), cacheTracer );
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         try
         {
-            stores.start();
+            stores.start( TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {
@@ -200,7 +204,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
             int nameId = Iterables.first( nameRecords ).getIntId();
             PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
-            long tokenId = keyTokenStore.nextId();
+            long tokenId = keyTokenStore.nextId( TRACER_SUPPLIER.get() );
             keyTokenRecord.setId( tokenId );
             keyTokenRecord.initialize( true, nameId );
             keyTokenRecord.setInternal( internal );

@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
@@ -156,5 +158,5 @@ public interface TransactionIdStore
     /**
      * Forces the transaction id counters to persistent storage.
      */
-    void flush();
+    void flush( PageCursorTracer cursorTracer );
 }

@@ -19,13 +19,15 @@
  */
 package org.neo4j.internal.id;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Storage id controller that provide buffering possibilities to be able so safely free and reuse ids.
@@ -34,21 +36,23 @@ import org.neo4j.scheduler.JobScheduler;
  */
 public class BufferedIdController extends LifecycleAdapter implements IdController
 {
+    private static final String BUFFERED_ID_CONTROLLER = "idController";
     private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
-    private JobHandle jobHandle;
+    private final PageCacheTracer pageCacheTracer;
+    private JobHandle<?> jobHandle;
 
-    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler )
+    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler, PageCacheTracer pageCacheTracer )
     {
         this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
         this.scheduler = scheduler;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
     public void start()
     {
-        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, this::maintenance, 1,
-                TimeUnit.SECONDS );
+        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, this::maintenance, 1, SECONDS );
     }
 
     @Override
@@ -70,7 +74,10 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     @Override
     public void maintenance()
     {
-        bufferingIdGeneratorFactory.maintenance();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( BUFFERED_ID_CONTROLLER ) )
+        {
+            bufferingIdGeneratorFactory.maintenance( cursorTracer );
+        }
     }
 
     @Override

@@ -47,6 +47,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -69,6 +71,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -203,10 +206,10 @@ class NodeStoreTest
         // Given
         NodeStore store = newNodeStore( fs );
 
-        long exists = store.nextId();
+        long exists = store.nextId( NULL );
         store.updateRecord( new NodeRecord( exists, false, 10, 20, true ) );
 
-        long deleted = store.nextId();
+        long deleted = store.nextId( NULL );
         store.updateRecord( new NodeRecord( deleted, false, 10, 20, true ) );
         store.updateRecord( new NodeRecord( deleted, false, 10, 20, false ) );
 
@@ -230,7 +233,7 @@ class NodeStoreTest
             int nextRelCandidate = rng.nextInt( 0, Integer.MAX_VALUE );
             if ( nextRelSet.add( nextRelCandidate ) )
             {
-                long nodeId = nodeStore.nextId();
+                long nodeId = nodeStore.nextId( NULL );
                 NodeRecord record = new NodeRecord( nodeId, false, nextRelCandidate, 20, true );
                 nodeStore.updateRecord( record );
                 if ( rng.nextInt( 0, 10 ) < 3 )
@@ -306,8 +309,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener );
 
         // THEN
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ) );
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( PageCursorTracer.class ) );
     }
 
     @Test
@@ -327,8 +330,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener );
 
         // THEN
-        verify( idUpdateListener, never() ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ) );
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ) );
+        verify( idUpdateListener, never() ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( PageCursorTracer.class ) );
     }
 
     @Test
@@ -348,8 +351,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener );
 
         // then
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ) );
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( PageCursorTracer.class ) );
     }
 
     @Test
@@ -371,8 +374,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener );
 
         // then
-        verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ) );
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ) );
+        verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( PageCursorTracer.class ) );
     }
 
     private NodeStore newNodeStore( FileSystemAbstraction fs )
@@ -386,14 +389,15 @@ class NodeStoreTest
         {
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                    File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, OpenOption[] openOptions )
+                    File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+                    OpenOption[] openOptions )
             {
-                return spy(
-                        super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, openOptions ) );
+                return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, cursorTracer,
+                        openOptions ) );
             }
         } );
         StoreFactory factory =
-                new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance() );
+                new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
         return nodeStore;

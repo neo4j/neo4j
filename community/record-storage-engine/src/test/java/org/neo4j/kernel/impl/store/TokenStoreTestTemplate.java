@@ -40,7 +40,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -57,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -74,7 +74,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     private DynamicStringStore nameStore;
 
     @BeforeEach
-    private void setUp() throws IOException
+    void setUp() throws IOException
     {
         File file = dir.file( "label-tokens.db" );
         File idFile = dir.file( "label-tokens.db.id" );
@@ -89,17 +89,17 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         nameStore = new DynamicStringStore( namesFile, namesIdFile, config, IdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
                 TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion() );
         store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
-        nameStore.initialise( true );
-        store.initialise( true );
-        nameStore.start();
-        store.start();
+        nameStore.initialise( true, NULL );
+        store.initialise( true, NULL );
+        nameStore.start( NULL );
+        store.start( NULL );
     }
 
     protected abstract TokenStore<R> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config );
 
     @AfterEach
-    private void tearDown() throws IOException
+    void tearDown() throws IOException
     {
         IOUtils.closeAll( store, nameStore );
     }
@@ -208,7 +208,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     private R createInUseRecord( List<DynamicRecord> nameRecords )
     {
         R tokenRecord = store.newRecord();
-        tokenRecord.setId( store.nextId() );
+        tokenRecord.setId( store.nextId( NULL ) );
         tokenRecord.initialize( true, nameRecords.get( 0 ).getIntId() );
         tokenRecord.addNameRecords( nameRecords );
         tokenRecord.setCreated();
@@ -217,7 +217,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
 
     private void createEmptyPageZero() throws IOException
     {
-        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
+        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
         {
             // Create an empty page in the file. All records in here will look like they are unused.
             assertTrue( cursor.next() );

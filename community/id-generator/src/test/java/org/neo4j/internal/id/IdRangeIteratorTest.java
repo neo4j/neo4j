@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Execution( CONCURRENT )
 class IdRangeIteratorTest
@@ -44,11 +45,11 @@ class IdRangeIteratorTest
         // when
         for ( int i = 0; i < rangeLength; i++ )
         {
-            iterator.nextId();
+            iterator.nextId( NULL );
         }
 
         // then
-        assertEquals( IdRangeIterator.VALUE_REPRESENTING_NULL, iterator.nextId() );
+        assertEquals( IdRangeIterator.VALUE_REPRESENTING_NULL, iterator.nextId( NULL ) );
     }
 
     @Test
@@ -62,7 +63,7 @@ class IdRangeIteratorTest
         Set<Long> seenIds = new HashSet<>();
         for ( int i = 0; i < rangeLength; i++ )
         {
-            seenIds.add( iterator.nextId() );
+            seenIds.add( iterator.nextId( NULL ) );
             if ( i > 0 )
             {
                 // then
@@ -79,10 +80,10 @@ class IdRangeIteratorTest
         IdRangeIterator iterator = new IdRange( new long[] {7, 8, 9}, 1024, rangeLength ).iterator();
 
         // then
-        assertEquals( 7, iterator.nextId() );
-        assertEquals( 8, iterator.nextId() );
-        assertEquals( 9, iterator.nextId() );
-        assertEquals( 1024, iterator.nextId() );
+        assertEquals( 7, iterator.nextId( NULL ) );
+        assertEquals( 8, iterator.nextId( NULL ) );
+        assertEquals( 9, iterator.nextId( NULL ) );
+        assertEquals( 1024, iterator.nextId( NULL ) );
     }
 
     @Test
@@ -92,15 +93,15 @@ class IdRangeIteratorTest
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
 
         // when
-        IdRangeIterator subRange = iterator.nextIdBatch( 5 ).iterator();
+        IdRangeIterator subRange = iterator.nextIdBatch( 5, NULL ).iterator();
 
         // then
-        assertEquals( 6, iterator.nextId() );
+        assertEquals( 6, iterator.nextId( NULL ) );
         for ( long i = 0; i < 5; i++ )
         {
-            assertEquals( 1 + i, subRange.nextId() );
+            assertEquals( 1 + i, subRange.nextId( NULL ) );
         }
-        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId( NULL ) );
     }
 
     @Test
@@ -108,19 +109,19 @@ class IdRangeIteratorTest
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
-        iterator.nextId();
-        iterator.nextId();
+        iterator.nextId( NULL );
+        iterator.nextId( NULL );
 
         // when
-        IdRangeIterator subRange = iterator.nextIdBatch( 3 ).iterator();
+        IdRangeIterator subRange = iterator.nextIdBatch( 3, NULL ).iterator();
 
         // then
-        assertEquals( 6, iterator.nextId() );
+        assertEquals( 6, iterator.nextId( NULL ) );
         for ( long i = 0; i < 3; i++ )
         {
-            assertEquals( 3 + i, subRange.nextId() );
+            assertEquals( 3 + i, subRange.nextId( NULL ) );
         }
-        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId( NULL ) );
     }
 
     @Test
@@ -128,19 +129,19 @@ class IdRangeIteratorTest
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3}, 10, 5 ).iterator();
-        iterator.nextId();
+        iterator.nextId( NULL );
 
         // when
-        IdRangeIterator subRange = iterator.nextIdBatch( 5 ).iterator();
+        IdRangeIterator subRange = iterator.nextIdBatch( 5, NULL ).iterator();
 
         // then
-        assertEquals( 13, iterator.nextId() );
-        assertEquals( 2, subRange.nextId() );
-        assertEquals( 3, subRange.nextId() );
-        assertEquals( 10, subRange.nextId() );
-        assertEquals( 11, subRange.nextId() );
-        assertEquals( 12, subRange.nextId() );
-        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+        assertEquals( 13, iterator.nextId( NULL ) );
+        assertEquals( 2, subRange.nextId( NULL ) );
+        assertEquals( 3, subRange.nextId( NULL ) );
+        assertEquals( 10, subRange.nextId( NULL ) );
+        assertEquals( 11, subRange.nextId( NULL ) );
+        assertEquals( 12, subRange.nextId( NULL ) );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId( NULL ) );
     }
 
     @Test
@@ -148,28 +149,28 @@ class IdRangeIteratorTest
     {
         // given
         IdRangeIterator iterator = new IdRange( EMPTY_LONG_ARRAY, 0, 20 ).iterator();
-        iterator.nextId();
+        iterator.nextId( NULL );
 
         // when
-        IdRangeIterator subRange = iterator.nextIdBatch( 5 ).iterator();
+        IdRangeIterator subRange = iterator.nextIdBatch( 5, NULL ).iterator();
 
         // then
-        assertEquals( 6, iterator.nextId() );
-        assertEquals( 1, subRange.nextId() );
-        assertEquals( 2, subRange.nextId() );
-        assertEquals( 3, subRange.nextId() );
-        assertEquals( 4, subRange.nextId() );
-        assertEquals( 5, subRange.nextId() );
-        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+        assertEquals( 6, iterator.nextId( NULL ) );
+        assertEquals( 1, subRange.nextId( NULL ) );
+        assertEquals( 2, subRange.nextId( NULL ) );
+        assertEquals( 3, subRange.nextId( NULL ) );
+        assertEquals( 4, subRange.nextId( NULL ) );
+        assertEquals( 5, subRange.nextId( NULL ) );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId( NULL ) );
 
         // when
-        subRange = iterator.nextIdBatch( 2 ).iterator();
+        subRange = iterator.nextIdBatch( 2, NULL ).iterator();
 
         // then
-        assertEquals( 9, iterator.nextId() );
-        assertEquals( 7, subRange.nextId() );
-        assertEquals( 8, subRange.nextId() );
-        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+        assertEquals( 9, iterator.nextId( NULL ) );
+        assertEquals( 7, subRange.nextId( NULL ) );
+        assertEquals( 8, subRange.nextId( NULL ) );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId( NULL ) );
     }
 
     @Test
@@ -177,28 +178,28 @@ class IdRangeIteratorTest
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {0, 1, 2}, 3, 10 ).iterator();
-        iterator.nextId();
-        iterator.nextId();
-        iterator.nextId();
+        iterator.nextId( NULL );
+        iterator.nextId( NULL );
+        iterator.nextId( NULL );
 
         // when
-        IdRangeIterator subRange = iterator.nextIdBatch( 3 ).iterator();
+        IdRangeIterator subRange = iterator.nextIdBatch( 3, NULL ).iterator();
 
         // then
-        assertEquals( 6, iterator.nextId() );
-        assertEquals( 3, subRange.nextId() );
-        assertEquals( 4, subRange.nextId() );
-        assertEquals( 5, subRange.nextId() );
-        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+        assertEquals( 6, iterator.nextId( NULL ) );
+        assertEquals( 3, subRange.nextId( NULL ) );
+        assertEquals( 4, subRange.nextId( NULL ) );
+        assertEquals( 5, subRange.nextId( NULL ) );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId( NULL ) );
 
         // when
-        subRange = iterator.nextIdBatch( 3 ).iterator();
+        subRange = iterator.nextIdBatch( 3, NULL ).iterator();
 
         // then
-        assertEquals( 10, iterator.nextId() );
-        assertEquals( 7, subRange.nextId() );
-        assertEquals( 8, subRange.nextId() );
-        assertEquals( 9, subRange.nextId() );
-        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+        assertEquals( 10, iterator.nextId( NULL ) );
+        assertEquals( 7, subRange.nextId( NULL ) );
+        assertEquals( 8, subRange.nextId( NULL ) );
+        assertEquals( 9, subRange.nextId( NULL ) );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId( NULL ) );
     }
 }

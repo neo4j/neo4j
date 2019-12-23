@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -30,6 +31,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Holds commit data structures for creating records in a {@link NeoStores}.
@@ -45,6 +47,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final SchemaStore schemaStore;
+    private final PageCursorTracer cursorTracer;
 
     RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold )
     {
@@ -63,11 +66,12 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.schemaStore = neoStores.getSchemaStore();
+        this.cursorTracer = TRACER_SUPPLIER.get();
     }
 
     private long nextId( StoreType storeType )
     {
-        return neoStores.getRecordStore( storeType ).nextId();
+        return neoStores.getRecordStore( storeType ).nextId( cursorTracer );
     }
 
     @Override
@@ -91,19 +95,19 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     @Override
     public int reserveRelationshipTypeTokenId()
     {
-        return toIntExact( neoStores.getRelationshipTypeTokenStore().nextId() );
+        return toIntExact( neoStores.getRelationshipTypeTokenStore().nextId( cursorTracer ) );
     }
 
     @Override
     public int reservePropertyKeyTokenId()
     {
-        return toIntExact( neoStores.getPropertyKeyTokenStore().nextId() );
+        return toIntExact( neoStores.getPropertyKeyTokenStore().nextId( cursorTracer ) );
     }
 
     @Override
     public int reserveLabelTokenId()
     {
-        return toIntExact( neoStores.getLabelTokenStore().nextId() );
+        return toIntExact( neoStores.getLabelTokenStore().nextId( cursorTracer ) );
     }
 
     @Override

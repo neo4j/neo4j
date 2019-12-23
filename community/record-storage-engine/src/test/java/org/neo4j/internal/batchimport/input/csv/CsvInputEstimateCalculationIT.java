@@ -135,7 +135,7 @@ class CsvInputEstimateCalculationIT
             SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
             try ( PageCache pageCache = new MuninnPageCache( swapperFactory, 1000, PageCacheTracer.NULL, contextSupplier, jobScheduler );
                   NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
-                          NullLogProvider.getInstance() ).openAllNeoStores() )
+                          NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores() )
             {
                 assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
                 assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );

@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static java.lang.System.nanoTime;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
@@ -76,7 +77,7 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
         @Override
         public long visit( long nodeId, int typeId, long out, long in, long loop )
         {
-            long id = store.nextId();
+            long id = store.nextId( TRACER_SUPPLIER.get() );
             RelationshipGroupRecord record = batch[cursor++];
             record.setId( id );
             record.initialize( true, typeId, out, in, loop, nodeId, loop );

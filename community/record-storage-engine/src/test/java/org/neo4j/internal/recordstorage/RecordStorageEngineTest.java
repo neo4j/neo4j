@@ -43,6 +43,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.Lock;
@@ -162,7 +163,7 @@ class RecordStorageEngineTest
         };
 
         RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache2, databaseLayout ).build();
-        engine.flushAndForce( limiter );
+        engine.flushAndForce( limiter, PageCursorTracer.NULL );
 
         assertThat( observedLimiter.get() ).isSameAs( limiter );
     }

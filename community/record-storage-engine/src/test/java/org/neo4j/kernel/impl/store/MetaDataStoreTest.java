@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -67,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_VERSION;
@@ -339,7 +341,7 @@ class MetaDataStoreTest
             // file readers
             race.addContestants( 3, throwing( () ->
             {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL ) )
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, NULL ) )
                 {
                     assertTrue( cursor.next() );
                     long id;
@@ -423,7 +425,7 @@ class MetaDataStoreTest
 
             race.addContestants( 3, throwing( () ->
             {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL ) )
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, NULL ) )
                 {
                     assertTrue( cursor.next() );
                     long id;
@@ -479,7 +481,7 @@ class MetaDataStoreTest
 
             race.addContestants( 3, throwing( () ->
             {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL ) )
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, NULL ) )
                 {
                     assertTrue( cursor.next() );
                     long logVersion;
@@ -525,7 +527,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             writeCorrectMetaDataRecord( store, positions, storeVersion );
-            store.flush();
+            store.flush( NULL );
         }
 
         List<Long> actualValues = new ArrayList<>();
@@ -747,7 +749,7 @@ class MetaDataStoreTest
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
-                        pageCacheWithFakeOverflow, fs, logProvider );
+                        pageCacheWithFakeOverflow, fs, logProvider, PageCacheTracer.NULL );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 

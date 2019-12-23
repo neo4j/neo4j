@@ -21,10 +21,11 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -43,9 +44,9 @@ public class TrackingIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
-        return delegate.countIndexedNodes( nodeId, propertyKeyIds, propertyValues );
+        return delegate.countIndexedNodes( nodeId, cursorTracer, propertyKeyIds, propertyValues );
     }
 
     @Override

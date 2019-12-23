@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -67,6 +68,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
@@ -222,11 +224,11 @@ class IndexCRUDIT
         @Override
         public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
         {
-            return newUpdater( IndexUpdateMode.ONLINE );
+            return newUpdater( IndexUpdateMode.ONLINE, NULL );
         }
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode )
+        public IndexUpdater newUpdater( final IndexUpdateMode mode, PageCursorTracer cursorTracer )
         {
             return new CollectingIndexUpdater( updatesCommitted::addAll );
         }

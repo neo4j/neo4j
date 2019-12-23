@@ -73,6 +73,7 @@ import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.auto;
 import static org.neo4j.internal.helpers.Format.duration;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Contains all algorithms and logic for doing an import. It exposes all stages as methods so that
@@ -521,7 +522,7 @@ public class ImportLogic implements Closeable
             {
                 return neoStore.getLastCommittedTransactionId();
             }
-        } );
+        }, TRACER_SUPPLIER.get() );
     }
 
     public void success()

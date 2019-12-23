@@ -27,6 +27,7 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -167,9 +168,9 @@ public class NodeImporter extends EntityImporter
     }
 
     @Override
-    void freeUnusedIds()
+    void freeUnusedIds( PageCursorTracer cursorTracer )
     {
-        super.freeUnusedIds();
-        freeUnusedIds( nodeStore, nodeIds );
+        super.freeUnusedIds( cursorTracer );
+        freeUnusedIds( nodeStore, nodeIds, cursorTracer );
     }
 }

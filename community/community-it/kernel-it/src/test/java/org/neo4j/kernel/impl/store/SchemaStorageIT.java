@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
@@ -250,7 +251,7 @@ class SchemaStorageIT
                 "value.boolean", Values.booleanValue( true )
         ) );
         SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) );
-        long id = schemaStore.nextId();
+        long id = schemaStore.nextId( PageCursorTracer.NULL );
         IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id ).withIndexConfig( expected );
         storage.writeSchemaRule( storeIndexDescriptor );
 

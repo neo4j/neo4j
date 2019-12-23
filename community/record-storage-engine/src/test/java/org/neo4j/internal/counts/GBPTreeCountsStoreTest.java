@@ -69,6 +69,7 @@ import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
@@ -126,7 +127,7 @@ class GBPTreeCountsStoreTest
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2 ); // now at 5
         }
 
-        countsStore.checkpoint( UNLIMITED );
+        countsStore.checkpoint( UNLIMITED, NULL );
 
         // when/then
         assertEquals( 15, countsStore.nodeCount( LABEL_ID_1 ) );
@@ -193,7 +194,7 @@ class GBPTreeCountsStoreTest
             race.addContestant( throwing( () ->
             {
                 long checkpointTxId = lastClosedTxId.getHighestGapFreeNumber();
-                countsStore.checkpoint( UNLIMITED );
+                countsStore.checkpoint( UNLIMITED, NULL );
                 lastCheckPointedTxId.set( checkpointTxId );
                 Thread.sleep( ThreadLocalRandom.current().nextInt( roundTimeMillis / 5 ) );
             } ) );
@@ -303,7 +304,7 @@ class GBPTreeCountsStoreTest
         // given
         int labelId = 123;
         incrementNodeCount( BASE_TX_ID + 1, labelId, 4 );
-        countsStore.checkpoint( UNLIMITED );
+        countsStore.checkpoint( UNLIMITED, NULL );
         incrementNodeCount( BASE_TX_ID + 2, labelId, -2 );
         closeCountsStore();
         deleteCountsStore();
@@ -328,7 +329,7 @@ class GBPTreeCountsStoreTest
         // applying this negative delta would have failed in the updater.
         incrementNodeCount( BASE_TX_ID + 2, labelId, -2 );
         verify( monitor ).ignoredTransaction( BASE_TX_ID + 2 );
-        countsStore.start();
+        countsStore.start( NULL );
 
         // then
         assertEquals( 2, countsStore.nodeCount( labelId ) );
@@ -344,7 +345,7 @@ class GBPTreeCountsStoreTest
         try ( OtherThreadExecutor<Void> checkpointer = new OtherThreadExecutor<>( "Checkpointer", null ) )
         {
             // when
-            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED ) ) );
+            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
             checkpointer.waitUntilWaiting();
 
             // and when closing one of the updaters it should still wait
@@ -368,7 +369,7 @@ class GBPTreeCountsStoreTest
               OtherThreadExecutor<AtomicReference<CountsStore.Updater>> applier = new OtherThreadExecutor<>( "Applier", new AtomicReference<>() ) )
         {
             // when
-            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED ) ) );
+            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
             checkpointer.waitUntilWaiting();
 
             // and when trying to open another applier it must wait
@@ -410,10 +411,10 @@ class GBPTreeCountsStoreTest
     void shouldFailApplyInReadOnlyMode() throws IOException
     {
         // given
-        countsStore.checkpoint( UNLIMITED );
+        countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
         instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
-        countsStore.start();
+        countsStore.start( NULL );
 
         // then
         assertThrows( IllegalStateException.class, () -> countsStore.apply( BASE_TX_ID + 1 ) );
@@ -423,13 +424,13 @@ class GBPTreeCountsStoreTest
     void shouldNotCheckpointInReadOnlyMode() throws IOException
     {
         // given
-        countsStore.checkpoint( UNLIMITED );
+        countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
         instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
-        countsStore.start();
+        countsStore.start( NULL );
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
-        countsStore.checkpoint( UNLIMITED );
+        countsStore.checkpoint( UNLIMITED, NULL );
     }
 
     @Test
@@ -443,7 +444,7 @@ class GBPTreeCountsStoreTest
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7 );
         }
-        countsStore.checkpoint( UNLIMITED );
+        countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
 
         // when
@@ -473,7 +474,7 @@ class GBPTreeCountsStoreTest
         Race race = new Race();
         race.addContestant( throwing( () ->
         {
-            countsStore.checkpoint( UNLIMITED );
+            countsStore.checkpoint( UNLIMITED, NULL );
         } ), 1 );
         race.addContestants( 10, throwing( () ->
         {
@@ -596,7 +597,7 @@ class GBPTreeCountsStoreTest
 
     private void checkpointAndRestartCountsStore() throws Exception
     {
-        countsStore.checkpoint( UNLIMITED );
+        countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
         openCountsStore();
     }
@@ -620,7 +621,7 @@ class GBPTreeCountsStoreTest
     private void openCountsStore( CountsBuilder builder ) throws IOException
     {
         instantiateCountsStore( builder, false, NO_MONITOR );
-        countsStore.start();
+        countsStore.start( NULL );
     }
 
     private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException

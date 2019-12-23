@@ -19,36 +19,75 @@
  */
 package org.neo4j.internal.id;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @EphemeralPageCacheExtension
 class BufferedIdControllerTest
 {
     @Inject
+    private TestDirectory testDirectory;
+    @Inject
     private FileSystemAbstraction fs;
     @Inject
     private PageCache pageCache;
 
+    private BufferingIdGeneratorFactory idGeneratorFactory;
+
+    @BeforeEach
+    void setUp()
+    {
+        idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, immediate() ) );
+    }
+
     @Test
     void shouldStopWhenNotStarted()
     {
-        BufferedIdController controller = newController();
+        BufferedIdController controller = newController( PageCacheTracer.NULL );
 
         assertDoesNotThrow( controller::stop );
     }
 
-    private BufferedIdController newController()
+    @Test
+    void reportPageCacheMetricsOnMaintenance()
     {
-        BufferingIdGeneratorFactory idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, immediate() ) );
-        return new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler() );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+
+        try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), IdType.NODE, 100L, true, 1000L, false,
+                NULL ) )
+        {
+            idGenerator.marker( NULL ).markDeleted( 1L );
+            idGenerator.clearCache( NULL );
+
+            assertThat( pageCacheTracer.pins() ).isZero();
+            assertThat( pageCacheTracer.unpins() ).isZero();
+            assertThat( pageCacheTracer.hits() ).isZero();
+
+            var controller = newController( pageCacheTracer );
+            controller.maintenance();
+
+            assertThat( pageCacheTracer.pins() ).isOne();
+            assertThat( pageCacheTracer.unpins() ).isOne();
+            assertThat( pageCacheTracer.hits() ).isOne();
+        }
+    }
+
+    private BufferedIdController newController( PageCacheTracer pageCacheTracer )
+    {
+        return new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), pageCacheTracer );
     }
 }

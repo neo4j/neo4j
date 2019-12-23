@@ -31,6 +31,8 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -42,9 +44,12 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Math.toIntExact;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.io.fs.FileUtils.blockSize;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
@@ -92,12 +97,89 @@ class NativeLabelScanStoreIT
         }
     }
 
+    @Test
+    void tracePageCacheAccessOnNodesWithLabelRead() throws IOException
+    {
+        try ( var scanWriter = store.newWriter() )
+        {
+            scanWriter.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+        }
+        var labelScanReader = store.newReader();
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNdoesWithLabelRead" ) )
+        {
+            assertThat( cursorTracer.pins() ).isZero();
+            assertThat( cursorTracer.unpins() ).isZero();
+            assertThat( cursorTracer.hits() ).isZero();
+
+            var resourceIterator = labelScanReader.nodesWithLabel( 0, cursorTracer );
+            while ( resourceIterator.hasNext() )
+            {
+                resourceIterator.next();
+            }
+
+            assertThat( cursorTracer.pins() ).isOne();
+            assertThat( cursorTracer.unpins() ).isOne();
+            assertThat( cursorTracer.hits() ).isOne();
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodesWithAnyLabelRead() throws IOException
+    {
+        try ( var scanWriter = store.newWriter() )
+        {
+            scanWriter.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+        }
+        var labelScanReader = store.newReader();
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodesWithAnyLabelRead" ) )
+        {
+            assertThat( cursorTracer.pins() ).isZero();
+            assertThat( cursorTracer.unpins() ).isZero();
+            assertThat( cursorTracer.hits() ).isZero();
+
+            var resourceIterator = labelScanReader.nodesWithAnyOfLabels( new int[]{0, 1}, cursorTracer );
+            while ( resourceIterator.hasNext() )
+            {
+                resourceIterator.next();
+            }
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodeLabelScan() throws IOException
+    {
+        try ( var scanWriter = store.newWriter() )
+        {
+            scanWriter.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+        }
+        var labelScanReader = store.newReader();
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeLabelScan" ) )
+        {
+            assertThat( cursorTracer.pins() ).isZero();
+            assertThat( cursorTracer.unpins() ).isZero();
+            assertThat( cursorTracer.hits() ).isZero();
+
+            labelScanReader.nodeLabelScan( 0, cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isOne();
+            assertThat( cursorTracer.unpins() ).isOne();
+            assertThat( cursorTracer.hits() ).isOne();
+        }
+    }
+
     private void verifyReads( long[] expected )
     {
         LabelScanReader reader = store.newReader();
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
-            long[] actualNodes = closingAsArray( reader.nodesWithLabel( i ) );
+            long[] actualNodes = closingAsArray( reader.nodesWithLabel( i, NULL ) );
             long[] expectedNodes = nodesWithLabel( expected, i );
             assertArrayEquals( expectedNodes, actualNodes );
         }

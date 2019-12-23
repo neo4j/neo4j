@@ -30,6 +30,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -58,7 +59,7 @@ class TestStoreAccess
             assertTrue( isUnclean( snapshot ), "Store should be unclean" );
 
             PageCache pageCache = pageCacheExtension.getPageCache( snapshot );
-            new StoreAccess( snapshot, pageCache, databaseLayout, Config.defaults() ).initialize().close();
+            new StoreAccess( snapshot, pageCache, databaseLayout, Config.defaults(), PageCacheTracer.NULL ).initialize().close();
             assertTrue( isUnclean( snapshot ), "Store should be unclean" );
         }
     }

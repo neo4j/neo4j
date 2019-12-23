@@ -27,6 +27,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
 {
     private final NeoStores neoStores;
@@ -53,7 +55,7 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     @Override
     public void close() throws IOException
     {
-        neoStores.flush( IOLimiter.UNLIMITED );
+        neoStores.flush( IOLimiter.UNLIMITED, NULL );
         neoStores.close();
     }
 }

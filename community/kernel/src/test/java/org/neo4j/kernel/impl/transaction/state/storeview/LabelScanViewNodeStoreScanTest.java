@@ -35,6 +35,8 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -64,7 +66,7 @@ class LabelScanViewNodeStoreScanTest
             cursors.withNode( i );
         }
         int[] labelIds = new int[]{1, 2};
-        when( labelScanReader.nodesWithAnyOfLabels( labelIds ) ).thenReturn( labeledNodes );
+        when( labelScanReader.nodesWithAnyOfLabels( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
 
         LabelScanViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();

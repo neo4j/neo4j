@@ -25,6 +25,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class RelationshipGroupGetter
 {
     private final IdSequence idGenerator;
@@ -70,7 +72,7 @@ public class RelationshipGroupGetter
         if ( change == null )
         {
             assert node.isDense() : "Node " + node + " should have been dense at this point";
-            long id = idGenerator.nextId();
+            long id = idGenerator.nextId( TRACER_SUPPLIER.get() );
             change = relGroupRecords.create( id, type );
             RelationshipGroupRecord record = change.forChangingData();
             record.setInUse( true );

@@ -32,6 +32,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -76,9 +77,9 @@ public class SchemaStore35 extends AbstractDynamicStore
 
     @VisibleForTesting
     @Override
-    public void initialise( boolean createIfNotExists )
+    public void initialise( boolean createIfNotExists, PageCursorTracer pageCursorTracer )
     {
-        super.initialise( createIfNotExists );
+        super.initialise( createIfNotExists, pageCursorTracer );
     }
 
     public List<DynamicRecord> allocateFrom( SchemaRule rule )

@@ -70,6 +70,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -105,7 +106,8 @@ class CommonAbstractStoreTest
     @BeforeEach
     void setUpMocks() throws IOException
     {
-        when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean() ) ).thenReturn( idGenerator );
+        when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean(), any() ) ).thenReturn(
+                idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
         when( mockedPageCache.map( eq( storeFile ), anyInt() ) ).thenReturn( pageFile );
@@ -144,7 +146,7 @@ class CommonAbstractStoreTest
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache,
                 NullLogProvider.getInstance(), GraphDatabaseSettings.label_block_size.defaultValue(), recordFormats ) )
         {
-            StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false ) );
+            StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false, NULL ) );
             assertEquals( "Fail to read header record of store file: " + storeFile.getAbsolutePath(), storeNotFoundException.getMessage() );
         }
     }
@@ -187,8 +189,8 @@ class CommonAbstractStoreTest
         File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
         TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ),
                 pageCache, NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
-        store.initialise( true );
-        store.start();
+        store.initialise( true, NULL );
+        store.start( NULL );
         assertTrue( fs.fileExists( nodeStore ) );
         assertTrue( fs.fileExists( idFile ) );
 
@@ -204,7 +206,7 @@ class CommonAbstractStoreTest
     {
         LogProvider log = NullLogProvider.getInstance();
         TheStore store = new TheStore( storeFile, idStoreFile, config, idType, idGeneratorFactory, mockedPageCache, log, recordFormat );
-        store.initialise( false );
+        store.initialise( false, NULL );
         return store;
     }
 

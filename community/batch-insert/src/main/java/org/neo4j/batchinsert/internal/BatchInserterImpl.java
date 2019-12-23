@@ -182,6 +182,8 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -273,7 +275,7 @@ public class BatchInserterImpl implements BatchInserter
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
                 pageCache, internalLogProvider );
             StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, internalLogProvider );
+                recordFormats, internalLogProvider, PageCacheTracer.NULL );
 
             maxNodeId = recordFormats.node().getMaxId();
 
@@ -285,7 +287,7 @@ public class BatchInserterImpl implements BatchInserter
             life.start();
             neoStores = sf.openAllNeoStores( true );
             neoStores.verifyStoreOk();
-            neoStores.start();
+            neoStores.start( NULL );
 
             nodeStore = neoStores.getNodeStore();
             relationshipStore = neoStores.getRelationshipStore();
@@ -518,7 +520,7 @@ public class BatchInserterImpl implements BatchInserter
         prototype = prototype.withIndexProvider( providerDescriptor );
         prototype = ensureSchemaHasName( prototype );
 
-        IndexDescriptor index = prototype.materialise( schemaStore.nextId() );
+        IndexDescriptor index = prototype.materialise( schemaStore.nextId( TRACER_SUPPLIER.get() ) );
         index = provider.completeConfiguration( index );
 
         try
@@ -568,7 +570,7 @@ public class BatchInserterImpl implements BatchInserter
                     // In this scenario this is OK
                 }
             }
-            indexingService.forceAll( IOLimiter.UNLIMITED );
+            indexingService.forceAll( IOLimiter.UNLIMITED, NULL );
         }
         catch ( InterruptedException e )
         {
@@ -624,8 +626,8 @@ public class BatchInserterImpl implements BatchInserter
     {
         // TODO: Do not create duplicate index
 
-        long indexId = schemaStore.nextId();
-        long constraintRuleId = schemaStore.nextId();
+        long indexId = schemaStore.nextId( TRACER_SUPPLIER.get() );
+        long constraintRuleId = schemaStore.nextId( TRACER_SUPPLIER.get() );
         constraint = ensureSchemaHasName( constraint );
 
         IndexProvider provider = indexProviderMap.getDefaultProvider();
@@ -724,7 +726,8 @@ public class BatchInserterImpl implements BatchInserter
 
     private ConstraintDescriptor createNodePropertyExistenceConstraintRule( String name, int labelId, int... propertyKeyIds )
     {
-        ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ).withId( schemaStore.nextId() ).withName( name );
+        ConstraintDescriptor rule =
+                ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ).withId( schemaStore.nextId( TRACER_SUPPLIER.get() ) ).withName( name );
         rule = ensureSchemaHasName( rule );
 
         try
@@ -743,7 +746,9 @@ public class BatchInserterImpl implements BatchInserter
 
     private ConstraintDescriptor createRelTypePropertyExistenceConstraintRule( String name, int relTypeId, int... propertyKeyIds )
     {
-        ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ).withId( schemaStore.nextId() ).withName( name );
+        ConstraintDescriptor rule =
+                ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ).withId( schemaStore.nextId( TRACER_SUPPLIER.get() ) ).withName(
+                        name );
         rule = ensureSchemaHasName( rule );
 
         try
@@ -802,9 +807,9 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     @Override
-    public long createNode( Map<String, Object> properties, Label... labels )
+    public long createNode( Map<String,Object> properties, Label... labels )
     {
-        return internalCreateNode( nodeStore.nextId(), properties, labels );
+        return internalCreateNode( nodeStore.nextId( TRACER_SUPPLIER.get() ), properties, labels );
     }
 
     private long internalCreateNode( long nodeId, Map<String, Object> properties, Label... labels )
@@ -937,7 +942,7 @@ public class BatchInserterImpl implements BatchInserter
     public long createRelationship( long node1, long node2, RelationshipType type,
             Map<String, Object> properties )
     {
-        long id = relationshipStore.nextId();
+        long id = relationshipStore.nextId( TRACER_SUPPLIER.get() );
         int typeId = getOrCreateRelationshipTypeId( type.name() );
         relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, noopLockClient );
         if ( properties != null && !properties.isEmpty() )
@@ -1070,7 +1075,7 @@ public class BatchInserterImpl implements BatchInserter
             NativeLabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
-            neoStores.flush( IOLimiter.UNLIMITED );
+            neoStores.flush( IOLimiter.UNLIMITED, NULL );
             createEmptyTransactionLog();
         }
         catch ( IOException e )
@@ -1136,7 +1141,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private <R extends TokenRecord> int createNewToken( TokenStore<R> store, String name, boolean internal )
     {
-        int keyId = (int) store.nextId();
+        int keyId = (int) store.nextId( TRACER_SUPPLIER.get() );
         R record = store.newRecord();
         record.setId( keyId );
         record.setInUse( true );

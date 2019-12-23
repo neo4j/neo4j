@@ -51,7 +51,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -78,6 +78,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabel;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
@@ -225,7 +226,7 @@ class LabelsAcceptanceTest
         JobScheduler scheduler = JobSchedulerFactory.createScheduler();
         try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
                 Lifespan lifespan = new Lifespan( scheduler );
-                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, PageCacheTracer.NULL, EMPTY, scheduler ) )
+                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, NULL, EMPTY, scheduler ) )
         {
             // Given
             Dependencies dependencies = new Dependencies();
@@ -806,22 +807,22 @@ class LabelsAcceptanceTest
 
     private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        return IdContextFactoryBuilder.of( fileSystem, jobScheduler, Config.defaults() ).withIdGenerationFactoryProvider(
+        return IdContextFactoryBuilder.of( fileSystem, jobScheduler, Config.defaults(), NULL ).withIdGenerationFactoryProvider(
                 any -> new DefaultIdGeneratorFactory( fileSystem, immediate() )
                 {
                     @Override
                     public IdGenerator open( PageCache pageCache, File fileName, IdType idType, LongSupplier highId, long maxId, boolean readOnly,
-                            OpenOption... openOptions )
+                            PageCursorTracer cursorTracer, OpenOption... openOptions )
                     {
-                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnly, openOptions );
+                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnly, cursorTracer, openOptions );
                     }
 
                     @Override
                     public IdGenerator create( PageCache pageCache, File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                            boolean readOnly, OpenOption... openOptions )
+                            boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
                     {
-                        return super
-                                .create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnly, openOptions );
+                        return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnly,
+                                cursorTracer, openOptions );
                     }
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )

@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.Race.throwing;
 
 @EphemeralPageCacheExtension
@@ -128,7 +129,7 @@ class IndexStatisticsStoreTest
 
     private void restartStore() throws IOException
     {
-        store.checkpoint( IOLimiter.UNLIMITED );
+        store.checkpoint( IOLimiter.UNLIMITED, NULL );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
         store = openStore();
@@ -168,7 +169,7 @@ class IndexStatisticsStoreTest
             for ( int i = 0; i < 20; i++ )
             {
                 Thread.sleep( 5 );
-                store.checkpoint( IOLimiter.UNLIMITED );
+                store.checkpoint( IOLimiter.UNLIMITED, NULL );
             }
             checkpointDone.set( true );
         } ) );

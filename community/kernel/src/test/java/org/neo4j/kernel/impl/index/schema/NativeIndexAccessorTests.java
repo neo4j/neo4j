@@ -76,6 +76,7 @@ import static org.neo4j.function.Predicates.in;
 import static org.neo4j.internal.helpers.collection.Iterables.asUniqueSet;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
@@ -109,7 +110,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     void shouldHandleCloseWithoutCallsToProcess() throws Exception
     {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE );
+        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL );
 
         // when
         updater.close();
@@ -122,7 +123,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     void processMustThrowAfterClose() throws Exception
     {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE );
+        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL );
         updater.close();
 
         assertThrows( IllegalStateException.class, () -> updater.process( simpleUpdate() ) );
@@ -133,7 +134,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
         {
             // when
             processAll( updater, updates );
@@ -224,7 +225,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         {
             // when
             IndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.randomUpdateGenerator( random ).next();
-            long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values()[0] );
+            long count = reader.countIndexedNodes( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -243,7 +244,8 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         {
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
-                long count = reader.countIndexedNodes( update.getEntityId(), valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values() );
+                long count = reader.countIndexedNodes( update.getEntityId(), NULL,
+                        valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values() );
 
                 // then
                 assertEquals( 1, count );
@@ -251,7 +253,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
             // and when
             Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) );
-            long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), generator.next().values()[0] );
+            long count = reader.countIndexedNodes( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), generator.next().values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -271,9 +273,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             int[] propKeys = valueCreatorUtil.indexDescriptor.schema().getPropertyIds();
-            long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, propKeys, update.values() );
-            long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, propKeys, update.values() );
-            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), propKeys, generateUniqueValue( updates ) );
+            long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, NULL, propKeys, update.values() );
+            long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, NULL, propKeys, update.values() );
+            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), NULL, propKeys, generateUniqueValue( updates ) );
 
             // then
             assertEquals( 0, countWithMismatchingData );
@@ -546,7 +548,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // when
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
+            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
             {
                 updater.process( update );
             }
@@ -561,9 +563,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     void requestForSecondUpdaterMustThrow() throws Exception
     {
         // given
-        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE ) )
+        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE, NULL ) )
         {
-            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE ) );
+            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
         }
     }
 
@@ -588,7 +590,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         processAll( data );
 
         // when
-        accessor.force( IOLimiter.UNLIMITED );
+        accessor.force( IOLimiter.UNLIMITED, NULL );
         accessor.close();
 
         // then
@@ -656,7 +658,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // given
         accessor.drop();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE ) );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
     }
 
     @Test
@@ -674,7 +676,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // given
         accessor.close();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE ) );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
     }
 
     @Test
@@ -1041,7 +1043,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     private void processAll( IndexEntryUpdate<IndexDescriptor>... updates )
             throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
         {
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
@@ -1052,7 +1054,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
     private void forceAndCloseAccessor()
     {
-        accessor.force( IOLimiter.UNLIMITED );
+        accessor.force( IOLimiter.UNLIMITED, NULL );
         closeAccessor();
     }
 

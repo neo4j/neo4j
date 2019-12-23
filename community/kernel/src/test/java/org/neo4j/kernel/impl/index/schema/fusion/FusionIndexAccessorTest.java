@@ -66,6 +66,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.ArrayUtil.without;
 import static org.neo4j.internal.schema.IndexProviderDescriptor.UNDECIDED;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
@@ -452,7 +453,7 @@ abstract class FusionIndexAccessorTest
     void shouldInstantiateUpdatersLazily()
     {
         // when getting a new reader, no part-reader should be instantiated
-        IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE );
+        IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL );
         for ( IndexAccessor aliveAccessor : aliveAccessors )
         {
             // then
@@ -468,19 +469,19 @@ abstract class FusionIndexAccessorTest
         long nextCount = 9;
         for ( IndexAccessor accessor : aliveAccessors )
         {
-            when( accessor.estimateNumberOfEntries() ).thenReturn( nextCount );
+            when( accessor.estimateNumberOfEntries( NULL ) ).thenReturn( nextCount );
             expected += nextCount;
             nextCount *= 31;
         }
 
         // when
-        long numberOfEntries = fusionIndexAccessor.estimateNumberOfEntries();
+        long numberOfEntries = fusionIndexAccessor.estimateNumberOfEntries( NULL );
 
         // then
         assertEquals( expected, numberOfEntries );
         for ( IndexAccessor aliveAccessor : aliveAccessors )
         {
-            verify( aliveAccessor ).estimateNumberOfEntries();
+            verify( aliveAccessor ).estimateNumberOfEntries( NULL );
         }
     }
 
@@ -492,18 +493,18 @@ abstract class FusionIndexAccessorTest
         for ( int i = 0; i < aliveAccessors.length; i++ )
         {
             IndexAccessor accessor = aliveAccessors[i];
-            when( accessor.estimateNumberOfEntries() ).thenReturn( i == 0 ? IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES : nextCount );
+            when( accessor.estimateNumberOfEntries( NULL ) ).thenReturn( i == 0 ? IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES : nextCount );
             nextCount *= 31;
         }
 
         // when
-        long numberOfEntries = fusionIndexAccessor.estimateNumberOfEntries();
+        long numberOfEntries = fusionIndexAccessor.estimateNumberOfEntries( NULL );
 
         // then
         assertEquals( IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES, numberOfEntries );
         for ( IndexAccessor aliveAccessor : aliveAccessors )
         {
-            verify( aliveAccessor ).estimateNumberOfEntries();
+            verify( aliveAccessor ).estimateNumberOfEntries( NULL );
         }
     }
 

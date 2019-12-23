@@ -378,7 +378,7 @@ public class Database extends LifecycleAdapter
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
-                    recoveryCleanupWorkCollector, !storageExists );
+                    recoveryCleanupWorkCollector, tracers.getPageCacheTracer(), !storageExists );
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -595,7 +595,7 @@ public class Database extends LifecycleAdapter
 
         final CheckPointerImpl checkPointer =
                 new CheckPointerImpl( transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider,
-                        tracers.getDatabaseTracer(), ioLimiter, storeCopyCheckPointMutex );
+                        tracers, ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,

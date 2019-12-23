@@ -31,6 +31,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
@@ -57,7 +58,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
     {
         if ( luceneIndex.isReadOnly() )
         {
@@ -75,7 +76,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public void force( IOLimiter ioLimiter )
+    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
     {
         try
         {
@@ -165,7 +166,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public long estimateNumberOfEntries()
+    public long estimateNumberOfEntries( PageCursorTracer ignored )
     {
         return luceneIndex.allDocumentsReader().maxCount();
     }

@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.id;
+package org.neo4j.internal.id.indexed;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-public interface IdSequence
+@FunctionalInterface
+public interface MarkerProvider
 {
-    long nextId( PageCursorTracer cursorTracer );
-
-    IdRange nextIdBatch( int size, PageCursorTracer cursorTracer );
+    IndexedIdGenerator.ReservedMarker getMarker( PageCursorTracer cursorTracer );
 }

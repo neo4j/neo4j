@@ -108,7 +108,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * validation the <CODE>initStorage</CODE> method is called.
      * <p>
      * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>.
-     * If a problem was found when opening the store the {@link #start()}
+     * If a problem was found when opening the store the {@link #start(PageCursorTracer)}
      * must be invoked.
      * <p>
      * throws IOException if the unable to open the storage or if the
@@ -144,14 +144,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.log = logProvider.getLog( getClass() );
     }
 
-    protected void initialise( boolean createIfNotExists )
+    protected void initialise( boolean createIfNotExists, PageCursorTracer cursorTracer )
     {
         try
         {
-            boolean created = checkAndLoadStorage( createIfNotExists );
+            boolean created = checkAndLoadStorage( createIfNotExists, cursorTracer );
             if ( !created )
             {
-                openIdGenerator();
+                openIdGenerator( cursorTracer );
             }
         }
         catch ( Exception e )
@@ -192,7 +192,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * this method will instead throw an exception in that situation.
      * @return {@code true} if the store was created as part of this call, otherwise {@code false} if it already existed.
      */
-    private boolean checkAndLoadStorage( boolean createIfNotExists )
+    private boolean checkAndLoadStorage( boolean createIfNotExists, PageCursorTracer cursorTracer )
     {
         try
         {
@@ -235,8 +235,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
                     // Create the id generator, and also open it because some stores may need the id generator when initializing their store
                     boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
-                    idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(), readOnly,
-                            openOptions );
+                    idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
+                            readOnly, cursorTracer, openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, concat( StandardOpenOption.CREATE, openOptions ) );
@@ -469,10 +469,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * @return The next free id
      */
     @Override
-    public long nextId()
+    public long nextId( PageCursorTracer cursorTracer )
     {
         assertIdGeneratorInitialized();
-        return idGenerator.nextId();
+        return idGenerator.nextId( cursorTracer );
     }
 
     private void assertIdGeneratorInitialized()
@@ -484,10 +484,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public IdRange nextIdBatch( int size, PageCursorTracer cursorTracer )
     {
         assertIdGeneratorInitialized();
-        return idGenerator.nextIdBatch( size );
+        return idGenerator.nextIdBatch( size, cursorTracer );
     }
 
     /**
@@ -520,22 +520,21 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * </ul>
      * So when this method is called the store is in a good state and from this point the database enters normal operations mode.
      */
-    void start() throws IOException
+    void start( PageCursorTracer cursorTracer ) throws IOException
     {
         if ( !storeOk )
         {
             storeOk = true;
             causeOfStoreNotOk = null;
         }
-        idGenerator.start( freeIds() );
+        idGenerator.start( freeIds( cursorTracer ), cursorTracer );
     }
 
-    private FreeIds freeIds()
+    private FreeIds freeIds( PageCursorTracer cursorTracer )
     {
         return visitor ->
         {
-            try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
-                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorTracer ) )
             {
                 int numberOfReservedLowIds = getNumberOfReservedLowIds();
                 int startingId = numberOfReservedLowIds;
@@ -602,15 +601,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    private void openIdGenerator()
+    private void openIdGenerator( PageCursorTracer cursorTracer )
     {
         boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
-        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), readOnly, openOptions );
+        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), readOnly,
+                cursorTracer, openOptions );
     }
 
     /**
      * Starts from the end of the file and scans backwards to find the highest in use record.
-     * Can be used even if {@link #start()} hasn't been called. Basically this method should be used
+     * Can be used even if {@link #start(PageCursorTracer)} hasn't been called. Basically this method should be used
      * over {@link #getHighestPossibleIdInUse()} and {@link #getHighId()} in cases where a store has been opened
      * but is in a scenario where recovery isn't possible, like some tooling or migration.
      *
@@ -718,12 +718,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void flush()
+    public void flush( PageCursorTracer cursorTracer )
     {
         try
         {
             pagedFile.flushAndForce();
-            idGenerator.checkpoint( IOLimiter.UNLIMITED );
+            idGenerator.checkpoint( IOLimiter.UNLIMITED, cursorTracer );
         }
         catch ( IOException e )
         {
@@ -955,25 +955,25 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
-                    idUpdateListener.markIdAsUnused( idType, idGenerator, id );
+                    idUpdateListener.markIdAsUnused( idType, idGenerator, id, cursorTracer );
                 }
                 else if ( record.isCreated() )
                 {
-                    idUpdateListener.markIdAsUsed( idType, idGenerator, id );
+                    idUpdateListener.markIdAsUsed( idType, idGenerator, id, cursorTracer );
                 }
 
                 if ( (!record.inUse() || !record.requiresSecondaryUnit()) && record.hasSecondaryUnitId() )
                 {
                     // If record was just now deleted, or if the record used a secondary unit, but not anymore
                     // then free the id of that secondary unit.
-                    idUpdateListener.markIdAsUnused( idType, idGenerator, record.getSecondaryUnitId() );
+                    idUpdateListener.markIdAsUnused( idType, idGenerator, record.getSecondaryUnitId(), cursorTracer );
                 }
                 if ( record.inUse() && record.isSecondaryUnitCreated() )
                 {
                     // Triggers on:
                     // - (a) record got created right now and has a secondary unit, or
                     // - (b) it already existed and just now grew into a secondary unit then mark the secondary unit as used
-                    idUpdateListener.markIdAsUsed( idType, idGenerator, record.getSecondaryUnitId() );
+                    idUpdateListener.markIdAsUsed( idType, idGenerator, record.getSecondaryUnitId(), cursorTracer );
                 }
             }
         }

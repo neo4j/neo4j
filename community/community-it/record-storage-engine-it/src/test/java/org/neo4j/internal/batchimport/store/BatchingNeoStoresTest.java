@@ -96,6 +96,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -274,7 +275,7 @@ class BatchingNeoStoresTest
     private static <RECORD extends AbstractBaseRecord> void createRecordIn( RecordStore<RECORD> store )
     {
         RECORD record = store.newRecord();
-        record.setId( store.nextId() );
+        record.setId( store.nextId( NULL ) );
         record.setInUse( true );
         if ( record instanceof PropertyRecord )
         {
@@ -330,7 +331,7 @@ class BatchingNeoStoresTest
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate() ), new DefaultIdController(),
-                            RecoveryCleanupWorkCollector.immediate(), true ) );
+                            RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true ) );
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
@@ -349,7 +350,7 @@ class BatchingNeoStoresTest
             txState.nodeDoCreate( node2 );
             txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
             apply( txState, commandCreationContext, storageEngine );
-            neoStores.flush( IOLimiter.UNLIMITED );
+            neoStores.flush( IOLimiter.UNLIMITED, NULL );
         }
     }
 
@@ -378,7 +379,7 @@ class BatchingNeoStoresTest
         @Override
         public int createToken( String name, boolean internal )
         {
-            int id = (int) store.nextId();
+            int id = (int) store.nextId( NULL );
             create( name, internal, id );
             return id;
         }

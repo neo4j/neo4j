@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
@@ -35,22 +36,13 @@ class BufferingIdGenerator extends IdGenerator.Delegate
 
     void initialize( Supplier<IdController.ConditionSnapshot> boundaries, Predicate<IdController.ConditionSnapshot> safeThreshold )
     {
-        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, freedIds ->
-        {
-            try ( Marker reuseMarker = super.marker() )
-            {
-                for ( long id : freedIds )
-                {
-                    reuseMarker.markFree( id );
-                }
-            }
-        } );
+        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, new FreeIdChunkConsumer() );
     }
 
     @Override
-    public Marker marker()
+    public Marker marker( PageCursorTracer cursorTracer )
     {
-        Marker actual = super.marker();
+        Marker actual = super.marker( cursorTracer );
         return new Marker()
         {
             @Override
@@ -83,21 +75,21 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     }
 
     @Override
-    public void maintenance()
+    public void maintenance( PageCursorTracer cursorTracer )
     {
         // Check and potentially release ids onto the IdGenerator
-        buffer.maintenance();
+        buffer.maintenance( cursorTracer );
 
         // Do IdGenerator maintenance, typically ensure ID cache is full
-        super.maintenance();
+        super.maintenance( cursorTracer );
     }
 
     @Override
-    public void clearCache()
+    public void clearCache( PageCursorTracer cursorTracer )
     {
         buffer.clear();
 
-        super.clearCache();
+        super.clearCache( cursorTracer );
     }
 
     void clear()
@@ -106,11 +98,11 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     }
 
     @Override
-    public void checkpoint( IOLimiter ioLimiter )
+    public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
     {
         // Flush buffered data to consumer
-        buffer.maintenance();
-        super.checkpoint( ioLimiter );
+        buffer.maintenance( cursorTracer );
+        super.checkpoint( ioLimiter, cursorTracer );
     }
 
     @Override
@@ -122,5 +114,20 @@ class BufferingIdGenerator extends IdGenerator.Delegate
             buffer = null;
         }
         super.close();
+    }
+
+    private class FreeIdChunkConsumer implements ChunkConsumer
+    {
+        @Override
+        public void consume( long[] freedIds, PageCursorTracer cursorTracer )
+        {
+            try ( Marker reuseMarker = BufferingIdGenerator.super.marker( cursorTracer ) )
+            {
+                for ( long id : freedIds )
+                {
+                    reuseMarker.markFree( id );
+                }
+            }
+        }
     }
 }

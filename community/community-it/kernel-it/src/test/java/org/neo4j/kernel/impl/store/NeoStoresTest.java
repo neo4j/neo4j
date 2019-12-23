@@ -58,6 +58,8 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.Database;
@@ -107,6 +109,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -186,7 +189,7 @@ public class NeoStoresTest
         {
             try ( NeoStores neoStores = sf.openNeoStores( true ) )
             {
-                neoStores.createDynamicArrayStore( new File( "someStore" ), new File( "someIdFile" ), IdType.ARRAY_BLOCK, -2 );
+                neoStores.createDynamicArrayStore( new File( "someStore" ), new File( "someIdFile" ), IdType.ARRAY_BLOCK, -2, NULL );
             }
         } );
         assertEquals( "Block size of dynamic array store should be positive integer.", e.getMessage() );
@@ -462,7 +465,7 @@ public class NeoStoresTest
         // given
         Config config = Config.defaults();
         StoreFactory sf = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ),
-                pageCache, fs, LOG_PROVIDER );
+                pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
 
         // when
         NeoStores neoStores = sf.openAllNeoStores( true );
@@ -478,7 +481,7 @@ public class NeoStoresTest
         assertEquals( 10L, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
-        neoStores.flush( IOLimiter.UNLIMITED );
+        neoStores.flush( IOLimiter.UNLIMITED, NULL );
         neoStores.close();
         neoStores = sf.openAllNeoStores();
 
@@ -627,7 +630,7 @@ public class NeoStoresTest
         Config defaults = Config.defaults( counts_store_rotation_timeout, Duration.ofMinutes( 60 ) );
         String errorMessage = "Failing for the heck of it";
         StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, errorMessage ), pageCache,
-                fs, NullLogProvider.getInstance() );
+                fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         NeoStores neoStore = factory.openAllNeoStores( true );
 
         var ex = assertThrows( UnderlyingStorageException.class, neoStore::close );
@@ -640,7 +643,7 @@ public class NeoStoresTest
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
-        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER );
+        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
 
         // when
         try ( NeoStores ignore = factory.openAllNeoStores( true ) )
@@ -656,7 +659,7 @@ public class NeoStoresTest
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
-        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER );
+        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
         StoreType[] allStoreTypes = StoreType.values();
         StoreType[] allButLastStoreTypes = Arrays.copyOf( allStoreTypes, allStoreTypes.length - 1 );
 
@@ -678,7 +681,7 @@ public class NeoStoresTest
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER, PageCacheTracer.NULL );
     }
 
     private void reinitializeStores( DatabaseLayout databaseLayout )
@@ -726,19 +729,19 @@ public class NeoStoresTest
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         if ( clazz.equals( PropertyKeyTokenRecord.class ) )
         {
-            return neoStores.getPropertyKeyTokenStore().nextId();
+            return neoStores.getPropertyKeyTokenStore().nextId( NULL );
         }
         if ( clazz.equals( RelationshipType.class ) )
         {
-            return neoStores.getRelationshipTypeTokenStore().nextId();
+            return neoStores.getRelationshipTypeTokenStore().nextId( NULL );
         }
         if ( clazz.equals( Node.class ) )
         {
-            return neoStores.getNodeStore().nextId();
+            return neoStores.getNodeStore().nextId( NULL );
         }
         if ( clazz.equals( Relationship.class ) )
         {
-            return neoStores.getRelationshipStore().nextId();
+            return neoStores.getRelationshipStore().nextId( NULL );
         }
         throw new IllegalArgumentException( clazz.getName() );
     }
@@ -1311,7 +1314,7 @@ public class NeoStoresTest
     private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
             NullLogProvider logProvider )
     {
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, logProvider );
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, logProvider, PageCacheTracer.NULL );
     }
 
     private static class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
@@ -1326,12 +1329,13 @@ public class NeoStoresTest
 
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, OpenOption[] openOptions )
+                File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+                OpenOption[] openOptions )
         {
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
-                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnly )
+                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnly, cursorTracer )
                 {
                     @Override
                     public synchronized void close()
@@ -1341,7 +1345,8 @@ public class NeoStoresTest
                     }
                 };
             }
-            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, openOptions );
+            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, cursorTracer,
+                    openOptions );
         }
     }
 }

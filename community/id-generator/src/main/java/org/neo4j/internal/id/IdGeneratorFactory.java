@@ -26,19 +26,21 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public interface IdGeneratorFactory
 {
-    IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly, OpenOption... openOptions );
+    IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+            PageCursorTracer cursorTracer, OpenOption... openOptions );
 
     IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
-            OpenOption... openOptions );
+            PageCursorTracer cursorTracer, OpenOption... openOptions );
 
     IdGenerator get( IdType idType );
 
     void visit( Consumer<IdGenerator> visitor );
 
-    void clearCache();
+    void clearCache( PageCursorTracer cursorTracer );
 
     Collection<File> listIdFiles();
 }

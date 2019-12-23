@@ -21,18 +21,17 @@ package org.neo4j.consistency.newchecker;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.consistency.newchecker.IndexChecker.NUM_INDEXES_IN_CACHE;
 import static org.neo4j.consistency.newchecker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.newchecker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 
@@ -55,12 +56,12 @@ class IndexSizesTest
         ParallelExecution execution = new ParallelExecution( 2, NOOP_EXCEPTION_HANDLER, DEFAULT_IDS_PER_CHUNK );
 
         indexes = new ArrayList<>();
-        var indexAccessors = Mockito.mock( IndexAccessors.class );
+        var indexAccessors = mock( IndexAccessors.class );
         when( indexAccessors.onlineRules( any() ) ).thenReturn( indexes );
         when( indexAccessors.accessorFor( any() ) ).then( invocation ->
         {
             IndexAccessor mock = mock( IndexAccessor.class );
-            when( mock.estimateNumberOfEntries() ).thenReturn( invocation.getArgument( 0, IndexDescriptor.class ).getId() );
+            when( mock.estimateNumberOfEntries( any( PageCursorTracer.class ) ) ).thenReturn( invocation.getArgument( 0, IndexDescriptor.class ).getId() );
             return mock;
         } );
 
@@ -73,8 +74,8 @@ class IndexSizesTest
         //given
         createIndexes( 3, 3 );
         //then
-        assertEquals( IndexChecker.NUM_INDEXES_IN_CACHE, sizes.largeIndexes( EntityType.NODE ).size() );
-        assertEquals( 6 - IndexChecker.NUM_INDEXES_IN_CACHE, sizes.smallIndexes( EntityType.NODE ).size() );
+        assertEquals( NUM_INDEXES_IN_CACHE, sizes.largeIndexes( NODE ).size() );
+        assertEquals( 6 - NUM_INDEXES_IN_CACHE, sizes.smallIndexes( NODE ).size() );
     }
 
     @Test
@@ -83,8 +84,8 @@ class IndexSizesTest
         //given
         createIndexes( 151, 149 );
         //then
-        assertEquals( 150, sizes.largeIndexes( EntityType.NODE ).size() );
-        assertEquals( 150, sizes.smallIndexes( EntityType.NODE ).size() );
+        assertEquals( 150, sizes.largeIndexes( NODE ).size() );
+        assertEquals( 150, sizes.smallIndexes( NODE ).size() );
     }
 
     @Test
@@ -93,8 +94,8 @@ class IndexSizesTest
         //given
         createIndexes( 3, 0 );
         //then
-        assertEquals( 3, sizes.smallIndexes( EntityType.NODE ).size() );
-        assertEquals( 0, sizes.largeIndexes( EntityType.NODE ).size() );
+        assertEquals( 3, sizes.smallIndexes( NODE ).size() );
+        assertEquals( 0, sizes.largeIndexes( NODE ).size() );
     }
 
     @Test
@@ -103,8 +104,8 @@ class IndexSizesTest
         //given
         createIndexes( 0, 3 );
         //then
-        assertEquals( 0, sizes.smallIndexes( EntityType.NODE ).size() );
-        assertEquals( 3, sizes.largeIndexes( EntityType.NODE ).size() );
+        assertEquals( 0, sizes.smallIndexes( NODE ).size() );
+        assertEquals( 3, sizes.largeIndexes( NODE ).size() );
     }
 
     @Test
@@ -112,8 +113,8 @@ class IndexSizesTest
     {
         //then
         createIndexes( 0, 0 );
-        assertEquals( 0, sizes.largeIndexes( EntityType.NODE ).size() );
-        assertEquals( 0, sizes.smallIndexes( EntityType.NODE ).size() );
+        assertEquals( 0, sizes.largeIndexes( NODE ).size() );
+        assertEquals( 0, sizes.smallIndexes( NODE ).size() );
     }
 
     @Test
@@ -124,8 +125,8 @@ class IndexSizesTest
         sizes.initialize();
 
         // when/then
-        assertTrue( sizes.largeIndexes( EntityType.NODE ).isEmpty() );
-        assertEquals( indexes, sizes.smallIndexes( EntityType.NODE ) );
+        assertTrue( sizes.largeIndexes( NODE ).isEmpty() );
+        assertEquals( indexes, sizes.smallIndexes( NODE ) );
     }
 
     private void createIndexes( int numSmall, int numLarge )

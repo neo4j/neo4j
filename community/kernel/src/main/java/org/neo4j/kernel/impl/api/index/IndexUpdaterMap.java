@@ -30,9 +30,12 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
+
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Holds currently open index updaters that are created dynamically when requested for any existing index in
@@ -56,7 +59,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    IndexUpdater getUpdater( IndexDescriptor descriptor )
+    IndexUpdater getUpdater( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )
@@ -64,19 +67,19 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
             IndexProxy indexProxy = indexMap.getIndexProxy( descriptor );
             if ( null != indexProxy )
             {
-                updater = indexProxy.newUpdater( indexUpdateMode );
+                updater = indexProxy.newUpdater( indexUpdateMode, cursorTracer );
                 updaterMap.put( descriptor, updater );
             }
         }
         return updater;
     }
 
-    private IndexUpdater getUpdater( IndexProxy proxy )
+    private IndexUpdater getUpdater( IndexProxy proxy, PageCursorTracer cursorTracer )
     {
         IndexUpdater updater = updaterMap.get( proxy.getDescriptor() );
         if ( null == updater )
         {
-            updater = proxy.newUpdater( indexUpdateMode );
+            updater = proxy.newUpdater( indexUpdateMode, cursorTracer );
             updaterMap.put( proxy.getDescriptor(), updater );
         }
         return updater;
@@ -139,7 +142,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
             {
                 if ( proxies.hasNext() )
                 {
-                    return getUpdater( proxies.next() );
+                    return getUpdater( proxies.next(), TRACER_SUPPLIER.get() );
                 }
                 return null;
             }

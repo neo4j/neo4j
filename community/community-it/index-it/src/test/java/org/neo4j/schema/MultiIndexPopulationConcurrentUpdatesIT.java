@@ -95,6 +95,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
@@ -180,13 +181,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
                 assertEquals("Should be removed by concurrent remove.",
-                        0, indexReader.countIndexedNodes( 0, new int[] {propertyId}, Values.of( "Sweden"  )) );
+                        0, indexReader.countIndexedNodes( 0, NULL, new int[] {propertyId}, Values.of( "Sweden"  )) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertEquals("Should be removed by concurrent remove.",
-                        0, indexReader.countIndexedNodes( 3, new int[] {propertyId}, Values.of( "green"  )) );
+                        0, indexReader.countIndexedNodes( 3, NULL, new int[] {propertyId}, Values.of( "green"  )) );
             }
         }
     }
@@ -210,13 +211,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
                 assertEquals("Should be added by concurrent add.", 1,
-                        indexReader.countIndexedNodes( otherNodes[0].getId(), new int[] {propertyId}, Values.of( "Denmark" ) ) );
+                        indexReader.countIndexedNodes( otherNodes[0].getId(), NULL, new int[] {propertyId}, Values.of( "Denmark" ) ) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
                 assertEquals("Should be added by concurrent add.", 1,
-                        indexReader.countIndexedNodes( otherNodes[1].getId(), new int[] {propertyId}, Values.of( "BMW" ) ) );
+                        indexReader.countIndexedNodes( otherNodes[1].getId(), NULL, new int[] {propertyId}, Values.of( "BMW" ) ) );
             }
         }
     }
@@ -240,18 +241,18 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertEquals( format( "Should be deleted by concurrent change. Reader is: %s, ", indexReader ), 0,
-                        indexReader.countIndexedNodes( color2.getId(), new int[] {propertyId}, Values.of( "green" ) ) );
+                        indexReader.countIndexedNodes( color2.getId(), NULL, new int[] {propertyId}, Values.of( "green" ) ) );
             }
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertEquals("Should be updated by concurrent change.", 1,
-                        indexReader.countIndexedNodes( color2.getId(), new int[] {propertyId}, Values.of( "pink"  ) ) );
+                        indexReader.countIndexedNodes( color2.getId(), NULL, new int[] {propertyId}, Values.of( "pink"  ) ) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
                 assertEquals("Should be added by concurrent change.", 1,
-                        indexReader.countIndexedNodes( car2.getId(), new int[] {propertyId}, Values.of( "SAAB"  ) ) );
+                        indexReader.countIndexedNodes( car2.getId(), NULL, new int[] {propertyId}, Values.of( "SAAB"  ) ) );
             }
         }
     }

@@ -30,6 +30,7 @@ import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -40,6 +41,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Idea is to migrate a {@link NeoStores} store by store, record by record in a sequential fashion for
@@ -50,12 +52,14 @@ class DirectRecordStoreMigrator
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Config config;
+    private final PageCacheTracer cacheTracer;
 
-    DirectRecordStoreMigrator( PageCache pageCache, FileSystemAbstraction fs, Config config )
+    DirectRecordStoreMigrator( PageCache pageCache, FileSystemAbstraction fs, Config config, PageCacheTracer cacheTracer )
     {
         this.pageCache = pageCache;
         this.fs = fs;
         this.config = config;
+        this.cacheTracer = cacheTracer;
     }
 
     public void migrate( DatabaseLayout fromDirectoryStructure, RecordFormats fromFormat, DatabaseLayout toDirectoryStructure,
@@ -66,13 +70,13 @@ class DirectRecordStoreMigrator
 
         try (
                 NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance() )
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), cacheTracer )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance() )
+                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance(), cacheTracer )
                         .openNeoStores( true, storesToOpen ) )
         {
-            toStores.start();
+            toStores.start( NULL );
             for ( StoreType type : types )
             {
                 // This condition will exclude counts store first and foremost.

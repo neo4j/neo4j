@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -90,6 +91,7 @@ import org.neo4j.token.TokenHolders;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -150,16 +152,16 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // WHEN simulating resuming the migration
-        migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs, logService.getInternalLogProvider() );
+                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs, logService.getInternalLogProvider(), NULL );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -179,7 +181,7 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -188,7 +190,7 @@ class RecordStorageMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider() );
+                logService.getInternalLogProvider(), NULL );
         storeFactory.openAllNeoStores().close();
         logProvider.rawMessageMatcher().assertNotContains( "ERROR" );
     }
@@ -209,7 +211,7 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
@@ -220,7 +222,7 @@ class RecordStorageMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs,
-                        logService.getInternalLogProvider() );
+                        logService.getInternalLogProvider(), NULL );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -240,7 +242,7 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -265,7 +267,7 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -292,7 +294,7 @@ class RecordStorageMigratorIT
         LogProvider logProvider = logService.getInternalLogProvider();
 
         // Prepare all the tokens we'll need.
-        StoreFactory legacyStoreFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, StandardV3_4.RECORD_FORMATS, logProvider );
+        StoreFactory legacyStoreFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, StandardV3_4.RECORD_FORMATS, logProvider, NULL );
         NeoStores stores = legacyStoreFactory.openNeoStores( false,
                 StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
                 StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
@@ -306,13 +308,13 @@ class RecordStorageMigratorIT
         File storeFile = databaseLayout.schemaStore();
         File idFile = databaseLayout.idSchemaStore();
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
-        schemaStore35.initialise( false );
+        schemaStore35.initialise( false, PageCursorTracer.NULL );
         SplittableRandom rng = new SplittableRandom();
         LongHashSet indexes = new LongHashSet();
         LongHashSet constraints = new LongHashSet();
         for ( int i = 0; i < 10; i++ )
         {
-            long id = schemaStore35.nextId();
+            long id = schemaStore35.nextId( PageCursorTracer.NULL );
             MutableLongSet target = rng.nextInt( 3 ) < 2 ? indexes : constraints;
             target.add( id );
         }
@@ -347,13 +349,13 @@ class RecordStorageMigratorIT
                 // We're starting to run low on ids, but just ignore this and loop as along as there are still some left.
             }
         }
-        schemaStore35.flush();
+        schemaStore35.flush( PageCursorTracer.NULL );
         schemaStore35.close();
 
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
 
         // When we migrate it to the new store format.
         String versionToMigrateTo = getVersionToMigrateTo( check );
@@ -364,7 +366,7 @@ class RecordStorageMigratorIT
         generatedRules.sort( Comparator.comparingLong( SchemaRule::getId ) );
 
         // Then the new store should retain an exact representation of the old-format schema rules.
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, logProvider );
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, logProvider, NULL );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
@@ -395,7 +397,7 @@ class RecordStorageMigratorIT
             Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ) );
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             record.addNameRecords( nameRecords );
-            record.setId( tokenStore.nextId() );
+            record.setId( tokenStore.nextId( PageCursorTracer.NULL ) );
             long maxId = 0;
             for ( DynamicRecord nameRecord : nameRecords )
             {
@@ -406,8 +408,8 @@ class RecordStorageMigratorIT
             tokenStore.updateRecord( record );
             tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse() ) );
         }
-        nameStore.flush();
-        tokenStore.flush();
+        nameStore.flush( PageCursorTracer.NULL );
+        tokenStore.flush( PageCursorTracer.NULL );
     }
 
     private static class RealIdsRandomSchema extends RandomSchema

@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @TestDirectoryExtension
 class LuceneSchemaIndexPopulationIT
@@ -96,7 +97,7 @@ class LuceneSchemaIndexPopulationIT
             try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force( IOLimiter.UNLIMITED );
+                indexAccessor.force( IOLimiter.UNLIMITED, NULL );
 
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );
@@ -120,7 +121,7 @@ class LuceneSchemaIndexPopulationIT
 
     private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             for ( int nodeId = 0; nodeId < nodesToUpdate; nodeId++ )
             {

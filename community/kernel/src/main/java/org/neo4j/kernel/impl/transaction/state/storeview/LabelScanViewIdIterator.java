@@ -23,6 +23,8 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * Node id iterator used during index population when we go over node ids indexed in label scan store.
  */
@@ -39,7 +41,7 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     {
         this.labelScanReader = labelScanReader;
         this.entityCursor = entityCursor;
-        this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds );
+        this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds, TRACER_SUPPLIER.get() );
         this.labelIds = labelIds;
     }
 
@@ -69,6 +71,6 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     public void invalidateCache()
     {
         this.idIterator.close();
-        this.idIterator = labelScanReader.nodesWithAnyOfLabels( lastReturnedId, labelIds );
+        this.idIterator = labelScanReader.nodesWithAnyOfLabels( lastReturnedId, labelIds, TRACER_SUPPLIER.get() );
     }
 }

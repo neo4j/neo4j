@@ -37,6 +37,7 @@ import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -45,6 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdType.STRING_BLOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class BufferingIdGeneratorFactoryTest
@@ -66,14 +68,15 @@ class BufferingIdGeneratorFactoryTest
         pageCache = mock( PageCache.class );
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, false );
+        idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, false,
+                NULL );
     }
 
     @Test
     void shouldDelayFreeingOfDeletedIds()
     {
         // WHEN
-        try ( Marker marker = idGenerator.marker() )
+        try ( Marker marker = idGenerator.marker( NULL ) )
         {
             marker.markDeleted( 7 );
         }
@@ -82,12 +85,12 @@ class BufferingIdGeneratorFactoryTest
         verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // after some maintenance and transaction still not closed
-        bufferingIdGeneratorFactory.maintenance();
+        bufferingIdGeneratorFactory.maintenance( NULL );
         verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance();
+        bufferingIdGeneratorFactory.maintenance( NULL );
 
         // THEN
         verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );
@@ -97,7 +100,7 @@ class BufferingIdGeneratorFactoryTest
     void shouldDelayFreeingOfDeletedIdsUntilCheckpoint()
     {
         // WHEN
-        try ( Marker marker = idGenerator.marker() )
+        try ( Marker marker = idGenerator.marker( NULL ) )
         {
             marker.markDeleted( 7 );
         }
@@ -106,12 +109,12 @@ class BufferingIdGeneratorFactoryTest
         verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // after some maintenance and transaction still not closed
-        idGenerator.checkpoint( IOLimiter.UNLIMITED );
+        idGenerator.checkpoint( IOLimiter.UNLIMITED, NULL );
         verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        idGenerator.checkpoint( IOLimiter.UNLIMITED );
+        idGenerator.checkpoint( IOLimiter.UNLIMITED, NULL );
 
         // THEN
         verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );
@@ -140,22 +143,22 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-                OpenOption... openOptions )
+                PageCursorTracer pageCursorTracer, OpenOption... openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
             Marker marker = mock( Marker.class );
             int ordinal = idType.ordinal();
             generators[ordinal] = idGenerator;
             markers[ordinal] = marker;
-            when( idGenerator.marker() ).thenReturn( marker );
+            when( idGenerator.marker( NULL ) ).thenReturn( marker );
             return idGenerator;
         }
 
         @Override
         public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                boolean readOnly, OpenOption... openOptions )
+                boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
         {
-            return open( pageCache, filename, idType, () -> highId, maxId, readOnly, openOptions );
+            return open( pageCache, filename, idType, () -> highId, maxId, readOnly, cursorTracer, openOptions );
         }
 
         @Override
@@ -171,7 +174,7 @@ class BufferingIdGeneratorFactoryTest
         }
 
         @Override
-        public void clearCache()
+        public void clearCache( PageCursorTracer cursorTracer )
         {
             // no-op
         }

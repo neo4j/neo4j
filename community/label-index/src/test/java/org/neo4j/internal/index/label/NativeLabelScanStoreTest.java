@@ -81,6 +81,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
@@ -184,7 +185,7 @@ public class NativeLabelScanStoreTest
     void forceShouldNotForceWriterOnReadOnlyScanStore() throws IOException
     {
         createAndStartReadOnly();
-        store.force( IOLimiter.UNLIMITED );
+        store.force( IOLimiter.UNLIMITED, NULL );
     }
 
     @Test
@@ -349,7 +350,7 @@ public class NativeLabelScanStoreTest
 
         // when
         LabelScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) labelId ) );
+        Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) labelId, NULL ) );
 
         // then
         assertEquals( nodes, nodesWithLabel );
@@ -375,7 +376,7 @@ public class NativeLabelScanStoreTest
 
         // then
         LabelScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) label0Id ) );
+        Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) label0Id, NULL ) );
         assertEquals( nodes, nodesWithLabel0 );
     }
 
@@ -456,7 +457,7 @@ public class NativeLabelScanStoreTest
         // WHEN
         Set<Long> nodeSet = new TreeSet<>();
         LabelScanReader reader = store.newReader();
-        PrimitiveLongResourceIterator nodes = reader.nodesWithLabel( labelId );
+        PrimitiveLongResourceIterator nodes = reader.nodesWithLabel( labelId, NULL );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );
@@ -492,13 +493,13 @@ public class NativeLabelScanStoreTest
         LabelScanReader reader = store.newReader();
         assertArrayEquals(
                 new long[]{1, 2, 3, 4, 5, 6, 7},
-                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2} ) ) );
+                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2}, NULL ) ) );
         assertArrayEquals(
                 new long[]{1, 2, 3, 4, 5, 8, 9},
-                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId3} ) ) );
+                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId3}, NULL ) ) );
         assertArrayEquals(
                 new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9},
-                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2, labelId3} ) ) );
+                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2, labelId3}, NULL ) ) );
     }
 
     @Test
@@ -526,7 +527,7 @@ public class NativeLabelScanStoreTest
         // then
         for ( Long labelId : possibleLabelIds )
         {
-            PrimitiveLongResourceIterator nodesWithLabel = store.newReader().nodesWithLabel( labelId.intValue() );
+            PrimitiveLongResourceIterator nodesWithLabel = store.newReader().nodesWithLabel( labelId.intValue(), NULL );
             Iterator<NodeLabelUpdate> expected =
                     updates.stream().filter( update -> LongStream.of( update.getLabelsAfter() ).anyMatch( candidateId -> candidateId == labelId ) ).iterator();
             while ( nodesWithLabel.hasNext() )
@@ -618,7 +619,7 @@ public class NativeLabelScanStoreTest
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
-        LongIterator nodes = store.newReader().nodesWithLabel( labelId );
+        LongIterator nodes = store.newReader().nodesWithLabel( labelId, NULL );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );

@@ -23,16 +23,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.internal.id.indexed.IdRange.IdState;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Responsible for starting and managing scans of a {@link GBPTree}, populating a cache with free ids that gets discovered in the scan.
@@ -48,7 +47,7 @@ class FreeIdScanner implements Closeable
     private final GBPTree<IdRangeKey, IdRange> tree;
     private final ConcurrentLongQueue cache;
     private final AtomicBoolean atLeastOneIdOnFreelist;
-    private final Supplier<ReservedMarker> markerSupplier;
+    private final MarkerProvider markerProvider;
     private final long generation;
     private final ScanLock lock;
     private volatile Seeker<IdRangeKey, IdRange> scanner;
@@ -57,13 +56,13 @@ class FreeIdScanner implements Closeable
     private int nextPosInRange;
 
     FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey,IdRange> tree, ConcurrentLongQueue cache, AtomicBoolean atLeastOneIdOnFreelist,
-            Supplier<ReservedMarker> markerSupplier, long generation, boolean strictlyPrioritizeFreelistOverHighId )
+            MarkerProvider markerProvider, long generation, boolean strictlyPrioritizeFreelistOverHighId )
     {
         this.idsPerEntry = idsPerEntry;
         this.tree = tree;
         this.cache = cache;
         this.atLeastOneIdOnFreelist = atLeastOneIdOnFreelist;
-        this.markerSupplier = markerSupplier;
+        this.markerProvider = markerProvider;
         this.pendingItemsToCache = new long[cache.capacity()];
         this.generation = generation;
         this.lock = strictlyPrioritizeFreelistOverHighId ? ScanLock.lockyAndPessimistic() : ScanLock.lockFreeAndOptimistic();
@@ -73,7 +72,7 @@ class FreeIdScanner implements Closeable
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      */
-    boolean tryLoadFreeIdsIntoCache()
+    boolean tryLoadFreeIdsIntoCache( PageCursorTracer cursorTracer )
     {
         if ( scanner == null && !atLeastOneIdOnFreelist.get() )
         {
@@ -95,10 +94,10 @@ class FreeIdScanner implements Closeable
                 int maxItemsToCache = cache.capacity() - cache.size();
 
                 // Find items to cache
-                if ( maxItemsToCache > 0 && findSomeIdsToCache( maxItemsToCache ) )
+                if ( maxItemsToCache > 0 && findSomeIdsToCache( maxItemsToCache, cursorTracer ) )
                 {
                     // Get a writer and mark the found ids as reserved
-                    markIdsAsReserved();
+                    markIdsAsReserved( cursorTracer );
 
                     // Place them in the cache so that allocation requests can see them
                     placeIdsInCache();
@@ -117,7 +116,7 @@ class FreeIdScanner implements Closeable
         return false;
     }
 
-    void clearCache()
+    void clearCache( PageCursorTracer cursorTracer )
     {
         lock.lock();
         try
@@ -136,7 +135,7 @@ class FreeIdScanner implements Closeable
             }
 
             // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache revert that by marking them as free again
-            try ( ReservedMarker marker = markerSupplier.get() )
+            try ( ReservedMarker marker = markerProvider.getMarker( cursorTracer ) )
             {
                 long id;
                 do
@@ -169,9 +168,9 @@ class FreeIdScanner implements Closeable
         }
     }
 
-    private void markIdsAsReserved()
+    private void markIdsAsReserved( PageCursorTracer cursorTracer )
     {
-        try ( ReservedMarker marker = markerSupplier.get() )
+        try ( ReservedMarker marker = markerProvider.getMarker( cursorTracer ) )
         {
             for ( int i = 0; i < pendingItemsToCacheCursor; i++ )
             {
@@ -180,12 +179,12 @@ class FreeIdScanner implements Closeable
         }
     }
 
-    private boolean findSomeIdsToCache( int maxItemsToCache ) throws IOException
+    private boolean findSomeIdsToCache( int maxItemsToCache, PageCursorTracer cursorTracer ) throws IOException
     {
         boolean startedNow = false;
         if ( scanner == null )
         {
-            scanner = tree.seek( LOW_KEY, HIGH_KEY, TRACER_SUPPLIER.get() );
+            scanner = tree.seek( LOW_KEY, HIGH_KEY, cursorTracer );
             startedNow = true;
         }
 

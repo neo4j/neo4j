@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class PropertyCreator
 {
     private final DynamicRecordAllocator stringRecordAllocator;
@@ -139,7 +141,7 @@ public class PropertyCreator
         if ( freeHostProxy == null )
         {
             // We couldn't find free space along the way, so create a new host record
-            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId(), primitive ).forChangingData();
+            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId( TRACER_SUPPLIER.get() ), primitive ).forChangingData();
             freeHost.setInUse( true );
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
@@ -203,7 +205,7 @@ public class PropertyCreator
         {
             return Record.NO_NEXT_PROPERTY.intValue();
         }
-        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId(), owner )
+        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( TRACER_SUPPLIER.get() ), owner )
                 .forChangingData();
         createdPropertyRecords.accept( currentRecord );
         currentRecord.setInUse( true );
@@ -217,7 +219,7 @@ public class PropertyCreator
                 // Here it means the current block is done for
                 PropertyRecord prevRecord = currentRecord;
                 // Create new record
-                long propertyId = propertyRecordIdGenerator.nextId();
+                long propertyId = propertyRecordIdGenerator.nextId( TRACER_SUPPLIER.get() );
                 currentRecord = propertyRecords.create( propertyId, owner ).forChangingData();
                 createdPropertyRecords.accept( currentRecord );
                 currentRecord.setInUse( true );

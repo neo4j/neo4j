@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
@@ -56,13 +57,13 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
     {
         return SwallowingIndexUpdater.INSTANCE;
     }
 
     @Override
-    public void force( IOLimiter ioLimiter )
+    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
     {
     }
 

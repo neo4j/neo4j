@@ -53,6 +53,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class PartitionedIndexReaderTest
@@ -154,11 +155,11 @@ class PartitionedIndexReaderTest
     void countNodesOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 1L );
-        when( indexReader2.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 2L );
-        when( indexReader3.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 3L );
+        when( indexReader1.countIndexedNodes( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 1L );
+        when( indexReader2.countIndexedNodes( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 2L );
+        when( indexReader3.countIndexedNodes( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 3L );
 
-        assertEquals( 6, indexReader.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) );
+        assertEquals( 6, indexReader.countIndexedNodes( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) );
     }
 
     @Test

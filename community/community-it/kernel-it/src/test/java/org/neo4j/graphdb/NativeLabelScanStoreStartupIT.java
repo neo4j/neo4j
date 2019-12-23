@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
@@ -86,7 +87,7 @@ class NativeLabelScanStoreStartupIT
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
         assertEquals( 1, labels.length, "Label scan store see 1 label for node" );
-        labelScanStore.force( IOLimiter.UNLIMITED );
+        labelScanStore.force( IOLimiter.UNLIMITED, NULL );
         labelScanStore.shutdown();
         workCollector.shutdown();
 
@@ -118,7 +119,7 @@ class NativeLabelScanStoreStartupIT
 
     private long[] readNodesForLabel( LabelScanStore labelScanStore )
     {
-        return closingAsArray( labelScanStore.newReader().nodesWithLabel( labelId ) );
+        return closingAsArray( labelScanStore.newReader().nodesWithLabel( labelId, NULL ) );
     }
 
     private void createTestNode()
@@ -160,7 +161,7 @@ class NativeLabelScanStoreStartupIT
             labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
         LabelScanReader labelScanReader = labelScanStore.newReader();
-        try ( PrimitiveLongResourceIterator iterator = labelScanReader.nodesWithLabel( labelId ) )
+        try ( PrimitiveLongResourceIterator iterator = labelScanReader.nodesWithLabel( labelId, NULL ) )
         {
             assertEquals( 1, iterator.next() );
         }

@@ -51,6 +51,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -82,7 +83,6 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
 {
-    private final StorageReader storageReader;
     private final GlobalProcedures globalProcedures;
     private final SchemaState schemaState;
     private final IndexingService indexingService;
@@ -100,10 +100,10 @@ public class AllStoreHolder extends Read
                            IndexingService indexingService,
                            LabelScanStore labelScanStore,
                            IndexStatisticsStore indexStatisticsStore,
+                           PageCursorTracer cursorTracer,
                            Dependencies databaseDependencies )
     {
-        super( storageReader, cursors, ktx );
-        this.storageReader = storageReader;
+        super( storageReader, cursors, cursorTracer, ktx );
         this.globalProcedures = globalProcedures;
         this.schemaState = schemaState;
         this.indexReaderCache = new IndexReaderCache( indexingService );
@@ -660,7 +660,7 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
         assertValidIndex( index );
         IndexReader reader = indexReaderCache.getOrCreate( index );
-        return reader.countIndexedNodes( nodeId, new int[] {propertyKeyId}, value );
+        return reader.countIndexedNodes( nodeId, cursorTracer, new int[] {propertyKeyId}, value );
     }
 
     @Override

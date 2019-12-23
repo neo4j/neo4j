@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
@@ -91,12 +92,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
     {
         if ( IndexUpdateMode.ONLINE == mode )
         {
             openCall( "update" );
-            return new DelegatingIndexUpdater( super.newUpdater( mode ) )
+            return new DelegatingIndexUpdater( super.newUpdater( mode, cursorTracer ) )
             {
                 @Override
                 public void close() throws IndexEntryConflictException
@@ -114,18 +115,18 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
         else
         {
-            return super.newUpdater( mode );
+            return super.newUpdater( mode, cursorTracer );
         }
     }
 
     @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
+    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( tryOpenCall( "force" ) )
         {
             try
             {
-                super.force( ioLimiter );
+                super.force( ioLimiter, cursorTracer );
             }
             finally
             {

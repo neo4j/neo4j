@@ -30,6 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
@@ -64,7 +65,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
      * a crash or similar. Updates given then may have already been applied to this index, so
      * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
      */
-    IndexUpdater newUpdater( IndexUpdateMode mode );
+    IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer );
 
     /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
@@ -72,9 +73,10 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
      * hasn't been forced to disk.
      *
      * @param ioLimiter The {@link IOLimiter} to use for implementations living on top of {@link org.neo4j.io.pagecache.PageCache}.
+     * @param cursorTracer underlying page cursor tracer
      * @throws UncheckedIOException if there was a problem forcing the state to persistent storage.
      */
-    void force( IOLimiter ioLimiter );
+    void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer );
 
     /**
      * Refreshes this index, so that {@link #newReader() readers} created after completion of this call
@@ -185,8 +187,9 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
     /**
      * @return an estimate of the number of entries, i.e. entityId+values pairs, in this index, or {@link #UNKNOWN_NUMBER_OF_ENTRIES}
      * if number of entries couldn't be determined.
+     * @param cursorTracer underlying page cursor tracer
      */
-    long estimateNumberOfEntries();
+    long estimateNumberOfEntries( PageCursorTracer cursorTracer );
 
     class Adapter implements IndexAccessor
     {
@@ -196,13 +199,13 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
         {
             return SwallowingIndexUpdater.INSTANCE;
         }
 
         @Override
-        public void force( IOLimiter ioLimiter )
+        public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
         {
         }
 
@@ -264,7 +267,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public long estimateNumberOfEntries()
+        public long estimateNumberOfEntries( PageCursorTracer cursorTracer )
         {
             return UNKNOWN_NUMBER_OF_ENTRIES;
         }
@@ -286,15 +289,15 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
         {
-            return delegate.newUpdater( mode );
+            return delegate.newUpdater( mode, cursorTracer );
         }
 
         @Override
-        public void force( IOLimiter ioLimiter )
+        public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
         {
-            delegate.force( ioLimiter );
+            delegate.force( ioLimiter, cursorTracer );
         }
 
         @Override
@@ -364,9 +367,9 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public long estimateNumberOfEntries()
+        public long estimateNumberOfEntries( PageCursorTracer cursorTracer )
         {
-            return delegate.estimateNumberOfEntries();
+            return delegate.estimateNumberOfEntries( cursorTracer );
         }
     }
 }

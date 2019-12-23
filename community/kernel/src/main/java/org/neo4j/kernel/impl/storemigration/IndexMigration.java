@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -51,12 +52,13 @@ enum IndexMigration
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
+                        PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
                     File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
                     File spatialDirectory = getSpatialSubDirectory( indexId, lucene10Dir );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, log );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
                 }
 
             },
@@ -70,12 +72,13 @@ enum IndexMigration
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
+                        PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectories( layout )[0];
                     File spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, log );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
                 }
 
             },
@@ -89,12 +92,13 @@ enum IndexMigration
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
+                        PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectories( layout )[0];
                     File spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, log );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
                 }
 
             },
@@ -109,11 +113,12 @@ enum IndexMigration
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
+                        PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
                     File rootDir = providerRootDirectories( layout )[0];
                     File genericFile = path( rootDir, String.valueOf( indexId ), "index-" + indexId );
-                    return GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, log );
+                    return GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, cursorTracer, log );
                 }
 
             },
@@ -127,7 +132,8 @@ enum IndexMigration
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log )
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
+                        PageCursorTracer cursorTracer, Log log )
                 {
                     // Fulltext index directory structure.
                     // └── schema
@@ -167,7 +173,8 @@ enum IndexMigration
 
     abstract File[] providerRootDirectories( DatabaseLayout layout );
 
-    abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException;
+    abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
+            PageCursorTracer cursorTracer, Log log ) throws IOException;
 
     /**
      * Returns the base schema index directory, i.e.

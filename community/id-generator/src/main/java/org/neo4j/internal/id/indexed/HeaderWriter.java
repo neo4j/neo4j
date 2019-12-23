@@ -25,6 +25,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Writes header of an {@link IndexedIdGenerator} into the {@link GBPTree}.
@@ -35,7 +36,7 @@ class HeaderWriter implements Consumer<PageCursor>
 {
     /**
      * highId to write in the header. This is a supplier because of how this writer is constructed before entering the critical
-     * section inside {@link GBPTree#checkpoint(IOLimiter)} and so the highId may have changed between constructing this writer
+     * section inside {@link GBPTree#checkpoint(IOLimiter, PageCursorTracer)} and so the highId may have changed between constructing this writer
      * and entering the checkpoint critical section.
      */
     private final LongSupplier highId;

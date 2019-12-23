@@ -28,16 +28,18 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 import static java.util.Arrays.copyOf;
 
 /**
  * Buffer of {@code long} values which can be held until a safe threshold is crossed, at which point
  * they are released onto a {@link Consumer}. These values are held in chunk and each chunk knows
- * which threshold is considered safe. Regular {@link #maintenance()} is required to be called externally
+ * which threshold is considered safe. Regular {@link #maintenance(PageCursorTracer)} is required to be called externally
  * for values to be released.
  *
  * This class is thread-safe for concurrent requests, but only a single thread should be responsible for
- * calling {@link #maintenance()}.
+ * calling {@link #maintenance(PageCursorTracer)}.
  */
 public class DelayedBuffer<T>
 {
@@ -61,7 +63,7 @@ public class DelayedBuffer<T>
 
     private final Supplier<T> thresholdSupplier;
     private final Predicate<T> safeThreshold;
-    private final Consumer<long[]> chunkConsumer;
+    private final ChunkConsumer chunkConsumer;
     private final Deque<Chunk<T>> chunks = new ConcurrentLinkedDeque<>();
     private final int chunkSize;
     private final Lock consumeLock = new ReentrantLock();
@@ -70,7 +72,7 @@ public class DelayedBuffer<T>
     private int chunkCursor;
 
     DelayedBuffer( Supplier<T> thresholdSupplier, Predicate<T> safeThreshold, int chunkSize,
-            Consumer<long[]> chunkConsumer )
+            ChunkConsumer chunkConsumer )
     {
         assert chunkSize > 0;
         this.thresholdSupplier = thresholdSupplier;
@@ -84,7 +86,7 @@ public class DelayedBuffer<T>
      * Should be called every now and then to check for safe thresholds of buffered chunks and potentially
      * release them onto the {@link Consumer}.
      */
-    public void maintenance()
+    public void maintenance( PageCursorTracer cursorTracer )
     {
         synchronized ( this )
         {
@@ -100,7 +102,7 @@ public class DelayedBuffer<T>
                 Chunk<T> candidate = chunks.peek();
                 if ( safeThreshold.test( candidate.threshold ) )
                 {
-                    chunkConsumer.accept( candidate.values );
+                    chunkConsumer.consume( candidate.values, cursorTracer );
                     chunks.remove();
                 }
                 else
@@ -132,7 +134,7 @@ public class DelayedBuffer<T>
 
     /**
      * Offers a value to this buffer. This value will at a later point be part of a buffered chunk,
-     * released by a call to {@link #maintenance()} when the safe threshold for the chunk, which is determined
+     * released by a call to {@link #maintenance(PageCursorTracer)} when the safe threshold for the chunk, which is determined
      * when the chunk is full or otherwise queued.
      */
     public synchronized void offer( long value )

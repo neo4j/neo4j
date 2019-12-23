@@ -28,6 +28,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.LogProvider;
 
@@ -46,24 +47,27 @@ public class StoreFactory
     private final LogProvider logProvider;
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
+    private final PageCacheTracer cacheTracer;
     private final OpenOption[] openOptions;
 
     public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
+            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, PageCacheTracer cacheTracer )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider ),
-                logProvider );
+                logProvider, cacheTracer );
     }
 
     public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider, OpenOption... openOptions )
+            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider, PageCacheTracer cacheTracer,
+            OpenOption... openOptions )
     {
         this.databaseLayout = databaseLayout;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.recordFormats = recordFormats;
+        this.cacheTracer = cacheTracer;
         this.openOptions = openOptions;
         this.logProvider = logProvider;
         this.pageCache = pageCache;
@@ -123,6 +127,6 @@ public class StoreFactory
             }
         }
         return new NeoStores( fileSystemAbstraction, databaseLayout, config, idGeneratorFactory, pageCache, logProvider, recordFormats, createStoreIfNotExists,
-                storeTypes, openOptions );
+                cacheTracer, storeTypes, openOptions );
     }
 }

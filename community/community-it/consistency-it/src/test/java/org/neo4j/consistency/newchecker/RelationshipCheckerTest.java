@@ -25,6 +25,7 @@ import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,9 +46,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node = nodePlusCached( nodeStore.nextId(), NULL, relationship );
-            relationship( relationship, nodeStore.nextId(), node, type, NULL, NULL, NULL, NULL, true, true );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            relationship( relationship, nodeStore.nextId( PageCursorTracer.NULL ), node, type, NULL, NULL, NULL, NULL, true, true );
         }
 
         // when
@@ -63,9 +64,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node = nodePlusCached( nodeStore.nextId(), NULL, relationship );
-            relationship( relationship, node, nodeStore.nextId(), type, NULL, NULL, NULL, NULL, true, true );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            relationship( relationship, node, nodeStore.nextId( PageCursorTracer.NULL ), type, NULL, NULL, NULL, NULL, true, true );
         }
 
         // when
@@ -81,8 +82,8 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node = nodePlusCached( nodeStore.nextId(), NULL, relationship );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
             relationship( relationship, node + 10, node, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -99,8 +100,8 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node = nodePlusCached( nodeStore.nextId(), NULL, relationship );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
             relationship( relationship, node, node + 10, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -117,9 +118,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node1 = nodePlusCached( nodeStore.nextId(), NULL, relationshipStore.nextId() );
-            long node2 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationshipStore.nextId( PageCursorTracer.NULL ) );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -136,9 +137,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node1 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId(), NULL, relationshipStore.nextId() );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationshipStore.nextId( PageCursorTracer.NULL ) );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -155,9 +156,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node1 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, false, true );
         }
 
@@ -174,9 +175,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node1 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, false );
         }
 
@@ -193,9 +194,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node1 = nodePlusCached( nodeStore.nextId(), NULL, NULL );
-            long node2 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -212,9 +213,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node1 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId(), NULL, NULL );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -231,9 +232,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId();
-            long node1 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId(), NULL, relationship );
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
             relationship( relationship, node1, node2, type + 1, NULL, NULL, NULL, NULL, true, true );
         }
 

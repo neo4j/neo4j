@@ -179,7 +179,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setLatestConstraintIntroducingTx( 0 );
 
         initHighId();
-        flush();
+        flush( TRACER_SUPPLIER.get() );
     }
 
     // Only for initialization and recovery, so we don't need to lock the records
@@ -463,7 +463,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 throw new UnderlyingStorageException( e );
             }
         }
-        flush(); // make sure the new version value is persisted
+        flush( TRACER_SUPPLIER.get() ); // make sure the new version value is persisted
         return version;
     }
 

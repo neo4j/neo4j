@@ -26,6 +26,7 @@ import java.util.EnumSet;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -118,9 +119,9 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
                 return new IndexAccessor.Delegating( actualAccessor )
                 {
                     @Override
-                    public IndexUpdater newUpdater( IndexUpdateMode mode )
+                    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
                     {
-                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode );
+                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode, cursorTracer );
                         return new DelegatingIndexUpdater( actualUpdater )
                         {
                             @Override

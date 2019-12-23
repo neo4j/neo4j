@@ -29,7 +29,6 @@ import org.apache.lucene.search.TotalHitCountCollector;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -38,6 +37,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
@@ -154,7 +154,7 @@ public class FulltextIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
         long count = 0;
         for ( SearcherReference searcher : searchers )

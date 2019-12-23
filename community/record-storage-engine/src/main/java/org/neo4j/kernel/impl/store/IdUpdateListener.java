@@ -22,28 +22,29 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public interface IdUpdateListener
 {
-    void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id );
+    void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer );
 
-    void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id );
+    void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer );
 
     IdUpdateListener DIRECT = new IdUpdateListener()
     {
         @Override
-        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id )
+        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
         {
-            try ( Marker marker = idGenerator.marker() )
+            try ( Marker marker = idGenerator.marker( cursorTracer ) )
             {
                 marker.markUsed( id );
             }
         }
 
         @Override
-        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id )
+        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
         {
-            try ( Marker marker = idGenerator.marker() )
+            try ( Marker marker = idGenerator.marker( cursorTracer ) )
             {
                 marker.markDeleted( id );
             }
@@ -53,12 +54,12 @@ public interface IdUpdateListener
     IdUpdateListener IGNORE = new IdUpdateListener()
     {
         @Override
-        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id )
+        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
         {   // no-op
         }
 
         @Override
-        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id )
+        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
         {   // no-op
         }
     };

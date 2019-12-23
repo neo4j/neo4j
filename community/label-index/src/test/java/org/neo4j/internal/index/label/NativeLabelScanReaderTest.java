@@ -67,7 +67,7 @@ class NativeLabelScanReaderTest
                 .thenReturn( cursor );
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
-        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID ) )
+        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID, NULL ) )
         {
             // THEN
             assertArrayEquals( new long[]{
@@ -95,8 +95,8 @@ class NativeLabelScanReaderTest
 
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
-        try ( PrimitiveLongResourceIterator first = reader.nodesWithLabel( LABEL_ID );
-              PrimitiveLongResourceIterator second = reader.nodesWithLabel( LABEL_ID ) )
+        try ( PrimitiveLongResourceIterator first = reader.nodesWithLabel( LABEL_ID, NULL );
+              PrimitiveLongResourceIterator second = reader.nodesWithLabel( LABEL_ID, NULL ) )
         {
             // first check test invariants
             verify( cursor1, never() ).close();
@@ -131,8 +131,8 @@ class NativeLabelScanReaderTest
 
         // WHEN
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
-        try ( PrimitiveLongResourceIterator ignore1 = reader.nodesWithLabel( LABEL_ID );
-              PrimitiveLongResourceIterator ignore2 = reader.nodesWithLabel( LABEL_ID )
+        try ( PrimitiveLongResourceIterator ignore1 = reader.nodesWithLabel( LABEL_ID, NULL );
+              PrimitiveLongResourceIterator ignore2 = reader.nodesWithLabel( LABEL_ID, NULL )
         )
         {
             // first check test invariants
@@ -168,7 +168,7 @@ class NativeLabelScanReaderTest
         // when
         long fromId = LabelScanValue.RANGE_SIZE + 3;
         NativeLabelScanReader reader = new NativeLabelScanReader( index );
-        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, LABEL_ID ) )
+        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, new int[]{LABEL_ID}, NULL ) )
         {
             // then
             assertArrayEquals( new long[] {

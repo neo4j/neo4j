@@ -28,6 +28,7 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -216,13 +217,13 @@ public class RecordBuilders
             private long nextId = filterType( records, RelationshipGroupRecord.class ).count();
 
             @Override
-            public long nextId()
+            public long nextId( PageCursorTracer cursorTracer )
             {
                 return nextId++;
             }
 
             @Override
-            public IdRange nextIdBatch( int size )
+            public IdRange nextIdBatch( int size, PageCursorTracer cursorTracer )
             {
                 throw new UnsupportedOperationException();
             }

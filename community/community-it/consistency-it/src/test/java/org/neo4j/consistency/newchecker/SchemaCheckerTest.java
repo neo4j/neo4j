@@ -43,6 +43,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.TokenStore;
@@ -97,11 +98,11 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index1 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             IndexDescriptor index2 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME2 )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             schemaStorage.writeSchemaRule( index1 );
             schemaStorage.writeSchemaRule( index2 );
         }
@@ -122,7 +123,7 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             schemaStorage.writeSchemaRule( index );
         }
 
@@ -142,7 +143,7 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             schemaStorage.writeSchemaRule( index );
         }
 
@@ -162,7 +163,7 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             schemaStorage.writeSchemaRule( index );
         }
 
@@ -182,7 +183,7 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( relationshipType1, UNUSED ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             schemaStorage.writeSchemaRule( index );
         }
 
@@ -202,7 +203,7 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() )
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withOwningConstraintId( UNUSED );
             schemaStorage.writeSchemaRule( index1 );
         }
@@ -221,7 +222,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             UniquenessConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME )
                     .withOwnedIndexId( UNUSED );
             schemaStorage.writeSchemaRule( constraintDescriptor );
@@ -243,7 +244,7 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             schemaStorage.writeSchemaRule( index );
             SchemaRecord schemaRecord = schemaStore.getRecord( index.getId(), schemaStore.newRecord(), RecordLoad.NORMAL );
             propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ) );
@@ -265,9 +266,9 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME )
                     .withOwnedIndexId( index.getId() );
             index = index.withOwningConstraintId( UNUSED );
@@ -291,9 +292,9 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME )
                     .withOwnedIndexId( UNUSED );
             index = index.withOwningConstraintId( uniquenessConstraint.getId() );
@@ -317,13 +318,13 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             IndexDescriptor index2 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label2, propertyKey2 ) )
                     .withName( NAME2 )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME )
                     .withOwnedIndexId( index1.getId() );
             index1 = index1.withOwningConstraintId( uniquenessConstraint.getId() );
@@ -349,13 +350,13 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId() );
+                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
             UniquenessConstraintDescriptor uniquenessConstraint1 = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME )
                     .withOwnedIndexId( index.getId() );
             UniquenessConstraintDescriptor uniquenessConstraint2 = ConstraintDescriptorFactory.uniqueForLabel( label2, propertyKey2 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME2 )
                     .withOwnedIndexId( index.getId() );
             index = index.withOwningConstraintId( uniquenessConstraint1.getId() );
@@ -379,19 +380,19 @@ class SchemaCheckerTest extends CheckerTestBase
         {
             NodeExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory
                     .existsForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME );
             NodeExistenceConstraintDescriptor constraint2 = ConstraintDescriptorFactory
                     .existsForLabel( label2, propertyKey1, propertyKey2 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME2 );
             RelExistenceConstraintDescriptor constraint3 = ConstraintDescriptorFactory
                     .existsForRelType( relationshipType1, propertyKey2 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME );
             RelExistenceConstraintDescriptor constraint4 = ConstraintDescriptorFactory
                     .existsForRelType( relationshipType2, propertyKey1, propertyKey2 )
-                    .withId( schemaStore.nextId() )
+                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
                     .withName( NAME2 );
             schemaStorage.writeSchemaRule( constraint1 );
             schemaStorage.writeSchemaRule( constraint2 );

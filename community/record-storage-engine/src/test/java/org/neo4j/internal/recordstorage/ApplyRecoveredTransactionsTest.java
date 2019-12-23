@@ -35,6 +35,7 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -54,6 +55,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @EphemeralPageCacheExtension
@@ -75,7 +77,7 @@ class ApplyRecoveredTransactionsTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance() );
+                new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
@@ -89,8 +91,8 @@ class ApplyRecoveredTransactionsTest
     void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
     {
         // WHEN recovering a transaction that creates some data
-        long nodeId = neoStores.getNodeStore().nextId();
-        long relationshipId = neoStores.getRelationshipStore().nextId();
+        long nodeId = neoStores.getNodeStore().nextId( NULL );
+        long relationshipId = neoStores.getRelationshipStore().nextId( NULL );
         int type = 1;
         applyExternalTransaction( 1,
                 new NodeCommand( new NodeRecord( nodeId ), inUse( created( new NodeRecord( nodeId ) ) ) ),

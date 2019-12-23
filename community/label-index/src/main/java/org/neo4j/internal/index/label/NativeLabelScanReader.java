@@ -35,8 +35,6 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * {@link LabelScanReader} for reading data from {@link NativeLabelScanStore}.
@@ -56,12 +54,12 @@ class NativeLabelScanReader implements LabelScanReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesWithLabel( int labelId )
+    public PrimitiveLongResourceIterator nodesWithLabel( int labelId, PageCursorTracer cursorTracer )
     {
         Seeker<LabelScanKey,LabelScanValue> cursor;
         try
         {
-            cursor = seekerForLabel( 0, labelId );
+            cursor = seekerForLabel( 0, labelId, cursorTracer );
         }
         catch ( IOException e )
         {
@@ -72,18 +70,18 @@ class NativeLabelScanReader implements LabelScanReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int... labelIds )
+    public PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] labelIds, PageCursorTracer cursorTracer )
     {
-        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( fromId, labelIds );
+        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( fromId, cursorTracer, labelIds );
         return new CompositeLabelScanValueIterator( iterators, false );
     }
 
     @Override
-    public LabelScan nodeLabelScan( int labelId )
+    public LabelScan nodeLabelScan( int labelId, PageCursorTracer cursorTracer )
     {
         try
         {
-            long highestNodeIdForLabel = highestNodeIdForLabel( labelId );
+            long highestNodeIdForLabel = highestNodeIdForLabel( labelId, cursorTracer );
             return new NativeLabelScan( labelId, highestNodeIdForLabel );
         }
         catch ( IOException e )
@@ -92,23 +90,23 @@ class NativeLabelScanReader implements LabelScanReader
         }
     }
 
-    private long highestNodeIdForLabel( int labelId ) throws IOException
+    private long highestNodeIdForLabel( int labelId, PageCursorTracer cursorTracer ) throws IOException
     {
         try ( Seeker<LabelScanKey,LabelScanValue> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
-                new LabelScanKey( labelId, Long.MIN_VALUE ), TRACER_SUPPLIER.get() ) )
+                new LabelScanKey( labelId, Long.MIN_VALUE ), cursorTracer ) )
         {
             return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
         }
     }
 
-    private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, int[] labelIds )
+    private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, PageCursorTracer cursorTracer, int[] labelIds )
     {
         List<PrimitiveLongResourceIterator> iterators = new ArrayList<>();
         try
         {
             for ( int labelId : labelIds )
             {
-                Seeker<LabelScanKey,LabelScanValue> cursor = seekerForLabel( fromId, labelId );
+                Seeker<LabelScanKey,LabelScanValue> cursor = seekerForLabel( fromId, labelId, cursorTracer );
                 iterators.add( new LabelScanValueIterator( cursor, fromId ) );
             }
         }
@@ -119,19 +117,19 @@ class NativeLabelScanReader implements LabelScanReader
         return iterators;
     }
 
-    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, int labelId ) throws IOException
+    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, int labelId, PageCursorTracer cursorTracer ) throws IOException
     {
         LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
         LabelScanKey to = new LabelScanKey( labelId, Long.MAX_VALUE );
-        return index.seek( from, to, NULL );
+        return index.seek( from, to, cursorTracer );
     }
 
-    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, long stopId, int labelId ) throws IOException
+    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, long stopId, int labelId, PageCursorTracer cursorTracer ) throws IOException
     {
         LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
         LabelScanKey to = new LabelScanKey( labelId, rangeOf( stopId ) );
 
-        return index.seek( from, to, NULL );
+        return index.seek( from, to, cursorTracer );
     }
 
     private class NativeLabelScan implements LabelScan
@@ -148,13 +146,13 @@ class NativeLabelScanReader implements LabelScanReader
         }
 
         @Override
-        public IndexProgressor initialize( IndexProgressor.NodeLabelClient client )
+        public IndexProgressor initialize( IndexProgressor.NodeLabelClient client, PageCursorTracer cursorTracer )
         {
-            return init( client, 0L, Long.MAX_VALUE );
+            return init( client, 0L, Long.MAX_VALUE, cursorTracer );
         }
 
         @Override
-        public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint )
+        public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, PageCursorTracer cursorTracer )
         {
             if ( sizeHint == 0 )
             {
@@ -167,15 +165,15 @@ class NativeLabelScanReader implements LabelScanReader
             {
                 return IndexProgressor.EMPTY;
             }
-            return init( client, start, stop );
+            return init( client, start, stop, cursorTracer );
         }
 
-        private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop )
+        private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop, PageCursorTracer cursorTracer )
         {
             Seeker<LabelScanKey,LabelScanValue> cursor;
             try
             {
-                cursor = seekerForLabel( start, stop, labelId );
+                cursor = seekerForLabel( start, stop, labelId, cursorTracer );
             }
             catch ( IOException e )
             {

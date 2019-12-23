@@ -23,6 +23,7 @@ import java.util.EnumMap;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 
 class EnqueuingIdUpdateListener implements IdUpdateListener
@@ -35,13 +36,13 @@ class EnqueuingIdUpdateListener implements IdUpdateListener
     }
 
     @Override
-    public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id )
+    public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
     {
         idUpdates.computeIfAbsent( idType, k -> new ChangedIds() ).addUsedId( id );
     }
 
     @Override
-    public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id )
+    public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
     {
         idUpdates.computeIfAbsent( idType, k -> new ChangedIds() ).addUnusedId( id );
     }

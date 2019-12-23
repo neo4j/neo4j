@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -151,6 +152,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.MultiPopulatorFactory.forConfig;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -217,7 +219,7 @@ class IndexingServiceTest
     void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -230,7 +232,7 @@ class IndexingServiceTest
         waitForIndexesToComeOnline( indexingService, index );
         verify( populator, timeout( 10000 ) ).close( true );
 
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -240,7 +242,7 @@ class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -249,7 +251,7 @@ class IndexingServiceTest
     void indexCreationShouldBeIdempotent() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -309,7 +311,7 @@ class IndexingServiceTest
         populationStartBarrier.release();
 
         IndexEntryUpdate<?> value2 = add( 2, "value2" );
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             updater.process( value2 );
         }
@@ -341,7 +343,7 @@ class IndexingServiceTest
     void shouldStillReportInternalIndexStateAsPopulatingWhenConstraintIndexIsDonePopulating() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
         IndexReader indexReader = mock( IndexReader.class );
         when( accessor.newReader() ).thenReturn( indexReader );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( index ) ).when( indexReader ).query( any(), any(), any(), anyBoolean(), any() );
@@ -358,7 +360,7 @@ class IndexingServiceTest
         // don't wait for index to come ONLINE here since we're testing that it doesn't
         verify( populator, timeout( 20000 ) ).close( true );
 
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -368,7 +370,7 @@ class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater );
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE, NULL );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -486,8 +488,8 @@ class IndexingServiceTest
         IndexProvider nativeBtree10Provider = mockIndexProviderWithAccessor( nativeBtree10Descriptor );
         IndexProvider fulltextProvider = mockIndexProviderWithAccessor( fulltextDescriptor );
 
-        when( nativeBtree10Provider.getInitialState( nativeBtree10Index ) ).thenReturn( ONLINE );
-        when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( ONLINE );
+        when( nativeBtree10Provider.getInitialState( nativeBtree10Index ) ).thenReturn( InternalIndexState.ONLINE );
+        when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( InternalIndexState.ONLINE );
 
         Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
         DependencyResolver dependencies =
@@ -740,7 +742,7 @@ class IndexingServiceTest
     void applicationOfUpdatesShouldFlush() throws Exception
     {
         // Given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
 
@@ -776,11 +778,11 @@ class IndexingServiceTest
 
         IndexAccessor accessor1 = mock( IndexAccessor.class );
         IndexUpdater updater1 = mock( IndexUpdater.class );
-        when( accessor1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater1 );
+        when( accessor1.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater1 );
 
         IndexAccessor accessor2 = mock( IndexAccessor.class );
         IndexUpdater updater2 = mock( IndexUpdater.class );
-        when( accessor2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater2 );
+        when( accessor2.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater2 );
 
         when( indexProvider.getOnlineAccessor( eq( index1 ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );
         when( indexProvider.getOnlineAccessor( eq( index2 ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor2 );
@@ -881,7 +883,7 @@ class IndexingServiceTest
         // and WHEN starting, i.e. completing recovery
         life.start();
 
-        verify( accessor ).newUpdater( RECOVERY );
+        verify( accessor ).newUpdater( eq( RECOVERY ), any( PageCursorTracer.class ) );
     }
 
     @Test
@@ -962,7 +964,7 @@ class IndexingServiceTest
 
         // THEN afterwards the index should be ONLINE
         assertEquals( 2, indexRef.get().getId() );
-        assertEquals( ONLINE, indexing.getIndexProxy( indexRef.get() ).getState() );
+        assertEquals( InternalIndexState.ONLINE, indexing.getIndexProxy( indexRef.get() ).getState() );
     }
 
     @Test
@@ -1265,15 +1267,15 @@ class IndexingServiceTest
                 return indexMap;
             } );
             throw new RuntimeException( "Index deleted." );
-        } ).when( deletedIndexProxy ).force( any( IOLimiter.class ) );
+        } ).when( deletedIndexProxy ).force( any( IOLimiter.class ), any( PageCursorTracer.class ) );
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll( IOLimiter.UNLIMITED );
-        verify( validIndex1 ).force( IOLimiter.UNLIMITED );
-        verify( validIndex2 ).force( IOLimiter.UNLIMITED );
-        verify( validIndex3 ).force( IOLimiter.UNLIMITED );
-        verify( validIndex4 ).force( IOLimiter.UNLIMITED );
+        indexingService.forceAll( IOLimiter.UNLIMITED, NULL );
+        verify( validIndex1 ).force( IOLimiter.UNLIMITED, NULL );
+        verify( validIndex2 ).force( IOLimiter.UNLIMITED, NULL );
+        verify( validIndex3 ).force( IOLimiter.UNLIMITED, NULL );
+        verify( validIndex4 ).force( IOLimiter.UNLIMITED, NULL );
     }
 
     @Test
@@ -1281,7 +1283,8 @@ class IndexingServiceTest
     {
         IndexMapReference indexMapReference = new IndexMapReference();
         IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
-        doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
+        doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy )
+                .force( any( IOLimiter.class ), any( PageCursorTracer.class ) );
         indexMapReference.modify( indexMap ->
         {
             IndexProxy validIndex = createIndexProxyMock( 0 );
@@ -1295,7 +1298,8 @@ class IndexingServiceTest
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        var e = assertThrows( UnderlyingStorageException.class, () -> indexingService.forceAll( IOLimiter.UNLIMITED ) );
+        var e = assertThrows( UnderlyingStorageException.class,
+                () -> indexingService.forceAll( IOLimiter.UNLIMITED, NULL ) );
         assertThat( e.getMessage(), startsWith( "Unable to force" ) );
     }
 
@@ -1308,7 +1312,7 @@ class IndexingServiceTest
         IndexAccessor accessor = mock( IndexAccessor.class );
         IndexUpdater updater = mock( IndexUpdater.class );
         when( accessor.newReader() ).thenReturn( IndexReader.EMPTY );
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
@@ -1628,7 +1632,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
         {
             return updater;
         }

@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -91,9 +92,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode, PageCursorTracer cursorTracer )
     {
-        IndexUpdater actual = accessor.newUpdater( escalateModeIfNecessary( mode ) );
+        IndexUpdater actual = accessor.newUpdater( escalateModeIfNecessary( mode ), cursorTracer );
         return started ? updateCountingUpdater( actual ) : actual;
     }
 
@@ -137,9 +138,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force( IOLimiter ioLimiter )
+    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
     {
-        accessor.force( ioLimiter );
+        accessor.force( ioLimiter, cursorTracer );
     }
 
     @Override

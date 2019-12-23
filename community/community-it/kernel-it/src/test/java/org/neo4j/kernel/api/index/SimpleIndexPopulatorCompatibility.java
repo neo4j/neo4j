@@ -58,6 +58,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -190,7 +191,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
             // WHEN
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 List<IndexEntryUpdate<?>> updates = updates( valueSet2 );
                 for ( IndexEntryUpdate<?> update : updates )
@@ -274,7 +275,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
             // WHEN
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 for ( NodeAndValue nodeAndValue : toRemove )
                 {

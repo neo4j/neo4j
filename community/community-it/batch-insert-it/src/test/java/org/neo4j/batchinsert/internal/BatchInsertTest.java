@@ -129,6 +129,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -1433,7 +1434,7 @@ class BatchInsertTest
         LabelScanReader labelScanReader = labelScanStore.newReader();
         List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
         List<Long> actualNodeIds;
-        try ( PrimitiveLongResourceIterator itr = labelScanReader.nodesWithLabel( labelId ) )
+        try ( PrimitiveLongResourceIterator itr = labelScanReader.nodesWithLabel( labelId, NULL ) )
         {
             actualNodeIds = extractPrimitiveLongIteratorAsList( itr );
         }

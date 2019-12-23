@@ -37,6 +37,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RelationshipCreator;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -98,7 +99,7 @@ class RelationshipCreatorTest
         RelationshipCreator relationshipCreator = new RelationshipCreator( groupGetter, 5 );
 
         // WHEN
-        relationshipCreator.relationshipCreate( idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId(), 0,
+        relationshipCreator.relationshipCreate( idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId( PageCursorTracer.NULL ), 0,
                 nodeId, nodeId, tracker, tracker );
 
         // THEN

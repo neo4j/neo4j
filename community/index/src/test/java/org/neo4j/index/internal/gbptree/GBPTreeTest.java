@@ -24,7 +24,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -1590,34 +1589,33 @@ class GBPTreeTest
     @Test
     void skipFlushingPageFileOnCloseWhenPageFileMarkForDeletion() throws IOException
     {
-        DefaultPageCacheTracer defaultPageCacheTracer = DefaultPageCacheTracer.TRACER;
-        PageCacheConfig config = config().withTracer( defaultPageCacheTracer );
-        long initialPins = defaultPageCacheTracer.pins();
+        var tracer = new DefaultPageCacheTracer();
+        PageCacheConfig config = config().withTracer( tracer );
+        long initialPins = tracer.pins();
         try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config );
               GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() )
-                      .with( defaultPageCacheTracer )
+                      .with( tracer )
                       .build() )
         {
             List<PagedFile> pagedFiles = pageCache.listExistingMappings();
             assertThat( pagedFiles ).hasSize( 1 );
 
-            long flushesBefore = defaultPageCacheTracer.flushes();
+            long flushesBefore = tracer.flushes();
 
             PagedFile indexPageFile = pagedFiles.get( 0 );
             indexPageFile.setDeleteOnClose( true );
             tree.close();
 
-            assertEquals( flushesBefore, defaultPageCacheTracer.flushes() );
-            assertEquals( defaultPageCacheTracer.pins(), defaultPageCacheTracer.unpins() );
-            assertThat( defaultPageCacheTracer.pins() ).isGreaterThan( initialPins );
-            assertThat( defaultPageCacheTracer.pins() ).isGreaterThan( 1 );
+            assertEquals( flushesBefore, tracer.flushes() );
+            assertEquals( tracer.pins(), tracer.unpins() );
+            assertThat( tracer.pins() ).isGreaterThan( initialPins );
+            assertThat( tracer.pins() ).isGreaterThan( 1 );
         }
     }
 
     /* Inconsistency tests */
 
     @Test
-    @Disabled
     void mustThrowIfStuckInInfiniteRootCatchup() throws IOException
     {
         // Create a tree with root and two children.
@@ -1635,7 +1633,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
         {
             // Insert data until we have a split in root
-            treeWithRootSplit( trace, tree );
+            treeWithRootSplit( trace, tree, pageCursorTracer );
             long corruptChild = trace.get( 1 );
 
             // We are not interested in further trace tracking
@@ -1662,12 +1660,10 @@ class GBPTreeTest
     }
 
     @Test
-    @Disabled
     void mustThrowIfStuckInInfiniteRootCatchupMultipleConcurrentSeekers() throws IOException
     {
         List<Long> trace = new ArrayList<>();
         MutableBoolean onOffSwitch = new MutableBoolean( true );
-        //TODO: pass this page cursor tracer to cursor tracers
         PageCursorTracer pageCursorTracer = trackingPageCursorTracer( trace, onOffSwitch );
         PageCache pageCache = createPageCache( defaultPageSize );
 
@@ -1675,7 +1671,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
         {
             // Insert data until we have a split in root
-            treeWithRootSplit( trace, tree );
+            treeWithRootSplit( trace, tree, pageCursorTracer );
             long leftChild = trace.get( 1 );
             long rightChild = trace.get( 2 );
 
@@ -1840,18 +1836,18 @@ class GBPTreeTest
      * trace.get( 1 ) - leftChild
      * trace.get( 2 ) - rightChild
      */
-    private void treeWithRootSplit( List<Long> trace, GBPTree<MutableLong,MutableLong> tree ) throws IOException
+    private void treeWithRootSplit( List<Long> trace, GBPTree<MutableLong,MutableLong> tree, PageCursorTracer cursorTracer ) throws IOException
     {
         long count = 0;
         do
         {
-            try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer( cursorTracer ) )
             {
                 writer.put( new MutableLong( count ), new MutableLong( count ) );
                 count++;
             }
             trace.clear();
-            try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), NULL ) )
+            try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), cursorTracer ) )
             {
                 seek.next();
             }
@@ -1859,7 +1855,7 @@ class GBPTreeTest
         while ( trace.size() <= 1 );
 
         trace.clear();
-        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( MAX_VALUE ), NULL ) )
+        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( MAX_VALUE ), cursorTracer ) )
         {
             //noinspection StatementWithEmptyBody
             while ( seek.next() )

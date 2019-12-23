@@ -26,6 +26,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -40,17 +41,20 @@ public final class IdContextFactoryBuilder
     private Function<NamedDatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider;
     private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
     private Config config;
+    private PageCacheTracer cacheTracer;
 
     private IdContextFactoryBuilder()
     {
     }
 
-    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler, Config config )
+    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler, Config config,
+            PageCacheTracer cacheTracer )
     {
         IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
         builder.fileSystemAbstraction = fileSystemAbstraction;
         builder.jobScheduler = jobScheduler;
         builder.config = config;
+        builder.cacheTracer = cacheTracer;
         return builder;
     }
 
@@ -79,7 +83,7 @@ public final class IdContextFactoryBuilder
         {
             factoryWrapper = identity();
         }
-        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, factoryWrapper );
+        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, factoryWrapper, cacheTracer );
     }
 
     public static Function<NamedDatabaseId,IdGeneratorFactory> defaultIdGeneratorFactoryProvider( FileSystemAbstraction fs, Config config )

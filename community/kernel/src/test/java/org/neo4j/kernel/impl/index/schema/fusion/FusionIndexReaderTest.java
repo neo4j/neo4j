@@ -51,6 +51,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer.getIndexQueryArgument;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
@@ -191,13 +192,13 @@ abstract class FusionIndexReaderTest
 
     private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, Value... nativeValue )
     {
-        fusionIndexReader.countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
-        verify( correct ).countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
+        fusionIndexReader.countIndexedNodes( 0, NULL, new int[] {PROP_KEY}, nativeValue );
+        verify( correct ).countIndexedNodes( 0, NULL, new int[] {PROP_KEY}, nativeValue );
         for ( IndexReader reader : aliveReaders )
         {
             if ( reader != correct )
             {
-                verify( reader, never() ).countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
+                verify( reader, never() ).countIndexedNodes( 0, NULL, new int[] {PROP_KEY}, nativeValue );
             }
         }
     }

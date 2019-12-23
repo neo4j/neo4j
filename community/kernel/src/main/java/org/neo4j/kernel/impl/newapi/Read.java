@@ -48,6 +48,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -82,15 +83,17 @@ abstract class Read implements TxStateHolder,
         LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>,
         QueryContext
 {
-    private final StorageReader storageReader;
+    protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
+    protected final PageCursorTracer cursorTracer;
     final KernelTransactionImplementation ktx;
 
-    Read( StorageReader storageReader, DefaultPooledCursors cursors,
+    Read( StorageReader storageReader, DefaultPooledCursors cursors, PageCursorTracer cursorTracer,
             KernelTransactionImplementation ktx )
     {
         this.storageReader = storageReader;
         this.cursors = cursors;
+        this.cursorTracer = cursorTracer;
         this.ktx = ktx;
     }
 
@@ -317,8 +320,8 @@ abstract class Read implements TxStateHolder,
         if ( accessMode.allowsTraverseAllNodesWithLabel( label ) )
         {
             // all nodes will be allowed
-            LabelScan labelScan = labelScanReader().nodeLabelScan( label );
-            indexProgressor = labelScan.initialize( indexCursor.nodeLabelClient() );
+            LabelScan labelScan = labelScanReader().nodeLabelScan( label, cursorTracer );
+            indexProgressor = labelScan.initialize( indexCursor.nodeLabelClient(), cursorTracer );
         }
         else if ( accessMode.disallowsTraverseLabel( label ) )
         {
@@ -328,8 +331,8 @@ abstract class Read implements TxStateHolder,
         else
         {
             // some nodes of this label might be blocked. we need to filter
-            LabelScan labelScan = labelScanReader().nodeLabelScan( label );
-            indexProgressor = labelScan.initialize( filteringNodeLabelClient( indexCursor.nodeLabelClient(), accessMode ) );
+            LabelScan labelScan = labelScanReader().nodeLabelScan( label, cursorTracer );
+            indexProgressor = labelScan.initialize( filteringNodeLabelClient( indexCursor.nodeLabelClient(), accessMode ), cursorTracer );
         }
         // TODO: When we have a blacklisted label, perhaps we should not consider labels added within the current transaction
         indexCursor.scan( indexProgressor, label );
@@ -400,7 +403,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
-        return new NodeLabelIndexCursorScan( this, label, labelScanReader().nodeLabelScan( label ) );
+        return new NodeLabelIndexCursorScan( this, label, labelScanReader().nodeLabelScan( label, cursorTracer ), cursorTracer );
     }
 
     @Override
@@ -414,7 +417,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeCursor> allNodesScan()
     {
         ktx.assertOpen();
-        return new NodeCursorScan( storageReader.allNodeScan(), this );
+        return new NodeCursorScan( storageReader.allNodeScan(), this, cursorTracer );
     }
 
     @Override
@@ -442,7 +445,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<RelationshipScanCursor> allRelationshipsScan()
     {
         ktx.assertOpen();
-        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this );
+        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this, cursorTracer );
     }
 
     @Override

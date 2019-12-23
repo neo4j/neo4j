@@ -52,6 +52,7 @@ import org.neo4j.internal.helpers.NamedThreadFactory;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Imports data from {@link Input} into a store. Only linkage between property records is done, not between nodes/relationships
@@ -162,7 +163,7 @@ public class DataImporter
 
         execution.assertHealthy();
         stores.markHighIds();
-        importers.forEach( EntityImporter::freeUnusedIds );
+        importers.forEach( importer -> importer.freeUnusedIds( TRACER_SUPPLIER.get() ) );
         step.markAsCompleted();
         writeMonitor.stop();
         executionMonitor.end( execution, currentTimeMillis() - startTime );

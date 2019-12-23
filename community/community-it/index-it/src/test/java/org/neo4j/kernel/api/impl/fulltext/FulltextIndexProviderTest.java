@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -100,6 +101,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
@@ -506,7 +508,7 @@ public class FulltextIndexProviderTest
                   PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler ) )
             {
 
-                StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance() );
+                StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(), NULL );
                 try ( NeoStores neoStores = factory.openAllNeoStores( false ) )
                 {
                     TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores );
@@ -523,7 +525,7 @@ public class FulltextIndexProviderTest
                     }
                     index = index.withIndexConfig( IndexConfig.with( indexConfigMap ) );
                     storage.writeSchemaRule( index );
-                    schemaStore.flush();
+                    schemaStore.flush( PageCursorTracer.NULL );
                 }
             }
             catch ( Exception e )

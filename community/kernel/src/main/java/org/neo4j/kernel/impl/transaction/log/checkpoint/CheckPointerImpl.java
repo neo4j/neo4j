@@ -24,10 +24,11 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -41,6 +42,7 @@ import static org.neo4j.internal.helpers.Format.duration;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
+    private static final String CHECKPOINT_TAG = "checkpoint";
     private static final long NO_TRANSACTION_ID = -1;
 
     private final TransactionAppender appender;
@@ -51,7 +53,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Health databaseHealth;
     private final IOLimiter ioLimiter;
     private final Log msgLog;
-    private final CheckPointTracer tracer;
+    private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
 
     private volatile long lastCheckPointedTx;
@@ -64,7 +66,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             TransactionAppender appender,
             Health databaseHealth,
             LogProvider logProvider,
-            CheckPointTracer tracer,
+            DatabaseTracers tracers,
             IOLimiter ioLimiter,
             StoreCopyCheckPointMutex mutex )
     {
@@ -76,7 +78,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.databaseHealth = databaseHealth;
         this.ioLimiter = ioLimiter;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
-        this.tracer = tracer;
+        this.tracers = tracers;
         this.mutex = mutex;
     }
 
@@ -164,7 +166,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 
     private long doCheckPoint( TriggerInfo triggerInfo ) throws IOException
     {
-        try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
+        var databaseTracer = tracers.getDatabaseTracer();
+        var pageCacheTracer = tracers.getPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG );
+              LogCheckPointEvent event = databaseTracer.beginCheckPoint() )
         {
             long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTransaction[0];
@@ -182,7 +187,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              */
             msgLog.info( prefix + " checkpoint started..." );
             Stopwatch startTime = Stopwatch.start();
-            forceOperation.flushAndForce( ioLimiter );
+            forceOperation.flushAndForce( ioLimiter, cursorTracer );
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
@@ -221,6 +226,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 
     public interface ForceOperation
     {
-        void flushAndForce( IOLimiter ioLimiter ) throws IOException;
+        void flushAndForce( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;
     }
 }

@@ -54,6 +54,7 @@ import static org.junit.Assert.assertFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @RunWith( Parameterized.class )
 public class UniqueIndexRecoveryTest
@@ -236,6 +237,6 @@ public class UniqueIndexRecoveryTest
 
     private void flushAll() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( IOLimiter.UNLIMITED );
+        db.getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( IOLimiter.UNLIMITED, NULL );
     }
 }

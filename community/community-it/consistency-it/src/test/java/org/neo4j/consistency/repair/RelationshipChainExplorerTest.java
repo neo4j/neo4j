@@ -37,6 +37,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -154,7 +155,7 @@ public class RelationshipChainExplorerTest
             transaction.commit();
         }
         managementService.shutdown();
-        StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, databaseLayout, Config.defaults() );
+        StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, databaseLayout, Config.defaults(), PageCacheTracer.NULL );
         return storeAccess.initialize();
     }
 

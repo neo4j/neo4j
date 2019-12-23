@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -190,7 +191,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private TransactionToApply createNodeAndProperty( int progress, StorageReader reader, CommandCreationContext creationContext ) throws Exception
         {
             TransactionState txState = new TxState();
-            long nodeId = nodeIds.nextId();
+            long nodeId = nodeIds.nextId( PageCursorTracer.NULL );
             txState.nodeDoCreate( nodeId );
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );

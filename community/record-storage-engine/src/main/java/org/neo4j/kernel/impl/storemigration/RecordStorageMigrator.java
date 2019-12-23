@@ -85,6 +85,7 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -121,6 +122,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -151,9 +153,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
+    private final PageCacheTracer cacheTracer;
 
     public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
-            LogService logService, JobScheduler jobScheduler )
+            LogService logService, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
     {
         super( "Store files" );
         this.fileSystem = fileSystem;
@@ -161,6 +164,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         this.config = config;
         this.logService = logService;
         this.jobScheduler = jobScheduler;
+        this.cacheTracer = cacheTracer;
     }
 
     @Override
@@ -253,8 +257,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
               GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), immediate(),
                       new CountsComputer( oldStores, pageCache, directoryLayout ), false, GBPTreeCountsStore.NO_MONITOR ) )
         {
-            countsStore.start();
-            countsStore.checkpoint( IOLimiter.UNLIMITED );
+            countsStore.start( TRACER_SUPPLIER.get() );
+            countsStore.checkpoint( IOLimiter.UNLIMITED, TRACER_SUPPLIER.get() );
         }
     }
 
@@ -487,7 +491,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, DatabaseLayout directoryStructure )
     {
         return new StoreFactory( directoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance() ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance(), cacheTracer ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationStrcuture, RecordFormats oldFormat,
@@ -518,7 +522,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         else
         {
             // Migrate all token stores and dynamic node label ids, keeping their ids intact
-            DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
+            DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config, cacheTracer );
 
             StoreType[] storesToMigrate = {
                     StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
@@ -545,7 +549,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance() );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer );
     }
 
     private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final int lastTxChecksum, final long lastTxLogVersion,
@@ -710,20 +714,20 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           oldFormat );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
             {
-                dstStore.start();
+                dstStore.start( TRACER_SUPPLIER.get() );
                 TokenHolders srcTokenHolders = new TokenHolders(
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
                 srcTokenHolders.setInitialTokens( allTokens( srcStore ) );
-                srcSchema.initialise( true );
+                srcSchema.initialise( true, TRACER_SUPPLIER.get() );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
                 SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore );
 
                 migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess );
 
-                dstStore.flush( IOLimiter.UNLIMITED );
+                dstStore.flush( IOLimiter.UNLIMITED, TRACER_SUPPLIER.get() );
             }
         }
     }

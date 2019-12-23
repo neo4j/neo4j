@@ -54,6 +54,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @EphemeralPageCacheExtension
 class SchemaStore35Test
@@ -79,7 +80,7 @@ class SchemaStore35Test
         NullLogProvider logProvider = NullLogProvider.getInstance();
         store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, IdType.SCHEMA,
                 idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
-        store.initialise( true );
+        store.initialise( true, NULL );
     }
 
     @AfterEach
@@ -92,7 +93,7 @@ class SchemaStore35Test
     void storeAndLoadSchemaRule() throws Exception
     {
         // GIVEN
-        long id = store.nextId();
+        long id = store.nextId( NULL );
         IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 1, 4 ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
@@ -111,7 +112,7 @@ class SchemaStore35Test
     {
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
-        long id = store.nextId();
+        long id = store.nextId( NULL );
         IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 2, propertyIds ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
@@ -131,7 +132,7 @@ class SchemaStore35Test
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
         int[] entityTokens = {2, 3, 4};
-        long id = store.nextId();
+        long id = store.nextId( NULL );
         IndexDescriptor indexRule = IndexPrototype.forSchema( fulltext( EntityType.RELATIONSHIP, entityTokens, propertyIds ), PROVIDER )
                 .withName( "index_" + id ).withIndexType( IndexType.FULLTEXT ).materialise( id );
 
@@ -151,7 +152,7 @@ class SchemaStore35Test
     void storeAndLoad_Big_CompositeSchemaRule() throws Exception
     {
         // GIVEN
-        long id = store.nextId();
+        long id = store.nextId( NULL );
         IndexDescriptor indexRule =
                 IndexPrototype.forSchema( forLabel( 2, range( 1, 200 ).toArray() ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
@@ -171,7 +172,7 @@ class SchemaStore35Test
     {
         // GIVEN
         FulltextSchemaDescriptor schema = fulltext( EntityType.RELATIONSHIP, range( 1, 200 ).toArray(), range( 1, 200 ).toArray() );
-        long id = store.nextId();
+        long id = store.nextId( NULL );
         IndexDescriptor indexRule = IndexPrototype.forSchema( schema, PROVIDER )
                 .withName( "index_" + id ).withIndexType( IndexType.FULLTEXT ).materialise( id );
 
@@ -190,14 +191,14 @@ class SchemaStore35Test
     void storeAndLoadAllRules()
     {
         // GIVEN
-        long indexId = store.nextId();
-        long constraintId = store.nextId();
+        long indexId = store.nextId( NULL );
+        long constraintId = store.nextId( NULL );
         Collection<SchemaRule> rules = Arrays.asList(
                 uniqueIndexRule( indexId, constraintId, 2, 5, 3 ),
                 constraintUniqueRule( constraintId, indexId, 2, 5, 3 ),
-                indexRule( store.nextId(), 0, 5 ),
-                indexRule( store.nextId(), 1, 6, 10, 99 ),
-                constraintExistsRule( store.nextId(), 5, 1 )
+                indexRule( store.nextId( NULL ), 0, 5 ),
+                indexRule( store.nextId( NULL ), 1, 6, 10, 99 ),
+                constraintExistsRule( store.nextId( NULL ), 5, 1 )
         );
 
         for ( SchemaRule rule : rules )

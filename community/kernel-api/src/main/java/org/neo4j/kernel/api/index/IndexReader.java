@@ -20,10 +20,11 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -35,11 +36,12 @@ public interface IndexReader extends Resource
 {
     /**
      * @param nodeId node id to match.
+     * @param cursorTracer underlying page cursor tracer
      * @param propertyKeyIds the property key ids that correspond to each of the property values.
      * @param propertyValues property values to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValues}.
      */
-    long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues );
+    long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues );
 
     IndexSampler createSampler();
 
@@ -80,7 +82,7 @@ public interface IndexReader extends Resource
     {
         // Used for checking index correctness
         @Override
-        public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
+        public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
         {
             return 0;
         }
@@ -118,7 +120,7 @@ public interface IndexReader extends Resource
     class Adaptor implements IndexReader
     {
         @Override
-        public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
+        public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
         {
             return 0;
         }

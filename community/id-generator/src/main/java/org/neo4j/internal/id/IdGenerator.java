@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 
 public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
@@ -35,34 +36,37 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     void markHighestWrittenAtHighId();
     long getHighId();
     long getHighestPossibleIdInUse();
-    Marker marker();
+    Marker marker( PageCursorTracer cursorTracer );
 
     @Override
     void close();
     long getNumberOfIdsInUse();
     long getDefragCount();
 
-    void checkpoint( IOLimiter ioLimiter );
+    void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer );
 
     /**
      * Does some maintenance. This operation isn't critical for the functionality of an IdGenerator, but may make it perform better.
      * The work happening inside this method should be work that would otherwise happen now and then inside the other methods anyway,
      * but letting a maintenance thread calling it may take some burden off of main request threads.
+     *
+     * @param cursorTracer underlying page cursor tracer
      */
-    void maintenance();
+    void maintenance( PageCursorTracer cursorTracer );
 
     /**
      * Starts the id generator, signaling that the database has entered normal operations mode.
      * Updates to this id generator may have come in before this call and those operations must be treated
      * as recovery operations.
      * @param freeIdsForRebuild access to stream of ids from the store to use if this id generator needs to be rebuilt when started
+     * @param cursorTracer underlying page cursor tracer
      */
-    void start( FreeIds freeIdsForRebuild ) throws IOException;
+    void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Clears internal ID caches. This should only be used in specific scenarios where ID states have changed w/o the cache knowing about it.
      */
-    void clearCache();
+    void clearCache( PageCursorTracer cursorTracer );
 
     interface Marker extends AutoCloseable
     {
@@ -83,15 +87,15 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public long nextId()
+        public long nextId( PageCursorTracer cursorTracer )
         {
-            return delegate.nextId();
+            return delegate.nextId( cursorTracer );
         }
 
         @Override
-        public IdRange nextIdBatch( int size )
+        public IdRange nextIdBatch( int size, PageCursorTracer cursorTracer )
         {
-            return delegate.nextIdBatch( size );
+            return delegate.nextIdBatch( size, cursorTracer );
         }
 
         @Override
@@ -119,9 +123,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public Marker marker()
+        public Marker marker( PageCursorTracer cursorTracer )
         {
-            return delegate.marker();
+            return delegate.marker( cursorTracer );
         }
 
         @Override
@@ -143,27 +147,27 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public void checkpoint( IOLimiter ioLimiter )
+        public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
         {
-            delegate.checkpoint( ioLimiter );
+            delegate.checkpoint( ioLimiter, cursorTracer );
         }
 
         @Override
-        public void maintenance()
+        public void maintenance( PageCursorTracer cursorTracer )
         {
-            delegate.maintenance();
+            delegate.maintenance( cursorTracer );
         }
 
         @Override
-        public void start( FreeIds freeIdsForRebuild ) throws IOException
+        public void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer ) throws IOException
         {
-            delegate.start( freeIdsForRebuild );
+            delegate.start( freeIdsForRebuild, cursorTracer );
         }
 
         @Override
-        public void clearCache()
+        public void clearCache( PageCursorTracer cursorTracer )
         {
-            delegate.clearCache();
+            delegate.clearCache( cursorTracer );
         }
 
         @Override

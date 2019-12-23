@@ -21,6 +21,8 @@ package org.neo4j.internal.id;
 
 import java.util.Arrays;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 import static java.lang.Integer.min;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
@@ -40,7 +42,7 @@ public class IdRangeIterator implements IdSequence
     }
 
     @Override
-    public long nextId()
+    public long nextId( PageCursorTracer ignored )
     {
         try
         {
@@ -64,7 +66,7 @@ public class IdRangeIterator implements IdSequence
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public IdRange nextIdBatch( int size, PageCursorTracer ignored )
     {
         int sizeLeft = size;
         long[] rangeDefrag = EMPTY_LONG_ARRAY;

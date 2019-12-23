@@ -31,6 +31,7 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -38,7 +39,6 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 
 public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndex<KEY,VALUE>
@@ -63,12 +63,12 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public NativeIndexUpdater<KEY, VALUE> newUpdater( IndexUpdateMode mode )
+    public NativeIndexUpdater<KEY, VALUE> newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
     {
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer( TRACER_SUPPLIER.get() ) );
+            return singleUpdater.initialize( tree.writer( cursorTracer ) );
         }
         catch ( IOException e )
         {
@@ -77,9 +77,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public void force( IOLimiter ioLimiter )
+    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
     {
-        tree.checkpoint( ioLimiter, TRACER_SUPPLIER.get() );
+        tree.checkpoint( ioLimiter, cursorTracer );
     }
 
     @Override
@@ -115,11 +115,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public long estimateNumberOfEntries()
+    public long estimateNumberOfEntries( PageCursorTracer cursorTracer )
     {
         try
         {
-            return tree.estimateNumberOfEntriesInTree( TRACER_SUPPLIER.get() );
+            return tree.estimateNumberOfEntriesInTree( cursorTracer );
         }
         catch ( IOException e )
         {

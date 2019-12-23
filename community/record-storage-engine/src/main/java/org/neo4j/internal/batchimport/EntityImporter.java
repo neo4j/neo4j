@@ -26,6 +26,7 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.id.IdGenerator.Marker;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -189,17 +190,17 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         monitor.propertiesImported( propertyCount );
     }
 
-    void freeUnusedIds()
+    void freeUnusedIds( PageCursorTracer cursorTracer )
     {
-        freeUnusedIds( propertyStore, propertyIds );
-        freeUnusedIds( propertyStore.getStringStore(), stringPropertyIds );
-        freeUnusedIds( propertyStore.getArrayStore(), arrayPropertyIds );
+        freeUnusedIds( propertyStore, propertyIds, cursorTracer );
+        freeUnusedIds( propertyStore.getStringStore(), stringPropertyIds, cursorTracer );
+        freeUnusedIds( propertyStore.getArrayStore(), arrayPropertyIds, cursorTracer );
     }
 
-    static void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch )
+    static void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch, PageCursorTracer cursorTracer )
     {
         // Free unused property ids still in the last pre-allocated batch
-        try ( Marker marker = store.getIdGenerator().marker() )
+        try ( Marker marker = store.getIdGenerator().marker( cursorTracer ) )
         {
             idBatch.visitUnused( marker::markDeleted );
         }

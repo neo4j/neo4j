@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.index.label;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
@@ -30,16 +31,18 @@ public interface LabelScan
      * Initialize the client for scanning for label
      *
      * @param client the client used for consuming data
+     * @param cursorTracer underlying page cursor tracer
      * @return a progressor used for reading data
      */
-    IndexProgressor initialize( IndexProgressor.NodeLabelClient client );
+    IndexProgressor initialize( IndexProgressor.NodeLabelClient client, PageCursorTracer cursorTracer );
 
     /**
      * Initialize the client for reading a batch of labels.
      *
      * @param client the client used for consuming data
      * @param sizeHint the approximate size of the batch
+     * @param cursorTracer underlying page cursor tracer
      * @return an iterator used for reading data
      */
-    IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint );
+    IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, PageCursorTracer cursorTracer );
 }

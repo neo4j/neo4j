@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * An {@link IdGenerator} that knows only about a highId and is read-only
@@ -59,7 +60,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public Marker marker()
+    public Marker marker( PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
@@ -84,37 +85,37 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public void checkpoint( IOLimiter ioLimiter )
+    public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
     {
         // no-op
     }
 
     @Override
-    public void maintenance()
+    public void maintenance( PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
 
     @Override
-    public void start( FreeIds freeIdsForRebuild )
+    public void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer )
     {
         // no-op
     }
 
     @Override
-    public long nextId()
+    public long nextId( PageCursorTracer ignored )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public IdRange nextIdBatch( int size, PageCursorTracer ignored )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
 
     @Override
-    public void clearCache()
+    public void clearCache( PageCursorTracer cursorTracer )
     {
         // no-op
     }

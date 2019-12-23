@@ -84,6 +84,7 @@ import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instanti
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
@@ -198,7 +199,7 @@ public class ConsistencyCheckService
         LifeSupport life = new LifeSupport();
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory =
-                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider );
+                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, PageCacheTracer.NULL );
         CountsManager countsManager = new CountsManager( pageCache, databaseLayout );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
@@ -401,7 +402,7 @@ public class ConsistencyCheckService
         {
             counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.ignore(),
                     new RebuildPreventingCountsInitializer(), true, GBPTreeCountsStore.NO_MONITOR );
-            counts.start();
+            counts.start( NULL );
             return counts;
         }
 

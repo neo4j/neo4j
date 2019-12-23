@@ -59,6 +59,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 @PageCacheExtension
@@ -231,7 +232,7 @@ class GenericAccessorPointsTest
 
     private void processAll( List<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
-        try ( NativeIndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( NativeIndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {

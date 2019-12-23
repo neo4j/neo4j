@@ -144,6 +144,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -472,7 +473,7 @@ public class FullCheckIntegrationTest
             IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     lookup( indexDescriptor.getIndexProvider() ).getOnlineAccessor( indexDescriptor, samplingConfig );
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 for ( long nodeId : indexedNodes )
                 {
@@ -483,7 +484,7 @@ public class FullCheckIntegrationTest
                     }
                 }
             }
-            accessor.force( IOLimiter.UNLIMITED );
+            accessor.force( IOLimiter.UNLIMITED, NULL );
             accessor.close();
         }
 
@@ -522,12 +523,12 @@ public class FullCheckIntegrationTest
             try ( IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( indexRule.getIndexProvider() ).getOnlineAccessor( indexRule,
                     samplingConfig ) )
             {
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
                 {
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
                 }
-                accessor.force( IOLimiter.UNLIMITED );
+                accessor.force( IOLimiter.UNLIMITED, NULL );
             }
         }
 
@@ -1172,7 +1173,7 @@ public class FullCheckIntegrationTest
         // given
         StoreAccess access = fixture.directStoreAccess().nativeStores();
         RecordStore<RelationshipTypeTokenRecord> relTypeStore = access.getRelationshipTypeTokenStore();
-        RelationshipTypeTokenRecord record = relTypeStore.getRecord( (int) relTypeStore.nextId(),
+        RelationshipTypeTokenRecord record = relTypeStore.getRecord( (int) relTypeStore.nextId( NULL ),
                 relTypeStore.newRecord(), FORCE );
         record.setNameId( 20 );
         record.setInUse( true );
@@ -2437,8 +2438,8 @@ public class FullCheckIntegrationTest
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
-        long ruleId1 = schemaStore.nextId();
-        long ruleId2 = schemaStore.nextId();
+        long ruleId1 = schemaStore.nextId( NULL );
+        long ruleId2 = schemaStore.nextId( NULL );
 
         String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
@@ -2454,8 +2455,8 @@ public class FullCheckIntegrationTest
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
-        long ruleId1 = schemaStore.nextId();
-        long ruleId2 = schemaStore.nextId();
+        long ruleId1 = schemaStore.nextId( NULL );
+        long ruleId2 = schemaStore.nextId( NULL );
 
         String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
@@ -2470,7 +2471,7 @@ public class FullCheckIntegrationTest
     private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        long ruleId = schemaStore.nextId();
+        long ruleId = schemaStore.nextId( NULL );
         ConstraintDescriptor rule = nodePropertyExistenceConstraintRule( ruleId, labelId, propertyKeyId ).withName( "constraint_" + ruleId );
         writeToSchemaStore( schemaStore, rule );
     }
@@ -2478,7 +2479,7 @@ public class FullCheckIntegrationTest
     private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintDescriptor rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
+        ConstraintDescriptor rule = relPropertyExistenceConstraintRule( schemaStore.nextId( NULL ), relTypeId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 

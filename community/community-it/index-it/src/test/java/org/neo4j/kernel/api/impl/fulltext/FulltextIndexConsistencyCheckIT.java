@@ -81,6 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
@@ -510,7 +511,7 @@ class FulltextIndexConsistencyCheckIT
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, Values.stringValue( "value" ) ) );
         }
@@ -672,7 +673,7 @@ class FulltextIndexConsistencyCheckIT
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, Values.stringValue( "value" ) ) );
         }

@@ -36,6 +36,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -56,6 +57,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -77,7 +79,7 @@ class DeleteDuplicateNodesStepTest
     void before()
     {
         var storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
-                pageCache, fs, NullLogProvider.getInstance() );
+                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
@@ -200,7 +202,7 @@ class DeleteDuplicateNodesStepTest
         PropertyStore propertyStore = neoStores.getPropertyStore();
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
-        nodeRecord.setId( nodeStore.nextId() );
+        nodeRecord.setId( nodeStore.nextId( NULL ) );
         nodeRecord.setInUse( true );
         NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore() );
         PropertyRecord[] propertyRecords = createPropertyChain( nodeRecord, propertyCount, propertyStore );
@@ -228,7 +230,7 @@ class DeleteDuplicateNodesStepTest
             {
                 PropertyRecord next = propertyStore.newRecord();
                 nodeRecord.setIdTo( next );
-                next.setId( propertyStore.nextId() );
+                next.setId( propertyStore.nextId( NULL ) );
                 if ( current != null )
                 {
                     next.setPrevProp( current.getId() );

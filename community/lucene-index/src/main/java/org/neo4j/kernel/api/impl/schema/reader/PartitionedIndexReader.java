@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
@@ -122,10 +123,10 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
         return indexReaders.parallelStream()
-                .mapToLong( reader -> reader.countIndexedNodes( nodeId, propertyKeyIds, propertyValues ) )
+                .mapToLong( reader -> reader.countIndexedNodes( nodeId, cursorTracer, propertyKeyIds, propertyValues ) )
                 .sum();
     }
 

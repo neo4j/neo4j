@@ -38,6 +38,8 @@ import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+
 public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fs;
@@ -69,7 +71,7 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
     private void migrateIndexProviders( DatabaseLayout migrationLayout, String versionToMigrateTo ) throws IOException, KernelException
     {
         try ( SchemaRuleMigrationAccess ruleAccess = storageEngineFactory
-                .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo ) )
+                .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo, NULL ) )
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {

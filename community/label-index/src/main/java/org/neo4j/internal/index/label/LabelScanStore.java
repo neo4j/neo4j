@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -137,7 +138,7 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
      *
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
-    void force( IOLimiter limiter ) throws IOException;
+    void force( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Acquire a reader for all {@link NodeLabelRange node label} ranges.

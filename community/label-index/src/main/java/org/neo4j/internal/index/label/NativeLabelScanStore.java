@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
@@ -304,9 +305,9 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
      * @param limiter {@link IOLimiter}.
      */
     @Override
-    public void force( IOLimiter limiter )
+    public void force( IOLimiter limiter, PageCursorTracer cursorTracer )
     {
-        index.checkpoint( limiter, NULL );
+        index.checkpoint( limiter, cursorTracer );
         writeMonitor.force();
     }
 

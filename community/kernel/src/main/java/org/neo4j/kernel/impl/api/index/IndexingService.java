@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -85,6 +86,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -628,7 +630,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate ) throws IndexEntryConflictException
     {
-        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey() );
+        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey(), TRACER_SUPPLIER.get() );
         if ( updater != null )
         {
             updater.process( indexUpdate );
@@ -722,10 +724,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         indexMapRef.getIndexProxy( indexId ).validate();
     }
 
-    public void forceAll( IOLimiter limiter ) throws IOException
+    public void forceAll( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException
     {
-        indexStatisticsStore.checkpoint( limiter );
-        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force( limiter ) ) );
+        indexStatisticsStore.checkpoint( limiter, cursorTracer );
+        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force( limiter, cursorTracer ) ) );
     }
 
     private LongObjectProcedure<IndexProxy> indexProxyOperation( String name, ThrowingConsumer<IndexProxy, Exception> operation )

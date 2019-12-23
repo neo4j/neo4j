@@ -27,6 +27,9 @@ import org.neo4j.lock.LockTracer;
 
 public class DatabaseTracers
 {
+    public static final DatabaseTracers EMPTY =
+            new DatabaseTracers( DatabaseTracer.NULL, PageCursorTracerSupplier.NULL, LockTracer.NONE, PageCacheTracer.NULL );
+
     private final DatabaseTracer databaseTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final LockTracer lockTracer;
@@ -34,10 +37,16 @@ public class DatabaseTracers
 
     public DatabaseTracers( Tracers tracers )
     {
-        databaseTracer = tracers.getDatabaseTracer();
-        pageCursorTracerSupplier = tracers.getPageCursorTracerSupplier();
-        lockTracer = tracers.getLockTracer();
-        pageCacheTracer = tracers.getPageCacheTracer();
+        this( tracers.getDatabaseTracer(), tracers.getPageCursorTracerSupplier(), tracers.getLockTracer(), tracers.getPageCacheTracer() );
+    }
+
+    private DatabaseTracers( DatabaseTracer databaseTracer, PageCursorTracerSupplier pageCursorTracerSupplier, LockTracer lockTracer,
+            PageCacheTracer pageCacheTracer )
+    {
+        this.databaseTracer = databaseTracer;
+        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.lockTracer = lockTracer;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     public DatabaseTracer getDatabaseTracer()
@@ -45,6 +54,7 @@ public class DatabaseTracers
         return databaseTracer;
     }
 
+    @Deprecated
     public PageCursorTracerSupplier getPageCursorTracerSupplier()
     {
         return pageCursorTracerSupplier;

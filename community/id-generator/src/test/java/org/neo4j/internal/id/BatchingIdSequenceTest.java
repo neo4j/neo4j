@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.internal.id.IdValidator.isReservedId;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Execution( CONCURRENT )
 class BatchingIdSequenceTest
@@ -44,15 +45,15 @@ class BatchingIdSequenceTest
         // The 'NULL Id' should be skipped, and never be visible anywhere.
         // Peek should always return what nextId will return
 
-        assertEquals( INTEGER_MINUS_ONE - 1, idSequence.nextId() );
+        assertEquals( INTEGER_MINUS_ONE - 1, idSequence.nextId( NULL) );
         assertEquals( INTEGER_MINUS_ONE + 1, idSequence.peek() );
-        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.nextId() );
+        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.nextId( NULL ) );
 
         // And what if someone were to set it directly to the NULL id
         idSequence.set( INTEGER_MINUS_ONE );
 
         assertEquals( INTEGER_MINUS_ONE + 1, idSequence.peek() );
-        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.nextId() );
+        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.nextId( NULL ) );
     }
 
     @Test
@@ -63,13 +64,13 @@ class BatchingIdSequenceTest
         idSequence.set( 99L );
 
         assertEquals( 99L, idSequence.peek() );
-        assertEquals( 99L, idSequence.nextId() );
+        assertEquals( 99L, idSequence.nextId( NULL ) );
         assertEquals( 100L, idSequence.peek() );
 
         idSequence.reset();
 
         assertEquals( 0L, idSequence.peek() );
-        assertEquals( 0L, idSequence.nextId() );
+        assertEquals( 0L, idSequence.nextId( NULL ) );
         assertEquals( 1L, idSequence.peek() );
     }
 
@@ -82,8 +83,8 @@ class BatchingIdSequenceTest
                 INTEGER_MINUS_ONE - batchSize - batchSize / 2 );
 
         // WHEN
-        IdRange range1 = idSequence.nextIdBatch( batchSize );
-        IdRange range2 = idSequence.nextIdBatch( batchSize );
+        IdRange range1 = idSequence.nextIdBatch( batchSize, NULL );
+        IdRange range2 = idSequence.nextIdBatch( batchSize, NULL );
 
         // THEN
         assertNoReservedId( range1 );

@@ -58,6 +58,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.values.storable.NoValue.NO_VALUE;
 
 /**
@@ -132,7 +133,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                         }
                         else
                         {
-                            long count = reader.countIndexedNodes( nodeId, schema.getPropertyIds(), values );
+                            long count = reader.countIndexedNodes( nodeId, TRACER_SUPPLIER.get(), schema.getPropertyIds(), values );
                             reportIncorrectIndexCount( values, engine, indexRule, count );
                         }
                     }

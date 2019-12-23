@@ -44,6 +44,9 @@ import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fs;
@@ -82,7 +85,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             throws IOException, KernelException
     {
         try ( SchemaRuleMigrationAccess ruleAccess = storageEngineFactory
-                .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo ) )
+                .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo, NULL ) )
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {
@@ -106,7 +109,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( provider.getKey(), provider.getVersion() );
 
-            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, log );
+            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, TRACER_SUPPLIER.get(), log );
 
             IndexDescriptor newIndexReference = old.withIndexConfig( indexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );

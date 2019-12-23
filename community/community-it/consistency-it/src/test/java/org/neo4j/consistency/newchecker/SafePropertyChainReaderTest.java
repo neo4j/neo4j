@@ -32,6 +32,7 @@ import org.neo4j.consistency.report.ConsistencyReport.PrimitiveConsistencyReport
 import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -75,9 +76,9 @@ class SafePropertyChainReaderTest extends CheckerTestBase
             // (N1)────>(P1)────>(P2)
             //            ▲───────┘
             {
-                long firstPropId = propertyStore.nextId();
-                long secondPropId = propertyStore.nextId();
-                nodeId1 = node( nodeStore.nextId(), firstPropId, NULL );
+                long firstPropId = propertyStore.nextId( PageCursorTracer.NULL );
+                long secondPropId = propertyStore.nextId( PageCursorTracer.NULL );
+                nodeId1 = node( nodeStore.nextId( PageCursorTracer.NULL ), firstPropId, NULL );
                 property( firstPropId, NULL, secondPropId, propertyValue( propertyKey1, intValue( 1 ) ) );
                 property( secondPropId, firstPropId, firstPropId, propertyValue( propertyKey2, intValue( 1 ) ) );
             }
@@ -85,8 +86,8 @@ class SafePropertyChainReaderTest extends CheckerTestBase
             // (N2)────>(P3)─┐
             //            ▲──┘
             {
-                nodeId2 = nodeStore.nextId();
-                long propId = propertyStore.nextId();
+                nodeId2 = nodeStore.nextId( PageCursorTracer.NULL );
+                long propId = propertyStore.nextId( PageCursorTracer.NULL );
                 node( nodeId2, propId, NULL );
                 property( propId, NULL, propId, propertyValue( propertyKey1, intValue( 1 ) ) );
             }
@@ -111,14 +112,14 @@ class SafePropertyChainReaderTest extends CheckerTestBase
         {
             // (N)---> X
             {
-                nodeId1 = node( nodeStore.nextId(), propertyStore.nextId(), NULL );
+                nodeId1 = node( nodeStore.nextId( PageCursorTracer.NULL ), propertyStore.nextId( PageCursorTracer.NULL ), NULL );
             }
 
             // (N)--->(P1)---> X
             {
-                long propId1 = propertyStore.nextId();
-                long propId2 = propertyStore.nextId();
-                nodeId2 = node( nodeStore.nextId(), propId1, NULL );
+                long propId1 = propertyStore.nextId( PageCursorTracer.NULL );
+                long propId2 = propertyStore.nextId( PageCursorTracer.NULL );
+                nodeId2 = node( nodeStore.nextId( PageCursorTracer.NULL ), propId1, NULL );
                 property( propId1, NULL, propId2, propertyValue( propertyKey1, longValue( 10 ) ) );
             }
         }
@@ -145,10 +146,10 @@ class SafePropertyChainReaderTest extends CheckerTestBase
             //        /
             //       v
             //     (P0)
-            long prop0Id = propertyStore.nextId();
-            long prop1Id = propertyStore.nextId();
-            long prop2Id = propertyStore.nextId();
-            nodeId = node( nodeStore.nextId(), prop1Id, NULL );
+            long prop0Id = propertyStore.nextId( PageCursorTracer.NULL );
+            long prop1Id = propertyStore.nextId( PageCursorTracer.NULL );
+            long prop2Id = propertyStore.nextId( PageCursorTracer.NULL );
+            nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), prop1Id, NULL );
             property( prop0Id, NULL, prop1Id, propertyValue( propertyKey1, stringValue( "a" ) ) );
             property( prop1Id, prop0Id, prop2Id, propertyValue( propertyKey2, stringValue( "b" ) ) );
             property( prop2Id, prop1Id, NULL, propertyValue( propertyKey3, stringValue( "c" ) ) );
@@ -173,10 +174,10 @@ class SafePropertyChainReaderTest extends CheckerTestBase
             //                  prev
             //                  v
             //                (P3)
-            long prop1Id = propertyStore.nextId();
-            long prop2Id = propertyStore.nextId();
-            long prop3Id = propertyStore.nextId();
-            nodeId = node( nodeStore.nextId(), prop1Id, NULL );
+            long prop1Id = propertyStore.nextId( PageCursorTracer.NULL );
+            long prop2Id = propertyStore.nextId( PageCursorTracer.NULL );
+            long prop3Id = propertyStore.nextId( PageCursorTracer.NULL );
+            nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), prop1Id, NULL );
             property( prop1Id, NULL, prop2Id, propertyValue( propertyKey1, stringValue( "a" ) ) );
             property( prop2Id, prop3Id, NULL, propertyValue( propertyKey2, stringValue( "b" ) ) );
             property( prop3Id, NULL, NULL, propertyValue( propertyKey3, stringValue( "c" ) ) );
@@ -197,8 +198,8 @@ class SafePropertyChainReaderTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (N)--->(P)*unusedKey
-            long propId = propertyStore.nextId();
-            nodeId = node( nodeStore.nextId(), propId, NULL );
+            long propId = propertyStore.nextId( PageCursorTracer.NULL );
+            nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL );
             property( propId, NULL, NULL, propertyValue( 99, intValue( 1 ) ) );
         }
 
@@ -305,8 +306,8 @@ class SafePropertyChainReaderTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (N)--->(P)---> (vandalized dynamic value chain)
-            long propId = propertyStore.nextId();
-            nodeId = node( nodeStore.nextId(), propId, NULL );
+            long propId = propertyStore.nextId( PageCursorTracer.NULL );
+            nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL );
             PropertyBlock dynamicBlock = propertyValue( propertyKey1, consistentValue );
             property( propId, NULL, NULL, dynamicBlock );
             vandal.accept( dynamicBlock );
@@ -332,19 +333,19 @@ class SafePropertyChainReaderTest extends CheckerTestBase
             //         *key=value1
             //         *key=value2
             {
-                long propId = propertyStore.nextId();
+                long propId = propertyStore.nextId( PageCursorTracer.NULL );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, intValue( 1 ) ), propertyValue( propertyKey1, intValue( 2 ) ) );
-                nodeId1 = node( nodeStore.nextId(), propId, NULL );
+                nodeId1 = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL );
             }
 
             // (N)--->(P1)--------->(P2)
             //         *key=value1   *key=value2
             {
-                long propId1 = propertyStore.nextId();
-                long propId2 = propertyStore.nextId();
+                long propId1 = propertyStore.nextId( PageCursorTracer.NULL );
+                long propId2 = propertyStore.nextId( PageCursorTracer.NULL );
                 property( propId1, NULL, propId2, propertyValue( propertyKey1, intValue( 1 ) ) );
                 property( propId2, propId1, NULL, propertyValue( propertyKey1, intValue( 2 ) ) );
-                nodeId2 = node( nodeStore.nextId(), propId1, NULL );
+                nodeId2 = node( nodeStore.nextId( PageCursorTracer.NULL ), propId1, NULL );
             }
         }
 

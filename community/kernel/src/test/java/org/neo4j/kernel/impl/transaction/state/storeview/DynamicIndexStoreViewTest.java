@@ -40,6 +40,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -69,7 +70,7 @@ class DynamicIndexStoreViewTest
 
         long[] nodeIds = {1, 2, 3, 4, 5, 6, 7, 8};
         PrimitiveLongResourceIterator labeledNodesIterator = PrimitiveLongResourceCollections.iterator( null, nodeIds );
-        when( labelScanReader.nodesWithAnyOfLabels( new int[] {2, 6} ) ).thenReturn( labeledNodesIterator );
+        when( labelScanReader.nodesWithAnyOfLabels( eq( new int[]{2, 6} ), any() ) ).thenReturn( labeledNodesIterator );
         for ( long nodeId : nodeIds )
         {
             cursors.withNode( nodeId ).propertyId( 1 ).relationship( 1 ).labels( 2, 6 );

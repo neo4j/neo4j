@@ -52,6 +52,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -96,6 +98,8 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
+    private static final String STORAGE_ENGINE_START_TAG = "storageEngineStart";
+
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
     private final TokenHolders tokenHolders;
@@ -111,6 +115,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
+    private final PageCacheTracer cacheTracer;
     private final GBPTreeCountsStore countsStore;
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
@@ -133,6 +138,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IdGeneratorFactory idGeneratorFactory,
             IdController idController,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            PageCacheTracer cacheTracer,
             boolean createStoreIfNotExists )
     {
         this.databaseLayout = databaseLayout;
@@ -142,8 +148,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.databaseHealth = databaseHealth;
         this.constraintSemantics = constraintSemantics;
         this.idController = idController;
+        this.cacheTracer = cacheTracer;
 
-        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider );
+        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
         for ( IdType idType : IdType.values() )
         {
@@ -356,9 +363,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void start() throws Exception
     {
-        neoStores.start();
-        countsStore.start();
-        idController.start();
+        try ( var cursor = cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) )
+        {
+            neoStores.start( cursor );
+            countsStore.start( cursor );
+            idController.start();
+        }
     }
 
     @VisibleForTesting
@@ -380,10 +390,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException
     {
-        countsStore.checkpoint( limiter);
-        neoStores.flush( limiter );
+        countsStore.checkpoint( limiter, cursorTracer );
+        neoStores.flush( limiter, cursorTracer );
     }
 
     @Override

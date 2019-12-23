@@ -29,9 +29,10 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
- * Wraps {@link IdGenerator} so that ids can be {@link IdGenerator#reuseMarker()} freed using reuse marker} at safe points in time, after all transactions
+ * Wraps {@link IdGenerator} so that ids can be freed using reuse marker at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
 public class BufferingIdGeneratorFactory implements IdGeneratorFactory
@@ -55,19 +56,19 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-            OpenOption... openOptions )
+            PageCursorTracer cursorTracer, OpenOption... openOptions )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
-        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnly );
+        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnly, cursorTracer );
         return wrapAndKeep( idType, generator );
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            boolean readOnly, OpenOption... openOptions )
+            boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
     {
-        IdGenerator idGenerator = delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnly, openOptions );
+        IdGenerator idGenerator = delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnly, cursorTracer, openOptions );
         return wrapAndKeep( idType, idGenerator );
     }
 
@@ -85,9 +86,9 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void clearCache()
+    public void clearCache( PageCursorTracer cursorTracer )
     {
-        delegate.clearCache();
+        delegate.clearCache( cursorTracer );
     }
 
     @Override
@@ -104,13 +105,13 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         return bufferingGenerator;
     }
 
-    public void maintenance()
+    public void maintenance( PageCursorTracer pageCursorTracer )
     {
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
-                generator.maintenance();
+                generator.maintenance( pageCursorTracer );
             }
         }
     }

@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * An abstract representation of a dynamic store. Record size is set at creation as the contents of the
  * first record and read and used when opening the store in future sessions.
@@ -184,7 +186,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     @Override
     public DynamicRecord nextRecord()
     {
-        return StandardDynamicRecordAllocator.allocateRecord( nextId() );
+        return StandardDynamicRecordAllocator.allocateRecord( nextId( TRACER_SUPPLIER.get() ) );
     }
 
     void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src )

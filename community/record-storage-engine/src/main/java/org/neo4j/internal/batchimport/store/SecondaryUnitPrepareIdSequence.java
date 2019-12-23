@@ -23,6 +23,7 @@ import java.util.function.LongFunction;
 
 import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Assumes that records have been allocated such that there will be a free record, right after a given record,
@@ -50,7 +51,7 @@ public class SecondaryUnitPrepareIdSequence implements PrepareIdSequence
         }
 
         @Override
-        public long nextId()
+        public long nextId( PageCursorTracer cursorTracer )
         {
             try
             {
@@ -67,7 +68,7 @@ public class SecondaryUnitPrepareIdSequence implements PrepareIdSequence
         }
 
         @Override
-        public IdRange nextIdBatch( int size )
+        public IdRange nextIdBatch( int size, PageCursorTracer cursorTracer )
         {
             throw new UnsupportedOperationException();
         }

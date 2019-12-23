@@ -34,6 +34,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -75,7 +76,7 @@ class RecordPropertyCursorTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory,
-                pageCache, fs, NullLogProvider.getInstance() ).openAllNeoStores( true );
+                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();
     }

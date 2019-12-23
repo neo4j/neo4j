@@ -35,6 +35,8 @@ import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.values.storable.ValueCategory;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * Calculates index sizes in parallel and caches the sizes
  */
@@ -68,7 +70,7 @@ class IndexSizes
         execution.run( "Estimate index sizes", indexes.stream().map( index -> (ThrowingRunnable) () ->
         {
             IndexAccessor accessor = indexAccessors.accessorFor( index );
-            indexSizes.put( index, accessor.estimateNumberOfEntries() );
+            indexSizes.put( index, accessor.estimateNumberOfEntries( TRACER_SUPPLIER.get() ) );
         } ).toArray( ThrowingRunnable[]::new ) );
     }
 

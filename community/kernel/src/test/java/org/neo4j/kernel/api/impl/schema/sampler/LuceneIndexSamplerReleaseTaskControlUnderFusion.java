@@ -56,6 +56,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -129,7 +130,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
     private void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
     {
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig );
-              IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+              IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             updater.process( IndexEntryUpdate.add( 1, descriptor, Values.of( "some string" ) ) );
         }

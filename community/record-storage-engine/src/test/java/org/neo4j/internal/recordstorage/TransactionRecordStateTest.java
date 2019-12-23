@@ -61,6 +61,7 @@ import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -119,6 +120,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -175,7 +177,7 @@ class TransactionRecordStateTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
-                formats, NullLogProvider.getInstance() );
+                formats, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         return storeFactory.openAllNeoStores( true );
     }
 
@@ -746,8 +748,8 @@ class TransactionRecordStateTest
         // GIVEN
         TransactionRecordState recordState = newTransactionRecordState();
 
-        final long indexId = neoStores.getSchemaStore().nextId();
-        final long constraintId = neoStores.getSchemaStore().nextId();
+        final long indexId = neoStores.getSchemaStore().nextId( NULL );
+        final long constraintId = neoStores.getSchemaStore().nextId( NULL );
 
         recordState.schemaRuleCreate( constraintId, true, uniqueForLabel( 1, 1 ).withId( constraintId ).withOwnedIndexId( indexId ) );
 
@@ -831,8 +833,8 @@ class TransactionRecordStateTest
         } );
         NodeStore nodeStore = neoStores.getNodeStore();
         long[] nodes = { // allocate ids
-                nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(),};
-
+                nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ),
+                nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ) };
         {
             // create the node records that we will modify in our main tx.
             TransactionRecordState tx = newTransactionRecordState();
@@ -886,11 +888,11 @@ class TransactionRecordStateTest
     {
         neoStores = createStores( Config.defaults( dense_node_threshold, 10 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId();
+        long nodeId = neoStores.getNodeStore().nextId( NULL );
 
         tx.nodeCreate( nodeId );
 
-        int typeA = (int) neoStores.getRelationshipTypeTokenStore().nextId();
+        int typeA = (int) neoStores.getRelationshipTypeTokenStore().nextId( NULL );
         tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 20 );
 
@@ -945,7 +947,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( dense_node_threshold, 50 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId();
+        long nodeId = neoStores.getNodeStore().nextId( NULL );
         int typeA = 0;
         int typeB = 1;
         int typeC = 2;
@@ -980,7 +982,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( dense_node_threshold, 49 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId();
+        long nodeId = neoStores.getNodeStore().nextId( NULL );
         int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
@@ -1004,7 +1006,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( dense_node_threshold, 8 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId();
+        long nodeId = neoStores.getNodeStore().nextId( NULL );
         int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
@@ -1027,7 +1029,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( dense_node_threshold, 13 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        int nodeId = (int) neoStores.getNodeStore().nextId();
+        int nodeId = (int) neoStores.getNodeStore().nextId( NULL );
         int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
@@ -1046,7 +1048,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId();
+        long nodeId = neoStores.getNodeStore().nextId( NULL );
         int typeA = 0;
         int typeB = 12;
         int typeC = 600;
@@ -1129,17 +1131,17 @@ class TransactionRecordStateTest
             apply( transaction( recordState ) );
         }
 
-        long nodeId = neoStores.getNodeStore().nextId();
+        long nodeId = neoStores.getNodeStore().nextId( NULL );
         {
-            long otherNode1Id = neoStores.getNodeStore().nextId();
-            long otherNode2Id = neoStores.getNodeStore().nextId();
+            long otherNode1Id = neoStores.getNodeStore().nextId( NULL );
+            long otherNode2Id = neoStores.getNodeStore().nextId( NULL );
             TransactionRecordState recordState = newTransactionRecordState();
             recordState.nodeCreate( nodeId );
             recordState.nodeCreate( otherNode1Id );
             recordState.nodeCreate( otherNode2Id );
-            recordState.relCreate( neoStores.getRelationshipStore().nextId(), type10, nodeId, otherNode1Id );
+            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode1Id );
             // This relationship will cause the switch to dense
-            recordState.relCreate( neoStores.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
+            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode2Id );
 
             apply( transaction( recordState ) );
 
@@ -1150,9 +1152,9 @@ class TransactionRecordStateTest
         // WHEN inserting a relationship of type 5
         {
             TransactionRecordState recordState = newTransactionRecordState();
-            long otherNodeId = neoStores.getNodeStore().nextId();
+            long otherNodeId = neoStores.getNodeStore().nextId( NULL );
             recordState.nodeCreate( otherNodeId );
-            recordState.relCreate( neoStores.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
+            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type5, nodeId, otherNodeId );
             apply( transaction( recordState ) );
 
             // THEN that group should end up first in the chain
@@ -1162,9 +1164,9 @@ class TransactionRecordStateTest
         // WHEN inserting a relationship of type 15
         {
             TransactionRecordState recordState = newTransactionRecordState();
-            long otherNodeId = neoStores.getNodeStore().nextId();
+            long otherNodeId = neoStores.getNodeStore().nextId( NULL );
             recordState.nodeCreate( otherNodeId );
-            recordState.relCreate( neoStores.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
+            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type15, nodeId, otherNodeId );
             apply( transaction( recordState ) );
 
             // THEN that group should end up last in the chain
@@ -1218,7 +1220,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId();
+        long ruleId = neoStores.getSchemaStore().nextId( NULL );
         IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
@@ -1242,7 +1244,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId();
+        long ruleId = neoStores.getSchemaStore().nextId( NULL );
         ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForLabel( 0, 1 ).withId( ruleId );
         state.schemaRuleCreate( ruleId, true, rule );
 
@@ -1266,7 +1268,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId();
+        long ruleId = neoStores.getSchemaStore().nextId( NULL );
         IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
@@ -1315,7 +1317,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId();
+        long ruleId = neoStores.getSchemaStore().nextId( NULL );
         IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
@@ -1345,7 +1347,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId();
+        long ruleId = neoStores.getSchemaStore().nextId( NULL );
         IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
@@ -1384,7 +1386,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId();
+        long ruleId = neoStores.getSchemaStore().nextId( NULL );
         IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).withName( "constraint_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
@@ -1436,11 +1438,11 @@ class TransactionRecordStateTest
         long[] result = new long[count];
         for ( int i = 0; i < count; i++ )
         {
-            long otherNodeId = neoStores.getNodeStore().nextId();
+            long otherNodeId = neoStores.getNodeStore().nextId( NULL );
             tx.nodeCreate( otherNodeId );
             long first = direction == OUTGOING ? nodeId : otherNodeId;
             long other = direction == INCOMING ? nodeId : otherNodeId;
-            long relId = neoStores.getRelationshipStore().nextId();
+            long relId = neoStores.getRelationshipStore().nextId( NULL );
             result[i] = relId;
             tx.relCreate( relId, type, first, other );
         }
@@ -1530,11 +1532,11 @@ class TransactionRecordStateTest
     {
         TransactionRecordState recordState = newTransactionRecordState();
 
-        nodeId.set( store.getNodeStore().nextId() );
+        nodeId.set( store.getNodeStore().nextId( NULL ) );
         int[] labelIds = new int[20];
         for ( int i = 0; i < labelIds.length; i++ )
         {
-            int labelId = (int) store.getLabelTokenStore().nextId();
+            int labelId = (int) store.getLabelTokenStore().nextId( NULL );
             recordState.createLabelToken( "Label" + i, labelId, false );
             labelIds[i] = labelId;
         }

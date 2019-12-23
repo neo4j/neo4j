@@ -232,7 +232,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
         this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
-                        dependencies );
+                        pageCursorTracer, dependencies );
         this.operations =
                 new Operations(
                         allStoreHolder,

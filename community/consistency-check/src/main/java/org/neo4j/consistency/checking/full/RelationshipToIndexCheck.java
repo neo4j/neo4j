@@ -42,6 +42,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.entityIntersectsSchema;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.getPropertyValues;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.properties;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
 {
@@ -80,7 +81,7 @@ public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord,
                         try ( IndexReader reader = indexes.accessorFor( index ).newReader() )
                         {
                             long entityId = record.getId();
-                            long count = reader.countIndexedNodes( entityId, schema.getPropertyIds(), values );
+                            long count = reader.countIndexedNodes( entityId, TRACER_SUPPLIER.get(), schema.getPropertyIds(), values );
                             reportIncorrectIndexCount( values, engine, index, count );
                         }
                     }

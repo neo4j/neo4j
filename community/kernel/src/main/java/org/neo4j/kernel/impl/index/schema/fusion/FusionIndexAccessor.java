@@ -32,6 +32,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
@@ -69,16 +70,17 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
     {
-        LazyInstanceSelector<IndexUpdater> updaterSelector = new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newUpdater( mode ) );
+        LazyInstanceSelector<IndexUpdater> updaterSelector = new LazyInstanceSelector<>( slot ->
+                instanceSelector.select( slot ).newUpdater( mode, cursorTracer ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
     @Override
-    public void force( IOLimiter ioLimiter )
+    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
     {
-        instanceSelector.forAll( accessor -> accessor.force( ioLimiter ) );
+        instanceSelector.forAll( accessor -> accessor.force( ioLimiter, cursorTracer ) );
     }
 
     @Override
@@ -173,9 +175,9 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public long estimateNumberOfEntries()
+    public long estimateNumberOfEntries( PageCursorTracer cursorTracer )
     {
-        List<Long> counts = instanceSelector.transform( IndexAccessor::estimateNumberOfEntries );
+        List<Long> counts = instanceSelector.transform( accessor -> accessor.estimateNumberOfEntries( cursorTracer ) );
         return counts.stream().anyMatch( count -> count == UNKNOWN_NUMBER_OF_ENTRIES )
                ? UNKNOWN_NUMBER_OF_ENTRIES
                : counts.stream().mapToLong( Long::longValue ).sum();

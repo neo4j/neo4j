@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -90,7 +91,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
@@ -101,7 +102,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom.initFromValue( i, propertyValues[i], NEUTRAL );
             treeKeyTo.initFromValue( i, propertyValues[i], NEUTRAL );
         }
-        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo, TRACER_SUPPLIER.get() ) )
+        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo, cursorTracer ) )
         {
             long count = 0;
             while ( seeker.next() )

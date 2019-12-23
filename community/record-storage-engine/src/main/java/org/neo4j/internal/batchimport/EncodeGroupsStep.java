@@ -25,6 +25,8 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * Takes cached {@link RelationshipGroupRecord relationship groups} and sets real ids and
  * {@link RelationshipGroupRecord#getNext() next pointers}, making them ready for writing to store.
@@ -53,10 +55,10 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
             long count = group.getNext();
             boolean lastInChain = count == 0;
 
-            group.setId( nextId == -1 ? nextId = store.nextId() : nextId );
+            group.setId( nextId == -1 ? nextId = store.nextId( TRACER_SUPPLIER.get() ) : nextId );
             if ( !lastInChain )
             {
-                group.setNext( nextId = store.nextId() );
+                group.setNext( nextId = store.nextId( TRACER_SUPPLIER.get() ) );
             }
             else
             {

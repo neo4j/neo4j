@@ -31,6 +31,7 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -231,9 +232,9 @@ public class RelationshipImporter extends EntityImporter
     }
 
     @Override
-    void freeUnusedIds()
+    void freeUnusedIds( PageCursorTracer cursorTracer )
     {
-        super.freeUnusedIds();
-        freeUnusedIds( relationshipStore, relationshipIds );
+        super.freeUnusedIds( cursorTracer );
+        freeUnusedIds( relationshipStore, relationshipIds, cursorTracer );
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -134,7 +135,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void flush()
+    public void flush( PageCursorTracer cursorTracer )
     {
     }
 }

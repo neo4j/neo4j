@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -63,7 +64,7 @@ public interface IndexProxy extends IndexConfigProvider
 {
     void start();
 
-    IndexUpdater newUpdater( IndexUpdateMode mode );
+    IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer );
 
     /**
      * Drop index.
@@ -87,7 +88,7 @@ public interface IndexProxy extends IndexConfigProvider
 
     PopulationProgress getIndexPopulationProgress();
 
-    void force( IOLimiter ioLimiter ) throws IOException;
+    void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;
 
     void refresh() throws IOException;
 

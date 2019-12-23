@@ -64,7 +64,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -124,6 +124,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -466,14 +467,14 @@ class DatabaseRecoveryIT
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
+                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), NULL, NullLog.getInstance(), contextSupplier,
                         jobScheduler ).getOrCreatePageCache();
-                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
+                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), NULL, NullLog.getInstance(), contextSupplier,
                         jobScheduler ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, immediate() ),
-                        pageCache1, fs1, logProvider ).openAllNeoStores();
+                        pageCache1, fs1, logProvider, NULL ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, immediate() ),
-                        pageCache2, fs2, logProvider ).openAllNeoStores()
+                        pageCache2, fs2, logProvider, NULL ).openAllNeoStores()
                 )
         {
             for ( StoreType storeType : StoreType.values() )
@@ -510,7 +511,8 @@ class DatabaseRecoveryIT
 
     private static void flush( GraphDatabaseService db ) throws IOException
     {
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( IOLimiter.UNLIMITED );
+        var forceOperation = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class );
+        forceOperation.flushAndForce( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
     }
 
     private static void checkPoint( GraphDatabaseService db ) throws IOException
@@ -876,9 +878,9 @@ class DatabaseRecoveryIT
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
         {
-            return wrap( super.newUpdater( mode ) );
+            return wrap( super.newUpdater( mode, cursorTracer ) );
         }
 
         private IndexUpdater wrap( IndexUpdater actual )

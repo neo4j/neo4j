@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 /**
@@ -41,7 +43,7 @@ public class BatchingIdSequence implements IdSequence
     }
 
     @Override
-    public long nextId()
+    public long nextId( PageCursorTracer ignored )
     {
         long result = peek();
         nextId++;
@@ -49,7 +51,7 @@ public class BatchingIdSequence implements IdSequence
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public IdRange nextIdBatch( int size, PageCursorTracer ignored )
     {
         while ( IdValidator.hasReservedIdInRange( nextId, nextId + size ) )
         {

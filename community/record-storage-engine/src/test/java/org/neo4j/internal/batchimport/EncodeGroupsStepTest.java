@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class EncodeGroupsStepTest
 {
@@ -50,7 +51,7 @@ class EncodeGroupsStepTest
         StageControl control = mock( StageControl.class );
         final AtomicLong nextId = new AtomicLong();
         RecordStore<RelationshipGroupRecord> store = mock( RecordStore.class );
-        when( store.nextId() ).thenAnswer( invocation -> nextId.incrementAndGet() );
+        when( store.nextId( NULL ) ).thenAnswer( invocation -> nextId.incrementAndGet() );
         doAnswer( invocation ->
         {
             // our own way of marking that this has record been prepared (firstOut=1)

@@ -39,6 +39,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -60,7 +61,7 @@ class ShortStringPropertyEncodeTest
     void setupStore()
     {
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ),
-                pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
+                pageCache, fileSystem, NullLogProvider.getInstance(), NULL ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
         propertyStore = neoStores.getPropertyStore();
     }

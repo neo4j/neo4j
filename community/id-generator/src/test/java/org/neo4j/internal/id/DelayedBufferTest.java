@@ -25,10 +25,10 @@ import org.junit.jupiter.api.parallel.Execution;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -43,6 +43,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Execution( CONCURRENT )
 class DelayedBufferTest
@@ -89,7 +90,7 @@ class DelayedBufferTest
         }
         maintenance.halt();
         end.set( true );
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         buffer.close();
 
         // THEN
@@ -124,7 +125,7 @@ class DelayedBufferTest
         buffer.offer( 1 );
         txOpened.incrementAndGet(); // <-- TX 2
         buffer.offer( 4 );
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         assertEquals( 0, consumer.chunksAccepted() );
 
         // B
@@ -132,7 +133,7 @@ class DelayedBufferTest
         txOpened.incrementAndGet(); // <-- TX 3
         txOpened.incrementAndGet(); // <-- TX 4
         buffer.offer( 7 );
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         assertEquals( 0, consumer.chunksAccepted() );
 
         // C
@@ -140,7 +141,7 @@ class DelayedBufferTest
         buffer.offer( 2 );
         buffer.offer( 8 );
         // TX 4 closes, but TXs with lower ids are still open
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         assertEquals( 0, consumer.chunksAccepted() );
 
         // D
@@ -154,7 +155,7 @@ class DelayedBufferTest
         // TX 3 closes, but TXs with lower ids are still open
         buffer.offer( 12 );
         txClosed.set( 4 ); // since 1-4 have now all closed
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         consumer.assertHaveOnlySeen( 1, 4, 5, 7 );
 
         // E
@@ -162,13 +163,13 @@ class DelayedBufferTest
         // TX 6 closes, but TXs with lower ids are still open
         buffer.offer( 13 );
         txClosed.set( 6 ); // since 1-6 have now all closed
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         consumer.assertHaveOnlySeen( 1, 2, 4, 5, 7, 8 );
 
         // F
         buffer.offer( 14 );
         txClosed.set( 7 ); // since 1-7 have now all closed
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         consumer.assertHaveOnlySeen( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 );
     }
 
@@ -176,7 +177,7 @@ class DelayedBufferTest
     void shouldClearCurrentChunk()
     {
         // GIVEN
-        Consumer<long[]> consumer = mock( Consumer.class );
+        var consumer = mock( ChunkConsumer.class );
         DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), alwaysTrue(), 10, consumer );
         buffer.offer( 0 );
         buffer.offer( 1 );
@@ -184,7 +185,7 @@ class DelayedBufferTest
 
         // WHEN
         buffer.clear();
-        buffer.maintenance();
+        buffer.maintenance( NULL );
 
         // THEN
         verifyNoMoreInteractions( consumer );
@@ -194,21 +195,21 @@ class DelayedBufferTest
     void shouldClearPreviousChunks()
     {
         // GIVEN
-        Consumer<long[]> consumer = mock( Consumer.class );
+        var consumer = mock( ChunkConsumer.class );
         final AtomicBoolean safeThreshold = new AtomicBoolean( false );
         DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), t -> safeThreshold.get(), 10, consumer );
         // three chunks
         buffer.offer( 0 );
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         buffer.offer( 1 );
-        buffer.maintenance();
+        buffer.maintenance( NULL );
         buffer.offer( 2 );
-        buffer.maintenance();
+        buffer.maintenance( NULL );
 
         // WHEN
         safeThreshold.set( true );
         buffer.clear();
-        buffer.maintenance();
+        buffer.maintenance( NULL );
 
         // THEN
         verifyNoMoreInteractions( consumer );
@@ -232,7 +233,7 @@ class DelayedBufferTest
         {
             while ( !end )
             {
-                buffer.maintenance();
+                buffer.maintenance( NULL );
                 LockSupport.parkNanos( nanoInterval );
             }
         }
@@ -247,7 +248,7 @@ class DelayedBufferTest
         }
     }
 
-    private static class VerifyingConsumer implements Consumer<long[]>
+    private static class VerifyingConsumer implements ChunkConsumer
     {
         private final boolean[] seenIds;
         private int chunkCount;
@@ -268,7 +269,7 @@ class DelayedBufferTest
         }
 
         @Override
-        public void accept( long[] chunk )
+        public void consume( long[] chunk, PageCursorTracer cursorTracer )
         {
             chunkCount++;
             for ( long id : chunk )

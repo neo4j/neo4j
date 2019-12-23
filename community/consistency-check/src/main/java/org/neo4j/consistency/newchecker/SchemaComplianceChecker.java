@@ -50,6 +50,7 @@ import static java.lang.String.format;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 class SchemaComplianceChecker implements AutoCloseable
 {
@@ -94,7 +95,7 @@ class SchemaComplianceChecker implements AutoCloseable
             }
             else
             {
-                long count = reader.countIndexedNodes( entity.getId(), schema.getPropertyIds(), valueArray );
+                long count = reader.countIndexedNodes( entity.getId(), TRACER_SUPPLIER.get(), schema.getPropertyIds(), valueArray );
                 reportIncorrectIndexCount( entity, valueArray, indexRule, count, reportSupplier );
             }
         }

@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.internal.index.label.LabelScan;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
@@ -36,9 +37,9 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
     private final LongSet removed;
     private final int label;
 
-    NodeLabelIndexCursorScan( Read read, int label, LabelScan labelScan )
+    NodeLabelIndexCursorScan( Read read, int label, LabelScan labelScan, PageCursorTracer cursorTracer )
     {
-        super( labelScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray() );
+        super( labelScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray(), cursorTracer );
         if ( hasChanges )
         {
             TransactionState txState = read.txState();
@@ -63,7 +64,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
         if ( mode.allowsTraverseAllNodesWithLabel( label ) )
         {
             // all nodes will be allowed
-            indexProgressor = storageScan.initializeBatch( indexCursor.nodeLabelClient(), sizeHint );
+            indexProgressor = storageScan.initializeBatch( indexCursor.nodeLabelClient(), sizeHint, cursorTracer );
         }
         else if ( mode.disallowsTraverseLabel( label ) )
         {
@@ -74,7 +75,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
         {
             // some nodes of this label might be blocked. we need to filter
             // TODO: Find which code path hits this and write tests for DENY (seems to be part of parallel runtime)
-            indexProgressor = storageScan.initializeBatch( read.filteringNodeLabelClient( indexCursor.nodeLabelClient(), mode ), sizeHint );
+            indexProgressor = storageScan.initializeBatch( read.filteringNodeLabelClient( indexCursor.nodeLabelClient(), mode ), sizeHint, cursorTracer );
         }
 
         if ( indexProgressor == IndexProgressor.EMPTY && !addedItems.hasNext() )

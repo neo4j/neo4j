@@ -50,6 +50,8 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class SchemaStorage implements SchemaRuleAccess
 {
     private final SchemaStore schemaStore;
@@ -64,7 +66,7 @@ public class SchemaStorage implements SchemaRuleAccess
     @Override
     public long newRuleId()
     {
-        return schemaStore.nextId();
+        return schemaStore.nextId( TRACER_SUPPLIER.get() );
     }
 
     @Override
@@ -191,7 +193,7 @@ public class SchemaStorage implements SchemaRuleAccess
     private PropertyRecord newInitialisedPropertyRecord( PropertyStore propertyStore, SchemaRule rule )
     {
         PropertyRecord record = propertyStore.newRecord();
-        record.setId( propertyStore.nextId() );
+        record.setId( propertyStore.nextId( TRACER_SUPPLIER.get() ) );
         record.setSchemaRuleId( rule.getId() );
         record.setCreated();
         return record;

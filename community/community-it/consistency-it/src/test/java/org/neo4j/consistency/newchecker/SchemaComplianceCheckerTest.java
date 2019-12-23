@@ -31,6 +31,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -108,15 +109,15 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
             TextValue value = stringValue( "a" );
             // (N1) indexed w/ property A
             {
-                long propId = propertyStore.nextId();
-                nodeId = node( nodeStore.nextId(), propId, NULL, label1 );
+                long propId = propertyStore.nextId( PageCursorTracer.NULL );
+                nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId, value );
             }
             // (N2) indexed w/ property A
             {
-                long propId = propertyStore.nextId();
-                long nodeId2 = node( nodeStore.nextId(), propId, NULL, label1 );
+                long propId = propertyStore.nextId( PageCursorTracer.NULL );
+                long nodeId2 = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId2, value );
             }
@@ -139,8 +140,8 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (N1) w/ property A (NOT indexed)
-            long propId = propertyStore.nextId();
-            nodeId = node( nodeStore.nextId(), propId, NULL, label1 );
+            long propId = propertyStore.nextId( PageCursorTracer.NULL );
+            nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
             property( propId, NULL, NULL, propertyValue( propertyKey1, stringValue( "a" ) ) );
         }
 
@@ -164,16 +165,16 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
             // (N1) w/ property
             {
-                long propId = propertyStore.nextId();
-                nodeId = node( nodeStore.nextId(), propId, NULL, label1 );
+                long propId = propertyStore.nextId( PageCursorTracer.NULL );
+                nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId, value );
             }
 
             // (N2) w/ property
             {
-                long propId = propertyStore.nextId();
-                long nodeId2 = node( nodeStore.nextId(), propId, NULL, label1 );
+                long propId = propertyStore.nextId( PageCursorTracer.NULL );
+                long nodeId2 = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId2, value );
             }
@@ -190,7 +191,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
             throws IndexNotFoundKernelException, IndexEntryConflictException
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE ) )
+        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, PageCursorTracer.NULL ) )
         {
             indexUpdater.process( add( nodeId, descriptor, value ) );
         }

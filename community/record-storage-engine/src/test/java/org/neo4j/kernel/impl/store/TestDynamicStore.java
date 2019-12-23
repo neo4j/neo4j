@@ -39,6 +39,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @EphemeralPageCacheExtension
@@ -69,7 +71,7 @@ class TestDynamicStore
     void setUp()
     {
         storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
-                pageCache, fs, NullLogProvider.getInstance() );
+                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
     }
 
     @AfterEach
@@ -84,7 +86,7 @@ class TestDynamicStore
     private DynamicArrayStore createDynamicArrayStore() throws IOException
     {
         neoStores = storeFactory.openAllNeoStores( true );
-        neoStores.start();
+        neoStores.start( NULL );
         return neoStores.getPropertyStore().getArrayStore();
     }
 
@@ -170,7 +172,7 @@ class TestDynamicStore
             }
             if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
             {
-                neoStores.flush( IOLimiter.UNLIMITED );
+                neoStores.flush( IOLimiter.UNLIMITED, NULL );
                 neoStores.close();
                 store = createDynamicArrayStore();
             }

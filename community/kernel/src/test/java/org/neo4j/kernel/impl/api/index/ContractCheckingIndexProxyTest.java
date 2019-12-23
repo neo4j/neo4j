@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.DoubleLatch;
@@ -34,6 +35,7 @@ import org.neo4j.test.ThreadTestUtils;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 class ContractCheckingIndexProxyTest
@@ -126,7 +128,7 @@ class ContractCheckingIndexProxyTest
         // WHEN
         assertThrows( IllegalStateException.class, () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 updater.process( null );
             }
@@ -146,7 +148,7 @@ class ContractCheckingIndexProxyTest
 
         assertThrows( IllegalStateException.class, () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 updater.process( null );
             }
@@ -161,7 +163,7 @@ class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.force( IOLimiter.UNLIMITED );
+        outer.force( IOLimiter.UNLIMITED, NULL );
         verifyNoMoreInteractions( inner );
     }
 
@@ -176,7 +178,7 @@ class ContractCheckingIndexProxyTest
         outer.start();
         outer.close();
 
-        outer.force( IOLimiter.UNLIMITED );
+        outer.force( IOLimiter.UNLIMITED, NULL );
         verify( inner ).start();
         verify( inner ).close();
         verifyNoMoreInteractions( inner );
@@ -248,9 +250,9 @@ class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public IndexUpdater newUpdater( IndexUpdateMode mode )
+            public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
             {
-                return super.newUpdater( mode );
+                return super.newUpdater( mode, cursorTracer );
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
@@ -260,7 +262,7 @@ class ContractCheckingIndexProxyTest
         // WHEN
         Thread updaterThread = runInSeparateThread( () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 updater.process( null );
                 try
@@ -294,7 +296,7 @@ class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public void force( IOLimiter ioLimiter )
+            public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
             {
                 try
                 {
@@ -312,7 +314,7 @@ class ContractCheckingIndexProxyTest
         actionThreadReference.set( actionThread );
 
         outer.start();
-        Thread thread = runInSeparateThread( () -> outer.force( IOLimiter.UNLIMITED ) );
+        Thread thread = runInSeparateThread( () -> outer.force( IOLimiter.UNLIMITED, NULL ) );
 
         ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();

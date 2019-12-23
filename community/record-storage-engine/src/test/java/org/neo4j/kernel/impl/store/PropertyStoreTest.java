@@ -48,6 +48,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -84,12 +85,12 @@ class PropertyStoreTest
                 new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                         NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
                         RecordFormatSelector.defaultFormat() );
-        store.initialise( true );
+        store.initialise( true, NULL );
 
         try
         {
-            store.start();
-            final long propertyRecordId = store.nextId();
+            store.start( NULL );
+            final long propertyRecordId = store.nextId( NULL );
 
             PropertyRecord record = new PropertyRecord( propertyRecordId );
             record.setInUse( true );

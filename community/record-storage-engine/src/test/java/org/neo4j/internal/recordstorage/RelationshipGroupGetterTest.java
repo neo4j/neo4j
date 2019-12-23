@@ -28,6 +28,7 @@ import org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGrou
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -67,7 +68,7 @@ class RelationshipGroupGetterTest
         // GIVEN a node with relationship group chain 2-->4-->10-->23
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fs, immediate()  ), pageCache, fs, logProvider );
+                new DefaultIdGeneratorFactory( fs, immediate()  ), pageCache, fs, logProvider, PageCacheTracer.NULL );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );

@@ -45,6 +45,7 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -63,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 @PageCacheExtension
@@ -302,7 +304,7 @@ class CountsComputerTest
     {
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            store.start();
+            store.start( NULL );
             assertEquals( BASE_TX_ID, store.txId() );
             // check that nothing is stored in the counts store by trying all combinations of tokens in the lower range
             for ( int s = 0; s < 10; s++ )
@@ -348,7 +350,7 @@ class CountsComputerTest
         cleanupCountsForRebuilding();
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER );
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER, PageCacheTracer.NULL );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
@@ -360,8 +362,8 @@ class CountsComputerTest
                     progressReporter );
             try ( GBPTreeCountsStore countsStore = createCountsStore( countsComputer ) )
             {
-                countsStore.start();
-                countsStore.checkpoint( IOLimiter.UNLIMITED );
+                countsStore.start( NULL );
+                countsStore.checkpoint( IOLimiter.UNLIMITED, NULL );
             }
             catch ( IOException e )
             {

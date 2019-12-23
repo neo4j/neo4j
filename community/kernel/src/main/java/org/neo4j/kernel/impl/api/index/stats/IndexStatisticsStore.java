@@ -39,6 +39,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -153,14 +154,14 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
     }
 
-    public void checkpoint( IOLimiter ioLimiter ) throws IOException
+    public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( !readOnly )
         {
             // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
             clearTree();
             writeCacheContentsIntoTree();
-            tree.checkpoint( ioLimiter, TRACER_SUPPLIER.get() );
+            tree.checkpoint( ioLimiter, cursorTracer );
         }
     }
 

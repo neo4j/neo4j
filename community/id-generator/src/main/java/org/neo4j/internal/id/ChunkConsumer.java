@@ -19,31 +19,14 @@
  */
 package org.neo4j.internal.id;
 
-import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public abstract class IdGeneratorContractTest
+/**
+ * Delayed buffer chunk consumer
+ * @see DelayedBuffer
+ */
+@FunctionalInterface
+interface ChunkConsumer
 {
-    protected abstract IdGenerator createIdGenerator( int grabSize );
-
-    protected abstract IdGenerator openIdGenerator( int grabSize );
-
-    @Test
-    void shouldReportCorrectHighId()
-    {
-        // given
-        try ( IdGenerator idGenerator = createIdGenerator( 2 ) )
-        {
-            assertEquals( 0, idGenerator.getHighId() );
-            assertEquals( -1, idGenerator.getHighestPossibleIdInUse() );
-
-            // when
-            idGenerator.nextId();
-
-            // then
-            assertEquals( 1, idGenerator.getHighId() );
-            assertEquals( 0, idGenerator.getHighestPossibleIdInUse() );
-        }
-    }
+    void consume( long[] chunk, PageCursorTracer cursorTracer );
 }

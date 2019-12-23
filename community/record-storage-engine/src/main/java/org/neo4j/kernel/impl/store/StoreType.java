@@ -24,127 +24,128 @@ import java.util.Optional;
 
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.layout.DatabaseFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public enum StoreType
 {
     NODE_LABEL( DatabaseFile.NODE_LABEL_STORE, IdType.NODE_LABELS )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createNodeLabelStore();
+                    return neoStores.createNodeLabelStore( cursorTracer );
                 }
             },
     NODE( DatabaseFile.NODE_STORE, IdType.NODE )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createNodeStore();
+                    return neoStores.createNodeStore( cursorTracer );
                 }
             },
     PROPERTY_KEY_TOKEN_NAME( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, IdType.PROPERTY_KEY_TOKEN_NAME )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createPropertyKeyTokenNamesStore();
+                    return neoStores.createPropertyKeyTokenNamesStore( cursorTracer );
                 }
             },
     PROPERTY_KEY_TOKEN( DatabaseFile.PROPERTY_KEY_TOKEN_STORE, IdType.PROPERTY_KEY_TOKEN )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createPropertyKeyTokenStore();
+                    return neoStores.createPropertyKeyTokenStore( cursorTracer );
                 }
             },
     PROPERTY_STRING( DatabaseFile.PROPERTY_STRING_STORE, IdType.STRING_BLOCK )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createPropertyStringStore();
+                    return neoStores.createPropertyStringStore( cursorTracer );
                 }
             },
     PROPERTY_ARRAY( DatabaseFile.PROPERTY_ARRAY_STORE, IdType.ARRAY_BLOCK )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createPropertyArrayStore();
+                    return neoStores.createPropertyArrayStore( cursorTracer );
                 }
             },
     PROPERTY( DatabaseFile.PROPERTY_STORE, IdType.PROPERTY )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createPropertyStore();
+                    return neoStores.createPropertyStore( cursorTracer );
                 }
             },
     RELATIONSHIP( DatabaseFile.RELATIONSHIP_STORE, IdType.RELATIONSHIP )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createRelationshipStore();
+                    return neoStores.createRelationshipStore( cursorTracer );
                 }
             },
     RELATIONSHIP_TYPE_TOKEN_NAME( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, IdType.RELATIONSHIP_TYPE_TOKEN_NAME )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createRelationshipTypeTokenNamesStore();
+                    return neoStores.createRelationshipTypeTokenNamesStore( cursorTracer );
                 }
             },
     RELATIONSHIP_TYPE_TOKEN( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, IdType.RELATIONSHIP_TYPE_TOKEN )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createRelationshipTypeTokenStore();
+                    return neoStores.createRelationshipTypeTokenStore( cursorTracer );
                 }
             },
     LABEL_TOKEN_NAME( DatabaseFile.LABEL_TOKEN_NAMES_STORE, IdType.LABEL_TOKEN_NAME )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createLabelTokenNamesStore();
+                    return neoStores.createLabelTokenNamesStore( cursorTracer );
                 }
             },
     LABEL_TOKEN( DatabaseFile.LABEL_TOKEN_STORE, IdType.LABEL_TOKEN )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createLabelTokenStore();
+                    return neoStores.createLabelTokenStore( cursorTracer );
                 }
             },
     SCHEMA( DatabaseFile.SCHEMA_STORE, IdType.SCHEMA )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createSchemaStore();
+                    return neoStores.createSchemaStore( cursorTracer );
                 }
             },
     RELATIONSHIP_GROUP( DatabaseFile.RELATIONSHIP_GROUP_STORE, IdType.RELATIONSHIP_GROUP )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createRelationshipGroupStore();
+                    return neoStores.createRelationshipGroupStore( cursorTracer );
                 }
             },
     META_DATA( DatabaseFile.METADATA_STORE, IdType.NEOSTORE_BLOCK ) // Make sure this META store is last
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores )
+                public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )
                 {
-                    return neoStores.createMetadataStore();
+                    return neoStores.createMetadataStore( cursorTracer );
                 }
             };
 
@@ -157,7 +158,7 @@ public enum StoreType
         this.idType = idType;
     }
 
-    abstract CommonAbstractStore open( NeoStores neoStores );
+    abstract CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer );
 
     public DatabaseFile getDatabaseFile()
     {

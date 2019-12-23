@@ -37,6 +37,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -55,6 +56,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.lang.System.currentTimeMillis;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +65,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 @EphemeralNeo4jLayoutExtension
@@ -88,9 +91,9 @@ class CheckPointerIntegrationTest
             InterruptedException
     {
         DatabaseManagementService managementService = builder
-                .setConfig( check_point_interval_time, Duration.ofMillis( 0 ) )
+                .setConfig( check_point_interval_time, ofMillis( 0 ) )
                 .setConfig( check_point_interval_tx, 1 )
-                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
+                .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -107,9 +110,9 @@ class CheckPointerIntegrationTest
         // given
         long millis = 200;
         DatabaseManagementService managementService = builder
-                .setConfig( check_point_interval_time, Duration.ofMillis( millis ) )
+                .setConfig( check_point_interval_time, ofMillis( millis ) )
                 .setConfig( check_point_interval_tx, 10000 )
-                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
+                .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // when
@@ -162,9 +165,9 @@ class CheckPointerIntegrationTest
     {
         // given
         DatabaseManagementService managementService = builder
-                .setConfig( check_point_interval_time, Duration.ofMillis( 300 ) )
+                .setConfig( check_point_interval_time, ofMillis( 300 ) )
                 .setConfig( check_point_interval_tx, 1 )
-                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
+                .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // when
@@ -195,7 +198,7 @@ class CheckPointerIntegrationTest
         DatabaseManagementService managementService = builder
                 .setConfig( check_point_interval_time, Duration.ofSeconds( 1 ) )
                 .setConfig( check_point_interval_tx, 10000 )
-                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
+                .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // when
@@ -219,7 +222,7 @@ class CheckPointerIntegrationTest
         // given
         DatabaseManagementServiceBuilder databaseManagementServiceBuilder = builder.setConfig( check_point_interval_time, Duration.ofMinutes( 300 ) )
                 .setConfig( check_point_interval_tx, 10000 )
-                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) );
+                .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) );
 
         // when
         DatabaseManagementService managementService1 = databaseManagementServiceBuilder.build();
@@ -233,12 +236,44 @@ class CheckPointerIntegrationTest
         assertEquals( 2, checkPoints.size() );
     }
 
+    @Test
+    void tracePageCacheAccessOnCheckpoint() throws Exception
+    {
+        var managementService = builder
+                .setConfig( check_point_interval_time, ofMillis( 0 ) )
+                .setConfig( check_point_interval_tx, 1 )
+                .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) ).build();
+        try
+        {
+            GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            var cacheTracer = databaseAPI.getDependencyResolver().resolveDependency( PageCacheTracer.class );
+
+            long initialFlushes = cacheTracer.flushes();
+            long initialBytesWritten = cacheTracer.bytesWritten();
+            long initialPins = cacheTracer.pins();
+
+            getCheckPointer( databaseAPI ).tryCheckPointNoWait( new SimpleTriggerInfo( "tracing" ) );
+
+            assertThat( cacheTracer.flushes() ).isGreaterThan( initialFlushes );
+            assertThat( cacheTracer.bytesWritten() ).isGreaterThan( initialBytesWritten );
+            assertThat( cacheTracer.pins() ).isGreaterThan( initialPins );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
     private static void triggerCheckPointAttempt( GraphDatabaseService db ) throws Exception
     {
         // Simulates triggering the checkpointer background job which runs now and then, checking whether
         // or not there's a need to perform a checkpoint.
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( CheckPointer.class ).checkPointIfNeeded(
-                new SimpleTriggerInfo( "Test" ) );
+        getCheckPointer( (GraphDatabaseAPI) db ).checkPointIfNeeded( new SimpleTriggerInfo( "Test" ) );
+    }
+
+    private static CheckPointer getCheckPointer( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( CheckPointer.class );
     }
 
     private File logsDirectory()

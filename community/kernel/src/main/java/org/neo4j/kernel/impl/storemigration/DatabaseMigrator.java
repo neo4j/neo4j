@@ -32,6 +32,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+
 /**
  * DatabaseMigrator collects all dependencies required for store migration,
  * prepare and construct all store upgrade participants in correct order and allow clients just migrate store
@@ -80,7 +82,7 @@ public class DatabaseMigrator
                 tailScanner, legacyLogsLocator );
 
         // Get all the participants from the storage engine and add them where they want to be
-        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService );
+        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, NULL );
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,

@@ -51,6 +51,7 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -136,7 +137,7 @@ public class GBPTreeCountsStore implements CountsStore
 
     // === Life cycle ===
 
-    public void start() throws IOException
+    public void start( PageCursorTracer cursorTracer ) throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( initialCountsBuilder != null )
@@ -147,7 +148,7 @@ public class GBPTreeCountsStore implements CountsStore
             }
             Lock lock = lock( this.lock.writeLock() );
             long txId = initialCountsBuilder.lastCommittedTxId();
-            try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer( TRACER_SUPPLIER.get() ), idSequence, txId ), lock ) )
+            try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ), idSequence, txId ), lock ) )
             {
                 initialCountsBuilder.initialize( updater );
             }
@@ -193,7 +194,7 @@ public class GBPTreeCountsStore implements CountsStore
         return new CountUpdater( new MapWriter( this::readCountFromTree, changes, idSequence, txId ), lock );
     }
 
-    public void checkpoint( IOLimiter ioLimiter ) throws IOException
+    public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( readOnly )
         {
@@ -229,7 +230,7 @@ public class GBPTreeCountsStore implements CountsStore
         updateTxIdInformationInTree( txIdSnapshot );
 
         // Good, check-point all these changes
-        tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ), TRACER_SUPPLIER.get() );
+        tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorTracer );
     }
 
     private void writeCountsChanges( ConcurrentHashMap<CountsKey,AtomicLong> changes ) throws IOException

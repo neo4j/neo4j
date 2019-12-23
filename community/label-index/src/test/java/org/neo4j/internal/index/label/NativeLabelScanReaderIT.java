@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
@@ -104,7 +105,7 @@ class NativeLabelScanReaderIT
         long fromId = random.nextInt( highNodeId );
         int nextExpectedId = expected.nextSetBit( toIntExact( fromId + 1 ) );
         LabelScanReader reader = store.newReader();
-        try ( PrimitiveLongResourceIterator ids = reader.nodesWithAnyOfLabels( fromId, new int[] {labelId} ) )
+        try ( PrimitiveLongResourceIterator ids = reader.nodesWithAnyOfLabels( fromId, new int[] {labelId}, NULL ) )
         {
             // then
             while ( nextExpectedId != -1 )

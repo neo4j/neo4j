@@ -59,6 +59,7 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
@@ -123,7 +124,7 @@ class RelationshipGroupDefragmenterTest
                 // next doesn't matter at all, as we're rewriting it anyway
                 // firstOut/In/Loop we could use in verification phase later
                 groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
-                groupRecord.setId( groupStore.nextId() );
+                groupRecord.setId( groupStore.nextId( NULL ) );
                 groupStore.updateRecord( groupRecord );
 
                 if ( typeId == 0 )
@@ -172,7 +173,7 @@ class RelationshipGroupDefragmenterTest
                     // next doesn't matter at all, as we're rewriting it anyway
                     // firstOut/In/Loop we could use in verification phase later
                     groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
-                    groupRecord.setId( groupStore.nextId() );
+                    groupRecord.setId( groupStore.nextId( NULL ) );
                     groupStore.updateRecord( groupRecord );
 
                     if ( !initializedNodes.get( nodeId ) )

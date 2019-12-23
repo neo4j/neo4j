@@ -20,6 +20,7 @@
 package org.neo4j.internal.index.label;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Reader of a label scan store which contains label-->nodes mappings.
@@ -27,36 +28,39 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 public interface LabelScanReader
 {
     /**
-     * Used as a marker to ignore the "fromId" in calls to {@link #nodesWithAnyOfLabels(long, int[])}.
+     * Used as a marker to ignore the "fromId" in calls to {@link #nodesWithAnyOfLabels(long, int[], PageCursorTracer)}.
      */
     long NO_ID = -1;
 
     /**
      * @param labelId label token id.
+     * @param cursorTracer underlying page cursor tracer
      * @return node ids with the given {@code labelId}.
      */
-    PrimitiveLongResourceIterator nodesWithLabel( int labelId );
+    PrimitiveLongResourceIterator nodesWithLabel( int labelId, PageCursorTracer cursorTracer );
 
     /**
      * Sets the client up for a label scan on <code>labelId</code>
      *
      * @param labelId label token id
      */
-    LabelScan nodeLabelScan( int labelId );
+    LabelScan nodeLabelScan( int labelId, PageCursorTracer cursorTracer );
 
     /**
      * @param labelIds label token ids.
+     * @param cursorTracer underlying page cursor tracer
      * @return node ids with any of the given label ids.
      */
-    default PrimitiveLongResourceIterator nodesWithAnyOfLabels( int[] labelIds )
+    default PrimitiveLongResourceIterator nodesWithAnyOfLabels( int[] labelIds, PageCursorTracer cursorTracer )
     {
-        return nodesWithAnyOfLabels( NO_ID, labelIds );
+        return nodesWithAnyOfLabels( NO_ID, labelIds, cursorTracer );
     }
 
     /**
      * @param fromId entity id to start at, exclusive, i.e. the given {@code fromId} will not be included in the result.
      * @param labelIds label token ids.
+     * @param cursorTracer underlying page cursor tracer
      * @return node ids with any of the given label ids.
      */
-    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] labelIds );
+    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] labelIds, PageCursorTracer cursorTracer );
 }
