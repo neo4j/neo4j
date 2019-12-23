@@ -17,13 +17,7 @@
 package org.neo4j.cypher.internal.v3_5.frontend.phases
 
 import org.neo4j.cypher.internal.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v3_5.expressions.Equals
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
-import org.neo4j.cypher.internal.v3_5.expressions.ExtractScope
-import org.neo4j.cypher.internal.v3_5.expressions.ListComprehension
-import org.neo4j.cypher.internal.v3_5.expressions.Property
-import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v3_5.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
@@ -97,9 +91,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "MATCH (n) RETURN n, count(*) AS c order by c",
-      """MATCH (n)
-        |RETURN n AS n, count(*) AS c ORDER BY c""".stripMargin,
-      List(varFor("n"))
+      """MATCH (`  n@7`)
+        |RETURN `  n@7` AS n, count(*) AS c ORDER BY c""".stripMargin,
+      List(varFor("  n@7"))
     ),
     TestCase(
       "WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng",

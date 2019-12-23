@@ -797,20 +797,20 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // (owner)-[`  REL62`]-(`  NODE64`)
     val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("owner")(pos)), Seq.empty, None)(pos),
+      NodePattern(Some(Variable("  owner@20")(pos)), Seq.empty, None)(pos),
       RelationshipPattern(Some(Variable("  REL62")(pos)), Seq.empty, None, None, SemanticDirection.BOTH)(pos),
       NodePattern(Some(Variable("  NODE64")(pos)), Seq.empty, None)(pos))(pos))(pos))
 
     val expectation = RegularPlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("owner")),
+      queryGraph = QueryGraph(patternNodes = Set("  owner@7")),
       horizon = AggregatingQueryProjection(
-        groupingExpressions = Map("owner" -> Variable("owner")(pos)),
+        groupingExpressions = Map("  owner@20" -> Variable("  owner@7")(pos)),
         aggregationExpressions = Map("collected" -> CountStar()(pos)),
-        selections = Selections(Set(Predicate(Set("owner", "  REL62", "  NODE64"),
+        selections = Selections(Set(Predicate(Set("  owner@20", "  REL62", "  NODE64"),
                                               exists(patternExpression))))),
       tail = Some(RegularPlannerQuery(
-        queryGraph = QueryGraph(argumentIds = Set("collected", "owner")),
-        horizon = RegularQueryProjection(projections = Map("owner" -> Variable("owner")(pos)))
+        queryGraph = QueryGraph(argumentIds = Set("collected", "  owner@20")),
+        horizon = RegularQueryProjection(projections = Map("owner" -> Variable("  owner@20")(pos)))
       ))
     )
 

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 
@@ -240,11 +240,11 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   test("ORDER BY column that isn't referenced in WITH DISTINCT") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name")._2
 
-    val labelScan = NodeByLabelScan("a", LabelName("A") _, Set.empty)
-    val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
-    val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
+    val labelScan = NodeByLabelScan("  a@7", LabelName("A") _, Set.empty)
+    val ageProperty = Property(varFor("  a@43"), PropertyKeyName("age") _) _
+    val nameProperty = Property(varFor("  a@7"), PropertyKeyName("name") _) _
 
-    val distinct = Distinct(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")))
+    val distinct = Distinct(labelScan, Map("name" -> nameProperty, "  a@43" -> varFor("  a@7")))
     val projection = Projection(distinct, Map("  FRESHID55" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("  FRESHID55")))
 
@@ -257,7 +257,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val labelScan = NodeByLabelScan("a", LabelName("A") _, Set.empty)
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
-    val ageSum = FunctionInvocation(Namespace(List()) _, FunctionName("sum") _, distinct = false, Vector(ageProperty)) _
+    val ageSum = FunctionInvocation(Namespace(List()) _, FunctionName("sum") _, distinct = false, Vector(ageProperty))_
 
     val aggregation = Aggregation(labelScan, Map("name" -> nameProperty), Map("age" -> ageSum))
     val sort = Sort(aggregation, Seq(Ascending("age")))
@@ -282,13 +282,13 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   test("ORDER BY column that isn't referenced in WITH GROUP BY") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age")._2
 
-    val labelScan = NodeByLabelScan("a", LabelName("A") _, Set.empty)
-    val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
-    val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
-    val fooProperty = Property(varFor("a"), PropertyKeyName("foo") _) _
+    val labelScan = NodeByLabelScan("  a@7", LabelName("A") _, Set.empty)
+    val ageProperty = Property(varFor("  a@7"), PropertyKeyName("age") _) _
+    val nameProperty = Property(varFor("  a@7"), PropertyKeyName("name") _) _
+    val fooProperty = Property(varFor("  a@34"), PropertyKeyName("foo") _) _
     val ageSum = FunctionInvocation(Namespace(List()) _, FunctionName("sum") _, distinct = false, Vector(ageProperty)) _
 
-    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")), Map("age" -> ageSum))
+    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, "  a@34" -> varFor("  a@7")), Map("age" -> ageSum))
     val projection = Projection(aggregation, Map("  FRESHID65" -> fooProperty))
     val sort = Sort(projection, Seq(Ascending("  FRESHID65")))
 
