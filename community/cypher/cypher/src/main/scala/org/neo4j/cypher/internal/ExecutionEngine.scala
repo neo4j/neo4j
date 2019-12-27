@@ -215,8 +215,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
     val combinedParams = params.updatedWith(executableQuery.extractedParams)
 
-    if (isOutermostQuery)
+    if (isOutermostQuery) {
+      context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator)
       context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, () => executableQuery.planDescription())
+    }
 
     executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, subscriber)
   }

@@ -130,9 +130,7 @@ class Neo4jTransactionalContextTest
         QueryRegistry secondQueryRegistry = mock( QueryRegistry.class );
 
         when( transactionFactory.beginKernelTransaction( transactionType, securityContext, connectionInfo ) ).thenReturn( secondKTX );
-        when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.databaseId() ).thenReturn( namedDatabaseId );
-        when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
         when( statement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( userTransaction.kernelTransaction() ).thenReturn( initialKTX, initialKTX, secondKTX );
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
@@ -191,9 +189,7 @@ class Neo4jTransactionalContextTest
         QueryRegistry secondQueryRegistry = mock( QueryRegistry.class );
 
         when( transactionFactory.beginKernelTransaction( transactionType, securityContext, connectionInfo ) ).thenReturn( secondKTX );
-        when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.databaseId() ).thenReturn( namedDatabaseId );
-        when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
         Mockito.doThrow( RuntimeException.class ).when( initialKTX ).commit();
         when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( userTransaction.kernelTransaction() ).thenReturn( initialKTX, initialKTX, secondKTX );

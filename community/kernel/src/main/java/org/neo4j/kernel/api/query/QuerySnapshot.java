@@ -46,10 +46,13 @@ public class QuerySnapshot
     private final long activeLockCount;
     private final Optional<Long> allocatedBytes;
     private final PageCounterValues page;
+    private final Optional<String> obfuscatedQueryText;
+    private final Optional<MapValue> obfuscatedQueryParameters;
 
     QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, PageCounterValues page, long compilationTimeMicros,
                    long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
-                   Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, Optional<Long> allocatedBytes )
+                   Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, Optional<Long> allocatedBytes,
+                   Optional<String> obfuscatedQueryText, Optional<MapValue> obfuscatedQueryParameters )
     {
         this.query = query;
         this.compilerInfo = compilerInfo;
@@ -63,6 +66,8 @@ public class QuerySnapshot
         this.waitingLocks = waitingLocks;
         this.activeLockCount = activeLockCount;
         this.allocatedBytes = allocatedBytes;
+        this.obfuscatedQueryText = obfuscatedQueryText;
+        this.obfuscatedQueryParameters = obfuscatedQueryParameters;
     }
 
     public long internalQueryId()
@@ -75,19 +80,19 @@ public class QuerySnapshot
         return query.id();
     }
 
-    public String queryText()
+    public Optional<String> obfuscatedQueryText()
     {
-        return query.queryText();
+        return obfuscatedQueryText;
+    }
+
+    public Optional<MapValue> obfuscatedQueryParameters()
+    {
+        return obfuscatedQueryParameters;
     }
 
     public Supplier<ExecutionPlanDescription> queryPlanSupplier()
     {
         return query.planDescriptionSupplier();
-    }
-
-    public MapValue queryParameters()
-    {
-        return query.queryParameters();
     }
 
     public String username()

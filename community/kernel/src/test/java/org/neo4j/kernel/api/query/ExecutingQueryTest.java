@@ -77,6 +77,12 @@ class ExecutingQueryTest
     void shouldTransitionBetweenStates()
     {
         // initial
+        assertEquals( "parsing", query.snapshot().status() );
+
+        // when
+        query.onObfuscatorReady( null );
+
+        // then
         assertEquals( "planning", query.snapshot().status() );
 
         // when
@@ -108,6 +114,7 @@ class ExecutingQueryTest
         clock.forward( 124, TimeUnit.MICROSECONDS );
 
         // then
+        query.onObfuscatorReady( null );
         QuerySnapshot snapshot = query.snapshot();
         assertEquals( snapshot.compilationTimeMicros(), snapshot.elapsedTimeMicros() );
 
@@ -126,6 +133,7 @@ class ExecutingQueryTest
     void shouldReportWaitTime()
     {
         // given
+        query.onObfuscatorReady( null );
         query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
         query.onExecutionStarted( new FakeMemoryTracker() );
 
@@ -279,54 +287,9 @@ class ExecutingQueryTest
     }
 
     @Test
-    void shouldObfuscateCreateUser()
-    {
-        testPasswordObfuscation( "create USER foo SET PaSsWoRd " );
-    }
-
-    @Test
-    void shouldObfuscateCreateOrReplaceUser()
-    {
-        testPasswordObfuscation( "create OR replace USER foo SET PaSsWoRd " );
-    }
-
-    @Test
-    void shouldObfuscateCreateUserIfNotExits()
-    {
-        testPasswordObfuscation( "create USER foo IF not EXisTS SET PaSsWoRd " );
-    }
-
-    @Test
-    void shouldObfuscateAlterUser()
-    {
-        testPasswordObfuscation( "alter USER foo SET PaSsWoRd " );
-    }
-
-    @Test
-    void shouldObfuscateAlterCurrentUser()
-    {
-        var queryPart = "alter CuRRenT USER foo SET PaSsWoRd FROM ";
-        var exeQuery = createExecutingQuery( 1, queryPart + "'bar' TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
-        assertThat( exeQuery.queryText() ).isEqualTo( queryPart + "'******' TO '******'" );
-        assertThat( exeQuery.queryParameters().size() ).isEqualTo( 0 );
-
-        MapValue params2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "bar" ), stringValue( "baz" )} );
-        MapValue obfuscatedParams2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "******" ), stringValue( "******" )} );
-        var exeQuery2 = createExecutingQuery( 1, queryPart + "$old TO $new", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params2 );
-        assertThat( exeQuery2.queryText() ).isEqualTo( queryPart + "$old TO $new" );
-        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams2 );
-
-        MapValue params3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "bar" )} );
-        MapValue obfuscatedParams3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "******" )} );
-        var exeQuery3 = createExecutingQuery( 1, queryPart + "$old TO 'baz'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params3 );
-        assertThat( exeQuery3.queryText() ).isEqualTo( queryPart + "$old TO '******'" );
-        assertThat( exeQuery3.queryParameters() ).isEqualTo( obfuscatedParams3 );
-
-    }
-
-    @Test
     void shouldNotAllowCompletingCompilationMultipleTimes()
     {
+        query.onObfuscatorReady( null );
         query.onCompilationCompleted( null, null, null );
         assertThatIllegalStateException().isThrownBy( () -> query.onCompilationCompleted( null, null, null ) );
     }
@@ -340,6 +303,9 @@ class ExecutingQueryTest
     @Test
     void shouldAllowRetryingAfterStartingExecutiong()
     {
+        assertEquals( "parsing", query.snapshot().status() );
+
+        query.onObfuscatorReady( null );
         assertEquals( "planning", query.snapshot().status() );
 
         query.onCompilationCompleted( null, null, null );
@@ -349,27 +315,15 @@ class ExecutingQueryTest
         assertEquals( "running", query.snapshot().status() );
 
         query.onRetryAttempted();
-        assertEquals( "planning", query.snapshot().status() );
+        assertEquals( "parsing", query.snapshot().status() );
     }
 
     @Test
     void shouldNotAllowRetryingWithoutStartingExecuting()
     {
+        query.onObfuscatorReady(null );
         query.onCompilationCompleted( null, null, null );
         assertThatIllegalStateException().isThrownBy( query::onRetryAttempted );
-    }
-
-    private void testPasswordObfuscation( String startOfQuery )
-    {
-        var exeQuery1 = createExecutingQuery( 1, startOfQuery + "'bar'", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, EMPTY_MAP );
-        assertThat( exeQuery1.queryText() ).isEqualTo( startOfQuery + "'******'" );
-        assertThat( exeQuery1.queryParameters().size() ).isEqualTo( 0 );
-
-        MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
-        MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
-        var exeQuery2 = createExecutingQuery( 1, startOfQuery + "$password", page, clock, cpuClock, NAMED_SYSTEM_DATABASE_ID, params );
-        assertThat( exeQuery2.queryText() ).isEqualTo( startOfQuery + "$password" );
-        assertThat( exeQuery2.queryParameters() ).isEqualTo( obfuscatedParams );
     }
 
     private LockWaitEvent lock( String resourceType, long resourceId )

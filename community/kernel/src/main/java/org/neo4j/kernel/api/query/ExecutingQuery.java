@@ -22,10 +22,9 @@ package org.neo4j.kernel.api.query;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -45,7 +44,6 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
-import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 /**
  * Represents a currently running query.
@@ -82,7 +80,7 @@ public class ExecutingQuery
     private final Map<String,Object> transactionAnnotationData;
     /** Uses write barrier of {@link #status}. */
     private CompilerInfo compilerInfo;
-    private volatile ExecutingQueryStatus status = SimpleState.planning();
+    private volatile ExecutingQueryStatus status = SimpleState.parsing();
     /** Updated through {@link #WAIT_TIME} */
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
@@ -118,6 +116,27 @@ public class ExecutingQuery
 
     // update state
 
+    public void onObfuscatorReady( QueryObfuscator queryObfuscator )
+    {
+        if ( status != SimpleState.parsing() ) // might get called multiple times due to caching and/or internal queries
+        {
+            return;
+        }
+
+        try
+        {
+            obfuscatedQueryText = queryObfuscator.obfuscateText( rawQueryText );
+            obfuscatedQueryParameters = queryObfuscator.obfuscateParameters( rawQueryParameters );
+        }
+        catch ( Exception ignore )
+        {
+            obfuscatedQueryText = null;
+            obfuscatedQueryParameters = null;
+        }
+
+        this.status = SimpleState.planning();
+    }
+
     public void onCompilationCompleted( CompilerInfo compilerInfo,
                                         QueryExecutionType.QueryType queryType,
                                         Supplier<ExecutionPlanDescription> planDescriptionSupplier )
@@ -148,7 +167,9 @@ public class ExecutingQuery
         this.planDescriptionSupplier = null;
         this.queryType = null;
         this.memoryTracker = OptionalMemoryTracker.NONE;
-        this.status = SimpleState.planning();
+        this.obfuscatedQueryParameters = null;
+        this.obfuscatedQueryText = null;
+        this.status = SimpleState.parsing();
     }
 
     public LockTracer lockTracer()
@@ -165,12 +186,16 @@ public class ExecutingQuery
         long waitTimeNanos;
         long currentTimeNanos;
         long cpuTimeNanos;
+        String queryText;
+        MapValue queryParameters;
         do
         {
             status = this.status; // read barrier, must be first
             waitTimeNanos = this.waitTimeNanos; // the reason for the retry loop: don't count the wait time twice
             cpuTimeNanos = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
             currentTimeNanos = clock.nanos(); // capture the time as close to the snapshot as possible
+            queryText = this.obfuscatedQueryText;
+            queryParameters = this.obfuscatedQueryParameters;
         }
         while ( this.status != status );
         // guarded by barrier - unused if status is planning, stable otherwise
@@ -201,7 +226,9 @@ public class ExecutingQuery
                 status.toMap( currentTimeNanos ),
                 waitingOnLocks,
                 totalActiveLocks - initialActiveLocks,
-                memoryTracker.totalAllocatedMemory()
+                memoryTracker.totalAllocatedMemory(),
+                Optional.ofNullable( queryText ),
+                Optional.ofNullable( queryParameters )
         );
     }
 
@@ -253,29 +280,14 @@ public class ExecutingQuery
         return username;
     }
 
-    public String queryText()
+    public String rawQueryText()
     {
-        if ( queryNeedsObfuscation() )
-        {
-            obfuscateQuery();
-            return obfuscatedQueryText;
-        }
         return rawQueryText;
     }
 
     Supplier<ExecutionPlanDescription> planDescriptionSupplier()
     {
         return planDescriptionSupplier;
-    }
-
-    public MapValue queryParameters()
-    {
-        if ( queryNeedsObfuscation() )
-        {
-            obfuscateQuery();
-            return obfuscatedQueryParameters;
-        }
-        return rawQueryParameters;
     }
 
     public NamedDatabaseId databaseId()
@@ -334,27 +346,6 @@ public class ExecutingQuery
         }
         WAIT_TIME.addAndGet( this, waiting.waitTimeNanos( clock.nanos() ) );
         status = waiting.previousStatus();
-    }
-
-    private boolean queryNeedsObfuscation()
-    {
-        return queryType == QueryExecutionType.QueryType.DBMS || queryType == null || namedDatabaseId.equals( NAMED_SYSTEM_DATABASE_ID );
-    }
-
-    private void obfuscateQuery()
-    {
-        if ( obfuscatedQueryText == null )
-        {
-            Set<String> passwordParams = new HashSet<>();
-            // security procedures can be run on both user and system database currently
-            this.obfuscatedQueryText = QueryObfuscation.obfuscateText( rawQueryText, passwordParams );
-            if ( namedDatabaseId.equals( NAMED_SYSTEM_DATABASE_ID ) )
-            {
-                // check for system commands
-                this.obfuscatedQueryText = QueryObfuscation.obfuscateSystemCommand( obfuscatedQueryText, passwordParams );
-            }
-            this.obfuscatedQueryParameters = QueryObfuscation.obfuscateParams( rawQueryParameters, passwordParams );
-        }
     }
 
     private void assertExpectedStatus( ExecutingQueryStatus expectedStatus )

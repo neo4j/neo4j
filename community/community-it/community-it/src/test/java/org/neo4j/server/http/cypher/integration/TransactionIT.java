@@ -959,6 +959,6 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
     {
         return kernelTransactions.activeTransactions().stream()
                 .flatMap( k -> k.executingQuery().stream() )
-                .anyMatch( executingQuery -> statement.equals( executingQuery.queryText() ) );
+                .anyMatch( executingQuery -> statement.equals( executingQuery.rawQueryText() ) );
     }
 }

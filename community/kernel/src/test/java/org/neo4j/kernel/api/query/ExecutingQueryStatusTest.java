@@ -69,6 +69,16 @@ class ExecutingQueryStatusTest
     }
 
     @Test
+    void shouldProduceSensibleMapRepresentationInParsingState()
+    {
+        // when
+        String status = SimpleState.parsing().name();
+
+        // then
+        assertEquals( "parsing", status );
+    }
+
+    @Test
     void shouldProduceSensibleMapRepresentationInWaitingOnLockState()
     {
         // given

@@ -25,10 +25,16 @@ import static java.util.Collections.emptyMap;
 
 final class SimpleState extends ExecutingQueryStatus
 {
+    private static final ExecutingQueryStatus PARSING = new SimpleState( PARSING_STATE );
     private static final ExecutingQueryStatus PLANNING = new SimpleState( PLANNING_STATE );
     private static final ExecutingQueryStatus PLANNED = new SimpleState( PLANNED_STATE );
     private static final ExecutingQueryStatus RUNNING = new SimpleState( RUNNING_STATE );
     private final String name;
+
+    static ExecutingQueryStatus parsing()
+    {
+        return PARSING;
+    }
 
     static ExecutingQueryStatus planning()
     {

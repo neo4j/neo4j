@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.util.{InternalNotification, TaskCloser}
 import org.neo4j.cypher.{CypherExecutionMode, CypherVersion}
 import org.neo4j.exceptions.{Neo4jException, ParameterNotFoundException, ParameterWrongTypeException}
 import org.neo4j.graphdb.{Notification, QueryExecutionType}
-import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
+import org.neo4j.kernel.api.query.{CompilerInfo, QueryObfuscator, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
 import org.neo4j.string.UTF8
@@ -154,7 +154,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       query.options.version,
       queryType,
       logicalPlanResult.shouldBeCached,
-      runtimeContext.config.enableMonitors)
+      runtimeContext.config.enableMonitors,
+      logicalPlanResult.queryObfuscator
+    )
   }
 
   private def buildCompilerInfo(logicalPlan: LogicalPlan,
@@ -213,7 +215,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         cypherVersion: CypherVersion,
                                         internalQueryType: InternalQueryType,
                                         override val shouldBeCached: Boolean,
-                                        enableMonitors: Boolean) extends ExecutableQuery {
+                                        enableMonitors: Boolean,
+                                        override val queryObfuscator: QueryObfuscator) extends ExecutableQuery {
 
     //Monitors are implemented via dynamic proxies which are slow compared to NOOP which is why we want to able to completely disable
     private val searchMonitor = if (enableMonitors) kernelMonitors.newMonitor(classOf[IndexSearchMonitor]) else IndexSearchMonitor.NOOP

@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
  */
 abstract class ExecutingQueryStatus
 {
+    static final String PARSING_STATE = "parsing";
     static final String PLANNING_STATE = "planning";
     static final String PLANNED_STATE = "planned";
     static final String RUNNING_STATE = "running";

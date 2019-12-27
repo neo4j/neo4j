@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
+import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.immutable.Map
@@ -50,8 +51,8 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
       val context = db.transactionalContext(tx, query = query -> Map.empty)
       val executingQuery = context.executingQuery()
       val result = new ResultSubscriber(context)
-      val executionResult = engine.execute(executingQuery.queryText(),
-        executingQuery.queryParameters(),
+      val executionResult = engine.execute(query,
+        MapValue.EMPTY,
         context,
         profile = false,
         prePopulate = false,

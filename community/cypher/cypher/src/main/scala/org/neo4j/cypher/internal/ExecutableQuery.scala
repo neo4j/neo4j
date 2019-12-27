@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.QueryExecutionType.QueryType
-import org.neo4j.kernel.api.query.CompilerInfo
+import org.neo4j.kernel.api.query.{CompilerInfo, QueryObfuscator}
 import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
 import org.neo4j.values.virtual.MapValue
 
@@ -80,4 +80,9 @@ trait ExecutableQuery extends CacheabilityInfo {
     * Type of this query.
     */
   def queryType: QueryType
+
+  /**
+   * Obfuscator to be used on this query's raw text and parameters before logging.
+   */
+  def queryObfuscator: QueryObfuscator
 }
