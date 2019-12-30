@@ -67,7 +67,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -2439,7 +2438,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             DefaultPageCacheTracer tracer = DefaultPageCacheTracer.TRACER;
-            DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( tracer );
             getPageCache( fs, maxPages, tracer );
 
             generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -2448,7 +2446,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             long initialUnpins = tracer.unpins();
             long countedPages = 0;
             long countedFaults = 0;
-            try ( PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+            try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( "tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading" );
                   PagedFile pagedFile = map( file( "a" ), filePageSize );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
             {
@@ -2501,14 +2499,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             long pagesToGenerate = 142;
-            DefaultPageCacheTracer tracer = DefaultPageCacheTracer.TRACER;
-            DefaultPageCursorTracerSupplier tracerSupplier = getCursorTracerSupplier( tracer );
+            DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
             getPageCache( fs, maxPages, tracer );
 
             long initialPins = tracer.pins();
             long initialUnpins = tracer.unpins();
 
-            try ( PageCursorTracer cursorTracer = tracerSupplier.get();
+            try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( "tracerMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting" );
                   PagedFile pagedFile = map( file( "a" ), filePageSize );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
@@ -2563,7 +2560,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         final AtomicInteger writeCount = new AtomicInteger();
         final AtomicInteger readCount = new AtomicInteger();
 
-        DefaultPageCacheTracer tracer = DefaultPageCacheTracer.TRACER;
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
         DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer( tracer, "test" )
         {
             @Override
@@ -6063,46 +6060,33 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void noFaultReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
         getPageCache( fs, maxPages, cacheTracer );
 
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( "noFaultReadOfPagesNotInMemory" );
                 PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorTracer ) )
         {
-            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, nofault, initialFaults );
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracer, nofault, initialFaults );
         }
-    }
-
-    private static DefaultPageCursorTracerSupplier getCursorTracerSupplier( DefaultPageCacheTracer cacheTracer )
-    {
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = TRACER_SUPPLIER;
-        // This cursor tracer is thread-local, so we'll initialise it on behalf of this thread.
-        PageCursorTracer cursorTracer = cursorTracerSupplier.get();
-        // Clear any stray counts that might have been carried over form other tests,
-        // by reporting into a throw-away cache tracer.
-        cursorTracer.reportEvents();
-        return cursorTracerSupplier;
     }
 
     @Test
     void noFaultWriteOnPagesNotInMemory() throws Exception
     {
-        DefaultPageCacheTracer cacheTracer = DefaultPageCacheTracer.TRACER;
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         getPageCache( fs, maxPages, cacheTracer );
 
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( "noFaultWriteOnPagesNotInMemory" );
                 PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorTracer ) )
         {
-            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, nofault, initialFaults );
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracer, nofault, initialFaults );
             verifyNoFaultWriteIsOutOfBounds( nofault );
         }
     }
@@ -6111,18 +6095,17 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void noFaultLinkedReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
         getPageCache( fs, maxPages, cacheTracer );
 
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( "noFaultLinkedReadOfPagesNotInMemory" );
                 PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorTracer );
                 PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
         {
-            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, linkedNoFault, initialFaults );
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracer, linkedNoFault, initialFaults );
         }
     }
 
@@ -6130,23 +6113,22 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void noFaultLinkedWriteOnPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
         getPageCache( fs, maxPages, cacheTracer );
 
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+                PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( "noFaultLinkedWriteOnPagesNotInMemory" );
                 PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorTracer );
                 PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
         {
-            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, linkedNoFault, initialFaults );
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracer, linkedNoFault, initialFaults );
             verifyNoFaultWriteIsOutOfBounds( linkedNoFault );
         }
     }
 
-    private static void verifyNoFaultAccessToPagesNotInMemory( DefaultPageCacheTracer cacheTracer, DefaultPageCursorTracerSupplier cursorTracerSupplier,
+    private static void verifyNoFaultAccessToPagesNotInMemory( DefaultPageCacheTracer cacheTracer, PageCursorTracer cursorTracer,
             PageCursor nofault, long initialFaults ) throws IOException
     {
         assertTrue( nofault.next() ); // File contains a page id 0.
@@ -6159,7 +6141,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertFalse( nofault.next( 2 ) ); // Still no page id two, even when using next with id.
 
         // Also check that no faults happened.
-        cursorTracerSupplier.get().reportEvents();
+        cursorTracer.reportEvents();
         assertThat( cacheTracer.faults() - initialFaults ).isEqualTo( 0L );
     }
 
