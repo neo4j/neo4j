@@ -118,11 +118,6 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("cross apply union with aliased variables") {
     // given
-    val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
-    }
     val lhsRows = inputValues()
 
     // when
@@ -143,6 +138,30 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("z").withRows(Array(Array(1), Array(2)))
+  }
+
+  test("cross apply union with multiple aliased variables") {
+    // given
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .crossApply()
+      .|.distinct("n AS n", "m AS m")
+      .|.union()
+      .|.|.projection("y AS n", "x AS m")
+      .|.|.argument("x", "y")
+      .|.projection("x AS n", "y AS m")
+      .|.argument("x", "y")
+      .projection("1 AS x", "2 AS y")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    runtimeResult should beColumns("n", "m").withRows(Array(Array(1, 2), Array(2, 1)))
   }
 
 }
