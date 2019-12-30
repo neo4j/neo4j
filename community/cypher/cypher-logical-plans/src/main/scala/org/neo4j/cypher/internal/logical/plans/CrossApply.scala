@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2020 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -19,26 +19,26 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
-  * For every row in left, set that row as the argument, and produce all rows from right
+  * For every row in left, set that row as the argument, and apply to right. For each right row,
+  * produce current left row merged with current right row.
   *
   * for ( leftRow <- left ) {
   *   right.setArgument( leftRow )
   *   for ( rightRow <- right ) {
-  *     produce rightRow
+  *     produce (leftRow merge rightRow)
   *   }
   * }
   */
-case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
-  extends BasicApply(idGen) {
+case class CrossApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends BasicApply(idGen) {
 
   val lhs: Option[LogicalPlan] = Some(left)
   val rhs: Option[LogicalPlan] = Some(right)
 
-  override def createNew(left: LogicalPlan, right: LogicalPlan, idGen: IdGen): Apply =
-    Apply(left, right)(idGen)
+  override def createNew(left: LogicalPlan, right: LogicalPlan, idGen: IdGen): CrossApply =
+    CrossApply(left, right)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

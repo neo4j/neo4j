@@ -311,7 +311,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults(z53)
-        .apply()
+        .crossApply()
         .|.distinct(s"$z53 AS $z53")
         .|.union()
         .|.|.projection(s"$z80 AS $z53")
@@ -331,7 +331,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults("sum")
-        .apply()
+        .crossApply()
         .|.aggregation(Seq.empty, Seq("sum(y.prop) AS sum"))
         .|.filter("y.value > x")
         .|.allNodeScan("y", "x")

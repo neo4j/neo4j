@@ -727,6 +727,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: Apply =>
         PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)
 
+      case _: CrossApply =>
+        PlanDescriptionImpl(id, "CrossApply", children, Seq.empty, variables)
+
       case _: AssertSameNode =>
         PlanDescriptionImpl(id, "AssertSameNode", children, Seq.empty, variables)
 

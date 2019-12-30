@@ -473,6 +473,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def apply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)(_)))
 
+  def crossApply(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CrossApply(lhs, rhs)(_)))
+
   def cartesianProduct(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs)(_)))
 

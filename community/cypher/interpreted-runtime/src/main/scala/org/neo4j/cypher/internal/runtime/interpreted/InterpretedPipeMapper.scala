@@ -467,6 +467,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 
+      case CrossApply(_, _) => CrossApplyPipe(lhs, rhs)(id = id)
+
       case AssertSameNode(node, _, _) =>
         AssertSameNodePipe(lhs, rhs, node)(id = id)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2020 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -19,26 +19,14 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
-/**
-  * For every row in left, set that row as the argument, and produce all rows from right
-  *
-  * for ( leftRow <- left ) {
-  *   right.setArgument( leftRow )
-  *   for ( rightRow <- right ) {
-  *     produce rightRow
-  *   }
-  * }
-  */
-case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
-  extends BasicApply(idGen) {
+abstract class BasicApply(idGen: IdGen) extends LogicalPlan(idGen) with ApplyPlan {
+  def left: LogicalPlan
+  def right: LogicalPlan
+  def createNew(left: LogicalPlan, right: LogicalPlan, idGen: IdGen): BasicApply
+}
 
-  val lhs: Option[LogicalPlan] = Some(left)
-  val rhs: Option[LogicalPlan] = Some(right)
-
-  override def createNew(left: LogicalPlan, right: LogicalPlan, idGen: IdGen): Apply =
-    Apply(left, right)(idGen)
-
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+object BasicApply {
+  def unapply(arg: BasicApply): Option[(LogicalPlan, LogicalPlan)] = Some((arg.left, arg.right))
 }

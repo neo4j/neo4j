@@ -230,7 +230,7 @@ Feature: SubqueryAcceptance
       """
     Then a SyntaxError should be raised at compile time: UndefinedVariable
 
-  Scenario: Aggregating top and bottom results within correlated subquery
+  Scenario: Aggregating top and bottom results from correlated subquery
     And having executed:
     """
     CREATE (:Config {threshold: 2})
@@ -251,4 +251,76 @@ Feature: SubqueryAcceptance
     Then the result should be, in any order:
       | sum  |
       | 39   |
+    And no side effects
+
+  Scenario: Aggregation on imported variables
+    When executing query:
+      """
+      UNWIND [0, 1, 2] AS x
+      CALL {
+        WITH x
+        RETURN max(x) AS xMax
+      }
+      RETURN x, xMax
+      """
+    Then the result should be, in any order:
+      | x | xMax |
+      | 0 | 0    |
+      | 1 | 1    |
+      | 2 | 2    |
+    And no side effects
+
+  Scenario: Aggregating top and bottom results within correlated subquery
+    And having executed:
+    """
+    CREATE (:Config {threshold: 2})
+    WITH *
+    UNWIND range(1, 10) as p
+    CREATE (:Node {prop: p})
+    """
+    When executing query:
+      """
+      MATCH (c:Config)
+      CALL {
+        WITH c MATCH (x:Node) WHERE x.prop > c.threshold WITH x.prop AS metric ORDER BY metric LIMIT 3 RETURN sum(metric) AS y
+        UNION
+        WITH c MATCH (x:Node) WHERE x.prop > c.threshold WITH x.prop AS metric ORDER BY metric DESC LIMIT 3 RETURN sum(metric) AS y
+      }
+      RETURN sum(y) AS sum
+      """
+    Then the result should be, in any order:
+      | sum |
+      | 39  |
+    And no side effects
+
+  Scenario: Grouping and aggregating within correlated subquery
+    And having executed:
+    """
+    CREATE (:Config {threshold: 2})
+    WITH *
+    UNWIND range(1, 10) as p
+    CREATE (:Node {prop: p, category: p % 2})
+    """
+    When executing query:
+      """
+      MATCH (c:Config)
+      CALL {
+          WITH c MATCH (x:Node)
+          WHERE x.prop > c.threshold
+          WITH x.prop AS metric, x.category AS cat
+          ORDER BY metric LIMIT 3
+          RETURN cat, sum(metric) AS y
+        UNION
+          WITH c MATCH (x:Node)
+          WHERE x.prop > c.threshold
+          WITH x.prop AS metric, x.category AS cat
+          ORDER BY metric DESC LIMIT 3
+          RETURN cat, sum(metric) AS y
+      }
+      RETURN cat, sum(y) AS sum
+      """
+    Then the result should be, in any order:
+      | cat | sum |
+      | 0   | 22  |
+      | 1   | 17  |
     And no side effects

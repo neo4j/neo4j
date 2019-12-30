@@ -116,7 +116,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
     val providedOrder = providedOrders.get(left.id)
     val plan =
-      if (correlated) Apply(left, right)
+      if (correlated) CrossApply(left, right)
       else CartesianProduct(left, right)
 
     annotate(plan, solved, providedOrder, context)

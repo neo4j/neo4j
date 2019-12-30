@@ -100,7 +100,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val producedPlan = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
-      producedPlan should equal(Apply(
+      producedPlan should equal(CrossApply(
         inputPlan,
         AllNodesScan("a", Set.empty)
       ))

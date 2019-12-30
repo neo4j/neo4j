@@ -106,6 +106,8 @@ abstract class LogicalPlan(idGen: IdGen)
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => (acc :+ plan, Some(identity))
   }
 
+  def leftmostLeaf: LogicalPlan = lhs.map(_.leftmostLeaf).getOrElse(this)
+
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
     try {
       val arguments = this.children.toList :+ idGen

@@ -46,84 +46,90 @@ case class unnestApply(solveds: Solveds, attributes: Attributes[LogicalPlan]) ex
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case Apply(_: Argument, rhs) =>
+    case BasicApply(_: Argument, rhs) =>
       rhs
 
     // L Ax Arg => L
-    case Apply(lhs, _: Argument) =>
+    case BasicApply(lhs, _: Argument) =>
       lhs
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@Apply(lhs, Apply(_: Argument, rhs)) =>
-      Apply(lhs, rhs)(SameId(original.id))
+    case original@BasicApply(lhs, nested@BasicApply(_: Argument, rhs)) =>
+      (original, nested) match {
+        case (_: CrossApply, _) |
+             (_, _: CrossApply) =>
+          CrossApply(lhs, rhs)(SameId(original.id))
+        case _ =>
+          Apply(lhs, rhs)(SameId(original.id))
+      }
 
     // L Ax (Arg FE R) => L FE R
-    case original@Apply(lhs, foreach@ForeachApply(_: Argument, rhs, _, _)) =>
+    case original@BasicApply(lhs, foreach@ForeachApply(_: Argument, rhs, _, _)) =>
       val res = foreach.copy(left = lhs, right = rhs)(attributes.copy(foreach.id))
       solveds.copy(original.id, res.id)
       res
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
+    case original@AntiConditionalApply(lhs, BasicApply(_: Argument, rhs), _) =>
       original.copy(lhs, rhs)(SameId(original.id))
 
     // L Ax (σ R) => σ(L Ax R)
-    case o@Apply(lhs, sel@Selection(predicate, rhs)) =>
-      val res = Selection(predicate, Apply(lhs, rhs)(SameId(o.id)))(attributes.copy(sel.id))
+    case o@BasicApply(lhs, sel@Selection(predicate, rhs)) =>
+      val res = Selection(predicate, o.createNew(lhs, rhs, SameId(o.id)))(attributes.copy(sel.id))
       solveds.copy(o.id, res.id)
       res
 
-    // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L
-    case original@Apply(lhs, Apply(sel@Selection(predicate, lhs2), rhs))
+    // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L2
+    case original@BasicApply(lhs, inner@BasicApply(sel@Selection(predicate, lhs2), rhs))
       if predicate.exprs.forall(lhs.satisfiesExpressionDependencies)=>
       val selectionLHS = Selection(predicate, lhs)(attributes.copy(sel.id))
       solveds.copy(original.id, selectionLHS.id)
-      val apply2 = Apply(lhs2, rhs)(attributes.copy(lhs.id))
+      val apply2 = inner.createNew(lhs2, rhs, attributes.copy(lhs.id))
       solveds.copy(original.id, apply2.id)
-      Apply(selectionLHS, apply2)(SameId(original.id))
+      original.createNew(selectionLHS, apply2, SameId(original.id))
 
     // L Ax (π R) => π(L Ax R)
-    case origApply@Apply(lhs, p@Projection(rhs, _)) =>
-      val newApply = Apply(lhs, rhs)(SameId(origApply.id))
+    case origApply@BasicApply(lhs, p@Projection(rhs, _)) =>
+      val newApply = origApply.createNew(lhs, rhs, SameId(origApply.id))
       val res = p.copy(source = newApply)(attributes.copy(p.id))
       solveds.copy(origApply.id, res.id)
       res
 
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
-    case apply@Apply(lhs, expand: Expand) =>
-      val newApply = apply.copy(right = expand.source)(SameId(apply.id))
+    case apply@BasicApply(lhs, expand: Expand) =>
+      val newApply = apply.createNew(lhs, right = expand.source, SameId(apply.id))
       val res = expand.copy(source = newApply)(attributes.copy(expand.id))
       solveds.copy(apply.id, res.id)
       res
 
     // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
-    case apply@Apply(lhs, expand: VarExpand) =>
-      val newApply = apply.copy(right = expand.source)(SameId(apply.id))
+    case apply@BasicApply(lhs, expand: VarExpand) =>
+      val newApply = apply.createNew(lhs, right = expand.source, SameId(apply.id))
       val res = expand.copy(source = newApply)(attributes.copy(expand.id))
       solveds.copy(apply.id, res.id)
       res
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@LeftOuterHashJoin(_, _:Argument, _)) =>
+    case apply@BasicApply(lhs, join@LeftOuterHashJoin(_, _:Argument, _)) =>
       val res = join.copy(left = lhs)(attributes.copy(join.id))
       solveds.copy(apply.id, res.id)
       res
 
     // L Ax (L2 ROJ Arg) => L2 ROJ L
-    case apply@Apply(lhs, join@RightOuterHashJoin(_, _, _:Argument)) =>
+    case apply@BasicApply(lhs, join@RightOuterHashJoin(_, _, _:Argument)) =>
       val res = join.copy(right = lhs)(attributes.copy(join.id))
       solveds.copy(apply.id, res.id)
       res
 
     // L Ax (OEX Arg) => OEX L
-    case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _)) =>
+    case apply@BasicApply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _)) =>
       val res = oex.copy(source = lhs)(attributes.copy(oex.id))
       solveds.copy(apply.id, res.id)
       res
 
     // L Ax (Cr R) => Cr Ax (L R)
-    case apply@Apply(lhs, create@Create(rhs, nodes, relationships)) =>
-      val res = Create(Apply(lhs, rhs)(SameId(apply.id)), nodes, relationships)(attributes.copy(create.id))
+    case apply@BasicApply(lhs, create@Create(rhs, nodes, relationships)) =>
+      val res = Create(apply.createNew(lhs, rhs, SameId(apply.id)), nodes, relationships)(attributes.copy(create.id))
       solveds.copy(apply.id, res.id)
       res
   })
