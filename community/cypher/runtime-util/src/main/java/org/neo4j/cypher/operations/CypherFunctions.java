@@ -70,7 +70,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 /**
  * This class contains static helper methods for the set of Cypher functions
  */
-@SuppressWarnings( {"unused", "ReferenceEquality"} )
+@SuppressWarnings( {"ReferenceEquality"} )
 public final class CypherFunctions
 {
     private static final BigDecimal MAX_LONG = BigDecimal.valueOf( Long.MAX_VALUE );

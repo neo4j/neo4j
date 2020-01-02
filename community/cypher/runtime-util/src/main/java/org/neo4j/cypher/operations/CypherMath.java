@@ -43,7 +43,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 /**
  * This class contains static helper math methods used by the compiled expressions
  */
-@SuppressWarnings( {"unused", "ReferenceEquality"} )
+@SuppressWarnings( {"ReferenceEquality"} )
 public final class CypherMath
 {
     private CypherMath()

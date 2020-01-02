@@ -46,7 +46,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 /**
  * Utilities for working with cursors from within generated code
  */
-@SuppressWarnings( {"Duplicates", "unused"} )
+@SuppressWarnings( {"Duplicates"} )
 public final class CursorUtils
 {
     /**

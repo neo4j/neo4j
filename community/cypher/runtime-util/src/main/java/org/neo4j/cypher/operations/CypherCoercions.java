@@ -79,7 +79,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-@SuppressWarnings( {"unused", "WeakerAccess"} )
+@SuppressWarnings( {"WeakerAccess"} )
 public final class CypherCoercions
 {
     private CypherCoercions()

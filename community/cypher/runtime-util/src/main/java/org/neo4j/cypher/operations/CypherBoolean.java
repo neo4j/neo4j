@@ -22,6 +22,7 @@ package org.neo4j.cypher.operations;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InternalException;
 import org.neo4j.exceptions.InvalidSemanticsException;
@@ -57,7 +58,7 @@ import static org.neo4j.values.storable.Values.TRUE;
 /**
  * This class contains static helper boolean methods used by the compiled expressions
  */
-@SuppressWarnings( {"unused", "ReferenceEquality"} )
+@SuppressWarnings( {"ReferenceEquality"} )
 public final class CypherBoolean
 {
     private static final BooleanMapper BOOLEAN_MAPPER = new BooleanMapper();
@@ -67,18 +68,21 @@ public final class CypherBoolean
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
+    @CalledFromGeneratedCode
     public static Value xor( AnyValue lhs, AnyValue rhs )
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return (lhs == TRUE) ^ (rhs == TRUE) ? TRUE : FALSE;
     }
 
+    @CalledFromGeneratedCode
     public static Value not( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return in != TRUE ? TRUE : FALSE;
     }
 
+    @CalledFromGeneratedCode
     public static Value equals( AnyValue lhs, AnyValue rhs )
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -96,6 +100,7 @@ public final class CypherBoolean
         }
     }
 
+    @CalledFromGeneratedCode
     public static Value notEquals( AnyValue lhs, AnyValue rhs )
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -113,6 +118,7 @@ public final class CypherBoolean
         }
     }
 
+    @CalledFromGeneratedCode
     public static BooleanValue regex( TextValue lhs, TextValue rhs )
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -128,6 +134,7 @@ public final class CypherBoolean
         }
     }
 
+    @CalledFromGeneratedCode
     public static BooleanValue regex( TextValue text, Pattern pattern )
     {
         assert text != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -136,6 +143,7 @@ public final class CypherBoolean
         return matches ? TRUE : FALSE;
     }
 
+    @CalledFromGeneratedCode
     public static Value lessThan( AnyValue lhs, AnyValue rhs )
     {
         if ( AnyValue.isNanAndNumber(lhs, rhs) )
@@ -159,6 +167,7 @@ public final class CypherBoolean
         }
     }
 
+    @CalledFromGeneratedCode
     public static Value lessThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
         if ( AnyValue.isNanAndNumber(lhs, rhs) )
@@ -182,6 +191,7 @@ public final class CypherBoolean
         }
     }
 
+    @CalledFromGeneratedCode
     public static Value greaterThan( AnyValue lhs, AnyValue rhs )
     {
         if ( AnyValue.isNanAndNumber(lhs, rhs) )
@@ -205,6 +215,7 @@ public final class CypherBoolean
         }
     }
 
+    @CalledFromGeneratedCode
     public static Value greaterThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
         if ( AnyValue.isNanAndNumber(lhs, rhs) )
@@ -228,11 +239,13 @@ public final class CypherBoolean
         }
     }
 
+    @CalledFromGeneratedCode
     public static Value coerceToBoolean( AnyValue value )
     {
         return value.map( BOOLEAN_MAPPER );
     }
 
+    @CalledFromGeneratedCode
     public static Value in( AnyValue lhs, AnyValue rhs )
     {
         assert rhs != NO_VALUE;

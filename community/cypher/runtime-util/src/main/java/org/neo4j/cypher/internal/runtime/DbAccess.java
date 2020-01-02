@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime;
 
 import java.util.Optional;
 
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -110,6 +111,7 @@ public interface DbAccess extends EntityById
      *         `Optional.of(true)` if the property was changed.
      *         `Optional.of(false)` if the property or the entity were deleted in TxState.
      */
+    @CalledFromGeneratedCode
     Optional<Boolean> hasTxStatePropertyForCachedNodeProperty( long nodeId, int propertyKeyId );
 
     /**
@@ -117,6 +119,7 @@ public interface DbAccess extends EntityById
      *         `Optional.of(true)` if the property was changed.
      *         `Optional.of(false)` if the property or the entity were deleted in TxState.
      */
+    @CalledFromGeneratedCode
     Optional<Boolean> hasTxStatePropertyForCachedRelationshipProperty( long relId, int propertyKeyId );
 
     /**

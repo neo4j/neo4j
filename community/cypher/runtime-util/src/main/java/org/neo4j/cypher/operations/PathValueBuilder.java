@@ -22,6 +22,7 @@ package org.neo4j.cypher.operations;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.values.AnyValue;
@@ -71,6 +72,7 @@ public class PathValueBuilder
      *
      * @param value the node to add
      */
+    @CalledFromGeneratedCode
     public void addNode( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -79,6 +81,7 @@ public class PathValueBuilder
         }
     }
 
+    @CalledFromGeneratedCode
     public void addRelationship( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -87,6 +90,7 @@ public class PathValueBuilder
         }
     }
 
+    @CalledFromGeneratedCode
     public void addRelationship( RelationshipValue value )
     {
         rels.add( value );
@@ -97,6 +101,7 @@ public class PathValueBuilder
      *
      * @param nodeValue the node to add
      */
+    @CalledFromGeneratedCode
     public void addNode( NodeValue nodeValue )
     {
         nodes.add( nodeValue );
@@ -107,6 +112,7 @@ public class PathValueBuilder
      *
      * @param value the incoming relationship to add
      */
+    @CalledFromGeneratedCode
     public void addIncoming( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -120,6 +126,7 @@ public class PathValueBuilder
      *
      * @param relationship the incoming relationship to add
      */
+    @CalledFromGeneratedCode
     public void addIncoming( RelationshipValue relationship )
     {
         nodes.add( startNode( relationship, dbAccess, cursor ) );
@@ -131,6 +138,7 @@ public class PathValueBuilder
      *
      * @param value the outgoing relationship to add
      */
+    @CalledFromGeneratedCode
     public void addOutgoing( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -144,6 +152,7 @@ public class PathValueBuilder
      *
      * @param relationship the outgoing relationship to add
      */
+    @CalledFromGeneratedCode
     public void addOutgoing( RelationshipValue relationship )
     {
         nodes.add( endNode(relationship, dbAccess, cursor ));
@@ -155,6 +164,7 @@ public class PathValueBuilder
      *
      * @param value the undirected relationship to add
      */
+    @CalledFromGeneratedCode
     public void addUndirected( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -168,6 +178,7 @@ public class PathValueBuilder
      *
      * @param relationship the undirected relationship to add
      */
+    @CalledFromGeneratedCode
     public void addUndirected( RelationshipValue relationship )
     {
         long previous = nodes.get( nodes.size() - 1 ).id();
@@ -191,6 +202,7 @@ public class PathValueBuilder
      * @param value the incoming relationships to add
      * @param target the final target node of the path
      */
+    @CalledFromGeneratedCode
     public void addMultipleIncoming( AnyValue value, AnyValue target )
     {
         if ( notNoValue( value ) && notNoValue( target ) )
@@ -205,6 +217,7 @@ public class PathValueBuilder
      * @param relationships the incoming relationships to add
      * @param target the final target node of the path
      */
+    @CalledFromGeneratedCode
     public void addMultipleIncoming( ListValue relationships, NodeValue target )
     {
         if ( relationships.isEmpty() )
@@ -236,6 +249,7 @@ public class PathValueBuilder
      *
      * @param value the incoming relationships to add
      */
+    @CalledFromGeneratedCode
     public void addMultipleIncoming( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -249,6 +263,7 @@ public class PathValueBuilder
      *
      * @param relationships the incoming relationships to add
      */
+    @CalledFromGeneratedCode
     public void addMultipleIncoming( ListValue relationships )
     {
         for ( AnyValue value : relationships )
@@ -270,6 +285,7 @@ public class PathValueBuilder
      * @param value the outgoing relationships to add
      * @param target the final target node of the path
      */
+    @CalledFromGeneratedCode
     public void addMultipleOutgoing( AnyValue value, AnyValue target )
     {
         if ( notNoValue( value ) && notNoValue( target ) )
@@ -284,6 +300,7 @@ public class PathValueBuilder
      * @param relationships the outgoing relationships to add
      * @param target the final target node of the path
      */
+    @CalledFromGeneratedCode
     public void addMultipleOutgoing( ListValue relationships, NodeValue target )
     {
         if ( relationships.isEmpty() )
@@ -317,6 +334,7 @@ public class PathValueBuilder
      *
      * @param value the outgoing relationships to add
      */
+    @CalledFromGeneratedCode
     public void addMultipleOutgoing( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -330,6 +348,7 @@ public class PathValueBuilder
      *
      * @param relationships the outgoing relationships to add
      */
+    @CalledFromGeneratedCode
     public void addMultipleOutgoing( ListValue relationships )
     {
         for ( AnyValue value : relationships )
@@ -351,6 +370,7 @@ public class PathValueBuilder
      * @param value the undirected relationships to add
      * @param target the final target node of the path
      */
+    @CalledFromGeneratedCode
     public void addMultipleUndirected( AnyValue value, AnyValue target )
     {
         if ( notNoValue( value ) && notNoValue( target ) )
@@ -365,6 +385,7 @@ public class PathValueBuilder
      * @param relationships the undirected relationships to add
      * @param target the final target node of the path
      */
+    @CalledFromGeneratedCode
     public void addMultipleUndirected( ListValue relationships, NodeValue target )
     {
         if ( relationships.isEmpty() )
@@ -418,6 +439,7 @@ public class PathValueBuilder
      *
      * @param value the undirected relationships to add
      */
+    @CalledFromGeneratedCode
     public void addMultipleUndirected( AnyValue value )
     {
         if ( notNoValue( value ) )
@@ -431,6 +453,7 @@ public class PathValueBuilder
      *
      * @param relationships the undirected relationships to add
      */
+    @CalledFromGeneratedCode
     public void addMultipleUndirected( ListValue relationships )
     {
         if ( relationships.isEmpty() )
