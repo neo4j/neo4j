@@ -392,7 +392,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should not kill cartesian product query") {
     // given
-    val nodes = nodeGraph(1)
+    nodeGraph(1)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .cartesianProduct()
@@ -403,7 +403,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // when
     // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
     val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
-    val input = finiteInput(100000, expectedRowSize)
+    val input = finiteInput(1000, expectedRowSize)
 
     // then no exception
     consume(execute(logicalQuery, runtime, input))
