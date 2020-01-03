@@ -88,6 +88,12 @@ object DebugSupport {
       if (enabled) {
         log(str.format(x1, x2, x3))
       }
+
+    def log(throwable: Throwable): Unit = {
+      if(enabled) {
+        throwable.printStackTrace()
+      }
+    }
   }
 
   final class DebugTimeline(val enabled: Boolean) {
