@@ -95,7 +95,7 @@
     <scala.target.vm>1.8</scala.target.vm>
     <scala.java.additional.args/>
     <jersey.version>1.19.3</jersey.version>
-    <currentYear>2019</currentYear>
+    <currentYear>2020</currentYear>
     <cypher.compatibility.23>2.3.12</cypher.compatibility.23>
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
     <cypher.compatibility.33>3.3.9</cypher.compatibility.33>
