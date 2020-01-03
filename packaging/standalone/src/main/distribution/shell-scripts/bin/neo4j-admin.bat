@@ -1,5 +1,5 @@
 @ECHO OFF
-rem Copyright (c) 2002-2018 "Neo4j,"
+rem Copyright (c) 2002-2020 "Neo4j,"
 rem Neo4j Sweden AB [http://neo4j.com]
 rem
 rem This file is part of Neo4j.
