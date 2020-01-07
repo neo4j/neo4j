@@ -16,12 +16,20 @@
  */
 package org.neo4j.cypher.internal.v3_5.frontend.phases
 
-import org.neo4j.cypher.internal.v3_5.ast.semantics.{Scope, SemanticTable, SymbolUse}
-import org.neo4j.cypher.internal.v3_5.ast.{Statement, _}
-import org.neo4j.cypher.internal.v3_5.expressions.{LogicalVariable, ProcedureOutput, Variable}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.Scope
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SymbolUse
+import org.neo4j.cypher.internal.v3_5.ast.Statement
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.expressions.LogicalVariable
+import org.neo4j.cypher.internal.v3_5.expressions.ProcedureOutput
+import org.neo4j.cypher.internal.v3_5.expressions.Variable
 import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.v3_5.util.{Ref, Rewriter, bottomUp, inSequence}
+import org.neo4j.cypher.internal.v3_5.util.Ref
+import org.neo4j.cypher.internal.v3_5.util.Rewriter
+import org.neo4j.cypher.internal.v3_5.util.bottomUp
+import org.neo4j.cypher.internal.v3_5.util.inSequence
 
 object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   type VariableRenamings = Map[Ref[Variable], Variable]
