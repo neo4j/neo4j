@@ -28,6 +28,8 @@ Apache Software License, Version 2.0
   Netty/All-in-One
   parboiled-core
   parboiled-scala
+  Scala Compiler
+  Scalap
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -283,9 +285,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  Scala Compiler
   scala-xml
-  Scalap
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

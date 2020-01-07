@@ -53,6 +53,7 @@ Apache Software License, Version 2.0
   parboiled-core
   parboiled-scala
   picocli - a mighty tiny Command Line Interface
+  Scala Compiler
   WMI4Java
 
 BSD - Scala License
@@ -63,7 +64,6 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  Scala Compiler
   Zstandard
 
 BSD License 2-clause

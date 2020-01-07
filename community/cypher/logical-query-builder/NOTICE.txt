@@ -30,14 +30,14 @@ Apache Software License, Version 2.0
   Apache Commons Text
   parboiled-core
   parboiled-scala
+  Scala Compiler
+  Scalap
 
 BSD - Scala License
   Scala Library
 
 BSD License
-  Scala Compiler
   scala-xml
-  Scalap
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

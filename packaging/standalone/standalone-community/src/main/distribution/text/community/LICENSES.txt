@@ -91,6 +91,7 @@ Apache Software License, Version 2.0
   protobufjs
   request
   rxjs
+  Scala Compiler
   tslib
   tunnel-agent
   WMI4Java
@@ -364,7 +365,6 @@ BSD License
   qs
   react-dnd
   react-dnd-html5-backend
-  Scala Compiler
   sntp
   tough-cookie
   Zstandard

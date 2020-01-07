@@ -6,6 +6,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
+  Scala Compiler
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -261,7 +262,6 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  Scala Compiler
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

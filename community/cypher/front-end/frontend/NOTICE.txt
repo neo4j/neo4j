@@ -20,10 +20,8 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   parboiled-core
   parboiled-scala
+  Scala Compiler
 
 BSD - Scala License
   Scala Library
-
-BSD License
-  Scala Compiler
 

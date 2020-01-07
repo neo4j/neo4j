@@ -52,12 +52,10 @@ Apache Software License, Version 2.0
   parboiled-scala
   salat-core
   salat-util
+  Scala Compiler
 
 BSD - Scala License
   Scala Library
-
-BSD License
-  Scala Compiler
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

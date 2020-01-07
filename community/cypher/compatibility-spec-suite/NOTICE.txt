@@ -51,6 +51,8 @@ Apache Software License, Version 2.0
   openCypher TCK Features and Graphs
   parboiled-core
   parboiled-scala
+  Scala Compiler
+  Scalap
 
 BSD - Scala License
   Scala Library
@@ -60,9 +62,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  Scala Compiler
   scala-xml
-  Scalap
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
