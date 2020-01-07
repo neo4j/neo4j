@@ -100,7 +100,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     TestCase(
       "MATCH (n) RETURN n, count(*) AS c order by c",
       """MATCH (`  n@7`)
-        |RETURN `  n@7` AS n, count(*) AS c ORDER BY c""".stripMargin,
+        |RETURN `  n@7` AS `  n@18`, count(*) AS c ORDER BY c""".stripMargin,
       List(varFor("  n@7"))
     ),
     TestCase(

@@ -873,15 +873,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       NodePattern(Some(varFor("  NODE64")), Seq.empty, None)(pos))(pos))(pos))
 
     val expectation = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("owner")),
+      queryGraph = QueryGraph(patternNodes = Set("  owner@7")),
       horizon = AggregatingQueryProjection(
-        groupingExpressions = Map("  owner@20" -> Variable("  owner@7")),
+        groupingExpressions = Map("  owner@20" -> varFor("  owner@7")),
         aggregationExpressions = Map("collected" -> CountStar()(pos)),
         selections = Selections(Set(Predicate(Set("  owner@20", "  REL62", "  NODE64"),
                                               exists(patternExpression))))),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("collected", "  owner@20")),
-        horizon = RegularQueryProjection(projections = Map("owner" -> varFor("  owner@20")))
+        horizon = RegularQueryProjection(projections = Map("  owner@20" -> varFor("  owner@20")))
       ))
     )
 
