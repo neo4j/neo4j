@@ -154,7 +154,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
                 ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
-        String expectedMessage = "An equivalent index already exists, 'Index( 1, 'name', GENERAL BTREE, :MY_LABEL(my_property_key), native-btree-1.0 )'.";
+        String expectedMessage =
+                "An equivalent index already exists, 'Index( id=1, name='name', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), " +
+                        "indexProvider='native-btree-1.0' )'.";
         assertExpectedException( exception, expectedCause, expectedMessage );
     }
 
@@ -169,7 +171,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
-                "An equivalent constraint already exists, 'Constraint( ", "'name', UNIQUENESS, :MY_LABEL(my_property_key), ownedIndex=1 )'." );
+                "An equivalent constraint already exists, 'Constraint( ",
+                "name='name', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}), ownedIndex=1 )'." );
     }
 
     @ParameterizedTest()
@@ -181,7 +184,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "otherName" ).create(),
                 ConstraintViolationException.class );
         Class<AlreadyIndexedException> expectedCause = AlreadyIndexedException.class;
-        String expectedMessage = "There already exists an index :MY_LABEL(my_property_key).";
+        String expectedMessage = "There already exists an index (:MY_LABEL {my_property_key}).";
         assertExpectedException( exception, expectedCause, expectedMessage );
     }
 
@@ -194,7 +197,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "otherName" ).create(),
                 ConstraintViolationException.class );
         Class<AlreadyIndexedException> expectedCause = AlreadyIndexedException.class;
-        String expectedMessage = "There already exists an index :MY_LABEL(my_property_key). A constraint cannot be created until the index has been dropped.";
+        String expectedMessage =
+                "There already exists an index (:MY_LABEL {my_property_key}). A constraint cannot be created until the index has been dropped.";
         assertExpectedException( exception, expectedCause, expectedMessage );
     }
 
@@ -207,7 +211,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "otherName" ).create(),
                 ConstraintViolationException.class );
         Class<AlreadyConstrainedException> expectedCause = AlreadyConstrainedException.class;
-        String expectedMessage = "There is a uniqueness constraint on :MY_LABEL(my_property_key), so an index is already created that matches this.";
+        String expectedMessage = "There is a uniqueness constraint on (:MY_LABEL {my_property_key}), so an index is already created that matches this.";
         assertExpectedException( exception, expectedCause, expectedMessage );
     }
 
@@ -221,7 +225,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 ConstraintViolationException.class );
         Class<AlreadyConstrainedException> expectedCause = AlreadyConstrainedException.class;
         assertExpectedException( exception, expectedCause,
-                "Constraint already exists: Constraint( ", "'name', UNIQUENESS, :MY_LABEL(my_property_key), ownedIndex=1 )" );
+                "Constraint already exists: Constraint( ", "name='name', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}), ownedIndex=1 )" );
     }
 
     @ParameterizedTest()
@@ -330,7 +334,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             catch ( ConstraintViolationException e )
             {
                 assertThat( e.getMessage(), containsString( "Unable to drop index: Index does not exist: " +
-                        "Index( 1, 'index_a0d2924', GENERAL BTREE, :MY_LABEL(my_property_key), native-btree-1.0 )" ) );
+                        "Index( id=1, name='index_a0d2924', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), indexProvider='native-btree-1.0' )" ) );
             }
             tx.commit();
         }
@@ -578,7 +582,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "There already exists an index :MY_LABEL(my_property_key). A constraint cannot be created " +
+            assertEquals( "There already exists an index (:MY_LABEL {my_property_key}). A constraint cannot be created " +
                           "until the index has been dropped.", e.getMessage() );
         }
     }
@@ -603,7 +607,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         catch ( ConstraintViolationException e )
         {
             assertThat( e.getMessage(), containsString(
-                    "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT (my_label.my_property_key) IS UNIQUE" ) );
+                    "Unable to create Constraint( name='constraint_c8a3b28f', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )" ) );
         }
     }
 

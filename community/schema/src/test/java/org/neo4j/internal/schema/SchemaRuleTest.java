@@ -128,46 +128,78 @@ class SchemaRuleTest
     @Test
     void mustGenerateReasonableUserDescription()
     {
-        assertUserDescription( "Index( GENERAL BTREE, :Label1(prop2, prop3), Undecided-0 )", labelPrototype );
-        assertUserDescription( "Index( UNIQUE BTREE, :Label1(prop2, prop3), Undecided-0 )", labelUniquePrototype );
-        assertUserDescription( "Index( GENERAL BTREE, -[:Type1(prop2, prop3)]-, Undecided-0 )", relTypePrototype );
-        assertUserDescription( "Index( UNIQUE BTREE, -[:Type1(prop2, prop3)]-, Undecided-0 )", relTypeUniquePrototype );
-        assertUserDescription( "Index( GENERAL FULLTEXT, :Label1,Label2(prop1, prop2), Undecided-0 )", nodeFtsPrototype );
-        assertUserDescription( "Index( GENERAL FULLTEXT, -[:Type1,Type2(prop1, prop2)]-, Undecided-0 )", relFtsPrototype );
-        assertUserDescription( "Constraint( -1, UNIQUENESS, :Label1(prop2, prop3) )", uniqueLabelConstraint );
-        assertUserDescription( "Constraint( -1, NODE PROPERTY EXISTENCE, :Label1(prop2, prop3) )", existsLabelConstraint );
-        assertUserDescription( "Constraint( -1, NODE KEY, :Label1(prop2, prop3) )", nodeKeyConstraint );
-        assertUserDescription( "Constraint( -1, RELATIONSHIP PROPERTY EXISTENCE, -[:Type1(prop2, prop3)]- )", existsRelTypeConstraint );
-        assertUserDescription( "Index( GENERAL FULLTEXT, :`La:bel`(`prop:erty`, prop1), Undecided-0 )", labelFtsPrototype2 );
-        assertUserDescription( "Index( GENERAL FULLTEXT, :`La:bel`,Label1(`prop:erty`, prop1), Undecided-0 )", nodeFtsPrototype2 );
-        assertUserDescription( "Constraint( -1, UNIQUENESS, :`La:bel`(`prop:erty`, prop1) )", uniqueLabelConstraint2 );
+        assertUserDescription( "Index( type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )", labelPrototype );
+        assertUserDescription( "Index( type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )", labelUniquePrototype );
+        assertUserDescription( "Index( type='GENERAL BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )", relTypePrototype );
+        assertUserDescription( "Index( type='UNIQUE BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )", relTypeUniquePrototype );
+        assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=(:Label1:Label2 {prop1, prop2}), indexProvider='Undecided-0' )", nodeFtsPrototype );
+        assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=-[:Type1:Type2 {prop1, prop2}]-, indexProvider='Undecided-0' )", relFtsPrototype );
+        assertUserDescription( "Constraint( type='UNIQUENESS', schema=(:Label1 {prop2, prop3}) )", uniqueLabelConstraint );
+        assertUserDescription( "Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}) )", existsLabelConstraint );
+        assertUserDescription( "Constraint( type='NODE KEY', schema=(:Label1 {prop2, prop3}) )", nodeKeyConstraint );
+        assertUserDescription( "Constraint( type='RELATIONSHIP PROPERTY EXISTENCE', schema=-[:Type1 {prop2, prop3}]- )", existsRelTypeConstraint );
+        assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )", labelFtsPrototype2 );
+        assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=(:`La:bel`:Label1 {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
+                nodeFtsPrototype2 );
+        assertUserDescription( "Constraint( type='UNIQUENESS', schema=(:`La:bel` {`prop:erty`, prop1}) )", uniqueLabelConstraint2 );
 
-        assertUserDescription( "Index( 'labelPrototypeNamed', GENERAL BTREE, :Label1(prop2, prop3), Undecided-0 )", labelPrototypeNamed );
-        assertUserDescription( "Index( 'labelUniquePrototypeNamed', UNIQUE BTREE, :Label1(prop2, prop3), Undecided-0 )", labelUniquePrototypeNamed );
-        assertUserDescription( "Index( 'relTypePrototypeNamed', GENERAL BTREE, -[:Type1(prop2, prop3)]-, Undecided-0 )", relTypePrototypeNamed );
-        assertUserDescription( "Index( 'relTypeUniquePrototypeNamed', UNIQUE BTREE, -[:Type1(prop2, prop3)]-, Undecided-0 )", relTypeUniquePrototypeNamed );
-        assertUserDescription( "Index( 'nodeFtsPrototypeNamed', GENERAL FULLTEXT, :Label1,Label2(prop1, prop2), Undecided-0 )", nodeFtsPrototypeNamed );
-        assertUserDescription( "Index( 'relFtsPrototypeNamed', GENERAL FULLTEXT, -[:Type1,Type2(prop1, prop2)]-, Undecided-0 )", relFtsPrototypeNamed );
-        assertUserDescription( "Index( 'labelFtsPrototype2Named', GENERAL FULLTEXT, :`La:bel`(`prop:erty`, prop1), Undecided-0 )", labelFtsPrototype2Named );
-        assertUserDescription( "Index( 'nodeFtsPrototype2Named', GENERAL FULLTEXT, :`La:bel`,Label1(`prop:erty`, prop1), Undecided-0 )",
+        assertUserDescription( "Index( name='labelPrototypeNamed', type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
+                labelPrototypeNamed );
+        assertUserDescription( "Index( name='labelUniquePrototypeNamed', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
+                labelUniquePrototypeNamed );
+        assertUserDescription( "Index( name='relTypePrototypeNamed', type='GENERAL BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )",
+                relTypePrototypeNamed );
+        assertUserDescription(
+                "Index( name='relTypeUniquePrototypeNamed', type='UNIQUE BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )",
+                relTypeUniquePrototypeNamed );
+        assertUserDescription(
+                "Index( name='nodeFtsPrototypeNamed', type='GENERAL FULLTEXT', schema=(:Label1:Label2 {prop1, prop2}), indexProvider='Undecided-0' )",
+                nodeFtsPrototypeNamed );
+        assertUserDescription(
+                "Index( name='relFtsPrototypeNamed', type='GENERAL FULLTEXT', schema=-[:Type1:Type2 {prop1, prop2}]-, indexProvider='Undecided-0' )",
+                relFtsPrototypeNamed );
+        assertUserDescription(
+                "Index( name='labelFtsPrototype2Named', type='GENERAL FULLTEXT', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
+                labelFtsPrototype2Named );
+        assertUserDescription(
+                "Index( name='nodeFtsPrototype2Named', type='GENERAL FULLTEXT', schema=(:`La:bel`:Label1 {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
                 nodeFtsPrototype2Named );
 
-        assertUserDescription( "Index( 1, 'labelIndexNamed', GENERAL BTREE, :Label1(prop2, prop3), Undecided-0 )", labelIndexNamed );
-        assertUserDescription( "Index( 2, 'labelUniqueIndexNamed', UNIQUE BTREE, :Label1(prop2, prop3), Undecided-0 )", labelUniqueIndexNamed );
-        assertUserDescription( "Index( 3, 'relTypeIndexNamed', GENERAL BTREE, -[:Type1(prop2, prop3)]-, Undecided-0 )", relTypeIndexNamed );
-        assertUserDescription( "Index( 4, 'relTypeUniqueIndexNamed', UNIQUE BTREE, -[:Type1(prop2, prop3)]-, Undecided-0 )", relTypeUniqueIndexNamed );
-        assertUserDescription( "Index( 5, 'nodeFtsIndexNamed', GENERAL FULLTEXT, :Label1,Label2(prop1, prop2), Undecided-0 )", nodeFtsIndexNamed );
-        assertUserDescription( "Index( 6, 'relFtsIndexNamed', GENERAL FULLTEXT, -[:Type1,Type2(prop1, prop2)]-, Undecided-0 )", relFtsIndexNamed );
-        assertUserDescription( "Index( 7, 'labelFtsIndex2Named', GENERAL FULLTEXT, :`La:bel`(`prop:erty`, prop1), Undecided-0 )", labelFtsIndex2Named );
-        assertUserDescription( "Index( 8, 'nodeFtsIndex2Named', GENERAL FULLTEXT, :`La:bel`,Label1(`prop:erty`, prop1), Undecided-0 )", nodeFtsIndex2Named );
+        assertUserDescription( "Index( id=1, name='labelIndexNamed', type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
+                labelIndexNamed );
+        assertUserDescription( "Index( id=2, name='labelUniqueIndexNamed', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
+                labelUniqueIndexNamed );
+        assertUserDescription( "Index( id=3, name='relTypeIndexNamed', type='GENERAL BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )",
+                relTypeIndexNamed );
+        assertUserDescription(
+                "Index( id=4, name='relTypeUniqueIndexNamed', type='UNIQUE BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )",
+                relTypeUniqueIndexNamed );
+        assertUserDescription(
+                "Index( id=5, name='nodeFtsIndexNamed', type='GENERAL FULLTEXT', schema=(:Label1:Label2 {prop1, prop2}), indexProvider='Undecided-0' )",
+                nodeFtsIndexNamed );
+        assertUserDescription(
+                "Index( id=6, name='relFtsIndexNamed', type='GENERAL FULLTEXT', schema=-[:Type1:Type2 {prop1, prop2}]-, indexProvider='Undecided-0' )",
+                relFtsIndexNamed );
+        assertUserDescription(
+                "Index( id=7, name='labelFtsIndex2Named', type='GENERAL FULLTEXT', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
+                labelFtsIndex2Named );
+        assertUserDescription(
+                "Index( id=8, name='nodeFtsIndex2Named', type='GENERAL FULLTEXT', schema=(:`La:bel`:Label1 {`prop:erty`, prop1}), " +
+                        "indexProvider='Undecided-0' )", nodeFtsIndex2Named );
 
-        assertUserDescription( "Constraint( 1, 'uniqueLabelConstraintNamed', UNIQUENESS, :Label1(prop2, prop3), ownedIndex=1 )", uniqueLabelConstraintNamed );
-        assertUserDescription( "Constraint( 2, 'existsLabelConstraintNamed', NODE PROPERTY EXISTENCE, :Label1(prop2, prop3), ownedIndex=2 )",
+        assertUserDescription( "Constraint( id=1, name='uniqueLabelConstraintNamed', type='UNIQUENESS', schema=(:Label1 {prop2, prop3}), ownedIndex=1 )",
+                uniqueLabelConstraintNamed );
+        assertUserDescription(
+                "Constraint( id=2, name='existsLabelConstraintNamed', type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}), ownedIndex=2 )",
                 existsLabelConstraintNamed );
-        assertUserDescription( "Constraint( 3, 'nodeKeyConstraintNamed', NODE KEY, :Label1(prop2, prop3), ownedIndex=3 )", nodeKeyConstraintNamed );
-        assertUserDescription( "Constraint( 4, 'existsRelTypeConstraintNamed', RELATIONSHIP PROPERTY EXISTENCE, -[:Type1(prop2, prop3)]-, ownedIndex=4 )",
+        assertUserDescription( "Constraint( id=3, name='nodeKeyConstraintNamed', type='NODE KEY', schema=(:Label1 {prop2, prop3}), ownedIndex=3 )",
+                nodeKeyConstraintNamed );
+        assertUserDescription(
+                "Constraint( id=4, name='existsRelTypeConstraintNamed', type='RELATIONSHIP PROPERTY EXISTENCE', schema=-[:Type1 {prop2, prop3}]-, " +
+                        "ownedIndex=4 )",
                 existsRelTypeConstraintNamed );
-        assertUserDescription( "Constraint( 5, 'uniqueLabelConstraint2Named', UNIQUENESS, :`La:bel`(`prop:erty`, prop1), ownedIndex=5 )",
+        assertUserDescription(
+                "Constraint( id=5, name='uniqueLabelConstraint2Named', type='UNIQUENESS', schema=(:`La:bel` {`prop:erty`, prop1}), ownedIndex=5 )",
                 uniqueLabelConstraint2Named );
     }
 

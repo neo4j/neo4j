@@ -93,8 +93,10 @@ class SchemaIndexDescriptorFactoryTest
         String providerName = forLabel.getIndexProvider().name();
         long uniqueForLabelId = uniqueForLabel.getId();
         assertThat( forLabel.userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
-                "Index( " + forLabelId + ", 'index_" + forLabelId + "', GENERAL BTREE, :Label1(property2), " + providerName + " )" );
+                "Index( id=" + forLabelId + ", name='index_" + forLabelId + "', type='GENERAL BTREE', schema=(:Label1 {property2}), indexProvider='" +
+                        providerName + "' )" );
         assertThat( uniqueForLabel.userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
-                "Index( " + uniqueForLabelId + ", 'index_" + uniqueForLabelId + "', UNIQUE BTREE, :Label2(property4), " + providerName + " )" );
+                "Index( id=" + uniqueForLabelId + ", name='index_" + uniqueForLabelId +
+                        "', type='UNIQUE BTREE', schema=(:Label2 {property4}), indexProvider='" + providerName + "' )" );
     }
 }

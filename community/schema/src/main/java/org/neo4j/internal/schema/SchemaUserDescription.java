@@ -37,11 +37,11 @@ public final class SchemaUserDescription
 
     static String forSchema( TokenNameLookup tokenNameLookup, EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
     {
-        String prefix = entityType == RELATIONSHIP ? "-[" : "";
-        String suffix = entityType == RELATIONSHIP ? "]-" : "";
+        String prefix = entityType == RELATIONSHIP ? "-[" : "(";
+        String suffix = entityType == RELATIONSHIP ? "]-" : ")";
         IntFunction<String> lookup = entityType == NODE ? tokenNameLookup::labelGetName : tokenNameLookup::relationshipTypeGetName;
-        return prefix + TokenIdPrettyPrinter.niceEntityLabels( lookup, entityTokens ) +
-                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds ) + suffix;
+        return prefix + TokenIdPrettyPrinter.niceEntityLabels( lookup, entityTokens ) + " " +
+                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds, '{', '}' ) + suffix;
     }
 
     static String forPrototype( TokenNameLookup tokenNameLookup, String name, boolean isUnique, IndexType indexType,
@@ -56,7 +56,7 @@ public final class SchemaUserDescription
             SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Index( ", " )" );
-        joiner.add( Long.toString( id ) );
+        joiner.add( "id=" + id );
         addPrototypeParams( tokenNameLookup, name, isUnique, indexType, schema, indexProvider, joiner );
         return joiner.toString();
     }
@@ -64,10 +64,10 @@ public final class SchemaUserDescription
     public static String forConstraint( TokenNameLookup tokenNameLookup, long id, String name, ConstraintType type, SchemaDescriptor schema, Long ownedIndex )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Constraint( ", " )" );
-        joiner.add( Long.toString( id ) );
+        maybeAddId( id, joiner );
         maybeAddName( name, joiner );
-        joiner.add( typeName( type, schema.entityType() ) );
-        joiner.add( schema.userDescription( tokenNameLookup ) );
+        addType( constraintType( type, schema.entityType() ), joiner );
+        addSchema( tokenNameLookup, schema, joiner );
         if ( ownedIndex != null )
         {
             joiner.add( "ownedIndex=" + ownedIndex );
@@ -75,7 +75,7 @@ public final class SchemaUserDescription
         return joiner.toString();
     }
 
-    private static String typeName( ConstraintType type, EntityType entityType )
+    private static String constraintType( ConstraintType type, EntityType entityType )
     {
         switch ( type )
         {
@@ -86,11 +86,19 @@ public final class SchemaUserDescription
         }
     }
 
+    private static void maybeAddId( long id, StringJoiner joiner )
+    {
+        if ( id != ConstraintDescriptor.NO_ID )
+        {
+            joiner.add( "id=" + id );
+        }
+    }
+
     private static void maybeAddName( String name, StringJoiner joiner )
     {
         if ( name != null )
         {
-            joiner.add( "'" + name + "'" );
+            joiner.add( "name='" + name + "'" );
         }
     }
 
@@ -98,13 +106,23 @@ public final class SchemaUserDescription
             IndexProviderDescriptor indexProvider, StringJoiner joiner )
     {
         maybeAddName( name, joiner );
-        joiner.add( (isUnique ? "UNIQUE" : "GENERAL") + " " + indexType );
-        joiner.add( schema.userDescription( tokenNameLookup ) );
-        joiner.add( indexProvider.name() );
+        addType( indexType( isUnique, indexType ), joiner );
+        addSchema( tokenNameLookup, schema, joiner );
+        joiner.add( "indexProvider='" + indexProvider.name() + "'" );
     }
 
-    private static String nullableName( String name )
+    private static String indexType( boolean isUnique, IndexType indexType )
     {
-        return name == null ? "" : "'" + name + "', ";
+        return (isUnique ? "UNIQUE" : "GENERAL") + " " + indexType;
+    }
+
+    private static void addType( String type, StringJoiner joiner )
+    {
+        joiner.add( "type='" + type + "'" );
+    }
+
+    private static void addSchema( TokenNameLookup tokenNameLookup, SchemaDescriptor schema, StringJoiner joiner )
+    {
+        joiner.add( "schema=" + schema.userDescription( tokenNameLookup ) );
     }
 }

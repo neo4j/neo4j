@@ -43,7 +43,7 @@ class IndexPopulationFailedKernelExceptionTest
                 descriptor.userDescription( TOKEN_NAME_LOOKUP ), new RuntimeException() );
 
         // Then
-        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo( "Failed to populate index :label[0](property[42], property[43], property[44])" );
+        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo( "Failed to populate index (:label[0] {property[42], property[43], property[44]})" );
     }
 
     @Test
@@ -58,6 +58,6 @@ class IndexPopulationFailedKernelExceptionTest
 
         // Then
         assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo(
-                "Failed to populate index :label[0](property[42], property[43], property[44]), due to an act of pure evil occurred" );
+                "Failed to populate index (:label[0] {property[42], property[43], property[44]}), due to an act of pure evil occurred" );
     }
 }

@@ -72,7 +72,7 @@ class SchemaLoggingIT
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
         logProvider.assertAtLeastOnce( match.info( containsString( "Index population started: [%s]" ),
-                "Index( 1, 'index_a908f819', GENERAL BTREE, :User(name), " + providerDescriptor.name() + " )" ) );
+                "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )" ) );
 
         assertEventually( () -> null, new LogMessageMatcher( match, providerDescriptor ), 1, TimeUnit.MINUTES );
     }
@@ -108,7 +108,8 @@ class SchemaLoggingIT
         public boolean matches( Object item )
         {
             return logProvider.containsMatchingLogCall( match.info( containsString( CREATION_FINISHED ),
-                    "Index( 1, 'index_a908f819', GENERAL BTREE, :User(name), " + descriptor.name() + " )", "ONLINE" ) );
+                    "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + descriptor.name() + "' )",
+                    "ONLINE" ) );
         }
 
         @Override

@@ -369,7 +369,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         // Then
         assertThat( connection, util.eventuallyReceives(
                 msgFailure( Status.Schema.IndexDropFailed,
-                        "Unable to drop index on :Movie12345(id). There is no such index." ),
+                        "Unable to drop index on (:Movie12345 {id}). There is no such index." ),
                 msgIgnored() ) );
     }
 

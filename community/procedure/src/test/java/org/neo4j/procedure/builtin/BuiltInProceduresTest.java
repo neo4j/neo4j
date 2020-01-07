@@ -303,9 +303,9 @@ class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.constraints" ),
                 contains(
-                        record( "MyExistenceConstraint", "CONSTRAINT ON ( user:User ) ASSERT exists(user.name)" ),
-                        record( "MyNodeKeyConstraint", "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NODE KEY" ),
-                        record( "constraint_1000", "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS UNIQUE" )
+                        record( "MyExistenceConstraint", "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:User {name}) )" ),
+                        record( "MyNodeKeyConstraint", "Constraint( name='MyNodeKeyConstraint', type='NODE KEY', schema=(:User {name}) )" ),
+                        record( "constraint_1000", "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:User {name}) )" )
                 ) );
     }
 
@@ -320,8 +320,9 @@ class BuiltInProceduresTest
         List<Object[]> call = call( "db.constraints" );
         assertThat( call,
                 contains(
-                        record( "MyExistenceConstraint", "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.y)" ),
-                        record( "constraint_1000", "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS UNIQUE" ) ) );
+                        record( "MyExistenceConstraint",
+                                "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:`FOO:BAR` {x.y}) )" ),
+                        record( "constraint_1000", "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:`FOO:BAR` {x.y}) )" ) ) );
     }
 
     @Test

@@ -26,7 +26,6 @@ import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaUserDescription;
-import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.ConstraintType.EXISTS;
@@ -48,7 +47,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     {
         this.type = type;
         this.schema = schema;
-        this.id = -1;
+        this.id = NO_ID;
         this.name = null;
         this.ownedIndex = null;
     }
@@ -183,11 +182,6 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
         return new IllegalStateException( "Cannot cast this schema to a " + targetType + " because it does not match that structure: " + this + "." );
     }
 
-    private String formatProperties( int[] propertyIds, TokenNameLookup tokenNameLookup, String nodeName )
-    {
-        return TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds, nodeName + "." );
-    }
-
     @Override
     public final boolean equals( Object o )
     {
@@ -220,7 +214,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     @Override
     public long getId()
     {
-        if ( id == -1 )
+        if ( id == NO_ID )
         {
             throw new IllegalStateException( "This constraint descriptor have no id assigned: " + this );
         }

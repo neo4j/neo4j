@@ -257,7 +257,9 @@ class IndexIT extends KernelIntegrationTest
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
         } );
-        assertEquals( "Unable to drop index: Index does not exist: Index( 1, 'my index', GENERAL BTREE, :Label(prop), native-btree-1.0 )",
+        assertEquals(
+                "Unable to drop index: Index does not exist: Index( id=1, name='my index', type='GENERAL BTREE', schema=(:Label {prop}), " +
+                        "indexProvider='native-btree-1.0' )",
                 e.getUserMessage( idTokenNameLookup ) );
         commit();
     }
@@ -281,7 +283,7 @@ class IndexIT extends KernelIntegrationTest
         // when
         SchemaWrite statement = schemaWriteInNewTransaction();
         SchemaKernelException e = assertThrows( SchemaKernelException.class, () -> statement.indexDrop( index.schema() ) );
-        assertEquals( "Unable to drop index on :" + LABEL + "(" + PROPERTY_KEY + "). There is no such index.", e.getMessage() );
+        assertEquals( "Unable to drop index on (:" + LABEL + " {" + PROPERTY_KEY + "}). There is no such index.", e.getMessage() );
         commit();
     }
 
@@ -367,7 +369,7 @@ class IndexIT extends KernelIntegrationTest
             statement.indexCreate( schema, "my index" );
             commit();
         } );
-        assertEquals( "There is a uniqueness constraint on :" + LABEL + "(" + PROPERTY_KEY + "), so an index is " +
+        assertEquals( "There is a uniqueness constraint on (:" + LABEL + " {" + PROPERTY_KEY + "}), so an index is " +
             "already created that matches this.", e.getMessage() );
         commit();
     }

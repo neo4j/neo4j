@@ -99,7 +99,8 @@ class SchemaProcedureIT extends KernelIntegrationTest
             assertThat( node.labels() ).isEqualTo( Values.stringArray( "Person" ) );
             assertEquals( stringValue( "Person" ), node.properties().get( "name" ) );
             assertEquals( VirtualValues.list( stringValue( "name" ) ), node.properties().get( "indexes" ) );
-            assertEquals( VirtualValues.list( stringValue( "CONSTRAINT ON ( person:Person ) ASSERT (person.age) IS UNIQUE" ) ),
+            assertEquals(
+                    VirtualValues.list( stringValue( "Constraint( id=3, name='constraint name', type='UNIQUENESS', schema=(:Person {age}), ownedIndex=2 )" ) ),
                     node.properties().get( "constraints" ) );
         }
     }

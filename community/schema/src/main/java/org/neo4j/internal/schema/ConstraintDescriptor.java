@@ -27,6 +27,8 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRule
 {
+    int NO_ID = -1;
+
     @Override
     SchemaDescriptor schema();
 

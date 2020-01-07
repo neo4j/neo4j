@@ -19,6 +19,7 @@
  */
 package org.neo4j.token.api;
 
+import java.util.StringJoiner;
 import java.util.function.IntFunction;
 
 import org.neo4j.common.TokenNameLookup;
@@ -46,24 +47,32 @@ public final class TokenIdPrettyPrinter
 
     public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds )
     {
-        return niceProperties( tokenNameLookup, propertyIds, "" );
+        return niceProperties( tokenNameLookup, propertyIds, '(', ')' );
     }
 
-    public static String niceProperties( TokenNameLookup lookup, int[] propertyIds, String prefix )
+    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, char prefix, char suffix )
     {
         StringBuilder out = new StringBuilder();
-        out.append( '(' );
-        format( out, prefix, ", ", lookup::propertyKeyGetName, propertyIds );
-        out.append( ')' );
+        out.append( prefix );
+        format( out, "", ", ", tokenNameLookup::propertyKeyGetName, propertyIds );
+        out.append( suffix );
         return out.toString();
     }
 
     public static String niceEntityLabels( IntFunction<String> lookup, int[] labelIds )
     {
-        StringBuilder out = new StringBuilder();
-        out.append( ':' );
-        format( out, "", ",", lookup, labelIds );
-        return out.toString();
+        StringJoiner entityJoiner = new StringJoiner( ":", ":", "" );
+        entityJoiner.setEmptyValue( "" );
+        for ( int id : labelIds )
+        {
+            String name = lookup.apply( id );
+            if ( name.contains( ":" ) )
+            {
+                name = '`' + name + "`";
+            }
+            entityJoiner.add( name );
+        }
+        return entityJoiner.toString();
     }
 
     public static void format( StringBuilder out, String prefix, String separator, IntFunction<String> lookup, int[] ids )

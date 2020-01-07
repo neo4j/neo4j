@@ -111,7 +111,7 @@ class IndexStatisticsIT
         assertEquals( 16, indexSample.uniqueValues() );
         assertEquals( 32, indexSample.sampleSize() );
         // and also
-        assertLogExistsForRecoveryOn( ":Alien(specimen)" );
+        assertLogExistsForRecoveryOn( "(:Alien {specimen})" );
     }
 
     private void assertLogExistsForRecoveryOn( String labelAndProperty )

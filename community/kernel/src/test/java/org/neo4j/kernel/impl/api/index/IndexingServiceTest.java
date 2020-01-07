@@ -427,9 +427,9 @@ class IndexingServiceTest
 
         // then
         internalLogProvider.assertAtLeastOnce(
-                logMatch.debug( "IndexingService.init: index 1 on :LabelOne(propertyOne) is ONLINE" ),
-                logMatch.debug( "IndexingService.init: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
-                logMatch.debug( "IndexingService.init: index 3 on :LabelTwo(propertyTwo) is FAILED" )
+                logMatch.debug( "IndexingService.init: index 1 on (:LabelOne {propertyOne}) is ONLINE" ),
+                logMatch.debug( "IndexingService.init: index 2 on (:LabelOne {propertyTwo}) is POPULATING" ),
+                logMatch.debug( "IndexingService.init: index 3 on (:LabelTwo {propertyTwo}) is FAILED" )
         );
     }
 
@@ -471,9 +471,9 @@ class IndexingServiceTest
         // then
         verify( provider ).getPopulationFailure( failedIndex );
         internalLogProvider.assertAtLeastOnce(
-                logMatch.debug( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
-                logMatch.debug( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
-                logMatch.debug( "IndexingService.start: index 3 on :LabelTwo(propertyTwo) is FAILED" )
+                logMatch.debug( "IndexingService.start: index 1 on (:LabelOne {propertyOne}) is ONLINE" ),
+                logMatch.debug( "IndexingService.start: index 2 on (:LabelOne {propertyTwo}) is POPULATING" ),
+                logMatch.debug( "IndexingService.start: index 3 on (:LabelTwo {propertyTwo}) is FAILED" )
         );
     }
 
@@ -1020,11 +1020,12 @@ class IndexingServiceTest
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
         internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
-                "Failed to populate index: [Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )]" ),
+                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
+                        "indexProvider='quantum-dex-25.0' )]" ),
                 causedBy( exception ) ) );
         internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
                 "Index population completed. Index is now online: [%s]",
-                "Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )" ) );
+                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
     }
 
     @Test
@@ -1053,11 +1054,12 @@ class IndexingServiceTest
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
         internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
-                "Failed to populate index: [Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )]" ),
+                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
+                        "indexProvider='quantum-dex-25.0' )]" ),
                 causedBy( exception ) ) );
         internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
                 "Index population completed. Index is now online: [%s]",
-                "Index( 0, 'index', GENERAL BTREE, :TheLabel(propertyKey), quantum-dex-25.0 )" ) );
+                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
     }
 
     @Test
@@ -1185,8 +1187,8 @@ class IndexingServiceTest
 
         // then
         internalLogProvider.assertAtLeastOnce(
-                logMatch.info( "IndexingService.init: index 1 on :Label1(prop) is POPULATING" ),
-                logMatch.info( "IndexingService.init: index 2 on :Label2(prop) is FAILED" ),
+                logMatch.info( "IndexingService.init: index 1 on (:Label1 {prop}) is POPULATING" ),
+                logMatch.info( "IndexingService.init: index 2 on (:Label2 {prop}) is FAILED" ),
                 logMatch.info( "IndexingService.init: indexes not specifically mentioned above are ONLINE" )
         );
         internalLogProvider.assertNone( logMatch.info( "IndexingService.init: index 3 on :Label3(prop) is ONLINE" ) );
@@ -1233,8 +1235,8 @@ class IndexingServiceTest
 
         // then
         internalLogProvider.assertAtLeastOnce(
-                logMatch.info( "IndexingService.start: index 1 on :Label1(prop) is POPULATING" ),
-                logMatch.info( "IndexingService.start: index 2 on :Label2(prop) is FAILED" ),
+                logMatch.info( "IndexingService.start: index 1 on (:Label1 {prop}) is POPULATING" ),
+                logMatch.info( "IndexingService.start: index 2 on (:Label2 {prop}) is FAILED" ),
                 logMatch.info( "IndexingService.start: indexes not specifically mentioned above are ONLINE" )
         );
         internalLogProvider.assertNone( logMatch.info( "IndexingService.start: index 3 on :Label3(prop) is ONLINE" ) );

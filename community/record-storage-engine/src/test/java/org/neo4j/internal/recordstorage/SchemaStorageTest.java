@@ -97,7 +97,7 @@ class SchemaStorageTest
         var e = assertThrows( SchemaRuleNotFoundException.class, () ->
             storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ) ) );
 
-        assertThat( e, tokenNameLookup ).hasUserMessage( "No label property existence constraint was found for :Label1(prop1)." );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "No label property existence constraint was found for (:Label1 {prop1})." );
     }
 
     @Test
@@ -114,7 +114,7 @@ class SchemaStorageTest
         var e = assertThrows( DuplicateSchemaRuleException.class, () ->
             schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ) ) );
 
-        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple label uniqueness constraints found for :Label1(prop1)." );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple label uniqueness constraints found for (:Label1 {prop1})." );
     }
 
     @Test
@@ -124,7 +124,7 @@ class SchemaStorageTest
 
         var e = assertThrows( SchemaRuleNotFoundException.class, () ->
             storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
-        assertThat( e, tokenNameLookup ).hasUserMessage( "No relationship type property existence constraint was found for -[:Type1(prop1)]-." );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "No relationship type property existence constraint was found for -[:Type1 {prop1}]-." );
     }
 
     @Test
@@ -141,7 +141,7 @@ class SchemaStorageTest
         var e = assertThrows( DuplicateSchemaRuleException.class, () ->
             schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
 
-        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for -[:Type1(prop1)]-." );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for -[:Type1 {prop1}]-." );
     }
 
     private static TokenNameLookup getDefaultTokenNameLookup()

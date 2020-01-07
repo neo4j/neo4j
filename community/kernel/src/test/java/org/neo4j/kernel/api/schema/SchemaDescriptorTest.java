@@ -84,7 +84,7 @@ class SchemaDescriptorTest
     @Test
     void shouldGiveNiceUserDescriptions()
     {
-        assertThat( SchemaDescriptor.forLabel( 1, 2 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( ":Label1(property2)" );
-        assertThat( SchemaDescriptor.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "-[:RelType1(property3)]-" );
+        assertThat( SchemaDescriptor.forLabel( 1, 2 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "(:Label1 {property2})" );
+        assertThat( SchemaDescriptor.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "-[:RelType1 {property3}]-" );
     }
 }
