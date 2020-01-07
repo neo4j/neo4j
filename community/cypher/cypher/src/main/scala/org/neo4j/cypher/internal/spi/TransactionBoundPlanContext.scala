@@ -52,18 +52,8 @@ object TransactionBoundPlanContext {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val procedures = tx.procedures()
     val handle = procedures.procedureGet(kn)
-    val signature = handle.signature()
-    val input = signature.inputSignature().asScala
-      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue), sensitive = s.isSensitive))
-      .toIndexedSeq
-    val output = if (signature.isVoid) None else Some(
-      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
-    val deprecationInfo = asOption(signature.deprecated())
-    val mode = asCypherProcMode(signature.mode(), signature.allowed())
-    val description = asOption(signature.description())
-    val warning = asOption(signature.warning())
 
-    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, signature.eager(), handle.id(), signature.systemProcedure())
+    asCypherProcedureSignature(name, handle.id(), handle.signature())
   }
 
   def functionSignature(tx: KernelTransaction, name: QualifiedName): Option[UserFunctionSignature] = {
@@ -216,7 +206,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override val statistics: InstrumentedGraphStatistics = graphStatistics
 
-  override val txIdProvider = LastCommittedTxIdProvider(tc.graph)
+  override val txIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
 

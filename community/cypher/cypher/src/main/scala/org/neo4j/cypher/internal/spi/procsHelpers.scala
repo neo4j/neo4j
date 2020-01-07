@@ -28,6 +28,8 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.procedure.Mode
 
+import scala.collection.JavaConverters._
+
 object procsHelpers {
 
   def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
@@ -43,8 +45,7 @@ object procsHelpers {
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
   }
 
-  def asCypherValue(neo4jValue: DefaultParameterValue) = CypherValue(neo4jValue.value,
-                                                                     asCypherType(neo4jValue.neo4jType()))
+  def asCypherValue(neo4jValue: DefaultParameterValue): CypherValue = CypherValue(neo4jValue.value, asCypherType(neo4jValue.neo4jType()))
 
   def asCypherType(neoType: AnyType): CypherType = neoType match {
     case Neo4jTypes.NTString => CTString
@@ -67,5 +68,19 @@ object procsHelpers {
     case Neo4jTypes.NTGeometry => CTGeometry
     case Neo4jTypes.NTMap => CTMap
     case Neo4jTypes.NTAny => CTAny
+  }
+
+  def asCypherProcedureSignature(name: QualifiedName, id: Int, signature: org.neo4j.internal.kernel.api.procs.ProcedureSignature): ProcedureSignature = {
+    val input = signature.inputSignature().asScala
+      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue), sensitive = s.isSensitive))
+      .toIndexedSeq
+    val output = if (signature.isVoid) None else Some(
+      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
+    val deprecationInfo = asOption(signature.deprecated())
+    val mode = asCypherProcMode(signature.mode(), signature.allowed())
+    val description = asOption(signature.description())
+    val warning = asOption(signature.warning())
+
+    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, signature.eager(), id, signature.systemProcedure())
   }
 }
