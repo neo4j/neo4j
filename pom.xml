@@ -112,8 +112,8 @@
     <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>2.10.0</jackson.version>
 	<amazon-sdk.version>1.11.524</amazon-sdk.version>
-    <guava.version>28.1-jre</guava.version>
-    <awaitility.version>4.0.1</awaitility.version>
+    <guava.version>28.2-jre</guava.version>
+    <awaitility.version>4.0.2</awaitility.version>
   </properties>
 
   <modules>
@@ -741,7 +741,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.27</version>
+            <version>8.28</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -1120,7 +1120,7 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.13</version>
+        <version>1.14</version>
         <scope>test</scope>
       </dependency>
 
@@ -1222,7 +1222,7 @@
       <dependency>
         <groupId>org.jctools</groupId>
         <artifactId>jctools-core</artifactId>
-        <version>2.1.2</version>
+        <version>3.0.0</version>
       </dependency>
       <dependency>
         <groupId>commons-io</groupId>

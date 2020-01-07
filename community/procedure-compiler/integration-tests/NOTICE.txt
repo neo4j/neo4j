@@ -43,6 +43,5 @@ Apache Software License, Version 2.0
   Truth Core
 
 MIT License
-  Animal Sniffer Annotations
   Checker Qual
 
