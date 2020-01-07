@@ -789,10 +789,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "on available system resources." )
     public static final Setting<String> pagecache_memory = newBuilder( "dbms.memory.pagecache.size", STRING, null ).build();
 
-    @Description( "Specify which page swapper to use for doing paged IO. " +
-            "This is only used when integrating with proprietary storage technology. Not used anymore." )
+    @Description( "This setting is not used anymore." )
     @Deprecated
     public static final Setting<String> pagecache_swapper = newBuilder( "dbms.memory.pagecache.swapper", STRING, null ).build();
+
+    @Description( "The maximum number of worker threads to use for pre-fetching data when doing sequential scans. " +
+            "Set to '0' to disable pre-fetching for scans." )
+    public static final Setting<Integer> pagecache_scan_prefetch = newBuilder( "dbms.memory.pagecache.scan.prefetchers", INT, 4 )
+            .addConstraint( range( 0, 255 ) ).build();
 
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
             "warmup after a restart, reducing the mean time to performance. " +

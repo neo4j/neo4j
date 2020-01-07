@@ -30,8 +30,10 @@ public enum Group
     // GENERAL DATABASE GROUPS.
     /** Thread that schedules delayed or recurring tasks. */
     TASK_SCHEDULER( "Scheduler", ExecutorServiceFactory.unschedulable() ),
-    /* Background page cache worker. */
-    PAGE_CACHE( "PageCacheWorker" ),
+    /* Page cache background eviction. */
+    PAGE_CACHE_EVICTION( "PageCacheEviction" ),
+    /* Page cache background eviction. */
+    PAGE_CACHE_PRE_FETCHER( "PageCachePreFetcher", ExecutorServiceFactory.cachedWithDiscard() ),
     /** Watch out for, and report, external manipulation of store files. */
     FILE_WATCHER( "FileWatcher" ),
     /** Monitor and report system-wide pauses, in case they lead to service interruption. */

@@ -472,7 +472,7 @@ public class MuninnPageCache implements PageCache
 
         try
         {
-            scheduler.schedule( Group.PAGE_CACHE, new EvictionTask( this ) );
+            scheduler.schedule( Group.PAGE_CACHE_EVICTION, new EvictionTask( this ) );
         }
         catch ( Exception e )
         {
@@ -599,7 +599,7 @@ public class MuninnPageCache implements PageCache
         // Submit all flushes to the background thread
         for ( PagedFile file : files )
         {
-            flushes.add( scheduler.schedule( Group.PAGE_CACHE, () ->
+            flushes.add( scheduler.schedule( Group.FILE_IO_HELPER, () ->
             {
                 try
                 {
@@ -1064,6 +1064,6 @@ public class MuninnPageCache implements PageCache
     void startPreFetching( MuninnPageCursor cursor, CursorFactory cursorFactory )
     {
         PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock );
-        cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE, preFetcher );
+        cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, preFetcher );
     }
 }

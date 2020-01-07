@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -139,9 +140,20 @@ interface ExecutorServiceFactory
                 threadCount = getRuntime().availableProcessors();
             }
             BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( 2 * threadCount );
-            RejectedExecutionHandler callerRuns = new ThreadPoolExecutor.CallerRunsPolicy();
-            return new ThreadPoolExecutor( 0, threadCount, 60L, TimeUnit.SECONDS, workQueue, factory, callerRuns );
+            RejectedExecutionHandler policy = new ThreadPoolExecutor.CallerRunsPolicy();
+            return new ThreadPoolExecutor( 0, threadCount, 60L, TimeUnit.SECONDS, workQueue, factory, policy );
         };
+    }
+
+    /**
+     * Will execute at most thread-count jobs concurrently, and silently discard tasks when over-subscribed.
+     * Tasks are not queued, but either stared immediately or discarded.
+     * Threads are cached for one minute and reused when possible.
+     */
+    static ExecutorServiceFactory cachedWithDiscard()
+    {
+        return ( group, factory, threadCount ) ->
+                new ThreadPoolExecutor( 0, threadCount, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), factory, new ThreadPoolExecutor.DiscardPolicy() );
     }
 
     /**
