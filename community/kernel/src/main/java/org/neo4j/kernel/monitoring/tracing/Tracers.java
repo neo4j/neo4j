@@ -20,7 +20,6 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.Log;
@@ -103,7 +102,6 @@ import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACER
 public class Tracers
 {
     private final PageCacheTracer pageCacheTracer;
-    private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final TracerFactory tracersFactory;
     private final SystemNanoClock clock;
 
@@ -122,19 +120,12 @@ public class Tracers
     {
         this.clock = clock;
         this.tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
-        this.pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier();
         this.pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
     }
 
     public PageCacheTracer getPageCacheTracer()
     {
         return pageCacheTracer;
-    }
-
-    @Deprecated
-    public PageCursorTracerSupplier getPageCursorTracerSupplier()
-    {
-        return pageCursorTracerSupplier;
     }
 
     public LockTracer getLockTracer()

@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.AssertableLogProvider;
@@ -58,7 +56,6 @@ class TracersTest
     {
         Tracers tracers = createTracers( "null" );
         assertThat( tracers.getPageCacheTracer() ).isEqualTo( PageCacheTracer.NULL );
-        assertThat( tracers.getPageCursorTracerSupplier() ).isEqualTo( PageCursorTracerSupplier.NULL );
         assertThat( tracers.getDatabaseTracer() ).isEqualTo( DatabaseTracer.NULL.NULL );
         assertNoWarning();
     }
@@ -96,7 +93,6 @@ class TracersTest
     {
         assertThat( tracers.getPageCacheTracer() ).isInstanceOf( DefaultPageCacheTracer.class );
         assertThat( tracers.getDatabaseTracer() ).isInstanceOf( DefaultTracer.class );
-        assertThat( tracers.getPageCursorTracerSupplier() ).isInstanceOf( DefaultPageCursorTracerSupplier.class );
     }
 
     private void assertNoWarning()

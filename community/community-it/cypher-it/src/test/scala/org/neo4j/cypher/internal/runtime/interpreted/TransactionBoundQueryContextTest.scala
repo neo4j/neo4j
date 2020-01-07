@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
@@ -82,7 +82,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(kernelTransaction.acquireStatement()).thenReturn(statement)
     statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
       new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new TestDatabaseIdRepository().defaultDatabase)
-    statement.initialize(null, PageCursorTracerSupplier.NULL.get(), 7)
+    statement.initialize(null, PageCursorTracer.NULL, 7)
     statement.acquire()
   }
 

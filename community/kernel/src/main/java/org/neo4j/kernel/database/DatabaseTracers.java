@@ -20,31 +20,26 @@
 package org.neo4j.kernel.database;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.lock.LockTracer;
 
 public class DatabaseTracers
 {
-    public static final DatabaseTracers EMPTY =
-            new DatabaseTracers( DatabaseTracer.NULL, PageCursorTracerSupplier.NULL, LockTracer.NONE, PageCacheTracer.NULL );
+    public static final DatabaseTracers EMPTY = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, PageCacheTracer.NULL );
 
     private final DatabaseTracer databaseTracer;
-    private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final LockTracer lockTracer;
     private final PageCacheTracer pageCacheTracer;
 
     public DatabaseTracers( Tracers tracers )
     {
-        this( tracers.getDatabaseTracer(), tracers.getPageCursorTracerSupplier(), tracers.getLockTracer(), tracers.getPageCacheTracer() );
+        this( tracers.getDatabaseTracer(), tracers.getLockTracer(), tracers.getPageCacheTracer() );
     }
 
-    private DatabaseTracers( DatabaseTracer databaseTracer, PageCursorTracerSupplier pageCursorTracerSupplier, LockTracer lockTracer,
-            PageCacheTracer pageCacheTracer )
+    private DatabaseTracers( DatabaseTracer databaseTracer, LockTracer lockTracer, PageCacheTracer pageCacheTracer )
     {
         this.databaseTracer = databaseTracer;
-        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.lockTracer = lockTracer;
         this.pageCacheTracer = pageCacheTracer;
     }
@@ -52,12 +47,6 @@ public class DatabaseTracers
     public DatabaseTracer getDatabaseTracer()
     {
         return databaseTracer;
-    }
-
-    @Deprecated
-    public PageCursorTracerSupplier getPageCursorTracerSupplier()
-    {
-        return pageCursorTracerSupplier;
     }
 
     public LockTracer getLockTracer()

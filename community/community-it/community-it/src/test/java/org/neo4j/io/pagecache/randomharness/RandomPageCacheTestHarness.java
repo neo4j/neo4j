@@ -48,7 +48,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
@@ -82,7 +81,6 @@ public class RandomPageCacheTestHarness implements Closeable
     private int filePageCount;
     private int filePageSize;
     private PageCacheTracer tracer;
-    private PageCursorTracerSupplier cursorTracerSupplier;
     private int commandCount;
     private double[] commandProbabilityFactors;
     private long randomSeed;
@@ -105,7 +103,6 @@ public class RandomPageCacheTestHarness implements Closeable
         cachePageCount = 20;
         filePageCount = cachePageCount * 10;
         tracer = PageCacheTracer.NULL;
-        cursorTracerSupplier = PageCursorTracerSupplier.NULL;
         commandCount = 1000;
 
         Command[] commands = Command.values();
@@ -162,14 +159,6 @@ public class RandomPageCacheTestHarness implements Closeable
     public void setTracer( PageCacheTracer tracer )
     {
         this.tracer = tracer;
-    }
-
-    /**
-     * Set the page cursor tracers supplier.
-     */
-    public void setCursorTracerSupplier( PageCursorTracerSupplier cursorTracerSupplier )
-    {
-        this.cursorTracerSupplier = cursorTracerSupplier;
     }
 
     /**

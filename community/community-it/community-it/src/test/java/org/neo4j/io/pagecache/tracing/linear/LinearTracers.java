@@ -22,30 +22,21 @@ package org.neo4j.io.pagecache.tracing.linear;
 import java.io.PrintStream;
 import java.util.function.Consumer;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-
 public class LinearTracers
 {
     private final LinearHistoryPageCacheTracer pageCacheTracer;
-    private final PageCursorTracerSupplier cursorTracerSupplier;
     private final LinearHistoryTracer tracer;
 
-    LinearTracers( LinearHistoryPageCacheTracer pageCacheTracer, PageCursorTracerSupplier cursorTracerSupplier,
+    LinearTracers( LinearHistoryPageCacheTracer pageCacheTracer,
             LinearHistoryTracer tracer )
     {
         this.pageCacheTracer = pageCacheTracer;
-        this.cursorTracerSupplier = cursorTracerSupplier;
         this.tracer = tracer;
     }
 
     public LinearHistoryPageCacheTracer getPageCacheTracer()
     {
         return pageCacheTracer;
-    }
-
-    public PageCursorTracerSupplier getCursorTracerSupplier()
-    {
-        return cursorTracerSupplier;
     }
 
     public void printHistory( PrintStream err )

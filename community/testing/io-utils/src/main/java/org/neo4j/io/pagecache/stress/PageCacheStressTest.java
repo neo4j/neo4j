@@ -28,7 +28,6 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -63,7 +62,6 @@ public class PageCacheStressTest
     private final int numberOfCachePages;
 
     private final PageCacheTracer tracer;
-    private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final Condition condition;
 
     private final File workingDirectory;
@@ -76,7 +74,6 @@ public class PageCacheStressTest
         this.numberOfCachePages = builder.numberOfCachePages;
 
         this.tracer = builder.tracer;
-        this.pageCursorTracerSupplier = builder.pageCursorTracerSupplier;
         this.condition = builder.condition;
 
         this.workingDirectory = builder.workingDirectory;
@@ -106,7 +103,6 @@ public class PageCacheStressTest
         int numberOfCachePages = 1000;
 
         PageCacheTracer tracer = NULL;
-        PageCursorTracerSupplier pageCursorTracerSupplier = PageCursorTracerSupplier.NULL;
         Condition condition;
 
         File workingDirectory;
@@ -151,12 +147,6 @@ public class PageCacheStressTest
         public Builder withWorkingDirectory( File workingDirectory )
         {
             this.workingDirectory = workingDirectory;
-            return this;
-        }
-
-        public Builder withPageCursorTracerSupplier( PageCursorTracerSupplier cursorTracerSupplier )
-        {
-            this.pageCursorTracerSupplier = cursorTracerSupplier;
             return this;
         }
     }

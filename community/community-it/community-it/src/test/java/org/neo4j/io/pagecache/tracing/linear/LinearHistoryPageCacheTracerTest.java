@@ -34,12 +34,11 @@ public class LinearHistoryPageCacheTracerTest
     @Test
     void makeSomeTestOutput() throws Exception
     {
-        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer( "makeSomeTestOutput" );
+        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
             harness.setUseAdversarialIO( true );
             harness.setTracer( linearTracers.getPageCacheTracer() );
-            harness.setCursorTracerSupplier( linearTracers.getCursorTracerSupplier() );
             harness.setCommandCount( 100 );
             harness.setConcurrencyLevel( 2 );
             harness.setPreparation( ( pageCache, fs, files ) -> linearTracers.processHistory( hEvent -> {} ) );

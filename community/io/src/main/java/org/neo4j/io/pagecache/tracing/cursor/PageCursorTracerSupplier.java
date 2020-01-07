@@ -27,6 +27,5 @@ import java.util.function.Supplier;
 @FunctionalInterface
 public interface PageCursorTracerSupplier extends Supplier<PageCursorTracer>
 {
-    PageCursorTracerSupplier NULL = () -> PageCursorTracer.NULL;
 
 }

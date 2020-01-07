@@ -91,8 +91,6 @@ import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
-import org.neo4j.kernel.impl.pagecache.PageCacheStartMetricsReporter;
-import org.neo4j.kernel.impl.pagecache.PageCacheStopMetricsReporter;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
@@ -332,7 +330,6 @@ public class Database extends LifecycleAdapter
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
-            life.add( new PageCacheStopMetricsReporter( tracers.getPageCursorTracerSupplier() ) );
             life.add( new PageCacheLifecycle( databasePageCache ) );
             life.add( initializeExtensions( databaseDependencies ) );
 
@@ -445,7 +442,6 @@ public class Database extends LifecycleAdapter
             life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
-            life.add( new PageCacheStartMetricsReporter( tracers.getPageCursorTracerSupplier() ) );
             life.setLast( checkpointerLifecycle );
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );

@@ -515,7 +515,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
             // Because our test failures are non-deterministic, we use this tracer to capture a full history of the
             // events leading up to any given failure.
-            LinearTracers linearTracers = pageCacheTracer( "pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures" );
+            LinearTracers linearTracers = pageCacheTracer();
             getPageCache( fs, maxPages, linearTracers.getPageCacheTracer() );
 
             try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );

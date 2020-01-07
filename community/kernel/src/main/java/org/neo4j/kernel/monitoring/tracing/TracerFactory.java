@@ -24,8 +24,6 @@ import java.time.Clock;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.Log;
@@ -70,14 +68,5 @@ public interface TracerFactory extends NamedService
     default LockTracer createLockTracer( Clock clock )
     {
         return LockTracer.NONE;
-    }
-
-    /**
-     * Create a new PageCursorTracerSupplier instance.
-     * @return The created instance.
-     */
-    default PageCursorTracerSupplier createPageCursorTracerSupplier()
-    {
-        return DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
     }
 }
