@@ -238,13 +238,15 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   test("ORDER BY column that isn't referenced in WITH DISTINCT") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name")._2
 
-    val labelScan = NodeByLabelScan("  a@7", labelName("A"), Set.empty)
-    val ageProperty = prop("  a@43", "age")
-    val nameProperty = prop("  a@43", "name")
+    val aAt7 = "  a@7"
+    val aAt43 = "  a@43"
+    val labelScan = NodeByLabelScan(aAt7, labelName("A"), Set.empty)
+    val ageProperty = prop(aAt43, "age")
+    val nameProperty = prop(aAt7, "name")
 
-    val distinct = Distinct(labelScan, Map("name" -> nameProperty, "  a@43" -> varFor("  a@7")))
-    val projection = Projection(distinct, Map("a.age" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("a.age")))
+    val distinct = Distinct(labelScan, Map("name" -> nameProperty, aAt43 -> varFor(aAt7)))
+    val projection = Projection(distinct, Map(s"$aAt43.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(s"$aAt43.age")))
 
     plan should equal(sort)
   }
@@ -280,15 +282,17 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   test("ORDER BY column that isn't referenced in WITH GROUP BY") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age")._2
 
-    val labelScan = NodeByLabelScan("  a@7", labelName("A"), Set.empty)
-    val ageProperty = prop("  a@7", "age")
-    val nameProperty = prop("  a@7", "name")
-    val fooProperty = prop("  a@34", "foo")
+    val aAt7 = "  a@7"
+    val aAt34 = "  a@34"
+    val labelScan = NodeByLabelScan(aAt7, labelName("A"), Set.empty)
+    val ageProperty = prop(aAt7, "age")
+    val nameProperty = prop(aAt7, "name")
+    val fooProperty = prop(aAt34, "foo")
     val ageSum = sum(ageProperty)
 
-    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, "  a@34" -> varFor("  a@7")), Map("age" -> ageSum))
-    val projection = Projection(aggregation, Map("a.foo" -> fooProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo")))
+    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, aAt34 -> varFor(aAt7)), Map("age" -> ageSum))
+    val projection = Projection(aggregation, Map(s"$aAt34.foo" -> fooProperty))
+    val sort = Sort(projection, Seq(Ascending(s"$aAt34.foo")))
 
     plan should equal(sort)
   }

@@ -231,7 +231,6 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should beLike {
       case
-        Projection(
           SelectionMatcher(Seq(
             LessThan(FunctionInvocation(Namespace(List()), FunctionName("rand"), false, Vector()),
                  Variable("  p@111"))),
@@ -241,7 +240,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                          Projection(_, _),
                          AllNodesScan("  n1@66", _)
                          ), _), _, _)
-        ),_) => ()
+        ) => ()
     }
   }
 
@@ -286,10 +285,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should beLike {
       case
-        Projection(
         Selection(ands,
         Limit(_,_,_)
-        ), _) if hasPathExpression(ands)=> ()
+        ) if hasPathExpression(ands)=> ()
     }
   }
 
