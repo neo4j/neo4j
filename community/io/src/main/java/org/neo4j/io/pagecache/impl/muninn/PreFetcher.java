@@ -62,7 +62,7 @@ class PreFetcher implements Runnable, CancelListener
     private long tripCount;
     private long pauseNanos = TimeUnit.MILLISECONDS.toNanos( 10 );
 
-    public PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, PageCacheTracer tracer, SystemNanoClock clock )
+    PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, PageCacheTracer tracer, SystemNanoClock clock )
     {
         this.observedCursor = observedCursor;
         this.cursorFactory = cursorFactory;
