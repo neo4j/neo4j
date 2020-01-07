@@ -114,6 +114,7 @@
 	<amazon-sdk.version>1.11.524</amazon-sdk.version>
     <guava.version>28.2-jre</guava.version>
     <awaitility.version>4.0.2</awaitility.version>
+    <skip-scalastyle>true</skip-scalastyle>
   </properties>
 
   <modules>
@@ -753,6 +754,41 @@
           <execution>
             <id>validate</id>
             <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.neo4j</groupId>
+        <artifactId>scalastyle-maven-plugin</artifactId>
+        <version>1.1.1</version>
+        <configuration>
+          <verbose>false</verbose>
+          <failOnViolation>true</failOnViolation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <failOnWarning>false</failOnWarning>
+          <sourceDirectory>${project.basedir}/src/main/scala</sourceDirectory>
+          <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
+          <configLocation>checkstyle/scalastyle_config.xml</configLocation>
+          <skip>${skip-scalastyle}</skip>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.scalastyle</groupId>
+            <artifactId>scalastyle-maven-plugin</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.neo4j.build</groupId>
+            <artifactId>build-resources</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
             <goals>
               <goal>check</goal>
             </goals>
