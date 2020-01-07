@@ -28,6 +28,7 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.scheduler.CancelListener;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
@@ -48,13 +49,14 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * will wait in between checking on the progress of the scanner, are dynamically computed and updated based on how fast the scanner appears to be.
  * The pre-fetcher also automatically figures out if the scanner is scanning the file in a forward or backwards direction.
  */
-class PreFetcher implements Runnable
+class PreFetcher implements Runnable, CancelListener
 {
     private static final String TRACER_PRE_FETCHER_TAG = "Pre-fetcher";
     private final MuninnPageCursor observedCursor;
     private final CursorFactory cursorFactory;
     private final PageCacheTracer tracer;
     private final SystemNanoClock clock;
+    private volatile boolean cancelled;
     private long startTime;
     private long deadline;
     private long tripCount;
@@ -140,9 +142,9 @@ class PreFetcher implements Runnable
                 }
                 while ( fromPage < toPage )
                 {
-                    if ( !prefetchCursor.next( fromPage ) )
+                    if ( !prefetchCursor.next( fromPage ) || cancelled )
                     {
-                        return; // Reached the end of the file.
+                        return; // Reached the end of the file. Or got cancelled.
                     }
                     fromPage++;
                 }
@@ -210,7 +212,7 @@ class PreFetcher implements Runnable
                 tripCount = 0;
             }
         }
-        return past;
+        return past || cancelled;
     }
 
     private void madeProgress()
@@ -226,5 +228,11 @@ class PreFetcher implements Runnable
         // Read as volatile even though the field isn't volatile.
         // We rely on the ordered-store of all writes to the current page id field, in order to weakly observe this value.
         return observedCursor.loadVolatileCurrentPageId();
+    }
+
+    @Override
+    public void cancelled()
+    {
+        cancelled = true;
     }
 }

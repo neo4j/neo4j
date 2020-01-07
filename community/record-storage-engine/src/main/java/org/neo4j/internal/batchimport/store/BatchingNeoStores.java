@@ -73,6 +73,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
 
 import static java.lang.String.valueOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -289,7 +290,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         MemoryAllocator memoryAllocator = createAllocator( config.get( pagecache_memory ), EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,

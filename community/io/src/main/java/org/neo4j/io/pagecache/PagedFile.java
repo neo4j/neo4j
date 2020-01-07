@@ -61,9 +61,9 @@ public interface PagedFile extends AutoCloseable
      */
     int PF_NO_GROW = 1 << 2;
     /**
-     * Read-ahead hint for sequential forward scanning.
+     * Read-ahead hint for sequential scanning.
      */
-    int PF_READ_AHEAD = 1 << 3; // TBD
+    int PF_READ_AHEAD = 1 << 3;
     /**
      * Do not load in the page if it is not loaded already. The methods {@link PageCursor#next()} and
      * {@link PageCursor#next(long)} will always return {@code true} for pages that are within the range of the file,

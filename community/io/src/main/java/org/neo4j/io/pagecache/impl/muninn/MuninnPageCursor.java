@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.scheduler.JobHandle;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
@@ -75,6 +76,7 @@ public abstract class MuninnPageCursor extends PageCursor
     private long currentPageId;
     protected long nextPageId;
     protected MuninnPageCursor linkedCursor;
+    protected JobHandle<?> preFetcher;
     private long pointer;
     private int pageSize;
     private int filePageSize;
@@ -171,10 +173,10 @@ public abstract class MuninnPageCursor extends PageCursor
     }
 
     /**
-     * We reading potentially dirty data in case if our page last modification version is higher then
+     * When reading potentially dirty data in case if our page last modification version is higher than
      * requested lastClosedTransactionId; or for this page file we already evict some page with version that is higher
-     * then requested lastClosedTransactionId. In this case we can't be sure that data of current page satisfying
-     * visibility requirements and we pessimistically will assume that we reading dirty data.
+     * than requested lastClosedTransactionId. In this case we can't be sure that the data of the current page is satisfying
+     * the visibility requirements, and we pessimistically will assume that we are reading dirty data.
      * @param lastClosedTransactionId last closed transaction id
      * @return true in case if we reading potentially dirty data for requested lastClosedTransactionId.
      */
@@ -203,6 +205,11 @@ public abstract class MuninnPageCursor extends PageCursor
             // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
             // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
             cursor.pagedFile = null;
+            if ( preFetcher != null )
+            {
+                preFetcher.cancel();
+                preFetcher = null;
+            }
             cursor = cursor.linkedCursor;
         }
     }

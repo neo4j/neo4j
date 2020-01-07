@@ -1063,6 +1063,7 @@ public class MuninnPageCache implements PageCache
 
     void startPreFetching( MuninnPageCursor cursor, CursorFactory cursorFactory )
     {
-        scheduler.schedule( Group.PAGE_CACHE, new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock ) );
+        PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock );
+        cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE, preFetcher );
     }
 }

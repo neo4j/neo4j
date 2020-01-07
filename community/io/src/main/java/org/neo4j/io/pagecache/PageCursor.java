@@ -62,8 +62,7 @@ import java.nio.ByteBuffer;
  * consistent state.
  * </li>
  * </ul>
- * You can alternatively use the {@link #next(long)} method, to navigate the
- * pages you need in a non-linear fashion.
+ * You can alternatively use the {@link #next(long)} method, to navigate the pages you need in an arbitrary order.
  */
 public abstract class PageCursor implements AutoCloseable
 {
