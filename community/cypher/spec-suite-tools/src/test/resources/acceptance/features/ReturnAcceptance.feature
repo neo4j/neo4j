@@ -206,7 +206,7 @@ Feature: ReturnAcceptance
       """
       RETURN range(2, 8, -1) AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | []   |
     And no side effects
@@ -217,7 +217,7 @@ Feature: ReturnAcceptance
       """
       RETURN range(8, 2, 1) AS result
       """
-    Then the result should be:
+    Then the result should be, in any order:
       | result |
       | []   |
     And no side effects
