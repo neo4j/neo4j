@@ -51,12 +51,14 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     private final Function<StoreHeader,Integer> recordSize;
     private final int recordHeaderSize;
     private final long maxId;
+    private final boolean pageAligned;
 
-    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize, int idBits )
+    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize, int idBits, boolean pageAligned )
     {
         this.recordSize = recordSize;
         this.recordHeaderSize = recordHeaderSize;
         this.maxId = (1L << idBits) - 1;
+        this.pageAligned = pageAligned;
     }
 
     @Override
@@ -98,6 +100,12 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     {
         return getClass().hashCode();
 
+    }
+
+    @Override
+    public int getPageSize( int pageCachePageSize, int recordSize )
+    {
+        return pageAligned ? pageCachePageSize : RecordFormat.super.getPageSize( pageCachePageSize, recordSize );
     }
 
     @Override

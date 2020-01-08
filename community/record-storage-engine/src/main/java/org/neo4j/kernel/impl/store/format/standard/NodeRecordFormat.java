@@ -33,7 +33,12 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
 
     public NodeRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.NODE_MAXIMUM_ID_BITS );
+        this( false );
+    }
+
+    public NodeRecordFormat( boolean pageAligned )
+    {
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.NODE_MAXIMUM_ID_BITS, pageAligned );
     }
 
     @Override

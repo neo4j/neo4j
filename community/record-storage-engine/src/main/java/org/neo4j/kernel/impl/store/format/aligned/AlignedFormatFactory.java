@@ -17,30 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.standard;
+package org.neo4j.kernel.impl.store.format.aligned;
 
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 
-public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<RelationshipTypeTokenRecord>
+@ServiceProvider
+public class AlignedFormatFactory implements RecordFormats.Factory
 {
-    public RelationshipTypeTokenRecordFormat()
+    @Override
+    public RecordFormats newInstance()
     {
-        this( false );
-    }
-
-    public RelationshipTypeTokenRecordFormat( boolean pageAligned )
-    {
-        this( StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS, pageAligned );
-    }
-
-    public RelationshipTypeTokenRecordFormat( int maxIdBits, boolean pageAligned )
-    {
-        super( BASE_RECORD_SIZE, maxIdBits, pageAligned );
+        return PageAlignedV4_1.RECORD_FORMATS;
     }
 
     @Override
-    public RelationshipTypeTokenRecord newRecord()
+    public String getName()
     {
-        return new RelationshipTypeTokenRecord( -1 );
+        return PageAlignedV4_1.NAME;
     }
 }

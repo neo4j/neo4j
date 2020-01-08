@@ -42,7 +42,12 @@ public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaReco
 
     public SchemaRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.SCHEMA_RECORD_ID_BITS );
+        this( false );
+    }
+
+    public SchemaRecordFormat( boolean pageAligned )
+    {
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.SCHEMA_RECORD_ID_BITS, pageAligned );
     }
 
     @Override

@@ -26,7 +26,12 @@ public class PropertyKeyTokenRecordFormat extends TokenRecordFormat<PropertyKeyT
 {
     public PropertyKeyTokenRecordFormat()
     {
-        super( BASE_RECORD_SIZE + 4/*prop count field*/, StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS );
+        this( false );
+    }
+
+    public PropertyKeyTokenRecordFormat( boolean pageAligned )
+    {
+        super( BASE_RECORD_SIZE + 4/*prop count field*/, StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS, pageAligned );
     }
 
     @Override

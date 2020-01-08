@@ -40,7 +40,12 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 
     public PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, StandardFormatSettings.PROPERTY_MAXIMUM_ID_BITS );
+        this( false );
+    }
+
+    public PropertyRecordFormat( boolean pageAligned )
+    {
+        super( fixedRecordSize( RECORD_SIZE ), 0, StandardFormatSettings.PROPERTY_MAXIMUM_ID_BITS, false );
     }
 
     @Override

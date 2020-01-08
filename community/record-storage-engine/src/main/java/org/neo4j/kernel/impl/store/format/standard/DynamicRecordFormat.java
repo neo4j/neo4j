@@ -35,8 +35,13 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
 
     public DynamicRecordFormat()
     {
+        this( false );
+    }
+
+    public DynamicRecordFormat( boolean pageAligned )
+    {
         super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, 0x10/*the inUse bit is the lsb in the second nibble*/,
-                StandardFormatSettings.DYNAMIC_MAXIMUM_ID_BITS );
+                StandardFormatSettings.DYNAMIC_MAXIMUM_ID_BITS, pageAligned );
     }
 
     @Override

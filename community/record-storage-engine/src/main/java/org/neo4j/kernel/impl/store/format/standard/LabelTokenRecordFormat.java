@@ -25,7 +25,12 @@ public class LabelTokenRecordFormat extends TokenRecordFormat<LabelTokenRecord>
 {
     public LabelTokenRecordFormat()
     {
-        super( BASE_RECORD_SIZE, StandardFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS );
+        this( false );
+    }
+
+    public LabelTokenRecordFormat( boolean pageAligned )
+    {
+        super( BASE_RECORD_SIZE, StandardFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS, pageAligned );
     }
 
     @Override

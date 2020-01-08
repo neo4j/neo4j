@@ -31,9 +31,9 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
 
     private static final byte INTERNAL_FLAG = IN_USE_BIT << 1;
 
-    TokenRecordFormat( int recordSize, int idBits )
+    TokenRecordFormat( int recordSize, int idBits, boolean pageAligned )
     {
-        super( fixedRecordSize( recordSize ), 0, IN_USE_BIT, idBits );
+        super( fixedRecordSize( recordSize ), 0, IN_USE_BIT, idBits, pageAligned );
     }
 
     @Override

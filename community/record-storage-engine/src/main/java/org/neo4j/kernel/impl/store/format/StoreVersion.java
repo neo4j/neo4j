@@ -27,6 +27,8 @@ public enum StoreVersion
     STANDARD_V3_4( "v0.A.9", "3.4.0" ),
     STANDARD_V4_0( "SF4.0.0", "4.0.0" ),
 
+    ALIGNED_V4_1( "AF4.1.0a", "4.1.0" ),
+
     HIGH_LIMIT_V3_0_0( "vE.H.0", "3.0.0" ),
     HIGH_LIMIT_V3_0_6( "vE.H.0b", "3.0.6" ),
     HIGH_LIMIT_V3_1_0( "vE.H.2", "3.1.0" ),

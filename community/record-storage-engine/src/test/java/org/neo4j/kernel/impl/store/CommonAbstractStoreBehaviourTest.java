@@ -336,7 +336,7 @@ class CommonAbstractStoreBehaviourTest
     {
         MyFormat( int recordHeaderSize )
         {
-            super( x -> 4, recordHeaderSize, 32 );
+            super( x -> 4, recordHeaderSize, 32, false );
         }
 
         @Override

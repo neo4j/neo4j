@@ -36,7 +36,12 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
 
     public RelationshipRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
+        this( false );
+    }
+
+    public RelationshipRecordFormat( boolean pageAligned )
+    {
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS, pageAligned );
     }
 
     @Override
