@@ -191,7 +191,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( end, relationship.targetNodeReference(), "target node" );
 
             assertEquals( start, relationship.originNodeReference(), "node of origin" );
-            assertEquals( end, relationship.neighbourNodeReference(), "neighbouring node" );
+            assertEquals( end, relationship.otherNodeReference(), "neighbouring node" );
 
             assertEquals( group.type(), relationship.type(), "relationship should have same label as group"
             );
@@ -218,7 +218,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( end, relationship.targetNodeReference(), "target node" );
 
             assertEquals( end, relationship.originNodeReference(), "node of origin" );
-            assertEquals( start, relationship.neighbourNodeReference(), "neighbouring node" );
+            assertEquals( start, relationship.otherNodeReference(), "neighbouring node" );
 
             assertEquals( group.type(), relationship.type(), "relationship should have same label as group"
             );

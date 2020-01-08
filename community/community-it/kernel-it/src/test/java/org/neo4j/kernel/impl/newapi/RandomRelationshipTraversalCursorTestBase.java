@@ -96,19 +96,19 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
                     while ( relationship.next() )
                     {
                         assertEquals( nodeId, relationship.originNodeReference(), "incoming origin" );
-                        relationship.neighbour( node );
+                        relationship.otherNode( node );
                     }
                     group.outgoing( relationship );
                     while ( relationship.next() )
                     {
                         assertEquals( nodeId, relationship.originNodeReference(), "outgoing origin");
-                        relationship.neighbour( node );
+                        relationship.otherNode( node );
                     }
                     group.loops( relationship );
                     while ( relationship.next() )
                     {
                         assertEquals( nodeId, relationship.originNodeReference(), "loop origin" );
-                        relationship.neighbour( node );
+                        relationship.otherNode( node );
                     }
                 }
             }

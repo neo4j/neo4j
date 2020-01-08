@@ -66,8 +66,7 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     @Override
     public long otherNodeReference()
     {
-        return cursor.originNodeReference() == cursor.sourceNodeReference() ?
-               cursor.targetNodeReference() : cursor.sourceNodeReference();
+        return cursor.otherNodeReference();
     }
 
     @Override

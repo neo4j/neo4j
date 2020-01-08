@@ -56,8 +56,7 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
     @Override
     public long otherNodeReference()
     {
-        return relationshipCursor.originNodeReference() == relationshipCursor.sourceNodeReference() ?
-               relationshipCursor.targetNodeReference() : relationshipCursor.sourceNodeReference();
+        return relationshipCursor.otherNodeReference();
     }
 
     @Override

@@ -110,13 +110,13 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     }
 
     @Override
-    public void neighbour( NodeCursor cursor )
+    public void otherNode( NodeCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public long neighbourNodeReference()
+    public long otherNodeReference()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

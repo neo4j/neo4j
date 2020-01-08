@@ -92,13 +92,13 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     }
 
     @Override
-    public void neighbour( NodeCursor cursor )
+    public void otherNode( NodeCursor cursor )
     {
-        read.singleNode( neighbourNodeReference(), cursor );
+        read.singleNode( otherNodeReference(), cursor );
     }
 
     @Override
-    public long neighbourNodeReference()
+    public long otherNodeReference()
     {
         if ( currentAddedInTx != NO_ID )
         {

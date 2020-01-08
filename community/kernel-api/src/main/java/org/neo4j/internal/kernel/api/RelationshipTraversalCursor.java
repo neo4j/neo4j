@@ -32,9 +32,9 @@ public interface RelationshipTraversalCursor extends RelationshipDataAccessor, C
      *
      * @param cursor the cursor to use for accessing the other node.
      */
-    void neighbour( NodeCursor cursor );
+    void otherNode( NodeCursor cursor );
 
-    long neighbourNodeReference();
+    long otherNodeReference();
 
     long originNodeReference();
 }

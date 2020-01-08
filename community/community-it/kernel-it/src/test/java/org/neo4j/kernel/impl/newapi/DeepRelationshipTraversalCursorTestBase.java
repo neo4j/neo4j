@@ -119,7 +119,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
 
             while ( relationship1.next() )
             {
-                relationship1.neighbour( node );
+                relationship1.otherNode( node );
 
                 assertTrue( node.next(), "child level 1" );
                 node.relationships( group );
@@ -131,7 +131,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
 
                 while ( relationship2.next() )
                 {
-                    leafs.add( relationship2.neighbourNodeReference() );
+                    leafs.add( relationship2.otherNodeReference() );
                     total++;
                 }
             }
