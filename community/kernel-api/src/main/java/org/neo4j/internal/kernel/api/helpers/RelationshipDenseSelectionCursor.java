@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -81,6 +82,18 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
     public void properties( PropertyCursor cursor )
     {
         relationshipCursor.properties( cursor );
+    }
+
+    @Override
+    public void source( NodeCursor nodeCursor )
+    {
+        relationshipCursor.source( nodeCursor );
+    }
+
+    @Override
+    public void target( NodeCursor nodeCursor )
+    {
+        relationshipCursor.target( nodeCursor );
     }
 
     @Override

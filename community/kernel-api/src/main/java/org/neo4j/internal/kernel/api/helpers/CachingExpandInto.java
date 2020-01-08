@@ -413,6 +413,18 @@ public class CachingExpandInto
         {
            read.relationshipProperties( currentRelationship.id, currentRelationship.properties, cursor );
         }
+
+        @Override
+        public void source( NodeCursor nodeCursor )
+        {
+            read.singleNode( sourceNodeReference(), nodeCursor );
+        }
+
+        @Override
+        public void target( NodeCursor nodeCursor )
+        {
+            read.singleNode( targetNodeReference(), nodeCursor );
+        }
     }
 
     private class ExpandIntoSelectionCursor extends DefaultCloseListenable implements RelationshipSelectionCursor
@@ -508,6 +520,18 @@ public class CachingExpandInto
         public void setTracer( KernelReadTracer tracer )
         {
             allRelationships.setTracer( tracer );
+        }
+
+        @Override
+        public void source( NodeCursor nodeCursor )
+        {
+            allRelationships.source( nodeCursor );
+        }
+
+        @Override
+        public void target( NodeCursor nodeCursor )
+        {
+            allRelationships.target( nodeCursor );
         }
 
         @Override
