@@ -20,6 +20,9 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition}
 import org.parboiled.scala._
 
+/**
+  * Parser for Cypher queries.
+  */
 class CypherParser extends Parser
   with Statement
   with Expressions {
