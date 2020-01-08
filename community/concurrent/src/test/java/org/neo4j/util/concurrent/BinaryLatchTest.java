@@ -19,31 +19,18 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 class BinaryLatchTest
 {
-    private static final ExecutorService executor = Executors.newCachedThreadPool();
-
-    @AfterAll
-    static void shutDownExecutor()
-    {
-        executor.shutdown();
-    }
-
     @Test
     void releaseThenAwaitDoesNotBlock()
     {
@@ -62,20 +49,32 @@ class BinaryLatchTest
         {
             final BinaryLatch latch = new BinaryLatch();
             Runnable awaiter = latch::await;
-            int awaiters = 24;
-            Future<?>[] futures = new Future<?>[awaiters];
+            int awaiters = 10;
+            Thread[] threads = new Thread[awaiters];
             for ( int i = 0; i < awaiters; i++ )
             {
-                futures[i] = executor.submit( awaiter );
+                threads[i] = new Thread( awaiter );
+                threads[i].start();
             }
 
-            assertThrows( TimeoutException.class, () -> futures[0].get( 10, TimeUnit.MILLISECONDS ) );
+            long deadline = TimeUnit.SECONDS.toNanos( 10 ) + System.nanoTime();
+            while ( deadline - System.nanoTime() > 0 )
+            {
+                if ( threads[0].getState() == Thread.State.WAITING )
+                {
+                    break;
+                }
+                Thread.sleep( 10 );
+            }
+
+            threads[0].join( 10 );
+            assertEquals( Thread.State.WAITING, threads[0].getState() );
 
             latch.release();
 
-            for ( Future<?> future : futures )
+            for ( Thread thread : threads )
             {
-                future.get();
+                thread.join();
             }
         } );
     }
@@ -96,14 +95,15 @@ class BinaryLatchTest
             };
 
             int awaiters = 6;
-            Future<?>[] futures = new Future<?>[awaiters];
+            Thread[] threads = new Thread[awaiters];
             for ( int i = 0; i < awaiters; i++ )
             {
-                futures[i] = executor.submit( awaiter );
+                threads[i] = new Thread( awaiter );
+                threads[i].start();
             }
 
             ThreadLocalRandom rng = ThreadLocalRandom.current();
-            for ( int i = 0; i < 500000; i++ )
+            for ( int i = 0; i < 50000; i++ )
             {
                 latchRef.getAndSet( new BinaryLatch() ).release();
                 spin( rng.nextLong( 0, 10 ) );
@@ -112,9 +112,9 @@ class BinaryLatchTest
             latchRef.getAndSet( null ).release();
 
             // None of the tasks we started should get stuck, e.g. miss a release signal:
-            for ( Future<?> future : futures )
+            for ( Thread thread : threads )
             {
-                future.get();
+                thread.join();
             }
         } );
     }
