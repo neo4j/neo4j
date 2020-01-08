@@ -22,7 +22,4 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons BeanUtils
   Apache Commons Collections
-  Apache Commons Configuration
-  Apache Commons Logging
-  Commons Lang
 
