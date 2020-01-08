@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+
 import org.junit.AssumptionViolatedException;
 
 import java.io.Closeable;
@@ -36,7 +37,8 @@ public final class AssumptionHelper
      *
      * @param file File to remove read permissions on.
      * @return A {@link Closeable} that will restore permissions when closed.
-     * @throws AssumptionViolatedException if the assumptions fail, e.i. user is unable to change permissions or can still read the file even without permissions.
+     * @throws AssumptionViolatedException if the assumptions fail, e.i. user is unable to change permissions or can
+     * still read the file even without permissions.
      */
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
     public static Closeable withoutReadPermissions( File file )
@@ -59,7 +61,8 @@ public final class AssumptionHelper
      *
      * @param file File to remove write permissions on.
      * @return A {@link Closeable} that will restore permissions when closed.
-     * @throws AssumptionViolatedException if the assumptions fail, e.i. user is unable to change permissions or can still write to the file even without permissions.
+     * @throws AssumptionViolatedException if the assumptions fail, e.i. user is unable to change permissions or can
+     * still write to the file even without permissions.
      */
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
     public static Closeable withoutWritePermissions( File file )
