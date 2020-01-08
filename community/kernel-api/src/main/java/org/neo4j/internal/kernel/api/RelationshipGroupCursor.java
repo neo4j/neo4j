@@ -24,33 +24,6 @@ package org.neo4j.internal.kernel.api;
  */
 public interface RelationshipGroupCursor extends Cursor
 {
-
-    /**
-     * Find the first relationship group with a label greater than or equal to the provided label.
-     * <p>
-     * Note that the default implementation of this method (and most likely any sane use of this method - regardless of
-     * implementation) assumes that relationship groups are ordered by label.
-     *
-     * @param relationshipLabel the relationship label to search for.
-     * @return {@code true} if a matching relationship group was found, {@code false} if all relationship groups
-     * within
-     * reach
-     * of
-     * this
-     * cursor were exhausted without finding a matching relationship group.
-     */
-    default boolean seek( int relationshipLabel )
-    {
-        while ( next() )
-        {
-            if ( relationshipLabel < type() )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     int type();
 
     int outgoingCount();
