@@ -1133,11 +1133,14 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 2L, descriptor.schema(), "A" ),
                     add( 3L, descriptor.schema(), "apa" ),
                     add( 4L, descriptor.schema(), "apa" ),
-                    add( 5L, descriptor.schema(), "apalong" ) ) );
+                    add( 5L, descriptor.schema(), "apalong" ),
+                    add( 6L, descriptor.schema(), "apa apa" )
+            ) );
 
-            assertThat( query( stringContains( 1, stringValue( "a" ) ) ) ).containsExactly(  1L, 3L, 4L, 5L );
-            assertThat( query( stringContains( 1, stringValue( "apa" ) ) ) ).containsExactly(  3L, 4L, 5L );
+            assertThat( query( stringContains( 1, stringValue( "a" ) ) ) ).containsExactly(  1L, 3L, 4L, 5L, 6L );
+            assertThat( query( stringContains( 1, stringValue( "apa" ) ) ) ).containsExactly(  3L, 4L, 5L, 6L );
             assertThat( query( stringContains( 1, stringValue( "apa*" ) ) ) ).isEmpty();
+            assertThat( query( stringContains( 1, stringValue( "pa ap" ) ) ) ).containsExactly( 6L );
         }
 
         @Test
@@ -1149,18 +1152,14 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 3L, descriptor.schema(), "apa" ),
                     add( 4L, descriptor.schema(), "apa" ),
                     add( 5L, descriptor.schema(), "longapa" ),
-                    add( 6L, descriptor.schema(), "apalong" ) ) );
+                    add( 6L, descriptor.schema(), "apalong" ),
+                    add( 7L, descriptor.schema(), "apa apa" )
+                    ) );
 
-            assertThat( query( stringSuffix( 1, stringValue( "a" ) ) ) ).containsExactly(  1L, 3L, 4L, 5L );
-            assertThat( query( stringSuffix( 1, stringValue( "apa" ) ) ) ).containsExactly(  3L, 4L, 5L );
+            assertThat( query( stringSuffix( 1, stringValue( "a" ) ) ) ).containsExactly(  1L, 3L, 4L, 5L, 7L );
+            assertThat( query( stringSuffix( 1, stringValue( "apa" ) ) ) ).containsExactly(  3L, 4L, 5L, 7L );
             assertThat( query( stringSuffix( 1, stringValue( "apa*" ) ) ) ).isEmpty();
-            assertThat( query( stringSuffix( 1, stringValue( "" ) ) ) ).containsExactly(  1L, 2L, 3L, 4L, 5L, 6L );
-        }
-
-        @Test
-        public void testIndexShouldHandleLargeAmountOfDuplicatesString() throws Exception
-        {
-            doTestShouldHandleLargeAmountOfDuplicates( "this is a semi-long string that will need to be split" );
+            assertThat( query( stringSuffix( 1, stringValue( "a apa" ) ) ) ).containsExactly(  7L );
         }
 
         @Test
