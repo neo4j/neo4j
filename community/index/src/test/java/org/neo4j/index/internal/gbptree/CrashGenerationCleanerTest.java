@@ -70,7 +70,7 @@ class CrashGenerationCleanerTest
     private RandomRule randomRule;
 
     private static final String FILE_NAME = "index";
-    private static final int PAGE_SIZE = 256;
+    private static final int PAGE_SIZE = 4096;
 
     private PagedFile pagedFile;
     private final Layout<MutableLong,MutableLong> layout = longLayout().build();

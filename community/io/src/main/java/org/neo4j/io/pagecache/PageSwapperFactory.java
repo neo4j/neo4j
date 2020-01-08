@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.annotations.service.Service;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 
 /**
  * Creates PageSwappers for the given files.
@@ -39,16 +38,6 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
 @Service
 public interface PageSwapperFactory
 {
-    /**
-     * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is
-     * required for doing direct IO, then {@link UnsafeUtil#pageSize()} can be
-     * returned.
-     *
-     * @return The required buffer alignment byte multiple.
-     * @param useDirectIO true if underlying factory should use direct io
-     */
-    long getRequiredBufferAlignment( boolean useDirectIO );
-
     /**
      * Create a PageSwapper for the given file.
      *

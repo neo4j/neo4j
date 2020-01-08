@@ -45,7 +45,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 class GBPTreeSingleWriterTest
 {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 256 ) );
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 512 ) );
     @Inject
     private TestDirectory directory;
     @Inject

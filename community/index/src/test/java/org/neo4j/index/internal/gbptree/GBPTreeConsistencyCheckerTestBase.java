@@ -57,7 +57,7 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class, RandomExtension.class} )
 abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 {
-    private static final int PAGE_SIZE = 256;
+    private static final int PAGE_SIZE = 512;
 
     @RegisterExtension
     static final PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();

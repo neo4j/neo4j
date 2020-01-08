@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,6 +33,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.internal.helpers.ArrayUtil.concat;
+import static org.neo4j.internal.helpers.ArrayUtil.contains;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.DIRECT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
@@ -68,7 +72,7 @@ public class StoreFactory
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.recordFormats = recordFormats;
         this.cacheTracer = cacheTracer;
-        this.openOptions = openOptions;
+        this.openOptions = buildOpenOptions( config, openOptions );
         this.logProvider = logProvider;
         this.pageCache = pageCache;
         configureRecordFormat( recordFormats, config );
@@ -128,5 +132,19 @@ public class StoreFactory
         }
         return new NeoStores( fileSystemAbstraction, databaseLayout, config, idGeneratorFactory, pageCache, logProvider, recordFormats, createStoreIfNotExists,
                 cacheTracer, storeTypes, openOptions );
+    }
+
+    private static OpenOption[] buildOpenOptions( Config config, OpenOption[] openOptions )
+    {
+        if ( !config.get( GraphDatabaseSettings.pagecache_direct_io ) )
+        {
+            return openOptions;
+        }
+
+        if ( contains( openOptions, DIRECT ) )
+        {
+            return openOptions;
+        }
+        return concat( openOptions, DIRECT );
     }
 }

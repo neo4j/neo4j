@@ -54,7 +54,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 
 @TestDirectoryExtension
 public abstract class PageSwapperTest
@@ -135,17 +134,6 @@ public abstract class PageSwapperTest
     }
 
     protected abstract FileSystemAbstraction getFs();
-
-    @Test
-    @EnabledOnOs( OS.LINUX )
-    void requiredDirectIoBufferAlignment()
-    {
-        PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
-        final long alignment = swapperFactory.getRequiredBufferAlignment( true );
-        assertTrue( isPowerOfTwo( alignment ), "Value: " + alignment );
-        // we should be at least 512 bytes aligned
-        assertThat( alignment ).isGreaterThanOrEqualTo( 512L );
-    }
 
     @Test
     void readMustNotSwallowInterrupts() throws Exception

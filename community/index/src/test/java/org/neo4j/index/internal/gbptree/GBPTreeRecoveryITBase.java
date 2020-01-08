@@ -56,7 +56,7 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 @ExtendWith( RandomExtension.class )
 abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 {
-    private static final int PAGE_SIZE = 256;
+    private static final int PAGE_SIZE = 512;
 
     @Inject
     private EphemeralFileSystemAbstraction fs;

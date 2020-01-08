@@ -821,6 +821,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<String> pagecache_warmup_prefetch_whitelist =
             newBuilder( "dbms.memory.pagecache.warmup.preload.whitelist", STRING, ".*" ).build();
 
+    @Description( "Use direct I/O for page cache. Setting is supported only on Linux and only for a subset of record formats" +
+            " that use platform aligned page size." )
+    public static final Setting<Boolean> pagecache_direct_io =
+            newBuilder( "dbms.memory.pagecache.directio", BOOL, false ).build();
+
     @Description( "Allows the enabling or disabling of the file watcher service." +
             " This is an auxiliary service but should be left enabled in almost all cases." )
     public static final Setting<Boolean> filewatcher_enabled = newBuilder( "dbms.filewatcher.enabled", BOOL, true ).build();

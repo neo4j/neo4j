@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
+import com.sun.nio.file.ExtendedOpenOption;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 
@@ -38,5 +40,13 @@ public enum PageCacheOpenOptions implements OpenOption
     /**
      * Mapped file will only use a single channel, overriding the otherwise configured striping amount, e.g. one channel per core.
      */
-    NO_CHANNEL_STRIPING
+    NO_CHANNEL_STRIPING,
+
+    /**
+     * Map the file with direct I/O flag.
+     * Please note that support for this option is limited.
+     * Please check that your platform is supported before providing this option.
+     * @see ExtendedOpenOption for details.
+     */
+    DIRECT
 }

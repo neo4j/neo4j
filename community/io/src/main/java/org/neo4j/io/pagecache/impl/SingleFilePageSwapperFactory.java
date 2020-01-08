@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -63,11 +62,5 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     public void close()
     {
         // We have nothing to close
-    }
-
-    @Override
-    public long getRequiredBufferAlignment( boolean useDirectIO )
-    {
-        return useDirectIO ? UnsafeUtil.pageSize() : 1;
     }
 }

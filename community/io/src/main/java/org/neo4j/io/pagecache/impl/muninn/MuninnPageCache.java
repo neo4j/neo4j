@@ -110,8 +110,7 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  */
 public class MuninnPageCache implements PageCache
 {
-    private static final boolean USE_DIRECT_IO = flag( MuninnPageCache.class, "useDirectIO", false );
-    public static final byte ZERO_BYTE =
+     public static final byte ZERO_BYTE =
             (byte) (flag( MuninnPageCache.class, "brandedZeroByte", false ) ? 0x0f : 0);
 
     // The amount of memory we need for every page, both its buffer and its meta-data.
@@ -265,9 +264,8 @@ public class MuninnPageCache implements PageCache
         this.pageCacheTracer = pageCacheTracer;
         this.versionContextSupplier = versionContextSupplier;
         this.printExceptionsOnClose = true;
-        long alignment = swapperFactory.getRequiredBufferAlignment( USE_DIRECT_IO );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
-        this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
+        this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
         this.scheduler = jobScheduler;
         this.clock = clock;
 
@@ -322,6 +320,7 @@ public class MuninnPageCache implements PageCache
         boolean deleteOnClose = false;
         boolean anyPageSize = false;
         boolean noChannelStriping = false;
+        boolean useDirectIO = false;
         for ( OpenOption option : openOptions )
         {
             if ( option.equals( StandardOpenOption.CREATE ) )
@@ -343,6 +342,10 @@ public class MuninnPageCache implements PageCache
             else if ( option.equals( PageCacheOpenOptions.NO_CHANNEL_STRIPING ) )
             {
                 noChannelStriping = true;
+            }
+            else if ( option.equals( PageCacheOpenOptions.DIRECT ) )
+            {
+                useDirectIO = true;
             }
             else if ( !ignoredOpenOptions.contains( option ) )
             {
@@ -395,7 +398,7 @@ public class MuninnPageCache implements PageCache
                 createIfNotExists,
                 truncateExisting,
                 noChannelStriping,
-                USE_DIRECT_IO );
+                useDirectIO );
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose( deleteOnClose );
         current = new FileMapping( file, pagedFile );
