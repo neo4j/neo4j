@@ -107,4 +107,10 @@ public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> 
     {
         return actual.getMaxId();
     }
+
+    @Override
+    public int getPageSize( int pageCachePageSize, int recordSize )
+    {
+        return actual.getPageSize( pageCachePageSize, recordSize );
+    }
 }

@@ -152,8 +152,5 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param recordSize store format record size
      * @return page size for file
      */
-    default int getPageSize( int pageCachePageSize, int recordSize )
-    {
-        return pageCachePageSize - pageCachePageSize % recordSize;
-    }
+    int getPageSize( int pageCachePageSize, int recordSize );
 }

@@ -239,6 +239,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
+        public int getPageSize( int pageCachePageSize, int recordSize )
+        {
+            return actual.getPageSize( pageCachePageSize, recordSize );
+        }
+
+        @Override
         public boolean equals( Object otherFormat )
         {
             return actual.equals( otherFormat );

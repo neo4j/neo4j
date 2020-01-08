@@ -106,6 +106,7 @@ class CommonAbstractStoreTest
     @BeforeEach
     void setUpMocks() throws IOException
     {
+        when( recordFormat.getPageSize( anyInt(), anyInt() ) ).thenReturn( Long.SIZE );
         when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean(), any() ) ).thenReturn(
                 idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
