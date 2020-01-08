@@ -20,62 +20,37 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.time.Clocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralTestDirectoryExtension
 class GBPTreeSingleWriterTest
 {
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 256 ) );
     @Inject
-    TestDirectory directory;
+    private TestDirectory directory;
     @Inject
-    FileSystemAbstraction fileSystem;
     private PageCache pageCache;
-    private SimpleLongLayout layout;
-    private ThreadPoolJobScheduler jobScheduler;
-
-    @BeforeEach
-    void createPageCache()
-    {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
-        MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB", new LocalMemoryTracker() );
-        jobScheduler = new ThreadPoolJobScheduler();
-        pageCache = new MuninnPageCache( factory, mman, 256, PageCacheTracer.NULL, EMPTY, jobScheduler, Clocks.nanoClock() );
-        layout = SimpleLongLayout.longLayout()
-                .withFixedSize( true )
-                .build();
-    }
-
-    @AfterEach
-    void tearDownPageCache() throws Exception
-    {
-        closeAll( pageCache, jobScheduler );
-    }
+    private SimpleLongLayout layout = SimpleLongLayout.longLayout().withFixedSize( true ).build();
 
     @Test
     void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet0() throws IOException
