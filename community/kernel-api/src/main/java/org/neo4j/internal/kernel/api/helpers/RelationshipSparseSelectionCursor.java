@@ -93,7 +93,6 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
         cursor.properties( propertyCursor );
     }
 
-
     @Override
     public void source( NodeCursor nodeCursor )
     {
