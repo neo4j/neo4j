@@ -25,8 +25,6 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -79,7 +77,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
@@ -103,6 +100,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -817,20 +815,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         // given
-        LockService locks = mock( LockService.class, new Answer<>()
-        {
-            @Override
-            public synchronized Object answer( final InvocationOnMock invocation )
-            {
-                // This is necessary because finalize() will also be called
-                String name = invocation.getMethod().getName();
-                if ( name.equals( "acquireNodeLock" ) || name.equals( "acquireRelationshipLock" ) )
-                {
-                    return mock( Lock.class, invocationOnMock -> null );
-                }
-                return null;
-            }
-        } );
+        LockService locks = mock( LockService.class, RETURNS_MOCKS );
         NodeStore nodeStore = neoStores.getNodeStore();
         long[] nodes = { // allocate ids
                 nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ),
