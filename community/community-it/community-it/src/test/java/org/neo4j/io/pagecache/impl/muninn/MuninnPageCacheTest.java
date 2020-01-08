@@ -67,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 
@@ -107,15 +106,16 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped() throws IOException
     {
-        DefaultPageCacheTracer defaultPageCacheTracer = DefaultPageCacheTracer.TRACER;
+        DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
         File fileForDeletion = file( "fileForDeletion" );
         writeInitialDataTo( fileForDeletion );
         long initialFlushes = defaultPageCacheTracer.flushes();
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, defaultPageCacheTracer ) )
         {
-            try ( PagedFile pagedFile = map( pageCache, fileForDeletion, 8 ) )
+            try ( var cursorTracer = defaultPageCacheTracer.createPageCursorTracer( "shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped" );
+                    PagedFile pagedFile = map( pageCache, fileForDeletion, 8 ) )
             {
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, TRACER_SUPPLIER.get() ) )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
                 {
                     assertTrue( cursor.next() );
                     cursor.putLong( 0L );
