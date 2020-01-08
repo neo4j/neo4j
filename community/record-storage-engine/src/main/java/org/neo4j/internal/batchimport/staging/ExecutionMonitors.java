@@ -33,8 +33,7 @@ public class ExecutionMonitors
 
     public static ExecutionMonitor defaultVisible()
     {
-        ProgressRestoringMonitor monitor = new ProgressRestoringMonitor();
-        return new HumanUnderstandableExecutionMonitor( NO_MONITOR, monitor );
+        return new HumanUnderstandableExecutionMonitor( NO_MONITOR );
     }
 
     private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()

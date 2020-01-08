@@ -57,7 +57,6 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
-import static org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_EXTERNAL_MONITOR;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 
 @PageCacheExtension
@@ -83,7 +82,7 @@ class HumanUnderstandableExecutionMonitorIT
     {
         // given
         CapturingMonitor progress = new CapturingMonitor();
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress, NO_EXTERNAL_MONITOR );
+        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress );
         IdType idType = IdType.INTEGER;
         Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, random.seed(),
                 0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
