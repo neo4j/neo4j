@@ -48,6 +48,7 @@ import org.neo4j.token.api.TokenHolder;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 @EphemeralPageCacheExtension
@@ -105,7 +106,7 @@ class SchemaStorageReadAndWriteTest
     void shouldPerfectlyPreserveSchemaRules() throws Exception
     {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
-        storage.writeSchemaRule( schemaRule );
+        storage.writeSchemaRule( schemaRule, NULL );
         SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId() );
         assertTrue( RandomSchema.schemaDeepEquals( returnedRule, schemaRule ),
                 () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule );

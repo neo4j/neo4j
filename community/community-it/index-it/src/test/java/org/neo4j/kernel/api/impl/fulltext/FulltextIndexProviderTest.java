@@ -509,6 +509,7 @@ public class FulltextIndexProviderTest
             {
 
                 StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(), NULL );
+                var cursorTracer = PageCursorTracer.NULL;
                 try ( NeoStores neoStores = factory.openAllNeoStores( false ) )
                 {
                     TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores );
@@ -524,8 +525,8 @@ public class FulltextIndexProviderTest
                         }
                     }
                     index = index.withIndexConfig( IndexConfig.with( indexConfigMap ) );
-                    storage.writeSchemaRule( index );
-                    schemaStore.flush( PageCursorTracer.NULL );
+                    storage.writeSchemaRule( index, cursorTracer );
+                    schemaStore.flush( cursorTracer );
                 }
             }
             catch ( Exception e )

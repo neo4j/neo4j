@@ -24,20 +24,21 @@ import java.io.IOException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
-
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
 {
     private final NeoStores neoStores;
     private final SchemaStorage schemaStorage;
+    private final PageCursorTracer cursorTracer;
 
-    SchemaRuleMigrationAccessImpl( NeoStores neoStores, SchemaStorage schemaStorage )
+    SchemaRuleMigrationAccessImpl( NeoStores neoStores, SchemaStorage schemaStorage, PageCursorTracer cursorTracer )
     {
         this.neoStores = neoStores;
         this.schemaStorage = schemaStorage;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -49,13 +50,13 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     @Override
     public void writeSchemaRule( SchemaRule rule ) throws KernelException
     {
-        schemaStorage.writeSchemaRule( rule );
+        schemaStorage.writeSchemaRule( rule, cursorTracer );
     }
 
     @Override
     public void close() throws IOException
     {
-        neoStores.flush( IOLimiter.UNLIMITED, NULL );
+        neoStores.flush( IOLimiter.UNLIMITED, cursorTracer );
         neoStores.close();
     }
 }

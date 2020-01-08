@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public interface DynamicRecordAllocator
 {
     int getRecordDataSize();
 
-    DynamicRecord nextRecord();
+    DynamicRecord nextRecord( PageCursorTracer cursorTracer );
 }

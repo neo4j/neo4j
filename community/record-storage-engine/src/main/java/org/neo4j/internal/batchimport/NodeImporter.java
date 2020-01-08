@@ -93,7 +93,7 @@ public class NodeImporter extends EntityImporter
         // also store this id as property in temp property store
         if ( id != null )
         {
-            idPropertyStore.encodeValue( idPropertyBlock, 0, Values.of( id ) );
+            idPropertyStore.encodeValue( idPropertyBlock, 0, Values.of( id ), PageCursorTracer.NULL );
             idPropertyRecord.addPropertyBlock( idPropertyBlock );
             idPropertyRecord.setId( nodeId ); // yes nodeId
             idPropertyRecord.setInUse( true );
@@ -138,7 +138,7 @@ public class NodeImporter extends EntityImporter
         if ( !hasLabelField )
         {
             long[] labelIds = labelTokenRepository.getOrCreateIds( labels, labelsCursor );
-            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore() );
+            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
         }
         labelsCursor = 0;
 

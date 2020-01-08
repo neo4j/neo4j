@@ -27,6 +27,7 @@ import java.util.Collection;
 import org.neo4j.consistency.checking.NodeRecordCheck.LabelsField;
 import org.neo4j.consistency.checking.NodeRecordCheck.RelationshipField;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
@@ -222,7 +224,7 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node ).add( 1, null, null );
+        new InlineNodeLabels( node ).add( 1, null, null, NULL );
         LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( 1 ) );
 
         add( labelRecordNotInUse );
@@ -253,7 +255,7 @@ class NodeRecordCheckTest
 
         labelIds[12] = labelIds.length;
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new ReusableRecordsAllocator( 52, labelRecords ) );
+                new ReusableRecordsAllocator( 52, labelRecords ), NULL );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -272,7 +274,7 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node ).put( new long[]{1, 2, 1}, null, null );
+        new InlineNodeLabels( node ).put( new long[]{1, 2, 1}, null, null, NULL );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
 
@@ -302,7 +304,7 @@ class NodeRecordCheckTest
 
         labelIds[12] = 11;
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new ReusableRecordsAllocator( 52, labelRecords ) );
+                new ReusableRecordsAllocator( 52, labelRecords ), NULL );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -325,12 +327,11 @@ class NodeRecordCheckTest
         new InlineNodeLabels( node )
         {
             @Override
-            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator
-                    allocator )
+            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
             {
-                return putSorted(  node, labelIds, nodeStore, allocator );
+                return putSorted(  node, labelIds, nodeStore, allocator, cursorTracer );
             }
-        }.put( new long[]{3, 1, 2}, null, null );
+        }.put( new long[]{3, 1, 2}, null, null, NULL );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
         LabelTokenRecord label3 = inUse( new LabelTokenRecord( 3 ) );
@@ -356,12 +357,11 @@ class NodeRecordCheckTest
         new InlineNodeLabels( node )
         {
             @Override
-            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator
-                    allocator )
+            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
             {
-                return putSorted( node, labelIds, nodeStore, allocator );
+                return putSorted( node, labelIds, nodeStore, allocator, cursorTracer );
             }
-        }.put( new long[]{1, 18, 13, 14, 15, 16, 12}, null, null );
+        }.put( new long[]{1, 18, 13, 14, 15, 16, 12}, null, null, NULL );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label12 = inUse( new LabelTokenRecord( 12 ) );
         LabelTokenRecord label13 = inUse( new LabelTokenRecord( 13 ) );
@@ -404,7 +404,7 @@ class NodeRecordCheckTest
         labelIds[12] = labelIds[11];
         labelIds[11] = temp;
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new ReusableRecordsAllocator( 52, labelRecords ) );
+                new ReusableRecordsAllocator( 52, labelRecords ), NULL );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -432,7 +432,7 @@ class NodeRecordCheckTest
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new NotUsedReusableRecordsAllocator( 52, labelRecords ) );
+                new NotUsedReusableRecordsAllocator( 52, labelRecords ), NULL );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -479,9 +479,9 @@ class NodeRecordCheckTest
         }
 
         @Override
-        public DynamicRecord nextRecord()
+        public DynamicRecord nextRecord( PageCursorTracer cursorTracer )
         {
-            DynamicRecord record = super.nextRecord();
+            DynamicRecord record = super.nextRecord( cursorTracer );
             record.setInUse( false );
             return record;
         }

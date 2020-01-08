@@ -216,7 +216,7 @@ class SchemaStore35Test
 
     private void storeRule( SchemaRule rule )
     {
-        Collection<DynamicRecord> records = store.allocateFrom( rule );
+        Collection<DynamicRecord> records = store.allocateFrom( rule, NULL );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );

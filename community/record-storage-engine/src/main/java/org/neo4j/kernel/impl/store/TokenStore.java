@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -126,10 +127,10 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         return new NamedToken( getStringFor( record ), record.getIntId(), record.isInternal() );
     }
 
-    public Collection<DynamicRecord> allocateNameRecords( byte[] chars )
+    public Collection<DynamicRecord> allocateNameRecords( byte[] chars, PageCursorTracer cursorTracer )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        nameStore.allocateRecordsFromBytes( records, chars );
+        nameStore.allocateRecordsFromBytes( records, chars, cursorTracer );
         return records;
     }
 

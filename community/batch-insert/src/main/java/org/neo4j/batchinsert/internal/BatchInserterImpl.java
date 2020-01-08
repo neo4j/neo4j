@@ -181,6 +181,8 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
@@ -337,7 +339,7 @@ public class BatchInserterImpl implements BatchInserter
             relationshipCreator = new RelationshipCreator(
                 new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getStoreHeaderInt() );
             propertyTraverser = new PropertyTraverser();
-            propertyCreator = new PropertyCreator( propertyStore, propertyTraverser );
+            propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, NULL );
             propertyDeletor = new PropertyDeleter( propertyTraverser );
 
             flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
@@ -492,7 +494,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void validateNodePropertyExistenceConstraintCanBeCreated( int labelId, int[] propertyKeyIds )
     {
-        ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds );
+        ConstraintDescriptor constraintDescriptor = existsForLabel( labelId, propertyKeyIds );
 
         if ( schemaCache.hasConstraintRule( constraintDescriptor ) )
         {
@@ -503,7 +505,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void validateRelationshipConstraintCanBeCreated( int relTypeId, int propertyKeyId )
     {
-        ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.existsForLabel( relTypeId, propertyKeyId );
+        ConstraintDescriptor constraintDescriptor = existsForLabel( relTypeId, propertyKeyId );
 
         if ( schemaCache.hasConstraintRule( constraintDescriptor ) )
         {
@@ -519,12 +521,13 @@ public class BatchInserterImpl implements BatchInserter
         prototype = prototype.withIndexProvider( providerDescriptor );
         prototype = ensureSchemaHasName( prototype );
 
-        IndexDescriptor index = prototype.materialise( schemaStore.nextId( TRACER_SUPPLIER.get() ) );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        IndexDescriptor index = prototype.materialise( schemaStore.nextId( cursorTracer ) );
         index = provider.completeConfiguration( index );
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( index );
+            schemaRuleAccess.writeSchemaRule( index, cursorTracer );
             schemaCache.addSchemaRule( index );
             labelsTouched = true;
             flushStrategy.forceFlush();
@@ -625,8 +628,9 @@ public class BatchInserterImpl implements BatchInserter
     {
         // TODO: Do not create duplicate index
 
-        long indexId = schemaStore.nextId( TRACER_SUPPLIER.get() );
-        long constraintRuleId = schemaStore.nextId( TRACER_SUPPLIER.get() );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        long indexId = schemaStore.nextId( cursorTracer );
+        long constraintRuleId = schemaStore.nextId( cursorTracer );
         constraint = ensureSchemaHasName( constraint );
 
         IndexProvider provider = indexProviderMap.getDefaultProvider();
@@ -639,9 +643,9 @@ public class BatchInserterImpl implements BatchInserter
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( constraint );
+            schemaRuleAccess.writeSchemaRule( constraint, cursorTracer );
             schemaCache.addSchemaRule( constraint );
-            schemaRuleAccess.writeSchemaRule( index );
+            schemaRuleAccess.writeSchemaRule( index, cursorTracer );
             schemaCache.addSchemaRule( index );
             labelsTouched = true;
             flushStrategy.forceFlush();
@@ -724,13 +728,13 @@ public class BatchInserterImpl implements BatchInserter
 
     private ConstraintDescriptor createNodePropertyExistenceConstraintRule( String name, int labelId, int... propertyKeyIds )
     {
-        ConstraintDescriptor rule =
-                ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ).withId( schemaStore.nextId( TRACER_SUPPLIER.get() ) ).withName( name );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        ConstraintDescriptor rule = existsForLabel( labelId, propertyKeyIds ).withId( schemaStore.nextId( cursorTracer ) ).withName( name );
         rule = ensureSchemaHasName( rule );
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( rule );
+            schemaRuleAccess.writeSchemaRule( rule, cursorTracer );
             schemaCache.addSchemaRule( rule );
             labelsTouched = true;
             flushStrategy.forceFlush();
@@ -744,14 +748,13 @@ public class BatchInserterImpl implements BatchInserter
 
     private ConstraintDescriptor createRelTypePropertyExistenceConstraintRule( String name, int relTypeId, int... propertyKeyIds )
     {
-        ConstraintDescriptor rule =
-                ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ).withId( schemaStore.nextId( TRACER_SUPPLIER.get() ) ).withName(
-                        name );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        ConstraintDescriptor rule = existsForRelType( relTypeId, propertyKeyIds ).withId( schemaStore.nextId( cursorTracer ) ).withName( name );
         rule = ensureSchemaHasName( rule );
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( rule );
+            schemaRuleAccess.writeSchemaRule( rule, cursorTracer );
             schemaCache.addSchemaRule( rule );
             flushStrategy.forceFlush();
             return rule;
@@ -846,7 +849,7 @@ public class BatchInserterImpl implements BatchInserter
     private void setNodeLabels( NodeRecord nodeRecord, Label... labels )
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
-        nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore() );
+        nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore(), TRACER_SUPPLIER.get() );
         labelsTouched = true;
     }
 
@@ -1139,13 +1142,14 @@ public class BatchInserterImpl implements BatchInserter
 
     private <R extends TokenRecord> int createNewToken( TokenStore<R> store, String name, boolean internal )
     {
-        int keyId = (int) store.nextId( TRACER_SUPPLIER.get() );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        int keyId = (int) store.nextId( cursorTracer );
         R record = store.newRecord();
         record.setId( keyId );
         record.setInUse( true );
         record.setInternal( internal );
         record.setCreated();
-        Collection<DynamicRecord> keyRecords = store.allocateNameRecords( encodeString( name ) );
+        Collection<DynamicRecord> keyRecords = store.allocateNameRecords( encodeString( name ), cursorTracer );
         record.setNameId( (int) Iterables.first( keyRecords ).getId() );
         record.addNameRecords( keyRecords );
         store.updateRecord( record );

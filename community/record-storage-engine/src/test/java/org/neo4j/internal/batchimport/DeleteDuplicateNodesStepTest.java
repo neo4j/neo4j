@@ -204,7 +204,7 @@ class DeleteDuplicateNodesStepTest
         NodeRecord nodeRecord = nodeStore.newRecord();
         nodeRecord.setId( nodeStore.nextId( NULL ) );
         nodeRecord.setInUse( true );
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore() );
+        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore(), NULL );
         PropertyRecord[] propertyRecords = createPropertyChain( nodeRecord, propertyCount, propertyStore );
         if ( propertyRecords.length > 0 )
         {
@@ -225,7 +225,7 @@ class DeleteDuplicateNodesStepTest
         for ( int i = 0; i < numberOfProperties; i++ )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, i, random.nextValue() );
+            propertyStore.encodeValue( block, i, random.nextValue(), NULL );
             if ( current == null || block.getValueBlocks().length > space )
             {
                 PropertyRecord next = propertyStore.newRecord();

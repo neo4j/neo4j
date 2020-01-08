@@ -227,7 +227,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     private List<DynamicRecord> allocateNameRecords( String tokenName )
     {
         List<DynamicRecord> nameRecords = new ArrayList<>();
-        nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ) );
+        nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ), NULL );
         return nameRecords;
     }
 

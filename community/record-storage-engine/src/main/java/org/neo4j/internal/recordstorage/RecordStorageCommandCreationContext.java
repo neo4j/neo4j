@@ -51,6 +51,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
 
     RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold )
     {
+        this.cursorTracer = TRACER_SUPPLIER.get();
         this.neoStores = neoStores;
         this.loaders = new Loaders( neoStores );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
@@ -62,11 +63,10 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         this.propertyCreator = new PropertyCreator(
                 new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
                 new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,
-                propertyTraverser, propertyStore.allowStorePointsAndTemporal() );
+                propertyTraverser, propertyStore.allowStorePointsAndTemporal(), cursorTracer );
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.schemaStore = neoStores.getSchemaStore();
-        this.cursorTracer = TRACER_SUPPLIER.get();
     }
 
     private long nextId( StoreType storeType )
@@ -121,6 +121,6 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         RecordChangeSet recordChangeSet = new RecordChangeSet( loaders );
         return new TransactionRecordState( neoStores, integrityValidator,
                 recordChangeSet, lastTransactionIdWhenStarted, locks,
-                relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter );
+                relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter, cursorTracer );
     }
 }

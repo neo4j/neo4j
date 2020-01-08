@@ -129,7 +129,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private void encodeProperty( PropertyBlock block, int key, Object property )
     {
         Value value = property instanceof Value ? (Value) property : Values.of( property );
-        PropertyStore.encodeValue( block, key, value, dynamicStringRecordAllocator, dynamicArrayRecordAllocator, propertyStore.allowStorePointsAndTemporal() );
+        PropertyStore.encodeValue( block, key, value, dynamicStringRecordAllocator, dynamicArrayRecordAllocator, propertyStore.allowStorePointsAndTemporal(),
+                PageCursorTracer.NULL );
     }
 
     long createAndWritePropertyChain()

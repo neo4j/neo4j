@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -34,8 +35,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
-
 public class PropertyCreator
 {
     private final DynamicRecordAllocator stringRecordAllocator;
@@ -43,20 +42,23 @@ public class PropertyCreator
     private final IdSequence propertyRecordIdGenerator;
     private final PropertyTraverser traverser;
     private final boolean allowStorePointsAndTemporal;
+    private final PageCursorTracer cursorTracer;
 
-    public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser )
+    public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser, PageCursorTracer cursorTracer )
     {
-        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePointsAndTemporal() );
+        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePointsAndTemporal(),
+                cursorTracer );
     }
 
     PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
-            PropertyTraverser traverser, boolean allowStorePointsAndTemporal )
+            PropertyTraverser traverser, boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer )
     {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
         this.propertyRecordIdGenerator = propertyRecordIdGenerator;
         this.traverser = traverser;
         this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
+        this.cursorTracer = cursorTracer;
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
@@ -141,7 +143,7 @@ public class PropertyCreator
         if ( freeHostProxy == null )
         {
             // We couldn't find free space along the way, so create a new host record
-            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId( TRACER_SUPPLIER.get() ), primitive ).forChangingData();
+            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), primitive ).forChangingData();
             freeHost.setInUse( true );
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
@@ -188,7 +190,7 @@ public class PropertyCreator
 
     public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
-        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal );
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal, cursorTracer );
         return block;
     }
 
@@ -205,7 +207,7 @@ public class PropertyCreator
         {
             return Record.NO_NEXT_PROPERTY.intValue();
         }
-        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( TRACER_SUPPLIER.get() ), owner )
+        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), owner )
                 .forChangingData();
         createdPropertyRecords.accept( currentRecord );
         currentRecord.setInUse( true );
@@ -219,7 +221,7 @@ public class PropertyCreator
                 // Here it means the current block is done for
                 PropertyRecord prevRecord = currentRecord;
                 // Create new record
-                long propertyId = propertyRecordIdGenerator.nextId( TRACER_SUPPLIER.get() );
+                long propertyId = propertyRecordIdGenerator.nextId( cursorTracer );
                 currentRecord = propertyRecords.create( propertyId, owner ).forChangingData();
                 createdPropertyRecords.accept( currentRecord );
                 currentRecord.setInUse( true );

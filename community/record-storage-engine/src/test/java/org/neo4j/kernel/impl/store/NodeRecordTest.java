@@ -98,7 +98,7 @@ class NodeRecordTest
         long labelId = 10_123;
         // A dynamic label record
         Collection<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(), new long[]{labelId},
-                recordAllocator );
+                recordAllocator, NULL );
         // and a deleted one as well (simulating some deleted labels)
         DynamicRecord unused = newDeletedDynamicRecord( ids.nextId( NULL ) );
         unused.setInUse( false );

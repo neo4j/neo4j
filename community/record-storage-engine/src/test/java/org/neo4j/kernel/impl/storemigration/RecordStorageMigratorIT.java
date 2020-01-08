@@ -340,7 +340,7 @@ class RecordStorageMigratorIT
                 }
                 randomSchema.commit();
                 generatedRules.add( schemaRule );
-                List<DynamicRecord> dynamicRecords = schemaStore35.allocateFrom( schemaRule );
+                List<DynamicRecord> dynamicRecords = schemaStore35.allocateFrom( schemaRule, PageCursorTracer.NULL );
                 for ( DynamicRecord dynamicRecord : dynamicRecords )
                 {
                     schemaStore35.updateRecord( dynamicRecord );
@@ -396,7 +396,7 @@ class RecordStorageMigratorIT
         for ( int i = 1; i <= tokenCount; i++ )
         {
             String name = prefix + i;
-            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ) );
+            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), PageCursorTracer.NULL );
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             record.addNameRecords( nameRecords );
             record.setId( tokenStore.nextId( PageCursorTracer.NULL ) );

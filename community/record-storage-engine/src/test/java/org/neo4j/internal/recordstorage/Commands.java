@@ -53,6 +53,8 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 public class Commands
 {
     private Commands()
@@ -156,7 +158,7 @@ public class Commands
         PropertyBlock block = new PropertyBlock();
         if ( valueRecordIds.length == 0 )
         {
-            PropertyStore.encodeValue( block, key, Values.of( 123 ), null, null, true );
+            PropertyStore.encodeValue( block, key, Values.of( 123 ), null, null, true, NULL );
         }
         else
         {

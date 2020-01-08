@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class ReusableRecordsAllocatorTest
 {
@@ -36,7 +37,7 @@ class ReusableRecordsAllocatorTest
         dynamicRecord.setInUse( false );
 
         ReusableRecordsAllocator recordsAllocator = new ReusableRecordsAllocator( 10, dynamicRecord );
-        DynamicRecord allocatedRecord = recordsAllocator.nextRecord();
+        DynamicRecord allocatedRecord = recordsAllocator.nextRecord( NULL );
 
         assertSame( allocatedRecord, dynamicRecord, "Records should be the same." );
         assertTrue( allocatedRecord.inUse(), "Record should be marked as used." );
@@ -50,7 +51,7 @@ class ReusableRecordsAllocatorTest
         dynamicRecord.setInUse( true );
 
         ReusableRecordsAllocator recordsAllocator = new ReusableRecordsAllocator( 10, dynamicRecord );
-        DynamicRecord allocatedRecord = recordsAllocator.nextRecord();
+        DynamicRecord allocatedRecord = recordsAllocator.nextRecord( NULL );
 
         assertSame( allocatedRecord, dynamicRecord, "Records should be the same." );
         assertTrue( allocatedRecord.inUse(), "Record should be marked as used." );
@@ -64,9 +65,9 @@ class ReusableRecordsAllocatorTest
         DynamicRecord dynamicRecord2 = new DynamicRecord( 1 );
 
         ReusableRecordsAllocator recordsAllocator = new ReusableRecordsAllocator( 10, dynamicRecord1, dynamicRecord2 );
-        assertSame( dynamicRecord1, recordsAllocator.nextRecord(), "Should be the same as first available record." );
+        assertSame( dynamicRecord1, recordsAllocator.nextRecord( NULL ), "Should be the same as first available record." );
         assertTrue( recordsAllocator.hasNext(), "Should have second record." );
-        assertSame( dynamicRecord2, recordsAllocator.nextRecord(), "Should be the same as second available record." );
+        assertSame( dynamicRecord2, recordsAllocator.nextRecord( NULL ), "Should be the same as second available record." );
         assertFalse( recordsAllocator.hasNext(), "Should be out of available records" );
     }
 }

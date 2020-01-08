@@ -250,10 +250,11 @@ class SchemaStorageIT
                 "value.doubleArray", Values.doubleArray( new double[]{0.4, 0.6, 1.0} ),
                 "value.boolean", Values.booleanValue( true )
         ) );
+        var cursorTracer = PageCursorTracer.NULL;
         SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) );
-        long id = schemaStore.nextId( PageCursorTracer.NULL );
+        long id = schemaStore.nextId( cursorTracer );
         IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id ).withIndexConfig( expected );
-        storage.writeSchemaRule( storeIndexDescriptor );
+        storage.writeSchemaRule( storeIndexDescriptor, cursorTracer );
 
         // when
         IndexDescriptor schemaRule = (IndexDescriptor) storage.loadSingleSchemaRule( id );

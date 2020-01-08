@@ -50,6 +50,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class WriteTransactionCommandOrderingTest
 {
@@ -155,7 +156,7 @@ class WriteTransactionCommandOrderingTest
         when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
 
         return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
-                0, null, null, null, null, null );
+                0, null, null, null, null, null, NULL );
     }
 
     private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter

@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Calculates record size that property values will occupy if encoded into a {@link PropertyStore}.
@@ -72,7 +73,7 @@ public class PropertyValueRecordSizeCalculator implements ToIntFunction<Value[]>
         for ( Value value : values )
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, true );
+            PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, true, NULL );
             if ( block.getValueBlocks().length > freeBlocksInCurrentRecord )
             {
                 propertyRecordsUsed++;

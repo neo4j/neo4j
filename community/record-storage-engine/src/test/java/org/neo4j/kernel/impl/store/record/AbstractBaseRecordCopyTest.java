@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;
 import org.neo4j.test.extension.Inject;
@@ -47,6 +46,8 @@ import static java.lang.String.format;
 import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.PropertyStore.encodeValue;
 
 @ExtendWith( RandomExtension.class )
 class AbstractBaseRecordCopyTest
@@ -134,8 +135,8 @@ class AbstractBaseRecordCopyTest
             PropertyBlock block = new PropertyBlock();
             // Dynamic records will not be written and read by the property record format,
             // that happens in the store where it delegates to a "sub" store.
-            PropertyStore.encodeValue( block, random.nextInt( 16 ), random.nextValue(),
-                    stringAllocator, arrayAllocator, true );
+            encodeValue( block, random.nextInt( 16 ), random.nextValue(),
+                    stringAllocator, arrayAllocator, true, NULL );
             int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
             if ( tentativeBlocksWithThisOne <= 4 )
             {

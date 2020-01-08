@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 
@@ -49,7 +50,7 @@ class NodeDynamicLabelOrphanChainStartCheckTest
         // given
         DynamicRecord record = new DynamicRecord( 0 );
         inUse( record ) ;
-        allocateFromNumbers( new ArrayList<>(), new long[] { }, new ReusableRecordsAllocator( 66, record ) );
+        allocateFromNumbers( new ArrayList<>(), new long[] { }, new ReusableRecordsAllocator( 66, record ), NULL );
 
         // when
         DynamicLabelConsistencyReport report = check( record );
@@ -66,7 +67,7 @@ class NodeDynamicLabelOrphanChainStartCheckTest
         add( nodeRecord );
 
         DynamicRecord nodeDynamicLabelRecord = inUse( new DynamicRecord( 0 ) );
-        allocateFromNumbers( new ArrayList<>(), new long[]{12L}, new ReusableRecordsAllocator( 66, nodeDynamicLabelRecord ) );
+        allocateFromNumbers( new ArrayList<>(), new long[]{12L}, new ReusableRecordsAllocator( 66, nodeDynamicLabelRecord ), NULL );
 
         // when
         DynamicLabelConsistencyReport report = check( nodeDynamicLabelRecord );
@@ -83,11 +84,11 @@ class NodeDynamicLabelOrphanChainStartCheckTest
 
         Collection<DynamicRecord> validLabelRecords = new ArrayList<>();
         DynamicRecord dynamicRecord = inUse( new DynamicRecord( 0 ) );
-        allocateFromNumbers( validLabelRecords, new long[] {nodeId}, new ReusableRecordsAllocator( 66, dynamicRecord ) );
+        allocateFromNumbers( validLabelRecords, new long[] {nodeId}, new ReusableRecordsAllocator( 66, dynamicRecord ), NULL );
 
         Collection<DynamicRecord> fakePointedToRecords = new ArrayList<>();
         DynamicRecord dynamicRecord1 = inUse( new DynamicRecord( 1 ) );
-        allocateFromNumbers( fakePointedToRecords, new long[] {nodeId}, new ReusableRecordsAllocator( 66, dynamicRecord1 ) );
+        allocateFromNumbers( fakePointedToRecords, new long[] {nodeId}, new ReusableRecordsAllocator( 66, dynamicRecord1 ), NULL );
 
         NodeRecord nodeRecord = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
         nodeRecord.setLabelField( dynamicPointer( fakePointedToRecords ), fakePointedToRecords );

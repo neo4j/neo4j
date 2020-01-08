@@ -282,7 +282,7 @@ class BatchingNeoStoresTest
         {
             // Special hack for property store, since it's not enough to simply set a record as in use there
             PropertyBlock block = new PropertyBlock();
-            ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ) );
+            ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ), NULL );
             ((PropertyRecord) record).addPropertyBlock( block );
         }
         store.updateRecord( record );

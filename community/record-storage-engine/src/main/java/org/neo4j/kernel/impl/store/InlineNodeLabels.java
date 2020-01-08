@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.util.Bits;
@@ -63,34 +64,34 @@ public class InlineNodeLabels implements NodeLabels
     }
 
     @Override
-    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
+    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
         Arrays.sort( labelIds );
-        return putSorted( node, labelIds, nodeStore, allocator );
+        return putSorted( node, labelIds, nodeStore, allocator, cursorTracer );
     }
 
     public static Collection<DynamicRecord> putSorted( NodeRecord node, long[] labelIds,
-            NodeStore nodeStore, DynamicRecordAllocator allocator )
+            NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
         if ( tryInlineInNodeRecord( node, labelIds, node.getDynamicLabelRecords() ) )
         {
             return Collections.emptyList();
         }
 
-        return DynamicNodeLabels.putSorted( node, labelIds, nodeStore, allocator );
+        return DynamicNodeLabels.putSorted( node, labelIds, nodeStore, allocator, cursorTracer );
     }
 
     @Override
-    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator )
+    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
         long[] augmentedLabelIds = labelCount( node.getLabelField() ) == 0 ? new long[]{labelId} :
                                    concatAndSort( parseInlined( node.getLabelField() ), labelId );
 
-        return putSorted( node, augmentedLabelIds, nodeStore, allocator );
+        return putSorted( node, augmentedLabelIds, nodeStore, allocator, cursorTracer );
     }
 
     @Override
-    public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore )
+    public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore, PageCursorTracer cursorTracer )
     {
         long[] newLabelIds = filter( parseInlined( node.getLabelField() ), labelId );
         boolean inlined = tryInlineInNodeRecord( node, newLabelIds, node.getDynamicLabelRecords() );

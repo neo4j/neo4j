@@ -1581,8 +1581,9 @@ class TransactionRecordStateTest
         PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, ResourceLocker.IGNORE,
                 new RelationshipCreator( relationshipGroupGetter, neoStores.getRelationshipGroupStore().getStoreHeaderInt() ),
-                new RelationshipDeleter( relationshipGroupGetter, propertyDeleter ), new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser ),
-                propertyDeleter );
+                new RelationshipDeleter( relationshipGroupGetter, propertyDeleter ),
+                new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser, NULL ),
+                propertyDeleter, NULL );
     }
 
     private static CommandsToApply transaction( TransactionRecordState recordState ) throws TransactionFailureException
@@ -1595,7 +1596,7 @@ class TransactionRecordStateTest
     private static void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse )
     {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
-        DynamicRecord record = dynamicLabelStore.getRecord( id, dynamicLabelStore.nextRecord(), FORCE );
+        DynamicRecord record = dynamicLabelStore.getRecord( id, dynamicLabelStore.nextRecord( NULL ), FORCE );
         assertEquals( inUse, record.inUse() );
     }
 

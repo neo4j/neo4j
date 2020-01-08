@@ -36,6 +36,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
@@ -209,10 +210,10 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
 
     public static void allocateFromNumbers( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator )
+            DynamicRecordAllocator recordAllocator, PageCursorTracer cursorTracer )
     {
         byte[] bytes = encodeFromNumbers( array, 0 );
-        allocateRecordsFromBytes( target, bytes, recordAllocator );
+        allocateRecordsFromBytes( target, bytes, recordAllocator, cursorTracer );
     }
 
     private static void allocateFromCompositeType(
@@ -220,11 +221,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
             byte[] bytes,
             DynamicRecordAllocator recordAllocator,
             boolean allowsStorage,
-            Capability storageCapability )
+            Capability storageCapability, PageCursorTracer cursorTracer )
     {
         if ( allowsStorage )
         {
-            allocateRecordsFromBytes( target, bytes, recordAllocator );
+            allocateRecordsFromBytes( target, bytes, recordAllocator, cursorTracer );
         }
         else
         {
@@ -233,7 +234,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
 
     private static void allocateFromString( Collection<DynamicRecord> target, String[] array,
-            DynamicRecordAllocator recordAllocator )
+            DynamicRecordAllocator recordAllocator, PageCursorTracer cursorTracer )
     {
         byte[][] stringsAsBytes = new byte[array.length][];
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
@@ -253,16 +254,16 @@ public class DynamicArrayStore extends AbstractDynamicStore
             buf.putInt( stringAsBytes.length );
             buf.put( stringAsBytes );
         }
-        allocateRecordsFromBytes( target, buf.array(), recordAllocator );
+        allocateRecordsFromBytes( target, buf.array(), recordAllocator, cursorTracer );
     }
 
-    public void allocateRecords( Collection<DynamicRecord> target, Object array )
+    public void allocateRecords( Collection<DynamicRecord> target, Object array, PageCursorTracer cursorTracer )
     {
-        allocateRecords( target, array, this, allowStorePointsAndTemporal );
+        allocateRecords( target, array, this, allowStorePointsAndTemporal, cursorTracer );
     }
 
     public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator, boolean allowStorePointsAndTemporal )
+            DynamicRecordAllocator recordAllocator, boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer )
     {
         if ( !array.getClass().isArray() )
         {
@@ -272,46 +273,46 @@ public class DynamicArrayStore extends AbstractDynamicStore
         Class<?> type = array.getClass().getComponentType();
         if ( type.equals( String.class ) )
         {
-            allocateFromString( target, (String[]) array, recordAllocator );
+            allocateFromString( target, (String[]) array, recordAllocator, cursorTracer );
         }
         else if ( type.equals( PointValue.class ) )
         {
             allocateFromCompositeType( target,GeometryType.encodePointArray( (PointValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.POINT_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.POINT_PROPERTIES, cursorTracer );
         }
         else if ( type.equals( LocalDate.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateArray( (LocalDate[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorTracer );
         }
         else if ( type.equals( LocalTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalTimeArray( (LocalTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorTracer );
         }
         else if ( type.equals( LocalDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalDateTimeArray( (LocalDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorTracer );
         }
         else if ( type.equals( OffsetTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeTimeArray( (OffsetTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorTracer );
         }
         else if ( type.equals( ZonedDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateTimeArray( (ZonedDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorTracer );
         }
         else if ( type.equals( DurationValue.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDurationArray( (DurationValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorTracer );
         }
         else
         {
-            allocateFromNumbers( target, array, recordAllocator );
+            allocateFromNumbers( target, array, recordAllocator, cursorTracer );
         }
     }
 

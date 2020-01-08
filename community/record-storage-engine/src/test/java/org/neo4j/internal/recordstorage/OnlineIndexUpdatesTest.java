@@ -121,7 +121,7 @@ class OnlineIndexUpdatesTest
         schemaCache = new SchemaCache( new StandardConstraintRuleAccessor(), index -> index );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.start();
-        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
+        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser(), PageCursorTracer.NULL );
         recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore ) );
     }
 
@@ -329,7 +329,7 @@ class OnlineIndexUpdatesTest
         if ( inUse )
         {
             InlineNodeLabels labelFieldWriter = new InlineNodeLabels( nodeRecord );
-            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null );
+            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null, PageCursorTracer.NULL );
         }
         return nodeRecord;
     }

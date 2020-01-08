@@ -714,20 +714,21 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           oldFormat );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
             {
-                dstStore.start( TRACER_SUPPLIER.get() );
+                var cursorTracer = TRACER_SUPPLIER.get();
+                dstStore.start( cursorTracer );
                 TokenHolders srcTokenHolders = new TokenHolders(
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
                 srcTokenHolders.setInitialTokens( allTokens( srcStore ) );
-                srcSchema.initialise( true, TRACER_SUPPLIER.get() );
+                srcSchema.initialise( true, cursorTracer );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
-                SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore );
+                SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorTracer );
 
                 migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess );
 
-                dstStore.flush( IOLimiter.UNLIMITED, TRACER_SUPPLIER.get() );
+                dstStore.flush( IOLimiter.UNLIMITED, cursorTracer );
             }
         }
     }

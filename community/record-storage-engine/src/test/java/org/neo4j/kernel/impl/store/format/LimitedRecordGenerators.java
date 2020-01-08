@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;
@@ -119,7 +120,7 @@ public class LimitedRecordGenerators implements RecordGenerators
                 // Dynamic records will not be written and read by the property record format,
                 // that happens in the store where it delegates to a "sub" store.
                 PropertyStore.encodeValue( block, random.nextInt( tokenBits ), random.nextValue(),
-                        stringAllocator, arrayAllocator, true );
+                        stringAllocator, arrayAllocator, true, PageCursorTracer.NULL );
                 int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
                 if ( tentativeBlocksWithThisOne <= 4 )
                 {

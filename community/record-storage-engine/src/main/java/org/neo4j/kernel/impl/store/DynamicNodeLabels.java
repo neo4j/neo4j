@@ -26,6 +26,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -76,13 +77,14 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     @Override
-    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
+    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
         Arrays.sort( labelIds );
-        return putSorted( node, labelIds, nodeStore, allocator );
+        return putSorted( node, labelIds, nodeStore, allocator, cursorTracer );
     }
 
-    static Collection<DynamicRecord> putSorted( NodeRecord node, long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
+    static Collection<DynamicRecord> putSorted( NodeRecord node, long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator,
+            PageCursorTracer cursorTracer )
     {
         long existingLabelsField = node.getLabelField();
         long existingLabelsBits = parseLabelsBody( existingLabelsField );
@@ -102,7 +104,7 @@ public class DynamicNodeLabels implements NodeLabels
         {
             Iterator<DynamicRecord> recycledRecords = changedDynamicRecords.iterator();
             Collection<DynamicRecord> allocatedRecords = allocateRecordsForDynamicLabels( node.getId(), labelIds,
-                    new ReusableRecordsCompositeAllocator( recycledRecords, allocator ) );
+                    new ReusableRecordsCompositeAllocator( recycledRecords, allocator ), cursorTracer );
             // Set the rest of the previously set dynamic records as !inUse
             while ( recycledRecords.hasNext() )
             {
@@ -118,7 +120,7 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     @Override
-    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator )
+    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
         nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ) );
         long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
@@ -126,13 +128,13 @@ public class DynamicNodeLabels implements NodeLabels
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         Collection<DynamicRecord> changedDynamicRecords = allocateRecordsForDynamicLabels( node.getId(), newLabelIds,
-                new ReusableRecordsCompositeAllocator( existingRecords, allocator ) );
+                new ReusableRecordsCompositeAllocator( existingRecords, allocator ), cursorTracer );
         node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );
         return changedDynamicRecords;
     }
 
     @Override
-    public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore )
+    public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore, PageCursorTracer cursorTracer )
     {
         nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ) );
         long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
@@ -146,7 +148,7 @@ public class DynamicNodeLabels implements NodeLabels
         else
         {
             Collection<DynamicRecord> newRecords = allocateRecordsForDynamicLabels( node.getId(), newLabelIds,
-                    new ReusableRecordsCompositeAllocator( existingRecords, nodeStore.getDynamicLabelStore() ) );
+                    new ReusableRecordsCompositeAllocator( existingRecords, nodeStore.getDynamicLabelStore() ), cursorTracer );
             node.setLabelField( dynamicPointer( newRecords ), existingRecords );
             if ( !newRecords.equals( existingRecords ) )
             {   // One less dynamic record, mark that one as not in use
@@ -203,18 +205,18 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     public static Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
-            AbstractDynamicStore dynamicLabelStore )
+            AbstractDynamicStore dynamicLabelStore, PageCursorTracer cursorTracer )
     {
-        return allocateRecordsForDynamicLabels( nodeId, labels, (DynamicRecordAllocator)dynamicLabelStore );
+        return allocateRecordsForDynamicLabels( nodeId, labels, (DynamicRecordAllocator)dynamicLabelStore, cursorTracer );
     }
 
     public static Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
-            DynamicRecordAllocator allocator )
+            DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
         long[] storedLongs = LabelIdArray.prependNodeId( nodeId, labels );
         Collection<DynamicRecord> records = new ArrayList<>();
         // since we can't store points in long array we passing false as possibility to store points
-        DynamicArrayStore.allocateRecords( records, storedLongs, allocator, false );
+        DynamicArrayStore.allocateRecords( records, storedLongs, allocator, false, cursorTracer );
         return records;
     }
 

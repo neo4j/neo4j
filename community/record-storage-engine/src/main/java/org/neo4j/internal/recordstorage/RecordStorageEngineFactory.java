@@ -40,6 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -186,10 +187,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         {
             throw new UncheckedIOException( e );
         }
-        return createMigrationTargetSchemaRuleAccess( stores );
+        return createMigrationTargetSchemaRuleAccess( stores, TRACER_SUPPLIER.get() );
     }
 
-    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores )
+    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, PageCursorTracer cursorTracer )
     {
         SchemaStore dstSchema = stores.getSchemaStore();
         TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
@@ -198,13 +199,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             DynamicStringStore nameStore = keyTokenStore.getNameStore();
             byte[] bytes = PropertyStore.encodeString( name );
             List<DynamicRecord> nameRecords = new ArrayList<>();
-            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore );
+            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorTracer );
             nameRecords.forEach( nameStore::prepareForCommit );
             nameRecords.forEach( nameStore::updateRecord );
             nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
             int nameId = Iterables.first( nameRecords ).getIntId();
             PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
-            long tokenId = keyTokenStore.nextId( TRACER_SUPPLIER.get() );
+            long tokenId = keyTokenStore.nextId( cursorTracer );
             keyTokenRecord.setId( tokenId );
             keyTokenRecord.initialize( true, nameId );
             keyTokenRecord.setInternal( internal );
@@ -217,6 +218,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens() );
-        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ) );
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ), cursorTracer );
     }
 }

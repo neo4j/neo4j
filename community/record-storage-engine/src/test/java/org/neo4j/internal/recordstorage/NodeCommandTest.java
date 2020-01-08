@@ -36,6 +36,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -146,7 +147,7 @@ class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore() );
+        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
@@ -180,7 +181,7 @@ class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
         {
-            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore() );
+            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
         }
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );

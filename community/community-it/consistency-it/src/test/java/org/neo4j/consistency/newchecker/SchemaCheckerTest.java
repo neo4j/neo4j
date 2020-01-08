@@ -93,18 +93,19 @@ class SchemaCheckerTest extends CheckerTestBase
     void shouldReportDuplicateRuleContent() throws Exception
     {
         // given
+        var cursorTracer = PageCursorTracer.NULL;
         try ( AutoCloseable ignored = tx() )
         {
             IndexDescriptor index1 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
             IndexDescriptor index2 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME2 )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
-            schemaStorage.writeSchemaRule( index1 );
-            schemaStorage.writeSchemaRule( index2 );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
+            schemaStorage.writeSchemaRule( index1, cursorTracer );
+            schemaStorage.writeSchemaRule( index2, cursorTracer );
         }
 
         // when
@@ -120,11 +121,12 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
-            schemaStorage.writeSchemaRule( index );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
         }
 
         // when
@@ -140,11 +142,12 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
-            schemaStorage.writeSchemaRule( index );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
         }
 
         // when
@@ -160,11 +163,12 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
-            schemaStorage.writeSchemaRule( index );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
         }
 
         // when
@@ -180,11 +184,12 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( relationshipType1, UNUSED ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
-            schemaStorage.writeSchemaRule( index );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
         }
 
         // when
@@ -200,12 +205,13 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .materialise( schemaStore.nextId( cursorTracer ) )
                     .withOwningConstraintId( UNUSED );
-            schemaStorage.writeSchemaRule( index1 );
+            schemaStorage.writeSchemaRule( index1, cursorTracer );
         }
 
         // when
@@ -221,11 +227,12 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             UniquenessConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME )
                     .withOwnedIndexId( UNUSED );
-            schemaStorage.writeSchemaRule( constraintDescriptor );
+            schemaStorage.writeSchemaRule( constraintDescriptor, cursorTracer );
         }
 
         // when
@@ -241,11 +248,12 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
-            schemaStorage.writeSchemaRule( index );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
             SchemaRecord schemaRecord = schemaStore.getRecord( index.getId(), schemaStore.newRecord(), RecordLoad.NORMAL );
             propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ) );
         }
@@ -263,17 +271,18 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME )
                     .withOwnedIndexId( index.getId() );
             index = index.withOwningConstraintId( UNUSED );
-            schemaStorage.writeSchemaRule( index );
-            schemaStorage.writeSchemaRule( uniquenessConstraint );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer );
         }
 
         // when
@@ -289,17 +298,18 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME )
                     .withOwnedIndexId( UNUSED );
             index = index.withOwningConstraintId( uniquenessConstraint.getId() );
-            schemaStorage.writeSchemaRule( index );
-            schemaStorage.writeSchemaRule( uniquenessConstraint );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer );
         }
 
         // when
@@ -315,23 +325,24 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
             IndexDescriptor index2 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label2, propertyKey2 ) )
                     .withName( NAME2 )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME )
                     .withOwnedIndexId( index1.getId() );
             index1 = index1.withOwningConstraintId( uniquenessConstraint.getId() );
             index2 = index2.withOwningConstraintId( uniquenessConstraint.getId() );
-            schemaStorage.writeSchemaRule( index1 );
-            schemaStorage.writeSchemaRule( index2 );
-            schemaStorage.writeSchemaRule( uniquenessConstraint );
+            schemaStorage.writeSchemaRule( index1, cursorTracer );
+            schemaStorage.writeSchemaRule( index2, cursorTracer );
+            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer );
         }
 
         // when
@@ -347,22 +358,23 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
-                    .materialise( schemaStore.nextId( PageCursorTracer.NULL ) );
+                    .materialise( schemaStore.nextId( cursorTracer ) );
             UniquenessConstraintDescriptor uniquenessConstraint1 = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME )
                     .withOwnedIndexId( index.getId() );
             UniquenessConstraintDescriptor uniquenessConstraint2 = ConstraintDescriptorFactory.uniqueForLabel( label2, propertyKey2 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME2 )
                     .withOwnedIndexId( index.getId() );
             index = index.withOwningConstraintId( uniquenessConstraint1.getId() );
-            schemaStorage.writeSchemaRule( index );
-            schemaStorage.writeSchemaRule( uniquenessConstraint1 );
-            schemaStorage.writeSchemaRule( uniquenessConstraint2 );
+            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( uniquenessConstraint1, cursorTracer );
+            schemaStorage.writeSchemaRule( uniquenessConstraint2, cursorTracer );
         }
 
         // when
@@ -378,26 +390,27 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
+            var cursorTracer = PageCursorTracer.NULL;
             NodeExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory
                     .existsForLabel( label1, propertyKey1 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME );
             NodeExistenceConstraintDescriptor constraint2 = ConstraintDescriptorFactory
                     .existsForLabel( label2, propertyKey1, propertyKey2 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME2 );
             RelExistenceConstraintDescriptor constraint3 = ConstraintDescriptorFactory
                     .existsForRelType( relationshipType1, propertyKey2 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME );
             RelExistenceConstraintDescriptor constraint4 = ConstraintDescriptorFactory
                     .existsForRelType( relationshipType2, propertyKey1, propertyKey2 )
-                    .withId( schemaStore.nextId( PageCursorTracer.NULL ) )
+                    .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME2 );
-            schemaStorage.writeSchemaRule( constraint1 );
-            schemaStorage.writeSchemaRule( constraint2 );
-            schemaStorage.writeSchemaRule( constraint3 );
-            schemaStorage.writeSchemaRule( constraint4 );
+            schemaStorage.writeSchemaRule( constraint1, cursorTracer );
+            schemaStorage.writeSchemaRule( constraint2, cursorTracer );
+            schemaStorage.writeSchemaRule( constraint3, cursorTracer );
+            schemaStorage.writeSchemaRule( constraint4, cursorTracer );
         }
 
         // when

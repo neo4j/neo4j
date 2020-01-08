@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Collection;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public interface NodeLabels
@@ -29,11 +30,11 @@ public interface NodeLabels
 
     long[] getIfLoaded();
 
-    Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator );
+    Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer );
 
-    Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator );
+    Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer );
 
-    Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore );
+    Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore, PageCursorTracer cursorTracer );
 
     boolean isInlined();
 }

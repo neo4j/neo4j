@@ -36,6 +36,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
@@ -53,6 +54,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
@@ -293,23 +295,24 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return propertyBlock.getType().value( propertyBlock, this );
     }
 
-    private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator )
+    private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
-        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, allocator );
+        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, allocator, cursorTracer );
     }
 
-    private static void allocateArrayRecords( Collection<DynamicRecord> target, Object array, DynamicRecordAllocator allocator, boolean allowStorePoints )
+    private static void allocateArrayRecords( Collection<DynamicRecord> target, Object array, DynamicRecordAllocator allocator, boolean allowStorePoints,
+            PageCursorTracer cursorTracer )
     {
-        DynamicArrayStore.allocateRecords( target, array, allocator, allowStorePoints );
+        DynamicArrayStore.allocateRecords( target, array, allocator, allowStorePoints, cursorTracer );
     }
 
-    public void encodeValue( PropertyBlock block, int keyId, Value value )
+    public void encodeValue( PropertyBlock block, int keyId, Value value, PageCursorTracer cursorTracer )
     {
-        encodeValue( block, keyId, value, stringStore, arrayStore, allowStorePointsAndTemporal );
+        encodeValue( block, keyId, value, stringStore, arrayStore, allowStorePointsAndTemporal, cursorTracer );
     }
 
     public static void encodeValue( PropertyBlock block, int keyId, Value value, DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator,
-            boolean allowStorePointsAndTemporal )
+            boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer )
     {
         if ( value instanceof ArrayValue )
         {
@@ -323,7 +326,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = new ArrayList<>();
-            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePointsAndTemporal );
+            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePointsAndTemporal, cursorTracer );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
@@ -485,7 +488,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             // Fall back to dynamic string store
             byte[] encodedString = encodeString( value );
             List<DynamicRecord> valueRecords = new ArrayList<>();
-            allocateStringRecords( valueRecords, encodedString, stringAllocator );
+            allocateStringRecords( valueRecords, encodedString, stringAllocator, TRACER_SUPPLIER.get() );
             setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {

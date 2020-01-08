@@ -29,6 +29,7 @@ import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -179,7 +180,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
         {
             if ( tokenToCreate.getKey() > highestCreatedId )
             {
-                createToken( tokenToCreate.getValue(), tokenToCreate.getKey() );
+                createToken( tokenToCreate.getValue(), tokenToCreate.getKey(), PageCursorTracer.NULL );
                 highest = Math.max( highest, tokenToCreate.getKey() );
             }
         }
@@ -189,12 +190,12 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
         highestCreatedId = highestId;
     }
 
-    private void createToken( String name, int tokenId )
+    private void createToken( String name, int tokenId, PageCursorTracer cursorTracer )
     {
         RECORD record = recordInstantiator.apply( tokenId );
         record.setInUse( true );
         record.setCreated();
-        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ) );
+        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
         store.updateRecord( record );

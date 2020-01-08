@@ -82,12 +82,12 @@ public class SchemaStore35 extends AbstractDynamicStore
         super.initialise( createIfNotExists, pageCursorTracer );
     }
 
-    public List<DynamicRecord> allocateFrom( SchemaRule rule )
+    public List<DynamicRecord> allocateFrom( SchemaRule rule, PageCursorTracer cursorTracer )
     {
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = getRecord( rule.getId(), newRecord(), CHECK );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule ), recordAllocator );
+        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule ), recordAllocator, cursorTracer );
         return records;
     }
 

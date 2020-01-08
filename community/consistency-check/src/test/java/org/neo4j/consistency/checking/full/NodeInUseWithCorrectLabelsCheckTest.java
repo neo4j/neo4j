@@ -42,6 +42,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 
@@ -222,7 +223,7 @@ class NodeInUseWithCorrectLabelsCheckTest
 
     private static NodeRecord withInlineLabels( NodeRecord nodeRecord, long... labelIds )
     {
-        new InlineNodeLabels( nodeRecord ).put( labelIds, null, null );
+        new InlineNodeLabels( nodeRecord ).put( labelIds, null, null, NULL );
         return nodeRecord;
     }
 
@@ -235,7 +236,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         }
         Collection<DynamicRecord> dynamicRecords = new ArrayList<>();
         DynamicArrayStore.allocateFromNumbers( dynamicRecords, prependNodeId( nodeRecord.getId(), labelIds ),
-                new ReusableRecordsAllocator( 4, preAllocatedRecords ) );
+                new ReusableRecordsAllocator( 4, preAllocatedRecords ), NULL );
         for ( DynamicRecord dynamicRecord : dynamicRecords )
         {
             recordAccess.addNodeDynamicLabels( dynamicRecord );

@@ -45,6 +45,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -142,7 +143,7 @@ class IndexBatchTransactionApplierTest
     {
         NodeRecord after = new NodeRecord( nodeId,
                 true, false, NO_NEXT_RELATIONSHIP.intValue(),NO_NEXT_PROPERTY.intValue(), 0 );
-        NodeLabelsField.parseLabelsField( after ).add( 1, null, null );
+        NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL );
 
         return new NodeCommand( new NodeRecord( nodeId ), after );
     }

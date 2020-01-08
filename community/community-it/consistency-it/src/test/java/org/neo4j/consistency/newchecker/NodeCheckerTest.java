@@ -221,7 +221,7 @@ class NodeCheckerTest extends CheckerTestBase
         {
             long nodeId = nodeStore.nextId( PageCursorTracer.NULL );
             NodeRecord node = new NodeRecord( nodeId ).initialize( true, NULL, false, NULL, 0 );
-            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore() );
+            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
             assertThat( node.getDynamicLabelRecords().size() ).isGreaterThanOrEqualTo( 2 );
             nodeStore.updateRecord( node );
             vandal.accept( node );

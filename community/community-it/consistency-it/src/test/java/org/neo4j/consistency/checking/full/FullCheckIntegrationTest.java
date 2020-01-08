@@ -79,6 +79,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -243,7 +244,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
-                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null, NULL );
                 tx.create( nodeRecord );
             }
         } );
@@ -270,7 +271,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getId(), new long[]{42L} ),
-                        new ReusableRecordsAllocator( 60, record ) );
+                        new ReusableRecordsAllocator( 60, record ), NULL );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
                 tx.create( nodeRecord );
@@ -720,7 +721,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 labels[0] = nodeRecord.getId(); // the first id should not be a label id, but the id of the node
                 ReusableRecordsAllocator allocator = new ReusableRecordsAllocator( 60, record1, record2, record3 );
-                allocateFromNumbers( chain, labels, allocator );
+                allocateFromNumbers( chain, labels, allocator, NULL );
 
                 nodeRecord.setLabelField( dynamicPointer( chain ), chain );
 
@@ -752,7 +753,7 @@ public class FullCheckIntegrationTest
 
                 Integer labelId = labels.other().get( 0 );
                 DynamicRecord record = inUse( new DynamicRecord( labelId ) );
-                allocateFromNumbers( duplicatedLabel, new long[]{nodeId, labelId, labelId}, new ReusableRecordsAllocator( 60, record ) );
+                allocateFromNumbers( duplicatedLabel, new long[]{nodeId, labelId, labelId}, new ReusableRecordsAllocator( 60, record ), NULL );
             }
         } );
 
@@ -788,7 +789,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords, prependNodeId( next.node(), new long[]{42L} ),
-                        new ReusableRecordsAllocator( 60, record ) );
+                        new ReusableRecordsAllocator( 60, record ), NULL );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
                 tx.create( nodeRecord );
@@ -1073,11 +1074,11 @@ public class FullCheckIntegrationTest
                     }
 
                     @Override
-                    public DynamicRecord nextRecord()
+                    public DynamicRecord nextRecord( PageCursorTracer cursorTracer )
                     {
                         return StandardDynamicRecordAllocator.allocateRecord( next.arrayProperty() );
                     }
-                }, true );
+                }, true, NULL );
                 assertThat( allocatedRecords.size() ).isGreaterThan( 1 );
                 DynamicRecord array = allocatedRecords.get( 0 );
                 array.setType( ARRAY.intValue() );
@@ -2250,7 +2251,7 @@ public class FullCheckIntegrationTest
             {
                 PropertyRecord record = new PropertyRecord( id ).initialize( true, prev, next );
                 PropertyBlock block = new PropertyBlock();
-                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, false );
+                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, false, NULL );
                 record.addPropertyBlock( block );
                 return record;
             }
@@ -2486,7 +2487,7 @@ public class FullCheckIntegrationTest
     private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule ) throws KernelException
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders() );
-        schemaRuleAccess.writeSchemaRule( rule );
+        schemaRuleAccess.writeSchemaRule( rule, NULL );
     }
 
     private Iterator<IndexDescriptor> getIndexDescriptors()
@@ -2561,7 +2562,7 @@ public class FullCheckIntegrationTest
         protoProperties.forEachKeyValue( ( keyId, value ) ->
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, true );
+            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, true, NULL );
             blocks.add( block );
         } );
 

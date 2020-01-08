@@ -63,6 +63,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -327,7 +328,7 @@ class CheckerTestBase
     PropertyBlock propertyValue( int propertyKey, Value value )
     {
         PropertyBlock propertyBlock = new PropertyBlock();
-        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value );
+        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value, PageCursorTracer.NULL );
         return propertyBlock;
     }
 
@@ -345,7 +346,7 @@ class CheckerTestBase
     {
         NodeRecord node = new NodeRecord( id ).initialize( true, nextProp, false, NULL, 0 );
         long[] labelIds = toLongs( labels );
-        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/ );
+        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, PageCursorTracer.NULL );
         nodeStore.updateRecord( node );
         return id;
     }

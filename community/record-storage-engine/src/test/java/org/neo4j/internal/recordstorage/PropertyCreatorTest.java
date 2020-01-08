@@ -79,7 +79,7 @@ class PropertyCreatorTest
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
-        creator = new PropertyCreator( propertyStore, new PropertyTraverser() );
+        creator = new PropertyCreator( propertyStore, new PropertyTraverser(), NULL );
     }
 
     @AfterEach
@@ -349,7 +349,7 @@ class PropertyCreatorTest
         for ( ExpectedProperty initialProperty : initialRecord.properties )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value );
+            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, NULL );
             record.addPropertyBlock( block );
         }
         assertTrue( record.size() <= PropertyType.getPayloadSize() );

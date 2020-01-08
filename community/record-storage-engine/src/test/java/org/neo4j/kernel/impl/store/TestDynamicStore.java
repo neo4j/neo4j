@@ -95,7 +95,7 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecordsFromBytes( records, new byte[10] );
+        store.allocateRecordsFromBytes( records, new byte[10], NULL );
         long blockId = Iterables.first( records ).getId();
         for ( DynamicRecord record : records )
         {
@@ -116,7 +116,7 @@ class TestDynamicStore
         char[] chars = new char[STR.length()];
         STR.getChars( 0, STR.length(), chars, 0 );
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, chars );
+        store.allocateRecords( records, chars, NULL );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
@@ -158,7 +158,7 @@ class TestDynamicStore
             {
                 byte[] bytes = createRandomBytes( random );
                 Collection<DynamicRecord> records = new ArrayList<>();
-                store.allocateRecords( records, bytes );
+                store.allocateRecords( records, bytes, NULL );
                 for ( DynamicRecord record : records )
                 {
                     assert !set.contains( record.getId() );
@@ -201,7 +201,7 @@ class TestDynamicStore
     private long create( DynamicArrayStore store, Object arrayToStore )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, arrayToStore );
+        store.allocateRecords( records, arrayToStore, NULL );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
@@ -249,7 +249,7 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         ArrayList<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, createBytes( 500 ) );
+        store.allocateRecords( records, createBytes( 500 ), NULL );
         long firstId = records.get( 0 ).getId();
         // Avoid creating this inconsistency at the last record, since that would trip up a data-size check instead.
         DynamicRecord secondLastRecord = records.get( records.size() - 2 );

@@ -34,6 +34,7 @@ import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -91,19 +92,13 @@ public class TransactionRecordState implements RecordState
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
+    private final PageCursorTracer cursorTracer;
 
     private boolean prepared;
 
-    TransactionRecordState(
-            NeoStores neoStores,
-            IntegrityValidator integrityValidator,
-            RecordChangeSet recordChangeSet,
-            long lastCommittedTxWhenTransactionStarted,
-            ResourceLocker locks,
-            RelationshipCreator relationshipCreator,
-            RelationshipDeleter relationshipDeleter,
-            PropertyCreator propertyCreator,
-            PropertyDeleter propertyDeleter )
+    TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator, RecordChangeSet recordChangeSet,
+            long lastCommittedTxWhenTransactionStarted, ResourceLocker locks, RelationshipCreator relationshipCreator, RelationshipDeleter relationshipDeleter,
+            PropertyCreator propertyCreator, PropertyDeleter propertyDeleter, PageCursorTracer cursorTracer )
     {
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
@@ -118,6 +113,7 @@ public class TransactionRecordState implements RecordState
         this.relationshipDeleter = relationshipDeleter;
         this.propertyCreator = propertyCreator;
         this.propertyDeleter = propertyDeleter;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -412,13 +408,13 @@ public class TransactionRecordState implements RecordState
     void addLabelToNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
+        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore(), cursorTracer );
     }
 
     void removeLabelFromNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
+        parseLabelsField( nodeRecord ).remove( labelId, nodeStore, cursorTracer );
     }
 
     /**
@@ -441,7 +437,7 @@ public class TransactionRecordState implements RecordState
      */
     void createPropertyKeyToken( String key, long id, boolean internal )
     {
-        createToken( neoStores.getPropertyKeyTokenStore(), key, id, internal, recordChangeSet.getPropertyKeyTokenChanges() );
+        createToken( neoStores.getPropertyKeyTokenStore(), key, id, internal, recordChangeSet.getPropertyKeyTokenChanges(), cursorTracer );
     }
 
     /**
@@ -452,7 +448,7 @@ public class TransactionRecordState implements RecordState
      */
     void createLabelToken( String name, long id, boolean internal )
     {
-        createToken( neoStores.getLabelTokenStore(), name, id, internal, recordChangeSet.getLabelTokenChanges() );
+        createToken( neoStores.getLabelTokenStore(), name, id, internal, recordChangeSet.getLabelTokenChanges(), cursorTracer );
     }
 
     /**
@@ -464,16 +460,17 @@ public class TransactionRecordState implements RecordState
      */
     void createRelationshipTypeToken( String name, long id, boolean internal )
     {
-        createToken( neoStores.getRelationshipTypeTokenStore(), name, id, internal, recordChangeSet.getRelationshipTypeTokenChanges() );
+        createToken( neoStores.getRelationshipTypeTokenStore(), name, id, internal, recordChangeSet.getRelationshipTypeTokenChanges(), cursorTracer );
     }
 
-    private static <R extends TokenRecord> void createToken( TokenStore<R> store, String name, long id, boolean internal, RecordAccess<R, Void> recordAccess )
+    private static <R extends TokenRecord> void createToken( TokenStore<R> store, String name, long id, boolean internal, RecordAccess<R,Void> recordAccess,
+            PageCursorTracer cursorTracer )
     {
         R record = recordAccess.create( id, null ).forChangingData();
         record.setInUse( true );
         record.setInternal( internal );
         record.setCreated();
-        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ) );
+        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
     }

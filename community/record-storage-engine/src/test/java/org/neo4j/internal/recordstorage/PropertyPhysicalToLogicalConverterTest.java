@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -224,7 +225,7 @@ class PropertyPhysicalToLogicalConverterTest
     private PropertyBlock property( long key, Value value )
     {
         PropertyBlock block = new PropertyBlock();
-        store.encodeValue( block, (int) key, value );
+        store.encodeValue( block, (int) key, value, NULL );
         return block;
     }
 
@@ -232,7 +233,7 @@ class PropertyPhysicalToLogicalConverterTest
             long[] labelsAfter, Command.PropertyCommand... changes )
     {
         long nodeId = 0;
-        EntityUpdates.Builder updates = EntityUpdates.forEntity( (long) 0, false ).withTokens( labelsBefore ).withTokensAfter( labelsAfter );
+        EntityUpdates.Builder updates = EntityUpdates.forEntity( 0, false ).withTokens( labelsBefore ).withTokensAfter( labelsAfter );
         EntityCommandGrouper grouper = new EntityCommandGrouper<>( Command.NodeCommand.class, 8 );
         grouper.add( new Command.NodeCommand( new NodeRecord( nodeId ), new NodeRecord( nodeId ) ) );
         for ( Command.PropertyCommand change : changes )
