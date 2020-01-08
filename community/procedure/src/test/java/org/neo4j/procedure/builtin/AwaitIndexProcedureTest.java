@@ -79,6 +79,8 @@ class AwaitIndexProcedureTest
         TokenRead tokenRead = mock( TokenRead.class );
         when( tokenRead.nodeLabelName( labelId ) ).thenReturn( "label_0" );
         when( tokenRead.propertyKeyName( propId ) ).thenReturn( "prop_0" );
+        when( tokenRead.labelGetName( labelId ) ).thenReturn( "label_0" );
+        when( tokenRead.propertyKeyGetName( propId ) ).thenReturn( "prop_0" );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         procedure = new IndexProcedures( transaction, null );
     }
@@ -127,7 +129,7 @@ class AwaitIndexProcedureTest
     }
 
     @Test
-    void shouldBlockUntilTheIndexIsOnline() throws IndexNotFoundKernelException, InterruptedException
+    void shouldBlockUntilTheIndexIsOnline() throws IndexNotFoundKernelException
     {
         when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
@@ -157,7 +159,7 @@ class AwaitIndexProcedureTest
     }
 
     @Test
-    void shouldTimeoutIfTheIndexTakesTooLongToComeOnline() throws InterruptedException, IndexNotFoundKernelException
+    void shouldTimeoutIfTheIndexTakesTooLongToComeOnline() throws IndexNotFoundKernelException
     {
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );

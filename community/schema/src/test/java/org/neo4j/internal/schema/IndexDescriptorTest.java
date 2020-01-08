@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -125,13 +124,14 @@ class IndexDescriptorTest
     }
 
     @Test
-    void toStringMustIncludeSchemaDescription()
+    void userDescriptionMustIncludeSchemaDescription()
     {
         IndexPrototype prototype = IndexPrototype.forSchema( SCHEMAS[0] );
         IndexDescriptor index = prototype.withName( "index" ).materialise( 1 );
-        String schemaDescription = SCHEMAS[0].userDescription( new InMemoryTokens() );
-        assertThat( prototype.toString() ).contains( schemaDescription );
-        assertThat( index.toString() ).contains( schemaDescription );
+        InMemoryTokens tokens = new InMemoryTokens();
+        String schemaDescription = SCHEMAS[0].userDescription( tokens );
+        assertThat( prototype.userDescription( tokens ) ).contains( schemaDescription );
+        assertThat( index.userDescription( tokens ) ).contains( schemaDescription );
     }
 
     @Test

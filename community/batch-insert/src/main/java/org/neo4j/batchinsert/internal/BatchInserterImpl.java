@@ -1325,6 +1325,12 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
+        public String getUserDescription( IndexDescriptor index )
+        {
+            return index.userDescription( tokenHolders );
+        }
+
+        @Override
         public void assertInOpenTransaction()
         {
             // BatchInserterImpl always is expected to be running in one big single "transaction"

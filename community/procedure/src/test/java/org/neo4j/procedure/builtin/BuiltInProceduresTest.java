@@ -35,6 +35,7 @@ import java.util.function.IntSupplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -162,6 +163,16 @@ class BuiltInProceduresTest
         when( tokens.propertyKeyName( anyInt() ) ).thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
         when( tokens.nodeLabelName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
         when( tokens.relationshipTypeName( anyInt() ) ).thenAnswer( invocation -> relTypes.get( invocation.getArgument( 0 ) ) );
+        when( tokens.propertyKeyGetName( anyInt() ) ).thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
+        when( tokens.labelGetName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
+        when( tokens.relationshipTypeGetName( anyInt() ) ).thenAnswer( invocation -> relTypes.get( invocation.getArgument( 0 ) ) );
+        when( tokens.entityTokensGetNames( any(), any() ) ).then( invocation ->
+        {
+            EntityType type = invocation.getArgument( 0 );
+            int[] ids = invocation.getArgument( 1 );
+            Map<Integer,String> mapping = type == EntityType.NODE ? labels : relTypes;
+            return Arrays.stream( ids ).mapToObj( mapping::get ).toArray( String[]::new );
+        } );
 
         when( schemaReadCore.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
         when( schemaReadCore.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );

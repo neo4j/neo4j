@@ -27,6 +27,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor;
 
 /**
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseNodeConstraintCreator} for re-use
@@ -51,6 +52,8 @@ public interface InternalSchemaActions
     void dropConstraint( ConstraintDescriptor constraint );
 
     String getUserMessage( KernelException e );
+
+    String getUserDescription( IndexDescriptor index );
 
     void assertInOpenTransaction();
 }

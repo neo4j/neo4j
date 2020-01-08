@@ -296,7 +296,7 @@ public class IndexDefinitionImpl implements IndexDefinition
             entityTokens = Arrays.stream( relTypes ).map( RelationshipType::name ).collect( joining( "," ) );
         }
         return "IndexDefinition[" + entityTokenType + ":" + entityTokens + " on:" + String.join( ",", propertyKeys ) + "]" +
-                (indexReference == null ? "" : " (" + indexReference + ")");
+                (indexReference == null ? "" : " (" + actions.getUserDescription( indexReference ) + ")");
     }
 
     static String labelNameList( Iterable<Label> labels, String prefix, String postfix )
