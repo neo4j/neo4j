@@ -40,11 +40,11 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
     int NO_RECORD_SIZE = 1;
 
     /**
-     * Instantiates a new record to use in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
+     * Instantiates a new record to use in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int, int)}
      * and {@link #write(AbstractBaseRecord, PageCursor, int, int)}. Records may be reused, which is why the instantiation
      * is separated from reading and writing.
      *
-     * @return a new record instance, usable in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
+     * @return a new record instance, usable in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int, int)}
      * and {@link #write(AbstractBaseRecord, PageCursor, int, int)}.
      */
     RECORD newRecord();
@@ -145,4 +145,15 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @return maximum possible id
      */
     long getMaxId();
+
+    /**
+     * Page size of store file represented by current record format
+     * @param pageCachePageSize page cache page size
+     * @param recordSize store format record size
+     * @return page size for file
+     */
+    default int getPageSize( int pageCachePageSize, int recordSize )
+    {
+        return pageCachePageSize - pageCachePageSize % recordSize;
+    }
 }

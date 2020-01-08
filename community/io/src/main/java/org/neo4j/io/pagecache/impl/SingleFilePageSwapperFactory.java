@@ -56,7 +56,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         {
             throw new NoSuchFileException( file.getPath(), null, "Cannot map non-existing file" );
         }
-        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, noChannelStriping, useDirectIO );
+        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO );
     }
 
     @Override

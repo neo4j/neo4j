@@ -28,10 +28,11 @@ import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 /**
  * Basic abstract implementation of a {@link RecordFormat} implementing most functionality except
- * {@link RecordFormat#read(AbstractBaseRecord, PageCursor, org.neo4j.kernel.impl.store.record.RecordLoad, int)} and
+ * {@link RecordFormat#read(AbstractBaseRecord, PageCursor, RecordLoad, int, int)} and
  * {@link RecordFormat#write(AbstractBaseRecord, PageCursor, int, int)}.
  *
  * @param <RECORD> type of record.

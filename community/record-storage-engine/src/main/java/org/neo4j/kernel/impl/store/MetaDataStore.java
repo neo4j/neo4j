@@ -63,6 +63,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
     public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
+    private static final MetaDataRecordFormat DEFAULT_FORMAT = new MetaDataRecordFormat();
     /*
      *  9 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest
      *  constraint tx | upgrade time | upgrade id
@@ -213,7 +214,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public static long setRecord( PageCache pageCache, File neoStore, Position position, long value ) throws IOException
     {
         long previousValue = FIELD_NOT_INITIALIZED;
-        int pageSize = getPageSize( pageCache );
+        int pageSize = DEFAULT_FORMAT.getPageSize( pageCache.pageSize(), RECORD_SIZE );
         try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize ) )
         {
             int offset = offset( position );
@@ -271,8 +272,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      */
     public static long getRecord( PageCache pageCache, File neoStore, Position position ) throws IOException
     {
-        MetaDataRecordFormat format = new MetaDataRecordFormat();
-        int pageSize = getPageSize( pageCache );
+        int pageSize = DEFAULT_FORMAT.getPageSize( pageCache.pageSize(), RECORD_SIZE );
         long value = FIELD_NOT_PRESENT;
         try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize ) )
         {
@@ -287,7 +287,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         record.setId( position.id );
                         do
                         {
-                            format.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE, filePageSize( pageSize, RECORD_SIZE ) / RECORD_SIZE );
+                            DEFAULT_FORMAT.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE,
+                                    DEFAULT_FORMAT.getPageSize( pageSize, RECORD_SIZE ) / RECORD_SIZE );
                             if ( record.inUse() )
                             {
                                 value = record.getValue();
@@ -309,11 +310,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             }
         }
         return value;
-    }
-
-    static int getPageSize( PageCache pageCache )
-    {
-        return filePageSize( pageCache.pageSize(), RECORD_SIZE );
     }
 
     public static void setStoreId( PageCache pageCache, File neoStore, StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp )

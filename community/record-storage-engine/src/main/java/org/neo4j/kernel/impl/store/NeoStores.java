@@ -557,20 +557,9 @@ public class NeoStores implements AutoCloseable
         return recordFormats;
     }
 
-    public static boolean isStorePresent( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
+    public static boolean isStorePresent( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
     {
         File metaDataStore = databaseLayout.metadataStore();
-        if ( !fs.fileExists( metaDataStore ) )
-        {
-            return false;
-        }
-        try ( PagedFile ignore = pageCache.map( metaDataStore, MetaDataStore.getPageSize( pageCache ) ) )
-        {
-            return true;
-        }
-        catch ( IOException e )
-        {
-            return false;
-        }
+        return fs.fileExists( metaDataStore );
     }
 }

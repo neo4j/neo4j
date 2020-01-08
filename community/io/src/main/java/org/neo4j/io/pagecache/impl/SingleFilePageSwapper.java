@@ -96,8 +96,7 @@ public class SingleFilePageSwapper implements PageSwapper
     @SuppressWarnings( "unused" ) // Accessed through unsafe
     private volatile long fileSize;
 
-    SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean noChannelStriping,
-            boolean useDirectIO ) throws IOException
+    SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO ) throws IOException
     {
         this.fs = fs;
         this.file = file;

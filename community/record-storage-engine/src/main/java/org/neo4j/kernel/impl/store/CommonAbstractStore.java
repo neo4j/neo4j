@@ -177,11 +177,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return typeDescriptor;
     }
 
-    static int filePageSize( int pageSize, int recordSize )
-    {
-        return pageSize - pageSize % recordSize;
-    }
-
     /**
      * This method is called by constructors. Checks the header record and loads the store.
      * <p>
@@ -382,9 +377,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         storeHeader = header;
         recordSize = determineRecordSize();
-        int pageSize = pageCache.pageSize();
-        filePageSize = filePageSize( pageSize, recordSize );
-        recordsPerPage = pageSize / recordSize;
+        filePageSize = recordFormat.getPageSize( pageCache.pageSize(), recordSize );
+        recordsPerPage = filePageSize / recordSize;
     }
 
     public boolean isInUse( long id )
@@ -907,7 +901,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             long id = record.getId() + 1;
             record.setId( id );
             long pageId = cursor.getCurrentPageId();
-            if ( offset >= pagedFile.pageSize() || pageId < 0 )
+            if ( offset != RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage) || pageId < 0 )
             {
                 if ( !cursor.next() )
                 {
