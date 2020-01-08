@@ -30,11 +30,16 @@ object ListLiteral {
 }
 
 case class ListLiteral(override val arguments: Expression*) extends Expression {
+  private val size = arguments.size
+
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val argumentValues = arguments.map { expression =>
-      expression(ctx, state)
+    val result = new Array[AnyValue](size)
+    var i = 0
+    while (i < size) {
+      result(i) = arguments(i).apply(ctx, state)
+      i += 1
     }
-    VirtualValues.list(argumentValues: _*)
+    VirtualValues.list(result:_*)
   }
 
   def rewrite(f: Expression => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
