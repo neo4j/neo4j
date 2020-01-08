@@ -621,11 +621,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      * The following two methods encode and decode a string that is presumably
      * the store version into a long via Latin1 encoding. This leaves room for
      * 7 characters and 1 byte for the length. Current string is
-     * 0.A.0 which is 5 chars, so we have room for expansion. When that
-     * becomes a problem we will be in a yacht, sipping alcoholic
-     * beverages of our choice. Or taking turns crashing golden
-     * helicopters. Anyway, it should suffice for some time and by then
-     * it should have become SEP.
+     * 0.A.0 which is 5 chars, so we have room for expansion.
      */
     public static long versionStringToLong( String storeVersion )
     {
