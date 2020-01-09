@@ -68,13 +68,17 @@ class BinaryLatchTest
             }
 
             threads[0].join( 10 );
-            assertEquals( Thread.State.WAITING, threads[0].getState() );
-
-            latch.release();
-
-            for ( Thread thread : threads )
+            try
             {
-                thread.join();
+                assertEquals( Thread.State.WAITING, threads[0].getState() );
+            }
+            finally
+            {
+                latch.release();
+                for ( Thread thread : threads )
+                {
+                    thread.join();
+                }
             }
         } );
     }
