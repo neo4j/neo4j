@@ -29,6 +29,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.rules.Timeout;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +60,7 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -785,6 +787,218 @@ public class FulltextIndexProviderTest
         }
     }
 
+    @Test
+    public void shouldAnswerContainsIfCypherCompatible() throws KernelException, IOException
+    {
+        IndexDescriptor indexReference;
+        Label containsLabel = label( "containsLabel" );
+        String containsProp = "containsProp";
+        long nodea;
+        long nodeapa1;
+        long nodeapa2;
+        long nodeapalong;
+        long nodeapaapa;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodea = createNode( tx, containsLabel, containsProp, "a" );
+            createNode( tx, containsLabel, containsProp, "A" );
+            nodeapa1 = createNode( tx, containsLabel, containsProp, "apa" );
+            nodeapa2 = createNode( tx, containsLabel, containsProp, "apa" );
+            nodeapalong = createNode( tx, containsLabel, containsProp, "apalong" );
+            nodeapaapa = createNode( tx, containsLabel, containsProp, "apa apa" );
+            tx.commit();
+        }
+
+        int containsLabelId;
+        int containsPropertyId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            TokenRead tokenRead = tokenRead( tx );
+            containsLabelId = tokenRead.nodeLabel( containsLabel.name() );
+            containsPropertyId = tokenRead.propertyKey( containsProp );
+        }
+
+        indexReference = createIndex( new int[]{containsLabelId}, new int[]{containsPropertyId}, "cypher" );
+        await( indexReference );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "a" ), nodea, nodeapa1, nodeapa2, nodeapalong, nodeapaapa );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "apa" ), nodeapa1, nodeapa2, nodeapalong, nodeapaapa );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "apa*" ) );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "pa ap" ), nodeapaapa );
+        }
+        db.restartDatabase( DbmsRule.RestartAction.EMPTY );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "a" ), nodea, nodeapa1, nodeapa2, nodeapalong, nodeapaapa );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "apa" ), nodeapa1, nodeapa2, nodeapalong, nodeapaapa );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "apa*" ) );
+            assertQueryResult( ktx, containsQuery( containsPropertyId, "pa ap" ), nodeapaapa );
+        }
+    }
+
+    @Test
+    public void shouldAnswerEndsWithIfCypherCompatible() throws KernelException, IOException
+    {
+        IndexDescriptor indexReference;
+        Label containsLabel = label( "containsLabel" );
+        String containsProp = "containsProp";
+        long nodea;
+        long nodeapa1;
+        long nodeapa2;
+        long nodelongapa;
+        long nodeapaapa;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodea = createNode( tx, containsLabel, containsProp, "a" );
+            createNode( tx, containsLabel, containsProp, "A" );
+            nodeapa1 = createNode( tx, containsLabel, containsProp, "apa" );
+            nodeapa2 = createNode( tx, containsLabel, containsProp, "apa" );
+            nodelongapa = createNode( tx, containsLabel, containsProp, "longapa" );
+            nodeapaapa = createNode( tx, containsLabel, containsProp, "apa apa" );
+            createNode( tx, containsLabel, containsProp, "apalong" );
+            tx.commit();
+        }
+
+        int containsLabelId;
+        int containsPropertyId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            TokenRead tokenRead = tokenRead( tx );
+            containsLabelId = tokenRead.nodeLabel( containsLabel.name() );
+            containsPropertyId = tokenRead.propertyKey( containsProp );
+        }
+
+        indexReference = createIndex( new int[]{containsLabelId}, new int[]{containsPropertyId}, "cypher" );
+        await( indexReference );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "a" ), nodea, nodeapa1, nodeapa2, nodelongapa, nodeapaapa );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "apa" ), nodeapa1, nodeapa2, nodelongapa, nodeapaapa );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "apa*" ) );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "a apa" ), nodeapaapa );
+        }
+        db.restartDatabase( DbmsRule.RestartAction.EMPTY );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "a" ), nodea, nodeapa1, nodeapa2, nodelongapa, nodeapaapa );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "apa" ), nodeapa1, nodeapa2, nodelongapa, nodeapaapa );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "apa*" ) );
+            assertQueryResult( ktx, endsWithQuery( containsPropertyId, "a apa" ), nodeapaapa );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleAnalyzer() throws KernelException
+    {
+        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1}, "english" );
+        await( indexReference );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            IllegalStateException e = assertThrows( IllegalStateException.class, () -> assertQueryResult( ktx, endsWithQuery( 1, "a" ) ) );
+            assertThat( e.getMessage() )
+                    .contains( "This fulltext index does not have support for Cypher semantics because configured analyzer 'english' is not Cypher compatible." );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleComposite() throws KernelException
+    {
+        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1, 2}, "cypher" );
+        await( indexReference );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            IllegalStateException e = assertThrows( IllegalStateException.class, () -> assertQueryResult( ktx, endsWithQuery( 1, "a" ) ) );
+            assertThat( e.getMessage() )
+                    .contains( "This fulltext index does not have support for Cypher semantics because index is composite." );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleMultipleEntities() throws KernelException
+    {
+        IndexDescriptor indexReference = createIndex( new int[]{1, 2}, new int[]{1}, "cypher" );
+        await( indexReference );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            IllegalStateException e = assertThrows( IllegalStateException.class, () -> assertQueryResult( ktx, endsWithQuery( 1, "a" ) ) );
+            assertThat( e.getMessage() )
+                    .contains( "This fulltext index does not have support for Cypher semantics because index target more than one label." );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleNotNodeIndex() throws KernelException
+    {
+        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1}, "cypher", EntityType.RELATIONSHIP );
+        await( indexReference );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            IndexNotApplicableKernelException e =
+                    assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, endsWithQuery( 1, "a" ) ) );
+            assertThat( e.getMessage() ).contains( "Node index seek can only be performed on node indexes" );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleEventuallyConsistent() throws KernelException
+    {
+        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1}, "cypher", EntityType.NODE, true );
+        await( indexReference );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            IllegalStateException e = assertThrows( IllegalStateException.class, () -> assertQueryResult( ktx, endsWithQuery( 1, "a" ) ) );
+            assertThat( e.getMessage() )
+                    .contains( "This fulltext index does not have support for Cypher semantics because index is eventually consistent." );
+        }
+    }
+
+    private void assertQueryResult( KernelTransaction ktx, IndexQuery query, Long... expectedResultArray ) throws KernelException
+    {
+        List<Long> expectedResult = Arrays.asList( expectedResultArray );
+        IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( NAME ) );
+        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+        {
+            List<Long> actualResult = new ArrayList<>();
+            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, query );
+            while ( cursor.next() )
+            {
+                actualResult.add( cursor.nodeReference() );
+            }
+            actualResult.sort( Long::compareTo );
+            expectedResult.sort( Long::compareTo );
+            assertThat( actualResult ).isEqualTo( expectedResult );
+        }
+    }
+
+    private IndexQuery.StringContainsPredicate containsQuery( int containsPropertyId, String containsString )
+    {
+        return IndexQuery.stringContains( containsPropertyId, Values.stringValue( containsString ) );
+    }
+
+    private IndexQuery.StringSuffixPredicate endsWithQuery( int containsPropertyId, String containsString )
+    {
+        return IndexQuery.stringSuffix( containsPropertyId, Values.stringValue( containsString ) );
+    }
+
+    private long createNode( Transaction tx, Label containsLabel, String containsProp, String propertyValue )
+    {
+        Node node = tx.createNode( containsLabel );
+        node.setProperty( containsProp, propertyValue );
+        return node.getId();
+    }
+
     private TokenRead tokenRead( Transaction tx )
     {
         return ((InternalTransaction) tx).kernelTransaction().tokenRead();
@@ -806,11 +1020,31 @@ public class FulltextIndexProviderTest
 
     private IndexDescriptor createIndex( int[] entityTokens, int[] propertyIds ) throws KernelException
     {
+        return createIndex( entityTokens, propertyIds, FulltextSettings.fulltext_default_analyzer.defaultValue() );
+    }
+
+    private IndexDescriptor createIndex( int[] entityTokens, int[] propertyIds, String analyzer ) throws KernelException
+    {
+        return createIndex( entityTokens, propertyIds, analyzer, EntityType.NODE );
+    }
+
+    private IndexDescriptor createIndex( int[] entityTokens, int[] propertyIds, String analyzer, EntityType entityType ) throws KernelException
+    {
+        return createIndex( entityTokens, propertyIds, analyzer, entityType, false );
+    }
+
+    private IndexDescriptor createIndex( int[] entityTokens, int[] propertyIds, String analyzer, EntityType entityType, boolean eventuallyConsistent )
+            throws KernelException
+    {
         IndexDescriptor fulltext;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, entityTokens, propertyIds );
-            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( IndexType.FULLTEXT ).withName( NAME );
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( entityType, entityTokens, propertyIds );
+            IndexConfig config = IndexConfig
+                    .with( FulltextIndexSettingsKeys.ANALYZER, Values.stringValue( analyzer ) )
+                    .withIfAbsent( FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.of( eventuallyConsistent ) );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( IndexType.FULLTEXT ).withName( NAME )
+                    .withIndexConfig( config );
             fulltext = transaction.schemaWrite().indexCreate( prototype );
             transaction.success();
         }

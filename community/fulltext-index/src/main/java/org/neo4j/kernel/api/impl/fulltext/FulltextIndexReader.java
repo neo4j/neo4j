@@ -20,17 +20,22 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.WildcardQuery;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -130,6 +135,25 @@ public class FulltextIndexReader implements IndexReader
                     throw new RuntimeException( "Could not parse the given fulltext search query: '" + fulltextSearch.query() + "'.", e );
                 }
             }
+            else if ( isFulltextCypherQuery( indexQuery ) )
+            {
+                assertNotComposite( queries );
+                assertCypherCompatible();
+                if ( indexQuery.type() == IndexQuery.IndexQueryType.stringContains )
+                {
+                    IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) indexQuery;
+                    String searchTerm = QueryParser.escape( scp.contains().stringValue() );
+                    Term term = new Term( propertyNames[0], "*" + searchTerm + "*" );
+                    queryBuilder.add( new WildcardQuery( term ), BooleanClause.Occur.MUST );
+                }
+                else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix )
+                {
+                    IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) indexQuery;
+                    String searchTerm = QueryParser.escape( ssp.suffix().stringValue() );
+                    Term term = new Term( propertyNames[0], "*" + searchTerm );
+                    queryBuilder.add( new WildcardQuery( term ), BooleanClause.Occur.MUST );
+                }
+            }
             else
             {
                 throw new IndexNotApplicableKernelException( "A fulltext schema index cannot answer " + indexQuery.type() + " queries." );
@@ -197,6 +221,47 @@ public class FulltextIndexReader implements IndexReader
     private String getPropertyKeyName( int propertyKey ) throws TokenNotFoundException
     {
         return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
+    }
+
+    private boolean isFulltextCypherQuery( IndexQuery indexQuery )
+    {
+        return indexQuery.type() == IndexQuery.IndexQueryType.stringContains || indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix;
+    }
+
+    private static void assertNotComposite( IndexQuery[] predicates )
+    {
+        assert predicates.length == 1 : "composite indexes not yet supported for this operation";
+    }
+
+    private void assertCypherCompatible()
+    {
+        String reason = "";
+        Object configuredAnalyzer = index.getIndexConfig().get( FulltextIndexSettingsKeys.ANALYZER ).asObject();
+        if ( !"cypher".equals( configuredAnalyzer ) || !(analyzer instanceof KeywordAnalyzer) )
+        {
+            reason = "configured analyzer '" + configuredAnalyzer + "' is not Cypher compatible";
+        }
+        else if ( !(propertyNames.length == 1) )
+        {
+            reason = "index is composite";
+        }
+        else if ( !(index.schema().entityType() == EntityType.NODE) )
+        {
+            reason = "index does not target nodes";
+        }
+        else if ( !(index.schema().getEntityTokenIds().length == 1) )
+        {
+            reason = "index target more than one label";
+        }
+        else if ( isEventuallyConsistent( index ) )
+        {
+            reason = "index is eventually consistent";
+        }
+
+        if ( !reason.equals( "" ) )
+        {
+            throw new IllegalStateException( "This fulltext index does not have support for Cypher semantics because " + reason + "." );
+        }
     }
 
     private static class FulltextIndexProgressor implements IndexProgressor
