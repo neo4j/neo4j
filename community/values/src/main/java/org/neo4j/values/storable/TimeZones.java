@@ -66,7 +66,7 @@ public class TimeZones
     {
         if ( !TIME_ZONE_STRING_TO_SHORT.containsKey( tzid ) )
         {
-            throw new IllegalArgumentException( "tzid" );
+            throw new IllegalArgumentException( String.format( "unknown tzid '%s'", tzid ) );
         }
         return TIME_ZONE_STRING_TO_SHORT.get( tzid );
     }
