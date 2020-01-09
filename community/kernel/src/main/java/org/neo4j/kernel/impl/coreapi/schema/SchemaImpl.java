@@ -923,7 +923,7 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserDescription( IndexDescriptor index )
         {
-            return index.userDescription( transaction.tokenRead() );
+            return index == null ? null : index.userDescription( transaction.tokenRead() );
         }
 
         @Override

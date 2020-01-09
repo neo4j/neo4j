@@ -1327,7 +1327,7 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public String getUserDescription( IndexDescriptor index )
         {
-            return index.userDescription( tokenHolders );
+            return index == null ? null : index.userDescription( tokenHolders );
         }
 
         @Override

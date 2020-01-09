@@ -40,8 +40,8 @@ import static org.neo4j.internal.helpers.collection.Iterables.stream;
 public class IndexDefinitionImpl implements IndexDefinition
 {
     private final InternalSchemaActions actions;
-
     private final IndexDescriptor indexReference;
+    private final String description; // This allows toString() to work after transaction has been closed.
     private final Label[] labels;
     private final RelationshipType[] relTypes;
     private final String[] propertyKeys;
@@ -49,27 +49,28 @@ public class IndexDefinitionImpl implements IndexDefinition
 
     public IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor ref, Label[] labels, String[] propertyKeys, boolean constraintIndex )
     {
+        actions.assertInOpenTransaction();
         this.actions = actions;
         this.indexReference = ref;
+        this.description = actions.getUserDescription( ref );
         this.labels = labels;
         this.relTypes = null;
         this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;
 
-        assertInUnterminatedTransaction();
     }
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor ref, RelationshipType[] relTypes, String[] propertyKeys,
-            boolean constraintIndex )
+    public IndexDefinitionImpl(
+            InternalSchemaActions actions, IndexDescriptor ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
     {
+        actions.assertInOpenTransaction();
         this.actions = actions;
         this.indexReference = ref;
+        this.description = actions.getUserDescription( ref );
         this.labels = null;
         this.relTypes = relTypes;
         this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;
-
-        assertInUnterminatedTransaction();
     }
 
     public IndexDescriptor getIndexReference()
@@ -80,7 +81,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public Iterable<Label> getLabels()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         assertIsNodeIndex();
         return Arrays.asList( labels );
     }
@@ -88,7 +89,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         assertIsRelationshipIndex();
         return Arrays.asList( relTypes );
     }
@@ -96,7 +97,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         return asList( propertyKeys );
     }
 
@@ -115,7 +116,7 @@ public class IndexDefinitionImpl implements IndexDefinition
      */
     String[] getPropertyKeysArrayShared()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         return propertyKeys;
     }
 
@@ -163,14 +164,14 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public boolean isConstraintIndex()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         return constraintIndex;
     }
 
     @Override
     public boolean isNodeIndex()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         return internalIsNodeIndex();
     }
 
@@ -182,21 +183,21 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public boolean isRelationshipIndex()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         return relTypes != null;
     }
 
     @Override
     public boolean isMultiTokenIndex()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         return internalIsNodeIndex() ? labels.length > 1 : relTypes.length > 1;
     }
 
     @Override
     public boolean isCompositeIndex()
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
         return propertyKeys.length > 1;
     }
 
@@ -296,17 +297,12 @@ public class IndexDefinitionImpl implements IndexDefinition
             entityTokens = Arrays.stream( relTypes ).map( RelationshipType::name ).collect( joining( "," ) );
         }
         return "IndexDefinition[" + entityTokenType + ":" + entityTokens + " on:" + String.join( ",", propertyKeys ) + "]" +
-                (indexReference == null ? "" : " (" + actions.getUserDescription( indexReference ) + ")");
+                (description == null ? "" : " (" + description + ")");
     }
 
     static String labelNameList( Iterable<Label> labels, String prefix, String postfix )
     {
         return stream( labels ).map( Label::name ).collect( joining( ", ", prefix, postfix ) );
-    }
-
-    private void assertInUnterminatedTransaction()
-    {
-        actions.assertInOpenTransaction();
     }
 
     private void assertIsNodeIndex()
