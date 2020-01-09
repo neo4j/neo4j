@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 class BinaryLatchTest
 {
@@ -68,13 +69,17 @@ class BinaryLatchTest
             }
 
             threads[0].join( 10 );
-            assertEquals( Thread.State.WAITING, threads[0].getState() );
-
-            latch.release();
-
-            for ( Thread thread : threads )
+            try
             {
-                thread.join();
+                assertEquals( Thread.State.WAITING, threads[0].getState() );
+            }
+            finally
+            {
+                latch.release();
+                for ( Thread thread : threads )
+                {
+                    thread.join();
+                }
             }
         } );
     }
@@ -82,7 +87,7 @@ class BinaryLatchTest
     @Test
     void stressLatch()
     {
-        assertTimeout( ofSeconds( 60 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 60 ), () ->
         {
             final AtomicReference<BinaryLatch> latchRef = new AtomicReference<>( new BinaryLatch() );
             Runnable awaiter = () ->
