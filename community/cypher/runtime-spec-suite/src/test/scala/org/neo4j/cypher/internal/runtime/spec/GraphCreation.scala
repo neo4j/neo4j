@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -22,8 +22,12 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.util.{Rewriter, topDown}
-import org.neo4j.graphdb.{Label, Node, Relationship, RelationshipType}
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random

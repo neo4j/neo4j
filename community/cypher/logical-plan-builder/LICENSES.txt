@@ -8,6 +8,8 @@ Apache Software License, Version 2.0
   Apache Commons Text
   parboiled-core
   parboiled-scala
+  Scala Compiler
+  Scalap
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -259,10 +261,8 @@ SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
-  Scala Compiler
   scala-xml
   scalacheck
-  Scalap
   test-interface
 ------------------------------------------------------------------------------
 

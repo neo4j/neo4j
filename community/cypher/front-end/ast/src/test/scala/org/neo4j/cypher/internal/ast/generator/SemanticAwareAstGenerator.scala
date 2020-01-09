@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@ import org.scalacheck.Gen.oneOf
 /**
  * Prototype of a generator that generates semantically valid expressions/ASTs.
  */
-class SemanticAwareAstGenerator(override val simpleStrings: Boolean = true, override val allowedVarNames: Option[Seq[String]] = None)
+class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[String]] = None)
   extends AstGenerator(simpleStrings, allowedVarNames) {
   // FIXME this generates too many invalid combinations
   def aggregationFunctionInvocation: Gen[FunctionInvocation] = {
