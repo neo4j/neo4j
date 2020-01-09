@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
 
 /**
  * This is a utility class always pointing to the latest Standard record format.
@@ -31,7 +30,7 @@ public class Standard
     {
     }
 
-    public static final String LATEST_STORE_VERSION =  PageAlignedV4_1.RECORD_FORMATS.storeVersion();
-    public static final RecordFormats LATEST_RECORD_FORMATS = PageAlignedV4_1.RECORD_FORMATS;
-    public static final String LATEST_NAME = PageAlignedV4_1.NAME;
+    public static final String LATEST_STORE_VERSION = StandardV4_0.STORE_VERSION;
+    public static final RecordFormats LATEST_RECORD_FORMATS = StandardV4_0.RECORD_FORMATS;
+    public static final String LATEST_NAME = StandardV4_0.NAME;
 }

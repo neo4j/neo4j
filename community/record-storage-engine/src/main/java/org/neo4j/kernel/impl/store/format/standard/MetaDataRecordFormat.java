@@ -34,7 +34,7 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
 
     public MetaDataRecordFormat()
     {
-        this( false );
+        this( true );
     }
 
     public MetaDataRecordFormat( boolean pageAligned )
