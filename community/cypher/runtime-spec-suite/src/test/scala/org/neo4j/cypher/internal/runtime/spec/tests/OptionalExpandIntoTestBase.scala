@@ -724,4 +724,112 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       } yield row
     runtimeResult should beColumns("x", "r2", "y").withRows(expected)
   }
+
+  test("should handle nested optional expand intos") {
+    // given
+    val n = 10
+
+    val r1s = given {
+      val as = nodeGraph(n, "A")
+      val bs = nodeGraph(n, "B")
+      val cs = nodeGraph(n, "C")
+
+      val r1s = for {
+        (a, i) <- as.zipWithIndex
+        b <- bs
+      } yield {
+        val r1 = b.createRelationshipTo(a, RelationshipType.withName("R"))
+        r1.setProperty("num", i)
+        r1
+      }
+
+      for {
+        c <- cs
+        b <- bs
+      } // r2
+        c.createRelationshipTo(b, RelationshipType.withName("R"))
+
+      r1s
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r1", "r2")
+      .optionalExpandInto("(b)-[r2]->(c)")
+      .optionalExpandInto("(b)-[r1]->(a)", Some("r1.num > 2"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("c", "C")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      r1 <- r1s
+      _ <- 0 until n
+    } yield {
+      val actualR1 = if (r1.getProperty("num").asInstanceOf[Int] > 2) r1 else null
+      Array[Any](actualR1, null)
+    }
+
+    runtimeResult should beColumns("r1", "r2").withRows(expected)
+  }
+
+  test("should handle relationship property predicate") {
+    // given
+    val node = given {
+      val x = tx.createNode(Label.label("START"))
+      val y = tx.createNode(Label.label("END"))
+      val r = x.createRelationshipTo(y, RelationshipType.withName("R"))
+      r.setProperty("prop", 100)
+      x
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r")
+      .optionalExpandInto("(x)-[r]->(y)", Some("r.prop > 100"))
+      .apply()
+      .|.nodeByLabelScan("y", "END")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "r").withSingleRow(node, null)
+  }
+
+  test("should handle optional expand into + filter") {
+    // given
+    val size = 1000
+    val (_, rels) = given { circleGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .filter(s"id(y) >= ${size / 2}")
+      .optionalExpandInto("(x)-[r]->(y)", Some(s"id(x) >= ${size / 2}"))
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        rel <- rels
+        x = rel.getStartNode
+        y = rel.getEndNode
+        if y.getId >= size /2
+        r = if (x.getId >= size /2) rel else null
+        row <- List(Array(x, r, y))
+      } yield row
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
 }
