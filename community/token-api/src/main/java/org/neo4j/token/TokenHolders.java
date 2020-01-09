@@ -27,7 +27,7 @@ import org.neo4j.token.api.TokensLoader;
 /**
  * Holds onto all available {@link TokenHolder} for easily passing all those around
  * and for easily extending available instances in one place.
- * Resolves token names without going through transaction and locing layers.
+ * Resolves token names without going through transaction and locking layers.
  */
 public class TokenHolders implements TokenNameLookup
 {
