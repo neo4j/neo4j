@@ -181,7 +181,6 @@ class LoggingPhaseTrackerTest
         // then
         assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( DEBUG ).containsMessages(
                         "TIME/PHASE Total: SCAN[totalTime=1s], WRITE[totalTime=1s], Last 1 sec: WRITE[totalTime=1s]" );
-//        logProvider.assertExactly( firstEntry, secondEntry );
 
         // when
         sleep( 1000 );
@@ -193,7 +192,6 @@ class LoggingPhaseTrackerTest
                                 "SCAN[totalTime=2s, avgTime=1s, minTime=0ns, maxTime=1s, nbrOfReports=2], " +
                                 "WRITE[totalTime=1s], " +
                                 "Last 1 sec: SCAN[totalTime=1s]" );
-//        logProvider.assertExactly( firstEntry, secondEntry, thirdEntry );
     }
 
     private LoggingPhaseTracker getPhaseTracker()

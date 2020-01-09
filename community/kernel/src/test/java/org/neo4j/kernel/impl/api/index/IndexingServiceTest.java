@@ -154,6 +154,7 @@ import static org.neo4j.kernel.impl.api.index.MultiPopulatorFactory.forConfig;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -1006,13 +1007,13 @@ class IndexingServiceTest
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
-//        LogAssertions.assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR ).containsMessages(
-//                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
-//                        "indexProvider='quantum-dex-25.0' )]" ),
-//                causedBy( exception ) ) );
-//        internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
-//                "Index population completed. Index is now online: [%s]",
-//                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
+        assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR ).assertExceptionForLogMessage(
+                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
+                        "indexProvider='quantum-dex-25.0' )]" )
+                .hasRootCause(  exception );
+        assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO )
+                .doesNotContainMessageWithArguments( "Index population completed. Index is now online: [%s]",
+                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" );
     }
 
     @Test
@@ -1040,13 +1041,13 @@ class IndexingServiceTest
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
-//        internalLogProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
-//                                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
-//                        "indexProvider='quantum-dex-25.0' )]" ),
-//                causedBy( exception ) ) );
-//        internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
-//                "Index population completed. Index is now online: [%s]",
-//                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" ) );
+        assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR )
+                .assertExceptionForLogMessage( "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', " +
+                                "schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )]" )
+                .hasRootCause( exception );
+        assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO )
+                .doesNotContainMessageWithArguments( "Index population completed. Index is now online: [%s]",
+                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" );
     }
 
     @Test
