@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An abstract representation of a dynamic store. Record size is set at creation as the contents of the
  * first record and read and used when opening the store in future sessions.
@@ -88,7 +90,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src,
             DynamicRecordAllocator dynamicRecordAllocator, PageCursorTracer cursorTracer )
     {
-        assert src != null : "Null src argument";
+        requireNonNull( src );
         DynamicRecord nextRecord = dynamicRecordAllocator.nextRecord( cursorTracer );
         int srcOffset = 0;
         int dataSize = dynamicRecordAllocator.getRecordDataSize();

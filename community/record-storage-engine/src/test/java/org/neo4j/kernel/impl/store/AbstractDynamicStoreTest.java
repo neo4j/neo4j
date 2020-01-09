@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.neo4j.configuration.Config;
@@ -35,6 +36,8 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -42,6 +45,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,6 +77,68 @@ class AbstractDynamicStoreTest
             buffer.putInt( BLOCK_SIZE );
             buffer.flip();
             channel.write( buffer );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNextRecord()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNextRecord" );
+              var store = newTestableDynamicStore() )
+        {
+            assertZeroCursor( cursorTracer );
+            prepareDirtyGenerator( store );
+
+            store.nextRecord( cursorTracer );
+
+            assertOneCursor( cursorTracer );
+        }
+    }
+
+    @Test
+    void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext" );
+              var store = newTestableDynamicStore() )
+        {
+            assertZeroCursor( cursorTracer );
+
+            store.nextRecord( cursorTracer );
+
+            assertZeroCursor( cursorTracer );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnRecordsAllocation()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRecordsAllocation" );
+              var store = newTestableDynamicStore() )
+        {
+            assertZeroCursor( cursorTracer );
+            prepareDirtyGenerator( store );
+
+            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer );
+
+            assertOneCursor( cursorTracer );
+        }
+    }
+
+    @Test
+    void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree" );
+              var store = newTestableDynamicStore() )
+        {
+            assertZeroCursor( cursorTracer );
+
+            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer );
+
+            assertZeroCursor( cursorTracer );
         }
     }
 
@@ -131,6 +197,28 @@ class AbstractDynamicStoreTest
             assertEquals( third, records.next() );
             assertFalse( records.hasNext() );
         }
+    }
+
+    private void prepareDirtyGenerator( AbstractDynamicStore store )
+    {
+        var idGenerator = store.getIdGenerator();
+        var marker = idGenerator.marker( NULL );
+        marker.markDeleted( 1L );
+        idGenerator.clearCache( NULL );
+    }
+
+    private void assertOneCursor( PageCursorTracer cursorTracer )
+    {
+        assertThat( cursorTracer.hits() ).isOne();
+        assertThat( cursorTracer.pins() ).isOne();
+        assertThat( cursorTracer.unpins() ).isOne();
+    }
+
+    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    {
+        assertThat( cursorTracer.hits() ).isZero();
+        assertThat( cursorTracer.pins() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
     }
 
     private DynamicRecord createDynamicRecord( long id, AbstractDynamicStore store, int dataSize )

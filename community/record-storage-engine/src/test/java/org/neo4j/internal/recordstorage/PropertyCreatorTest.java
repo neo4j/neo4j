@@ -29,7 +29,9 @@ import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -70,6 +72,7 @@ class PropertyCreatorTest
     private PropertyStore propertyStore;
     private PropertyCreator creator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> records;
+    private PageCursorTracer cursorTracer;
 
     @BeforeEach
     void startStore()
@@ -79,13 +82,39 @@ class PropertyCreatorTest
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
-        creator = new PropertyCreator( propertyStore, new PropertyTraverser(), NULL );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        cursorTracer = pageCacheTracer.createPageCursorTracer( "propertyStore" );
+        creator = new PropertyCreator( propertyStore, new PropertyTraverser(), cursorTracer );
     }
 
     @AfterEach
     void closeStore()
     {
         neoStores.close();
+    }
+
+    @Test
+    void noPageCacheAccessOnCleanIdGenerator()
+    {
+        assertZeroCursor();
+
+        existingChain(
+                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ),
+                record( property( 4, 4 ), property( 5, 5 ), property( 6, 6 ), property( 7, 7 ) ) );
+
+        setProperty( 10, 10 );
+
+        assertZeroCursor();
+    }
+
+    @Test
+    void pageCacheAccessOnPropertyCreation()
+    {
+        assertZeroCursor();
+        prepareDirtyGenerator( propertyStore );
+
+        setProperty( 10, 10 );
+        assertOneCursor();
     }
 
     @Test
@@ -319,12 +348,34 @@ class PropertyCreatorTest
         assertEquals( propCount + 1, propertyRecordsInUse() );
     }
 
+    private void prepareDirtyGenerator( PropertyStore store )
+    {
+        var idGenerator = store.getIdGenerator();
+        var marker = idGenerator.marker( NULL );
+        marker.markDeleted( 1L );
+        idGenerator.clearCache( NULL );
+    }
+
+    private void assertZeroCursor()
+    {
+        assertThat( cursorTracer.hits() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
+    }
+
+    private void assertOneCursor()
+    {
+        assertThat( cursorTracer.hits() ).isOne();
+        assertThat( cursorTracer.unpins() ).isOne();
+        assertThat( cursorTracer.unpins() ).isOne();
+    }
+
     private void existingChain( ExpectedRecord... initialRecords )
     {
         PropertyRecord prev = null;
         for ( ExpectedRecord initialRecord : initialRecords )
         {
-            PropertyRecord record = this.records.create( propertyStore.nextId( NULL ), primitive.record ).forChangingData();
+            PropertyRecord record = this.records.create( propertyStore.nextId( cursorTracer ), primitive.record ).forChangingData();
             record.setInUse( true );
             existingRecord( record, initialRecord );
 
@@ -349,7 +400,7 @@ class PropertyCreatorTest
         for ( ExpectedProperty initialProperty : initialRecord.properties )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, NULL );
+            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, cursorTracer );
             record.addPropertyBlock( block );
         }
         assertTrue( record.size() <= PropertyType.getPayloadSize() );
