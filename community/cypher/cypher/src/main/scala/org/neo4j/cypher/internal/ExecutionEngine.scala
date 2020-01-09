@@ -34,7 +34,7 @@ import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{FunctionInformation, QueryExecution, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.{FunctionInformation, QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
@@ -59,6 +59,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   require(queryService != null, "Can't work with a null graph database")
 
   // HELPER OBJECTS
+  private val queryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   private val preParser = new PreParser(config.version,
     config.planner,
@@ -136,11 +137,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               profile: Boolean,
               prePopulate: Boolean,
               subscriber: QuerySubscriber): QueryExecution = {
+    queryExecutionMonitor.start( context.executingQuery() )
     executeSubQuery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
   }
 
   /**
     * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`
+    * Note. This method will monitor the query start after it has been parsed. The caller is responsible for monitoring any query failing before this point.
     *
     * @param query       the query to execute
     * @param params      the parameters of the query
@@ -155,6 +158,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               prePopulate: Boolean,
               input: InputDataStream,
               subscriber: QuerySubscriber): QueryExecution = {
+    queryExecutionMonitor.start( context.executingQuery() )
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
       doExecute(query, params, context, isOutermostQuery = true, prePopulate, input, queryTracer, subscriber)
