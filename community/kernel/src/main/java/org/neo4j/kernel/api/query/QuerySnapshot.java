@@ -70,6 +70,11 @@ public class QuerySnapshot
         return query.internalQueryId();
     }
 
+    public String id()
+    {
+        return query.id();
+    }
+
     public String queryText()
     {
         return query.queryText();

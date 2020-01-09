@@ -243,6 +243,11 @@ public class ExecutingQuery
         return queryId;
     }
 
+    public String id()
+    {
+        return Long.toString( internalQueryId() );
+    }
+
     public String username()
     {
         return username;
