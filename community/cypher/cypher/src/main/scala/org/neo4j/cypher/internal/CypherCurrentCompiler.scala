@@ -287,9 +287,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case CypherExecutionMode.normal => NormalMode
       }
 
-      val monitor = if (isOutermostQuery) kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]) else QueryExecutionMonitor.NO_OP
-      monitor.start( transactionalContext.executingQuery() )
-
       val inner = if (innerExecutionMode == ExplainMode) {
         taskCloser.close(success = true)
         val columns = columnNames(logicalPlan)
@@ -318,6 +315,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                             planDescriptionBuilder,
                                             subscriber)
         }
+      val monitor = if (isOutermostQuery) kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]) else QueryExecutionMonitor.NO_OP
       ClosingExecutionResult.wrapAndInitiate(
         transactionalContext.executingQuery(),
         inner,
