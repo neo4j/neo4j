@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,8 +39,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -50,10 +48,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexState;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
 
 @EphemeralTestDirectoryExtension
 class IndexRestartIT
@@ -99,9 +93,9 @@ class IndexRestartIT
         try ( Transaction transaction = db.beginTx() )
         {
             // THEN
-            assertThat( getIndexes( transaction, myLabel ), hasSize( 0 ) );
-            var e = assertThrows( NotFoundException.class, () -> getIndexState( transaction, index ) );
-            assertThat( e.getMessage(), CoreMatchers.containsString( myLabel.name() ) );
+            assertThat( getIndexes( transaction, myLabel ) ).isEmpty();
+            var e = assertThrows( NotFoundException.class, () -> indexState( transaction, index ) );
+            assertThat( e ).hasMessageContaining( myLabel.name() );
         }
     }
 
@@ -123,7 +117,11 @@ class IndexRestartIT
         // Then
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.ONLINE ) );
+            var indexes = getIndexes( transaction, myLabel );
+            for ( IndexDefinition definition : indexes )
+            {
+                assertThat( indexState( transaction, definition ) ).isEqualTo( Schema.IndexState.ONLINE );
+            }
         }
         assertEquals( 1, provider.populatorCallCount.get() );
         assertEquals( 2, provider.writerCallCount.get() );
@@ -145,7 +143,11 @@ class IndexRestartIT
 
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( getIndexes( transaction, myLabel ), not( haveState( transaction, Schema.IndexState.FAILED ) ) );
+            var indexes = getIndexes( transaction, myLabel );
+            for ( IndexDefinition definition : indexes )
+            {
+                assertThat( indexState( transaction, definition ) ).isNotEqualTo( Schema.IndexState.FAILED );
+            }
         }
         assertEquals( 2, provider.populatorCallCount.get() );
     }
@@ -191,5 +193,15 @@ class IndexRestartIT
         {
             managementService.shutdown();
         }
+    }
+
+    private Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
+    {
+        return transaction.schema().getIndexes( label );
+    }
+
+    private Schema.IndexState indexState( Transaction transaction, IndexDefinition index )
+    {
+        return transaction.schema().getIndexState( index );
     }
 }

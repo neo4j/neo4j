@@ -26,8 +26,7 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,10 +40,9 @@ class FieldInjectionsTest
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> injections.setters( ProcedureWithNonInjectedMemberFields.class ) );
-        assertThat( exception.getMessage(), equalTo("Field `someState` on `ProcedureWithNonInjectedMemberFields` " +
-                                                            "is not annotated as a @Context and is not static. " +
-                                                            "If you want to store state along with your procedure, " +
-                                                            "please use a static field.") );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Field `someState` on `ProcedureWithNonInjectedMemberFields` " + "is not annotated as a @Context and is not static. " +
+                        "If you want to store state along with your procedure, " + "please use a static field." );
     }
 
     @Test
@@ -54,7 +52,7 @@ class FieldInjectionsTest
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> injections.setters( ProcedureWithPrivateMemberField.class ) );
-        assertThat( exception.getMessage(), equalTo("Field `someState` on `ProcedureWithPrivateMemberField` must be non-final and public.") );
+        assertThat( exception.getMessage() ).isEqualTo( "Field `someState` on `ProcedureWithPrivateMemberField` must be non-final and public." );
     }
 
     @Test

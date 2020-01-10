@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +34,7 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
@@ -48,16 +48,13 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
@@ -66,17 +63,8 @@ public class ResourceInjectionTest
     private ProcedureCompiler compiler;
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
-    private final Log log = mock(Log.class);
-
-    public static String notAvailableMessage( String procName )
-    {
-        return argThat( notAvailableMessageMatcher( procName ) );
-    }
-
-    private static Matcher<String> notAvailableMessageMatcher( String procName )
-    {
-        return allOf( containsString( procName ), containsString( "unavailable" ) );
-    }
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private Log log = logProvider.getLog( getClass() );
 
     @BeforeEach
     void setUp()
@@ -102,17 +90,16 @@ public class ResourceInjectionTest
         List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
 
         // Then
-        assertThat( out.get( 0 ), equalTo( new AnyValue[]{stringValue( "Bonnie" )} ) );
-        assertThat( out.get( 1 ), equalTo( new AnyValue[]{stringValue( "Clyde" )} ) );
+        assertThat( out.get( 0 ) ).isEqualTo( new AnyValue[]{stringValue( "Bonnie" )} );
+        assertThat( out.get( 1 ) ).isEqualTo( new AnyValue[]{stringValue( "Clyde" )} );
     }
 
     @Test
     void shouldFailNicelyWhenUnknownAPI()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compiler.compileProcedure( ProcedureWithUnknownAPI.class, null, true ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to set up injection for procedure `ProcedureWithUnknownAPI`, " +
-                                                    "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " +
-                                                    "which is not a known injectable component." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Unable to set up injection for procedure `ProcedureWithUnknownAPI`, " +
+                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " + "which is not a known injectable component." );
     }
 
     @Test
@@ -126,10 +113,10 @@ public class ResourceInjectionTest
         List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
 
         // Then
-        assertThat( out.get( 0 ), equalTo( new AnyValue[]{stringValue( "Morpheus" )} ) );
-        assertThat( out.get( 1 ), equalTo( new AnyValue[]{stringValue( "Trinity" )} ) );
-        assertThat( out.get( 2 ), equalTo( new AnyValue[]{stringValue( "Neo" )} ) );
-        assertThat( out.get( 3 ), equalTo( new AnyValue[]{stringValue( "Emil" )} ) );
+        assertThat( out.get( 0 ) ).isEqualTo( new AnyValue[]{stringValue( "Morpheus" )} );
+        assertThat( out.get( 1 ) ).isEqualTo( new AnyValue[]{stringValue( "Trinity" )} );
+        assertThat( out.get( 2 ) ).isEqualTo( new AnyValue[]{stringValue( "Neo" )} );
+        assertThat( out.get( 3 ) ).isEqualTo( new AnyValue[]{stringValue( "Emil" )} );
     }
 
     @Test
@@ -138,12 +125,13 @@ public class ResourceInjectionTest
         //When
         List<CallableProcedure> procList =
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, null, false );
-        verify( log ).warn( notAvailableMessage( "org.neo4j.procedure.impl.listCoolPeople" ) );
+        assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
+                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople" );
 
-        assertThat( procList.size(), equalTo( 1 ) );
+        assertThat( procList.size() ).isEqualTo( 1 );
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
-        assertThat( exception.getMessage(), notAvailableMessageMatcher( "org.neo4j.procedure.impl.listCoolPeople" ) );
+        assertThat( exception.getMessage() ).doesNotContain( "org.neo4j.procedure.impl.listCoolPeople" );
     }
 
     @Test
@@ -157,16 +145,15 @@ public class ResourceInjectionTest
         AnyValue out = proc.apply( prepareContext(), new AnyValue[0] );
 
         // Then
-        assertThat( out, equalTo( Values.of("[Bonnie, Clyde]") ) );
+        assertThat( out ).isEqualTo( Values.of( "[Bonnie, Clyde]" ) );
     }
 
     @Test
     void shouldFailNicelyWhenFunctionUsesUnknownAPI()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compiler.compileFunction( FunctionWithUnknownAPI.class, false ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to set up injection for procedure `FunctionWithUnknownAPI`, " +
-                                                    "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " +
-                                                    "which is not a known injectable component." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Unable to set up injection for procedure `FunctionWithUnknownAPI`, " +
+                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " + "which is not a known injectable component." );
     }
 
     @Test
@@ -175,12 +162,13 @@ public class ResourceInjectionTest
         //When
         List<CallableUserFunction> procList =
                 compiler.compileFunction( FunctionWithUnsafeAPI.class, false );
-        verify( log ).warn( notAvailableMessage( "org.neo4j.procedure.impl.listCoolPeople" ) );
+        assertThat( logProvider ).forClass( getClass() )
+                .forLevel( WARN ).doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople" );
 
-        assertThat( procList.size(), equalTo( 1 ) );
+        assertThat( procList.size() ).isEqualTo( 1 );
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new AnyValue[0] ) );
-        assertThat( exception.getMessage(), notAvailableMessageMatcher( "org.neo4j.procedure.impl.listCoolPeople" ) );
+        assertThat( exception.getMessage() ).doesNotContain( "org.neo4j.procedure.impl.listCoolPeople" );
     }
 
     @Test
@@ -194,7 +182,7 @@ public class ResourceInjectionTest
         AnyValue out = proc.create( prepareContext() ).result();
 
         // Then
-        assertThat( out, equalTo( stringValue( "[Bonnie, Clyde]" ) ) );
+        assertThat( out ).isEqualTo( stringValue( "[Bonnie, Clyde]" ) );
     }
 
     @Test
@@ -202,9 +190,8 @@ public class ResourceInjectionTest
     {
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> compiler.compileAggregationFunction( AggregationFunctionWithUnknownAPI.class ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to set up injection for procedure `AggregationFunctionWithUnknownAPI`, " +
-                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " +
-                "which is not a known injectable component." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Unable to set up injection for procedure `AggregationFunctionWithUnknownAPI`, " +
+                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " + "which is not a known injectable component." );
     }
 
     @Test
@@ -213,15 +200,17 @@ public class ResourceInjectionTest
         //When
         List<CallableUserAggregationFunction> procList =
                 compiler.compileAggregationFunction( AggregationFunctionWithUnsafeAPI.class);
-        verify( log ).warn( notAvailableMessage( "org.neo4j.procedure.impl.listCoolPeople" ) );
+        assertThat( logProvider ).forClass( getClass() )
+                .forLevel( WARN )
+                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople" );
 
-        assertThat( procList.size(), equalTo( 1 ) );
+        assertThat( procList.size() ).isEqualTo( 1 );
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
         {
             procList.get( 0 ).create( prepareContext() ).update( new AnyValue[]{} );
             procList.get( 0 ).create( prepareContext() ).result();
         } );
-        assertThat( exception.getMessage(), notAvailableMessageMatcher( "org.neo4j.procedure.impl.listCoolPeople" ) );
+        assertThat( exception.getMessage() ).doesNotContain( "org.neo4j.procedure.impl.listCoolPeople" );
     }
 
     @Test
@@ -232,11 +221,11 @@ public class ResourceInjectionTest
         compiler.compileProcedure( FunctionsAndProcedureUnsafe.class, null, false );
         compiler.compileAggregationFunction( FunctionsAndProcedureUnsafe.class );
         // Then
-
-        verify( log ).warn( notAvailableMessage( "org.neo4j.procedure.impl.safeUserFunctionInUnsafeAPIClass" ) );
-        verify( log ).warn( notAvailableMessage( "org.neo4j.procedure.impl.listCoolPeopleProcedure" ) );
-        // With extra ' ' space at the end to distinguish from procedure form:
-        verify( log ).warn( notAvailableMessage( "org.neo4j.procedure.impl.listCoolPeople " ) );
+        assertThat( logProvider ).forClass( getClass() )
+                .forLevel( WARN )
+                .doesNotContainMessage( "org.neo4j.procedure.impl.safeUserFunctionInUnsafeAPIClass" )
+                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeopleProcedure" )
+                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople " );    // With extra ' ' space at the end to distinguish from procedure form:
     }
 
     private org.neo4j.kernel.api.procedure.Context prepareContext()

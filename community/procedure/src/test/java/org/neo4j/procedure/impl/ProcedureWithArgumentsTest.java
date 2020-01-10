@@ -43,9 +43,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -70,12 +68,9 @@ public class ProcedureWithArgumentsTest
 
         // Then
         assertEquals( 1, procedures.size() );
-        assertThat( procedures.get( 0 ).signature(), equalTo(
-                procedureSignature( "org", "neo4j", "procedure", "impl", "listCoolPeople" )
-                        .in( "name", Neo4jTypes.NTString )
-                        .in( "age", Neo4jTypes.NTInteger )
-                        .out( "name", Neo4jTypes.NTString )
-                        .build() ) );
+        assertThat( procedures.get( 0 ).signature() ).isEqualTo(
+                procedureSignature( "org", "neo4j", "procedure", "impl", "listCoolPeople" ).in( "name", Neo4jTypes.NTString ).in( "age",
+                        Neo4jTypes.NTInteger ).out( "name", Neo4jTypes.NTString ).build() );
     }
 
     @Test
@@ -90,7 +85,7 @@ public class ProcedureWithArgumentsTest
 
         // Then
         List<AnyValue[]> collect = asList( out );
-        assertThat( collect.get( 0 )[0], equalTo( stringValue( "Pontus is 35 years old." )) );
+        assertThat( collect.get( 0 )[0] ).isEqualTo( stringValue( "Pontus is 35 years old." ) );
     }
 
     @Test
@@ -108,36 +103,35 @@ public class ProcedureWithArgumentsTest
 
         // Then
         List<AnyValue[]> collect = asList( out );
-        assertThat( collect.get( 0 )[0], equalTo( stringValue( "Roland is 1000 years old." ) ) );
-        assertThat( collect.get( 1 )[0], equalTo( stringValue( "Eddie is 23 years old." ) ) );
-        assertThat( collect.get( 2 )[0], equalTo( stringValue( "Susan is 29 years old." ) ) );
-        assertThat( collect.get( 3 )[0], equalTo( stringValue( "Jake is 12 years old." ) ) );
+        assertThat( collect.get( 0 )[0] ).isEqualTo( stringValue( "Roland is 1000 years old." ) );
+        assertThat( collect.get( 1 )[0] ).isEqualTo( stringValue( "Eddie is 23 years old." ) );
+        assertThat( collect.get( 2 )[0] ).isEqualTo( stringValue( "Susan is 29 years old." ) );
+        assertThat( collect.get( 3 )[0] ).isEqualTo( stringValue( "Jake is 12 years old." ) );
     }
 
     @Test
     void shouldFailIfMissingAnnotations()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithoutAnnotatedArgs.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Argument at position 0 in method `listCoolPeople` " +
-                                                    "is missing an `@Name` annotation.%n" +
-                                                    "Please add the annotation, recompile the class and try again." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format(
+                "Argument at position 0 in method `listCoolPeople` " + "is missing an `@Name` annotation.%n" +
+                        "Please add the annotation, recompile the class and try again." ) );
     }
 
     @Test
     void shouldFailIfMisplacedDefaultValue()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithMisplacedDefault.class ) );
-        assertThat( exception.getMessage(), containsString(
-                "Non-default argument at position 2 with name c in method defaultValues follows default argument. " +
-                "Add a default value or rearrange arguments so that the non-default values comes first." ) );
+        assertThat( exception.getMessage() ).contains( "Non-default argument at position 2 with name c in method defaultValues follows default argument. " +
+                "Add a default value or rearrange arguments so that the non-default values comes first." );
     }
 
     @Test
     void shouldFailIfWronglyTypedDefaultValue()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithBadlyTypedDefault.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Argument `a` at position 0 in `defaultValues` with%n" +
-                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a INTEGER?" ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format( "Argument `a` at position 0 in `defaultValues` with%n" +
+                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a INTEGER?" ) );
     }
 
     private Context prepareContext()

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -101,11 +100,6 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -596,8 +590,8 @@ class IndexingServiceTest
 
         // WHEN trying to start up and initialize it with an index from provider Y
         var e = assertThrows( LifecycleException.class, life::init );
-        assertThat( e.getCause().getMessage(), containsString( PROVIDER_DESCRIPTOR.name() ) );
-        assertThat( e.getCause().getMessage(), containsString( otherProviderKey ) );
+        assertThat( e.getCause().getMessage() ).contains( PROVIDER_DESCRIPTOR.name() );
+        assertThat( e.getCause().getMessage() ).contains( otherProviderKey );
     }
 
     @Test
@@ -627,7 +621,7 @@ class IndexingServiceTest
 
         // THEN
         // We get a snapshot per online index
-        assertThat( asCollection( files ), equalTo( asCollection( iterator( theFile, theFile ) ) ) );
+        assertThat( asCollection( files ) ).isEqualTo( asCollection( iterator( theFile, theFile ) ) );
     }
 
     @Test
@@ -659,7 +653,7 @@ class IndexingServiceTest
 
         // THEN
         // We get a snapshot from the online index, but no snapshot from the populating one
-        assertThat( asCollection( files ), equalTo( asCollection( iterator( theFile ) ) ) );
+        assertThat( asCollection( files ) ).isEqualTo( asCollection( iterator( theFile ) ) );
     }
 
     @Test
@@ -721,7 +715,7 @@ class IndexingServiceTest
         life.shutdown();
 
         var e = assertThrows( IllegalStateException.class, () -> indexingService.applyUpdates( asSet( add( 1, "foo" ) ) ) );
-        assertThat( e.getMessage(), startsWith( "Can't apply index updates" ) );
+        assertThat( e.getMessage() ).startsWith( "Can't apply index updates" );
     }
 
     @Test
@@ -906,7 +900,7 @@ class IndexingServiceTest
         try
         {
             assertNull( indexProxy.getDescriptor().getIndexConfig().get( "a" ) );
-            assertThat( indexProxy.getState(), Matchers.is( POPULATING ) ); // The existing online index got nuked during recovery.
+            assertThat( indexProxy.getState() ).isEqualTo( POPULATING ); // The existing online index got nuked during recovery.
         }
         finally
         {
@@ -1004,7 +998,7 @@ class IndexingServiceTest
         // then
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
-        assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
+        assertThat( storedFailure() ).contains( format( "java.io.IOException: Expected failure%n\tat " ) );
         assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR ).assertExceptionForLogMessage(
                 "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
                         "indexProvider='quantum-dex-25.0' )]" )
@@ -1038,7 +1032,7 @@ class IndexingServiceTest
         // then
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
-        assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
+        assertThat( storedFailure() ).contains( format( "java.io.IOException: Expected failure%n\tat " ) );
         assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR )
                 .assertExceptionForLogMessage( "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', " +
                                 "schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )]" )
@@ -1114,10 +1108,10 @@ class IndexingServiceTest
             // flip will win and make the index NOT fail and therefor hanging this test awaiting on the exceptionBarrier below
             waitForIndexesToComeOnline( indexing, indexRule );
             IndexProxy indexProxy = indexing.getIndexProxy( indexRule );
-            assertThat( indexProxy, instanceOf( ContractCheckingIndexProxy.class ) );
+            assertThat( indexProxy ).isInstanceOf( ContractCheckingIndexProxy.class );
             ContractCheckingIndexProxy contractCheckingIndexProxy = (ContractCheckingIndexProxy) indexProxy;
             IndexProxy delegate = contractCheckingIndexProxy.getDelegate();
-            assertThat( delegate, instanceOf( FlippableIndexProxy.class ) );
+            assertThat( delegate ).isInstanceOf( FlippableIndexProxy.class );
             FlippableIndexProxy flippableIndexProxy = (FlippableIndexProxy) delegate;
             Exception expectedCause = new Exception( "index was failed on purpose" );
             IndexPopulationFailure indexFailure = IndexPopulationFailure.failure( expectedCause );
@@ -1288,7 +1282,7 @@ class IndexingServiceTest
 
         var e = assertThrows( UnderlyingStorageException.class,
                 () -> indexingService.forceAll( IOLimiter.UNLIMITED, NULL ) );
-        assertThat( e.getMessage(), startsWith( "Unable to force" ) );
+        assertThat( e.getMessage() ).startsWith( "Unable to force" );
     }
 
     @Test

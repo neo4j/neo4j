@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,9 +50,7 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -111,10 +108,8 @@ public class UserFunctionTest
 
         // Then
         assertEquals( 1, function.size() );
-        assertThat( function.get( 0 ).signature(), Matchers.equalTo(
-                functionSignature( "org", "neo4j", "procedure", "impl", "listCoolPeople" )
-                        .out( Neo4jTypes.NTList( Neo4jTypes.NTAny ) )
-                        .build() ) );
+        assertThat( function.get( 0 ).signature() ).isEqualTo(
+                functionSignature( "org", "neo4j", "procedure", "impl", "listCoolPeople" ).out( Neo4jTypes.NTList( Neo4jTypes.NTAny ) ).build() );
     }
 
     @Test
@@ -127,7 +122,7 @@ public class UserFunctionTest
         Object out = func.apply( prepareContext(), new AnyValue[0] );
 
         // Then
-        assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
+        assertThat( out ).isEqualTo( ValueUtils.of( Arrays.asList( "Bonnie", "Clyde" ) ) );
     }
 
     @Test
@@ -153,34 +148,34 @@ public class UserFunctionTest
         Object bananaOut = bananaPeople.apply( prepareContext(), new AnyValue[0] );
 
         // Then
-        assertThat( coolOut , equalTo(ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
+        assertThat( coolOut ).isEqualTo( ValueUtils.of( Arrays.asList( "Bonnie", "Clyde" ) ) );
 
-        assertThat( ((MapValue) bananaOut).get("foo"), equalTo( ValueUtils.of( Arrays.asList( "bar", "baz" ) ) ) );
+        assertThat( ((MapValue) bananaOut).get( "foo" ) ).isEqualTo( ValueUtils.of( Arrays.asList( "bar", "baz" ) ) );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WierdConstructorFunction.class ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
-                                                    "in the class `WierdConstructorFunction`. Please add a " +
-                                                    "valid, public constructor, recompile the class and try again." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Unable to find a usable public no-argument constructor " + "in the class `WierdConstructorFunction`. Please add a " +
+                        "valid, public constructor, recompile the class and try again." );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnNoPublicConstructor()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorFunction.class ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
-                                                    "in the class `PrivateConstructorFunction`. Please add " +
-                                                    "a valid, public constructor, recompile the class and try again." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Unable to find a usable public no-argument constructor " + "in the class `PrivateConstructorFunction`. Please add " +
+                        "a valid, public constructor, recompile the class and try again." );
     }
 
     @Test
     void shouldNotAllowVoidOutput()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithVoidOutput.class ) );
-        assertThat( exception.getMessage(), startsWith( "Don't know how to map `void` to the Neo4j Type System." ) );
+        assertThat( exception.getMessage() ).startsWith( "Don't know how to map `void` to the Neo4j Type System." );
     }
 
     @Test
@@ -189,23 +184,23 @@ public class UserFunctionTest
 
         // When
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Don't know how to map `char[]` to the Neo4j Type System.%n" +
-                "Please refer to to the documentation for full details.%n" +
-                "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
-                "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
-                "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
-                "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
-                "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format(
+                "Don't know how to map `char[]` to the Neo4j Type System.%n" + "Please refer to to the documentation for full details.%n" +
+                        "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
+                        "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
+                        "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
+                        "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
+                        "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ) );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " +
-                                                    "annotated as a @Context field,%n" +
-                                                    "but it is static. @Context fields must be public, non-final and non-static,%n" +
-                                                    "because they are reset each time a procedure is invoked." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format(
+                "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " + "annotated as a @Context field,%n" +
+                        "but it is static. @Context fields must be public, non-final and non-static,%n" +
+                        "because they are reset each time a procedure is invoked." ) );
     }
 
     @Test
@@ -222,8 +217,8 @@ public class UserFunctionTest
     void shouldNotAllowOverridingFunctionNameWithoutNamespace()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ) );
-        assertThat( exception.getMessage(), equalTo( "It is not allowed to define functions in the root namespace please use a " +
-                "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" ) );
+        assertThat( exception.getMessage() ).isEqualTo( "It is not allowed to define functions in the root namespace please use a " +
+                "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" );
     }
 
     @Test
@@ -234,8 +229,8 @@ public class UserFunctionTest
 
         // When
         ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0] ) );
-        assertThat( exception.getMessage(),
-                equalTo( "Failed to invoke function `org.neo4j.procedure.impl.throwsAtInvocation`: Caused by: java.lang.IndexOutOfBoundsException" ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Failed to invoke function `org.neo4j.procedure.impl.throwsAtInvocation`: Caused by: java.lang.IndexOutOfBoundsException" );
     }
 
     @Test
@@ -250,7 +245,7 @@ public class UserFunctionTest
 
         // Expect
         Object out = method.apply( prepareContext(), new AnyValue[0] );
-        assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
+        assertThat( out ).isEqualTo( ValueUtils.of( Arrays.asList( "Bonnie", "Clyde" ) ) );
     }
 
     @Test
@@ -263,7 +258,7 @@ public class UserFunctionTest
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
-        assertThat( method.size(), equalTo( 0 ) );
+        assertThat( method.size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -276,7 +271,7 @@ public class UserFunctionTest
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
-        assertThat( method.size(), equalTo( 0 ) );
+        assertThat( method.size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -305,7 +300,7 @@ public class UserFunctionTest
             case "oldFunc":
             case "badFunc":
                 assertTrue( func.signature().deprecated().isPresent(), "Should be deprecated" );
-                assertThat( func.signature().deprecated().get(), equalTo( "newFunc" ) );
+                assertThat( func.signature().deprecated().get() ).isEqualTo( "newFunc" );
                 break;
             default:
                 fail( "Unexpected function: " + name );
@@ -323,7 +318,7 @@ public class UserFunctionTest
         Object out = func.apply( prepareContext(), new AnyValue[]{stringValue("hello")} );
 
         // Then
-        assertThat(out, equalTo( longValue( 5 ) ) );
+        assertThat( out ).isEqualTo( longValue( 5 ) );
     }
 
     @Test
@@ -336,7 +331,7 @@ public class UserFunctionTest
         Object out = func.apply( prepareContext(), new AnyValue[]{stringValue("hello")} );
 
         // Then
-        assertThat(out, equalTo( NO_VALUE ) );
+        assertThat( out ).isEqualTo( NO_VALUE );
     }
 
     private org.neo4j.kernel.api.procedure.Context prepareContext()

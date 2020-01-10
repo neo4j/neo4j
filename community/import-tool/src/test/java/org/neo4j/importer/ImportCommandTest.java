@@ -30,7 +30,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.Set;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -42,11 +41,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.lineSeparator;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.collection.IsEmptyCollection.empty;
-import static org.hamcrest.text.IsEmptyString.emptyString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -293,8 +288,8 @@ class ImportCommandTest
             final var foo = testDir.createFile( "foo.csv" );
             final var bar = testDir.createFile( "bar.csv" );
             final var g = ImportCommand.parseNodeFilesGroup( foo.getPath() + "," + bar.getPath() );
-            assertThat( g.key, empty() );
-            assertThat( g.files, arrayContaining( foo, bar ) );
+            assertThat( g.key ).isEmpty();
+            assertThat( g.files ).contains( foo, bar );
         }
 
         @Test
@@ -303,8 +298,8 @@ class ImportCommandTest
             final var foo = testDir.createFile( "foo.csv" );
             final var bar = testDir.createFile( "bar.csv" );
             final var g = ImportCommand.parseNodeFilesGroup( "BANANA=" + foo.getPath() + "," + bar.getPath() );
-            assertThat( g.key, equalTo( Set.of( "BANANA" ) ) );
-            assertThat( g.files, arrayContaining( foo, bar ) );
+            assertThat( g.key ).containsOnly( "BANANA" );
+            assertThat( g.files ).containsOnly( foo, bar );
         }
 
         @Test
@@ -313,8 +308,8 @@ class ImportCommandTest
             final var foo = testDir.createFile( "foo.csv" );
             final var bar = testDir.createFile( "bar.csv" );
             final var g = ImportCommand.parseNodeFilesGroup( ":APPLE::KIWI : BANANA=" + foo.getPath() + "," + bar.getPath() );
-            assertThat( g.key, equalTo( Set.of( "BANANA", "KIWI", "APPLE" ) ) );
-            assertThat( g.files, arrayContaining( foo, bar ) );
+            assertThat( g.key ).containsOnly( "BANANA", "KIWI", "APPLE" );
+            assertThat( g.files ).containsOnly( foo, bar );
         }
 
         @Test
@@ -324,8 +319,8 @@ class ImportCommandTest
             final var foo2 = testDir.createFile( "foo-2.csv" );
             final var foo3 = testDir.createFile( "foo-X.csv" );
             final var g = ImportCommand.parseNodeFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv" );
-            assertThat( g.key, equalTo( Set.of( "BANANA" ) ) );
-            assertThat( g.files, arrayContaining( foo1, foo2 ) );
+            assertThat( g.key ).containsOnly( "BANANA" );
+            assertThat( g.files ).containsOnly( foo1, foo2 );
         }
     }
 
@@ -351,8 +346,8 @@ class ImportCommandTest
             final var foo = testDir.createFile( "foo.csv" );
             final var bar = testDir.createFile( "bar.csv" );
             final var g = ImportCommand.parseRelationshipFilesGroup( foo.getPath() + "," + bar.getPath() );
-            assertThat( g.key, emptyString() );
-            assertThat( g.files, arrayContaining( foo, bar ) );
+            assertThat( g.key ).isEmpty();
+            assertThat( g.files ).containsOnly( foo, bar );
         }
 
         @Test
@@ -361,8 +356,8 @@ class ImportCommandTest
             final var foo = testDir.createFile( "foo.csv" );
             final var bar = testDir.createFile( "bar.csv" );
             final var g = ImportCommand.parseRelationshipFilesGroup( "BANANA=" + foo.getPath() + "," + bar.getPath() );
-            assertThat( g.key, equalTo( "BANANA" ) );
-            assertThat( g.files, arrayContaining( foo, bar ) );
+            assertThat( g.key ).isEqualTo( "BANANA" );
+            assertThat( g.files ).containsOnly( foo, bar );
         }
 
         @Test
@@ -372,8 +367,8 @@ class ImportCommandTest
             final var foo2 = testDir.createFile( "foo-2.csv" );
             final var foo3 = testDir.createFile( "foo-X.csv" );
             final var g = ImportCommand.parseRelationshipFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv" );
-            assertThat( g.key, equalTo( "BANANA" ) );
-            assertThat( g.files, arrayContaining( foo1, foo2 ) );
+            assertThat( g.key ).isEqualTo( "BANANA" );
+            assertThat( g.files ).containsOnly( foo1, foo2 );
         }
     }
 }

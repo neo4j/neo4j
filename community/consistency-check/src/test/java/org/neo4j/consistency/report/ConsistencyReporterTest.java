@@ -19,9 +19,6 @@
  */
 package org.neo4j.consistency.report;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -31,7 +28,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Suite;
 import org.junit.runners.model.Statement;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
+import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -75,18 +72,17 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.test.InMemoryTokens;
 
 import static java.lang.String.format;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -139,7 +135,7 @@ public class ConsistencyReporterTest
             PendingReferenceCheck pendingRefCheck = captor.getValue();
 
             // then
-            verifyZeroInteractions( summary );
+            verifyNoInteractions( summary );
 
             // when
             pendingRefCheck.skip();
@@ -206,8 +202,8 @@ public class ConsistencyReporterTest
             // THEN
             assertNotNull( loggedError.get() );
             String error = loggedError.get();
-            assertThat( error, containsString( "at " ) );
-            assertThat( error, containsString( testName.getMethodName() ) );
+            assertThat( error ).contains( "at " );
+            assertThat( error ).contains( testName.getMethodName() );
         }
     }
 
@@ -232,12 +228,12 @@ public class ConsistencyReporterTest
                 {
                     verify( report ).error( any( RecordType.class ),
                                             any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
-                                            argThat( hasExpectedFormat() ), any( Object[].class ) );
+                                            argThat( expectedFormat() ), any( Object[].class ) );
                 }
                 else
                 {
                     verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ), argThat( hasExpectedFormat() ), nullSafeAny() );
+                                            any( AbstractBaseRecord.class ), argThat( expectedFormat() ), nullSafeAny() );
                 }
             }
             else
@@ -246,13 +242,13 @@ public class ConsistencyReporterTest
                 {
                     verify( report ).warning( any( RecordType.class ),
                                               any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
-                                              argThat( hasExpectedFormat() ), any( Object[].class ) );
+                                              argThat( expectedFormat() ), any( Object[].class ) );
                 }
                 else
                 {
                     verify( report ).warning( any( RecordType.class ),
                                               any( AbstractBaseRecord.class ),
-                                              argThat( hasExpectedFormat() ), nullSafeAny() );
+                                              argThat( expectedFormat() ), nullSafeAny() );
                 }
             }
         }
@@ -485,26 +481,13 @@ public class ConsistencyReporterTest
         }
     }
 
-    private static <T> T[] nullSafeAny()
+    private static ArgumentMatcher<String> expectedFormat()
     {
-        return ArgumentMatchers.argThat( argument -> true );
+        return argument -> argument.trim().split( " " ).length > 1;
     }
 
-    private static Matcher<String> hasExpectedFormat()
+    private static <T> T[] nullSafeAny()
     {
-        return new TypeSafeMatcher<>()
-        {
-            @Override
-            public boolean matchesSafely( String item )
-            {
-                return item.trim().split( " " ).length > 1;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "message of valid format" );
-            }
-        };
+        return argThat( argument -> true );
     }
 }

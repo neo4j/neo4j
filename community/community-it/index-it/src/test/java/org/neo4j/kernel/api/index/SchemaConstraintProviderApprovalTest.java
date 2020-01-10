@@ -35,6 +35,7 @@ import java.util.function.Function;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
@@ -51,7 +52,6 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createConstraint;
 
 /*
  * The purpose of this test class is to make sure all index providers produce the same results.
@@ -227,6 +227,15 @@ public abstract class SchemaConstraintProviderApprovalTest
         public String toString()
         {
             return Strings.prettyPrint( array );
+        }
+    }
+
+    private static void createConstraint( GraphDatabaseService db, Label label, String propertyKey )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            tx.commit();
         }
     }
 }

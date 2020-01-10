@@ -39,9 +39,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -88,15 +86,14 @@ class JmxQueryProcedureTest
                 procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
 
         // then
-        assertThat( asList( result ), contains(
-            equalTo( new AnyValue[]{
+        assertThat( asList( result ) ).contains( new AnyValue[]{
                     stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
                     stringValue( "This is a description" ),
                     ValueUtils.of( map( attributeName, map(
                             "description", "This is the attribute desc.",
                             "value", "Hello, world!"
                     ) ) )
-            } ) ) );
+            } );
     }
 
     @Test
@@ -116,15 +113,15 @@ class JmxQueryProcedureTest
         RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
 
         // then
-        assertThat( asList( result ), contains(
-                equalTo( new AnyValue[]{
+        assertThat( asList( result ) ).contains(
+                new AnyValue[]{
                         stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
                         stringValue( "This is a description" ),
                         ValueUtils.of( map( attributeName, map(
                                 "description", "This is the attribute desc.",
                                 "value", null
                         ) ) )
-                } ) ) );
+                } );
     }
 
     @Test
@@ -160,8 +157,8 @@ class JmxQueryProcedureTest
         RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
 
         // then
-        assertThat( asList( result ), contains(
-                equalTo( new AnyValue[]{
+        assertThat( asList( result ) ).contains(
+                new AnyValue[]{
                         stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
                         stringValue( "This is a description" ),
                         ValueUtils.of( map( attributeName, map(
@@ -170,7 +167,7 @@ class JmxQueryProcedureTest
                                         "description", "Composite description",
                                         "properties", map(
                                                 "key1", "Hello",
-                                                "key2", 123 ) ) ) ) )} ) ) );
+                                                "key2", 123 ) ) ) ) )} );
     }
 
     @Test
@@ -188,6 +185,6 @@ class JmxQueryProcedureTest
         //      .. we don't assert more than this, this is more of a smoke test to ensure
         //      that independent of platform, we never throw exceptions even when converting every
         //      single MBean into Neo4j types, and we always get the correct number of MBeans out.
-        assertThat( asList( result ).size(), equalTo( jmxServer.getMBeanCount() ));
+        assertThat( asList( result ) ).hasSize( jmxServer.getMBeanCount() );
     }
 }

@@ -28,12 +28,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @ImpermanentDbmsExtension
 class TestShortStringProperties
@@ -54,8 +51,13 @@ class TestShortStringProperties
             node.setProperty( "reverse", "esrever" );
             transaction.commit();
         }
-        assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( "value" )  ) );
-        assertThat( node, inTx( graphdb, hasProperty( "reverse" ).withValue( "esrever" )  ) );
+
+        try ( Transaction transaction = graphdb.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( "value", n.getProperty( "key" ) );
+            assertEquals( "esrever", n.getProperty( "reverse" ) );
+        }
     }
 
     @Test
@@ -68,7 +70,12 @@ class TestShortStringProperties
             rel.setProperty( "type", "dimsedut" );
             transaction.commit();
         }
-        assertThat( rel, inTx( graphdb, hasProperty( "type" ).withValue( "dimsedut" ) ) );
+
+        try ( Transaction transaction = graphdb.beginTx() )
+        {
+            var r = transaction.getRelationshipById( rel.getId() );
+            assertEquals( "dimsedut", r.getProperty( "type" ) );
+        }
     }
 
     @Test
@@ -90,7 +97,11 @@ class TestShortStringProperties
             transaction.commit();
         }
 
-        assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( "other" )  ) );
+        try ( Transaction transaction = graphdb.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( "other", n.getProperty( "key" ) );
+        }
     }
 
     @Test
@@ -112,7 +123,11 @@ class TestShortStringProperties
             transaction.commit();
         }
 
-        assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( "value" )  ) );
+        try ( Transaction transaction = graphdb.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( "value", n.getProperty( "key" ) );
+        }
     }
 
     @Test
@@ -134,7 +149,11 @@ class TestShortStringProperties
             transaction.commit();
         }
 
-        assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( LONG_STRING )  ) );
+        try ( Transaction transaction = graphdb.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( LONG_STRING, n.getProperty( "key" ) );
+        }
     }
 
     @Test
@@ -159,7 +178,8 @@ class TestShortStringProperties
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            assertThat( transaction.getNodeById( node.getId() ), not( hasProperty( "key" ) ) );
+            var n = transaction.getNodeById( node.getId() );
+            assertFalse( n.hasProperty( "key" ) );
         }
     }
 }

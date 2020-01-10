@@ -31,8 +31,7 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -60,7 +59,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listString );
 
         // Then
-        assertThat( converted, equalTo( ntList( null, NTString ) ) );
+        assertThat( converted ).isEqualTo( ntList( null, NTString ) );
     }
 
     @Test
@@ -74,7 +73,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listString );
 
         // Then
-        assertThat( converted, equalTo( ntList( emptyList(), NTString ) ) );
+        assertThat( converted ).isEqualTo( ntList( emptyList(), NTString ) );
     }
 
     @Test
@@ -88,7 +87,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listString );
 
         // Then
-        assertThat( converted, equalTo( ntList( emptyList(), NTString ) ) );
+        assertThat( converted ).isEqualTo( ntList( emptyList(), NTString ) );
     }
 
     @Test
@@ -102,7 +101,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listString );
 
         // Then
-        assertThat( converted, equalTo( ntList( asList( "foo", "bar" ), NTString ) ) );
+        assertThat( converted ).isEqualTo( ntList( asList( "foo", "bar" ), NTString ) );
     }
 
     @Test
@@ -116,7 +115,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listString );
 
         // Then
-        assertThat( converted, equalTo( ntList( asList( "foo", "bar" ), NTString ) ) );
+        assertThat( converted ).isEqualTo( ntList( asList( "foo", "bar" ), NTString ) );
     }
 
     @Test
@@ -130,7 +129,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listString );
 
         // Then
-        assertThat( converted, equalTo( ntList( asList( 1337L, 42L ), NTInteger ) ) );
+        assertThat( converted ).isEqualTo( ntList( asList( 1337L, 42L ), NTInteger ) );
     }
 
     @Test
@@ -144,7 +143,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listSting );
 
         // Then
-        assertThat( converted, equalTo( ntList( asList( 2.718281828, 3.14 ), NTFloat ) ) );
+        assertThat( converted ).isEqualTo( ntList( asList( 2.718281828, 3.14 ), NTFloat ) );
     }
 
     @Test
@@ -158,7 +157,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( listString );
 
         // Then
-        assertThat( converted, equalTo( ntList( singletonList( null ), NTFloat ) ) );
+        assertThat( converted ).isEqualTo( ntList( singletonList( null ), NTFloat ) );
     }
 
     @Test
@@ -172,7 +171,7 @@ class ListConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntList( asList( false, true ), NTBoolean ) ) );
+        assertThat( converted ).isEqualTo( ntList( asList( false, true ), NTBoolean ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -190,8 +189,8 @@ class ListConverterTest
 
         // Then
         List<Object> list = (List<Object>) converted.value();
-        assertThat( list.get( 0 ), equalTo( 42L ) );
-        assertThat( list.get( 1 ), equalTo( asList( 42L, 1337L ) ) );
+        assertThat( list.get( 0 ) ).isEqualTo( 42L );
+        assertThat( list.get( 1 ) ).isEqualTo( asList( 42L, 1337L ) );
     }
 
     @Test
@@ -202,7 +201,7 @@ class ListConverterTest
         String listString = "[1337, 'forty-two']";
 
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> converter.apply( listString ) );
-        assertThat( exception.getMessage(), equalTo( "Expects a list of Long but got a list of String" ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Expects a list of Long but got a list of String" );
     }
 
     @Test
@@ -216,7 +215,7 @@ class ListConverterTest
         DefaultParameterValue value = converter.apply( listString );
 
         // Then
-        assertThat( value, equalTo( ntList( asList( 1337L, "forty-two" ), NTAny ) ) );
+        assertThat( value ).isEqualTo( ntList( asList( 1337L, "forty-two" ), NTAny ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -232,7 +231,7 @@ class ListConverterTest
 
         // Then
         List<Object> list = (List<Object>) converted.value();
-        assertThat( list.get( 0 ), equalTo( map( "k1", 42L ) ) );
-        assertThat( list.get( 1 ), equalTo( map( "k1", 1337L ) ) );
+        assertThat( list.get( 0 ) ).isEqualTo( map( "k1", 42L ) );
+        assertThat( list.get( 1 ) ).isEqualTo( map( "k1", 1337L ) );
     }
 }

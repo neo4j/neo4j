@@ -48,7 +48,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -312,17 +311,15 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private static void createIndex( GraphDatabaseService gds, Label label, String propKey )
     {
-        IndexDefinition indexDefinition;
-
         try ( Transaction tx = gds.beginTx() )
         {
-            indexDefinition = tx.schema().indexFor( label ).on( propKey ).create();
+            tx.schema().indexFor( label ).on( propKey ).create();
             tx.commit();
         }
 
         try ( Transaction tx = gds.beginTx() )
         {
-            tx.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

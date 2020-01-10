@@ -41,11 +41,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
@@ -70,7 +66,7 @@ class UserFunctionsTest
         procs.register( function );
 
         // Then
-        assertThat( procs.function( signature.name() ).signature(), equalTo( signature ) );
+        assertThat( procs.function( signature.name() ).signature() ).isEqualTo( signature );
     }
 
     @Test
@@ -83,14 +79,12 @@ class UserFunctionsTest
 
         // Then
         List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllNonAggregatingFunctions().collect( Collectors.toSet()) );
-        assertThat( signatures, containsInAnyOrder(
-                functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build(),
-                functionSignature( "org", "myproc2" ).out(Neo4jTypes.NTAny).build(),
-                functionSignature( "org", "myproc3" ).out(Neo4jTypes.NTAny).build() ) );
+        assertThat( signatures ).contains( functionSignature( "org", "myproc1" ).out( Neo4jTypes.NTAny ).build(),
+                functionSignature( "org", "myproc2" ).out( Neo4jTypes.NTAny ).build(), functionSignature( "org", "myproc3" ).out( Neo4jTypes.NTAny ).build() );
 
         // And
         signatures = Iterables.asList( procs.getAllAggregatingFunctions().collect( Collectors.toSet()) );
-        assertThat( signatures, empty() );
+        assertThat( signatures ).isEmpty();
     }
 
     @Test
@@ -103,14 +97,12 @@ class UserFunctionsTest
 
         // Then
         List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllNonAggregatingFunctions().collect( Collectors.toSet()) );
-        assertThat( signatures, containsInAnyOrder(
-                functionSignature( "org", "myfunc1" ).out(Neo4jTypes.NTAny).build(),
-                functionSignature( "org", "myfunc2" ).out(Neo4jTypes.NTAny).build() ) );
+        assertThat( signatures ).contains( functionSignature( "org", "myfunc1" ).out( Neo4jTypes.NTAny ).build(),
+                functionSignature( "org", "myfunc2" ).out( Neo4jTypes.NTAny ).build() );
 
         // And
         signatures = Iterables.asList( procs.getAllAggregatingFunctions().collect( Collectors.toSet()) );
-        assertThat( signatures, containsInAnyOrder(
-                functionSignature( "org", "myaggrfunc1" ).out(Neo4jTypes.NTAny).build() ) );
+        assertThat( signatures ).contains( functionSignature( "org", "myaggrfunc1" ).out( Neo4jTypes.NTAny ).build() );
     }
 
     @Test
@@ -124,7 +116,7 @@ class UserFunctionsTest
         Object result = procs.callFunction( prepareContext(), functionId, new AnyValue[] {numberValue( 1337 )} );
 
         // Then
-        assertThat( result , equalTo( Values.of(1337) ) );
+        assertThat( result ).isEqualTo( Values.of( 1337 ) );
     }
 
     @Test
@@ -133,7 +125,7 @@ class UserFunctionsTest
         UserFunctionHandle functionHandle = procs.function( signature.name() );
         ProcedureException exception = assertThrows( ProcedureException.class,
                 () -> procs.callFunction( prepareContext(), functionHandle != null ? functionHandle.id() : -1, new AnyValue[]{numberValue( 1337 )} ) );
-        assertThat( exception.getMessage(), equalTo( "There is no function with the internal id `-1` registered for this database instance." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "There is no function with the internal id `-1` registered for this database instance." );
     }
 
     @Test
@@ -143,14 +135,14 @@ class UserFunctionsTest
         procs.register( function );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.register( function ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to register function, because the name `org.myproc` is already in use." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Unable to register function, because the name `org.myproc` is already in use." );
     }
 
     @Test
     void shouldSignalNonExistingFunction()
     {
         // When
-        assertThat(procs.function( signature.name() ), nullValue());
+        assertThat( procs.function( signature.name() ) ).isNull();
     }
 
     @Test
@@ -173,7 +165,7 @@ class UserFunctionsTest
         Object result = procs.callFunction( ctx, functionId, new AnyValue[0] );
 
         // Then
-        assertThat( result, equalTo( Values.stringValue( Thread.currentThread().getName()) ) );
+        assertThat( result ).isEqualTo( Values.stringValue( Thread.currentThread().getName() ) );
     }
 
     private CallableUserFunction function( UserFunctionSignature signature )

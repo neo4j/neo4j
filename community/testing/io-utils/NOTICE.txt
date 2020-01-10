@@ -37,7 +37,6 @@ Apache Software License, Version 2.0
 
 BSD License
   asm
-  Hamcrest
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

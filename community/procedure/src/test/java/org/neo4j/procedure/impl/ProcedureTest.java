@@ -19,9 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +33,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -52,9 +48,7 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -115,10 +109,8 @@ public class ProcedureTest
 
         // Then
         assertEquals( 1, procedures.size() );
-        assertThat( procedures.get( 0 ).signature(), Matchers.equalTo(
-                procedureSignature( "org", "neo4j", "procedure", "impl", "listCoolPeople" )
-                        .out( "name", Neo4jTypes.NTString )
-                        .build() ) );
+        assertThat( procedures.get( 0 ).signature() ).isEqualTo(
+                procedureSignature( "org", "neo4j", "procedure", "impl", "listCoolPeople" ).out( "name", Neo4jTypes.NTString ).build() );
     }
 
     @Test
@@ -131,10 +123,7 @@ public class ProcedureTest
         RawIterator<AnyValue[],ProcedureException> out = proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
-        assertThat( asList( out ), Matchers.contains(
-                new AnyValue[]{stringValue( "Bonnie" )},
-                new AnyValue[]{stringValue( "Clyde" )}
-        ) );
+        assertThat( asList( out ) ).containsExactly( new AnyValue[]{stringValue( "Bonnie" )}, new AnyValue[]{stringValue( "Clyde" )} );
     }
 
     @Test
@@ -160,33 +149,28 @@ public class ProcedureTest
         RawIterator<AnyValue[],ProcedureException> bananaOut = bananaPeople.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
-        assertThat( asList( coolOut ), Matchers.contains(
-                new AnyValue[]{stringValue( "Bonnie" )},
-                new AnyValue[]{stringValue( "Clyde" )}
-        ) );
+        assertThat( asList( coolOut ) ).containsExactly( new AnyValue[]{stringValue( "Bonnie" )}, new AnyValue[]{stringValue( "Clyde" )} );
 
-        assertThat( asList( bananaOut ), Matchers.contains(
-                new AnyValue[]{stringValue( "Jake" ), longValue( 18L )},
-                new AnyValue[]{stringValue( "Pontus" ), longValue( 2L )}
-        ) );
+        assertThat( asList( bananaOut ) ).containsExactly( new AnyValue[]{stringValue( "Jake" ), longValue( 18L )},
+                new AnyValue[]{stringValue( "Pontus" ), longValue( 2L )} );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WierdConstructorProcedure.class ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
-                                                    "in the class `WierdConstructorProcedure`. Please add a " +
-                                                    "valid, public constructor, recompile the class and try again." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Unable to find a usable public no-argument constructor " + "in the class `WierdConstructorProcedure`. Please add a " +
+                        "valid, public constructor, recompile the class and try again." );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnNoPublicConstructor()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorProcedure.class ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
-                                                    "in the class `PrivateConstructorProcedure`. Please add " +
-                                                    "a valid, public constructor, recompile the class and try again." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Unable to find a usable public no-argument constructor " + "in the class `PrivateConstructorProcedure`. Please add " +
+                        "a valid, public constructor, recompile the class and try again." );
     }
 
     @Test
@@ -204,25 +188,20 @@ public class ProcedureTest
     void shouldGiveHelpfulErrorOnProcedureReturningInvalidRecordType()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithInvalidRecordOutput.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                                                "that you define, with public non-final fields defining the fields in the record.%n" +
-                                                "If you''d like your procedure to return `String`, you could define a record class " +
-                                                "like:%n" +
-                                                "public class Output '{'%n" +
-                                                "    public String out;%n" +
-                                                "'}'%n" +
-                                                "%n" +
-                                                "And then define your procedure as returning `Stream<Output>`." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                "that you define, with public non-final fields defining the fields in the record.%n" +
+                "If you''d like your procedure to return `String`, you could define a record class " + "like:%n" + "public class Output '{'%n" +
+                "    public String out;%n" + "'}'%n" + "%n" + "And then define your procedure as returning `Stream<Output>`." ) );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithStaticContextAnnotatedField.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format("The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " +
-                                                    "annotated as a @Context field,%n" +
-                                                    "but it is static. @Context fields must be public, non-final and non-static,%n" +
-                                                    "because they are reset each time a procedure is invoked." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format(
+                "The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " + "annotated as a @Context field,%n" +
+                        "but it is static. @Context fields must be public, non-final and non-static,%n" +
+                        "because they are reset each time a procedure is invoked." ) );
 
     }
 
@@ -263,8 +242,8 @@ public class ProcedureTest
         CallableProcedure proc = compile( ProcedureThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
-        assertThat( exception.getMessage(), equalTo( "Failed to invoke procedure `org.neo4j.procedure.impl.throwsAtInvocation`: " +
-                                                    "Caused by: java.lang.IndexOutOfBoundsException" ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Failed to invoke procedure `org.neo4j.procedure.impl.throwsAtInvocation`: " + "Caused by: java.lang.IndexOutOfBoundsException" );
     }
 
     @Test
@@ -281,35 +260,11 @@ public class ProcedureTest
                 stream.next();
             }
         } );
-        assertThat( exception.getMessage(), equalTo( "Failed to invoke procedure `org.neo4j.procedure.impl.throwsInStream`: " +
-                                            "Caused by: java.lang.IndexOutOfBoundsException" ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Failed to invoke procedure `org.neo4j.procedure.impl.throwsInStream`: Caused by: java.lang.IndexOutOfBoundsException" );
         // Expect that we get a suppressed exception from Stream.onClose (which also verifies that we actually call
         // onClose on the first exception)
-        assertThat( exception, new BaseMatcher<Exception>()
-        {
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "a suppressed exception with cause ExceptionDuringClose" );
-            }
-
-            @Override
-            public boolean matches( Object item )
-            {
-                Exception e = (Exception) item;
-                for ( Throwable suppressed : e.getSuppressed() )
-                {
-                    if ( suppressed instanceof ResourceCloseFailureException )
-                    {
-                        if ( suppressed.getCause() instanceof ExceptionDuringClose )
-                        {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-        } );
+        assertThat( exception.getSuppressed()[0] ).hasRootCauseInstanceOf( ExceptionDuringClose.class );
     }
 
     @Test
@@ -339,7 +294,7 @@ public class ProcedureTest
             case "oldProc":
             case "badProc":
                 assertTrue( proc.signature().deprecated().isPresent(), "Should be deprecated" );
-                assertThat( proc.signature().deprecated().get(), equalTo( "newProc" ) );
+                assertThat( proc.signature().deprecated().get() ).isEqualTo( "newProc" );
                 break;
             default:
                 fail( "Unexpected procedure: " + name );
@@ -385,7 +340,7 @@ public class ProcedureTest
         // Then
         verify( log )
                 .warn( "The procedure 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
-        assertThat( proc.isEmpty(), is(true) );
+        assertThat( proc.isEmpty() ).isTrue();
     }
 
     @Test
@@ -420,7 +375,7 @@ public class ProcedureTest
         // Then
         verify( log )
                 .warn( "The procedure 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
-        assertThat( proc.isEmpty(), is(true) );
+        assertThat( proc.isEmpty() ).isTrue();
     }
 
     @Test
@@ -435,9 +390,7 @@ public class ProcedureTest
                         Values.TRUE}, EMPTY_RESOURCE_TRACKER );
 
         // Then
-        assertThat( out.next(), equalTo(
-                new AnyValue[]{longValue( 42 ), stringValue( "hello" ), Values.TRUE}
-        ) );
+        assertThat( out.next() ).isEqualTo( new AnyValue[]{longValue( 42 ), stringValue( "hello" ), Values.TRUE} );
         assertFalse( out.hasNext() );
     }
 

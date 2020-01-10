@@ -26,9 +26,7 @@ import java.util.List;
 import org.neo4j.configuration.helpers.SocketAddress;
 
 import static java.util.Collections.emptyList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,9 +38,9 @@ class RoutingResultTest
     {
         var result = new RoutingResult( emptyList(), emptyList(), emptyList(), 42 );
 
-        assertThat( result.readEndpoints(), is( empty() ) );
-        assertThat( result.writeEndpoints(), is( empty() ) );
-        assertThat( result.routeEndpoints(), is( empty() ) );
+        assertThat( result.readEndpoints() ).isEmpty();
+        assertThat( result.writeEndpoints() ).isEmpty();
+        assertThat( result.routeEndpoints() ).isEmpty();
     }
 
     @Test

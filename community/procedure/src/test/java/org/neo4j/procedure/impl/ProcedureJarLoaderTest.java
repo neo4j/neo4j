@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -59,10 +58,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -99,12 +95,11 @@ public class ProcedureJarLoaderTest
         // Then
         List<ProcedureSignature> signatures =
                 procedures.stream().map( CallableProcedure::signature ).collect( toList() );
-        assertThat( signatures, contains(
-                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" )
-                        .out( "someNumber", NTInteger ).build() ) );
+        assertThat( signatures ).containsExactly(
+                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() );
 
-        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) ),
-                contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 1337L )} ) ) );
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) ) )
+                .containsExactly( new AnyValue[]{Values.longValue( 1337L )} );
     }
 
     @Test
@@ -119,11 +114,11 @@ public class ProcedureJarLoaderTest
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
-        assertThat( signatures,
-                contains( procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() ) );
+        assertThat( signatures ).containsExactly(
+                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() );
 
-        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) ),
-                contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 1337L )} ) ) );
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) ) )
+                .containsExactly( new AnyValue[]{Values.longValue( 1337L )} );
     }
 
     @Test
@@ -137,15 +132,11 @@ public class ProcedureJarLoaderTest
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
-        assertThat( signatures, contains(
-                procedureSignature( "org","neo4j", "procedure", "impl", "myProcedure" )
-                        .in( "value", NTInteger )
-                        .out( "someNumber", NTInteger )
-                        .build() ));
+        assertThat( signatures ).containsExactly(
+                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" ).in( "value", NTInteger ).out( "someNumber", NTInteger ).build() );
 
-        assertThat( asList( procedures.get( 0 )
-                        .apply( prepareContext(), new AnyValue[]{Values.longValue( 42 )}, EMPTY_RESOURCE_TRACKER ) ),
-                contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 42 )} ) ) );
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[]{Values.longValue( 42 )}, EMPTY_RESOURCE_TRACKER ) ) )
+                .containsExactly( new AnyValue[]{Values.longValue( 42 )} );
     }
 
     @Test
@@ -159,9 +150,8 @@ public class ProcedureJarLoaderTest
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
-        assertThat( signatures, containsInAnyOrder(
-                procedureSignature( "org","neo4j", "procedure", "impl", "myOtherProcedure" ).out( "someNumber", NTInteger ).build(),
-                procedureSignature( "org","neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
+        assertThat( signatures ).contains( procedureSignature( "org", "neo4j", "procedure", "impl", "myOtherProcedure" ).out( "someNumber", NTInteger ).build(),
+                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() );
     }
 
     @Test
@@ -171,15 +161,10 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithInvalidProcedure.class );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+        assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
-                "If you''d like your procedure to return `boolean`, you could define a record class " +
-                "like:%n" +
-                "public class Output '{'%n" +
-                "    public boolean out;%n" +
-                "'}'%n" +
-                "%n" +
-                "And then define your procedure as returning `Stream<Output>`." )) );
+                "If you''d like your procedure to return `boolean`, you could define a record class " + "like:%n" + "public class Output '{'%n" +
+                "    public boolean out;%n" + "'}'%n" + "%n" + "And then define your procedure as returning `Stream<Output>`." ) );
     }
 
     @Test
@@ -194,9 +179,8 @@ public class ProcedureJarLoaderTest
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
-        assertThat( signatures, containsInAnyOrder(
-                procedureSignature( "org","neo4j", "procedure", "impl", "myOtherProcedure" ).out( "someNumber", NTInteger ).build(),
-                procedureSignature( "org","neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
+        assertThat( signatures ).contains( procedureSignature( "org", "neo4j", "procedure", "impl", "myOtherProcedure" ).out( "someNumber", NTInteger ).build(),
+                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" ).out( "someNumber", NTInteger ).build() );
     }
 
     @Test
@@ -206,8 +190,8 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithWildCardStream.class );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                "that you define and not a Stream<?>." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" + "that you define and not a Stream<?>." ) );
     }
 
     @Test
@@ -217,8 +201,8 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithRawStream.class );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                "that you define and not a raw Stream." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" + "that you define and not a raw Stream." ) );
     }
 
     @Test
@@ -228,9 +212,8 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithGenericStream.class );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
-        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                "that you define and not a parameterized type such as java.util.List<org.neo4j" +
-                ".procedure.impl.ProcedureJarLoaderTest$Output>.") ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                "that you define and not a parameterized type such as java.util.List<org.neo4j" + ".procedure.impl.ProcedureJarLoaderTest$Output>." ) );
     }
 
     @Test

@@ -60,6 +60,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.values.storable.Values;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -71,7 +72,6 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class IndexCRUDIT
@@ -264,6 +264,20 @@ class IndexCRUDIT
         {
             Set<Long> nodeIds = indexSamples.computeIfAbsent( propertyValue, k -> new HashSet<>() );
             nodeIds.add( nodeId );
+        }
+    }
+
+    private static void createIndex( GraphDatabaseAPI db, Label label, String property )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().indexFor( label ).on( property ).create();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 30, SECONDS );
         }
     }
 }

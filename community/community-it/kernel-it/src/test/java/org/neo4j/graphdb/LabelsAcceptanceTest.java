@@ -64,9 +64,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.stream.Collectors.toSet;
+import static org.glassfish.jersey.internal.guava.Iterators.size;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -76,16 +76,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabel;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoLabels;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoNodes;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNodes;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @ImpermanentDbmsExtension
 class LabelsAcceptanceTest
@@ -171,8 +166,11 @@ class LabelsAcceptanceTest
         }
 
         // Then
-        assertThat( "Label should have been added to node", myNode,
-                inTx( db, hasLabel( Labels.MY_LABEL ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.getNodeById( myNode.getId() );
+            assertTrue( node.hasLabel( Labels.MY_LABEL ) );
+        }
     }
 
     @Test
@@ -216,8 +214,11 @@ class LabelsAcceptanceTest
         }
 
         // Then
-        assertThat( "Label should have been added to node", myNode,
-                inTx( db, hasLabel( Labels.MY_LABEL ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.getNodeById( myNode.getId() );
+            assertTrue( node.hasLabel( Labels.MY_LABEL ) );
+        }
     }
 
     @Test
@@ -270,7 +271,11 @@ class LabelsAcceptanceTest
         }
 
         // Then
-        assertThat( myNode, not( inTx( db, hasLabel( label ) ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.getNodeById( myNode.getId() );
+            assertFalse( node.hasLabel( label ) );
+        }
     }
 
     @Test
@@ -287,7 +292,14 @@ class LabelsAcceptanceTest
         // THEN
 
         Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( toSet() );
-        assertThat( node, inTx( db, hasLabels( names ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            for ( String labelName : names )
+            {
+                assertTrue( n.hasLabel( label( labelName ) ) );
+            }
+        }
     }
 
     @Test
@@ -306,7 +318,11 @@ class LabelsAcceptanceTest
         }
 
         // THEN
-        assertThat( myNode, not( inTx( db, hasLabel( label ) ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.getNodeById( myNode.getId() );
+            assertFalse( node.hasLabel( label ) );
+        }
     }
 
     @Test
@@ -325,7 +341,11 @@ class LabelsAcceptanceTest
         }
 
         // THEN
-        assertThat( myNode, not( inTx( db, hasLabel( label ) ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.getNodeById( myNode.getId() );
+            assertFalse( node.hasLabel( label ) );
+        }
     }
 
     @Test
@@ -365,7 +385,14 @@ class LabelsAcceptanceTest
             tx.commit();
         }
 
-        assertThat( node, inTx( db, hasLabels( expected ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            for ( String label : expected )
+            {
+                assertTrue( n.hasLabel( label( label ) ) );
+            }
+        }
     }
 
     @Test
@@ -375,7 +402,11 @@ class LabelsAcceptanceTest
         Node node = createNode( db );
 
         // WHEN THEN
-        assertThat( node, inTx( db, hasNoLabels() ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( 0, count( n.getLabels() ) );
+        }
     }
 
     @Test
@@ -393,8 +424,8 @@ class LabelsAcceptanceTest
         // THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( transaction, hasNodes( Labels.MY_LABEL, node ) );
-            assertThat( transaction, hasNoNodes( Labels.MY_OTHER_LABEL ) );
+            assertTrue( size( transaction.findNodes( Labels.MY_LABEL ) ) > 0 );
+            assertEquals( 0, size( transaction.findNodes( Labels.MY_OTHER_LABEL ) ) );
         }
     }
 
@@ -581,7 +612,7 @@ class LabelsAcceptanceTest
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 0, Iterables.count( tx.getAllNodes() ) );
+            assertEquals( 0, count( tx.getAllNodes() ) );
         }
     }
 

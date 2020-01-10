@@ -33,8 +33,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -111,7 +110,7 @@ class BulkAppendNativeLabelScanWriterTest
             // when/then
             IllegalArgumentException failure =
                     assertThrows( IllegalArgumentException.class, () -> writer.write( labelChanges( 3, new long[]{1, 2}, new long[]{2, 3} ) ) );
-            assertThat( failure.getMessage(), containsString( "Was expecting no labels before" ) );
+            assertThat( failure.getMessage() ).contains( "Was expecting no labels before" );
         }
     }
 

@@ -25,8 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -42,8 +41,8 @@ class ProcedureHolderTest
         procHolder.put( qualifiedName, item, false );
 
         // then
-        assertThat( procHolder.get( qualifiedName ), equalTo( item ) );
-        assertThat( procHolder.idOf( qualifiedName ), equalTo( 0 ) );
+        assertThat( procHolder.get( qualifiedName ) ).isEqualTo( item );
+        assertThat( procHolder.idOf( qualifiedName ) ).isEqualTo( 0 );
     }
 
     @Test
@@ -55,10 +54,10 @@ class ProcedureHolderTest
         procHolder.put( new QualifiedName( new String[0], "CaseSensitive" ), "CaseSensitiveItem", false );
 
         // then
-        assertThat( procHolder.get( new QualifiedName( new String[0], "CASESENSITIVE" ) ), equalTo( "CASESENSITIVEItem" ) );
-        assertThat( procHolder.get( new QualifiedName( new String[0], "CaseSensitive" ) ), equalTo( "CaseSensitiveItem" ) );
-        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CASESENSITIVE" ) ), equalTo( 0 ) );
-        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CaseSensitive" ) ), equalTo( 1 ) );
+        assertThat( procHolder.get( new QualifiedName( new String[0], "CASESENSITIVE" ) ) ).isEqualTo( "CASESENSITIVEItem" );
+        assertThat( procHolder.get( new QualifiedName( new String[0], "CaseSensitive" ) ) ).isEqualTo( "CaseSensitiveItem" );
+        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CASESENSITIVE" ) ) ).isEqualTo( 0 );
+        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CaseSensitive" ) ) ).isEqualTo( 1 );
     }
 
     @Test
@@ -72,8 +71,8 @@ class ProcedureHolderTest
 
         // then
         QualifiedName lowerCaseName = new QualifiedName( new String[0], "caseinsensitive" );
-        assertThat( procHolder.get( lowerCaseName ), equalTo( item ) );
-        assertThat( procHolder.idOf( lowerCaseName ), equalTo( 0 ) );
+        assertThat( procHolder.get( lowerCaseName ) ).isEqualTo( item );
+        assertThat( procHolder.idOf( lowerCaseName ) ).isEqualTo( 0 );
     }
 
     @Test
@@ -87,8 +86,8 @@ class ProcedureHolderTest
 
         // then
         QualifiedName lowerCaseName = new QualifiedName( new String[0], "caseinsensitive" );
-        assertThat( procHolder.get( lowerCaseName ), equalTo( item ) );
-        assertThat( procHolder.idOf( lowerCaseName ), equalTo( 0 ) );
+        assertThat( procHolder.get( lowerCaseName ) ).isEqualTo( item );
+        assertThat( procHolder.idOf( lowerCaseName ) ).isEqualTo( 0 );
 
         // and then
         procHolder.put( qualifiedName, item, false );

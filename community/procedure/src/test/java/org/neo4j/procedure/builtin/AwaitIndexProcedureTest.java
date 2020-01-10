@@ -41,11 +41,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -56,7 +52,6 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.test.assertion.Assert.assertEventually;
 
 class AwaitIndexProcedureTest
 {
@@ -104,9 +99,9 @@ class AwaitIndexProcedureTest
         when( schemaRead.indexGetFailure( any( IndexDescriptor.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "index", TIMEOUT, TIME_UNIT ) );
-        assertThat( exception.status(), is( Status.Schema.IndexCreationFailed ) );
-        assertThat( exception.getMessage(), containsString( "Kilroy was here" ) );
-        assertThat( exception.getMessage(), containsString( "Index 'index' is in failed state.: Cause of failure:" ) );
+        assertThat( exception.status() ).isEqualTo( Status.Schema.IndexCreationFailed );
+        assertThat( exception.getMessage() ).contains( "Kilroy was here" );
+        assertThat( exception.getMessage() ).contains( "Index 'index' is in failed state.: Cause of failure:" );
     }
 
     @Test
@@ -116,7 +111,7 @@ class AwaitIndexProcedureTest
 
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "index", TIMEOUT, TIME_UNIT ) );
-        assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
+        assertThat( exception.status() ).isEqualTo( Status.Schema.IndexNotFound );
     }
 
     @Test
@@ -125,11 +120,11 @@ class AwaitIndexProcedureTest
         when( schemaRead.indexGetForName( "some index" ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "some index", TIMEOUT, TIME_UNIT ) );
-        assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
+        assertThat( exception.status() ).isEqualTo( Status.Schema.IndexNotFound );
     }
 
     @Test
-    void shouldBlockUntilTheIndexIsOnline() throws IndexNotFoundKernelException
+    void shouldBlockUntilTheIndexIsOnline() throws IndexNotFoundKernelException, InterruptedException
     {
         when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
@@ -138,7 +133,7 @@ class AwaitIndexProcedureTest
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
 
         AtomicBoolean done = new AtomicBoolean( false );
-        new Thread( () ->
+        var thread = new Thread( () ->
         {
             try
             {
@@ -149,23 +144,25 @@ class AwaitIndexProcedureTest
                 throw new RuntimeException( e );
             }
             done.set( true );
-        } ).start();
+        } );
+        thread.start();
 
-        assertThat( done.get(), is( false ) );
+        assertThat( done.get() ).isFalse();
 
         state.set( ONLINE );
-        assertEventually( "Procedure did not return after index was online",
-                done::get, is( true ), TIMEOUT, TIME_UNIT );
+        thread.join();
+
+        assertThat( done.get() ).isTrue();
     }
 
     @Test
-    void shouldTimeoutIfTheIndexTakesTooLongToComeOnline() throws IndexNotFoundKernelException
+    void shouldTimeoutIfTheIndexTakesTooLongToComeOnline() throws IndexNotFoundKernelException, InterruptedException
     {
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();
-        new Thread( () ->
+        var thread = new Thread( () ->
         {
             try
             {
@@ -176,10 +173,12 @@ class AwaitIndexProcedureTest
             {
                 exception.set( e );
             }
-        } ).start();
+        } );
+        thread.start();
 
-        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), TIMEOUT, TIME_UNIT );
-        //noinspection ThrowableResultOfMethodCallIgnored
-        assertThat( exception.get().status(), is( Status.Procedure.ProcedureTimedOut ) );
+        thread.join();
+
+        assertThat( exception.get() ).isNotNull();
+        assertThat( exception.get().status() ).isEqualTo( Status.Procedure.ProcedureTimedOut );
     }
 }

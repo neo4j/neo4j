@@ -48,14 +48,12 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 
 @EphemeralTestDirectoryExtension
 class TestReadOnlyNeo4j
@@ -136,10 +134,10 @@ class TestReadOnlyNeo4j
             assertEquals( rel, transaction.getRelationshipById( rel.getId() ) );
 
             var loadedNode = transaction.getNodeById( node1.getId() );
-            assertThat( loadedNode, hasProperty( "key1" ).withValue( "value1" ) );
+            assertEquals( "value1", loadedNode.getProperty( "key1" ) );
             Relationship loadedRel = loadedNode.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
             assertEquals( rel, loadedRel );
-            assertThat( loadedRel, hasProperty( "key1" ).withValue( "value1" ) );
+            assertEquals( "value1", loadedRel.getProperty( "key1" ) );
         }
     }
 

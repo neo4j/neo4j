@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
@@ -80,10 +79,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -190,7 +186,7 @@ class BuiltInProceduresTest
         givenIndex( "User", "name" );
 
         // When/Then
-        assertThat( call( "db.indexes" ), contains( record(
+        assertThat( call( "db.indexes" ) ).contains( record(
                 1000L,
                 "index_1000",
                 "ONLINE",
@@ -201,7 +197,7 @@ class BuiltInProceduresTest
                 singletonList( "User" ),
                 singletonList( "name" ),
                 "no-index-provider-1.0" )
-        ) );
+        );
     }
 
     @Test
@@ -224,7 +220,7 @@ class BuiltInProceduresTest
         givenUniqueConstraint( "User", "name" );
 
         // When/Then
-        assertThat( call( "db.indexes" ), contains( record(
+        assertThat( call( "db.indexes" ) ).contains( record(
                 1000L,
                 "constraint_1000",
                 "ONLINE",
@@ -235,7 +231,7 @@ class BuiltInProceduresTest
                 singletonList( "User" ),
                 singletonList( "name" ),
                 "no-index-provider-1.0" )
-        ) );
+        );
     }
 
     @Test
@@ -246,9 +242,9 @@ class BuiltInProceduresTest
 
         // When/Then
         final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
-        assertThat( call( "db.indexDetails", "index_" + 1000 ), contains( record(
+        assertThat( call( "db.indexDetails", "index_" + 1000 ) ).contains( record(
                 1000L, "index_1000", "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
-                EMPTY.getProviderDescriptor().name(), configMap, "" ) ) );
+                EMPTY.getProviderDescriptor().name(), configMap, "" ) );
     }
 
     @Test
@@ -260,9 +256,9 @@ class BuiltInProceduresTest
 
         // When/Then
         final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
-        assertThat( call( "db.indexDetails", "index_" + 1000 ), contains( record(
+        assertThat( call( "db.indexDetails", "index_" + 1000 ) ).contains( record(
                 1000L, "index_1000", "NOT FOUND", 0D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
-                EMPTY.getProviderDescriptor().name(), configMap, "Index not found. It might have been concurrently dropped." ) ) );
+                EMPTY.getProviderDescriptor().name(), configMap, "Index not found. It might have been concurrently dropped." ) );
     }
 
     @Test
@@ -272,10 +268,9 @@ class BuiltInProceduresTest
         givenPropertyKeys( "name", "age" );
 
         // When/Then
-        assertThat( call( "db.propertyKeys" ),
-                containsInAnyOrder(
+        assertThat( call( "db.propertyKeys" ) ).contains(
                         record( "age" ),
-                        record( "name" ) ) );
+                        record( "name" ) );
     }
 
     @Test
@@ -285,10 +280,9 @@ class BuiltInProceduresTest
         givenLabels( "Banana", "Fruit" );
 
         // When/Then
-        assertThat( call( "db.labels" ),
-                containsInAnyOrder(
+        assertThat( call( "db.labels" ) ).contains(
                         record( "Banana" ),
-                        record( "Fruit" ) ) );
+                        record( "Fruit" ) );
     }
 
     @Test
@@ -298,10 +292,9 @@ class BuiltInProceduresTest
         givenRelationshipTypes( "EATS", "SPROUTS" );
 
         // When/Then
-        assertThat( call( "db.relationshipTypes" ),
-                containsInAnyOrder(
+        assertThat( call( "db.relationshipTypes" ) ).contains(
                         record( "EATS" ),
-                        record( "SPROUTS" ) ) );
+                        record( "SPROUTS" ) );
     }
 
     @Test
@@ -312,12 +305,11 @@ class BuiltInProceduresTest
         givenNodePropExistenceConstraint( "User", "name" );
         givenNodeKeys( "User", "name" );
         // When/Then
-        assertThat( call( "db.constraints" ),
-                contains(
-                        record( "MyExistenceConstraint", "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:User {name}) )" ),
-                        record( "MyNodeKeyConstraint", "Constraint( name='MyNodeKeyConstraint', type='NODE KEY', schema=(:User {name}) )" ),
-                        record( "constraint_1000", "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:User {name}) )" )
-                ) );
+        assertThat( call( "db.constraints" ) ).contains(
+                    record( "MyExistenceConstraint", "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:User {name}) )" ),
+                    record( "MyNodeKeyConstraint", "Constraint( name='MyNodeKeyConstraint', type='NODE KEY', schema=(:User {name}) )" ),
+                    record( "constraint_1000", "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:User {name}) )" )
+                );
     }
 
     @Test
@@ -329,20 +321,19 @@ class BuiltInProceduresTest
 
         // When/Then
         List<Object[]> call = call( "db.constraints" );
-        assertThat( call,
-                contains(
+        assertThat( call ).contains(
                         record( "MyExistenceConstraint",
                                 "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:`FOO:BAR` {x.y}) )" ),
-                        record( "constraint_1000", "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:`FOO:BAR` {x.y}) )" ) ) );
+                        record( "constraint_1000", "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:`FOO:BAR` {x.y}) )" ) );
     }
 
     @Test
     void shouldListSystemComponents() throws Throwable
     {
         // When/Then
-        assertThat( call( "dbms.components" ), contains(
+        assertThat( call( "dbms.components" ) ).contains(
                 record( "Neo4j Kernel", singletonList( "1.3.37" ), "community" )
-        ) );
+        );
     }
 
     @Test
@@ -381,9 +372,9 @@ class BuiltInProceduresTest
 
     }
 
-    private static Matcher<Object[]> record( Object... fields )
+    private static Object[] record( Object... fields )
     {
-        return equalTo( fields );
+        return fields;
     }
 
     private void givenIndex( String label, String propKey )

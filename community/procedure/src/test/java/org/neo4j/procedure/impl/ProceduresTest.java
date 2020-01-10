@@ -43,10 +43,7 @@ import org.neo4j.procedure.builtin.BuiltInFunctions;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -77,7 +74,7 @@ class ProceduresTest
         procs.register( procedure );
 
         // Then
-        assertThat( procs.procedure( signature.name() ).signature(), equalTo( signature ) );
+        assertThat( procs.procedure( signature.name() ).signature() ).isEqualTo( signature );
     }
 
     @Test
@@ -90,10 +87,9 @@ class ProceduresTest
 
         // Then
         List<ProcedureSignature> signatures = Iterables.asList( procs.getAllProcedures() );
-        assertThat( signatures, containsInAnyOrder(
-                procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build(),
+        assertThat( signatures ).contains( procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build(),
                 procedureSignature( "org", "myproc2" ).out( "age", NTInteger ).build(),
-                procedureSignature( "org", "myproc3" ).out( "age", NTInteger ).build() ) );
+                procedureSignature( "org", "myproc3" ).out( "age", NTInteger ).build() );
     }
 
     @Test
@@ -109,7 +105,7 @@ class ProceduresTest
                         new AnyValue[]{longValue( 1337 )}, EMPTY_RESOURCE_TRACKER );
 
         // Then
-        assertThat( asList( result ), contains( equalTo( new AnyValue[]{longValue( 1337 )} ) ) );
+        assertThat( asList( result ) ).contains( new AnyValue[]{longValue( 1337 )} );
     }
 
     @Test
@@ -117,9 +113,9 @@ class ProceduresTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
                 procs.procedure( signature.name() ) );
-        assertThat( exception.getMessage(), equalTo( "There is no procedure with the name `org.myproc` registered for this " +
-                                                    "database instance. Please ensure you've spelled the " +
-                                                    "procedure name correctly and that the procedure is properly deployed." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "There is no procedure with the name `org.myproc` registered for this " + "database instance. Please ensure you've spelled the " +
+                        "procedure name correctly and that the procedure is properly deployed." );
     }
 
     @Test
@@ -129,7 +125,7 @@ class ProceduresTest
         procs.register( procedure );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.register( procedure ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to register procedure, because the name `org.myproc` is already in use." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Unable to register procedure, because the name `org.myproc` is already in use." );
     }
 
     @Test
@@ -137,9 +133,9 @@ class ProceduresTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class,
                 () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).in( "a", NTAny ).in( "a", NTAny ).build() ) ) );
-        assertThat( exception.getMessage(), equalTo( "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be " +
-                                                    "registered, because it contains a duplicated input field, 'a'. " +
-                                                    "You need to rename or remove one of the duplicate fields." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be " + "registered, because it contains a duplicated input field, 'a'. " +
+                        "You need to rename or remove one of the duplicate fields." );
     }
 
     @Test
@@ -147,18 +143,18 @@ class ProceduresTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class,
                 () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).out( "a", NTAny ).out( "a", NTAny ).build() ) ) );
-        assertThat( exception.getMessage(), equalTo( "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, " +
-                                                    "because it contains a duplicated output field, 'a'. " +
-                                                    "You need to rename or remove one of the duplicate fields." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, " + "because it contains a duplicated output field, 'a'. " +
+                        "You need to rename or remove one of the duplicate fields." );
     }
 
     @Test
     void shouldSignalNonExistingProcedure()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.procedure( signature.name() ) );
-        assertThat( exception.getMessage(), equalTo( "There is no procedure with the name `org.myproc` registered for this " +
-                                                    "database instance. Please ensure you've spelled the " +
-                                                    "procedure name correctly and that the procedure is properly deployed." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "There is no procedure with the name `org.myproc` registered for this " + "database instance. Please ensure you've spelled the " +
+                        "procedure name correctly and that the procedure is properly deployed." );
     }
 
     @Test
@@ -182,7 +178,7 @@ class ProceduresTest
         RawIterator<AnyValue[], ProcedureException> result = procs.callProcedure( ctx, procedureHandle.id(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
 
         // Then
-        assertThat( asList( result ), contains( equalTo( new AnyValue[]{ stringValue( Thread.currentThread().getName() ) } ) ) );
+        assertThat( asList( result ) ).contains( new AnyValue[]{ stringValue( Thread.currentThread().getName() ) } );
     }
 
     @Test

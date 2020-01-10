@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.spatial.Point;
@@ -30,24 +31,19 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.SchemaAcceptanceTest.createIndex;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
@@ -103,7 +99,7 @@ class IndexingAcceptanceTest
             tx.commit();
         }
 
-        Neo4jMatchers.createIndex( db, LABEL1, "key" );
+        createIndex( db, LABEL1, "key" );
 
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -116,8 +112,8 @@ class IndexingAcceptanceTest
         try ( Transaction transaction = db.beginTx() )
         {
             // THEN
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, db, transaction ), containsOnly( myNode ) );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, transaction ) ).containsOnly( myNode );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, transaction ) ).isEmpty();
         }
     }
 
@@ -136,7 +132,7 @@ class IndexingAcceptanceTest
             tx.commit();
         }
 
-        Neo4jMatchers.createIndex( db, LABEL1, "key2" );
+        createIndex( db, LABEL1, "key2" );
         Node myNode;
         try ( Transaction tx = db.beginTx() )
         {
@@ -152,9 +148,9 @@ class IndexingAcceptanceTest
         {
             myNode = transaction.getNodeById( myNode.getId() );
             // Then
-            assertThat( myNode, hasProperty( "key2" ).withValue( LONG_STRING ) );
-            assertThat( myNode, hasProperty( "key3" ).withValue( LONG_STRING ) );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, db, transaction ), containsOnly( myNode ) );
+            assertEquals( LONG_STRING, myNode.getProperty( "key2" ) );
+            assertEquals( LONG_STRING, myNode.getProperty( "key3" ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, transaction ) ).containsOnly( myNode );
         }
     }
 
@@ -167,7 +163,7 @@ class IndexingAcceptanceTest
         // When
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", transaction ) ).containsOnly( myNode );
         }
     }
 
@@ -176,12 +172,12 @@ class IndexingAcceptanceTest
     {
         // Given
         Node myNode = createNode( db, map( "name", "Hawking" ), LABEL1 );
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL1, "name" );
 
         // When
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", transaction ) ).containsOnly( myNode );
         }
     }
 
@@ -190,9 +186,9 @@ class IndexingAcceptanceTest
     {
         // Given
         Node myNode = createNode( db, map( "name", "Hawking" ), LABEL1, LABEL2 );
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        Neo4jMatchers.createIndex( db, LABEL2, "name" );
-        Neo4jMatchers.createIndex( db, LABEL3, "name" );
+        createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL2, "name" );
+        createIndex( db, LABEL3, "name" );
 
         // When
         try ( Transaction tx = db.beginTx() )
@@ -208,17 +204,17 @@ class IndexingAcceptanceTest
         {
             myNode = transaction.getNodeById( myNode.getId() );
             // Then
-            assertThat( myNode, hasProperty( "name" ).withValue( "Einstein" ) );
-            assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
+            assertEquals( "Einstein", myNode.getProperty( "name" ) );
+            assertThat( myNode.getLabels() ).containsOnly( LABEL2, LABEL3 );
 
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", transaction ) ).isEmpty();
 
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", db, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", transaction ) ).containsOnly( myNode );
 
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", db, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", transaction ) ).containsOnly( myNode );
             transaction.commit();
         }
     }
@@ -228,9 +224,9 @@ class IndexingAcceptanceTest
     {
         // Given
         Node myNode = createNode( db, map( "name", "Hawking" ), LABEL1, LABEL2 );
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        Neo4jMatchers.createIndex( db, LABEL2, "name" );
-        Neo4jMatchers.createIndex( db, LABEL3, "name" );
+        createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL2, "name" );
+        createIndex( db, LABEL3, "name" );
 
         // When
         try ( Transaction tx = db.beginTx() )
@@ -247,20 +243,20 @@ class IndexingAcceptanceTest
         {
             myNode = transaction.getNodeById( myNode.getId() );
             // Then
-            assertThat( myNode, hasProperty( "name" ).withValue( "Feynman" ) );
-            assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
+            assertEquals( "Feynman", myNode.getProperty( "name" ) );
+            assertThat( myNode.getLabels() ).containsOnly( LABEL2, LABEL3 );
 
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", transaction ) ).isEmpty();
 
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", db, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", transaction ) ).containsOnly( myNode );
 
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", db, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", transaction ) ).containsOnly( myNode );
             transaction.commit();
         }
     }
@@ -271,7 +267,7 @@ class IndexingAcceptanceTest
         // When/Then
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", transaction ) ).isEmpty();
         }
     }
 
@@ -279,18 +275,18 @@ class IndexingAcceptanceTest
     void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction()
     {
         // GIVEN
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL1, "name" );
         Node firstNode = createNode( db, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", db, transaction ), containsOnly( firstNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", transaction ) ).containsOnly( firstNode );
         }
         Node secondNode = createNode( db, map( "name", "Taylor" ), LABEL1 );
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", db, transaction ), containsOnly( secondNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", transaction ) ).containsOnly( secondNode );
         }
     }
 
@@ -298,7 +294,7 @@ class IndexingAcceptanceTest
     void createdNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL1, "name" );
 
         // WHEN
 
@@ -314,15 +310,15 @@ class IndexingAcceptanceTest
         }
 
         // THEN
-        assertThat( sizeBeforeDelete, equalTo(1L) );
-        assertThat( sizeAfterDelete, equalTo(0L) );
+        assertThat( sizeBeforeDelete ).isOne();
+        assertThat( sizeAfterDelete ).isZero();
     }
 
     @Test
     void deletedNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL1, "name" );
         Node firstNode = createNode( db, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN
@@ -337,15 +333,15 @@ class IndexingAcceptanceTest
         }
 
         // THEN
-        assertThat( sizeBeforeDelete, equalTo(1L) );
-        assertThat( sizeAfterDelete, equalTo(0L) );
+        assertThat( sizeBeforeDelete ).isOne();
+        assertThat( sizeAfterDelete ).isZero();
     }
 
     @Test
     void createdNodeShouldShowUpInIndexQuery()
     {
         // GIVEN
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL1, "name" );
         createNode( db, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN
@@ -362,8 +358,8 @@ class IndexingAcceptanceTest
         }
 
         // THEN
-        assertThat( sizeBeforeDelete, equalTo(1L) );
-        assertThat( sizeAfterDelete, equalTo(2L) );
+        assertThat( sizeBeforeDelete ).isOne();
+        assertThat( sizeAfterDelete ).isEqualTo( 2L );
     }
 
     @Test
@@ -371,7 +367,7 @@ class IndexingAcceptanceTest
     {
         // GIVEN
         String property = "name";
-        Neo4jMatchers.createIndex( db, LABEL1, property );
+        createIndex( db, LABEL1, property );
 
         // WHEN & THEN
         assertCanCreateAndFind( db, LABEL1, property, "A String" );
@@ -426,7 +422,7 @@ class IndexingAcceptanceTest
         // this test was included here for now as a precondition for the following test
 
         // given
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL1, "name" );
 
         Node node1;
         Node node2;
@@ -453,7 +449,7 @@ class IndexingAcceptanceTest
     void shouldThrowWhenMultipleResultsForSingleNode()
     {
         // given
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createIndex( db, LABEL1, "name" );
 
         Node node1;
         Node node2;
@@ -470,9 +466,9 @@ class IndexingAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             var e = assertThrows( MultipleFoundException.class, () -> tx.findNode( LABEL1, "name", "Stefan" ) );
-            assertThat( e.getMessage(), equalTo(
+            assertThat( e ).hasMessage(
                     format( "Found multiple nodes with label: '%s', property name: 'name' " +
-                            "and property value: 'Stefan' while only one was expected.", LABEL1 ) ) );
+                            "and property value: 'Stefan' while only one was expected.", LABEL1 ) );
         }
     }
 
@@ -487,9 +483,8 @@ class IndexingAcceptanceTest
 
         for ( int i = 0; i < indexesCount; i++ )
         {
-            Neo4jMatchers.createIndexNoWait( db, Label.label( labelPrefix + i ), propertyKeyPrefix + i );
+            createIndex( db, Label.label( labelPrefix + i ), propertyKeyPrefix + i );
         }
-        Neo4jMatchers.waitForIndexes( db );
 
         // When
         long nodeId;
@@ -533,10 +528,15 @@ class IndexingAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             Node found = tx.findNode( label, propertyKey, value );
-            assertThat( found, equalTo( created ) );
+            assertThat( found ).isEqualTo( created );
             found.delete();
             tx.commit();
         }
+    }
+
+    private List<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value, Transaction transaction )
+    {
+        return Iterators.asList( transaction.findNodes( label, propertyName, value ) );
     }
 
     private Node createNode( GraphDatabaseService db, Map<String, Object> properties, Label... labels )
@@ -551,17 +551,5 @@ class IndexingAcceptanceTest
             tx.commit();
             return node;
         }
-    }
-
-    private Neo4jMatchers.Deferred<Label> labels( final Node myNode )
-    {
-        return new Neo4jMatchers.Deferred<>()
-        {
-            @Override
-            protected Iterable<Label> manifest()
-            {
-                return myNode.getLabels();
-            }
-        };
     }
 }

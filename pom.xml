@@ -1120,6 +1120,12 @@
         <artifactId>awaitility</artifactId>
         <version>${awaitility.version}</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -1461,12 +1467,6 @@
         <artifactId>junit</artifactId>
         <version>4.12</version>
         <scope>provided</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.testing.compile</groupId>

@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,9 +52,7 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -94,11 +91,9 @@ public class UserAggregationFunctionTest
 
         // Then
         assertEquals( 1, function.size() );
-        assertThat( function.get( 0 ).signature(), Matchers.equalTo(
-                functionSignature( "org", "neo4j", "procedure", "impl", "collectCool" )
-                        .in( "name", Neo4jTypes.NTString )
-                        .out( Neo4jTypes.NTList( Neo4jTypes.NTAny ) )
-                        .build() ) );
+        assertThat( function.get( 0 ).signature() ).isEqualTo(
+                functionSignature( "org", "neo4j", "procedure", "impl", "collectCool" ).in( "name", Neo4jTypes.NTString ).out(
+                        Neo4jTypes.NTList( Neo4jTypes.NTAny ) ).build() );
     }
 
     @Test
@@ -116,8 +111,7 @@ public class UserAggregationFunctionTest
         aggregator.update( new AnyValue[]{stringValue( "Clyde" )} );
 
         // Then
-        assertThat( aggregator.result(),
-                equalTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) ) );
+        assertThat( aggregator.result() ).isEqualTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) );
     }
 
     @Test
@@ -168,107 +162,106 @@ public class UserAggregationFunctionTest
         f2Aggregator.update( new AnyValue[]{stringValue( "Bonnie" ), longValue( 42L )} );
 
         // Then
-        assertThat( f1Aggregator.result(),
-                equalTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) ) );
-        assertThat( ((MapValue) f2Aggregator.result()).get( "Bonnie" ), equalTo( longValue( 1337L ) ) );
+        assertThat( f1Aggregator.result() ).isEqualTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) );
+        assertThat( ((MapValue) f2Aggregator.result()).get( "Bonnie" ) ).isEqualTo( longValue( 1337L ) );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WierdConstructorFunction.class ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
-                                                    "in the class `WierdConstructorFunction`. Please add a " +
-                                                    "valid, public constructor, recompile the class and try again." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Unable to find a usable public no-argument constructor " + "in the class `WierdConstructorFunction`. Please add a " +
+                        "valid, public constructor, recompile the class and try again." );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnNoPublicConstructor()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorFunction.class ) );
-        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
-                                                    "in the class `PrivateConstructorFunction`. Please add " +
-                                                    "a valid, public constructor, recompile the class and try again." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Unable to find a usable public no-argument constructor " + "in the class `PrivateConstructorFunction`. Please add " +
+                        "a valid, public constructor, recompile the class and try again." );
     }
 
     @Test
     void shouldNotAllowVoidOutput()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithVoidOutput.class ) );
-        assertThat( exception.getMessage(), startsWith( "Don't know how to map `void` to the Neo4j Type System." ) );
+        assertThat( exception.getMessage() ).startsWith( "Don't know how to map `void` to the Neo4j Type System." );
     }
 
     @Test
     void shouldNotAllowNonVoidUpdate()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithNonVoidUpdate.class ) );
-        assertThat( exception.getMessage(), equalTo( "Update method 'update' in VoidOutput has type 'long' but must have return type 'void'." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Update method 'update' in VoidOutput has type 'long' but must have return type 'void'." );
     }
 
     @Test
     void shouldNotAllowMissingAnnotations()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithMissingAnnotations.class ) );
-        assertThat( exception.getMessage(), equalTo( "Class 'MissingAggregator' must contain methods annotated with " +
-                "both '@UserAggregationResult' as well as '@UserAggregationUpdate'." ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Class 'MissingAggregator' must contain methods annotated with " + "both '@UserAggregationResult' as well as '@UserAggregationUpdate'." );
     }
 
     @Test
     void shouldNotAllowMultipleUpdateAnnotations()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithDuplicateUpdateAnnotations.class ) );
-        assertThat( exception.getMessage(), equalTo( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationUpdate'." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationUpdate'." );
     }
 
     @Test
     void shouldNotAllowMultipleResultAnnotations()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithDuplicateResultAnnotations.class ) );
-        assertThat( exception.getMessage(), equalTo( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationResult'." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationResult'." );
     }
 
     @Test
     void shouldNotAllowNonPublicMethod()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( NonPublicTestMethod.class ) );
-        assertThat( exception.getMessage(), equalTo( "Aggregation method 'test' in NonPublicTestMethod must be public." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Aggregation method 'test' in NonPublicTestMethod must be public." );
     }
 
     @Test
     void shouldNotAllowNonPublicUpdateMethod()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( NonPublicUpdateMethod.class ) );
-        assertThat( exception.getMessage(), equalTo( "Aggregation update method 'update' in InnerAggregator must be public." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Aggregation update method 'update' in InnerAggregator must be public." );
     }
 
     @Test
     void shouldNotAllowNonPublicResultMethod()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( NonPublicResultMethod.class ) );
-        assertThat( exception.getMessage(), equalTo( "Aggregation result method 'result' in InnerAggregator must be public." ) );
+        assertThat( exception.getMessage() ).isEqualTo( "Aggregation result method 'result' in InnerAggregator must be public." );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnFunctionReturningInvalidType()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format("Don't know how to map `char[]` to the Neo4j Type System.%n" +
-                "Please refer to to the documentation for full details.%n" +
-                "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
-                "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
-                "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
-                "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
-                "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format(
+                "Don't know how to map `char[]` to the Neo4j Type System.%n" + "Please refer to to the documentation for full details.%n" +
+                        "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
+                        "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
+                        "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
+                        "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
+                        "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ) );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ) );
-        assertThat( exception.getMessage(), equalTo( String.format("The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " +
-                "annotated as a @Context field,%n" +
-                "but it is static. @Context fields must be public, non-final and non-static,%n" +
-                "because they are reset each time a procedure is invoked." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format(
+                "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " + "annotated as a @Context field,%n" +
+                        "but it is static. @Context fields must be public, non-final and non-static,%n" +
+                        "because they are reset each time a procedure is invoked." ) );
     }
 
     @Test
@@ -285,8 +278,8 @@ public class UserAggregationFunctionTest
     void shouldNotAllowOverridingFunctionNameWithoutNamespace()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ) );
-        assertThat( exception.getMessage(), equalTo( "It is not allowed to define functions in the root namespace please use a " +
-                "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" ) );
+        assertThat( exception.getMessage() ).isEqualTo( "It is not allowed to define functions in the root namespace please use a " +
+                "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" );
     }
 
     @Test
@@ -297,8 +290,8 @@ public class UserAggregationFunctionTest
 
         ProcedureException exception = assertThrows( ProcedureException.class,
                 () -> method.create( prepareContext() ).update( new AnyValue[]{} ) );
-        assertThat( exception.getMessage(),
-                equalTo( "Failed to invoke function `org.neo4j.procedure.impl.test`: Caused by: java.lang.IndexOutOfBoundsException" ) );
+        assertThat( exception.getMessage() ).isEqualTo(
+                "Failed to invoke function `org.neo4j.procedure.impl.test`: Caused by: java.lang.IndexOutOfBoundsException" );
     }
 
     @Test
@@ -314,7 +307,7 @@ public class UserAggregationFunctionTest
         // Expect
         UserAggregator created = method.create( prepareContext() );
         created.update( new AnyValue[]{stringValue( "Bonnie" )} );
-        assertThat( created.result(), equalTo( VirtualValues.list( stringValue( "Bonnie" ) ) ) );
+        assertThat( created.result() ).isEqualTo( VirtualValues.list( stringValue( "Bonnie" ) ) );
     }
 
     @Test
@@ -327,7 +320,7 @@ public class UserAggregationFunctionTest
 
         List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the whitelist and won't be loaded." );
-        assertThat( method.size(), equalTo( 0 ) );
+        assertThat( method.size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -340,7 +333,7 @@ public class UserAggregationFunctionTest
 
         List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the whitelist and won't be loaded." );
-        assertThat( method.size(), equalTo( 0 ) );
+        assertThat( method.size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -369,7 +362,7 @@ public class UserAggregationFunctionTest
             case "oldFunc":
             case "badFunc":
                 assertTrue( func.signature().deprecated().isPresent(), "Should be deprecated" );
-                assertThat( func.signature().deprecated().get(), equalTo( "newFunc" ) );
+                assertThat( func.signature().deprecated().get() ).isEqualTo( "newFunc" );
                 break;
             default:
                 fail( "Unexpected function: " + name );
@@ -393,8 +386,7 @@ public class UserAggregationFunctionTest
         aggregator.update( new AnyValue[]{longValue( 1 )} );
 
         // Then
-        assertThat( aggregator.result(),
-                equalTo( longValue( 5 ) ) );
+        assertThat( aggregator.result() ).isEqualTo( longValue( 5 ) );
     }
 
     private org.neo4j.kernel.api.procedure.Context prepareContext()

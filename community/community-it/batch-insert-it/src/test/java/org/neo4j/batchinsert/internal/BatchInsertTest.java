@@ -102,12 +102,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.emptyArray;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -116,10 +111,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.graphdb.Label.label;
@@ -133,9 +128,6 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-import static org.neo4j.test.mockito.matcher.CollectionMatcher.matchesCollection;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -226,7 +218,7 @@ class BatchInsertTest
         inserter.setNodeProperty( id2, "array", array2 );
 
         // Then
-        assertThat( inserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
+        assertThat( inserter.getNodeProperties( id1 ).get( "array" ) ).isEqualTo( array1 );
         inserter.shutdown();
     }
 
@@ -266,14 +258,18 @@ class BatchInsertTest
     void setSingleProperty( int denseNodeThreshold ) throws Exception
     {
         BatchInserter inserter = newBatchInserter( denseNodeThreshold );
-        long node = inserter.createNode( null );
+        long nodeById = inserter.createNode( null );
 
         String value = "Something";
         String key = "name";
-        inserter.setNodeProperty( node, key, value );
+        inserter.setNodeProperty( nodeById, key, value );
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
-        assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value ) ) );
+        try ( var tx = db.beginTx() )
+        {
+            var node = tx.getNodeById( nodeById );
+            assertThat( node.getProperty( key ) ).isEqualTo( value );
+        }
         managementService.shutdown();
     }
 
@@ -891,7 +887,7 @@ class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
-        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
+        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -928,7 +924,7 @@ class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
-        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
+        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -965,9 +961,8 @@ class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
-        verify( populator ).add( argThat( matchesCollection(
-                add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
-                add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ) );
+        verify( populator ).add( argThat( c -> c.contains( add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ) ) &&
+                                               c.contains( add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1065,17 +1060,15 @@ class BatchInsertTest
         long personNodeId = inserter.createNode(properties);
 
         assertEquals( "Shevchenko", getNodeProperties( inserter, personNodeId ).get( "lastName" ) );
-        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ), is( emptyArray() ) );
+        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ) ).isEmpty();
 
         inserter.setNodeProperty( personNodeId, "email", new String[]{"Edward1099511659993@gmail.com"} );
-        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ),
-                arrayContaining( "Edward1099511659993@gmail.com" ) );
+        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ) ).contains( "Edward1099511659993@gmail.com" );
 
         inserter.setNodeProperty( personNodeId, "email",
                 new String[]{"Edward1099511659993@gmail.com", "backup@gmail.com"} );
 
-        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ),
-                arrayContaining( "Edward1099511659993@gmail.com", "backup@gmail.com" ) );
+        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ) ).contains( "Edward1099511659993@gmail.com", "backup@gmail.com" );
         inserter.shutdown();
     }
 
@@ -1329,8 +1322,8 @@ class BatchInsertTest
             var schema = tx.schema();
             IndexDefinition index = schema.getIndexes( label ).iterator().next();
             String indexFailure = schema.getIndexFailure( index );
-            assertThat( indexFailure, containsString( "IndexEntryConflictException" ) );
-            assertThat( indexFailure, containsString( value ) );
+            assertThat( indexFailure ).contains(  "IndexEntryConflictException" );
+            assertThat( indexFailure ).contains( value );
             tx.commit();
         }
         finally

@@ -32,10 +32,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @ImpermanentDbmsExtension
 class TestTransactionEventDeadlocks
@@ -66,7 +64,11 @@ class TestTransactionEventDeadlocks
             tx.commit();
         }
 
-        assertThat( node, inTx( graphdb, hasProperty( "counter" ).withValue( 1L ) ) );
+        try ( Transaction transaction = graphdb.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( 1L, n.getProperty( "counter" ) );
+        }
     }
 
     private static class RelationshipCounterTransactionEventListener extends TransactionEventListenerAdapter<Void>

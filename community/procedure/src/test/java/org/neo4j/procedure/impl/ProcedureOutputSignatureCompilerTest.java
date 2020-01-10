@@ -27,10 +27,7 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
@@ -101,10 +98,8 @@ public class ProcedureOutputSignatureCompilerTest
         // when
 
         // then
-        assertThat( signatures( RecordWithDeprecatedFields.class ), containsInAnyOrder(
-                outputField( "deprecated", NTString, true ),
-                outputField( "alsoDeprecated", NTString, true ),
-                outputField( "replacement", NTString, false ) ) );
+        assertThat( signatures( RecordWithDeprecatedFields.class ) ).contains( outputField( "deprecated", NTString, true ),
+                outputField( "alsoDeprecated", NTString, true ), outputField( "replacement", NTString, false ) );
     }
 
     @Test
@@ -113,34 +108,33 @@ public class ProcedureOutputSignatureCompilerTest
         // when
 
         // then
-        assertThat( signatures( RecordWithInheritedFields.class ), containsInAnyOrder(
-                outputField( "name", NTString, false ),
-                outputField( "anotherName", NTString, false ) ) );
+        assertThat( signatures( RecordWithInheritedFields.class ) ).contains( outputField( "name", NTString, false ),
+                outputField( "anotherName", NTString, false ) );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnUnmappable()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( UnmappableRecord.class ) );
-        assertThat( exception.getMessage(), startsWith( "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: " +
-                "Don't know how to map `org.neo4j.procedure.impl.ProcedureOutputSignatureCompilerTest$UnmappableRecord`" ) );
+        assertThat( exception.getMessage() ).startsWith( "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: " +
+                "Don't know how to map `org.neo4j.procedure.impl.ProcedureOutputSignatureCompilerTest$UnmappableRecord`" );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnPrivateField()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( RecordWithPrivateField.class ) );
-        assertThat( exception.getMessage(), startsWith( "Field `wat` in record `RecordWithPrivateField` cannot be accessed. " +
-                "Please ensure the field is marked as `public`." ) );
+        assertThat( exception.getMessage() ).startsWith(
+                "Field `wat` in record `RecordWithPrivateField` cannot be accessed. " + "Please ensure the field is marked as `public`." );
     }
 
     @Test
     void shouldGiveHelpfulErrorOnMapWithNonStringKeyMap()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( RecordWithNonStringKeyMap.class ) );
-        assertThat( exception.getMessage(), equalTo( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted " +
+        assertThat( exception.getMessage() ).isEqualTo( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted " +
                 "to a Neo4j type: Maps are required to have `String` keys - but this map " +
-                "has `org.neo4j.procedure.impl.ProcedureOutputSignatureCompilerTest$RecordWithNonStringKeyMap` keys." ) );
+                "has `org.neo4j.procedure.impl.ProcedureOutputSignatureCompilerTest$RecordWithNonStringKeyMap` keys." );
     }
 
     @Test
@@ -152,14 +146,10 @@ public class ProcedureOutputSignatureCompilerTest
         //            and what is a primitive value..
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures(Long.class) );
-        assertThat( exception.getMessage(), equalTo( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+        assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
-                "If you''d like your procedure to return `Long`, you could define a record class like:%n" +
-                "public class Output '{'%n" +
-                "    public Long out;%n" +
-                "'}'%n" +
-                "%n" +
-                "And then define your procedure as returning `Stream<Output>`." ) ) );
+                "If you''d like your procedure to return `Long`, you could define a record class like:%n" + "public class Output '{'%n" +
+                "    public Long out;%n" + "'}'%n" + "%n" + "And then define your procedure as returning `Stream<Output>`." ) );
     }
 
     private List<FieldSignature> signatures( Class<?> clazz ) throws ProcedureException

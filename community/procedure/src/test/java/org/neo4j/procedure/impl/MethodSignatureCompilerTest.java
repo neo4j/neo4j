@@ -31,10 +31,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings( "WeakerAccess" )
@@ -84,7 +81,7 @@ class MethodSignatureCompilerTest
         List<FieldSignature> signature = new MethodSignatureCompiler( new TypeCheckers() ).signatureFor( echo );
 
         // THen
-        assertThat(signature, contains( FieldSignature.inputField( "name", Neo4jTypes.NTString ) ));
+        assertThat( signature ).containsExactly( FieldSignature.inputField( "name", Neo4jTypes.NTString ) );
     }
 
     @Test
@@ -94,12 +91,10 @@ class MethodSignatureCompilerTest
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithInvalidType", UnmappableRecord.class );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeCheckers() ).signatureFor( echo ) );
-        assertThat( exception.getMessage(), startsWith( String.format("Argument `name` at position 0 in `echoWithInvalidType` with%n" +
-                                                "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
-                                                "`org.neo4j.procedure.impl.MethodSignatureCompilerTest$UnmappableRecord` to " +
-                                                "the Neo4j Type System.%n" +
-                                                "Please refer to to the documentation for full details.%n" +
-                                                "For your reference, known types are:" ) ) );
+        assertThat( exception.getMessage() ).startsWith( String.format( "Argument `name` at position 0 in `echoWithInvalidType` with%n" +
+                "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
+                "`org.neo4j.procedure.impl.MethodSignatureCompilerTest$UnmappableRecord` to " + "the Neo4j Type System.%n" +
+                "Please refer to to the documentation for full details.%n" + "For your reference, known types are:" ) );
     }
 
     @Test
@@ -109,8 +104,8 @@ class MethodSignatureCompilerTest
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithoutAnnotations", String.class, String.class);
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeCheckers() ).signatureFor( echo ) );
-        assertThat( exception.getMessage(), equalTo( String.format("Argument at position 1 in method `echoWithoutAnnotations` is missing an `@Name` " +
-                                                    "annotation.%n" +
-                                                    "Please add the annotation, recompile the class and try again." ) ) );
+        assertThat( exception.getMessage() ).isEqualTo( String.format(
+                "Argument at position 1 in method `echoWithoutAnnotations` is missing an `@Name` " + "annotation.%n" +
+                        "Please add the annotation, recompile the class and try again." ) );
     }
 }

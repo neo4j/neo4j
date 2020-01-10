@@ -28,8 +28,7 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
@@ -48,7 +47,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( null ) ) );
+        assertThat( converted ).isEqualTo( ntMap( null ) );
     }
 
     @Test
@@ -61,7 +60,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( emptyMap() ) ) );
+        assertThat( converted ).isEqualTo( ntMap( emptyMap() ) );
     }
 
     @Test
@@ -74,7 +73,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( emptyMap() ) ) );
+        assertThat( converted ).isEqualTo( ntMap( emptyMap() ) );
     }
 
     @Test
@@ -87,7 +86,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", "value" ) ) );
     }
 
     @Test
@@ -100,7 +99,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "va\'lue" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", "va\'lue" ) ) );
     }
 
     @Test
@@ -113,7 +112,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "va\"lue" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", "va\"lue" ) ) );
     }
 
     @Test
@@ -126,7 +125,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "va\"lue" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", "va\"lue" ) ) );
     }
 
     @Test
@@ -139,7 +138,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", "value" ) ) );
     }
 
     @Test
@@ -152,7 +151,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "k\'ey", "value" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "k\'ey", "value" ) ) );
     }
 
     @Test
@@ -165,7 +164,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "k\"ey", "value" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "k\"ey", "value" ) ) );
     }
 
     @Test
@@ -178,7 +177,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", 1337L ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", 1337L ) ) );
     }
 
     @Test
@@ -191,7 +190,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", 2.718281828 ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", 2.718281828 ) ) );
     }
 
     @Test
@@ -204,7 +203,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", null ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", null ) ) );
     }
 
     @Test
@@ -217,7 +216,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", false ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", false ) ) );
     }
 
     @Test
@@ -230,7 +229,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", true ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "key", true ) ) );
     }
 
     @Test
@@ -243,7 +242,7 @@ class MapConverterTest
         DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "k1", 2.718281828, "k2", "e" ) ) ) );
+        assertThat( converted ).isEqualTo( ntMap( map( "k1", 2.718281828, "k2", "e" ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -260,9 +259,9 @@ class MapConverterTest
         Map<String,Object> map1 = (Map<String,Object>) converted.value();
         Map<String,Object> map2 = (Map<String,Object>) map1.get( "k2" );
         Map<String,Object> map3 = (Map<String,Object>) map2.get( "k2" );
-        assertThat( map1.get( "k1" ), equalTo( 1337L ) );
-        assertThat( map2.get( "k1" ), equalTo( 1337L ) );
-        assertThat( map3.get( "k1" ), equalTo( 1337L ) );
+        assertThat( map1.get( "k1" ) ).isEqualTo( 1337L );
+        assertThat( map2.get( "k1" ) ).isEqualTo( 1337L );
+        assertThat( map3.get( "k1" ) ).isEqualTo( 1337L );
     }
 
     @Test
@@ -286,7 +285,7 @@ class MapConverterTest
 
         // Then
         Map<String,Object> map1 = (Map<String,Object>) converted.value();
-        assertThat( map1.get( "k1" ), equalTo( asList( 1337L, 42L ) ) );
+        assertThat( map1.get( "k1" ) ).isEqualTo( asList( 1337L, 42L ) );
 
     }
 }

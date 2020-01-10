@@ -19,23 +19,18 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 class CypherUpdateMapTest
 {
@@ -64,10 +59,12 @@ class CypherUpdateMapTest
             transaction.commit();
         }
 
-        Node node1 = getNodeByIdInTx( 0 );
-
-        assertThat( node1, inTxS( hasProperty( "key1" ).withValue( "value1" ) ) );
-        assertThat( node1, inTxS( hasProperty( "key2" ).withValue( 1234 ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.getNodeById( 0 );
+            assertThat( node.getProperty( "key1" ) ).isEqualTo( "value1" );
+            assertThat( node.getProperty( "key2" ) ).isEqualTo( 1234 );
+        }
 
         try ( Transaction transaction = db.beginTx() )
         {
@@ -77,23 +74,10 @@ class CypherUpdateMapTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node2 = transaction.getNodeById( 0 );
-            assertThat( node2, not( hasProperty( "key1" ) ) );
-            assertThat( node2, not( hasProperty( "key2" ) ) );
-            assertThat( node2, hasProperty( "key3" ).withValue( 5678 ) );
-        }
-    }
-
-    <T> Matcher<? super T> inTxS( final Matcher<T> inner )
-    {
-        return inTx( db, inner, false );
-    }
-
-    private Node getNodeByIdInTx( int nodeId )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            return transaction.getNodeById( nodeId );
+            var node = transaction.getNodeById( 0 );
+            assertThat( node.hasProperty( "key1" ) ).isFalse();
+            assertThat( node.hasProperty( "key2" ) ).isFalse();
+            assertThat( node.getProperty( "key3" ) ).isEqualTo( 5678 );
         }
     }
 }

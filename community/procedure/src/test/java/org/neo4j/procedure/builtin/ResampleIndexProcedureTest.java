@@ -30,8 +30,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -87,7 +86,7 @@ class ResampleIndexProcedureTest
         when( schemaRead.indexGetForName( anyString() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( "index_42" ) );
-        assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
+        assertThat( exception.status() ).isEqualTo( Status.Schema.IndexNotFound );
     }
 
     @Test

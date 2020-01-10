@@ -75,7 +75,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -89,9 +89,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
 
 @Neo4jLayoutExtension
 class IndexRecoveryIT
@@ -174,8 +171,9 @@ class IndexRecoveryIT
 
             try ( Transaction transaction = db.beginTx() )
             {
-                assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
-                assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
+                assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
+                assertThat( transaction.schema().getIndexes( myLabel ) )
+                        .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.POPULATING );
             }
             // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
             // we will not gonna need to get index populators during recovery index service start
@@ -223,8 +221,9 @@ class IndexRecoveryIT
 
             try ( Transaction transaction = db.beginTx() )
             {
-                assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
-                assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
+                assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
+                assertThat( transaction.schema().getIndexes( myLabel ) )
+                        .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.POPULATING );
             }
             verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
             verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
@@ -268,8 +267,9 @@ class IndexRecoveryIT
         // Then
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
-            assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.ONLINE ) );
+            assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
+            assertThat( transaction.schema().getIndexes( myLabel ) )
+                    .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.ONLINE );
         }
         verify( mockedIndexProvider )
                 .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
@@ -303,8 +303,9 @@ class IndexRecoveryIT
         // Then
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
-            assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.FAILED ) );
+            assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
+            assertThat( transaction.schema().getIndexes( myLabel ) )
+                    .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.FAILED );
         }
         verify( mockedIndexProvider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( mockedIndexProvider ).getDropper( any( IndexDescriptor.class ) );

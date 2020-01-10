@@ -25,7 +25,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,22 +36,17 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 
 public class SchemaIndexAcceptanceTest
 {
@@ -93,9 +90,9 @@ public class SchemaIndexAcceptanceTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, "name", "One", db, transaction ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, "name", "Two", db, transaction ), containsOnly( node2 ) );
-            assertThat( findNodesByLabelAndProperty( label, "name", "Three", db, transaction ), containsOnly( node3 ) );
+            assertThat( findNodesByLabelAndProperty( label, "name", "One", transaction ) ).containsOnly( node1 );
+            assertThat( findNodesByLabelAndProperty( label, "name", "Two", transaction ) ).containsOnly( node2 );
+            assertThat( findNodesByLabelAndProperty( label, "name", "Three", transaction ) ).containsOnly( node3 );
         }
     }
 
@@ -115,13 +112,13 @@ public class SchemaIndexAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( getIndexes( tx, label ), haveState( tx, IndexState.ONLINE ) );
+            assertThat( getIndexes( tx, label ) ).extracting( i -> tx.schema().getIndexState( i ) ).containsOnly( IndexState.ONLINE );
         }
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, transaction ) ).containsOnly( node1 );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), transaction ) ).isEmpty();
             transaction.commit();
         }
     }
@@ -142,13 +139,13 @@ public class SchemaIndexAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( getIndexes( tx, label ), haveState( tx, IndexState.ONLINE ) );
+            assertThat( getIndexes( tx, label ) ).extracting( i -> tx.schema().getIndexState( i ) ).containsOnly( IndexState.ONLINE );
         }
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, transaction ) ).containsOnly( node1 );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), transaction ) ).isEmpty();
         }
 
     }
@@ -170,13 +167,13 @@ public class SchemaIndexAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( getIndexes( tx, label ), haveState( tx, IndexState.ONLINE ) );
+            assertThat( getIndexes( tx, label ) ).extracting( i -> tx.schema().getIndexState( i ) ).containsOnly( IndexState.ONLINE );
         }
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, transaction ) ).containsOnly( node1 );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, transaction ) ).isEmpty();
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), transaction ) ).isEmpty();
         }
     }
 
@@ -196,7 +193,7 @@ public class SchemaIndexAcceptanceTest
         // THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( getIndexes( transaction, label ), isEmpty() );
+            assertThat( getIndexes( transaction, label ) ).isEmpty();
         }
     }
 
@@ -257,5 +254,31 @@ public class SchemaIndexAcceptanceTest
             node.setProperty( propertyKey, "yeah" );
             tx.commit();
         }
+    }
+
+    private List<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value, Transaction transaction )
+    {
+        return Iterators.asList( transaction.findNodes( label, propertyName, value ) );
+    }
+
+    private Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
+    {
+        return transaction.schema().getIndexes( label );
+    }
+
+    private IndexDefinition createIndex( GraphDatabaseService db, Label label, String property )
+    {
+        IndexDefinition indexDefinition;
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            indexDefinition = tx.schema().indexFor( label ).on( property ).create();
+            tx.commit();
+        }
+
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+        }
+        return indexDefinition;
     }
 }

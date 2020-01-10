@@ -106,7 +106,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void addedNodePropertiesIncludedInSample() throws Exception
+    void addedNodePropertiesIncludedInSample()
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -120,7 +120,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void changedNodePropertiesDoNotInfluenceSample() throws Exception
+    void changedNodePropertiesDoNotInfluenceSample()
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -132,7 +132,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void removedNodePropertyIncludedInSample() throws Exception
+    void removedNodePropertyIncludedInSample()
     {
         long initialValue = 10;
         UniqueIndexSampler sampler = new UniqueIndexSampler();
@@ -147,7 +147,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void nodePropertyUpdatesIncludedInSample() throws Exception
+    void nodePropertyUpdatesIncludedInSample()
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -172,11 +172,11 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( add( 3, descriptor, "qux" ) );
 
         verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
-                documentRepresentingProperties( (long) 1, "foo" ) );
+                documentRepresentingProperties( 1, "foo" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
-                documentRepresentingProperties( (long) 2, "bar" ) );
+                documentRepresentingProperties( 2, "bar" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ),
-                documentRepresentingProperties( (long) 3, "qux" ) );
+                documentRepresentingProperties( 3, "qux" ) );
     }
 
     @Test
@@ -189,9 +189,9 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( change( 2, descriptor, "before2", "after2" ) );
 
         verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
-                documentRepresentingProperties( (long) 1, "after1" ) );
+                documentRepresentingProperties( 1, "after1" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
-                documentRepresentingProperties( (long) 2, "after2" ) );
+                documentRepresentingProperties( 2, "after2" ) );
     }
 
     @Test

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -32,7 +33,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,7 +61,7 @@ class BigPropertyIndexValidationIT
     void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
     {
         // GIVEN
-        Neo4jMatchers.createIndex( db, LABEL, propertyKey );
+        createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
         assertThrows( TransactionFailureException.class, () ->
@@ -84,7 +84,7 @@ class BigPropertyIndexValidationIT
     void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
     {
         // GIVEN
-        Neo4jMatchers.createIndex( db, LABEL, propertyKey );
+        createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
         assertThrows( TransactionFailureException.class, () ->
@@ -108,7 +108,7 @@ class BigPropertyIndexValidationIT
     void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
     {
         // GIVEN
-        Neo4jMatchers.createIndex( db, LABEL, propertyKey );
+        createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
         assertThrows( TransactionFailureException.class, () ->
@@ -127,5 +127,20 @@ class BigPropertyIndexValidationIT
                 assertFalse( nodes.hasNext() );
             }
         } );
+    }
+
+    private static void createIndex( GraphDatabaseService gds, Label label, String propKey )
+    {
+        try ( Transaction tx = gds.beginTx() )
+        {
+            tx.schema().indexFor( label ).on( propKey ).create();
+            tx.commit();
+        }
+
+        try ( Transaction tx = gds.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.commit();
+        }
     }
 }

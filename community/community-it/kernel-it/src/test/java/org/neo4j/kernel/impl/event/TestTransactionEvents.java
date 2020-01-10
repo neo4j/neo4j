@@ -74,8 +74,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @ImpermanentDbmsExtension
 class TestTransactionEvents
@@ -482,7 +480,11 @@ class TestTransactionEvents
             tx.commit();
         }
         // Then
-        assertThat(node, inTx(db, hasProperty(key).withValue(value2)));
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( value2, n.getProperty( key ) );
+        }
         dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
     }
 
