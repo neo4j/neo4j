@@ -19,7 +19,6 @@
  */
 package org.neo4j.codegen;
 
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -35,15 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.codegen.bytecode.ByteCode;
 import org.neo4j.codegen.source.SourceCode;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -57,8 +53,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.codegen.Expression.add;
 import static org.neo4j.codegen.Expression.and;
 import static org.neo4j.codegen.Expression.arrayLoad;
@@ -516,9 +512,9 @@ public abstract class CodeGenerationTest
         // then
         verify( a ).run();
         verifyNoMoreInteractions( a );
-        verifyZeroInteractions( b );
-        verifyZeroInteractions( c );
-        verifyZeroInteractions( d );
+        verifyNoInteractions( b );
+        verifyNoInteractions( c );
+        verifyNoInteractions( d );
 
     }
 
@@ -930,7 +926,7 @@ public abstract class CodeGenerationTest
 
         // then
         verify( runner1 ).run();
-        verifyZeroInteractions( runner2 );
+        verifyNoInteractions( runner2 );
     }
 
     @Test
@@ -955,8 +951,8 @@ public abstract class CodeGenerationTest
         // when
         MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class );
 
-        assertThat( conditional.invoke( true ), equalTo( "true" ) );
-        assertThat( conditional.invoke( false ), equalTo( "false" ) );
+        assertThat( conditional.invoke( true ) ).isEqualTo( "true" );
+        assertThat( conditional.invoke( false ) ).isEqualTo( "false" );
     }
 
     @Test
@@ -991,7 +987,7 @@ public abstract class CodeGenerationTest
 
         // then
         verify( runner2 ).run();
-        verifyZeroInteractions( runner1 );
+        verifyNoInteractions( runner1 );
     }
 
     @Test
@@ -1026,7 +1022,7 @@ public abstract class CodeGenerationTest
 
         // then
         verify( runner2 ).run();
-        verifyZeroInteractions( runner1 );
+        verifyNoInteractions( runner1 );
     }
 
     @Test
@@ -1059,7 +1055,7 @@ public abstract class CodeGenerationTest
 
         // then
         verify( runner2 ).run();
-        verifyZeroInteractions( runner1 );
+        verifyNoInteractions( runner1 );
     }
 
     @Test
@@ -1092,7 +1088,7 @@ public abstract class CodeGenerationTest
 
         // then
         verify( runner1 ).run();
-        verifyZeroInteractions( runner2 );
+        verifyNoInteractions( runner2 );
     }
 
     @Test
@@ -1125,7 +1121,7 @@ public abstract class CodeGenerationTest
 
         // then
         verify( runner1 ).run();
-        verifyZeroInteractions( runner2 );
+        verifyNoInteractions( runner2 );
     }
 
     @Test
@@ -1272,7 +1268,7 @@ public abstract class CodeGenerationTest
         verify( runner1 ).run();
         verify( runner2 ).run();
         verify( runner3 ).run();
-        verifyZeroInteractions( runner4 );
+        verifyNoInteractions( runner4 );
     }
 
     @Test
@@ -1296,10 +1292,10 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class );
 
         // then
-        assertThat( conditional.invoke( true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false ), equalTo( true ) );
-        assertThat( conditional.invoke( false, true ), equalTo( true ) );
-        assertThat( conditional.invoke( false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, false ) ).isEqualTo( false );
     }
 
     @Test
@@ -1339,9 +1335,9 @@ public abstract class CodeGenerationTest
 
         // then
         verify( runner1 ).run();
-        verifyZeroInteractions( runner2 );
-        verifyZeroInteractions( runner3 );
-        verifyZeroInteractions( runner4 );
+        verifyNoInteractions( runner2 );
+        verifyNoInteractions( runner3 );
+        verifyNoInteractions( runner4 );
     }
 
     @Test
@@ -1365,10 +1361,10 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class );
 
         // then
-        assertThat( conditional.invoke( true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false ), equalTo( false ) );
-        assertThat( conditional.invoke( false, true ), equalTo( false ) );
-        assertThat( conditional.invoke( false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, false ) ).isEqualTo( false );
     }
 
     @Test
@@ -1397,14 +1393,14 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
 
         // then
-        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false, true ), equalTo( false ) );
-        assertThat( conditional.invoke( false, true, true ), equalTo( false ) );
-        assertThat( conditional.invoke( false, false, true ), equalTo( false ) );
-        assertThat( conditional.invoke( true, true, false ), equalTo( false ) );
-        assertThat( conditional.invoke( true, false, false ), equalTo( false ) );
-        assertThat( conditional.invoke( false, true, false ), equalTo( false ) );
-        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, true, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, false, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( true, true, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( true, false, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, true, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, false, false ) ).isEqualTo( false );
     }
 
     @Test
@@ -1433,14 +1429,14 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
 
         // then
-        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false, true ), equalTo( false ) );
-        assertThat( conditional.invoke( false, true, true ), equalTo( false ) );
-        assertThat( conditional.invoke( false, false, true ), equalTo( false ) );
-        assertThat( conditional.invoke( true, true, false ), equalTo( false ) );
-        assertThat( conditional.invoke( true, false, false ), equalTo( false ) );
-        assertThat( conditional.invoke( false, true, false ), equalTo( false ) );
-        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, true, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, false, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( true, true, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( true, false, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, true, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, false, false ) ).isEqualTo( false );
     }
 
     @Test
@@ -1469,14 +1465,14 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
 
         // then
-        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false, true ), equalTo( true ) );
-        assertThat( conditional.invoke( false, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( false, false, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, true, false ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false, false ), equalTo( true ) );
-        assertThat( conditional.invoke( false, true, false ), equalTo( true ) );
-        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, false, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, true, false ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false, false ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, true, false ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, false, false ) ).isEqualTo( false );
     }
 
     @Test
@@ -1505,14 +1501,14 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
 
         // then
-        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false, true ), equalTo( true ) );
-        assertThat( conditional.invoke( false, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( false, false, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, true, false ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false, false ), equalTo( true ) );
-        assertThat( conditional.invoke( false, true, false ), equalTo( true ) );
-        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, false, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, true, false ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false, false ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, true, false ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, false, false ) ).isEqualTo( false );
     }
 
     @Test
@@ -1541,14 +1537,14 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
 
         // then
-        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( true, false, true ), equalTo( true ) );
-        assertThat( conditional.invoke( false, true, true ), equalTo( true ) );
-        assertThat( conditional.invoke( false, false, true ), equalTo( false ) );
-        assertThat( conditional.invoke( true, true, false ), equalTo( false ) );
-        assertThat( conditional.invoke( true, false, false ), equalTo( false ) );
-        assertThat( conditional.invoke( false, true, false ), equalTo( false ) );
-        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( true, false, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, true, true ) ).isEqualTo( true );
+        assertThat( conditional.invoke( false, false, true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( true, true, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( true, false, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, true, false ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false, false, false ) ).isEqualTo( false );
     }
 
     @Test
@@ -1572,8 +1568,8 @@ public abstract class CodeGenerationTest
                 instanceMethod( handle.newInstance(), "conditional", boolean.class );
 
         // then
-        assertThat( conditional.invoke( true ), equalTo( false ) );
-        assertThat( conditional.invoke( false ), equalTo( true ) );
+        assertThat( conditional.invoke( true ) ).isEqualTo( false );
+        assertThat( conditional.invoke( false ) ).isEqualTo( true );
     }
 
     @Test
@@ -1603,12 +1599,12 @@ public abstract class CodeGenerationTest
 
         // then
         TernaryChecker checker1 = new TernaryChecker();
-        assertThat( ternary.invoke( true, checker1 ), equalTo( "on true" ) );
+        assertThat( ternary.invoke( true, checker1 ) ).isEqualTo( "on true" );
         assertTrue( checker1.ranOnTrue );
         assertFalse( checker1.ranOnFalse );
 
         TernaryChecker checker2 = new TernaryChecker();
-        assertThat( ternary.invoke( false, checker2 ), equalTo( "on false" ) );
+        assertThat( ternary.invoke( false, checker2 ) ).isEqualTo( "on false" );
         assertFalse( checker2.ranOnTrue );
         assertTrue( checker2.ranOnFalse );
     }
@@ -1640,12 +1636,12 @@ public abstract class CodeGenerationTest
 
         // then
         TernaryChecker checker1 = new TernaryChecker();
-        assertThat( ternary.invoke( null, checker1 ), equalTo( "on true" ) );
+        assertThat( ternary.invoke( null, checker1 ) ).isEqualTo( "on true" );
         assertTrue( checker1.ranOnTrue );
         assertFalse( checker1.ranOnFalse );
 
         TernaryChecker checker2 = new TernaryChecker();
-        assertThat( ternary.invoke( new Object(), checker2 ), equalTo( "on false" ) );
+        assertThat( ternary.invoke( new Object(), checker2 ) ).isEqualTo( "on false" );
         assertFalse( checker2.ranOnTrue );
         assertTrue( checker2.ranOnFalse );
     }
@@ -1677,12 +1673,12 @@ public abstract class CodeGenerationTest
 
         // then
         TernaryChecker checker1 = new TernaryChecker();
-        assertThat( ternary.invoke( new Object(), checker1 ), equalTo( "on true" ) );
+        assertThat( ternary.invoke( new Object(), checker1 ) ).isEqualTo( "on true" );
         assertTrue( checker1.ranOnTrue );
         assertFalse( checker1.ranOnFalse );
 
         TernaryChecker checker2 = new TernaryChecker();
-        assertThat( ternary.invoke( null, checker2 ), equalTo( "on false" ) );
+        assertThat( ternary.invoke( null, checker2 ) ).isEqualTo( "on false" );
         assertFalse( checker2.ranOnTrue );
         assertTrue( checker2.ranOnFalse );
     }
@@ -1835,25 +1831,25 @@ public abstract class CodeGenerationTest
     @Test
     void shouldHandleAddition() throws Throwable
     {
-        assertThat( addForType( int.class, 17, 18 ), equalTo( 35 ) );
-        assertThat( addForType( long.class, 17L, 18L ), equalTo( 35L ) );
-        assertThat( addForType( double.class, 17D, 18D ), equalTo( 35D ) );
+        assertThat( addForType( int.class, 17, 18 ) ).isEqualTo( 35 );
+        assertThat( addForType( long.class, 17L, 18L ) ).isEqualTo( 35L );
+        assertThat( addForType( double.class, 17D, 18D ) ).isEqualTo( 35D );
     }
 
     @Test
     void shouldHandleSubtraction() throws Throwable
     {
-        assertThat( subtractForType( int.class, 19, 18 ), equalTo( 1 ) );
-        assertThat( subtractForType( long.class, 19L, 18L ), equalTo( 1L ) );
-        assertThat( subtractForType( double.class, 19D, 18D ), equalTo( 1D ) );
+        assertThat( subtractForType( int.class, 19, 18 ) ).isEqualTo( 1 );
+        assertThat( subtractForType( long.class, 19L, 18L ) ).isEqualTo( 1L );
+        assertThat( subtractForType( double.class, 19D, 18D ) ).isEqualTo( 1D );
     }
 
     @Test
     void shouldHandleMultiplication() throws Throwable
     {
-        assertThat( multiplyForType( int.class, 17, 18 ), equalTo( 306 ) );
-        assertThat( multiplyForType( long.class, 17L, 18L ), equalTo( 306L ) );
-        assertThat( multiplyForType( double.class, 17D, 18D ), equalTo( 306D ) );
+        assertThat( multiplyForType( int.class, 17, 18 ) ).isEqualTo( 306 );
+        assertThat( multiplyForType( long.class, 17L, 18L ) ).isEqualTo( 306L );
+        assertThat( multiplyForType( double.class, 17D, 18D ) ).isEqualTo( 306D );
     }
 
     @Test
@@ -2178,7 +2174,7 @@ public abstract class CodeGenerationTest
 
         // then
         assertEquals( "SimpleClass", instance.getClass().getSimpleName() );
-        assertThat( instance, instanceOf( NamedBase.class ) );
+        assertThat( instance ).isInstanceOf( NamedBase.class );
         assertEquals( "Pontus", ((NamedBase) instance).name );
         assertEquals( "Tobias", getField( instance, "foo" ) );
     }
@@ -2197,29 +2193,29 @@ public abstract class CodeGenerationTest
     @Test
     void shouldBeAbleToBox() throws Throwable
     {
-        assertThat( boxTest( boolean.class, true ), equalTo( Boolean.TRUE ) );
-        assertThat( boxTest( boolean.class, false ), equalTo( Boolean.FALSE ) );
-        assertThat( boxTest( byte.class, (byte) 12 ), equalTo( (byte) 12 ) );
-        assertThat( boxTest( short.class, (short) 12 ), equalTo( (short) 12 ) );
-        assertThat( boxTest( int.class, 12 ), equalTo( 12 ) );
-        assertThat( boxTest( long.class, 12L ), equalTo( 12L ) );
-        assertThat( boxTest( float.class, 12F ), equalTo( 12F ) );
-        assertThat( boxTest( double.class, 12D ), equalTo( 12D ) );
-        assertThat( boxTest( char.class, 'a' ), equalTo( 'a' ) );
+        assertThat( boxTest( boolean.class, true ) ).isEqualTo( Boolean.TRUE );
+        assertThat( boxTest( boolean.class, false ) ).isEqualTo( Boolean.FALSE );
+        assertThat( boxTest( byte.class, (byte) 12 ) ).isEqualTo( (byte) 12 );
+        assertThat( boxTest( short.class, (short) 12 ) ).isEqualTo( (short) 12 );
+        assertThat( boxTest( int.class, 12 ) ).isEqualTo( 12 );
+        assertThat( boxTest( long.class, 12L ) ).isEqualTo( 12L );
+        assertThat( boxTest( float.class, 12F ) ).isEqualTo( 12F );
+        assertThat( boxTest( double.class, 12D ) ).isEqualTo( 12D );
+        assertThat( boxTest( char.class, 'a' ) ).isEqualTo( 'a' );
     }
 
     @Test
     void shouldBeAbleToUnbox() throws Throwable
     {
-        assertThat( unboxTest( Boolean.class, boolean.class, true ), equalTo( true ) );
-        assertThat( unboxTest( Boolean.class, boolean.class, false ), equalTo( false ) );
-        assertThat( unboxTest( Byte.class, byte.class, (byte) 12 ), equalTo( (byte) 12 ) );
-        assertThat( unboxTest( Short.class, short.class, (short) 12 ), equalTo( (short) 12 ) );
-        assertThat( unboxTest( Integer.class, int.class, 12 ), equalTo( 12 ) );
-        assertThat( unboxTest( Long.class, long.class, 12L ), equalTo( 12L ) );
-        assertThat( unboxTest( Float.class, float.class, 12F ), equalTo( 12F ) );
-        assertThat( unboxTest( Double.class, double.class, 12D ), equalTo( 12D ) );
-        assertThat( unboxTest( Character.class, char.class, 'a' ), equalTo( 'a' ) );
+        assertThat( unboxTest( Boolean.class, boolean.class, true ) ).isEqualTo( true );
+        assertThat( unboxTest( Boolean.class, boolean.class, false ) ).isEqualTo( false );
+        assertThat( unboxTest( Byte.class, byte.class, (byte) 12 ) ).isEqualTo( (byte) 12 );
+        assertThat( unboxTest( Short.class, short.class, (short) 12 ) ).isEqualTo( (short) 12 );
+        assertThat( unboxTest( Integer.class, int.class, 12 ) ).isEqualTo( 12 );
+        assertThat( unboxTest( Long.class, long.class, 12L ) ).isEqualTo( 12L );
+        assertThat( unboxTest( Float.class, float.class, 12F ) ).isEqualTo( 12F );
+        assertThat( unboxTest( Double.class, double.class, 12D ) ).isEqualTo( 12D );
+        assertThat( unboxTest( Character.class, char.class, 'a' ) ).isEqualTo( 'a' );
     }
 
     @Test
@@ -2424,7 +2420,7 @@ public abstract class CodeGenerationTest
 
         // then
         assertEquals( simpleClassName, instance.getClass().getSimpleName() );
-        assertThat( instance, instanceOf( NamedBase.class ) );
+        assertThat( instance ).isInstanceOf( NamedBase.class );
         assertEquals( "Pontus", ((NamedBase) instance).name );
         assertEquals( toValue, getField( instance, "toValue" ) );
     }
@@ -2471,11 +2467,6 @@ public abstract class CodeGenerationTest
         return instanceMethod( handle.newInstance(), "box", unboxedType ).invoke( value );
     }
 
-    private MethodHandle conditional( Function<CodeBlock,Expression> test, Parameter... params )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
     private static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception
     {
         return MethodHandles.lookup().unreflect( target.getMethod( name, parameters ) );
@@ -2498,11 +2489,6 @@ public abstract class CodeGenerationTest
 
     public static final String PACKAGE = "org.neo4j.codegen.test";
     private CodeGenerator generator;
-
-    ClassGenerator generateClass( String name, Class<?> firstInterface, Class<?>... more )
-    {
-        return generator.generateClass( PACKAGE, name, firstInterface, more );
-    }
 
     private ClassGenerator generateClass( Class<?> base, String name, Class<?>... interfaces )
     {

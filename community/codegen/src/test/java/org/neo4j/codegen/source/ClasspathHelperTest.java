@@ -28,11 +28,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Set;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathFor;
 import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathStringFor;
 
@@ -41,7 +37,7 @@ class ClasspathHelperTest
     @Test
     void shouldNotFailForNullClassLoader()
     {
-        assertThat( fullClasspathFor( null ), not( empty() ) );
+        assertThat( fullClasspathFor( null ) ).isNotEmpty();
     }
 
     @Test
@@ -54,7 +50,7 @@ class ClasspathHelperTest
         Set<String> elements = fullClasspathFor( loader );
 
         // Then
-        assertThat( elements, hasItems( pathTo( "file1" ), pathTo( "file2" ) ) );
+        assertThat( elements ).contains( pathTo( "file1" ), pathTo( "file2" ) );
     }
 
     @Test
@@ -68,7 +64,7 @@ class ClasspathHelperTest
         Set<String> elements = fullClasspathFor( child );
 
         // Then
-        assertThat( elements, hasItems( pathTo( "file1" ), pathTo( "file2" ), pathTo( "file3" ) ) );
+        assertThat( elements ).contains( pathTo( "file1" ), pathTo( "file2" ), pathTo( "file3" ) );
     }
 
     @Test
@@ -84,7 +80,7 @@ class ClasspathHelperTest
         Set<String> elements = fullClasspathFor( loader4 );
 
         // Then
-        assertThat( elements, hasItems( pathTo( "file1" ), pathTo( "file2" ), pathTo( "file3" ), pathTo( "file4" ) ) );
+        assertThat( elements ).contains( pathTo( "file1" ), pathTo( "file2" ), pathTo( "file3" ), pathTo( "file4" ) );
     }
 
     @Test
@@ -98,7 +94,7 @@ class ClasspathHelperTest
         String classpath = fullClasspathStringFor( child );
 
         // Then
-        assertThat( classpath, containsString( pathTo( "bar" ) + File.pathSeparator + pathTo( "foo" ) ) );
+        assertThat( classpath ).contains( pathTo( "bar" ) + File.pathSeparator + pathTo( "foo" ) );
     }
 
     private static URL[] urls( String... strings ) throws MalformedURLException

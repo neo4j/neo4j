@@ -28,8 +28,7 @@ import org.neo4j.codegen.CodeBlock;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CompilationFailureException;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.codegen.CodeGenerationTest.PACKAGE;
 import static org.neo4j.codegen.CodeGenerator.generateCode;
@@ -55,6 +54,6 @@ class ByteCodeVerifierTest
 
         CompilationFailureException exception =
                 assertThrows( CompilationFailureException.class, handle::loadClass );
-        assertThat( exception.toString(), containsString( "box(I)" )  );
+        assertThat( exception.toString() ).contains( "box(I)" );
     }
 }
