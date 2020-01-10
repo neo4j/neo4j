@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.interpreted
 
-import org.neo4j.cypher.internal.runtime.spec.COMMUNITY
+import org.neo4j.cypher.internal.runtime.spec.{COMMUNITY, LogicalQueryBuilder}
 import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
 import org.neo4j.cypher.internal.runtime.spec.tests._
 import org.neo4j.cypher.internal.{CommunityRuntimeContext, InterpretedRuntime}
@@ -50,6 +50,7 @@ class InterpretedProjectEndpointsTest extends ProjectEndpointsTestBase(COMMUNITY
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexContainsScanTest extends NodeIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedNodeIndexStartsWithSeekTest extends NodeIndexStartsWithSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexEndsWithScanTest extends NodeIndexEndsWithScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexSeekTest extends NodeIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                                    with NodeIndexSeekRangeAndCompositeTestBase[CommunityRuntimeContext]
