@@ -46,6 +46,7 @@ import org.neo4j.service.Services;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Comparator.comparingInt;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
@@ -222,7 +223,7 @@ public class RecordFormatSelector
 
     private static RecordFormats getConfiguredRecordFormat( Config config, DatabaseLayout databaseLayout )
     {
-        if ( databaseLayout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
+        if ( SYSTEM_DATABASE_NAME.equals( databaseLayout.getDatabaseName() ) )
         {
             // TODO: System database does not support multiple formats, remove this when it does!
             return null;

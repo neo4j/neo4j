@@ -31,6 +31,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.aligned.AlignedFormatFamily;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.internal.helpers.ArrayUtil.concat;
@@ -72,7 +73,7 @@ public class StoreFactory
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.recordFormats = recordFormats;
         this.cacheTracer = cacheTracer;
-        this.openOptions = buildOpenOptions( config, openOptions );
+        this.openOptions = buildOpenOptions( config, recordFormats, openOptions );
         this.logProvider = logProvider;
         this.pageCache = pageCache;
         configureRecordFormat( recordFormats, config );
@@ -134,8 +135,13 @@ public class StoreFactory
                 cacheTracer, storeTypes, openOptions );
     }
 
-    private static OpenOption[] buildOpenOptions( Config config, OpenOption[] openOptions )
+    private static OpenOption[] buildOpenOptions( Config config, RecordFormats recordFormats, OpenOption[] openOptions )
     {
+        // we need to modify options only for aligned format and aviod passing direct io option in all other cases
+        if ( recordFormats.getFormatFamily() != AlignedFormatFamily.INSTANCE )
+        {
+            return openOptions;
+        }
         if ( !config.get( GraphDatabaseSettings.pagecache_direct_io ) )
         {
             return openOptions;
