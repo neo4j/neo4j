@@ -180,7 +180,9 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         NameValidator.assertValidRoleName(roleName)
         val admin = Some(plans.AssertDbmsAdmin(CreateRoleAction))
         val source = ifExistsDo match {
-          case _: IfExistsReplace => Some(plans.DropRole(admin, roleName))
+          case _: IfExistsReplace =>
+            val checkFrozenRole = Some(plans.CheckFrozenRole(admin, roleName))
+            Some(plans.DropRole(checkFrozenRole, roleName))
           case _: IfExistsDoNothing => Some(plans.DoNothingIfExists(admin, "Role", roleName))
           case _ => admin
         }
@@ -191,7 +193,9 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         NameValidator.assertValidRoleName(roleName)
         val admin = Some(plans.AssertDbmsAdmin(CreateRoleAction))
         val source = ifExistsDo match {
-          case _: IfExistsReplace => Some(plans.DropRole(admin, roleName))
+          case _: IfExistsReplace =>
+            val checkFrozenRole = Some(plans.CheckFrozenRole(admin, roleName))
+            Some(plans.DropRole(checkFrozenRole, roleName))
           case _: IfExistsDoNothing => Some(plans.DoNothingIfExists(admin, "Role", roleName))
           case _ => admin
         }
