@@ -66,7 +66,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <lucene.version>8.2.0</lucene.version>
-    <bouncycastle.version>1.63</bouncycastle.version>
+    <bouncycastle.version>1.64</bouncycastle.version>
     <ThreadLeakageGuardExtension.PRINT_ONLY>false</ThreadLeakageGuardExtension.PRINT_ONLY>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <test.runner.jvm/>
@@ -1008,7 +1008,7 @@
       <dependency>
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-core</artifactId>
-        <version>1.4.1</version>
+        <version>1.4.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
@@ -1271,20 +1271,6 @@
           <exclusion>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <!-- Added (directly) to avoid version clash in commons-configuration. -->
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-digester3</artifactId>
-        <version>3.2</version>
-        <type>jar</type>
-        <scope>compile</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
