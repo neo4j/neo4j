@@ -22,6 +22,7 @@ package org.neo4j.configuration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,8 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -61,6 +60,7 @@ import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.test.AssumptionHelper.withoutReadPermissions;
 
 @TestDirectoryExtension
 class ConfigTest
@@ -465,13 +465,14 @@ class ConfigTest
         Log log = logProvider.getLog( Config.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
-        tryRemoveReadPermissions( confFile );
+        try ( Closeable ignored = withoutReadPermissions( confFile ) )
+        {
+            Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
 
-        Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
+            config.setLogger( log );
 
-        config.setLogger( log );
-
-        assertThat( logProvider ).containsMessages( "Unable to load config file [%s]" );
+            assertThat( logProvider ).containsMessages( "Unable to load config file [%s]" );
+        }
     }
 
     @Test
@@ -501,8 +502,10 @@ class ConfigTest
     {
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
-        tryRemoveReadPermissions( confFile );
-        assertThrows( IllegalArgumentException.class, () -> Config.emptyBuilder().fromFile( confFile ).build() );
+        try ( Closeable ignored = withoutReadPermissions( confFile ) )
+        {
+            assertThrows( IllegalArgumentException.class, () -> Config.emptyBuilder().fromFile( confFile ).build() );
+        }
     }
 
     @Test
@@ -752,17 +755,6 @@ class ConfigTest
         static final Setting<String> baseString = newBuilder( "test.default.dependency.base", DefaultParser, "base" ).immutable().build();
 
         static final Setting<String> dependingString = newBuilder( "test.default.dependency.dep", DefaultParser, null ).setDependency( baseString ).build();
-    }
-
-    /**
-     * Will try to set the file as not readable. There are cases, as {@link File#canRead()} states, where it returns true even if you remove
-     * the permissions, hence the extra check.
-     * @param file the file to remove permissions from.
-     */
-    private void tryRemoveReadPermissions( File file )
-    {
-        assumeTrue( file.setReadable( false ) );
-        assumeFalse( file.canRead() );
     }
 
 }
