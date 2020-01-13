@@ -209,12 +209,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService )
     {
+        this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.storageReader = storageEngine.newReader();
-        this.commandCreationContext = storageEngine.newCommandCreationContext();
+        this.commandCreationContext = storageEngine.newCommandCreationContext( pageCursorTracer );
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
@@ -222,7 +223,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = tracers.getDatabaseTracer();
         this.versionContextSupplier = versionContextSupplier;
         this.leaseService = leaseService;
-        this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
         this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );

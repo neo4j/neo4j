@@ -21,19 +21,20 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
-
 public class RelationshipGroupGetter
 {
     private final IdSequence idGenerator;
+    private final PageCursorTracer cursorTracer;
 
-    public RelationshipGroupGetter( IdSequence idGenerator )
+    public RelationshipGroupGetter( IdSequence idGenerator, PageCursorTracer cursorTracer )
     {
         this.idGenerator = idGenerator;
+        this.cursorTracer = cursorTracer;
     }
 
     public RelationshipGroupPosition getRelationshipGroup( NodeRecord node, int type,
@@ -65,14 +66,14 @@ public class RelationshipGroupGetter
     }
 
     public RecordProxy<RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
-            NodeRecord node, int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords  )
+            NodeRecord node, int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
     {
         RelationshipGroupPosition existingGroup = getRelationshipGroup( node, type, relGroupRecords );
         RecordProxy<RelationshipGroupRecord, Integer> change = existingGroup.group();
         if ( change == null )
         {
             assert node.isDense() : "Node " + node + " should have been dense at this point";
-            long id = idGenerator.nextId( TRACER_SUPPLIER.get() );
+            long id = idGenerator.nextId( cursorTracer );
             change = relGroupRecords.create( id, type );
             RelationshipGroupRecord record = change.forChangingData();
             record.setInUse( true );

@@ -44,7 +44,7 @@ public interface StorageEngine extends Lifecycle
      * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, long, TxStateVisitor.Decorator)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
-    CommandCreationContext newCommandCreationContext();
+    CommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer );
 
     /**
      * Adds an {@link IndexUpdateListener} which will receive streams of index updates from changes that gets

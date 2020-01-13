@@ -37,7 +37,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RelationshipCreator;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -63,6 +62,7 @@ import org.neo4j.test.extension.Inject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 class RelationshipCreatorTest
@@ -95,11 +95,11 @@ class RelationshipCreatorTest
         NeoStores neoStores = flipToNeoStores();
 
         Tracker tracker = new Tracker( neoStores, idGeneratorFactory );
-        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
+        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL );
         RelationshipCreator relationshipCreator = new RelationshipCreator( groupGetter, 5 );
 
         // WHEN
-        relationshipCreator.relationshipCreate( idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId( PageCursorTracer.NULL ), 0,
+        relationshipCreator.relationshipCreate( idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId( NULL ), 0,
                 nodeId, nodeId, tracker, tracker );
 
         // THEN

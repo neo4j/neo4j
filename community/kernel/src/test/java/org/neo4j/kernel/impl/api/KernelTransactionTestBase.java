@@ -38,6 +38,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
@@ -111,7 +112,7 @@ class KernelTransactionTestBase
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( storageEngine.newReader() ).thenReturn( storageReader );
-        when( storageEngine.newCommandCreationContext() ).thenReturn( commandCreationContext );
+        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ) ) ).thenReturn( commandCreationContext );
         when( storageEngine.transactionIdStore() ).thenReturn( transactionIdStore );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(

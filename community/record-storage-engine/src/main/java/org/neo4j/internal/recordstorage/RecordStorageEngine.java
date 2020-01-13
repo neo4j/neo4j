@@ -216,9 +216,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public RecordStorageCommandCreationContext newCommandCreationContext()
+    public RecordStorageCommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, cursorTracer );
     }
 
     @Override

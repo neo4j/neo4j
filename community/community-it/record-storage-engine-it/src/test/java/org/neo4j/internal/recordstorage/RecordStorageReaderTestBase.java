@@ -61,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
@@ -107,7 +108,7 @@ public abstract class RecordStorageReaderTestBase
         this.storageEngine = builder.build();
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
-        this.commitContext = storageEngine.newCommandCreationContext();
+        this.commitContext = storageEngine.newCommandCreationContext( NULL );
         storageEngineRule.before();
     }
 

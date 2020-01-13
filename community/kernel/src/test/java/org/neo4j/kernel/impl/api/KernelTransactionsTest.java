@@ -47,6 +47,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -636,7 +637,7 @@ class KernelTransactionsTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.newReader() ).thenReturn( firstReader, otherReaders );
-        when( storageEngine.newCommandCreationContext() ).thenReturn( mock( CommandCreationContext.class ) );
+        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ) ) ).thenReturn( mock( CommandCreationContext.class ) );
         doAnswer( invocation ->
         {
             Collection<StorageCommand> argument = invocation.getArgument( 0 );

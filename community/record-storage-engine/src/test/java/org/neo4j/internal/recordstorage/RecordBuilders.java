@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 /** Test utility DSL for creating store records */
 public class RecordBuilders
 {
@@ -227,7 +229,7 @@ public class RecordBuilders
             {
                 throw new UnsupportedOperationException();
             }
-        } );
+        }, NULL );
     }
 
     private static class Loader<T extends AbstractBaseRecord, E> implements RecordAccess.Loader<T,E>

@@ -51,7 +51,7 @@ public class RelationshipCreator
      * @param secondNodeId The id of the end node.
      */
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId,
-            RecordAccessSet recordChangeSet, ResourceLocker locks )
+            RecordAccessSet recordChangeSet, ResourceLocker locks)
     {
         // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
         NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();
@@ -157,8 +157,8 @@ public class RelationshipCreator
             RecordAccess<RelationshipRecord, Void> relRecords,
             RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
-        RelationshipGroupRecord group =
-                relGroupGetter.getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
+        var relationshipGroup = relGroupGetter.getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords );
+        RelationshipGroupRecord group = relationshipGroup.forChangingData();
         DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, node );
         long nextRel = dir.getNextRel( group );
         setCorrectNextRel( node, rel, nextRel );

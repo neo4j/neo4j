@@ -336,7 +336,7 @@ class BatchingNeoStoresTest
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
-            CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
+            CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( NULL );
             propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
             labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );

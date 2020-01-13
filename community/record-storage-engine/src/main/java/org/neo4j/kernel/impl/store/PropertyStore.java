@@ -56,7 +56,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
@@ -338,7 +337,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else
         {
-            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePointsAndTemporal ) );
+            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePointsAndTemporal, cursorTracer ) );
         }
     }
 
@@ -409,12 +408,16 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         private final int keyId;
         private final DynamicRecordAllocator stringAllocator;
         private final boolean allowStorePointsAndTemporal;
-        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePointsAndTemporal )
+        private final PageCursorTracer cursorTracer;
+
+        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePointsAndTemporal,
+                PageCursorTracer cursorTracer )
         {
             this.block = block;
             this.keyId = keyId;
             this.stringAllocator = stringAllocator;
             this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
+            this.cursorTracer = cursorTracer;
         }
 
         @Override
@@ -490,7 +493,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             // Fall back to dynamic string store
             byte[] encodedString = encodeString( value );
             List<DynamicRecord> valueRecords = new ArrayList<>();
-            allocateStringRecords( valueRecords, encodedString, stringAllocator, TRACER_SUPPLIER.get() );
+            allocateStringRecords( valueRecords, encodedString, stringAllocator, cursorTracer );
             setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {

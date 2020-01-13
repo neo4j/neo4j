@@ -42,7 +42,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -68,6 +67,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -154,14 +154,14 @@ public class IndexWorkSyncTransactionApplicationStressIT
             this.index = index;
             NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
-            this.commandCreationContext = storageEngine.newCommandCreationContext();
+            this.commandCreationContext = storageEngine.newCommandCreationContext( NULL );
         }
 
         @Override
         public void run()
         {
             try ( StorageReader reader = storageEngine.newReader();
-                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext() )
+                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( NULL ) )
             {
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {
@@ -191,7 +191,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private TransactionToApply createNodeAndProperty( int progress, StorageReader reader, CommandCreationContext creationContext ) throws Exception
         {
             TransactionState txState = new TxState();
-            long nodeId = nodeIds.nextId( PageCursorTracer.NULL );
+            long nodeId = nodeIds.nextId( NULL );
             txState.nodeDoCreate( nodeId );
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );

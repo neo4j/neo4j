@@ -50,6 +50,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -82,7 +83,7 @@ class RelationshipGroupGetterTest
             store.updateRecord( group4 );
             store.updateRecord( group10 );
             store.updateRecord( group23 );
-            RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store );
+            RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store, NULL );
             NodeRecord node = new NodeRecord( 0, true, group2.getId(), -1 );
 
             // WHEN trying to find relationship group 7
