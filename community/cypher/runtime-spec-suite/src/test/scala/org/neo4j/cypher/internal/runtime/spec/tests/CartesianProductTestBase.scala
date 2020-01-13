@@ -492,8 +492,6 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(rowCount(limitCount))
   }
 
-  // These tests are ignored because expand fused over pipelines is broken.
-
   test("should support cartesian product with hash-join on RHS") {
     // given
     val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }

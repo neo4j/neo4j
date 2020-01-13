@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
+import scala.collection.JavaConverters._
+
 abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
                                                               edition: Edition[CONTEXT],
                                                               runtime: CypherRuntime[CONTEXT],
@@ -162,6 +164,70 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("n", "m").withRows(Array(Array(1, 2), Array(2, 1)))
+  }
+
+  test("cross apply after expand on rhs") {
+    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .crossApply()
+      .|.expandInto("(y)--(x)")
+      .|.allNodeScan("y", "x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expectedResultRows = for {
+      x <- nodes
+      y <- unfilteredNodes
+      rel <- y.getRelationships.asScala if rel.getOtherNode(y) == x
+    } yield Array(x, y)
+
+    runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
+  }
+
+  test("cross apply with limit on rhs") {
+    val limit = 10
+
+    val unfilteredNodes = given {
+      val size = 100
+      val nodes = nodeGraph(size)
+      randomlyConnect(nodes, Connectivity(1, limit, "REL"))
+      nodes
+    }
+
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .crossApply()
+      .|.limit(limit)
+      .|.expandInto("(y)--(x)")
+      .|.allNodeScan("y", "x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expectedRowCounts = for {
+      x <- nodes
+      subquery = for {
+        y <- unfilteredNodes
+        rel <- y.getRelationships.asScala if rel.getOtherNode(y) == x
+      } yield Array(x, y)
+    } yield math.min(subquery.size, limit)
+
+    val expectedRowCount = expectedRowCounts.sum
+    runtimeResult should beColumns("x", "y").withRows(rowCount(expectedRowCount))
   }
 
 }
