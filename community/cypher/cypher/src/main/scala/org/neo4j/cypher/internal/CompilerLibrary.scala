@@ -39,7 +39,7 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
                      cypherPlanner: CypherPlannerOption,
                      cypherRuntime: CypherRuntimeOption,
                      cypherUpdateStrategy: CypherUpdateStrategy): Compiler = {
-    val key = CompilerKey(cypherPlanner, cypherRuntime, cypherUpdateStrategy)
+    val key = CompilerKey(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
     compilers.computeIfAbsent(key, ignore => factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, executionEngineProvider))
   }
 
@@ -55,7 +55,8 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
     else 0
   }
 
-  case class CompilerKey(cypherPlanner: CypherPlannerOption,
+  case class CompilerKey(cypherVersion: CypherVersion,
+                         cypherPlanner: CypherPlannerOption,
                          cypherRuntime: CypherRuntimeOption,
                          cypherUpdateStrategy: CypherUpdateStrategy)
 }
