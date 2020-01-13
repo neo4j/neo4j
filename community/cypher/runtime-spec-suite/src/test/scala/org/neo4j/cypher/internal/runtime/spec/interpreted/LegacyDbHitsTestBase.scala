@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.interpreted
 
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileDbHitsTestBase
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 object LegacyDbHitsTestBase {
   final val costOfExpandGetRelCursor: Long = 1 // to get the rel cursor

@@ -21,9 +21,12 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.Collections
 
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
                                                                       edition: Edition[CONTEXT],
@@ -341,7 +344,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("countStar", "count", "avg", "collect", "max", "min", "sum")
-        .withSingleRow(1, 1, 1, Collections.singletonList(1), 1, 1, 1)
+      .withSingleRow(1, 1, 1, Collections.singletonList(1), 1, 1, 1)
   }
 
   test("should keep input order") {

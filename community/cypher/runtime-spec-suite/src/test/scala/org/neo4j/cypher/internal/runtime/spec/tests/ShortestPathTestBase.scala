@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util
 
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.graphdb.Direction.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.TestPath
+import org.neo4j.graphdb.Direction.INCOMING
+import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.graphdb.Label
 
 abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](

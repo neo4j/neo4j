@@ -19,35 +19,38 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                 runtime: CypherRuntime[CONTEXT],
                                                                 sizeHint: Int
-                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-    test("should support simple hash join between two identifiers") {
-      // given
-      val nodes = given {
-        nodePropertyGraph(sizeHint, {
-          case i => Map("prop" -> i)
-        })
-      }
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("a", "b")
-        .valueHashJoin("a.prop=b.prop")
-        .|.allNodeScan("b")
-        .allNodeScan("a")
-        .build()
-      val runtimeResult = execute(logicalQuery, runtime)
-
-      // then
-      val expected = nodes.map(n => Array(n, n))
-      runtimeResult should beColumns("a", "b").withRows(expected)
+  test("should support simple hash join between two identifiers") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
     }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .valueHashJoin("a.prop=b.prop")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n))
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
 
   test("should handle additional data when joining on two identifiers") {
     // given

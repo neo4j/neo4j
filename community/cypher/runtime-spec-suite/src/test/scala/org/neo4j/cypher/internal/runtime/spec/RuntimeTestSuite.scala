@@ -22,33 +22,52 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
-import org.neo4j.cypher.internal.logical.builder.Resolver
-import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
-import org.neo4j.cypher.internal.runtime.debug.DebugLog
-import org.neo4j.cypher.internal.runtime.{InputDataStream, InputDataStreamTestSupport, NoInput, QueryStatistics}
-import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.util.{Rewriter, topDown}
+import org.neo4j.cypher.internal.logical.builder.Resolver
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
+import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.debug.DebugLog
+import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.{CypherRuntime, ExecutionPlan, LogicalQuery, RuntimeContext}
+import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.graphdb._
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
-import org.neo4j.kernel.impl.query.{QuerySubscriber, RecordingQuerySubscriber}
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.{AssertableLogProvider, LogProvider}
+import org.neo4j.logging.AssertableLogProvider
+import org.neo4j.logging.LogProvider
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.scalactic.Equality
+import org.scalactic.TolerantNumerics
 import org.scalactic.source.Position
-import org.scalactic.{Equality, TolerantNumerics}
-import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.{BeforeAndAfterEach, Tag}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.Tag
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -57,13 +76,13 @@ object RuntimeTestSuite {
 }
 
 /**
-  * Contains helpers, matchers and graph handling to support runtime acceptance test,
-  * meaning tests where the query is
-  *
-  *  - specified as a logical plan
-  *  - executed on a real database
-  *  - evaluated by it's results
-  */
+ * Contains helpers, matchers and graph handling to support runtime acceptance test,
+ * meaning tests where the query is
+ *
+ *  - specified as a logical plan
+ *  - executed on a real database
+ *  - evaluated by it's results
+ */
 abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                            val runtime: CypherRuntime[CONTEXT],
                                                            workloadMode: Boolean = false)
@@ -183,7 +202,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     for {thing <- things if rng.nextDouble() < selectivity
          dup <- if (rng.nextDouble() < duplicateProbability) Seq(thing, thing) else Seq(thing)
          nullifiedDup = if (rng.nextDouble() < nullProbability) null.asInstanceOf[X] else dup
-    } yield nullifiedDup
+         } yield nullifiedDup
   }
 
   // EXECUTE
@@ -228,7 +247,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
                                        runtime: CypherRuntime[CONTEXT]
-             ): IndexedSeq[Array[AnyValue]] = {
+                                      ): IndexedSeq[Array[AnyValue]] = {
     val subscriber = new RecordingQuerySubscriber
     runtimeTestSupport.runTransactionally(logicalQuery, runtime, NoInput, (_, result) => {
       val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
@@ -315,122 +334,122 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {
-      for (_ <- 0 until nNodes) yield {
-        tx.createNode(labels.map(Label.label): _*)
-      }
+    for (_ <- 0 until nNodes) yield {
+      tx.createNode(labels.map(Label.label): _*)
+    }
   }
 
   /**
-    * Create n disjoint chain graphs, where one is a chain of nodes connected
-    * by relationships of the given types. The initial node will have the label
-    * :START, and the last node the label :END. Note that relationships with a type
-    * starting with `FRO` will be created in reverse direction, allowing convenient
-    * creation of chains with varying relationship direction.
-    */
+   * Create n disjoint chain graphs, where one is a chain of nodes connected
+   * by relationships of the given types. The initial node will have the label
+   * :START, and the last node the label :END. Note that relationships with a type
+   * starting with `FRO` will be created in reverse direction, allowing convenient
+   * creation of chains with varying relationship direction.
+   */
   def chainGraphs(nChains: Int, relTypeNames: String*): IndexedSeq[TestPath] = {
-      val relTypes = relTypeNames.map(RelationshipType.withName)
-      val startLabel = Label.label("START")
-      val endLabel = Label.label("END")
-      for (_ <- 0 until nChains) yield {
-        val head = tx.createNode(startLabel)
-        var previous: Node = head
-        val relationships =
-          for (relType <- relTypes) yield {
-            val n =
-              if (relType == relTypes.last)
-                tx.createNode(endLabel)
-              else
-                tx.createNode()
+    val relTypes = relTypeNames.map(RelationshipType.withName)
+    val startLabel = Label.label("START")
+    val endLabel = Label.label("END")
+    for (_ <- 0 until nChains) yield {
+      val head = tx.createNode(startLabel)
+      var previous: Node = head
+      val relationships =
+        for (relType <- relTypes) yield {
+          val n =
+            if (relType == relTypes.last)
+              tx.createNode(endLabel)
+            else
+              tx.createNode()
 
-            val r =
-              if (relType.name().startsWith("FRO")) {
-                n.createRelationshipTo(previous, relType)
-              } else {
-                previous.createRelationshipTo(n, relType)
-              }
-            previous = n
-            r
-          }
-        TestPath(head, relationships)
-      }
-  }
-
-  /**
-    * Create a lollipop graph:
-    *
-    *             -[r1:R]->
-    *   (n1:START)         (n2)-[r3:R]->(n3)
-    *             -[r2:R]->
-    */
-  def lollipopGraph(): (Seq[Node], Seq[Relationship]) = {
-      val n1 = tx.createNode(Label.label("START"))
-      val n2 = tx.createNode()
-      val n3 = tx.createNode()
-      val relType = RelationshipType.withName("R")
-      val r1 = n1.createRelationshipTo(n2, relType)
-      val r2 = n1.createRelationshipTo(n2, relType)
-      val r3 = n2.createRelationshipTo(n3, relType)
-      (Seq(n1, n2, n3), Seq(r1, r2, r3))
-  }
-
-  /**
-    * Create a sine graph:
-    *
-    *       <- sc1 <- sc2 <- sc3 <-
-    *       +>    sb1 +> sb2     +>
-    *       ->        sa1        ->
-    * start ----------------------> middle <---------------------- end
-    *                                      ->        ea1        ->
-    *                                      +>    eb1 +> eb2     +>
-    *                                      -> ec1 -> ec2 -> ec3 ->
-    *
-    * where
-    *   start has label :START
-    *   middle has label :MIDDLE
-    *   end has label :END
-    *   -> has type :A
-    *   +> has type :B
-    */
-  def sineGraph(): SineGraph = {
-      val start = tx.createNode(Label.label("START"))
-      val middle = tx.createNode(Label.label("MIDDLE"))
-      val end = tx.createNode(Label.label("END"))
-
-      val A = RelationshipType.withName("A")
-      val B = RelationshipType.withName("B")
-
-      def chain(relType: RelationshipType, nodes: Node*): Unit = {
-        for (i <- 0 until nodes.length-1) {
-          nodes(i).createRelationshipTo(nodes(i+1), relType)
+          val r =
+            if (relType.name().startsWith("FRO")) {
+              n.createRelationshipTo(previous, relType)
+            } else {
+              previous.createRelationshipTo(n, relType)
+            }
+          previous = n
+          r
         }
+      TestPath(head, relationships)
+    }
+  }
+
+  /**
+   * Create a lollipop graph:
+   *
+   *             -[r1:R]->
+   *   (n1:START)         (n2)-[r3:R]->(n3)
+   *             -[r2:R]->
+   */
+  def lollipopGraph(): (Seq[Node], Seq[Relationship]) = {
+    val n1 = tx.createNode(Label.label("START"))
+    val n2 = tx.createNode()
+    val n3 = tx.createNode()
+    val relType = RelationshipType.withName("R")
+    val r1 = n1.createRelationshipTo(n2, relType)
+    val r2 = n1.createRelationshipTo(n2, relType)
+    val r3 = n2.createRelationshipTo(n3, relType)
+    (Seq(n1, n2, n3), Seq(r1, r2, r3))
+  }
+
+  /**
+   * Create a sine graph:
+   *
+   *       <- sc1 <- sc2 <- sc3 <-
+   *       +>    sb1 +> sb2     +>
+   *       ->        sa1        ->
+   * start ----------------------> middle <---------------------- end
+   *                                      ->        ea1        ->
+   *                                      +>    eb1 +> eb2     +>
+   *                                      -> ec1 -> ec2 -> ec3 ->
+   *
+   * where
+   *   start has label :START
+   *   middle has label :MIDDLE
+   *   end has label :END
+   *   -> has type :A
+   *   +> has type :B
+   */
+  def sineGraph(): SineGraph = {
+    val start = tx.createNode(Label.label("START"))
+    val middle = tx.createNode(Label.label("MIDDLE"))
+    val end = tx.createNode(Label.label("END"))
+
+    val A = RelationshipType.withName("A")
+    val B = RelationshipType.withName("B")
+
+    def chain(relType: RelationshipType, nodes: Node*): Unit = {
+      for (i <- 0 until nodes.length-1) {
+        nodes(i).createRelationshipTo(nodes(i+1), relType)
       }
+    }
 
-      val startMiddle = start.createRelationshipTo(middle, A)
-      val endMiddle = end.createRelationshipTo(middle, A)
+    val startMiddle = start.createRelationshipTo(middle, A)
+    val endMiddle = end.createRelationshipTo(middle, A)
 
-      val sa1 = tx.createNode()
-      val sb1 = tx.createNode()
-      val sb2 = tx.createNode()
-      val sc1 = tx.createNode()
-      val sc2 = tx.createNode()
-      val sc3 = tx.createNode()
+    val sa1 = tx.createNode()
+    val sb1 = tx.createNode()
+    val sb2 = tx.createNode()
+    val sc1 = tx.createNode()
+    val sc2 = tx.createNode()
+    val sc3 = tx.createNode()
 
-      chain(A, start, sa1, middle)
-      chain(B, start, sb1, sb2, middle)
-      chain(A, middle, sc3, sc2, sc1, start)
+    chain(A, start, sa1, middle)
+    chain(B, start, sb1, sb2, middle)
+    chain(A, middle, sc3, sc2, sc1, start)
 
-      val ea1 = tx.createNode()
-      val eb1 = tx.createNode()
-      val eb2 = tx.createNode()
-      val ec1 = tx.createNode()
-      val ec2 = tx.createNode()
-      val ec3 = tx.createNode()
+    val ea1 = tx.createNode()
+    val eb1 = tx.createNode()
+    val eb2 = tx.createNode()
+    val ec1 = tx.createNode()
+    val ec2 = tx.createNode()
+    val ec3 = tx.createNode()
 
-      chain(A, middle, ea1, end)
-      chain(B, middle, eb1, eb2, end)
-      chain(A, middle, ec1, ec2, ec3, end)
+    chain(A, middle, ea1, end)
+    chain(B, middle, eb1, eb2, end)
+    chain(A, middle, ec1, ec2, ec3, end)
 
-      SineGraph(start, middle, end, sa1, sb1, sb2, sc1, sc2, sc3, ea1, eb1, eb2, ec1, ec2, ec3, startMiddle, endMiddle)
+    SineGraph(start, middle, end, sa1, sb1, sb2, sc1, sc2, sc3, ea1, eb1, eb2, ec1, ec2, ec3, startMiddle, endMiddle)
   }
 
   def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
@@ -440,12 +459,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       }
 
     val rels = new ArrayBuffer[Relationship]
-      val rType = RelationshipType.withName("R")
-      for (i <- 0 until nNodes) {
-        val a = nodes(i)
-        val b = nodes((i + 1) % nNodes)
-        rels += a.createRelationshipTo(b, rType)
-      }
+    val rType = RelationshipType.withName("R")
+    for (i <- 0 until nNodes) {
+      val a = nodes(i)
+      val b = nodes((i + 1) % nNodes)
+      rels += a.createRelationshipTo(b, rType)
+    }
     (nodes, rels)
   }
 
@@ -457,52 +476,52 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val center = tx.createNode(Label.label(labelCenter))
 
     val rels = new ArrayBuffer[Relationship]
-      val rType = RelationshipType.withName("R")
-      for (i <- 0 until ringSize) {
-        val a = ring(i)
-        rels += a.createRelationshipTo(center, rType)
-      }
+    val rType = RelationshipType.withName("R")
+    for (i <- 0 until ringSize) {
+      val a = ring(i)
+      rels += a.createRelationshipTo(center, rType)
+    }
     (ring :+ center, rels)
   }
 
   case class Connectivity(atLeast: Int, atMost: Int, relType: String)
 
   /**
-    * All outgoing relationships of a node
-    * @param from the start node
-    * @param connections the end nodes rels, grouped by rel type
-    */
+   * All outgoing relationships of a node
+   * @param from the start node
+   * @param connections the end nodes rels, grouped by rel type
+   */
   case class NodeConnections(from: Node, connections: Map[String, Seq[Node]])
 
   /**
-    * Randomly connect nodes.
-    * @param nodes all nodes to connect.
-    * @param connectivities a definition of how many rels of which rel type to create for each node.
-    * @return all actually created connections, grouped by start node.
-    */
+   * Randomly connect nodes.
+   * @param nodes all nodes to connect.
+   * @param connectivities a definition of how many rels of which rel type to create for each node.
+   * @return all actually created connections, grouped by start node.
+   */
   def randomlyConnect(nodes: Seq[Node], connectivities: Connectivity*): Seq[NodeConnections] = {
     val random = new Random(12345)
-      for (from <- nodes) yield {
-        val source = tx.getNodeById(from.getId)
-        val relationshipsByType =
-          for {
-            c <- connectivities
-            numConnections = random.nextInt(c.atMost - c.atLeast) + c.atLeast
-            if numConnections > 0
-          } yield {
-            val relType = RelationshipType.withName(c.relType)
+    for (from <- nodes) yield {
+      val source = tx.getNodeById(from.getId)
+      val relationshipsByType =
+        for {
+          c <- connectivities
+          numConnections = random.nextInt(c.atMost - c.atLeast) + c.atLeast
+          if numConnections > 0
+        } yield {
+          val relType = RelationshipType.withName(c.relType)
 
-            val endNodes =
-              for (_ <- 0 until numConnections) yield {
-                val to = tx.getNodeById(nodes(random.nextInt(nodes.length)).getId)
-                source.createRelationshipTo(to, relType)
-                to
-              }
-            (c.relType, endNodes)
-          }
+          val endNodes =
+            for (_ <- 0 until numConnections) yield {
+              val to = tx.getNodeById(nodes(random.nextInt(nodes.length)).getId)
+              source.createRelationshipTo(to, relType)
+              to
+            }
+          (c.relType, endNodes)
+        }
 
-        NodeConnections(source, relationshipsByType.toMap)
-      }
+      NodeConnections(source, relationshipsByType.toMap)
+    }
   }
 
   def nodePropertyGraph(nNodes: Int, properties: PartialFunction[Int, Map[String, Any]], labels: String*): Seq[Node] = {

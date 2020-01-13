@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.InputDataStream
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.TimeLimitedCypherTest
 import org.neo4j.exceptions.TransactionOutOfMemoryException
 import org.neo4j.kernel.impl.util.ValueUtils
 
@@ -47,39 +52,39 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   }
 
   /**
-    * Infinite iterator.
-    *
-    * @param rowSize the size of a row in Bytes
-    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
-    */
+   * Infinite iterator.
+   *
+   * @param rowSize the size of a row in Bytes
+   * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
+   */
   protected def infiniteInput(rowSize: Long, data: Any*): InputDataStream = {
     iteratorInput(iterate(data.toArray, None, nodeInput = false, rowSize))
   }
 
   /**
-    * Infinite iterator.
-    *
-    * @param rowSize the size of a row in Bytes
-    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns node values.
-    */
+   * Infinite iterator.
+   *
+   * @param rowSize the size of a row in Bytes
+   * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns node values.
+   */
   protected def infiniteNodeInput(rowSize: Long, data: Any*): InputDataStream = {
     iteratorInput(iterate(data.toArray, None, nodeInput = true, rowSize))
   }
 
   /**
-    * Finite iterator.
-    *
-    * @param limit the iterator will be exhausted after the given amount of rows
-    * @param data  an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
-    */
+   * Finite iterator.
+   *
+   * @param limit the iterator will be exhausted after the given amount of rows
+   * @param data  an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
+   */
   protected def finiteInput(limit: Int, data: Any*): InputDataStream = {
     iteratorInput(iterate(data.toArray, Some(limit), nodeInput = false, -1))
   }
 
   /**
-    * Determine after how many rows to kill the query and fail the test, given the size of a row in the operator under test.
-    * @param rowSize the size of a row in Bytes.
-    */
+   * Determine after how many rows to kill the query and fail the test, given the size of a row in the operator under test.
+   * @param rowSize the size of a row in Bytes.
+   */
   protected def killAfterNRows(rowSize: Long): Long = {
     MemoryManagementTestBase.maxMemory / rowSize + 10 // An extra of 10 rows to account for mis-estimation and batching
   }
@@ -95,8 +100,8 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   case object E_NODE_VALUE extends ValueToEstimate
 
   /**
-    * Estimate the size of an object after converting it into a Neo4j value.
-    */
+   * Estimate the size of an object after converting it into a Neo4j value.
+   */
   protected def estimateSize(data: ValueToEstimate): Long = {
     data match {
       case E_INT => ValueUtils.of(0).estimatedHeapUsage()
@@ -107,14 +112,14 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   }
 
   /**
-    * Create an iterator.
-    *
-    * @param data      an optionally empty array. If non-empty, it will be returned in every call to `next`
-    * @param limit     if defined, the iterator will be exhausted after the given amount of rows
-    * @param nodeInput if true, and data is empty, the iterator returns node values.
-    *                  If false, and data is empty, the iterator returns integer values.
-    * @param rowSize   the size of a row in the operator under test. This value determines when to fail the test if the query is not killed soon enough.
-    */
+   * Create an iterator.
+   *
+   * @param data      an optionally empty array. If non-empty, it will be returned in every call to `next`
+   * @param limit     if defined, the iterator will be exhausted after the given amount of rows
+   * @param nodeInput if true, and data is empty, the iterator returns node values.
+   *                  If false, and data is empty, the iterator returns integer values.
+   * @param rowSize   the size of a row in the operator under test. This value determines when to fail the test if the query is not killed soon enough.
+   */
   protected def iterate(data: Array[Any],
                         limit: Option[Int],
                         nodeInput: Boolean,
@@ -481,8 +486,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 }
 
 /**
-  * Tests for runtime with full language support
-  */
+ * Tests for runtime with full language support
+ */
 trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
   self: MemoryManagementTestBase[CONTEXT] =>
 

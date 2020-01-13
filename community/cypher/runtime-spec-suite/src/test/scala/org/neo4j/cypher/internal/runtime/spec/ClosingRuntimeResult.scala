@@ -22,10 +22,13 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.lang
 import java.util.Optional
 
-import org.neo4j.cypher.internal.runtime.{QueryStatistics, ResourceManager}
-import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 /**
   * This is needed for tests, because closing is usually handled in org.neo4j.cypher.internal.result.ClosingExecutionResult,
@@ -93,7 +96,7 @@ class ClosingRuntimeResult(inner: RuntimeResult,
     if (_pageCacheHits == -1L)
       _pageCacheHits = txContext.kernelStatisticProvider().getPageCacheHits
     if (_pageCacheMisses == -1L)
-    _pageCacheMisses = txContext.kernelStatisticProvider().getPageCacheMisses
+      _pageCacheMisses = txContext.kernelStatisticProvider().getPageCacheMisses
 
     resourceManager.close()
     assertAllReleased()

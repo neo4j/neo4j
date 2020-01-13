@@ -21,15 +21,26 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, Rows, RowsMatcher, RuntimeTestSuite, _}
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.Rows
+import org.neo4j.cypher.internal.runtime.spec.RowsMatcher
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.TestPath
 import org.neo4j.exceptions.ArithmeticException
-import org.neo4j.kernel.impl.util.{NodeEntityWrappingNodeValue, RelationshipEntityWrappingValue}
+import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
+import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{NodeReference, RelationshipReference}
+import org.neo4j.values.virtual.NodeReference
+import org.neo4j.values.virtual.RelationshipReference
 
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+
+import scala.concurrent.ExecutionContext.global
 
 abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                        runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
@@ -42,7 +53,6 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .build()
 
     // when
-    import scala.concurrent.ExecutionContext.global
     val futureResult = Future(consume(execute(logicalQuery, runtime, inputValues(Array(1)))))(global)
 
     // then
@@ -65,7 +75,6 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .build()
 
     // when
-    import scala.concurrent.ExecutionContext.global
     val futureResult = Future(consume(execute(logicalQuery, runtime)))(global)
 
     // then

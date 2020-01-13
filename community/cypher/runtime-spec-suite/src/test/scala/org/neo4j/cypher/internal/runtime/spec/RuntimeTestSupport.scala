@@ -20,12 +20,26 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.CypherConfiguration
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.MasterCompiler
+import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.internal.ResourceManagerFactory
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.NormalMode
+import org.neo4j.cypher.internal.runtime.ProfileMode
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
@@ -34,16 +48,18 @@ import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.VirtualValues
 
 /**
-  * This class contains various ugliness needed to perform physical compilation
-  * and then execute a query.
-  */
+ * This class contains various ugliness needed to perform physical compilation
+ * and then execute a query.
+ */
 class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
                                                     val edition: Edition[CONTEXT],
                                                     val workloadMode: Boolean,

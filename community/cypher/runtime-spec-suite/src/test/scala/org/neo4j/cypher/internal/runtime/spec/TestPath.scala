@@ -19,16 +19,20 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.{lang, util}
+import java.lang
+import java.util
 
-import org.neo4j.graphdb.{Entity, Node, Path, Relationship}
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
+
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 /**
-  * Test org.neo4j.graphdb.Path implementation, used for runtime spec suite assertions.
-  */
+ * Test org.neo4j.graphdb.Path implementation, used for runtime spec suite assertions.
+ */
 case class TestPath(override val startNode: Node, _relationships: Seq[Relationship]) extends Path {
-
-  import scala.collection.JavaConverters._
 
   private val _nodes =
     _relationships.foldLeft(List(startNode))((nodes, r) => r.getOtherNode(nodes.head) :: nodes).reverse

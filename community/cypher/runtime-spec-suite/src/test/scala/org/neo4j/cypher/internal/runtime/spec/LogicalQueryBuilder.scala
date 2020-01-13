@@ -20,18 +20,20 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
-import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.logical.builder.{AbstractLogicalPlanBuilder, Resolver}
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
+import org.neo4j.cypher.internal.logical.builder.Resolver
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Default
 
 /**
-  * Test help utility for hand-writing logical queries.
-  */
+ * Test help utility for hand-writing logical queries.
+ */
 class LogicalQueryBuilder(tokenResolver: Resolver)
   extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver) {
 

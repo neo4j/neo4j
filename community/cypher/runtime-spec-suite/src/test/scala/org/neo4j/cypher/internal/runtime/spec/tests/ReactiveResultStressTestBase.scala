@@ -19,13 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseSettings.{cypher_pipelined_batch_size_big, cypher_pipelined_batch_size_small, cypher_worker_count}
-import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultStressTestBase.{MORSEL_SIZE, WORKERS}
-import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
-import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
+import org.neo4j.configuration.GraphDatabaseSettings.cypher_pipelined_batch_size_big
+import org.neo4j.configuration.GraphDatabaseSettings.cypher_pipelined_batch_size_small
+import org.neo4j.configuration.GraphDatabaseSettings.cypher_worker_count
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultStressTestBase.MORSEL_SIZE
+import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultStressTestBase.WORKERS
 import org.scalatest.concurrent.Eventually
 
 import scala.util.Random
+
 object ReactiveResultStressTestBase {
   val MORSEL_SIZE = 17
   val WORKERS = 13

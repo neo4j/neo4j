@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-class RowsMatcherTest extends CypherFunSuite with TestName
-{
+class RowsMatcherTest extends CypherFunSuite with TestName  {
   test("AnyRowsMatcher") {
     AnyRowsMatcher.matches(Array[String](), NO_ROWS) should be(true)
     AnyRowsMatcher.matches(Array("a"), NO_ROWS) should be(true)

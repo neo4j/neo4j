@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
-  edition: Edition[CONTEXT],
-  runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                                   edition: Edition[CONTEXT],
+                                                                   runtime: CypherRuntime[CONTEXT],
+                                                                   sizeHint: Int
+                                                                 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should not explode on cached properties") {
     // given

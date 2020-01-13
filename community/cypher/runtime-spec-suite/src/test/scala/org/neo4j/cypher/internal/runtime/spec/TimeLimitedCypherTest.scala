@@ -20,8 +20,11 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.scalatest.concurrent.{Signaler, ThreadSignaler, TimeLimitedTests}
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.concurrent.Signaler
+import org.scalatest.concurrent.ThreadSignaler
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.Minutes
+import org.scalatest.time.Span
 
 /**
  * Limits tests in a class to 5 minutes.

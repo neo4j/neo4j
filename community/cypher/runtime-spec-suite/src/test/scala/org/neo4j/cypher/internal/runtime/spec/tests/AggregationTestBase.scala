@@ -24,15 +24,22 @@ import java.time.temporal.ChronoUnit
 import java.util.Collections
 
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
-import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Values}
+import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.StringValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
-import scala.collection.JavaConverters._
 import scala.util.Random
+
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],

@@ -19,9 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.logical.plans.{GetValue, IndexOrderAscending, IndexOrderDescending, ManyQueryExpression}
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.RelationshipType
 
 // Supported by all runtimes
@@ -165,7 +171,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val nodes = given {
       index("Honey", "prop")
       nodeGraph(5, "Milk")
-       nodePropertyGraph(sizeHint, {
+      nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
       }, "Honey")
     }

@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.EntityNotFoundException
-import org.neo4j.graphdb.{Label, Node, Relationship}
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 
 abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                              runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {

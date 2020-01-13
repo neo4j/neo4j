@@ -19,12 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.graphdb.{Node, RelationshipType}
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 
 import scala.util.Random
 
@@ -788,10 +793,10 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected =
-    for {
-      path <- paths
-      length <- 0 to 5
-    } yield Array(path.startNode, path.take(length).endNode())
+      for {
+        path <- paths
+        length <- 0 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 

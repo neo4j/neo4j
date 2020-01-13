@@ -19,12 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RowCount
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase.smallTestGraph
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ParameterWrongTypeException
-import org.neo4j.graphdb.{Label, Node, RelationshipType}
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 object ExpandAllTestBase {
@@ -268,7 +274,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
       Array(r1.getStartNode, r1.getEndNode),
       Array(r2.getStartNode, r2.getEndNode),
       Array(r3.getStartNode, r3.getEndNode)
-      )
+    )
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
@@ -420,7 +426,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
-        )
+      )
     }).reduce(_ ++ _)
     val (nodes, rels) = given {
       val nodes = nodeGraph(n, "Honey")

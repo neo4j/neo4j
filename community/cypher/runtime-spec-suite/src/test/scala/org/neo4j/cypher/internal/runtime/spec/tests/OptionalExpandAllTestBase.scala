@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Label.label
-import org.neo4j.graphdb.{Node, RelationshipType}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 
 abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -348,7 +352,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
-        )
+      )
     }).reduce(_ ++ _)
 
     val (nodes, rels) = given {
@@ -731,7 +735,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER")
-        )
+      )
     }).reduce(_ ++ _)
 
     val (nodes, rels) = given {
@@ -762,7 +766,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     val relTuples = (for(i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER")
-        )
+      )
     }).reduce(_ ++ _)
 
     val (nodes, rels) = given {

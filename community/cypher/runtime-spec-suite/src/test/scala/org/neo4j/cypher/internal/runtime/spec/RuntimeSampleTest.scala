@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.spec
 import org.neo4j.cypher.internal.InterpretedRuntime
 
 /**
-  * Sample tests to demonstrate the runtime acceptance test framework. Remove eventually?
-  */
+ * Sample tests to demonstrate the runtime acceptance test framework. Remove eventually?
+ */
 class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY.EDITION, InterpretedRuntime)
 {
 
@@ -63,11 +63,11 @@ class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY.EDITION, InterpretedR
 
     // then
     val expected = for {
-        x <- nodes
-        y <- nodes
-        z <- nodes
-        q <- nodes
-      } yield Array(x, y, z, q)
+      x <- nodes
+      y <- nodes
+      z <- nodes
+      q <- nodes
+    } yield Array(x, y, z, q)
     runtimeResult should beColumns("x", "y", "z", "q").withRows(expected)
   }
 

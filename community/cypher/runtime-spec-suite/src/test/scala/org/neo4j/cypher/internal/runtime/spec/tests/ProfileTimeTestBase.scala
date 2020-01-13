@@ -20,19 +20,22 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.collection.RawIterator
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
 import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
-import org.neo4j.kernel.api.procedure.Context
 
 abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                               runtime: CypherRuntime[CONTEXT],

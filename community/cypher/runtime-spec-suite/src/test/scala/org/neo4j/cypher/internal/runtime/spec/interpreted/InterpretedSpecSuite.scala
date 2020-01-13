@@ -19,10 +19,71 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.interpreted
 
-import org.neo4j.cypher.internal.runtime.spec.{COMMUNITY, LogicalQueryBuilder}
+import org.neo4j.cypher.internal.CommunityRuntimeContext
+import org.neo4j.cypher.internal.InterpretedRuntime
+import org.neo4j.cypher.internal.runtime.spec.COMMUNITY
 import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
-import org.neo4j.cypher.internal.runtime.spec.tests._
-import org.neo4j.cypher.internal.{CommunityRuntimeContext, InterpretedRuntime}
+import org.neo4j.cypher.internal.runtime.spec.tests.AggregationTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.AllNodeScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.AllNodeScanWithOtherOperatorsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ArgumentTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ArrayIndexSupport
+import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductProvidedOrderTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllWithOtherOperatorsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ExpandIntoTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ExpandIntoWithOtherOperatorsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ExpressionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ExpressionWithTxStateChangesTests
+import org.neo4j.cypher.internal.runtime.spec.tests.FilterTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportMemoryManagementTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.LabelScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.LimitTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.MiscTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeByIdSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeCountFromCountStoreTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeHashJoinTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexContainsScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexEndsWithScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekRangeAndCompositeTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexStartsWithSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeLockingUniqueIndexSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandAllTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandIntoTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OptionalTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OrderedAggregationTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OrderedDistinctTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.PartialTop1TestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.PartialTopNTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallDbHitsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallRowsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ProfileRowsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ProjectEndpointsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ProjectionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ProvidedOrderTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipCountFromCountStoreTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ThreadUnsafeExpressionTests
+import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByIdSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ValueHashJoinTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
 
 object InterpretedSpecSuite {
   val SIZE_HINT = 200

@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.graphdb
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 class TestSubscriber extends QuerySubscriber {
 

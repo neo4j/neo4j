@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import java.util.Objects
 
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
-import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalatest.matchers.Matcher
 
 import scala.collection.mutable
@@ -37,7 +38,7 @@ object Rows {
     if (a.isEmpty) {
       sb ++= "<NO ROWS>"
     } else {
-     sb ++= s"<${a.size} rows>\n"
+      sb ++= s"<${a.size} rows>\n"
     }
 
     // There is a bug in IntelliJ that falsely displays a test as green if there is too much output in certain cases. (It is still red in maven though)

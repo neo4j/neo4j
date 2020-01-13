@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util
-import java.util.Collections
 
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
                                                           edition: Edition[CONTEXT],
