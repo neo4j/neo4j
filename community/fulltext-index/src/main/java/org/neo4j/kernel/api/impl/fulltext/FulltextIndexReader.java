@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.index.Term;
@@ -27,7 +28,10 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.WildcardQuery;
 
@@ -55,7 +59,9 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
 
@@ -136,35 +142,51 @@ public class FulltextIndexReader implements IndexReader
                     throw new RuntimeException( "Could not parse the given fulltext search query: '" + fulltextSearch.query() + "'.", e );
                 }
             }
-            else if ( isFulltextCypherQuery( indexQuery ) )
+            else
             {
+                // Not fulltext query
                 assertNotComposite( queries );
                 assertCypherCompatible();
+                Query query;
                 if ( indexQuery.type() == IndexQuery.IndexQueryType.stringContains )
                 {
                     IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( scp.contains().stringValue() );
                     Term term = new Term( propertyNames[0], "*" + searchTerm + "*" );
-                    queryBuilder.add( new WildcardQuery( term ), BooleanClause.Occur.MUST );
+                    query = new WildcardQuery( term );
                 }
                 else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix )
                 {
                     IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( ssp.suffix().stringValue() );
                     Term term = new Term( propertyNames[0], "*" + searchTerm );
-                    queryBuilder.add( new WildcardQuery( term ), BooleanClause.Occur.MUST );
+                    query = new WildcardQuery( term );
                 }
                 else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringPrefix )
                 {
                     IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) indexQuery;
                     String searchTerm = spp.prefix().stringValue();
                     Term term = new Term( propertyNames[0], searchTerm );
-                    queryBuilder.add( new LuceneDocumentStructure.PrefixMultiTermsQuery( term ), BooleanClause.Occur.MUST );
+                    query = new LuceneDocumentStructure.PrefixMultiTermsQuery( term );
                 }
-            }
-            else
-            {
-                throw new IndexNotApplicableKernelException( "A fulltext schema index cannot answer " + indexQuery.type() + " queries." );
+                else if ( indexQuery.getClass() == IndexQuery.ExactPredicate.class && indexQuery.valueGroup() == ValueGroup.TEXT )
+                {
+                    IndexQuery.ExactPredicate exact = (IndexQuery.ExactPredicate) indexQuery;
+                    String searchTerm = ((TextValue) exact.value()).stringValue();
+                    Term term = new Term( propertyNames[0], searchTerm );
+                    query = new ConstantScoreQuery( new TermQuery( term ) );
+                }
+                else if ( indexQuery.getClass() == IndexQuery.TextRangePredicate.class )
+                {
+                    IndexQuery.TextRangePredicate sp = (IndexQuery.TextRangePredicate) indexQuery;
+                    query = newRangeSeekByStringQuery( propertyNames[0], sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
+                }
+                else
+                {
+                    throw new IndexNotApplicableKernelException(
+                            "A fulltext schema index cannot answer " + indexQuery.type() + " queries on " + indexQuery.valueCategory() + " values." );
+                }
+                queryBuilder.add( query, BooleanClause.Occur.MUST );
             }
         }
         BooleanQuery query = queryBuilder.build();
@@ -231,18 +253,36 @@ public class FulltextIndexReader implements IndexReader
         return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
     }
 
-    private boolean isFulltextCypherQuery( IndexQuery indexQuery )
-    {
-        return indexQuery.type() == IndexQuery.IndexQueryType.stringContains || indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix ||
-                indexQuery.type() == IndexQuery.IndexQueryType.stringPrefix;
-    }
-
     private static void assertNotComposite( IndexQuery[] predicates )
     {
         if ( predicates.length != 1 )
         {
             throw new IllegalStateException( "composite indexes not yet supported for this operation" );
         }
+    }
+
+    private static Query newRangeSeekByStringQuery( String propertyName, String lower, boolean includeLower, String upper, boolean includeUpper )
+    {
+        boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
+        boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
+        TermRangeQuery termRangeQuery =
+                TermRangeQuery.newStringRange( propertyName, lower, upper, includeLowerBoundary, includeUpperBoundary );
+
+        if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
+        {
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            if ( includeLowerBoundary != includeLower )
+            {
+                builder.add( new TermQuery( new Term( propertyName, lower ) ), BooleanClause.Occur.MUST_NOT );
+            }
+            if ( includeUpperBoundary != includeUpper )
+            {
+                builder.add( new TermQuery( new Term( propertyName, upper ) ), BooleanClause.Occur.MUST_NOT );
+            }
+            builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
+            return new ConstantScoreQuery( builder.build() );
+        }
+        return termRangeQuery;
     }
 
     private void assertCypherCompatible()

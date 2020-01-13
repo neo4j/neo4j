@@ -90,6 +90,7 @@ import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -905,7 +906,6 @@ public class FulltextIndexProviderTest
         long nodea;
         long nodeapa1;
         long nodeapa2;
-        long nodelongapa;
         long nodeapaapa;
         long nodeapalong;
         try ( Transaction tx = db.beginTx() )
@@ -914,7 +914,7 @@ public class FulltextIndexProviderTest
             createNode( tx, containsLabel, containsProp, "A" );
             nodeapa1 = createNode( tx, containsLabel, containsProp, "apa" );
             nodeapa2 = createNode( tx, containsLabel, containsProp, "apa" );
-            nodelongapa = createNode( tx, containsLabel, containsProp, "longapa" );
+            createNode( tx, containsLabel, containsProp, "longapa" );
             nodeapaapa = createNode( tx, containsLabel, containsProp, "apa apa" );
             nodeapalong = createNode( tx, containsLabel, containsProp, "apalong" );
             tx.commit();
@@ -950,6 +950,128 @@ public class FulltextIndexProviderTest
             assertQueryResult( ktx, startsWithQuery( containsPropertyId, "apa*" ) );
             assertQueryResult( ktx, startsWithQuery( containsPropertyId, "apa a" ), nodeapaapa );
             assertQueryResult( ktx, startsWithQuery( containsPropertyId, "*apa" ) );
+        }
+    }
+
+    @Test
+    public void shouldAnswerExactIfCypherCompatible() throws KernelException, IOException
+    {
+        IndexDescriptor indexReference;
+        Label containsLabel = label( "containsLabel" );
+        String containsProp = "containsProp";
+        long nodea;
+        long nodeapa1;
+        long nodeapa2;
+        long nodeapaapa;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodea = createNode( tx, containsLabel, containsProp, "a" );
+            createNode( tx, containsLabel, containsProp, "A" );
+            nodeapa1 = createNode( tx, containsLabel, containsProp, "apa" );
+            nodeapa2 = createNode( tx, containsLabel, containsProp, "apa" );
+            createNode( tx, containsLabel, containsProp, "longapa" );
+            nodeapaapa = createNode( tx, containsLabel, containsProp, "apa apa" );
+            createNode( tx, containsLabel, containsProp, "apalong" );
+            tx.commit();
+        }
+
+        int containsLabelId;
+        int containsPropertyId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            TokenRead tokenRead = tokenRead( tx );
+            containsLabelId = tokenRead.nodeLabel( containsLabel.name() );
+            containsPropertyId = tokenRead.propertyKey( containsProp );
+        }
+
+        indexReference = createIndex( new int[]{containsLabelId}, new int[]{containsPropertyId}, "cypher" );
+        await( indexReference );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "a" ), nodea );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa" ), nodeapa1, nodeapa2 );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa*" ) );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa a" ) );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa apa" ), nodeapaapa );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "*apa" ) );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa*" ) );
+            IndexNotApplicableKernelException e =
+                    assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, exactQuery( containsPropertyId, 1 ) ) );
+            assertThat( e.getMessage() ).contains(
+                    "A fulltext schema index cannot answer " + IndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
+        }
+        db.restartDatabase( DbmsRule.RestartAction.EMPTY );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "a" ), nodea );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa" ), nodeapa1, nodeapa2 );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa*" ) );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa a" ) );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa apa" ), nodeapaapa );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "*apa" ) );
+            assertQueryResult( ktx, exactQuery( containsPropertyId, "apa*" ) );
+            IndexNotApplicableKernelException e =
+                    assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, exactQuery( containsPropertyId, 1 ) ) );
+            assertThat( e.getMessage() ).contains(
+                    "A fulltext schema index cannot answer " + IndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
+        }
+    }
+
+    @Test
+    public void shouldAnswerRangeIfCypherCompatible() throws KernelException, IOException
+    {
+        IndexDescriptor indexReference;
+        Label containsLabel = label( "containsLabel" );
+        String containsProp = "containsProp";
+        long nodea;
+        long nodeaa;
+        long nodeaapa;
+        long nodeapa1;
+        long nodeapa2;
+        try ( Transaction tx = db.beginTx() )
+        {
+            createNode( tx, containsLabel, containsProp, "1" );
+            nodea = createNode( tx, containsLabel, containsProp, "a" );
+            nodeaa = createNode( tx, containsLabel, containsProp, "aa" );
+            nodeaapa = createNode( tx, containsLabel, containsProp, "aapa" );
+            nodeapa1 = createNode( tx, containsLabel, containsProp, "apa" );
+            nodeapa2 = createNode( tx, containsLabel, containsProp, "apa" );
+            createNode( tx, containsLabel, containsProp, "bpa" );
+            createNode( tx, containsLabel, containsProp, "A" );
+            tx.commit();
+        }
+
+        int containsLabelId;
+        int containsPropertyId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            TokenRead tokenRead = tokenRead( tx );
+            containsLabelId = tokenRead.nodeLabel( containsLabel.name() );
+            containsPropertyId = tokenRead.propertyKey( containsProp );
+        }
+
+        indexReference = createIndex( new int[]{containsLabelId}, new int[]{containsPropertyId}, "cypher" );
+        await( indexReference );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", true, "apa", true ), nodea, nodeaa, nodeaapa, nodeapa1, nodeapa2 );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", false, "apa", true ), nodeaa, nodeaapa, nodeapa1, nodeapa2 );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", true, "apa", false ), nodea, nodeaa, nodeaapa );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", false, "apa", false ), nodeaa, nodeaapa );
+        }
+        db.restartDatabase( DbmsRule.RestartAction.EMPTY );
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", true, "apa", true ), nodea, nodeaa, nodeaapa, nodeapa1, nodeapa2 );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", false, "apa", true ), nodeaa, nodeaapa, nodeapa1, nodeapa2 );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", true, "apa", false ), nodea, nodeaa, nodeaapa );
+            assertQueryResult( ktx, rangeQuery( containsPropertyId, "a", false, "apa", false ), nodeaa, nodeaapa );
         }
     }
 
@@ -1041,19 +1163,29 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private IndexQuery.StringContainsPredicate containsQuery( int containsPropertyId, String containsString )
+    private IndexQuery.StringContainsPredicate containsQuery( int containsPropertyId, String string )
     {
-        return IndexQuery.stringContains( containsPropertyId, Values.stringValue( containsString ) );
+        return IndexQuery.stringContains( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private IndexQuery.StringSuffixPredicate endsWithQuery( int containsPropertyId, String containsString )
+    private IndexQuery.StringSuffixPredicate endsWithQuery( int containsPropertyId, String string )
     {
-        return IndexQuery.stringSuffix( containsPropertyId, Values.stringValue( containsString ) );
+        return IndexQuery.stringSuffix( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private IndexQuery.StringPrefixPredicate startsWithQuery( int containsPropertyId, String containsString )
+    private IndexQuery.StringPrefixPredicate startsWithQuery( int containsPropertyId, String string )
     {
-        return IndexQuery.stringPrefix( containsPropertyId, Values.stringValue( containsString ) );
+        return IndexQuery.stringPrefix( containsPropertyId, Values.stringValue( string ) );
+    }
+
+    private IndexQuery.ExactPredicate exactQuery( int containsPropertyId, Object object )
+    {
+        return IndexQuery.exact( containsPropertyId, Values.of( object ) );
+    }
+
+    private IndexQuery.RangePredicate rangeQuery( int containsPropertyId, Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    {
+        return IndexQuery.range( containsPropertyId, Values.of( from ), fromInclusive, Values.of( to ), toInclusive );
     }
 
     private long createNode( Transaction tx, Label containsLabel, String containsProp, String propertyValue )
