@@ -37,20 +37,22 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
 {
     private final RecordStore<RECORD> store;
     private final int batchSize;
+    private final boolean prefetch;
     private final RecordDataAssembler<RECORD> assembler;
 
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage, RecordStore<RECORD> store )
     {
-        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord ) );
+        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord ), false );
     }
 
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
-            RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter )
+            RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter, boolean prefetch )
     {
         super( control, ">", config, parallelReading( config, inRecordWritingStage ) ? 0 : 1 );
         this.store = store;
         this.assembler = converter;
         this.batchSize = config.batchSize();
+        this.prefetch = prefetch;
     }
 
     private static boolean parallelReading( Configuration config, boolean inRecordWritingStage )
@@ -78,7 +80,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         int i = 0;
         // Just use the first record in the batch here to satisfy the record cursor.
         // The truth is that we'll be using the read method which accepts an external record anyway so it doesn't matter.
-        try ( PageCursor cursor = store.openPageCursorForReading( id ) )
+        try ( PageCursor cursor = prefetch ? store.openPageCursorForReadingWithPrefetching( id ) : store.openPageCursorForReading( id ) )
         {
             boolean hasNext = true;
             while ( hasNext )
