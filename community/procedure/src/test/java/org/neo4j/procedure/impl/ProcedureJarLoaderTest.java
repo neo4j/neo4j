@@ -56,8 +56,8 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -161,7 +161,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithInvalidProcedure.class );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
-        assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+        assertThat( exception.getMessage() ).isEqualTo( format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
                 "If you''d like your procedure to return `boolean`, you could define a record class like:%n" +
                 "public class Output '{'%n" +
@@ -194,7 +194,7 @@ public class ProcedureJarLoaderTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                         "that you define and not a Stream<?>." ) );
     }
 
@@ -206,7 +206,7 @@ public class ProcedureJarLoaderTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                         "that you define and not a raw Stream." ) );
     }
 
@@ -217,7 +217,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithGenericStream.class );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
-        assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+        assertThat( exception.getMessage() ).isEqualTo( format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define and not a parameterized type such as java.util.List<org.neo4j.procedure.impl.ProcedureJarLoaderTest$Output>." ) );
     }
 
@@ -237,7 +237,7 @@ public class ProcedureJarLoaderTest
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
         assertThat( logProvider ).containsMessages(
-                escapeJava( String.format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) ) );
+                format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) );
     }
 
     @Test
@@ -256,8 +256,7 @@ public class ProcedureJarLoaderTest
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
-        assertThat( logProvider ).containsMessages(
-                escapeJava( String.format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) ) );
+        assertThat( logProvider ).containsMessages( format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) );
     }
 
     @Test
