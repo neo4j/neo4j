@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature._
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.phases.{Parsing, _}
 import org.neo4j.cypher.internal.rewriting.rewriters.{IfNoParameter, InnerVariableNamer, LiteralExtraction}
-import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.rewriting.{Additions, Deprecations, RewriterStepSequencer}
 
 object CompilationPhases {
 
@@ -45,12 +45,15 @@ object CompilationPhases {
       compatibilityMode match {
         case Compatibility3_5 =>
           base andThen
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_0) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_1) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
         case Compatibility4_0 =>
           base andThen
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_1) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
         case Compatibility4_1 => base

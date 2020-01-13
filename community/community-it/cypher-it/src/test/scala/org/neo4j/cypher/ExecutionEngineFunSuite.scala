@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
@@ -97,5 +98,11 @@ abstract class ExecutionEngineFunSuite
 
   def shouldHaveNoWarnings(result: Result) {
     shouldHaveWarnings(result, List())
+  }
+
+  def selectDatabase(name: String): Unit = {
+    graphOps = managementService.database(name)
+    graph = new GraphDatabaseCypherService(graphOps)
+    eengine = ExecutionEngineHelper.createEngine(graph)
   }
 }
