@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.InterpretedRuntimeName
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.InterpretedRuntimeName
-import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.planmatching.CountInTree
 import org.neo4j.cypher.planmatching.ExactPlan
 import org.neo4j.cypher.planmatching.PlanInTree
