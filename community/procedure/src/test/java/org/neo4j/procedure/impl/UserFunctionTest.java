@@ -158,7 +158,7 @@ public class UserFunctionTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WierdConstructorFunction.class ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor " + "in the class `WierdConstructorFunction`. Please add a " +
+                "Unable to find a usable public no-argument constructor in the class `WierdConstructorFunction`. Please add a " +
                         "valid, public constructor, recompile the class and try again." );
     }
 
@@ -167,7 +167,7 @@ public class UserFunctionTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorFunction.class ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor " + "in the class `PrivateConstructorFunction`. Please add " +
+                "Unable to find a usable public no-argument constructor in the class `PrivateConstructorFunction`. Please add " +
                         "a valid, public constructor, recompile the class and try again." );
     }
 
@@ -185,7 +185,8 @@ public class UserFunctionTest
         // When
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ) );
         assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "Don't know how to map `char[]` to the Neo4j Type System.%n" + "Please refer to to the documentation for full details.%n" +
+                "Don't know how to map `char[]` to the Neo4j Type System.%n" +
+                        "Please refer to to the documentation for full details.%n" +
                         "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
                         "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
                         "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
@@ -198,7 +199,7 @@ public class UserFunctionTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ) );
         assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " + "annotated as a @Context field,%n" +
+                "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is annotated as a @Context field,%n" +
                         "but it is static. @Context fields must be public, non-final and non-static,%n" +
                         "because they are reset each time a procedure is invoked." ) );
     }

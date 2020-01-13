@@ -269,13 +269,13 @@ public class SchemaIndexAcceptanceTest
     private IndexDefinition createIndex( GraphDatabaseService db, Label label, String property )
     {
         IndexDefinition indexDefinition;
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             indexDefinition = tx.schema().indexFor( label ).on( property ).create();
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }

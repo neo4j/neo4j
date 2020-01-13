@@ -163,8 +163,11 @@ public class ProcedureJarLoaderTest
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
         assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
-                "If you''d like your procedure to return `boolean`, you could define a record class " + "like:%n" + "public class Output '{'%n" +
-                "    public boolean out;%n" + "'}'%n" + "%n" + "And then define your procedure as returning `Stream<Output>`." ) );
+                "If you''d like your procedure to return `boolean`, you could define a record class like:%n" +
+                "public class Output '{'%n" +
+                "    public boolean out;%n" +
+                "'}'%n%n" +
+                "And then define your procedure as returning `Stream<Output>`." ) );
     }
 
     @Test
@@ -191,7 +194,8 @@ public class ProcedureJarLoaderTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" + "that you define and not a Stream<?>." ) );
+                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                        "that you define and not a Stream<?>." ) );
     }
 
     @Test
@@ -202,7 +206,8 @@ public class ProcedureJarLoaderTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" + "that you define and not a raw Stream." ) );
+                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                        "that you define and not a raw Stream." ) );
     }
 
     @Test
@@ -213,7 +218,7 @@ public class ProcedureJarLoaderTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
         assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                "that you define and not a parameterized type such as java.util.List<org.neo4j" + ".procedure.impl.ProcedureJarLoaderTest$Output>." ) );
+                "that you define and not a parameterized type such as java.util.List<org.neo4j.procedure.impl.ProcedureJarLoaderTest$Output>." ) );
     }
 
     @Test

@@ -423,7 +423,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         // THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", transaction ) ).containsOnly(node );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", transaction ) ).containsOnly( node );
         }
     }
 

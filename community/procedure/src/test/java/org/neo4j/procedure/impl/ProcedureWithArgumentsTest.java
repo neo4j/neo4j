@@ -114,7 +114,7 @@ public class ProcedureWithArgumentsTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithoutAnnotatedArgs.class ) );
         assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "Argument at position 0 in method `listCoolPeople` " + "is missing an `@Name` annotation.%n" +
+                "Argument at position 0 in method `listCoolPeople` is missing an `@Name` annotation.%n" +
                         "Please add the annotation, recompile the class and try again." ) );
     }
 

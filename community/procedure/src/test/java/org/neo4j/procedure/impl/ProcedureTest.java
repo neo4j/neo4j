@@ -160,7 +160,7 @@ public class ProcedureTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WierdConstructorProcedure.class ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor " + "in the class `WierdConstructorProcedure`. Please add a " +
+                "Unable to find a usable public no-argument constructor in the class `WierdConstructorProcedure`. Please add a " +
                         "valid, public constructor, recompile the class and try again." );
     }
 
@@ -169,7 +169,7 @@ public class ProcedureTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorProcedure.class ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor " + "in the class `PrivateConstructorProcedure`. Please add " +
+                "Unable to find a usable public no-argument constructor in the class `PrivateConstructorProcedure`. Please add " +
                         "a valid, public constructor, recompile the class and try again." );
     }
 
@@ -190,8 +190,11 @@ public class ProcedureTest
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithInvalidRecordOutput.class ) );
         assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
-                "If you''d like your procedure to return `String`, you could define a record class " + "like:%n" + "public class Output '{'%n" +
-                "    public String out;%n" + "'}'%n" + "%n" + "And then define your procedure as returning `Stream<Output>`." ) );
+                "If you''d like your procedure to return `String`, you could define a record class like:%n" +
+                "public class Output '{'%n" +
+                "    public String out;%n" +
+                "'}'%n%n" +
+                "And then define your procedure as returning `Stream<Output>`." ) );
     }
 
     @Test
@@ -199,7 +202,7 @@ public class ProcedureTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithStaticContextAnnotatedField.class ) );
         assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " + "annotated as a @Context field,%n" +
+                "The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is annotated as a @Context field,%n" +
                         "but it is static. @Context fields must be public, non-final and non-static,%n" +
                         "because they are reset each time a procedure is invoked." ) );
 
@@ -243,7 +246,7 @@ public class ProcedureTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Failed to invoke procedure `org.neo4j.procedure.impl.throwsAtInvocation`: " + "Caused by: java.lang.IndexOutOfBoundsException" );
+                "Failed to invoke procedure `org.neo4j.procedure.impl.throwsAtInvocation`: Caused by: java.lang.IndexOutOfBoundsException" );
     }
 
     @Test

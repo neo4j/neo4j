@@ -41,8 +41,8 @@ class FieldInjectionsTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> injections.setters( ProcedureWithNonInjectedMemberFields.class ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Field `someState` on `ProcedureWithNonInjectedMemberFields` " + "is not annotated as a @Context and is not static. " +
-                        "If you want to store state along with your procedure, " + "please use a static field." );
+                "Field `someState` on `ProcedureWithNonInjectedMemberFields` is not annotated as a @Context and is not static. " +
+                "If you want to store state along with your procedure, please use a static field." );
     }
 
     @Test

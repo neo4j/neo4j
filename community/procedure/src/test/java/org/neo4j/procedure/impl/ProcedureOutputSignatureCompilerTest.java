@@ -125,7 +125,7 @@ public class ProcedureOutputSignatureCompilerTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( RecordWithPrivateField.class ) );
         assertThat( exception.getMessage() ).startsWith(
-                "Field `wat` in record `RecordWithPrivateField` cannot be accessed. " + "Please ensure the field is marked as `public`." );
+                "Field `wat` in record `RecordWithPrivateField` cannot be accessed. Please ensure the field is marked as `public`." );
     }
 
     @Test
@@ -148,8 +148,11 @@ public class ProcedureOutputSignatureCompilerTest
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures(Long.class) );
         assertThat( exception.getMessage() ).isEqualTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
-                "If you''d like your procedure to return `Long`, you could define a record class like:%n" + "public class Output '{'%n" +
-                "    public Long out;%n" + "'}'%n" + "%n" + "And then define your procedure as returning `Stream<Output>`." ) );
+                "If you''d like your procedure to return `Long`, you could define a record class like:%n" +
+                "public class Output '{'%n" +
+                "    public Long out;%n" +
+                "'}'%n%n" +
+                "And then define your procedure as returning `Stream<Output>`." ) );
     }
 
     private List<FieldSignature> signatures( Class<?> clazz ) throws ProcedureException

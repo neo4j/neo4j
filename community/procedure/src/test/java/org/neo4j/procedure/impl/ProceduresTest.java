@@ -114,7 +114,7 @@ class ProceduresTest
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
                 procs.procedure( signature.name() ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "There is no procedure with the name `org.myproc` registered for this " + "database instance. Please ensure you've spelled the " +
+                "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the " +
                         "procedure name correctly and that the procedure is properly deployed." );
     }
 
@@ -134,7 +134,7 @@ class ProceduresTest
         ProcedureException exception = assertThrows( ProcedureException.class,
                 () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).in( "a", NTAny ).in( "a", NTAny ).build() ) ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be " + "registered, because it contains a duplicated input field, 'a'. " +
+                "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be registered, because it contains a duplicated input field, 'a'. " +
                         "You need to rename or remove one of the duplicate fields." );
     }
 
@@ -144,7 +144,7 @@ class ProceduresTest
         ProcedureException exception = assertThrows( ProcedureException.class,
                 () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).out( "a", NTAny ).out( "a", NTAny ).build() ) ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, " + "because it contains a duplicated output field, 'a'. " +
+                "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, because it contains a duplicated output field, 'a'. " +
                         "You need to rename or remove one of the duplicate fields." );
     }
 
@@ -153,7 +153,7 @@ class ProceduresTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.procedure( signature.name() ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "There is no procedure with the name `org.myproc` registered for this " + "database instance. Please ensure you've spelled the " +
+                "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the " +
                         "procedure name correctly and that the procedure is properly deployed." );
     }
 

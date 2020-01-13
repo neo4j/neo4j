@@ -154,7 +154,7 @@ public class ResourceInjectionTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compiler.compileFunction( FunctionWithUnknownAPI.class, false ) );
         assertThat( exception.getMessage() ).isEqualTo( "Unable to set up injection for procedure `FunctionWithUnknownAPI`, " +
-                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " + "which is not a known injectable component." );
+                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` which is not a known injectable component." );
     }
 
     @Test
@@ -194,7 +194,7 @@ public class ResourceInjectionTest
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> compiler.compileAggregationFunction( AggregationFunctionWithUnknownAPI.class ) );
         assertThat( exception.getMessage() ).isEqualTo( "Unable to set up injection for procedure `AggregationFunctionWithUnknownAPI`, " +
-                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` " + "which is not a known injectable component." );
+                "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` which is not a known injectable component." );
     }
 
     @Test
