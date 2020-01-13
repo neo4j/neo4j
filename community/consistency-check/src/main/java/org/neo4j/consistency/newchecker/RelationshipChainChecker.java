@@ -22,7 +22,6 @@ package org.neo4j.consistency.newchecker;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -38,8 +37,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.time.Stopwatch;
 
 import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.lang.Math.toIntExact;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.NEXT;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.PREV;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_FIRST_IN_CHAIN;
@@ -64,8 +61,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
  */
 class RelationshipChainChecker implements Checker
 {
-    private static final int REPORT_PAGE_ID_THRESHOLD = 1000;
-    private final int ioReadAheadSize;
     private final ConsistencyReport.Reporter reporter;
     private final CheckerContext context;
     private final int numberOfChainCheckers;
@@ -77,12 +72,13 @@ class RelationshipChainChecker implements Checker
     {
         this.context = context;
         this.reporter = context.reporter;
-        // Because the last thread will be the one reading the relationships store and enqueuing to the checkers
+        // There will be two threads in addition to the relationship checkers:
+        // - Relationship store scanner
+        // - (Internal) thread helping pre-fetching the relationship store pages
         this.numberOfChainCheckers = max( 1, context.execution.getNumberOfThreads() - 2 );
         this.cacheAccess = context.cacheAccess;
         this.recordLoader = context.recordLoader;
         this.progress = context.progressReporter( this, "Relationship chains", context.neoStores.getRelationshipStore().getHighId() * 2 );
-        this.ioReadAheadSize = max( REPORT_PAGE_ID_THRESHOLD * 2, min( 100_000, toIntExact( context.pageCache.maxCachedPages() / 4 ) ) );
     }
 
     @Override
@@ -101,12 +97,11 @@ class RelationshipChainChecker implements Checker
         RelationshipStore relationshipStore = context.neoStores.getRelationshipStore();
         long highId = relationshipStore.getHighId();
         AtomicBoolean end = new AtomicBoolean();
-        int numberOfThreads = numberOfChainCheckers + 2;
+        int numberOfThreads = numberOfChainCheckers + 1;
         ThrowingRunnable[] workers = new ThrowingRunnable[numberOfThreads];
         ProgressListener localProgress = progress.threadLocalReporter();
         ArrayBlockingQueue<BatchedRelationshipRecords>[] threadQueues = new ArrayBlockingQueue[numberOfChainCheckers];
         BatchedRelationshipRecords[] threadBatches = new BatchedRelationshipRecords[numberOfChainCheckers];
-        AtomicLong currentWorkingPage = new AtomicLong( 0 );
         for ( int i = 0; i < numberOfChainCheckers; i++ )
         {
             threadQueues[i] = new ArrayBlockingQueue<>( 20 );
@@ -115,10 +110,10 @@ class RelationshipChainChecker implements Checker
         }
 
         // Record reader
-        workers[workers.length - 2] = () ->
+        workers[workers.length - 1] = () ->
         {
             RelationshipRecord relationship = relationshipStore.newRecord();
-            try ( PageCursor cursor = relationshipStore.openPageCursorForReading( 0 ) )
+            try ( PageCursor cursor = relationshipStore.openPageCursorForReadingWithPrefetching( 0 ) )
             {
                 int recordsPerPage = relationshipStore.getRecordsPerPage();
                 long id = direction.startingId( highId );
@@ -133,23 +128,10 @@ class RelationshipChainChecker implements Checker
                             queueRelationshipCheck( threadQueues, threadBatches, relationship );
                         }
                     }
-
-                    if ( cursor.getCurrentPageId() % REPORT_PAGE_ID_THRESHOLD == 0 )
-                    {
-                        currentWorkingPage.set( cursor.getCurrentPageId() );
-                    }
                 }
                 processLastRelationshipChecks( threadQueues, threadBatches, end );
                 localProgress.done();
             }
-        };
-
-        // I/O worker that paves the way for the record reader so that it won't have to spend time page faulting
-        workers[workers.length - 1] = () ->
-        {
-            StorePagePrefetcher prefetcher =
-                    new StorePagePrefetcher( relationshipStore, ioReadAheadSize, context::isCancelled, StorePagePrefetcher.NO_MONITOR );
-            prefetcher.prefetch( currentWorkingPage::get, direction == ScanDirection.FORWARD );
         };
 
         Stopwatch stopwatch = Stopwatch.start();

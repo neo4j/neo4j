@@ -412,14 +412,31 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     /**
      * DANGER: make sure to always close this cursor.
+     *
+     * Opens a {@link PageCursor} to this store, mainly for use in {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * The opened cursor will make use of the {@link PagedFile#PF_READ_AHEAD} flag for optimal scanning performance.
+     */
+    @Override
+    public PageCursor openPageCursorForReadingWithPrefetching( long id )
+    {
+        return openPageCursorForReading( 0, PF_READ_AHEAD );
+    }
+
+    /**
+     * DANGER: make sure to always close this cursor.
      */
     @Override
     public PageCursor openPageCursorForReading( long id )
     {
+        return openPageCursorForReading( id, 0 );
+    }
+
+    private PageCursor openPageCursorForReading( long id, int additionalCursorFlags )
+    {
         try
         {
             long pageId = pageIdForRecord( id );
-            return pagedFile.io( pageId, PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() );
+            return pagedFile.io( pageId, PF_SHARED_READ_LOCK | additionalCursorFlags, TRACER_SUPPLIER.get() );
         }
         catch ( IOException e )
         {

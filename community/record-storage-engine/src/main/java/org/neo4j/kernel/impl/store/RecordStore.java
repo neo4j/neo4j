@@ -127,6 +127,17 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     PageCursor openPageCursorForReading( long id );
 
     /**
+     * Opens a {@link PageCursor} on this store, capable of reading records using
+     * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * The caller is responsible for closing it when done with it.
+     * The opened cursor will make use of pre-fetching for optimal scanning performance.
+     *
+     * @param id cursor will initially be placed at the page containing this record id.
+     * @return PageCursor for reading records.
+     */
+    PageCursor openPageCursorForReadingWithPrefetching( long id );
+
+    /**
      * Reads a record from the store into {@code target}, see
      * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
      * <p>
@@ -314,6 +325,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public PageCursor openPageCursorForReading( long id )
         {
             return actual.openPageCursorForReading( id );
+        }
+
+        @Override
+        public PageCursor openPageCursorForReadingWithPrefetching( long id )
+        {
+            return actual.openPageCursorForReadingWithPrefetching( id );
         }
 
         @Override
