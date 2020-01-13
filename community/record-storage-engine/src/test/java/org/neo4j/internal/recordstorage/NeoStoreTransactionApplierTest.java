@@ -871,7 +871,7 @@ class NeoStoreTransactionApplierTest
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
                 indexUpdatesSync, nodeStore, propertyStore,
-                mock( StorageEngine.class ), schemaCache, indexActivator );
+                mock( StorageEngine.class ), schemaCache, indexActivator, NULL );
     }
 
     private boolean apply( BatchTransactionApplier applier, ApplyFunction function, CommandsToApply transactionToApply ) throws Exception

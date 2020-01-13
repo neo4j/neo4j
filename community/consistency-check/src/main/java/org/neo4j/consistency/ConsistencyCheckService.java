@@ -235,7 +235,7 @@ public class ConsistencyCheckService
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, true, monitors, workCollector );
             life.add( labelScanStore );
-            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, PageCacheTracer.NULL );
             life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();

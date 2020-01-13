@@ -293,9 +293,10 @@ public final class Recovery
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
+        var pageCacheTracer = tracers.getPageCacheTracer();
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
                 getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ),
-                new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), recoveryCleanupCollector,  tracers.getPageCacheTracer(),
+                new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), recoveryCleanupCollector, pageCacheTracer,
                 true );
 
         // Label index
@@ -306,9 +307,11 @@ public final class Recovery
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
                 new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
-        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false );
+        IndexStatisticsStore indexStatisticsStore =
+                new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false, pageCacheTracer );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
-                config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ), false );
+                config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
+                pageCacheTracer, false );
 
         TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
         LogVersionRepository logVersionRepository = storageEngine.logVersionRepository();

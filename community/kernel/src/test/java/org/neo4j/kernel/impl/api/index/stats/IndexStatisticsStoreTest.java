@@ -35,6 +35,8 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
@@ -46,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.Race.throwing;
 
 @EphemeralPageCacheExtension
@@ -77,7 +78,7 @@ class IndexStatisticsStoreTest
     private IndexStatisticsStore openStore()
     {
         return lifeSupport.add(
-                new IndexStatisticsStore( pageCache, testDirectory.file( "stats" ), immediate(), false ) );
+                new IndexStatisticsStore( pageCache, testDirectory.file( "stats" ), immediate(), false, PageCacheTracer.NULL ) );
     }
 
     @Test
@@ -129,7 +130,7 @@ class IndexStatisticsStoreTest
 
     private void restartStore() throws IOException
     {
-        store.checkpoint( IOLimiter.UNLIMITED, NULL );
+        store.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
         store = openStore();
@@ -169,7 +170,7 @@ class IndexStatisticsStoreTest
             for ( int i = 0; i < 20; i++ )
             {
                 Thread.sleep( 5 );
-                store.checkpoint( IOLimiter.UNLIMITED, NULL );
+                store.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
             }
             checkpointDone.set( true );
         } ) );
@@ -205,7 +206,8 @@ class IndexStatisticsStoreTest
     @Test
     void shouldNotStartWithoutFileIfReadOnly()
     {
-        final IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), true );
+        final IndexStatisticsStore indexStatisticsStore =
+                new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), true, PageCacheTracer.NULL );
         final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
@@ -235,7 +237,7 @@ class IndexStatisticsStoreTest
         final File file = testDirectory.file( "existing" );
 
         // Create store
-        IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false );
+        IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false, PageCacheTracer.NULL );
         try
         {
             store.init();
@@ -246,7 +248,7 @@ class IndexStatisticsStoreTest
         }
 
         // Start in readOnly mode
-        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true );
+        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true, PageCacheTracer.NULL );
         try
         {
             readOnlyStore.init();

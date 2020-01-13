@@ -23,6 +23,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -49,6 +50,7 @@ public class IndexingServiceFactory
                                           IndexingService.Monitor monitor,
                                           SchemaState schemaState,
                                           IndexStatisticsStore indexStatisticsStore,
+                                          PageCacheTracer pageCacheTracer,
                                           boolean readOnly )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
@@ -62,6 +64,6 @@ public class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor, indexStatisticsStore, readOnly );
+                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, readOnly );
     }
 }

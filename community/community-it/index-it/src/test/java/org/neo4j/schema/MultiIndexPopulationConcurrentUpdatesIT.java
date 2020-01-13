@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -327,7 +328,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
-                    mock( IndexStatisticsStore.class ), false );
+                    mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, false );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
@@ -631,7 +632,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 update.entityTokensUnchanged(),
                                 update.propertiesChanged(), false, EntityType.NODE );
                         Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE );
-                        indexService.applyUpdates( entryUpdates );
+                        indexService.applyUpdates( entryUpdates, NULL );
                     }
                 }
                 catch ( UncheckedIOException | KernelException e )

@@ -241,7 +241,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     private IndexStatisticsStore startIndexStatisticsStore( boolean readOnly )
     {
-        final IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout(), immediate(), readOnly );
+        final IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout(), immediate(), readOnly, NULL );
         try
         {
             indexStatisticsStore.init();

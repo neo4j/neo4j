@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public interface IndexUpdateListener
 {
@@ -51,8 +52,9 @@ public interface IndexUpdateListener
     /**
      * Applies indexing updates from changes in underlying storage.
      * @param updates stream of updates to apply.
+     * @param cursorTracer underlying page cursor tracer
      */
-    void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates ) throws IOException, KernelException;
+    void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, PageCursorTracer cursorTracer ) throws IOException, KernelException;
 
     /**
      * Called before commit to ask whether or not the particular indexReference is valid.
@@ -79,7 +81,7 @@ public interface IndexUpdateListener
         }
 
         @Override
-        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates ) throws IOException, KernelException
+        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, PageCursorTracer cursorTracer ) throws IOException, KernelException
         {
         }
 

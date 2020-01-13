@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class NeoTransactionIndexApplierTest
 {
@@ -78,7 +79,7 @@ class NeoTransactionIndexApplierTest
     {
         PropertyStore propertyStore = mock( PropertyStore.class );
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                propertyStore, mock( StorageEngine.class ), schemaCache, new IndexActivator( indexingService ) );
+                propertyStore, mock( StorageEngine.class ), schemaCache, new IndexActivator( indexingService ), NULL );
     }
 
     @Test

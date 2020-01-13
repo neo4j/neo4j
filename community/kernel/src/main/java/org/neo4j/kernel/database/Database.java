@@ -56,6 +56,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -371,9 +372,10 @@ public class Database extends LifecycleAdapter
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
+            var pageCacheTracer = tracers.getPageCacheTracer();
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
-                    recoveryCleanupWorkCollector, tracers.getPageCacheTracer(), !storageExists );
+                    recoveryCleanupWorkCollector, pageCacheTracer, !storageExists );
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -387,8 +389,9 @@ public class Database extends LifecycleAdapter
             // Schema indexes
             DynamicIndexStoreView indexStoreView =
                     new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader, internalLogProvider );
-            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector, readOnly );
-            IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
+                    readOnly, pageCacheTracer );
+            IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, pageCacheTracer );
 
             TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
             databaseDependencies.satisfyDependency( transactionIdStore );
@@ -430,7 +433,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
             databaseDependencies.satisfyDependency( new DatabaseEntityCounters( this.idGeneratorFactory,
-                    databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
+            databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
 
             var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
             this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );
@@ -497,11 +500,12 @@ public class Database extends LifecycleAdapter
             StorageEngine storageEngine,
             DatabaseSchemaState databaseSchemaState,
             DynamicIndexStoreView indexStoreView,
-            IndexStatisticsStore indexStatisticsStore )
+            IndexStatisticsStore indexStatisticsStore,
+            PageCacheTracer pageCacheTracer )
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
                 indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
-                readOnly ) );
+                pageCacheTracer, readOnly ) );
     }
 
     /**
@@ -519,11 +523,12 @@ public class Database extends LifecycleAdapter
             LogProvider internalLogProvider,
             LogProvider userLogProvider,
             IndexingService.Monitor indexingServiceMonitor,
+            PageCacheTracer pageCacheTracer,
             boolean readOnly )
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexingServiceMonitor,
-                databaseSchemaState, indexStatisticsStore, readOnly );
+                databaseSchemaState, indexStatisticsStore, pageCacheTracer, readOnly );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;
     }

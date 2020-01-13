@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -52,6 +53,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final IndexActivator indexActivator;
+    private final PageCursorTracer cursorTracer;
     private final PropertyStore propertyStore;
     private final StorageEngine storageEngine;
     private final SchemaCache schemaCache;
@@ -65,7 +67,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore,
             PropertyStore propertyStore, StorageEngine storageEngine,
-            SchemaCache schemaCache, IndexActivator indexActivator )
+            SchemaCache schemaCache, IndexActivator indexActivator, PageCursorTracer cursorTracer )
     {
         this.indexUpdateListener = indexUpdateListener;
         this.labelScanStoreSync = labelScanStoreSync;
@@ -75,6 +77,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         this.schemaCache = schemaCache;
         this.transactionApplier = new SingleTransactionApplier( nodeStore );
         this.indexActivator = indexActivator;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -98,7 +101,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             try
             {
-                indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates ) );
+                indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates, cursorTracer ) );
             }
             catch ( ExecutionException e )
             {

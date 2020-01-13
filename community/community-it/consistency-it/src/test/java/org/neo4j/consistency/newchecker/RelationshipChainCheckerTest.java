@@ -224,7 +224,7 @@ class RelationshipChainCheckerTest extends CheckerTestBase
             tx.commit();
         }
 
-        try ( AutoCloseable tx = tx() )
+        try ( var tx = tx() )
         {
             RelationshipRecord first = relationshipStore.getRecord( firstRelationshipId, relationshipStore.newRecord(), RecordLoad.NORMAL );
             RelationshipRecord second = relationshipStore.getRecord( secondRelationshipId, relationshipStore.newRecord(), RecordLoad.NORMAL );

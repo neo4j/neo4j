@@ -328,7 +328,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             appliers.add( new ConsistencyCheckingBatchApplier( neoStores ) );
         }
-        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs, TRACER_SUPPLIER.get() ) );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs, cursorTracer ) );
         if ( mode.needsHighIdTracking() )
         {
             appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
@@ -344,7 +345,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Schema index application
             appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, indexUpdatesSync,
-                    neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, indexActivator ) );
+                    neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, indexActivator, cursorTracer ) );
         }
 
         // Perform the application

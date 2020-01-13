@@ -551,11 +551,12 @@ public class BatchInserterImpl implements BatchInserter
         LogProvider userLogProvider = logService.getUserLogProvider();
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, NO_LOCK_SERVICE,
                 () -> new RecordStorageReader( neoStores ), logProvider );
+        var cacheTracer = PageCacheTracer.NULL;
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
-                immediate(), false );
+                immediate(), false, cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
-                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders,
-                        emptyList(), logProvider, userLogProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, false );
+                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
+                        NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, false );
         life.add( indexingService );
         try
         {

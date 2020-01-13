@@ -82,7 +82,7 @@ class SchemaRuleCommandTest
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer,
-            indexUpdatesSync, mock( NodeStore.class ), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ) );
+            indexUpdatesSync, mock( NodeStore.class ), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ), NULL );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
     private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
 
