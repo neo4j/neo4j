@@ -168,11 +168,11 @@ public class LuceneDocumentStructure
      * According to benchmarks this implementation is faster then {@link PrefixQuery} because we do
      * not construct automaton  which is extremely expensive.
      */
-    private static class PrefixMultiTermsQuery extends MultiTermQuery
+    public static class PrefixMultiTermsQuery extends MultiTermQuery
     {
         private Term term;
 
-        PrefixMultiTermsQuery( Term term )
+        public PrefixMultiTermsQuery( Term term )
         {
             super( term.field() );
             this.term = term;

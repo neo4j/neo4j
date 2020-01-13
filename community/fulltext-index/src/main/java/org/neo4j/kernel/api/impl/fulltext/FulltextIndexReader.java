@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
+import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -153,6 +154,13 @@ public class FulltextIndexReader implements IndexReader
                     Term term = new Term( propertyNames[0], "*" + searchTerm );
                     queryBuilder.add( new WildcardQuery( term ), BooleanClause.Occur.MUST );
                 }
+                else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringPrefix )
+                {
+                    IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) indexQuery;
+                    String searchTerm = spp.prefix().stringValue();
+                    Term term = new Term( propertyNames[0], searchTerm );
+                    queryBuilder.add( new LuceneDocumentStructure.PrefixMultiTermsQuery( term ), BooleanClause.Occur.MUST );
+                }
             }
             else
             {
@@ -225,19 +233,23 @@ public class FulltextIndexReader implements IndexReader
 
     private boolean isFulltextCypherQuery( IndexQuery indexQuery )
     {
-        return indexQuery.type() == IndexQuery.IndexQueryType.stringContains || indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix;
+        return indexQuery.type() == IndexQuery.IndexQueryType.stringContains || indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix ||
+                indexQuery.type() == IndexQuery.IndexQueryType.stringPrefix;
     }
 
     private static void assertNotComposite( IndexQuery[] predicates )
     {
-        assert predicates.length == 1 : "composite indexes not yet supported for this operation";
+        if ( predicates.length != 1 )
+        {
+            throw new IllegalStateException( "composite indexes not yet supported for this operation" );
+        }
     }
 
     private void assertCypherCompatible()
     {
         String reason = "";
         Object configuredAnalyzer = index.getIndexConfig().get( FulltextIndexSettingsKeys.ANALYZER ).asObject();
-        if ( !"cypher".equals( configuredAnalyzer ) || !(analyzer instanceof KeywordAnalyzer) )
+        if ( !"cypher".equals( configuredAnalyzer ) || !(analyzer.getClass() == KeywordAnalyzer.class) )
         {
             reason = "configured analyzer '" + configuredAnalyzer + "' is not Cypher compatible";
         }
