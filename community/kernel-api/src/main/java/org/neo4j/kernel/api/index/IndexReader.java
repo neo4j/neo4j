@@ -49,17 +49,18 @@ public interface IndexReader extends Resource
      * Queries the index for the given {@link IndexQuery} predicates.
      * @param client the client which will control the progression though query results.
      * @param needsValues if the index should fetch property values together with node ids for index queries
+     * @param cursorTracer underlying page cursor tracer
      * @param query the query so serve.
      */
-    void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
-            throws IndexNotApplicableKernelException;
+    void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, PageCursorTracer cursorTracer,
+            IndexQuery... query ) throws IndexNotApplicableKernelException;
 
     /**
      * @param predicates query to determine whether or not index has full value precision for.
      * @return whether or not this reader will only return 100% matching results from
-     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexOrder, boolean, IndexQuery...)}.
+     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexOrder, boolean, PageCursorTracer, IndexQuery...)}.
      * If {@code false} is returned this means that the caller of
-     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexOrder, boolean, IndexQuery...)} will have to
+     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexOrder, boolean, PageCursorTracer, IndexQuery...)} will have to
      * do additional filtering, double-checking of actual property values, externally.
      */
     boolean hasFullValuePrecision( IndexQuery... predicates );
@@ -75,8 +76,9 @@ public interface IndexReader extends Resource
      * @param client {@link IndexProgressor.EntityValueClient} to get initialized with this progression.
      * @param propertyAccessor used for distinguishing between lossy indexed values.
      * @param needsValues whether or not values should be loaded.
+     * @param cursorTracer underlying page cursor tracer
      */
-    void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues );
+    void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues, PageCursorTracer cursorTracer );
 
     IndexReader EMPTY = new IndexReader()
     {
@@ -94,7 +96,8 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+        public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+                PageCursorTracer cursorTracer, IndexQuery... query )
         {
             // do nothing
         }
@@ -111,7 +114,8 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+        public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
+                PageCursorTracer cursorTracer )
         {
             // do nothing
         }
@@ -132,7 +136,8 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+        public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+                PageCursorTracer cursorTracer, IndexQuery... query )
         {
         }
 
@@ -143,7 +148,8 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+        public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
+                PageCursorTracer cursorTracer )
         {
         }
 

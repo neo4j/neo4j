@@ -112,7 +112,7 @@ public class SimpleIndexReader extends AbstractIndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
-            IndexQuery... predicates ) throws IndexNotApplicableKernelException
+            PageCursorTracer cursorTracer, IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         Query query = toLuceneQuery( predicates );
         client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, indexOrder, needsValues, false );
@@ -198,7 +198,8 @@ public class SimpleIndexReader extends AbstractIndexReader
      * @param needsValues whether or not to load string values.
      */
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
+            PageCursorTracer cursorTracer )
     {
         try
         {

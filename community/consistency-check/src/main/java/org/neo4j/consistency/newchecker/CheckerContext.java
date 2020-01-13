@@ -41,6 +41,7 @@ import org.neo4j.time.Stopwatch;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.internal.helpers.Format.duration;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class CheckerContext
 {
@@ -182,7 +183,7 @@ class CheckerContext
     {
         if ( !isCancelled() && checker.shouldBeChecked( consistencyFlags ) )
         {
-            timeOperation( checker.toString(), () -> checker.check( range, limiter.isFirst( range ), limiter.isLast( range ) ), true );
+            timeOperation( checker.toString(), () -> checker.check( range, limiter.isFirst( range ), limiter.isLast( range ), NULL ), true );
         }
     }
 

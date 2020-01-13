@@ -37,6 +37,7 @@ import org.neo4j.internal.recordstorage.RecordRelationshipScanCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -88,7 +89,7 @@ class RelationshipChecker implements Checker
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
+    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer cacheTracer ) throws Exception
     {
         execution.run( getClass().getSimpleName() + "-relationships", execution.partition( neoStores.getRelationshipStore(),
                 ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to ) ) );

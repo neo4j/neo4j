@@ -27,18 +27,19 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
 
 class ChangedIds
 {
     private final MutableLongList ids = LongLists.mutable.empty();
-    private final BitSet operation = new BitSet(); // set=used, cleared=unused
+    private final BitSet usedSet = new BitSet(); // set=used, cleared=unused
     private AsyncApply asyncApply;
 
     void addUsedId( long id )
     {
-        operation.set( ids.size() );
+        usedSet.set( ids.size() );
         ids.add( id );
     }
 
@@ -51,7 +52,7 @@ class ChangedIds
     {
         ids.forEachWithIndex( ( id, index ) ->
         {
-            boolean used = operation.get( index );
+            boolean used = usedSet.get( index );
             if ( used )
             {
                 visitor.markUsed( id );
@@ -63,9 +64,9 @@ class ChangedIds
         } );
     }
 
-    void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync )
+    void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync, PageCursorTracer cursorTracer )
     {
-        asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this ) );
+        asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this, cursorTracer ) );
     }
 
     void awaitApply() throws ExecutionException

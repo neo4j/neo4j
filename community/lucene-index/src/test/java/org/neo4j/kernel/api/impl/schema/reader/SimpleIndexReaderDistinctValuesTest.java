@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -103,7 +104,7 @@ public class SimpleIndexReaderDistinctValuesTest
         NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         try ( IndexReader reader = index.getIndexReader() )
         {
-            reader.distinctValues( client, propertyAccessor, true );
+            reader.distinctValues( client, propertyAccessor, true, NULL );
             while ( client.progressor.next() )
             {
                 Value value = client.values[0];
@@ -134,7 +135,7 @@ public class SimpleIndexReaderDistinctValuesTest
         NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         try ( IndexReader reader = index.getIndexReader() )
         {
-            reader.distinctValues( client, propertyAccessor, true );
+            reader.distinctValues( client, propertyAccessor, true, NULL );
             int actualCount = 0;
             while ( client.progressor.next() )
             {

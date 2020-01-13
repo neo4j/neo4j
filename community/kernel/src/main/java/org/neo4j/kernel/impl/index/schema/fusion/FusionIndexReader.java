@@ -68,13 +68,13 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
-            throws IndexNotApplicableKernelException
+    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues,
+            PageCursorTracer cursorTracer, IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueCategory );
         if ( slot != null )
         {
-            instanceSelector.select( slot ).query( context, cursor, indexOrder, needsValues, predicates );
+            instanceSelector.select( slot ).query( context, cursor, indexOrder, needsValues, cursorTracer, predicates );
         }
         else
         {
@@ -93,7 +93,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
                 {
                     try
                     {
-                        reader.query( context, multiProgressor, indexOrder, needsValues, predicates );
+                        reader.query( context, multiProgressor, indexOrder, needsValues, cursorTracer, predicates );
                     }
                     catch ( IndexNotApplicableKernelException e )
                     {
@@ -123,11 +123,12 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     }
 
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient cursor, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    public void distinctValues( IndexProgressor.EntityValueClient cursor, NodePropertyAccessor propertyAccessor, boolean needsValues,
+            PageCursorTracer cursorTracer )
     {
         BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
         cursor.initialize( descriptor, multiProgressor, new IndexQuery[0], IndexOrder.NONE, needsValues, false );
-        instanceSelector.forAll( reader -> reader.distinctValues( multiProgressor, propertyAccessor, needsValues ) );
+        instanceSelector.forAll( reader -> reader.distinctValues( multiProgressor, propertyAccessor, needsValues, cursorTracer ) );
     }
 
     @Override

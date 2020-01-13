@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
 {
@@ -93,7 +92,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     }
 
     @Override
-    public IndexEntriesReader[] newAllIndexEntriesReader( int partitions )
+    public IndexEntriesReader[] newAllIndexEntriesReader( int partitions, PageCursorTracer cursorTracer )
     {
         GenericKey lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
@@ -103,7 +102,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, TRACER_SUPPLIER.get() );
+            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, cursorTracer );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
             for ( Seeker<GenericKey,NativeIndexValue> seeker : seekers )
             {

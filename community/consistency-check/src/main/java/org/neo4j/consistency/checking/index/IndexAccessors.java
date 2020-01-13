@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class IndexAccessors implements Closeable
 {
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
@@ -85,7 +87,7 @@ public class IndexAccessors implements Closeable
                     }
                     else
                     {
-                        if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor ) )
+                        if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, TRACER_SUPPLIER.get() ) )
                         {
                             onlineIndexRules.add( indexDescriptor );
                         }

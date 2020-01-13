@@ -56,10 +56,10 @@ public class TrackingIndexReader implements IndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
-            throws IndexNotApplicableKernelException
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+            PageCursorTracer cursorTracer, IndexQuery... query ) throws IndexNotApplicableKernelException
     {
-        delegate.query( context, client, indexOrder, needsValues, query );
+        delegate.query( context, client, indexOrder, needsValues, cursorTracer, query );
     }
 
     @Override
@@ -69,9 +69,10 @@ public class TrackingIndexReader implements IndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
+            PageCursorTracer cursorTracer )
     {
-        delegate.distinctValues( client, propertyAccessor, needsValues );
+        delegate.distinctValues( client, propertyAccessor, needsValues, cursorTracer );
     }
 
     @Override

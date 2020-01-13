@@ -69,8 +69,8 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
-            throws IndexNotApplicableKernelException
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+            PageCursorTracer cursorTracer, IndexQuery... query ) throws IndexNotApplicableKernelException
     {
         try
         {
@@ -79,7 +79,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
             {
                 try
                 {
-                    reader.query( context, bridgingIndexProgressor, indexOrder, needsValues, query );
+                    reader.query( context, bridgingIndexProgressor, indexOrder, needsValues, cursorTracer, query );
                 }
                 catch ( IndexNotApplicableKernelException e )
                 {
@@ -101,10 +101,11 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
+            PageCursorTracer cursorTracer )
     {
         BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor, needsValues ) );
+        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor, needsValues, cursorTracer ) );
         client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, needsValues, false );
     }
 

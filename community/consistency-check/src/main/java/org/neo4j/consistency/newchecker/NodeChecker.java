@@ -44,6 +44,7 @@ import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -61,6 +62,7 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.longOf;
 import static org.neo4j.consistency.checking.full.NodeInUseWithCorrectLabelsCheck.sortAndDeduplicate;
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
@@ -94,7 +96,7 @@ class NodeChecker implements Checker
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
+    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer cacheTracer ) throws Exception
     {
         ParallelExecution execution = context.execution;
         execution.run( getClass().getSimpleName() + "-checkNodes", execution.partition( nodeIdRange,
@@ -419,7 +421,8 @@ class NodeChecker implements Checker
         PropertySchemaType propertySchemaType = schema.propertySchemaType();
         long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
         indexEntityTokenIds = sortAndDeduplicate( indexEntityTokenIds );
-        try ( BoundedIterable<Long> allEntriesReader = accessor.newAllEntriesReader( range.from(), lastRange ? Long.MAX_VALUE : range.to() ) )
+        try ( BoundedIterable<Long> allEntriesReader = accessor.newAllEntriesReader( range.from(), lastRange ? Long.MAX_VALUE : range.to(),
+                TRACER_SUPPLIER.get() ) )
         {
             for ( long entityId : allEntriesReader )
             {

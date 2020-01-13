@@ -151,7 +151,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
             // The index population detects conflicts on the fly, however for updates coming in we're in a position
             // where we cannot detect conflicts while applying, but instead afterwards.
-            updater = new DeferredConflictCheckingIndexUpdater( updater, this::newReader, descriptor );
+            updater = new DeferredConflictCheckingIndexUpdater( updater, this::newReader, descriptor, TRACER_SUPPLIER.get() );
         }
         return updater;
     }

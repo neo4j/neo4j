@@ -24,6 +24,8 @@ import java.util.Iterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class IndexIterator implements BoundedIterable<Long>
 {
     private final IndexAccessor indexAccessor;
@@ -37,7 +39,7 @@ public class IndexIterator implements BoundedIterable<Long>
     @Override
     public long maxCount()
     {
-        try ( BoundedIterable<Long> reader = indexAccessor.newAllEntriesReader() )
+        try ( BoundedIterable<Long> reader = indexAccessor.newAllEntriesReader( TRACER_SUPPLIER.get() ) )
         {
             return reader.maxCount();
         }
@@ -61,7 +63,7 @@ public class IndexIterator implements BoundedIterable<Long>
     {
         if ( indexReader == null )
         {
-            indexReader = indexAccessor.newAllEntriesReader();
+            indexReader = indexAccessor.newAllEntriesReader( TRACER_SUPPLIER.get() );
         }
 
         return indexReader.iterator();

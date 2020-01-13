@@ -78,6 +78,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -184,8 +185,8 @@ abstract class IndexPopulationStressTest
         {
             SimpleNodeValueClient entries = new SimpleNodeValueClient();
             SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, entries, IndexOrder.NONE, hasValues, IndexQuery.exists( 0 ) );
-            referenceReader.query( NULL_CONTEXT, referenceEntries, IndexOrder.NONE, hasValues, IndexQuery.exists( 0 ) );
+            reader.query( NULL_CONTEXT, entries, IndexOrder.NONE, hasValues, NULL, IndexQuery.exists( 0 ) );
+            referenceReader.query( NULL_CONTEXT, referenceEntries, IndexOrder.NONE, hasValues, NULL, IndexQuery.exists( 0 ) );
             while ( referenceEntries.next() )
             {
                 assertTrue( entries.next() );

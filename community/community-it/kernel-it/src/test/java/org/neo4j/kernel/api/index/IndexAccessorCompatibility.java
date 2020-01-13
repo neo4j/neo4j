@@ -116,7 +116,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             SimpleNodeValueClient nodeValueClient = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, nodeValueClient, IndexOrder.NONE, false, predicates );
+            reader.query( NULL_CONTEXT, nodeValueClient, IndexOrder.NONE, false, NULL, predicates );
             List<Long> list = new LinkedList<>();
             while ( nodeValueClient.next() )
             {
@@ -134,7 +134,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, IndexQuery... predicates ) throws Exception
     {
         IndexReader reader = accessor.newReader();
-        reader.query( NULL_CONTEXT, client, order, false, predicates );
+        reader.query( NULL_CONTEXT, client, order, false, NULL, predicates );
         return reader;
     }
 

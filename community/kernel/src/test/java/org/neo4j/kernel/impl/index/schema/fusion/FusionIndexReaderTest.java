@@ -153,7 +153,7 @@ abstract class FusionIndexReaderTest
         // when
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, IndexQuery.exists( PROP_KEY ) );
+            fusionIndexReader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, NULL, IndexQuery.exists( PROP_KEY ) );
         }
 
         // then
@@ -264,7 +264,7 @@ abstract class FusionIndexReaderTest
         LongSet resultSet;
         try ( NodeValueIterator result = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, result, IndexOrder.NONE, false, exists );
+            fusionIndexReader.query( NULL_CONTEXT, result, IndexOrder.NONE, false, NULL, exists );
 
             // then
             resultSet = PrimitiveLongCollections.asSet( result );
@@ -288,7 +288,7 @@ abstract class FusionIndexReaderTest
                 Value value = values.get( i )[0];
                 try ( NodeValueIterator cursor = new NodeValueIterator() )
                 {
-                    fusionIndexReader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, false, IndexQuery.exact( 0, value ) );
+                    fusionIndexReader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, false, NULL, IndexQuery.exact( 0, value ) );
                 }
                 for ( IndexSlot j : IndexSlot.values() )
                 {
@@ -317,18 +317,18 @@ abstract class FusionIndexReaderTest
         // when
         try ( NodeValueIterator cursor = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, false, indexQuery );
+            fusionIndexReader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, false, NULL, indexQuery );
         }
 
         // then
         // Strange mockito inconsistency regarding varargs
         if ( indexQuery.length == 1 )
         {
-            verify( expectedReader ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ) );
+            verify( expectedReader ).query( any(), any(), any(), anyBoolean(), any(), eq( indexQuery[0] ) );
         }
         else
         {
-            verify( expectedReader ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
+            verify( expectedReader ).query( any(), any(), any(), anyBoolean(), any(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
         }
         for ( IndexReader reader : aliveReaders )
         {

@@ -38,6 +38,8 @@ import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -52,6 +54,7 @@ import static org.neo4j.consistency.newchecker.RecordLoading.safeGetNodeLabels;
 
 public class IndexChecker implements Checker
 {
+    private static final String INDEX_CHECKER_TAG = "IndexChecker";
     private static final int INDEX_CACHING_PROGRESS_FACTOR = 3;
     static final int NUM_INDEXES_IN_CACHE = 5;
 
@@ -87,7 +90,7 @@ public class IndexChecker implements Checker
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
+    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer cacheTracer ) throws Exception
     {
         // While more indexes
         //   Scan through one or more indexes (as sequentially as possible) and cache the node ids + hash of the indexed value in one bit-set for each index
@@ -95,18 +98,21 @@ public class IndexChecker implements Checker
 
         cacheAccess.setCacheSlotSizesAndClear( TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE ); //can hold up to 5 indexes
         List<IndexContext> indexesToCheck = new ArrayList<>();
-        for ( int i = 0; i < indexes.size() && !context.isCancelled(); i++ )
+        try ( var indexChecker = cacheTracer.createPageCursorTracer( INDEX_CHECKER_TAG ) )
         {
-            IndexContext index = new IndexContext( indexes.get( i ), i % NUM_INDEXES_IN_CACHE );
-            indexesToCheck.add( index );
-            cacheIndex( index, nodeIdRange, firstRange );
-            boolean isLastIndex = i == indexes.size() - 1;
-            boolean canFitMoreAndIsNotLast = !isLastIndex && index.cacheSlotOffset != NUM_INDEXES_IN_CACHE - 1;
-            if ( !canFitMoreAndIsNotLast  && !context.isCancelled() )
+            for ( int i = 0; i < indexes.size() && !context.isCancelled(); i++ )
             {
-                checkVsEntities( indexesToCheck, nodeIdRange );
-                indexesToCheck = new ArrayList<>();
-                cacheAccess.clearCache();
+                IndexContext index = new IndexContext( indexes.get( i ), i % NUM_INDEXES_IN_CACHE );
+                indexesToCheck.add( index );
+                cacheIndex( index, nodeIdRange, firstRange, indexChecker );
+                boolean isLastIndex = i == indexes.size() - 1;
+                boolean canFitMoreAndIsNotLast = !isLastIndex && index.cacheSlotOffset != NUM_INDEXES_IN_CACHE - 1;
+                if ( !canFitMoreAndIsNotLast  && !context.isCancelled() )
+                {
+                    checkVsEntities( indexesToCheck, nodeIdRange );
+                    indexesToCheck = new ArrayList<>();
+                    cacheAccess.clearCache();
+                }
             }
         }
     }
@@ -117,10 +123,10 @@ public class IndexChecker implements Checker
         return flags.isCheckIndexes();
     }
 
-    private void cacheIndex( IndexContext index, LongRange nodeIdRange, boolean firstRange ) throws Exception
+    private void cacheIndex( IndexContext index, LongRange nodeIdRange, boolean firstRange, PageCursorTracer cursorTracer ) throws Exception
     {
         IndexAccessor accessor = indexAccessors.accessorFor( index.descriptor );
-        IndexEntriesReader[] partitions = accessor.newAllIndexEntriesReader( context.execution.getNumberOfThreads() );
+        IndexEntriesReader[] partitions = accessor.newAllIndexEntriesReader( context.execution.getNumberOfThreads(), cursorTracer );
         try
         {
             Value[][] firstValues = new Value[partitions.length][];

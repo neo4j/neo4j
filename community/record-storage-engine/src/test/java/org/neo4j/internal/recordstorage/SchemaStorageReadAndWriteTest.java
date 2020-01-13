@@ -69,7 +69,7 @@ class SchemaStorageReadAndWriteTest
         @Override
         public int nextRuleId()
         {
-            return (int) storage.newRuleId();
+            return (int) storage.newRuleId( NULL );
         }
     };
 

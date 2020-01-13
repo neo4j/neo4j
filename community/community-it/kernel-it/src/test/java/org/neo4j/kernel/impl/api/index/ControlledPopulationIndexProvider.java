@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -100,7 +101,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
         return initialIndexState;
     }

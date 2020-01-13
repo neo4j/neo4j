@@ -84,6 +84,7 @@ import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -1242,7 +1243,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 if ( legal )
                 {
                     // when
-                    reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, theQuery );
+                    reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, NULL, theQuery );
 
                     // then should not throw
                 }
@@ -1251,7 +1252,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     try
                     {
                         // when
-                        reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, theQuery );
+                        reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, NULL, theQuery );
                         fail( "Expected index reader to throw for illegal composite query. Query was, " + Arrays.toString( theQuery ) );
                     }
                     catch ( IllegalArgumentException e )

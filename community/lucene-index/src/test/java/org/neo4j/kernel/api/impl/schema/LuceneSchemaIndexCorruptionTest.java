@@ -52,6 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -77,7 +78,7 @@ class LuceneSchemaIndexCorruptionTest
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
                 .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
-        InternalIndexState initialState = provider.getInitialState( descriptor );
+        InternalIndexState initialState = provider.getInitialState( descriptor, NULL );
 
         // Then
         assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );
@@ -96,7 +97,7 @@ class LuceneSchemaIndexCorruptionTest
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
                 .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
-        InternalIndexState initialState = provider.getInitialState( descriptor );
+        InternalIndexState initialState = provider.getInitialState( descriptor, NULL );
 
         // Then
         assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );
@@ -115,7 +116,7 @@ class LuceneSchemaIndexCorruptionTest
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
                 .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
-        InternalIndexState initialState = provider.getInitialState( descriptor );
+        InternalIndexState initialState = provider.getInitialState( descriptor, NULL );
 
         // Then
         assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );

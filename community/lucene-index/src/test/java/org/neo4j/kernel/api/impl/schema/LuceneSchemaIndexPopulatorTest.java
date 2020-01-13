@@ -63,6 +63,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @TestDirectoryExtension
@@ -296,7 +297,7 @@ class LuceneSchemaIndexPopulatorTest
     private void switchToVerification() throws IOException
     {
         indexPopulator.close( true );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index ) );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index, NULL ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }

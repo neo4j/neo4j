@@ -85,7 +85,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
         {
             // Try and read initial state, if we succeed then we know this file is a native index file
             // and we overwrite initial state with target.
-            NativeIndexes.readState( pageCache, fileOrDir );
+            NativeIndexes.readState( pageCache, fileOrDir, NULL );
             return true;
         }
         catch ( Throwable t )

@@ -85,7 +85,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // WHEN (this will attempt to call close)
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.markAsFailed( failure ), false );
         // THEN
-        assertThat( indexProvider.getPopulationFailure( descriptor ) ).contains( failure );
+        assertThat( indexProvider.getPopulationFailure( descriptor, NULL ) ).contains( failure );
     }
 
     @Test
@@ -102,7 +102,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             p.close( false );
 
             // THEN
-            assertEquals( FAILED, indexProvider.getInitialState( descriptor ) );
+            assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL ) );
         }, false );
     }
 
@@ -147,7 +147,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                   NodeValueIterator nodes = new NodeValueIterator() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
-                reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, propertyValue ) );
+                reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, NULL, IndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
             }
         }
@@ -208,7 +208,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 {
                     try ( NodeValueIterator nodes = new NodeValueIterator() )
                     {
-                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, NULL, IndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.nodeId, nodes.next() );
                         assertFalse( nodes.hasNext() );
                     }
@@ -290,7 +290,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 for ( NodeAndValue nodeAndValue : toRemove )
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, nodeAndValue.value ) );
+                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, NULL, IndexQuery.exact( propertyKeyId, nodeAndValue.value ) );
                     boolean anyHits = false;
 
                     StringJoiner nodesStillLeft = new StringJoiner( ", ", "[", "]" );
@@ -328,7 +328,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 {
                     try ( NodeValueIterator nodes = new NodeValueIterator() )
                     {
-                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, NULL, IndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.nodeId, nodes.next() );
                         assertFalse( nodes.hasNext() );
                     }
@@ -366,7 +366,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     {
                         try ( NodeValueIterator nodes = new NodeValueIterator() )
                         {
-                            reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                            reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, NULL, IndexQuery.exact( propertyKeyId, entry.value ) );
                             assertEquals( entry.value.toString(), asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
                         }
                     }

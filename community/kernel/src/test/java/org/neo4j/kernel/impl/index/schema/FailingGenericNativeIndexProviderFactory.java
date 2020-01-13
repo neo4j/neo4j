@@ -138,15 +138,17 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             }
 
             @Override
-            public String getPopulationFailure( IndexDescriptor descriptor )
+            public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
             {
-                return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE : actualProvider.getPopulationFailure( descriptor );
+                return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE
+                                                                          : actualProvider.getPopulationFailure( descriptor, cursorTracer );
             }
 
             @Override
-            public InternalIndexState getInitialState( IndexDescriptor descriptor )
+            public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
             {
-                return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED : actualProvider.getInitialState( descriptor );
+                return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED
+                                                                          : actualProvider.getInitialState( descriptor, cursorTracer );
             }
         };
     }

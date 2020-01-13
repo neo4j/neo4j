@@ -178,7 +178,7 @@ class PartitionedIndexReaderTest
     {
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
-            indexReader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, query );
+            indexReader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, NULL, query );
             return PrimitiveLongCollections.asSet( iterator );
         }
     }

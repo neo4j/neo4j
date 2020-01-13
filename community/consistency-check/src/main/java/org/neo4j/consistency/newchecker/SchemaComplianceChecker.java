@@ -148,7 +148,7 @@ class SchemaComplianceChecker implements AutoCloseable
         try
         {
             NodeValueIterator iterator = new NodeValueIterator();
-            reader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, query );
+            reader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, TRACER_SUPPLIER.get(), query );
             indexedNodeIds = iterator;
         }
         catch ( IndexNotApplicableKernelException e )

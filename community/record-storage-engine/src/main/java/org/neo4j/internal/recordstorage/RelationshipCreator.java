@@ -50,8 +50,7 @@ public class RelationshipCreator
      * @param firstNodeId The id of the start node.
      * @param secondNodeId The id of the end node.
      */
-    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId,
-            RecordAccessSet recordChangeSet, ResourceLocker locks)
+    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId, RecordAccessSet recordChangeSet, ResourceLocker locks )
     {
         // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
         NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();

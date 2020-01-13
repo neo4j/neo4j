@@ -240,6 +240,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         validateDefaultProviderExisting();
 
+        var cursorTracer = TRACER_SUPPLIER.get();
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
@@ -249,7 +250,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
                 IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
                 IndexProvider provider = providerMap.lookup( providerDescriptor );
-                InternalIndexState initialState = provider.getInitialState( descriptor );
+                InternalIndexState initialState = provider.getInitialState( descriptor, cursorTracer );
 
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( descriptor ) );
 
@@ -267,7 +268,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     break;
                 case FAILED:
                     monitor.initialState( descriptor, FAILED );
-                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor ) );
+                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor, cursorTracer ) );
                     indexProxy = indexProxyCreator.createFailedIndexProxy( descriptor, failure );
                     break;
                 default:

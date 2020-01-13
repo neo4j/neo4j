@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -132,16 +133,16 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor )
+    public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
         StringBuilder builder = new StringBuilder();
-        providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, descriptor ) );
+        providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, descriptor, cursorTracer ) );
         return builder.toString();
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
-        String failure = provider.getPopulationFailure( descriptor );
+        String failure = provider.getPopulationFailure( descriptor, cursorTracer );
         if ( isNotEmpty( failure ) )
         {
             builder.append( indexName );
@@ -152,9 +153,9 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
-        Iterable<InternalIndexState> statesIterable = providers.transform( p -> p.getInitialState( descriptor ) );
+        Iterable<InternalIndexState> statesIterable = providers.transform( p -> p.getInitialState( descriptor, cursorTracer ) );
         List<InternalIndexState> states = Iterables.asList( statesIterable );
         if ( states.contains( FAILED ) )
         {

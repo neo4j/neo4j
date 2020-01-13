@@ -51,8 +51,6 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
-
 public class SchemaStorage implements SchemaRuleAccess
 {
     private final SchemaStore schemaStore;
@@ -65,9 +63,9 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public long newRuleId()
+    public long newRuleId( PageCursorTracer cursorTracer )
     {
-        return schemaStore.nextId( TRACER_SUPPLIER.get() );
+        return schemaStore.nextId( cursorTracer );
     }
 
     @Override
@@ -166,13 +164,13 @@ public class SchemaStorage implements SchemaRuleAccess
         assert !blocks.isEmpty() : "Property blocks should have been produced for schema rule: " + rule;
 
         long nextPropId = Record.NO_NEXT_PROPERTY.longValue();
-        PropertyRecord currRecord = newInitialisedPropertyRecord( propertyStore, rule );
+        PropertyRecord currRecord = newInitialisedPropertyRecord( propertyStore, rule, cursorTracer );
 
         for ( PropertyBlock block : blocks )
         {
             if ( !currRecord.hasSpaceFor( block ) )
             {
-                PropertyRecord nextRecord = newInitialisedPropertyRecord( propertyStore, rule );
+                PropertyRecord nextRecord = newInitialisedPropertyRecord( propertyStore, rule, cursorTracer );
                 linkAndWritePropertyRecord( propertyStore, currRecord, nextRecord.getId(), nextPropId );
                 nextPropId = currRecord.getId();
                 currRecord = nextRecord;
@@ -191,10 +189,10 @@ public class SchemaStorage implements SchemaRuleAccess
         schemaStore.setHighestPossibleIdInUse( rule.getId() );
     }
 
-    private PropertyRecord newInitialisedPropertyRecord( PropertyStore propertyStore, SchemaRule rule )
+    private PropertyRecord newInitialisedPropertyRecord( PropertyStore propertyStore, SchemaRule rule, PageCursorTracer cursorTracer )
     {
         PropertyRecord record = propertyStore.newRecord();
-        record.setId( propertyStore.nextId( TRACER_SUPPLIER.get() ) );
+        record.setId( propertyStore.nextId( cursorTracer ) );
         record.setSchemaRuleId( rule.getId() );
         record.setCreated();
         return record;

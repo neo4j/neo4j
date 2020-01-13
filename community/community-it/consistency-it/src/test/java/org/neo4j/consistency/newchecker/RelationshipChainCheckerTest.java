@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -241,6 +242,6 @@ class RelationshipChainCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new RelationshipChainChecker( context( numberOfThreads() ) ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
+        new RelationshipChainChecker( context( numberOfThreads() ) ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true, PageCacheTracer.NULL );
     }
 }

@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -155,13 +156,13 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor )
+    public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
         return defaultIfEmpty( getIndexStorage( descriptor.getId() ).getStoredIndexFailure(), StringUtils.EMPTY );
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor index )
+    public InternalIndexState getInitialState( IndexDescriptor index, PageCursorTracer cursorTracer )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
         String failure = indexStorage.getStoredIndexFailure();

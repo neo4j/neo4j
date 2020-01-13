@@ -72,7 +72,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  * </li>
  * </ul>
  * <p>
- * {@link #force(IOLimiter)} is vital for allowing this store to be recoverable, and must be called
+ * {@link #force(IOLimiter, PageCursorTracer)} is vital for allowing this store to be recoverable, and must be called
  * whenever Neo4j performs a checkpoint.
  * <p>
  * This store is backed by a single store file "neostore.labelscanstore.db".

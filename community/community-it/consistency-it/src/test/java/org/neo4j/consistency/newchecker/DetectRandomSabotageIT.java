@@ -658,7 +658,7 @@ public class DetectRandomSabotageIT
                         IndexAccessor accessor = ((OnlineIndexProxy) indexProxy).accessor();
                         long selectedEntityId = -1;
                         Value[] selectedValues = null;
-                        try ( IndexEntriesReader reader = accessor.newAllIndexEntriesReader( 1 )[0] )
+                        try ( IndexEntriesReader reader = accessor.newAllIndexEntriesReader( 1, NULL )[0] )
                         {
                             long entityId = -1;
                             Value[] values = null;

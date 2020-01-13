@@ -21,9 +21,11 @@ package org.neo4j.consistency.newchecker;
 
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 interface Checker
 {
-    void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception;
+    void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer pageCacheTracer ) throws Exception;
+
     boolean shouldBeChecked( ConsistencyFlags flags );
 }

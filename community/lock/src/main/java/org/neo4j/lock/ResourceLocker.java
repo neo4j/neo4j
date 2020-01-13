@@ -28,7 +28,7 @@ public interface ResourceLocker
      * while one client holds an exclusive lock. If the lock cannot be acquired,
      * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
      *
-     * @param tracer
+     * @param tracer lock tracer
      * @param resourceType type or resource(s) to lock.
      * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
      *

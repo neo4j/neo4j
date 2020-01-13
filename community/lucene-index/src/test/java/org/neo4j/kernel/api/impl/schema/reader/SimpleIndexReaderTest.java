@@ -157,7 +157,7 @@ class SimpleIndexReaderTest
 
     private void doQuery( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
-        reader.query( NULL_CONTEXT, new NodeValueIterator(), IndexOrder.NONE, false, query );
+        reader.query( NULL_CONTEXT, new NodeValueIterator(), IndexOrder.NONE, false, NULL, query );
     }
 
     private SimpleIndexReader getNonUniqueSimpleReader()

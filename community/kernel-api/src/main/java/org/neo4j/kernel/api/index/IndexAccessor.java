@@ -80,7 +80,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
 
     /**
      * Refreshes this index, so that {@link #newReader() readers} created after completion of this call
-     * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode)}
+     * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode, PageCursorTracer)}
      * w/ {@link IndexUpdateMode#ONLINE}, but not guaranteed for {@link IndexUpdateMode#RECOVERY}.
      * Therefore this call is complementary for updates that has taken place with {@link IndexUpdateMode#RECOVERY}.
      *
@@ -106,15 +106,15 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
     /**
      * @return a {@link BoundedIterable} to access all entity ids indexed in this index.
      */
-    default BoundedIterable<Long> newAllEntriesReader()
+    default BoundedIterable<Long> newAllEntriesReader( PageCursorTracer cursorTracer )
     {
-        return newAllEntriesReader( 0, Long.MAX_VALUE );
+        return newAllEntriesReader( 0, Long.MAX_VALUE, cursorTracer );
     }
 
     /**
      * @return a {@link BoundedIterable} to access all entity ids indexed in the range {@code fromIdInclusive}-{@code toIdExclusive} in this index.
      */
-    BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive );
+    BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer );
 
     /**
      * Returns one or more {@link IndexEntriesReader readers} reading all entries in this index. The supplied {@code partitions} is a hint
@@ -122,12 +122,13 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
      * read individually in parallel and collectively all partitions will read all the index entries in this index.
      *
      * @param partitions a hint for how many partitions will be returned.
+     * @param cursorTracer underlying page cursor tracer
      * @return the partitions that can read the index entries in this index. The implementation should strive to adhere to this number,
      * but the only real contract is that the returned number of readers is between 1 <= numberOfReturnedReaders <= partitions.
      */
-    default IndexEntriesReader[] newAllIndexEntriesReader( int partitions )
+    default IndexEntriesReader[] newAllIndexEntriesReader( int partitions, PageCursorTracer cursorTracer )
     {
-        BoundedIterable<Long> entriesReader = newAllEntriesReader();
+        BoundedIterable<Long> entriesReader = newAllEntriesReader( cursorTracer );
         Iterator<Long> ids = entriesReader.iterator();
         IndexEntriesReader reader = new IndexEntriesReader()
         {
@@ -226,7 +227,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
+        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
         {
             return new BoundedIterable<>()
             {
@@ -319,15 +320,15 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader()
+        public BoundedIterable<Long> newAllEntriesReader( PageCursorTracer cursorTracer )
         {
-            return delegate.newAllEntriesReader();
+            return delegate.newAllEntriesReader( cursorTracer );
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
+        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
         {
-            return delegate.newAllEntriesReader( fromIdInclusive, toIdExclusive );
+            return delegate.newAllEntriesReader( fromIdInclusive, toIdExclusive, cursorTracer );
         }
 
         @Override

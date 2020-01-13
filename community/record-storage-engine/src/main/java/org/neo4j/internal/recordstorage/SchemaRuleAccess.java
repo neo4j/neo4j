@@ -41,7 +41,7 @@ public interface SchemaRuleAccess
         return new SchemaStorage( store, tokenHolders );
     }
 
-    long newRuleId();
+    long newRuleId( PageCursorTracer cursorTracer );
 
     Iterable<SchemaRule> getAll();
 

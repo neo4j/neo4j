@@ -33,6 +33,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.index.label.LabelScanWriter;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -322,6 +323,6 @@ class NodeCheckerTest extends CheckerTestBase
     private void check() throws Exception
     {
         NodeChecker checker = new NodeChecker( context(), noMandatoryProperties );
-        checker.check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
+        checker.check( LongRange.range( 0, nodeStore.getHighId() ), true, true, PageCacheTracer.NULL );
     }
 }

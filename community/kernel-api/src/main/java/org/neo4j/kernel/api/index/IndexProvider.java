@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -175,7 +176,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor descriptor )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
                 {
                     return InternalIndexState.ONLINE;
                 }
@@ -188,7 +189,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public String getPopulationFailure( IndexDescriptor descriptor )
+                public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
                 {
                     return StringUtils.EMPTY;
                 }
@@ -231,18 +232,20 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      *
      * Implementations are expected to persist this failure
      * @param descriptor {@link IndexDescriptor} of the index.
+     * @param cursorTracer underlying page cursor tracer
      * @return failure, in the form of a stack trace, that happened during population or empty string if there is no failure
      */
-    public abstract String getPopulationFailure( IndexDescriptor descriptor );
+    public abstract String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer );
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor, PageCursorTracer)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      * @param descriptor to get initial state for.
+     * @param cursorTracer underlying page cursor tracer.
      */
-    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor );
+    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer );
 
     /**
      * @return a description of this index provider
@@ -323,13 +326,13 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor )
+        public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
         {
             return StringUtils.EMPTY;
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
         {
             return null;
         }
@@ -370,15 +373,15 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor )
+        public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
         {
-            return provider.getPopulationFailure( descriptor );
+            return provider.getPopulationFailure( descriptor, cursorTracer );
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
         {
-            return provider.getInitialState( descriptor );
+            return provider.getInitialState( descriptor, cursorTracer );
         }
 
         @Override

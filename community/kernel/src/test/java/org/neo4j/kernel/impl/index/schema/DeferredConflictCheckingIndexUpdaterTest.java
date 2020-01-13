@@ -44,6 +44,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -68,7 +69,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         updates.add( remove( nodeId++, descriptor, tuple( 1001L, 1002L ) ) );
         updates.add( change( nodeId++, descriptor, tuple( (byte) 2, (byte) 3 ), tuple( (byte) 4, (byte) 5 ) ) );
         updates.add( add( nodeId, descriptor, tuple( 5, "5" ) ) );
-        try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor ) )
+        try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL ) )
         {
             // when
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -89,7 +90,7 @@ class DeferredConflictCheckingIndexUpdaterTest
                 {
                     query[i] = IndexQuery.exact( propertyKeyIds[i], tuple[i] );
                 }
-                verify( reader ).query( any(), any(), any(), anyBoolean(), eq( query[0] ), eq( query[1] ) );
+                verify( reader ).query( any(), any(), any(), anyBoolean(), any(), eq( query[0] ), eq( query[1] ) );
             }
         }
         verify( reader ).close();
@@ -103,7 +104,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         IndexUpdater actual = mock( IndexUpdater.class );
         IndexReader reader = mock( IndexReader.class );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), anyBoolean(), any() );
-        DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor );
+        DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL );
 
         // when
         updater.process( add( 0, descriptor, tuple( 10, 11 ) ) );

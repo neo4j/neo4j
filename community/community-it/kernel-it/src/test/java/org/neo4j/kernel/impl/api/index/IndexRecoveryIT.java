@@ -87,6 +87,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -158,7 +159,7 @@ class IndexRecoveryIT
 
         killFuture.get();
 
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( InternalIndexState.POPULATING );
         Semaphore recoverySemaphore = new Semaphore( 0 );
         try
         {
@@ -211,7 +212,7 @@ class IndexRecoveryIT
         }
 
         // When
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( InternalIndexState.POPULATING );
         populationSemaphore = new Semaphore( 1 );
         try
         {
@@ -256,8 +257,7 @@ class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class )) )
-                .thenReturn( InternalIndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( writer );
 
@@ -295,7 +295,7 @@ class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.FAILED );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( InternalIndexState.FAILED );
 
         // When
         startDb();

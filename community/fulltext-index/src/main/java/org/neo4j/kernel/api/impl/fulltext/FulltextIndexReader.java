@@ -123,8 +123,8 @@ public class FulltextIndexReader implements IndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... queries )
-            throws IndexNotApplicableKernelException
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+            PageCursorTracer cursorTracer, IndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         for ( IndexQuery indexQuery : queries )
@@ -233,7 +233,8 @@ public class FulltextIndexReader implements IndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
+            PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Fulltext indexes does not support distinctValues queries" );
     }

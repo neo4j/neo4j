@@ -323,7 +323,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, queries );
+            reader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, NULL, queries );
             return toSet( results );
         }
     }

@@ -113,7 +113,7 @@ abstract class Read implements TxStateHolder,
         client.setRead( this );
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), indexSession.reference );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, indexSession.reader );
-        indexSession.reader.query( this, withFullPrecision, indexOrder, needsValues, query );
+        indexSession.reader.query( this, withFullPrecision, indexOrder, needsValues, cursorTracer, query );
     }
 
     @Override
@@ -131,7 +131,7 @@ abstract class Read implements TxStateHolder,
         client.setRead( this );
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), index );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, reader );
-        reader.query( this, withFullPrecision, IndexOrder.NONE, false, query );
+        reader.query( this, withFullPrecision, IndexOrder.NONE, false, cursorTracer, query );
     }
 
     @Override
@@ -142,7 +142,7 @@ abstract class Read implements TxStateHolder,
         IndexReader reader = indexReader( index, true );
         cursorImpl.setRead( this );
         CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this );
-        reader.distinctValues( cursorImpl, accessor, needsValues );
+        reader.distinctValues( cursorImpl, accessor, needsValues, cursorTracer );
     }
 
     private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode,
@@ -282,7 +282,7 @@ abstract class Read implements TxStateHolder,
         cursor.setRead( this );
         IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, indexReader );
         // we never need values for exact predicates
-        indexReader.query( this, target, IndexOrder.NONE, false, query );
+        indexReader.query( this, target, IndexOrder.NONE, false, cursorTracer, query );
     }
 
     @Override
@@ -305,7 +305,7 @@ abstract class Read implements TxStateHolder,
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this );
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( cursorImpl, ktx.securityContext().mode(), indexSession.reference );
-        indexSession.reader.query( this, withSecurity, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( this, withSecurity, indexOrder, needsValues, cursorTracer, IndexQuery.exists( firstProperty ) );
     }
 
     @Override

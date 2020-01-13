@@ -687,7 +687,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         processAll( updates );
 
         // when
-        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader() );
+        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader( NULL ) );
 
         // then
         Set<Long> expectedIds = Stream.of( updates )
@@ -700,7 +700,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex()
     {
         // when
-        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader() );
+        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader( NULL ) );
 
         // then
         Set<Long> expectedIds = Collections.emptySet();
@@ -722,7 +722,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1] ) );
             IndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
             IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
-            reader.query( NULL_CONTEXT, filterClient, IndexOrder.NONE, false, rangeQuery );
+            reader.query( NULL_CONTEXT, filterClient, IndexOrder.NONE, false, NULL, rangeQuery );
 
             // then
             assertTrue( iter.hasNext() );
@@ -774,7 +774,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                 }
 
                 SimpleNodeValueClient client = new SimpleNodeValueClient();
-                reader.query( NULL_CONTEXT, client, supportedOrder, true, supportedQuery );
+                reader.query( NULL_CONTEXT, client, supportedOrder, true, NULL, supportedQuery );
                 int i = 0;
                 while ( client.next() )
                 {
@@ -796,7 +796,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
 
             var e = assertThrows( UnsupportedOperationException.class, () ->
-                reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery ) );
+                reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), unsupportedOrder, false, NULL, unsupportedQuery ) );
             assertThat( e.getMessage() ).contains( "unsupported order" ).contains( unsupportedOrder.toString() ).contains( unsupportedQuery.toString() );
         }
     }
@@ -851,7 +851,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         try ( IndexReader reader = accessor.newReader() )
         {
                 SimpleNodeValueClient client = new SimpleNodeValueClient();
-                reader.query( NULL_CONTEXT, client, IndexOrder.NONE, true, supportedQuery );
+                reader.query( NULL_CONTEXT, client, IndexOrder.NONE, true, NULL, supportedQuery );
 
                 // then
                 while ( client.next() )
@@ -922,7 +922,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     private static NodeValueIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
-        reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, query );
+        reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, NULL, query );
         return client;
     }
 

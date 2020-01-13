@@ -142,7 +142,7 @@ abstract class NativeIndexProviderTests
         // when
         // ... no failure on populator
 
-        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor() ) );
+        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor(), NULL ) );
     }
 
     @Test
@@ -164,7 +164,7 @@ abstract class NativeIndexProviderTests
         failedPopulator.markAsFailed( "failure" );
         failedPopulator.close( false );
 
-        var populationFailure = provider.getPopulationFailure( descriptor( nonFailedIndexId ) );
+        var populationFailure = provider.getPopulationFailure( descriptor( nonFailedIndexId ), NULL );
         assertEquals( StringUtils.EMPTY, populationFailure );
     }
 
@@ -182,7 +182,7 @@ abstract class NativeIndexProviderTests
         populator.close( false );
 
         // then
-        String populationFailure = provider.getPopulationFailure( descriptor() );
+        String populationFailure = provider.getPopulationFailure( descriptor(), NULL );
         assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
@@ -211,9 +211,9 @@ abstract class NativeIndexProviderTests
         thirdPopulator.close( false );
 
         // then
-        assertThat( provider.getPopulationFailure( descriptor( first ) ) ).isEqualTo( firstFailure );
-        assertThat( provider.getPopulationFailure( descriptor( third ) ) ).isEqualTo( thirdFailure );
-        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor( second ) ) );
+        assertThat( provider.getPopulationFailure( descriptor( first ), NULL ) ).isEqualTo( firstFailure );
+        assertThat( provider.getPopulationFailure( descriptor( third ), NULL ) ).isEqualTo( thirdFailure );
+        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor( second ), NULL ) );
     }
 
     @Test
@@ -231,7 +231,7 @@ abstract class NativeIndexProviderTests
 
         // then
         provider = newProvider();
-        String populationFailure = provider.getPopulationFailure( descriptor() );
+        String populationFailure = provider.getPopulationFailure( descriptor(), NULL );
         assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
@@ -245,7 +245,7 @@ abstract class NativeIndexProviderTests
         provider = newProvider();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
 
         // then
         assertEquals( expectedStateOnNonExistingSubIndex, state );
@@ -269,7 +269,7 @@ abstract class NativeIndexProviderTests
         populator.create();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
@@ -287,7 +287,7 @@ abstract class NativeIndexProviderTests
         populator.close( false );
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
 
         // then
         assertEquals( InternalIndexState.FAILED, state );
@@ -303,7 +303,7 @@ abstract class NativeIndexProviderTests
         populator.close( true );
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
 
         // then
         assertEquals( InternalIndexState.ONLINE, state );

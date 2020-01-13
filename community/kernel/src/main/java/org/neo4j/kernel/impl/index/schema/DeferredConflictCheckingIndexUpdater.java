@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -63,13 +64,16 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     private final IndexUpdater actual;
     private final Supplier<IndexReader> readerSupplier;
     private final IndexDescriptor indexDescriptor;
+    private final PageCursorTracer cursorTracer;
     private final Set<ValueTuple> touchedTuples = new HashSet<>();
 
-    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<IndexReader> readerSupplier, IndexDescriptor indexDescriptor )
+    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<IndexReader> readerSupplier, IndexDescriptor indexDescriptor,
+            PageCursorTracer cursorTracer )
     {
         this.actual = actual;
         this.readerSupplier = readerSupplier;
         this.indexDescriptor = indexDescriptor;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -92,7 +96,7 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
             {
                 try ( NodeValueIterator client = new NodeValueIterator() )
                 {
-                    reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, queryOf( tuple ) );
+                    reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, cursorTracer, queryOf( tuple ) );
                     if ( client.hasNext() )
                     {
                         long firstEntityId = client.next();

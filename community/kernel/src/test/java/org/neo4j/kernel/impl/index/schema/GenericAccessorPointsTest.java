@@ -250,7 +250,7 @@ class GenericAccessorPointsTest
             for ( Value value : values )
             {
                 IndexQuery.ExactPredicate exact = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                indexReader.query( QueryContext.NULL_CONTEXT, client, IndexOrder.NONE, true, exact );
+                indexReader.query( QueryContext.NULL_CONTEXT, client, IndexOrder.NONE, true, NULL, exact );
 
                 // then
                 assertTrue( client.next() );

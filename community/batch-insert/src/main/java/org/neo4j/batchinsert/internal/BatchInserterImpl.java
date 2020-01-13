@@ -611,7 +611,7 @@ public class BatchInserterImpl implements BatchInserter
         for ( IndexDescriptor descriptor : schemaCache.indexes() )
         {
             IndexProvider provider = indexProviderMap.lookup( descriptor.getIndexProvider() );
-            if ( provider.getInitialState( descriptor ) != InternalIndexState.FAILED )
+            if ( provider.getInitialState( descriptor, NULL ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( descriptor );
             }

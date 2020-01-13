@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -101,11 +102,11 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor ) throws IOException;
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor )
+    public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
         try
         {
-            String failureMessage = NativeIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ) );
+            String failureMessage = NativeIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), cursorTracer );
             return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
         }
         catch ( IOException e )
@@ -115,11 +116,11 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
     {
         try
         {
-            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ) );
+            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), cursorTracer );
         }
         catch ( MetadataMismatchException | IOException e )
         {

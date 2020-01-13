@@ -103,10 +103,10 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
+    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
     {
         Iterable<BoundedIterable<Long>> entries =
-                instanceSelector.transform( indexAccessor -> indexAccessor.newAllEntriesReader( fromIdInclusive, toIdExclusive ) );
+                instanceSelector.transform( indexAccessor -> indexAccessor.newAllEntriesReader( fromIdInclusive, toIdExclusive, cursorTracer ) );
         return new BoundedIterable<>()
         {
             @Override

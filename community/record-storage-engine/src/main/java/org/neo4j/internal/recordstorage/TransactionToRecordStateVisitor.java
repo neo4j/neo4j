@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -45,15 +46,17 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final SchemaRuleAccess schemaStorage;
     private final SchemaRecordChangeTranslator schemaStateChanger;
     private final ConstraintRuleAccessor constraintSemantics;
+    private final PageCursorTracer cursorTracer;
 
     TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState, SchemaRuleAccess schemaRuleAccess,
-            ConstraintRuleAccessor constraintSemantics )
+            ConstraintRuleAccessor constraintSemantics, PageCursorTracer cursorTracer )
     {
         this.recordState = recordState;
         this.schemaState = schemaState;
         this.schemaStorage = schemaRuleAccess;
         this.schemaStateChanger = schemaRuleAccess.getSchemaRecordChangeTranslator();
         this.constraintSemantics = constraintSemantics;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -156,7 +159,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     public void visitAddedConstraint( ConstraintDescriptor constraint ) throws KernelException
     {
         clearSchemaState = true;
-        long constraintId = schemaStorage.newRuleId();
+        long constraintId = schemaStorage.newRuleId( cursorTracer );
 
         switch ( constraint.type() )
         {

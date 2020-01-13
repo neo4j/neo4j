@@ -106,7 +106,7 @@ class LuceneSchemaIndexPopulationIT
                       NodeValueIterator results = new NodeValueIterator();
                       IndexSampler indexSampler = indexReader.createSampler() )
                 {
-                    indexReader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, IndexQuery.exists( 1 ) );
+                    indexReader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, NULL, IndexQuery.exists( 1 ) );
                     long[] nodes = PrimitiveLongCollections.asArray( results );
                     assertEquals( affectedNodes, nodes.length );
 

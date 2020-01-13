@@ -25,6 +25,7 @@ import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 
@@ -247,6 +248,6 @@ class RelationshipCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new RelationshipChecker( context(), noMandatoryProperties ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
+        new RelationshipChecker( context(), noMandatoryProperties ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true, PageCacheTracer.NULL );
     }
 }

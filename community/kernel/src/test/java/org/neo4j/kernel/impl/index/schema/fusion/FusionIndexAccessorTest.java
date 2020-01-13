@@ -254,7 +254,7 @@ abstract class FusionIndexAccessorTest
         mockAllEntriesReaders( ids );
 
         // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
+        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader( NULL ) );
 
         // then
         for ( List<Long> part : ids )
@@ -272,7 +272,7 @@ abstract class FusionIndexAccessorTest
         mockAllEntriesReaders( ids );
 
         // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
+        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader( NULL ) );
 
         // then
         assertTrue( result.isEmpty() );
@@ -291,7 +291,7 @@ abstract class FusionIndexAccessorTest
         mockAllEntriesReaders( parts );
 
         // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
+        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader( NULL ) );
 
         // then
         for ( List<Long> part : parts )
@@ -309,7 +309,7 @@ abstract class FusionIndexAccessorTest
                 .toArray( BoundedIterable[]::new );
 
         // when
-        fusionIndexAccessor.newAllEntriesReader().close();
+        fusionIndexAccessor.newAllEntriesReader( NULL ).close();
 
         // then
         for ( BoundedIterable<Long> allEntriesReader : allEntriesReaders )
@@ -330,7 +330,7 @@ abstract class FusionIndexAccessorTest
                             .toArray( BoundedIterable[]::new );
 
             // then
-            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader( NULL );
             verifyOtherIsClosedOnSingleThrow( allEntriesReaders[i], fusionAllEntriesReader, without( allEntriesReaders, allEntriesReaders[i] ) );
 
             resetMocks();
@@ -353,7 +353,7 @@ abstract class FusionIndexAccessorTest
             }
 
             // then
-            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader( NULL );
             FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( failingReader, fusionAllEntriesReader );
         }
     }
@@ -377,7 +377,7 @@ abstract class FusionIndexAccessorTest
             }
 
             // then
-            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader( NULL );
             assertThat( fusionAllEntriesReader.maxCount() ).isEqualTo( BoundedIterable.UNKNOWN_MAX_COUNT );
         }
     }
@@ -392,7 +392,7 @@ abstract class FusionIndexAccessorTest
         }
 
         // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader( NULL );
         assertThat( fusionAllEntriesReader.maxCount() ).isEqualTo( lastId );
     }
 
@@ -519,7 +519,7 @@ abstract class FusionIndexAccessorTest
     private static BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
-        when( targetAccessor.newAllEntriesReader( anyLong(), anyLong() ) ).thenReturn( allEntriesReader );
+        when( targetAccessor.newAllEntriesReader( anyLong(), anyLong(), any() ) ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
@@ -531,7 +531,7 @@ abstract class FusionIndexAccessorTest
     private static void mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
-        when( targetAccessor.newAllEntriesReader( anyLong(), anyLong() ) ).thenReturn( allEntriesReader );
+        when( targetAccessor.newAllEntriesReader( anyLong(), anyLong(), any() ) ).thenReturn( allEntriesReader );
     }
 
     private static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( List<Long> entries )
