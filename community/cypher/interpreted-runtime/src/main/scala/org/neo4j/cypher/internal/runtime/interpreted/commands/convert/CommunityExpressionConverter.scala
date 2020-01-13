@@ -173,11 +173,12 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           commandexpressions.AggregationFunctionInvocation(signature, callArgumentCommands)
         else
           commandexpressions.FunctionInvocation(signature, callArgumentCommands.toArray)
-      case _: ast.MapProjection => throw new InternalException("should have been rewritten away")
-      case _: ast.PatternComprehension => throw new InternalException("should have been rewritten away")
-      case _: ast.PatternExpression => throw new InternalException("should have been rewritten away")
-      case _: NestedPlanExpression => throw new InternalException("should have been rewritten away")
-      case _: ast.Parameter => throw new InternalException("should have been rewritten away")
+      case _: ast.MapProjection => throw new InternalException("`MapProjection` should have been rewritten away")
+      case _: ast.PatternComprehension => throw new InternalException("`PatternComprehension` should have been rewritten away")
+      case _: ast.PatternExpression => throw new InternalException("`PatternExpression` should have been rewritten away")
+      case _: NestedPlanExpression => throw new InternalException("`NestedPlanExpression` should have been rewritten away")
+      case _: ast.Parameter => throw new InternalException("`Parameter` should have been rewritten away")
+      case _: ExistsSubClause => throw new InternalException("`ExistsSubClause` should have been rewritten away")
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))
       case _ => null
     }

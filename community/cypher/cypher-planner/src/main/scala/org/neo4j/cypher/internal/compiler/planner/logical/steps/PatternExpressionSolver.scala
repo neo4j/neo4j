@@ -341,4 +341,16 @@ object PatternExpressionSolver {
       (rewrittenExpression, rewrittenInner)
     }
   }
+
+  object ForExistentialSubquery {
+    def solve(source: LogicalPlan, expressions: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
+      expressions.foldLeft((Seq.empty[Expression], source)) {
+          case ((solvedExprs, plan), e: ExistsSubClause) =>
+            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrder, e)
+            val semiApplyPlan = context.logicalPlanProducer.planSemiApplyInHorizon(plan, subQueryPlan, e, context)
+            (solvedExprs :+ e, semiApplyPlan)
+          case (acc, _) => acc
+      }
+    }
+  }
 }

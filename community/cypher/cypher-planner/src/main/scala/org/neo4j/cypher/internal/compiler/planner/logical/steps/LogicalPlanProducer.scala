@@ -487,8 +487,23 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       case p: QueryProjection => p.addPredicates(predicates: _*)
       case _ => throw new IllegalArgumentException("You can only plan HorizonSelection after a projection")
     })
-    val (rewrittenPredicates, rewrittenSource) = PatternExpressionSolver.ForMulti.solve(source, predicates, interestingOrder, context)
-    annotate(Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource), solved, providedOrders.get(source.id), context)
+
+    // solve existential subquery predicates
+    val (solvedPredicates, existsPlan) = PatternExpressionSolver.ForExistentialSubquery.solve(source, predicates, interestingOrder, context)
+    if (solvedPredicates.nonEmpty) {
+      annotate(Selection(coercePredicatesWithAnds(solvedPredicates), existsPlan), solved, providedOrders.get(source.id), context)
+    }
+    val filteredPredicates = predicates.filterNot(solvedPredicates.contains(_))
+
+    // solve remaining predicates
+    val newPlan = if (filteredPredicates.nonEmpty) {
+      val (rewrittenPredicates, rewrittenSource) = PatternExpressionSolver.ForMulti.solve(existsPlan, filteredPredicates, interestingOrder, context)
+      annotate(Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource), solved, providedOrders.get(existsPlan.id), context)
+    } else {
+      existsPlan
+    }
+
+    newPlan
   }
 
   // Using the solver for `expr` in all SemiApply-like plans is kinda stupid.
@@ -529,6 +544,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
+    annotate(SemiApply(left, right), solved, providedOrders.get(left.id), context)
+  }
+
+  def planSemiApplyInHorizon(left: LogicalPlan, right: LogicalPlan, expr: ExistsSubClause, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(left.id).asSinglePlannerQuery.updateHorizon {
+      case horizon: QueryProjection => horizon.addPredicates(expr)
+      case horizon => horizon
+    }
     annotate(SemiApply(left, right), solved, providedOrders.get(left.id), context)
   }
 
