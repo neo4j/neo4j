@@ -60,7 +60,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
       }
   }
 
-  private def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
+  def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
     // Creating a query graph by combining all extracted query graphs created by each entry of the patternElements
     val emptyTuple = (Map.empty[PatternElement, Variable], QueryGraph.empty)
     val(namedMap, qg) = e.patternElements.foldLeft(emptyTuple) { (acc, patternElement) =>
