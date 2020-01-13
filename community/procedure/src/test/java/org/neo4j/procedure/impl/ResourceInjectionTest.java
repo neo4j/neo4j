@@ -126,12 +126,13 @@ public class ResourceInjectionTest
         List<CallableProcedure> procList =
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, null, false );
         assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
-                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople" );
+                .containsMessages( "org.neo4j.procedure.impl.listCoolPeople", "unavailable" );
 
         assertThat( procList.size() ).isEqualTo( 1 );
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER ) );
-        assertThat( exception.getMessage() ).doesNotContain( "org.neo4j.procedure.impl.listCoolPeople" );
+        assertThat( exception.getMessage() )
+                .contains( "org.neo4j.procedure.impl.listCoolPeople", "unavailable" );
     }
 
     @Test
@@ -163,12 +164,14 @@ public class ResourceInjectionTest
         List<CallableUserFunction> procList =
                 compiler.compileFunction( FunctionWithUnsafeAPI.class, false );
         assertThat( logProvider ).forClass( getClass() )
-                .forLevel( WARN ).doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople" );
+                .forLevel( WARN )
+                .containsMessages( "org.neo4j.procedure.impl.listCoolPeople", "unavailable" );
 
         assertThat( procList.size() ).isEqualTo( 1 );
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new AnyValue[0] ) );
-        assertThat( exception.getMessage() ).doesNotContain( "org.neo4j.procedure.impl.listCoolPeople" );
+        assertThat( exception.getMessage() )
+                .contains( "org.neo4j.procedure.impl.listCoolPeople", "unavailable" );
     }
 
     @Test
@@ -202,7 +205,7 @@ public class ResourceInjectionTest
                 compiler.compileAggregationFunction( AggregationFunctionWithUnsafeAPI.class);
         assertThat( logProvider ).forClass( getClass() )
                 .forLevel( WARN )
-                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople" );
+                .containsMessages( "org.neo4j.procedure.impl.listCoolPeople", "unavailable" );
 
         assertThat( procList.size() ).isEqualTo( 1 );
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
@@ -210,7 +213,8 @@ public class ResourceInjectionTest
             procList.get( 0 ).create( prepareContext() ).update( new AnyValue[]{} );
             procList.get( 0 ).create( prepareContext() ).result();
         } );
-        assertThat( exception.getMessage() ).doesNotContain( "org.neo4j.procedure.impl.listCoolPeople" );
+        assertThat( exception.getMessage() )
+                .contains( "org.neo4j.procedure.impl.listCoolPeople", "unavailable" );
     }
 
     @Test
@@ -223,9 +227,9 @@ public class ResourceInjectionTest
         // Then
         assertThat( logProvider ).forClass( getClass() )
                 .forLevel( WARN )
-                .doesNotContainMessage( "org.neo4j.procedure.impl.safeUserFunctionInUnsafeAPIClass" )
-                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeopleProcedure" )
-                .doesNotContainMessage( "org.neo4j.procedure.impl.listCoolPeople " );    // With extra ' ' space at the end to distinguish from procedure form:
+                .containsMessages( "org.neo4j.procedure.impl.safeUserFunctionInUnsafeAPIClass is unavailable",
+                                   "org.neo4j.procedure.impl.listCoolPeopleProcedure is unavailable",
+                                    "org.neo4j.procedure.impl.listCoolPeople is unavailable" );
     }
 
     private org.neo4j.kernel.api.procedure.Context prepareContext()
