@@ -131,7 +131,7 @@ public class ScoreEntityIterator implements ValuesIterator
         {
             // We take the delegate iterators in current score order, using the ordering defined in CIP2016-06-14, where NaN comes between positive infinity
             // and the largest float/double value. This is the same as Float/Double.compare.
-            sources = new PriorityQueue<>( ( o1, o2 ) -> Double.compare( o2.currentScore(), o1.currentScore() ) );
+            sources = new PriorityQueue<>( ( o1, o2 ) -> Float.compare( o2.currentScore(), o1.currentScore() ) );
             for ( ValuesIterator iterator : iterators )
             {
                 if ( iterator.hasNext() )

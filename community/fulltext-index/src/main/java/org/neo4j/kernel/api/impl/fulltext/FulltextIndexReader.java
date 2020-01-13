@@ -48,7 +48,6 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
-import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
@@ -107,9 +106,9 @@ public class FulltextIndexReader implements IndexReader
     {
         try
         {
-            DocValuesCollector docValuesCollector = new DocValuesCollector( true );
-            searcher.getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getValuesSortedByRelevance( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
+            FulltextResultCollector collector = new FulltextResultCollector();
+            searcher.getIndexSearcher().search( query, collector );
+            return collector.iterator();
         }
         catch ( IOException e )
         {
