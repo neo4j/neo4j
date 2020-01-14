@@ -28,12 +28,15 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 object PlanningAttributes {
   class Solveds extends Attribute[LogicalPlan, PlannerQueryPart]
   class Cardinalities extends Attribute[LogicalPlan, Cardinality]
-  class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder]
+  class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder] {
+    def hasProvidedOrder(id: Id): Boolean = if (isDefinedAt(id)) get(id).isEmpty else false
+  }
 }
 
 case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, providedOrders: ProvidedOrders) {
