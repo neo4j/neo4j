@@ -60,7 +60,7 @@ class FreeListIdProviderTest
     private PageAwareByteArrayCursor cursor;
     private final PagedFile pagedFile = mock( PagedFile.class );
     private final FreelistPageMonitor monitor = new FreelistPageMonitor();
-    private final FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, PAGE_SIZE, BASE_ID, monitor );
+    private FreeListIdProvider freelist;
 
     @Inject
     private RandomRule random;
@@ -69,8 +69,12 @@ class FreeListIdProviderTest
     void setUpPagedFile() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+
         when( pagedFile.io( anyLong(), anyInt(), any() ) ).thenAnswer(
                 invocation -> cursor.duplicate( invocation.getArgument( 0 ) ) );
+        when( pagedFile.pageSize() ).thenReturn( PAGE_SIZE );
+
+        freelist = new FreeListIdProvider( pagedFile, BASE_ID, monitor );
         freelist.initialize( BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0 );
     }
 

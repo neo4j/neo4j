@@ -101,11 +101,16 @@ class FreeListIdProvider implements IdProvider
      */
     private final Monitor monitor;
 
-    FreeListIdProvider( PagedFile pagedFile, int pageSize, long lastId, Monitor monitor )
+    FreeListIdProvider( PagedFile pagedFile, long lastId )
+    {
+        this( pagedFile, lastId, NO_MONITOR );
+    }
+
+    FreeListIdProvider( PagedFile pagedFile, long lastId, Monitor monitor )
     {
         this.pagedFile = pagedFile;
         this.monitor = monitor;
-        this.freelistNode = new FreelistNode( pageSize );
+        this.freelistNode = new FreelistNode( pagedFile.pageSize() );
         this.lastId = lastId;
     }
 
