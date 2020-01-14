@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -156,10 +157,10 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @Override
-    public long writeKey( KEY key, long stableGeneration, long unstableGeneration ) throws IOException
+    public long writeKey( KEY key, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException
     {
         int keySize = layout.keySize( key );
-        long newId = acquireNewId( stableGeneration, unstableGeneration );
+        long newId = acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
         try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             placeCursorAtOffloadId( cursor, newId );
@@ -173,11 +174,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @Override
-    public long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration ) throws IOException
+    public long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException
     {
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
-        long newId = acquireNewId( stableGeneration, unstableGeneration );
+        long newId = acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
         try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             placeCursorAtOffloadId( cursor, newId );
@@ -192,9 +193,9 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @Override
-    public void free( long offloadId, long stableGeneration, long unstableGeneration ) throws IOException
+    public void free( long offloadId, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException
     {
-        idProvider.releaseId( stableGeneration, unstableGeneration, offloadId );
+        idProvider.releaseId( stableGeneration, unstableGeneration, offloadId, cursorTracer );
     }
 
     @VisibleForTesting
@@ -226,9 +227,9 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
         cursor.putInt( valueSize );
     }
 
-    private long acquireNewId( long stableGeneration, long unstableGeneration ) throws IOException
+    private long acquireNewId( long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException
     {
-        return idProvider.acquireNewId( stableGeneration, unstableGeneration );
+        return idProvider.acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
     }
 
     private static void placeCursorAtOffloadId( PageCursor cursor, long offloadId ) throws IOException

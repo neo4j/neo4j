@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Provide tree node (page) ids which can be used for storing tree node data.
@@ -35,23 +36,25 @@ interface IdProvider
      *
      * @param stableGeneration current stable generation.
      * @param unstableGeneration current unstable generation.
+     * @param cursorTracer underlying page cache cursor access tracer
      * @return page id guaranteed to current not be used and whose bytes are all zeros.
      * @throws IOException on {@link PageCursor} error.
      */
-    long acquireNewId( long stableGeneration, long unstableGeneration ) throws IOException;
+    long acquireNewId( long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Releases a page id which has previously been used, but isn't anymore, effectively allowing
-     * it to be reused and returned from {@link #acquireNewId(long, long)}.
+     * it to be reused and returned from {@link #acquireNewId(long, long, PageCursorTracer)}.
      *
      * @param stableGeneration current stable generation.
      * @param unstableGeneration current unstable generation.
      * @param id page id to release.
+     * @param cursorTracer underlying page cache cursor access tracer
      * @throws IOException on {@link PageCursor} error.
      */
-    void releaseId( long stableGeneration, long unstableGeneration, long id ) throws IOException;
+    void releaseId( long stableGeneration, long unstableGeneration, long id, PageCursorTracer cursorTracer ) throws IOException;
 
-    void visitFreelist( IdProviderVisitor visitor ) throws IOException;
+    void visitFreelist( IdProviderVisitor visitor, PageCursorTracer cursorTracer ) throws IOException;
 
     long lastId();
 

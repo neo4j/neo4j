@@ -677,7 +677,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
 
         // Initialize free-list
-        freeList.initializeAfterCreation();
+        freeList.initializeAfterCreation( cursorTracer );
         changesSinceLastCheckpoint = true;
 
         // Checkpoint to make the created root node stable. Forcing tree state also piggy-backs on this.
@@ -1444,7 +1444,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             new GBPTreeStructure<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
                     .visitTree( cursor, writer.cursor, visitor );
-            freeList.visitFreelist( visitor );
+            freeList.visitFreelist( visitor, cursorTracer );
         }
         return visitor;
     }
@@ -1531,7 +1531,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             {
                 cleanTrackingVisitor.dirtyOnStartup( indexFile );
             }
-            consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor );
+            consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor, cursorTracer );
         }
         catch ( TreeInconsistencyException | MetadataMismatchException | CursorException e )
         {
@@ -1577,6 +1577,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
+        private PageCursorTracer cursorTracer;
 
         // Writer can't live past a checkpoint because of the mutex with checkpoint,
         // therefore safe to locally cache these generation fields from the volatile generation in the tree
@@ -1626,6 +1627,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 lock.writerAndCleanerLock();
                 assertRecoveryCleanSuccessful();
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer );
+                this.cursorTracer = cursorTracer;
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
                 this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
@@ -1670,9 +1672,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             try
             {
                 treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, createIfNotExists,
-                        stableGeneration, unstableGeneration );
+                        stableGeneration, unstableGeneration, cursorTracer );
 
-                handleStructureChanges();
+                handleStructureChanges( cursorTracer );
             }
             catch ( IOException e )
             {
@@ -1702,9 +1704,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             try
             {
                 result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
-                        stableGeneration, unstableGeneration );
+                        stableGeneration, unstableGeneration, cursorTracer );
 
-                handleStructureChanges();
+                handleStructureChanges( cursorTracer );
             }
             catch ( IOException e )
             {
@@ -1721,19 +1723,19 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             return result;
         }
 
-        private void handleStructureChanges() throws IOException
+        private void handleStructureChanges( PageCursorTracer cursorTracer ) throws IOException
         {
             if ( structurePropagation.hasRightKeyInsert )
             {
                 // New root
-                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
+                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
                         stableGeneration, unstableGeneration );
                 bTreeNode.insertKeyAndRightChildAt( cursor, structurePropagation.rightKey, structurePropagation.rightChild, 0, 0,
-                        stableGeneration, unstableGeneration );
+                        stableGeneration, unstableGeneration, cursorTracer );
                 TreeNode.setKeyCount( cursor, 1 );
                 setRoot( newRootId );
                 monitor.treeGrowth();

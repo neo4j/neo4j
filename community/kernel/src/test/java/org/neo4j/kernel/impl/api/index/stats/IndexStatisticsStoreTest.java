@@ -35,6 +35,7 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -44,6 +45,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,11 +63,12 @@ class IndexStatisticsStoreTest
     private TestDirectory testDirectory;
 
     private IndexStatisticsStore store;
+    private final PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
 
     @BeforeEach
     void start()
     {
-        store = openStore();
+        store = openStore( pageCacheTracer, "stats" );
         lifeSupport.start();
     }
 
@@ -75,10 +78,28 @@ class IndexStatisticsStoreTest
         lifeSupport.shutdown();
     }
 
-    private IndexStatisticsStore openStore()
+    private IndexStatisticsStore openStore( PageCacheTracer pageCacheTracer, String fileName )
     {
-        return lifeSupport.add(
-                new IndexStatisticsStore( pageCache, testDirectory.file( "stats" ), immediate(), false, PageCacheTracer.NULL ) );
+        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), false, pageCacheTracer );
+        return lifeSupport.add( statisticsStore );
+    }
+
+    @Test
+    void tracePageCacheAccessOnStatisticStoreInitialisation()
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+
+        assertThat( cacheTracer.pins() ).isZero();
+        assertThat( cacheTracer.unpins() ).isZero();
+        assertThat( cacheTracer.hits() ).isZero();
+        assertThat( cacheTracer.faults() ).isZero();
+
+        openStore( cacheTracer, "tracedStats" );
+
+        assertThat( cacheTracer.faults() ).isZero();
+        assertThat( cacheTracer.pins() ).isZero();
+        assertThat( cacheTracer.unpins() ).isZero();
+        assertThat( cacheTracer.hits() ).isZero();
     }
 
     @Test
@@ -133,7 +154,7 @@ class IndexStatisticsStoreTest
         store.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
-        store = openStore();
+        store = openStore( pageCacheTracer, "stats" );
         lifeSupport.start();
     }
 

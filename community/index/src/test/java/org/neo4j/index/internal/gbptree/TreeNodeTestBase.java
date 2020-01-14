@@ -45,6 +45,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO_NEED_DEFRAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 public abstract class TreeNodeTestBase<KEY,VALUE>
@@ -175,7 +176,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         // WHEN
         KEY firstKey = key( 1 );
         VALUE firstValue = value( 10 );
-        node.insertKeyValueAt( cursor, firstKey, firstValue, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, firstKey, firstValue, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
@@ -186,7 +187,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         // WHEN
         KEY secondKey = key( 3 );
         VALUE secondValue = value( 30 );
-        node.insertKeyValueAt( cursor, secondKey, secondValue, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, secondKey, secondValue, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
@@ -198,7 +199,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         // WHEN
         KEY removedKey = key( 2 );
         VALUE removedValue = value( 20 );
-        node.insertKeyValueAt( cursor, removedKey, removedValue, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, removedKey, removedValue, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 3 );
 
         // THEN
@@ -210,7 +211,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         assertValueEquals( secondValue, node.valueAt( cursor, readValue, 2 ) );
 
         // WHEN
-        node.removeKeyValueAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
@@ -249,7 +250,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         // WHEN
         long firstKey = 1;
         long firstChild = 10;
-        node.insertKeyAndRightChildAt( cursor, key( firstKey ), firstChild, 0, 0, stable, unstable );
+        node.insertKeyAndRightChildAt( cursor, key( firstKey ), firstChild, 0, 0, stable, unstable, NULL );
         TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
@@ -258,7 +259,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         // WHEN
         long secondKey = 3;
         long secondChild = 30;
-        node.insertKeyAndRightChildAt( cursor, key( secondKey ), secondChild, 1, 1, stable, unstable );
+        node.insertKeyAndRightChildAt( cursor, key( secondKey ), secondChild, 1, 1, stable, unstable, NULL );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
@@ -267,21 +268,21 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         // WHEN
         long removedKey = 2;
         long removedChild = 20;
-        node.insertKeyAndRightChildAt( cursor, key( removedKey ), removedChild, 1, 2, stable, unstable );
+        node.insertKeyAndRightChildAt( cursor, key( removedKey ), removedChild, 1, 2, stable, unstable, NULL );
         TreeNode.setKeyCount( cursor, 3 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, removedKey, removedChild, secondKey, secondChild );
 
         // WHEN
-        node.removeKeyAndRightChildAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyAndRightChildAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild );
 
         // WHEN
-        node.removeKeyAndLeftChildAt( cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyAndLeftChildAt( cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
@@ -308,7 +309,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         KEY key = key( childId );
         for ( ; node.internalOverflow( cursor, keyCount, key ) == Overflow.NO; childId++, keyCount++, key = key( childId ) )
         {
-            node.insertKeyAndRightChildAt( cursor, key, childId, keyCount, keyCount, stable, unstable );
+            node.insertKeyAndRightChildAt( cursor, key, childId, keyCount, keyCount, stable, unstable, NULL );
         }
 
         // Assert children
@@ -377,13 +378,13 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         KEY key = key( 1 );
         VALUE value = value( 1 );
-        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 2 );
         value = value( 2 );
-        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
 
         // AND
-        node.removeKeyValueAt( cursor, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 1 );
 
         // WHEN
@@ -400,13 +401,13 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         KEY key = key( 1 );
         VALUE value = value( 1 );
-        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 2 );
         value = value( 2 );
-        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
 
         // AND
-        node.removeKeyValueAt( cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 1 );
 
         // WHEN
@@ -423,16 +424,16 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         KEY key = key( 1 );
         VALUE value = value( 1 );
-        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 2 );
         value = value( 2 );
-        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 3 );
         value = value( 3 );
-        node.insertKeyValueAt( cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
 
         // AND
-        node.removeKeyValueAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 2 );
 
         // WHEN
@@ -450,23 +451,23 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         KEY key = key( 1 );
         VALUE value = value( 1 );
-        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 2 );
         value = value( 2 );
-        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 3 );
         value = value( 3 );
-        node.insertKeyValueAt( cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 4 );
         value = value( 4 );
-        node.insertKeyValueAt( cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 5 );
         value = value( 5 );
-        node.insertKeyValueAt( cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
 
         // AND
-        node.removeKeyValueAt( cursor, 1, 5, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.removeKeyValueAt( cursor, 2, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 1, 5, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+        node.removeKeyValueAt( cursor, 2, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 3 );
 
         // WHEN
@@ -485,24 +486,24 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         KEY key = key( 1 );
         VALUE value = value( 1 );
-        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 2 );
         value = value( 2 );
-        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 3 );
         value = value( 3 );
-        node.insertKeyValueAt( cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 4 );
         value = value( 4 );
-        node.insertKeyValueAt( cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         key = key( 5 );
         value = value( 5 );
-        node.insertKeyValueAt( cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertKeyValueAt( cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
 
         // AND
-        node.removeKeyValueAt( cursor, 0, 5, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.removeKeyValueAt( cursor, 1, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.removeKeyValueAt( cursor, 2, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 0, 5, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+        node.removeKeyValueAt( cursor, 1, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+        node.removeKeyValueAt( cursor, 2, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 2 );
 
         // WHEN
@@ -549,7 +550,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                 {   // there's room
                     int position = expectedKeyCount == 0 ? 0 : random.nextInt( expectedKeyCount );
                     // ensure unique
-                    node.insertKeyValueAt( cursor, newKey, newValue, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION );
+                    node.insertKeyValueAt( cursor, newKey, newValue, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
                     expectedKeys.add( position, newKey );
                     expectedValues.add( position, newValue );
 
@@ -563,7 +564,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                     int position = random.nextInt( expectedKeyCount );
                     node.keyAt( cursor, readKey, position, LEAF );
                     node.valueAt( cursor, readValue, position );
-                    node.removeKeyValueAt( cursor, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION );
+                    node.removeKeyValueAt( cursor, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
                     KEY expectedKey = expectedKeys.remove( position );
                     VALUE expectedValue = expectedValues.remove( position );
                     assertEquals( 0, layout.compare( expectedKey, readKey ),

@@ -58,6 +58,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 @ResourceLock( InternalTreeLogicTestBase.INDEX_RESOURCE )
@@ -105,7 +106,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         id = new SimpleIdProvider( cursor::duplicate );
 
         id.reset();
-        long newId = id.acquireNewId( stableGeneration, unstableGeneration );
+        long newId = id.acquireNewId( stableGeneration, unstableGeneration, NULL );
         goTo( cursor, newId );
         readCursor.next( newId );
 
@@ -1654,7 +1655,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         GBPTreeConsistencyChecker<KEY> consistencyChecker =
                 new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration, true );
         ThrowingConsistencyCheckVisitor<KEY> visitor = new ThrowingConsistencyCheckVisitor<>();
-        consistencyChecker.check( null, readCursor, root, visitor );
+        consistencyChecker.check( null, readCursor, root, visitor, NULL );
         goTo( readCursor, currentPageId );
     }
 
@@ -1883,11 +1884,11 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException
     {
         assertTrue( split.hasRightKeyInsert );
-        long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
+        long rootId = id.acquireNewId( stableGeneration, unstableGeneration, NULL );
         goTo( cursor, rootId );
         node.initializeInternal( cursor, stableGeneration, unstableGeneration );
         node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
-        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration );
+        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration, NULL );
         TreeNode.setKeyCount( cursor, 1 );
         split.hasRightKeyInsert = false;
         updateRoot();
@@ -1967,7 +1968,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     {
         structurePropagation.hasRightKeyInsert = false;
         structurePropagation.hasMidChildUpdate = false;
-        treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, true, stableGeneration, unstableGeneration );
+        treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, true, stableGeneration, unstableGeneration, NULL );
         handleAfterChange();
     }
 
@@ -1988,7 +1989,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private VALUE remove( KEY key, VALUE into ) throws IOException
     {
-        VALUE result = treeLogic.remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
+        VALUE result = treeLogic.remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, NULL );
         handleAfterChange();
         return result;
     }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class OffloadStoreTest
 {
@@ -58,7 +59,7 @@ class OffloadStoreTest
         RawBytes value = layout.newValue();
         key.bytes = new byte[200];
         value.bytes = new byte[offloadStore.maxEntrySize() - layout.keySize( key )];
-        long offloadId = offloadStore.writeKeyValue( key, value, STABLE_GENERATION, UNSTABLE_GENERATION );
+        long offloadId = offloadStore.writeKeyValue( key, value, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
 
         {
             RawBytes into = layout.newKey();
@@ -88,7 +89,7 @@ class OffloadStoreTest
 
         RawBytes key = layout.newKey();
         key.bytes = new byte[200];
-        long offloadId = offloadStore.writeKey( key, STABLE_GENERATION, UNSTABLE_GENERATION );
+        long offloadId = offloadStore.writeKey( key, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
 
         cursor.next( offloadId );
         assertEquals( TreeNode.NODE_TYPE_OFFLOAD, TreeNode.nodeType( cursor ) );

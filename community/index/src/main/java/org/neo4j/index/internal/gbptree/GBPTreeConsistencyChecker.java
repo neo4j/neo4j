@@ -34,6 +34,7 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -86,9 +87,10 @@ class GBPTreeConsistencyChecker<KEY>
      * @param cursor {@link PageCursor} to use for reading.
      * @param root {@link Root} the root of the gbptree.
      * @param visitor {@link GBPTreeConsistencyCheckVisitor} visitor to report inconsistencies to.
+     * @param cursorTracer underlying page cursor tracer
      * @throws IOException on {@link PageCursor} error.
      */
-    public void check( File file, PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
+    public void check( File file, PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor<KEY> visitor, PageCursorTracer cursorTracer ) throws IOException
     {
         // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
         long highId = lastId + 1;
@@ -96,7 +98,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         // Log ids in freelist together with ids occupied by freelist pages.
         IdProvider.IdProviderVisitor freelistSeenIdsVisitor = new FreelistSeenIdsVisitor<>( file, seenIds, lastId, visitor );
-        idProvider.visitFreelist( freelistSeenIdsVisitor );
+        idProvider.visitFreelist( freelistSeenIdsVisitor, cursorTracer );
 
         // Check structure of GBPTree
         long rootGeneration = root.goTo( cursor );
