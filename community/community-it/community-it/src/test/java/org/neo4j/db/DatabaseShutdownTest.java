@@ -19,6 +19,7 @@
  */
 package org.neo4j.db;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -123,8 +124,8 @@ class DatabaseShutdownTest
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override
-                                public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions )
-                                        throws IOException
+                                public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize,
+                                        ImmutableSet<OpenOption> openOptions ) throws IOException
                                 {
                                     PagedFile pagedFile = super.map( file, versionContextSupplier, pageSize, openOptions );
                                     return new DelegatingPagedFile( pagedFile )

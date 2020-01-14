@@ -42,6 +42,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 
 @PageCacheExtension
@@ -153,7 +154,8 @@ class PageCachePrefetchingTest
 
     private void writeToFile( File file, DefaultPageCursorTracer tracer, int additionalPfFlags ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE ) )
+        try ( PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE,
+                immutable.of( StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE ) ) )
         {
             for ( int i = 0; i < 5; i++ )
             {

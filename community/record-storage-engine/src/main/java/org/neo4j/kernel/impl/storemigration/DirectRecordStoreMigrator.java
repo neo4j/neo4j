@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -70,10 +71,10 @@ class DirectRecordStoreMigrator
 
         try (
                 NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), cacheTracer )
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance(), cacheTracer )
+                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
                         .openNeoStores( true, storesToOpen ) )
         {
             toStores.start( NULL );

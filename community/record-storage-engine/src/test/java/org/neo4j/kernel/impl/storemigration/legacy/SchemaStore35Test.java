@@ -49,6 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.ByteBuffer.wrap;
 import static java.util.stream.IntStream.range;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
@@ -79,7 +80,7 @@ class SchemaStore35Test
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, IdType.SCHEMA,
-                idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
+                idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS, immutable.empty() );
         store.initialise( true, NULL );
     }
 

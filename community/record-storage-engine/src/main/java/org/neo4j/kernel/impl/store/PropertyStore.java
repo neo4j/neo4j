@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -168,7 +170,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
                 recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );

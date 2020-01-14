@@ -170,6 +170,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -276,7 +277,7 @@ public class BatchInserterImpl implements BatchInserter
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
                 pageCache, internalLogProvider );
             StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, internalLogProvider, PageCacheTracer.NULL );
+                recordFormats, internalLogProvider, PageCacheTracer.NULL, immutable.empty() );
 
             maxNodeId = recordFormats.node().getMaxId();
 

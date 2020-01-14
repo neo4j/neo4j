@@ -34,6 +34,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @PageCacheExtension
@@ -51,7 +52,7 @@ class PageCacheLongArrayTest
     @Test
     void verifyPageCacheLongArray() throws Exception
     {
-        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
+        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), immutable.of( CREATE,  DELETE_ON_CLOSE ) );
 
         try ( LongArray array = new PageCacheLongArray( file, COUNT, 0, 0 ) )
         {

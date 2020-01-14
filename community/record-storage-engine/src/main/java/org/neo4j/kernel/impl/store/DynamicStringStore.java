@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 
@@ -49,7 +51,7 @@ public class DynamicStringStore extends AbstractDynamicStore
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
             String storeVersion,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, openOptions );

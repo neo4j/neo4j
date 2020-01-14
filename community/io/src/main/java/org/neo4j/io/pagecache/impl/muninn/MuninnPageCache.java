@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -110,7 +112,7 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  */
 public class MuninnPageCache implements PageCache
 {
-     public static final byte ZERO_BYTE =
+    public static final byte ZERO_BYTE =
             (byte) (flag( MuninnPageCache.class, "brandedZeroByte", false ) ? 0x0f : 0);
 
     // The amount of memory we need for every page, both its buffer and its meta-data.
@@ -303,7 +305,7 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( File file, VersionContextSupplier versionContextSupplier, int filePageSize, OpenOption... openOptions )
+    public synchronized PagedFile map( File file, VersionContextSupplier versionContextSupplier, int filePageSize, ImmutableSet<OpenOption> openOptions )
             throws IOException
     {
         assertHealthy();

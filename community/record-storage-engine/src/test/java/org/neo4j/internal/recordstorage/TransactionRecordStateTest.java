@@ -93,6 +93,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -175,7 +176,7 @@ class TransactionRecordStateTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
-                formats, NullLogProvider.getInstance(), PageCacheTracer.NULL );
+                formats, NullLogProvider.getInstance(), PageCacheTracer.NULL, immutable.empty() );
         return storeFactory.openAllNeoStores( true );
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -55,6 +56,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -107,8 +109,8 @@ class CommonAbstractStoreTest
     void setUpMocks() throws IOException
     {
         when( recordFormat.getPageSize( anyInt(), anyInt() ) ).thenReturn( Long.SIZE );
-        when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean(), any() ) ).thenReturn(
-                idGenerator );
+        when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean(), any(), any() ) )
+                .thenReturn( idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
         when( mockedPageCache.map( eq( storeFile ), anyInt() ) ).thenReturn( pageFile );
@@ -138,14 +140,14 @@ class CommonAbstractStoreTest
         PagedFile pagedFile = mock( PagedFile.class );
         PageCursor pageCursor = mock( PageCursor.class );
 
-        when( pageCache.map( eq( storeFile ), anyInt(), any( OpenOption.class ) ) ).thenReturn( pagedFile );
+        when( pageCache.map( eq( storeFile ), anyInt(), any() ) ).thenReturn( pagedFile );
         when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() ) ).thenReturn( pageCursor );
         when( pageCursor.next() ).thenReturn( false );
 
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
 
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache,
-                NullLogProvider.getInstance(), GraphDatabaseSettings.label_block_size.defaultValue(), recordFormats ) )
+                NullLogProvider.getInstance(), GraphDatabaseSettings.label_block_size.defaultValue(), recordFormats, immutable.empty() ) )
         {
             StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false, NULL ) );
             assertEquals( "Fail to read header record of store file: " + storeFile.getAbsolutePath(), storeNotFoundException.getMessage() );
@@ -188,8 +190,8 @@ class CommonAbstractStoreTest
         // GIVEN
         File nodeStore = databaseLayout.nodeStore();
         File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
-        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ),
-                pageCache, NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
+        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
+                NullLogProvider.getInstance(), recordFormat, immutable.with( DELETE_ON_CLOSE ) );
         store.initialise( true, NULL );
         store.start( NULL );
         assertTrue( fs.fileExists( nodeStore ) );
@@ -206,7 +208,7 @@ class CommonAbstractStoreTest
     private TheStore newStore()
     {
         LogProvider log = NullLogProvider.getInstance();
-        TheStore store = new TheStore( storeFile, idStoreFile, config, idType, idGeneratorFactory, mockedPageCache, log, recordFormat );
+        TheStore store = new TheStore( storeFile, idStoreFile, config, idType, idGeneratorFactory, mockedPageCache, log, recordFormat, immutable.empty() );
         store.initialise( false, NULL );
         return store;
     }
@@ -219,7 +221,7 @@ class CommonAbstractStoreTest
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>
     {
         TheStore( File file, File idFile, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-                LogProvider logProvider, RecordFormat<TheRecord> recordFormat, OpenOption... openOptions )
+                LogProvider logProvider, RecordFormat<TheRecord> recordFormat, ImmutableSet<OpenOption> openOptions )
         {
             super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType", recordFormat,
                     NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );

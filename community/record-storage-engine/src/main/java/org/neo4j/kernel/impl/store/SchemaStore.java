@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
@@ -130,7 +131,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             LogProvider logProvider,
             PropertyStore propertyStore,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
                 getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), openOptions );

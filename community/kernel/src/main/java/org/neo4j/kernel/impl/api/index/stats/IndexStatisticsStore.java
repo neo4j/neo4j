@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsValue.EMPTY_STATISTICS;
 
@@ -91,7 +92,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         try
         {
             tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL );
+                    recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL, immutable.empty() );
         }
         catch ( TreeFileNotFoundException e )
         {

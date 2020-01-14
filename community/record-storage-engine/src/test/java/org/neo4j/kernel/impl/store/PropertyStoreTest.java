@@ -41,6 +41,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -84,7 +85,7 @@ class PropertyStoreTest
         final PropertyStore store =
                 new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                         NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                        RecordFormatSelector.defaultFormat() );
+                        RecordFormatSelector.defaultFormat(), immutable.empty() );
         store.initialise( true, NULL );
 
         try

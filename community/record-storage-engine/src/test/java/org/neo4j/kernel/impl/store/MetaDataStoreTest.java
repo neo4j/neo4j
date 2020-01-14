@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -100,7 +101,8 @@ class MetaDataStoreTest
         pageCacheWithFakeOverflow = new DelegatingPageCache( pageCache )
         {
             @Override
-            public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+            public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize,
+                    ImmutableSet<OpenOption> openOptions ) throws IOException
             {
                 return new DelegatingPagedFile( super.map( file, versionContextSupplier, pageSize, openOptions ) )
                 {

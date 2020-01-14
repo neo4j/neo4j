@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -79,7 +81,7 @@ public class NeoStores implements AutoCloseable
     private final RecordFormats recordFormats;
     // All stores, as Object due to CountsTracker being different that all other stores.
     private final CommonAbstractStore[] stores;
-    private final OpenOption[] openOptions;
+    private final ImmutableSet<OpenOption> openOptions;
 
     NeoStores(
             FileSystemAbstraction fileSystem,
@@ -92,7 +94,7 @@ public class NeoStores implements AutoCloseable
             boolean createIfNotExist,
             PageCacheTracer pageCacheTracer,
             StoreType[] storeTypes,
-            OpenOption[] openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         this.fileSystem = fileSystem;
         this.layout = layout;

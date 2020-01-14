@@ -56,6 +56,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
@@ -70,7 +71,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 /**
  * Counts store build on top of the {@link GBPTree}.
- * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(IOLimiter)}.
+ * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(IOLimiter, PageCursorTracer)}.
  * Multiple {@link #apply(long) appliers} can run concurrently in a lock-free manner.
  * Checkpoint will acquire a write lock, wait for currently active appliers to close while at the same time blocking new appliers to start,
  * but doesn't wait for appliers that haven't even started yet, i.e. it doesn't require a gap-free transaction sequence to be completed.
@@ -126,7 +127,8 @@ public class GBPTreeCountsStore implements CountsStore
     {
         try
         {
-            return new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly, NULL );
+            return new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly, NULL,
+                    immutable.empty() );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -413,7 +415,7 @@ public class GBPTreeCountsStore implements CountsStore
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), 0, GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), true, NULL ) )
+                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty() ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.Collection;
@@ -70,7 +72,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-            PageCursorTracer cursorTracer, OpenOption... openOptions )
+            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         IndexedIdGenerator generator =
                 instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnly, cursorTracer, openOptions );
@@ -80,7 +82,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
-            OpenOption[] openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnly,
@@ -95,7 +97,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator create( PageCache pageCache, File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
+            boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.

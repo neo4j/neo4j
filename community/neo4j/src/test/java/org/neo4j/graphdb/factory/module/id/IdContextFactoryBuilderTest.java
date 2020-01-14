@@ -44,6 +44,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -91,9 +92,9 @@ class IdContextFactoryBuilderTest
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
 
-        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId, false, NULL );
+        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId, false, NULL, immutable.empty() );
 
-        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId, false, NULL );
+        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId, false, NULL, immutable.empty() );
     }
 
     @Test
@@ -124,7 +125,8 @@ class IdContextFactoryBuilderTest
         File file = testDirectory.file( "b" );
         IdType idType = IdType.NODE;
 
-        try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, false, NULL ) )
+        try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, false, NULL,
+                immutable.empty() ) )
         {
             idGenerator.marker( NULL ).markDeleted( 1 );
             idGeneratorFactory.clearCache( NULL );

@@ -53,6 +53,7 @@ import org.neo4j.token.api.NamedToken;
 
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -87,7 +88,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         RecordFormats formats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         nameStore = new DynamicStringStore( namesFile, namesIdFile, config, IdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
-                TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion() );
+                TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion(), immutable.empty() );
         store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
         nameStore.initialise( true, NULL );
         store.initialise( true, NULL );

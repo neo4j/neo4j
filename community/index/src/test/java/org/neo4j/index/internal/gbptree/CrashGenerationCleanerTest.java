@@ -44,19 +44,20 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-@TestDirectoryExtension
+@EphemeralTestDirectoryExtension
 @ExtendWith( RandomExtension.class )
 class CrashGenerationCleanerTest
 {
@@ -70,7 +71,7 @@ class CrashGenerationCleanerTest
     private RandomRule randomRule;
 
     private static final String FILE_NAME = "index";
-    private static final int PAGE_SIZE = 4096;
+    private static final int PAGE_SIZE = 256;
 
     private PagedFile pagedFile;
     private final Layout<MutableLong,MutableLong> layout = longLayout().build();
@@ -107,8 +108,7 @@ class CrashGenerationCleanerTest
     {
         PageCache pageCache = pageCacheExtension
                 .getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
-        pagedFile = pageCache
-                .map( testDirectory.file( FILE_NAME ), PAGE_SIZE, CREATE, DELETE_ON_CLOSE );
+        pagedFile = pageCache.map( testDirectory.file( FILE_NAME ), PAGE_SIZE, immutable.of( CREATE, DELETE_ON_CLOSE ) );
     }
 
     @AfterEach

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -118,6 +119,7 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 
 import static java.util.Arrays.asList;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
@@ -491,7 +493,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, DatabaseLayout directoryStructure )
     {
         return new StoreFactory( directoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance(), cacheTracer ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance(), cacheTracer, Sets.immutable.empty() ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationStrcuture, RecordFormats oldFormat,
@@ -549,7 +551,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer,
+                immutable.empty() );
     }
 
     private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final int lastTxChecksum, final long lastTxLogVersion,
@@ -711,7 +714,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           srcIdGeneratorFactory,
                           pageCache,
                           NullLogProvider.getInstance(),
-                          oldFormat );
+                          oldFormat, immutable.empty() );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
             {
                 var cursorTracer = TRACER_SUPPLIER.get();

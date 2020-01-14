@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
@@ -34,8 +36,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.AlignedFormatFamily;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.internal.helpers.ArrayUtil.concat;
-import static org.neo4j.internal.helpers.ArrayUtil.contains;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.eclipse.collections.api.factory.Sets.mutable;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.DIRECT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
@@ -53,19 +55,19 @@ public class StoreFactory
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
     private final PageCacheTracer cacheTracer;
-    private final OpenOption[] openOptions;
+    private final ImmutableSet<OpenOption> openOptions;
 
     public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, PageCacheTracer cacheTracer )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider ),
-                logProvider, cacheTracer );
+                logProvider, cacheTracer, immutable.empty() );
     }
 
     public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider, PageCacheTracer cacheTracer,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         this.databaseLayout = databaseLayout;
         this.config = config;
@@ -135,9 +137,9 @@ public class StoreFactory
                 cacheTracer, storeTypes, openOptions );
     }
 
-    private static OpenOption[] buildOpenOptions( Config config, RecordFormats recordFormats, OpenOption[] openOptions )
+    private static ImmutableSet<OpenOption> buildOpenOptions( Config config, RecordFormats recordFormats, ImmutableSet<OpenOption> openOptions )
     {
-        // we need to modify options only for aligned format and aviod passing direct io option in all other cases
+        // we need to modify options only for aligned format and avoid passing direct io option in all other cases
         if ( recordFormats.getFormatFamily() != AlignedFormatFamily.INSTANCE )
         {
             return openOptions;
@@ -147,10 +149,10 @@ public class StoreFactory
             return openOptions;
         }
 
-        if ( contains( openOptions, DIRECT ) )
+        if ( openOptions.contains( DIRECT ) )
         {
             return openOptions;
         }
-        return concat( openOptions, DIRECT );
+        return immutable.withAll( mutable.ofAll( openOptions ).withAll( openOptions ) );
     }
 }

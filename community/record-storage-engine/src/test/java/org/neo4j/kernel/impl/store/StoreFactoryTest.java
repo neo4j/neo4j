@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -71,7 +73,12 @@ class StoreFactoryTest
         idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
     }
 
-    private StoreFactory storeFactory( Config config, PageCacheTracer pageCacheTracer, OpenOption... openOptions )
+    private StoreFactory storeFactory( Config config, PageCacheTracer pageCacheTracer )
+    {
+        return storeFactory( config, pageCacheTracer, immutable.empty() );
+    }
+
+    private StoreFactory storeFactory( Config config, PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider );
@@ -135,7 +142,7 @@ class StoreFactoryTest
     void shouldDelegateDeletionOptionToStores()
     {
         // GIVEN
-        StoreFactory storeFactory = storeFactory( defaults(), NULL, DELETE_ON_CLOSE );
+        StoreFactory storeFactory = storeFactory( defaults(), NULL, immutable.of( DELETE_ON_CLOSE ) );
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );

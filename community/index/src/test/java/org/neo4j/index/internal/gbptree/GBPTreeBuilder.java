@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.function.Consumer;
@@ -28,6 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
@@ -52,7 +55,7 @@ public class GBPTreeBuilder<KEY,VALUE>
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
     private boolean readOnly;
     private PageCacheTracer pageCacheTracer = NULL;
-    private OpenOption[] openOptions = {};
+    private ImmutableSet<OpenOption> openOptions = immutable.empty();
 
     public GBPTreeBuilder( PageCache pageCache, File file, Layout<KEY,VALUE> layout )
     {
@@ -121,7 +124,7 @@ public class GBPTreeBuilder<KEY,VALUE>
         return this;
     }
 
-    public GBPTreeBuilder<KEY,VALUE> with( OpenOption... openOptions )
+    public GBPTreeBuilder<KEY,VALUE> with( ImmutableSet<OpenOption> openOptions )
     {
         this.openOptions = openOptions;
         return this;

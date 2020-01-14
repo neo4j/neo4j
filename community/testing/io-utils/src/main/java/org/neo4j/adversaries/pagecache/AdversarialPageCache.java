@@ -19,13 +19,12 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,6 +34,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
+import static java.nio.file.StandardOpenOption.CREATE;
 
 /**
  * A {@linkplain PageCache page cache} that wraps another page cache and an {@linkplain Adversary adversary} to provide
@@ -56,9 +57,9 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        if ( ArrayUtils.contains( openOptions, StandardOpenOption.CREATE ) )
+        if ( openOptions.contains( CREATE ) )
         {
             adversary.injectFailure( IOException.class, SecurityException.class );
         }

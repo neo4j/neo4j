@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 
@@ -47,7 +49,7 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
             PageCache pageCache,
             LogProvider logProvider,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
                 pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,

@@ -80,6 +80,7 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
@@ -160,7 +161,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance() );
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, recordFormats,
-                NullLogProvider.getInstance(), cacheTracer )
+                NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
                 .openNeoStores( META_DATA ).getMetaDataStore();
     }
 
@@ -177,7 +178,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         RecordFormats formats = selectForVersion( recordFormats );
         StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, formats,
-                logService.getInternalLogProvider(), cacheTracer );
+                logService.getInternalLogProvider(), cacheTracer, immutable.empty() );
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         try
         {

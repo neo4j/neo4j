@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
@@ -26,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +60,9 @@ import org.neo4j.util.concurrent.Runnables;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
-import static org.neo4j.internal.helpers.ArrayUtil.concat;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.eclipse.collections.impl.factory.Sets.mutable;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
@@ -100,7 +102,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private final StoreHeaderFormat<HEADER> storeHeaderFormat;
     private HEADER storeHeader;
 
-    private final OpenOption[] openOptions;
+    private final ImmutableSet<OpenOption> openOptions;
 
     /**
      * Opens and validates the store contained in <CODE>file</CODE>
@@ -128,7 +130,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,
             String storeVersion,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         this.storageFile = file;
         this.idFile = idFile;
@@ -197,7 +199,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 // This store has a store-specific header so we have read it before we can be sure that we can map it with correct page size.
                 // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
                 HEADER defaultHeader = storeHeaderFormat.generateHeader();
-                pagedFile = pageCache.map( storageFile, filePageSize, concat( ANY_PAGE_SIZE, openOptions ) );
+                pagedFile = pageCache.map( storageFile, filePageSize, immutable.withAll( mutable.ofAll( openOptions ).with( ANY_PAGE_SIZE ) ) );
                 HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile );
                 if ( !defaultHeader.equals( readHeader ) )
                 {
@@ -234,7 +236,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                             readOnly, cursorTracer, openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
-                    pagedFile = pageCache.map( storageFile, filePageSize, concat( StandardOpenOption.CREATE, openOptions ) );
+                    pagedFile = pageCache.map( storageFile, filePageSize, immutable.withAll( mutable.ofAll( openOptions ).with( CREATE ) ) );
                     initialiseNewStoreFile();
                     return true; // <-- successfully created and initialized
                 }
@@ -901,7 +903,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             long id = record.getId() + 1;
             record.setId( id );
             long pageId = cursor.getCurrentPageId();
-            if ( offset != RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage) || pageId < 0 )
+            if ( offset != RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage ) || pageId < 0 )
             {
                 if ( !cursor.next() )
                 {

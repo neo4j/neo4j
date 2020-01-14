@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.File;
 
@@ -66,7 +67,7 @@ public class GBPTreeBootstrapper
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, meta.getPageSize(), NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
-                    pageCacheTracer );
+                    pageCacheTracer, Sets.immutable.empty() );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )

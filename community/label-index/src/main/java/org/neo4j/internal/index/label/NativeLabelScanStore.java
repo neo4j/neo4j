@@ -51,6 +51,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -428,7 +429,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         try
         {
             index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
-                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL );
+                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL, immutable.empty() );
             return isRebuilding.getValue();
         }
         catch ( TreeFileNotFoundException e )

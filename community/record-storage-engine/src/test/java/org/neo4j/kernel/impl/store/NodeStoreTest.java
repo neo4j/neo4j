@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
@@ -274,7 +275,8 @@ class NodeStoreTest
                 PageCache customPageCache = new DelegatingPageCache( pageCache )
                 {
                     @Override
-                    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+                    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize,
+                            ImmutableSet<OpenOption> openOptions ) throws IOException
                     {
                         if ( file.getName().endsWith( ".id" ) )
                         {
@@ -390,7 +392,7 @@ class NodeStoreTest
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                     File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
-                    OpenOption[] openOptions )
+                    ImmutableSet<OpenOption> openOptions )
             {
                 return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, cursorTracer,
                         openOptions ) );

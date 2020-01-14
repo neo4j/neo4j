@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,6 +61,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -298,11 +300,11 @@ public class DatabaseTest
         {
             PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
                                                      invocation.getArgument( 1, VersionContextSupplier.class ),
-                                                     invocation.getArgument( 2, Integer.class ) ) );
+                                                     invocation.getArgument( 2, Integer.class ), immutable.empty() ) );
             files.add( file );
             return file;
         } )
-        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt() );
+        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt(), any() );
 
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
         files.clear();
@@ -330,11 +332,11 @@ public class DatabaseTest
         {
             PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
                                                      invocation.getArgument( 1, VersionContextSupplier.class ),
-                                                     invocation.getArgument( 2, Integer.class ) ) );
+                                                     invocation.getArgument( 2, Integer.class ), immutable.empty() ) );
             files.add( file );
             return file;
         } )
-        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt() );
+        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt(), any() );
 
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
         files.clear();
@@ -376,7 +378,7 @@ public class DatabaseTest
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory )
-                .create( any(), any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyBoolean(), any() );
+                .create( any(), any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyBoolean(), any(), any() );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
@@ -461,7 +463,7 @@ public class DatabaseTest
         }
 
         @Override
-        public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+        public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
         {
             PagedFile pagedFile = super.map( file, versionContextSupplier, pageSize, openOptions );
             pagedFiles.add( pagedFile );

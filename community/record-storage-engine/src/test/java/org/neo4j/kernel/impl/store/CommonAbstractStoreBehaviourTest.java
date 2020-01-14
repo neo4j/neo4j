@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.StandardOpenOption;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
@@ -47,6 +46,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -245,7 +246,7 @@ class CommonAbstractStoreBehaviourTest
         }
         int pageSize = store.pagedFile.pageSize();
         store.close();
-        store.pageCache.map( store.getStorageFile(), pageSize, StandardOpenOption.TRUNCATE_EXISTING ).close();
+        store.pageCache.map( store.getStorageFile(), pageSize, immutable.of( TRUNCATE_EXISTING ) ).close();
         createStore();
     }
 
@@ -436,7 +437,7 @@ class CommonAbstractStoreBehaviourTest
         {
             super( new File( STORE_FILENAME ), new File( ID_FILENAME ), config, IdType.NODE,
                     new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
-                    NullLogProvider.getInstance(), "T", format, format, "XYZ" );
+                    NullLogProvider.getInstance(), "T", format, format, "XYZ", immutable.empty() );
         }
 
         @Override

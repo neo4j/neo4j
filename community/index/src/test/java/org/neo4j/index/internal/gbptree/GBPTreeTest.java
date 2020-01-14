@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,8 +88,11 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Math.toIntExact;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -380,7 +384,7 @@ class GBPTreeTest
     void shouldPickUpOpenOptions() throws IOException
     {
         // given
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( StandardOpenOption.DELETE_ON_CLOSE ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( immutable.of( DELETE_ON_CLOSE ) ).build() )
         {
             // when just closing it with the deletion flag
             assertTrue( fileSystem.fileExists( indexFile ) );
@@ -722,7 +726,7 @@ class GBPTreeTest
     {
         // given an existing empty file
         PageCache pageCache = createPageCache( defaultPageSize );
-        pageCache.map( indexFile, pageCache.pageSize(), StandardOpenOption.CREATE ).close();
+        pageCache.map( indexFile, pageCache.pageSize(), immutable.of( CREATE ) ).close();
 
         // when
         try
@@ -1907,7 +1911,7 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
-            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
                 return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
                 {
@@ -1944,7 +1948,7 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
-            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
                 return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
                 {
@@ -2039,7 +2043,7 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize * 4 ) )
         {
             @Override
-            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
                 return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
                 {

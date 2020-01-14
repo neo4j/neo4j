@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.nio.file.OpenOption;
+import org.eclipse.collections.api.factory.Sets;
 
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
@@ -28,6 +28,6 @@ class MuninnPageCacheNoChannelStripingTest extends MuninnPageCacheTest
     MuninnPageCacheNoChannelStripingTest()
     {
         // Think of this as calling a super constructor accepting this argument. See more comments on this field declaration.
-        openOptions = new OpenOption[] {PageCacheOpenOptions.NO_CHANNEL_STRIPING};
+        openOptions = Sets.immutable.of( PageCacheOpenOptions.NO_CHANNEL_STRIPING );
     }
 }

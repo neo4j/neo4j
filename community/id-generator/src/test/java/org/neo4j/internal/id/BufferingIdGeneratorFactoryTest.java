@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -69,7 +71,7 @@ class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, false,
-                NULL );
+                NULL, immutable.empty() );
     }
 
     @Test
@@ -143,7 +145,7 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-                PageCursorTracer pageCursorTracer, OpenOption... openOptions )
+                PageCursorTracer pageCursorTracer, ImmutableSet<OpenOption> openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
             Marker marker = mock( Marker.class );
@@ -156,7 +158,7 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
+                boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
         {
             return open( pageCache, filename, idType, () -> highId, maxId, readOnly, cursorTracer, openOptions );
         }

@@ -19,11 +19,12 @@
  */
 package org.neo4j.internal.batchimport.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
@@ -76,6 +77,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
 import static java.lang.String.valueOf;
+import static java.nio.file.StandardOpenOption.READ;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -155,7 +158,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private boolean databaseExistsAndContainsData()
     {
         File metaDataFile = databaseLayout.metadataStore();
-        try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), StandardOpenOption.READ ) )
+        try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), immutable.of( READ ) ) )
         {
             // OK so the db probably exists
         }
@@ -165,7 +168,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             return false;
         }
 
-        try ( NeoStores stores = newStoreFactory( databaseLayout, idGeneratorFactory, pageCacheTracer ).openNeoStores( StoreType.NODE,
+        try ( NeoStores stores = newStoreFactory( databaseLayout, idGeneratorFactory, pageCacheTracer, immutable.empty() ).openNeoStores( StoreType.NODE,
                 StoreType.RELATIONSHIP ) )
         {
             return stores.getNodeStore().getHighId() > 0 || stores.getRelationshipStore().getHighId() > 0;
@@ -239,7 +242,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void instantiateStores() throws IOException
     {
-        neoStores = newStoreFactory( databaseLayout, idGeneratorFactory, pageCacheTracer ).openAllNeoStores( true );
+        neoStores = newStoreFactory( databaseLayout, idGeneratorFactory, pageCacheTracer, immutable.empty() ).openAllNeoStores( true );
         propertyKeyRepository = new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore() );
         labelRepository = new BatchingLabelTokenRepository( neoStores.getLabelTokenStore() );
         relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository( neoStores.getRelationshipTypeTokenStore() );
@@ -255,7 +258,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private NeoStores instantiateTempStores()
     {
-        return newStoreFactory( temporaryDatabaseLayout, tempIdGeneratorFactory, pageCacheTracer ).openNeoStores( true, TEMP_STORE_TYPES );
+        return newStoreFactory( temporaryDatabaseLayout, tempIdGeneratorFactory, pageCacheTracer, immutable.empty() )
+                .openNeoStores( true, TEMP_STORE_TYPES );
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
@@ -294,7 +298,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, cacheTracer, openOptions );
     }

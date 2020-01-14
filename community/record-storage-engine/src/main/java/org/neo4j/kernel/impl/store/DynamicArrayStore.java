@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -113,7 +115,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             LogProvider logProvider,
             int dataSizeFromConfiguration,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );

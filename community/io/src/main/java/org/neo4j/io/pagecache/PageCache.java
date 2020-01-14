@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -27,6 +29,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -42,6 +46,25 @@ public interface PageCache extends AutoCloseable
      * The default {@link #pageSize()}.
      */
     int PAGE_SIZE = 8192;
+
+    /**
+     * Ask for a handle to a paged file, backed by this page cache with default version context that was provided during page cache construction
+     * and default empty set of file open options.
+     * <p>
+     * Note that this currently asks for the pageSize to use, which is an artifact or records being
+     * of varying size in the stores. This should be consolidated to use a standard page size for the
+     * whole cache, with records aligning on those page boundaries.
+     *
+     * @param file The file to map.
+     * @param pageSize The file page size to use for this mapping. If the file is already mapped with a different page
+     * size, an exception will be thrown.
+     * @throws java.nio.file.NoSuchFileException if the given file does not exist.
+     * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
+     */
+    default PagedFile map( File file, int pageSize ) throws IOException
+    {
+        return map( file, versionContextSupplier(), pageSize, immutable.empty() );
+    }
 
     /**
      * Ask for a handle to a paged file, backed by this page cache with default version context that was provided during page cache construction
@@ -64,7 +87,7 @@ public interface PageCache extends AutoCloseable
      * {@link StandardOpenOption#CREATE} option was not specified.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    default PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+    default PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         return map( file, versionContextSupplier(), pageSize, openOptions );
     }
@@ -91,14 +114,14 @@ public interface PageCache extends AutoCloseable
      * {@link StandardOpenOption#CREATE} option was not specified.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException;
+    PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException;
 
     /**
      * Ask for an already mapped paged file, backed by this page cache.
      * <p>
      * If mapping exist, the returned {@link Optional} will report {@link Optional#isPresent()} true and
      * {@link Optional#get()} will return the same {@link PagedFile} instance that was initially returned my
-     * {@link #map(File, int, OpenOption...)}.
+     * {@link #map(File, int, ImmutableSet)}.
      * If no mapping exist for this file, then returned {@link Optional} will report {@link Optional#isPresent()}
      * false.
      * <p>

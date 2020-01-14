@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -59,7 +61,7 @@ public class DatabasePageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         PagedFile pagedFile = globalPageCache.map( file, versionContextSupplier, pageSize, openOptions );
         DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles );

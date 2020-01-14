@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacy;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
@@ -63,7 +65,7 @@ public class SchemaStore35 extends AbstractDynamicStore
             PageCache pageCache,
             LogProvider logProvider,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
                 recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );

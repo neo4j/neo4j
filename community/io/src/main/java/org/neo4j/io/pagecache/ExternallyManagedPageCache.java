@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -49,13 +51,13 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+    public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         return delegate.map( file, pageSize, openOptions );
     }
 
     @Override
-    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         return delegate.map( file, versionContextSupplier, pageSize, openOptions );
     }

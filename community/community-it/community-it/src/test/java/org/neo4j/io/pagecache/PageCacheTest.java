@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
@@ -76,8 +77,9 @@ import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static java.time.Duration.ofMillis;
-import static org.apache.commons.lang3.ArrayUtils.addAll;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.eclipse.collections.api.factory.Sets.mutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -104,14 +106,24 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     // zero-parameter constructor calling super constructor with a specific set of option options... and junit doesn't allow multiple
     // constructors on a test class. Making this class abstract and have one sub-class with no specific open options and another for
     // specific open options seemed a bit excessive, that's all.
-    protected OpenOption[] openOptions = new OpenOption[0];
+    protected ImmutableSet<OpenOption> openOptions = immutable.empty();
 
-    protected PagedFile map( PageCache pageCache, File file, int filePageSize, OpenOption... options ) throws IOException
+    protected PagedFile map( PageCache pageCache, File file, int filePageSize ) throws IOException
     {
-        return pageCache.map( file, filePageSize, addAll( openOptions, options ) );
+        return map( pageCache, file, filePageSize, immutable.empty() );
     }
 
-    protected PagedFile map( File file, int filePageSize, OpenOption... options ) throws IOException
+    protected PagedFile map( PageCache pageCache, File file, int filePageSize, ImmutableSet<OpenOption> options ) throws IOException
+    {
+        return pageCache.map( file, filePageSize, immutable.withAll( mutable.withAll( openOptions ).withAll( options ) ) );
+    }
+
+    protected PagedFile map( File file, int filePageSize ) throws IOException
+    {
+        return map( pageCache, file, filePageSize, immutable.empty() );
+    }
+
+    protected PagedFile map( File file, int filePageSize, ImmutableSet<OpenOption> options ) throws IOException
     {
         return map( pageCache, file, filePageSize, options );
     }
@@ -968,7 +980,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             // Because otherwise we cannot ensure that our branch-free bounds checking always lands within a page boundary.
             configureStandardPageCache();
             assertThrows( IllegalArgumentException.class,
-                    () -> map( file( "a" ), Long.BYTES - 1, PageCacheOpenOptions.ANY_PAGE_SIZE ) ); // this must throw;
+                    () -> map( file( "a" ), Long.BYTES - 1, immutable.of( PageCacheOpenOptions.ANY_PAGE_SIZE ) ) ); // this must throw;
         } );
     }
 
@@ -996,7 +1008,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             File file = file( "a" );
             //noinspection unused,EmptyTryBlock
             try ( PagedFile oldMapping = map( file, filePageSize );
-                    PagedFile newMapping = map( file, 0, PageCacheOpenOptions.ANY_PAGE_SIZE ) )
+                    PagedFile newMapping = map( file, 0, immutable.of( PageCacheOpenOptions.ANY_PAGE_SIZE ) ) )
             {
                 // All good
             }
@@ -2749,7 +2761,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
 
         PagedFile file;
-        try ( PagedFile pf = map( file( "a" ), filePageSize, StandardOpenOption.CREATE ) )
+        try ( PagedFile pf = map( file( "a" ), filePageSize, immutable.of( StandardOpenOption.CREATE ) ) )
         {
             file = pf;
         }
@@ -4359,7 +4371,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            try ( PagedFile pf = map( file( "does not exist" ), filePageSize, StandardOpenOption.CREATE );
+            try ( PagedFile pf = map( file( "does not exist" ), filePageSize, immutable.of( StandardOpenOption.CREATE ) );
                     PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 assertTrue( cursor.next() );
@@ -4373,7 +4385,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            try ( PagedFile pf = map( file( "a" ), filePageSize, StandardOpenOption.CREATE );
+            try ( PagedFile pf = map( file( "a" ), filePageSize, immutable.of( StandardOpenOption.CREATE ) );
                     PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 assertTrue( cursor.next() );
@@ -4387,8 +4399,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            try ( PagedFile pf = map( file( "a" ), filePageSize, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.APPEND,
-                    StandardOpenOption.SPARSE );
+            try ( PagedFile pf = map( file( "a" ), filePageSize,
+                    immutable.of( StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.APPEND, StandardOpenOption.SPARSE ) );
                     PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 assertTrue( cursor.next() );
@@ -4420,7 +4432,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         try
         {
-            map( file( "a" ), filePageSize, option ).close();
+            map( file( "a" ), filePageSize, immutable.of( option ) ).close();
             fail( "Expected map() to throw when given the OpenOption " + option );
         }
         catch ( IllegalArgumentException | UnsupportedOperationException e )
@@ -4442,7 +4454,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue( cursor.next() );
                 cursor.putInt( 0xcafebabe );
             }
-            try ( PagedFile pf = map( file( "a" ), filePageSize, StandardOpenOption.TRUNCATE_EXISTING );
+            try ( PagedFile pf = map( file( "a" ), filePageSize, immutable.of( StandardOpenOption.TRUNCATE_EXISTING ) );
                     PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
             {
                 assertThat( pf.getLastPageId() ).isLessThan( 0L );
@@ -4460,7 +4472,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertThrows( UnsupportedOperationException.class, () ->
             {
-                try ( PagedFile second = map( file( "a" ), filePageSize, StandardOpenOption.TRUNCATE_EXISTING ) )
+                try ( PagedFile second = map( file( "a" ), filePageSize, immutable.of( StandardOpenOption.TRUNCATE_EXISTING ) ) )
                 {
                     // empty
                 }
@@ -4481,7 +4493,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void fileMappedWithDeleteOnCloseMustNotExistAfterUnmap() throws Exception
     {
         configureStandardPageCache();
-        map( file( "a" ), filePageSize, DELETE_ON_CLOSE ).close();
+        map( file( "a" ), filePageSize, immutable.of( DELETE_ON_CLOSE ) ).close();
         assertThrows( NoSuchFileException.class, () -> map( file( "a" ), filePageSize ) );
     }
 
@@ -4492,7 +4504,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File file = file( "a" );
         try ( PagedFile ignore = map( file, filePageSize ) )
         {
-            map( file, filePageSize, DELETE_ON_CLOSE ).close();
+            map( file, filePageSize, immutable.of( DELETE_ON_CLOSE ) ).close();
         }
         assertThrows( NoSuchFileException.class, () -> map( file, filePageSize ) );
     }
@@ -4504,7 +4516,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter );
         File file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-                PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
+                PagedFile pf = cache.map( file, filePageSize, immutable.of( DELETE_ON_CLOSE ) );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             writeRecords( cursor );
@@ -4569,7 +4581,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             for ( int i = 0; i < iterations; i++ )
             {
                 ensureExists( file );
-                try ( PagedFile pf = map( file, filePageSize, DELETE_ON_CLOSE );
+                try ( PagedFile pf = map( file, filePageSize, immutable.of( DELETE_ON_CLOSE ) );
                         PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
                     writeRecords( cursor );
@@ -4585,7 +4597,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         try ( PagedFile ignore = map( file( "a" ), filePageSize ) )
         {
-            map( file( "a" ), filePageSize + 1, PageCacheOpenOptions.ANY_PAGE_SIZE ).close();
+            map( file( "a" ), filePageSize + 1, immutable.of( PageCacheOpenOptions.ANY_PAGE_SIZE ) ).close();
         }
     }
 

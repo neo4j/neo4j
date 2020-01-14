@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.Closeable;
 import java.io.File;
@@ -52,6 +53,9 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.eclipse.collections.impl.factory.Sets.mutable;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -60,7 +64,6 @@ import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER
 import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
-import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
@@ -467,11 +470,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final PageCacheTracer pageCacheTracer;
 
     /**
-     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(File, int, OpenOption...)}
+     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(File, int, ImmutableSet)}
      * at open/create. When initially creating the file an array consisting of {@link StandardOpenOption#CREATE}
      * concatenated with the contents of this array is passed into the map call.
      */
-    private final OpenOption[] openOptions;
+    private final ImmutableSet<OpenOption> openOptions;
 
     /**
      * Whether or not this tree has been closed. Accessed and changed solely in
@@ -568,7 +571,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
             Monitor monitor, Header.Reader headerReader, Consumer<PageCursor> headerWriter,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer, OpenOption... openOptions )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions )
             throws MetadataMismatchException
     {
         this.indexFile = indexFile;
@@ -683,8 +686,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         clean = true;
     }
 
-    private PagedFile openOrCreate( PageCache pageCache, File indexFile, int pageSizeForCreation, PageCursorTracer cursorTracer, OpenOption... openOptions )
-            throws IOException, MetadataMismatchException
+    private PagedFile openOrCreate( PageCache pageCache, File indexFile, int pageSizeForCreation, PageCursorTracer cursorTracer,
+            ImmutableSet<OpenOption> openOptions ) throws IOException, MetadataMismatchException
     {
         try
         {
@@ -700,7 +703,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, PageCursorTracer cursorTracer, OpenOption... openOptions )
+    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
             throws IOException, MetadataMismatchException
     {
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions );
@@ -743,7 +746,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
 
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile, pageSize, concat( StandardOpenOption.CREATE, openOptions ) );
+        PagedFile pagedFile = pageCache.map( indexFile, pageSize, immutable.withAll( mutable.ofAll( openOptions ).with( CREATE ) ) );
         created = true;
         return pagedFile;
     }
@@ -783,7 +786,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     public static void readHeader( PageCache pageCache, File indexFile, Header.Reader headerReader, PageCursorTracer cursorTracer )
             throws IOException, MetadataMismatchException
     {
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, immutable.empty() ) )
         {
             Pair<TreeState,TreeState> states = loadStatePages( pagedFile, cursorTracer );
             TreeState state = TreeStatePair.selectNewestValidState( states );
@@ -885,7 +888,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             throws IOException
     {
         Header.Writer writer = replace( headerWriter );
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, immutable.empty() ) )
         {
             Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorTracer );
             TreeState newestValidState = TreeStatePair.selectNewestValidState( states );
@@ -988,8 +991,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize, MutableBoolean pagedFileOpen,
-            OpenOption... openOptions )
-            throws IOException
+            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         // This index was created with another page size, re-open with that actual page size
         if ( pageSize != pageCache.pageSize() )

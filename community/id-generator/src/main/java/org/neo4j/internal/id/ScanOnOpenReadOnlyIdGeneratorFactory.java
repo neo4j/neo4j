@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.Collection;
@@ -32,7 +34,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in
- * {@link IdGeneratorFactory#open(PageCache, File, IdType, LongSupplier, long, boolean, PageCursorTracer, OpenOption...)},
+ * {@link IdGeneratorFactory#open(PageCache, File, IdType, LongSupplier, long, boolean, PageCursorTracer, ImmutableSet)},
  * instantiating {@link IdGenerator} that will return that highId and do nothing else.
  * This is of great convenience when migrating between id file formats.
  */
@@ -42,7 +44,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-            PageCursorTracer cursorTracer, OpenOption... openOptions )
+            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         long highId = highIdScanner.getAsLong();
         ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator( highId );
@@ -52,9 +54,9 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
+            boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
-        return open( pageCache, filename, idType, () -> highId, maxId, readOnly, cursorTracer );
+        return open( pageCache, filename, idType, () -> highId, maxId, readOnly, cursorTracer, openOptions );
     }
 
     @Override

@@ -89,6 +89,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.TokenHolders;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -296,7 +297,8 @@ class RecordStorageMigratorIT
         LogProvider logProvider = logService.getInternalLogProvider();
 
         // Prepare all the tokens we'll need.
-        StoreFactory legacyStoreFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, StandardV3_4.RECORD_FORMATS, logProvider, NULL );
+        StoreFactory legacyStoreFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, StandardV3_4.RECORD_FORMATS, logProvider, NULL,
+                immutable.empty() );
         NeoStores stores = legacyStoreFactory.openNeoStores( false,
                 StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
                 StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
@@ -309,7 +311,8 @@ class RecordStorageMigratorIT
         // Prepare the legacy schema store we'll migrate.
         File storeFile = databaseLayout.schemaStore();
         File idFile = databaseLayout.idSchemaStore();
-        SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
+        SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS,
+                immutable.empty() );
         schemaStore35.initialise( false, PageCursorTracer.NULL );
         SplittableRandom rng = new SplittableRandom();
         LongHashSet indexes = new LongHashSet();

@@ -20,6 +20,7 @@
 package org.neo4j.internal.id.indexed;
 
 import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import java.io.File;
@@ -52,6 +53,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -326,7 +328,14 @@ public class IndexedIdGenerator implements IdGenerator
     private final Monitor monitor;
 
     public IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, PageCursorTracer cursorTracer )
+    {
+        this( pageCache, file, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, cursorTracer, immutable.empty() );
+    }
+
+    public IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, PageCursorTracer cursorTracer,
+            ImmutableSet<OpenOption> openOptions )
     {
         this( pageCache, file, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, cursorTracer, NO_MONITOR,
                 openOptions );
@@ -334,7 +343,7 @@ public class IndexedIdGenerator implements IdGenerator
 
     public IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, PageCursorTracer cursorTracer, Monitor monitor,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         this.file = file;
         this.readOnly = readOnly;
@@ -383,7 +392,7 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean readOnly, OpenOption[] openOptions )
+            boolean readOnly, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
@@ -666,7 +675,7 @@ public class IndexedIdGenerator implements IdGenerator
             HeaderReader header = readHeader( pageCache, file, cursorTracer ).orElseThrow( () -> new NoSuchFileException( file.getAbsolutePath() ) );
             IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
             try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                    immediate(), true, cacheTracer ) )
+                    immediate(), true, cacheTracer, immutable.empty() ) )
             {
                 tree.visit( new GBPTreeVisitor.Adaptor<>()
                 {

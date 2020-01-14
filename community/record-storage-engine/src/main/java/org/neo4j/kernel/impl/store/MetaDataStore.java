@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -49,6 +51,7 @@ import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static java.lang.String.format;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
@@ -153,7 +156,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
             String storeVersion,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
                 TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
@@ -214,7 +217,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         long previousValue = FIELD_NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
-        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, immutable.empty() ) )
         {
             int offset = offset( position );
             try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
@@ -274,7 +277,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         var recordFormat = new MetaDataRecordFormat();
         int pageSize = pageCache.pageSize();
         long value = FIELD_NOT_PRESENT;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, immutable.empty() ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {

@@ -28,12 +28,14 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.LogProvider;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
+
 class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
 {
     @Override
     protected TokenStore<LabelTokenRecord> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
-        return new LabelTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats );
+        return new LabelTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats, immutable.empty() );
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
@@ -68,7 +70,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             LogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
                 NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );

@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -177,7 +178,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
                   PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds() );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
                   IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE,
-                            readOnly, cursorTracer );
+                            readOnly, cursorTracer, immutable.empty() );
                   Marker marker = idGenerator.marker( cursorTracer ) )
             {
                 AbstractBaseRecord record = store.newRecord();
@@ -201,7 +202,8 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
 
     private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer,
+                immutable.empty() );
     }
 
     @Override

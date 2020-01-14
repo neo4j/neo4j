@@ -32,6 +32,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -68,7 +69,7 @@ class BufferedIdControllerTest
         var pageCacheTracer = new DefaultPageCacheTracer();
 
         try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), IdType.NODE, 100L, true, 1000L, false,
-                NULL ) )
+                NULL, immutable.empty() ) )
         {
             idGenerator.marker( NULL ).markDeleted( 1L );
             idGenerator.clearCache( NULL );

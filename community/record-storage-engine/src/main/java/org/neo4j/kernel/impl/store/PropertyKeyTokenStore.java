@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 
@@ -47,7 +49,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             LogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
                 recordFormats.propertyKeyToken(), recordFormats.storeVersion(), openOptions );

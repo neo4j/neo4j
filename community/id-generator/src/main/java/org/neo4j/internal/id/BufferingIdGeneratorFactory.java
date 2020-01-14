@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.Collection;
@@ -56,17 +58,17 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-            PageCursorTracer cursorTracer, OpenOption... openOptions )
+            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
-        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnly, cursorTracer );
+        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnly, cursorTracer, openOptions );
         return wrapAndKeep( idType, generator );
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            boolean readOnly, PageCursorTracer cursorTracer, OpenOption... openOptions )
+            boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         IdGenerator idGenerator = delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnly, cursorTracer, openOptions );
         return wrapAndKeep( idType, idGenerator );

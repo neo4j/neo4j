@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,6 +100,7 @@ import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -681,7 +683,8 @@ public class NeoStoresTest
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER, PageCacheTracer.NULL );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER, PageCacheTracer.NULL,
+                immutable.empty() );
     }
 
     private void reinitializeStores( DatabaseLayout databaseLayout )
@@ -1330,7 +1333,7 @@ public class NeoStoresTest
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                 File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
-                OpenOption[] openOptions )
+                ImmutableSet<OpenOption> openOptions )
         {
             if ( idType == IdType.NODE )
             {

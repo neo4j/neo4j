@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
 import java.io.Closeable;
@@ -41,11 +42,12 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.test.AssumptionHelper.withoutReadPermissions;
 import static org.neo4j.test.AssumptionHelper.withoutWritePermissions;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -68,7 +70,7 @@ class NeoStoreOpenFailureTest
         RecordFormatPropertyConfigurator.configureRecordFormat( formats, config );
         boolean create = true;
         StoreType[] storeTypes = StoreType.values();
-        OpenOption[] openOptions = new OpenOption[0];
+        ImmutableSet<OpenOption> openOptions = immutable.empty();
         NeoStores neoStores = new NeoStores(
                 fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, NULL, storeTypes, openOptions );
         File schemaStore = neoStores.getSchemaStore().getStorageFile();

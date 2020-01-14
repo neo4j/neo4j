@@ -39,6 +39,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -67,7 +68,7 @@ class DatabasePageCacheTest
     {
         globalPageCache = mock( PageCache.class );
         pagedFileMapper = new PagedFileAnswer();
-        when( globalPageCache.map( any( File.class ), any(), eq( PAGE_SIZE ) ) ).then( pagedFileMapper );
+        when( globalPageCache.map( any( File.class ), any(), eq( PAGE_SIZE ), any() ) ).then( pagedFileMapper );
         databasePageCache = new DatabasePageCache( globalPageCache, EMPTY );
     }
 
@@ -84,10 +85,10 @@ class DatabasePageCacheTest
     void mapDatabaseFile() throws IOException
     {
         File mapFile = testDirectory.createFile( "mapFile" );
-        PagedFile pagedFile = databasePageCache.map( mapFile, EMPTY, PAGE_SIZE );
+        PagedFile pagedFile = databasePageCache.map( mapFile, EMPTY, PAGE_SIZE, immutable.empty() );
 
         assertNotNull( pagedFile );
-        verify( globalPageCache ).map( mapFile, EMPTY, PAGE_SIZE );
+        verify( globalPageCache ).map( mapFile, EMPTY, PAGE_SIZE, immutable.empty() );
     }
 
     @Test

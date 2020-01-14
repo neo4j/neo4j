@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.File;
 import java.nio.file.OpenOption;
 
@@ -47,7 +49,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             LogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
-            OpenOption... openOptions )
+            ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, recordFormats.relationshipTypeToken(),

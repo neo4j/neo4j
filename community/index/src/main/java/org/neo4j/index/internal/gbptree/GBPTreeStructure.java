@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -65,7 +66,7 @@ public class GBPTreeStructure<KEY, VALUE>
      */
     public static void visitHeader( PageCache pageCache, File file, GBPTreeVisitor visitor ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.READ ) )
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() ) )
             {

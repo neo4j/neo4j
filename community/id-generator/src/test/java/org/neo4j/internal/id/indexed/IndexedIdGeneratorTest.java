@@ -58,6 +58,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -532,7 +533,8 @@ class IndexedIdGeneratorTest
     {
         stop();
         IndexedIdGenerator.Monitor monitor = mock( IndexedIdGenerator.Monitor.class );
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor );
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor,
+                immutable.empty() );
         verify( monitor ).opened( -1, 0 );
         idGenerator.start( NO_FREE_IDS, NULL );
 
@@ -569,7 +571,8 @@ class IndexedIdGeneratorTest
         verify( monitor ).close();
 
         // Also test normalization (which requires a restart)
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor );
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor,
+                immutable.empty() );
         idGenerator.start( NO_FREE_IDS, NULL );
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
