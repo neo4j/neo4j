@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Pre
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.{InputPosition, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.util.attribution.{Id, IdGen, SameId, SequentialIdGen}
+import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, Cartesian_3D, WGS84, WGS84_3D}
+import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -416,6 +418,68 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
+  private def point2PointFunction(point: PointValue) = {
+
+    val coordinate = point.getCoordinate.getCoordinate
+    point.getCoordinateReferenceSystem match {
+      case Cartesian =>
+        function("point",
+                 literalMap(Map("x" -> literalFloat(coordinate.get(0)),
+                                "y" -> literalFloat(coordinate.get(1)),
+                                "crs" -> literalString("cartesian"))))
+      case Cartesian_3D =>
+        function("point",
+                 literalMap(Map("x" -> literalFloat(coordinate.get(0)),
+                                "y" -> literalFloat(coordinate.get(1)),
+                                "z" -> literalFloat(coordinate.get(2)),
+                                "crs" -> literalString("cartesian-3d"))))
+      case WGS84 =>
+        function("point",
+                 literalMap(Map("longitude" -> literalFloat(coordinate.get(0)),
+                                "latitude" -> literalFloat(coordinate.get(1)),
+                                "crs" -> literalString("wgs-84"))))
+      case WGS84_3D =>
+        function("point",
+                 literalMap(Map("longitude" -> literalFloat(coordinate.get(0)),
+                                "latitude" -> literalFloat(coordinate.get(1)),
+                                "height" -> literalFloat(coordinate.get(2)),
+                                "crs" -> literalString("wgs-84-3d"))))
+      case _ => throw new UnsupportedOperationException
+    }
+  }
+
+  def pointDistanceIndexSeek(node: String,
+                             labelName: String,
+                             property: String,
+                             point: String,
+                             distance: Double,
+                             getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                             indexOrder: IndexOrder = IndexOrderNone,
+                             inclusive: Boolean = false,
+                             argumentIds: Set[String] = Set.empty): IMPL = {
+    val label = resolver.getLabelId(labelName)
+
+
+    val propId = resolver.getPropertyKeyId(property)
+    val planBuilder = (idGen: IdGen) => {
+      val labelToken = LabelToken(labelName, LabelId(label))
+      val propToken = PropertyKeyToken(PropertyKeyName(property)(InputPosition.NONE), PropertyKeyId(propId))
+      val indexedProperty = IndexedProperty(propToken, getValue)
+      val e =
+        RangeQueryExpression(PointDistanceSeekRangeWrapper(
+          PointDistanceRange(function("point", Parser.parseExpression(point)), literalFloat(distance), inclusive))(InputPosition.NONE))
+      val plan = NodeIndexSeek(node,
+                               labelToken,
+                               Seq(indexedProperty),
+                               e,
+                               argumentIds,
+                               indexOrder)(idGen)
+      newNode(varFor(plan.idName))
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
   def aggregation(groupingExpressions: Seq[String],
                   aggregationExpression: Seq[String]): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Aggregation(lp,
@@ -575,6 +639,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   private def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
   private def literalInt(value: Long): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(pos)
+  private def literalFloat(value: Double): DecimalDoubleLiteral =
+    DecimalDoubleLiteral(value.toString)(pos)
+  private def literalMap(map: Map[String, Expression]) =
+    MapExpression(map.map {
+      case (key, value) => PropertyKeyName(key)(pos) -> value
+    }.toSeq)(pos)
+  def literalString(str: String): StringLiteral = StringLiteral(str)(pos)
+  def function(name: String, args: Expression*): FunctionInvocation =
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
 }
 

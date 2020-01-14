@@ -81,6 +81,7 @@ object LogicalPlanToPlanBuilderString {
       case _:UnwindCollection => "unwind"
       case _:FindShortestPaths => "shortestPath"
       case _:NodeIndexScan => "nodeIndexOperator"
+      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _) => "pointDistanceIndexSeek"
       case _:NodeIndexSeek => "nodeIndexOperator"
       case _:NodeUniqueIndexSeek => "nodeIndexOperator"
       case _:NodeIndexContainsScan => "nodeIndexOperator"
@@ -148,7 +149,7 @@ object LogicalPlanToPlanBuilderString {
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicate, relationshipPredicate) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
-        val lenStr = s"${minLength}..${maxLength}"
+        val lenStr = s"$minLength..$maxLength"
         val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
         val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
         s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
@@ -240,6 +241,8 @@ object LogicalPlanToPlanBuilderString {
       case NodeIndexEndsWithScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder) =>
         val propName = property.propertyKeyToken.name
         indexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName ENDS WITH ${expressionStringifier(valueExpr)}")
+      case NodeIndexSeek(idName, labelToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(FunctionInvocation(_, FunctionName("point"), _, args), distance, inclusive))), argumentIds, indexOrder) =>
+        pointDistanceIndexSeek(idName, labelToken, properties, args.head, distance, argumentIds, indexOrder, inclusive = inclusive)
       case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
@@ -319,6 +322,30 @@ object LogicalPlanToPlanBuilderString {
     }
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     s""" "$indexStr"$indexOrderStr$argStr$getValueStr$uniqueStr """.trim
+  }
+
+  private def pointDistanceIndexSeek(idName: String,
+                                     labelToken: LabelToken,
+                                     properties: Seq[IndexedProperty],
+                                     point: Expression,
+                                     distance: Expression,
+                                     argumentIds: Set[String],
+                                     indexOrder: IndexOrder,
+                                     inclusive: Boolean): String = {
+    val propName = properties.head.propertyKeyToken.name
+    val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
+    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val inclusiveStr = s", inclusive = $inclusive"
+    val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
+      (v1, v2) =>
+        if (v1 == v2) {
+          v1
+        } else {
+          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
+        }
+    }
+    val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
+    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(distance)}$indexOrderStr$argStr$getValueStr$inclusiveStr """.trim
   }
 
   private def idsStr(ids: SeekableArgs) = {

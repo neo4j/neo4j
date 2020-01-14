@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Pre
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
+import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
+import org.neo4j.values.storable.Values.pointValue
 
 import scala.collection.mutable
 import scala.tools.nsc.Settings
@@ -438,13 +441,21 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
       .build())
 
-  testPlan("directedRelationshipByIdSeek",
+  testPlan("pointDistanceIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
-      .|.directedRelationshipByIdSeek("r2", "x", "y", Set("x"), 25)
-      .directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+      .|.pointDistanceIndexSeek("y", "L", "prop", "{x: 1.0, y: 2.0, crs: 'cartesian'}", 10, argumentIds = Set("x"), getValue = GetValue)
+      .pointDistanceIndexSeek("x", "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", 100, indexOrder = IndexOrderDescending)
       .build())
+
+  testPlan("directedRelationshipByIdSeek",
+           new TestPlanBuilder()
+             .produceResults("x", "y")
+             .apply()
+             .|.directedRelationshipByIdSeek("r2", "x", "y", Set("x"), 25)
+             .directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+             .build())
 
   // Formatting paramExpr and customQueryExpression is currently not supported.
   // These cases will need manual fixup.
