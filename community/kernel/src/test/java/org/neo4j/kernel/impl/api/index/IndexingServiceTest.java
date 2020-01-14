@@ -337,7 +337,7 @@ class IndexingServiceTest
         when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
         IndexReader indexReader = mock( IndexReader.class );
         when( accessor.newReader() ).thenReturn( indexReader );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( index ) ).when( indexReader ).query( any(), any(), any(), anyBoolean(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( index ) ).when( indexReader ).query( any(), any(), any(), anyBoolean(), any(), any() );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 

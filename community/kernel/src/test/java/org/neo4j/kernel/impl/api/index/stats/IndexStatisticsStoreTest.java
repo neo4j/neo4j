@@ -96,10 +96,10 @@ class IndexStatisticsStoreTest
 
         openStore( cacheTracer, "tracedStats" );
 
-        assertThat( cacheTracer.faults() ).isZero();
-        assertThat( cacheTracer.pins() ).isZero();
-        assertThat( cacheTracer.unpins() ).isZero();
-        assertThat( cacheTracer.hits() ).isZero();
+        assertThat( cacheTracer.faults() ).isEqualTo( 5 );
+        assertThat( cacheTracer.pins() ).isEqualTo( 14 );
+        assertThat( cacheTracer.unpins() ).isEqualTo( 14 );
+        assertThat( cacheTracer.hits() ).isEqualTo( 9 );
     }
 
     @Test

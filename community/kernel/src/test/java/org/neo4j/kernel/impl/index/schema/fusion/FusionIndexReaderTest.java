@@ -88,7 +88,7 @@ abstract class FusionIndexReaderTest
         for ( int i = 0; i < activeSlots.length; i++ )
         {
             IndexReader mock = mock( IndexReader.class );
-            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), anyBoolean(), any() );
+            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), anyBoolean(), any(), any() );
             aliveReaders[i] = mock;
             switch ( activeSlots[i] )
             {
@@ -147,7 +147,7 @@ abstract class FusionIndexReaderTest
                         invocation.getArgument( 3 ), false );
                 progressors[slot] = progressor;
                 return null;
-            } ).when( aliveReaders[i] ).query( any(), any(), any(), anyBoolean(), any() );
+            } ).when( aliveReaders[i] ).query( any(), any(), any(), anyBoolean(), any(), any() );
         }
 
         // when
@@ -257,7 +257,7 @@ abstract class FusionIndexReaderTest
         for ( IndexReader aliveReader : aliveReaders )
         {
             doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR, lastId++, lastId++ ) ).when( aliveReader ).query(
-                    any(), any(), any(), anyBoolean(), any() );
+                    any(), any(), any(), anyBoolean(), any(), any() );
         }
 
         // when
@@ -297,7 +297,7 @@ abstract class FusionIndexReaderTest
                     {
                         if ( i == j )
                         {
-                            verify( readers.get( i ) ).query( any(), any(), any(), anyBoolean(), any() );
+                            verify( readers.get( i ) ).query( any(), any(), any(), anyBoolean(), any(), any() );
                         }
                         else
                         {
