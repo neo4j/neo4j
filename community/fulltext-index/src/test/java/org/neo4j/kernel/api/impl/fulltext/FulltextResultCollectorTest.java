@@ -103,7 +103,7 @@ class FulltextResultCollectorTest
         @Test
         void queueMustCollectAndOrderResultsByScore()
         {
-            EntityScorePriorityQueue pq = new EntityScorePriorityQueue( 10 );
+            EntityScorePriorityQueue pq = new EntityScorePriorityQueue();
             assertThat( pq.isEmpty() ).isTrue();
             pq.insert( 1, 3.0f );
             assertThat( pq.isEmpty() ).isFalse();
@@ -117,20 +117,20 @@ class FulltextResultCollectorTest
             List<Integer> ids = new ArrayList<>( 7 );
             LongFloatProcedure receiver = ( id, score ) -> ids.add( (int) id );
             assertThat( pq.size() ).isEqualTo( 7 );
-            pq.removeMax( receiver );
+            pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 6 );
-            pq.removeMax( receiver );
+            pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 5 );
-            pq.removeMax( receiver );
+            pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 4 );
-            pq.removeMax( receiver );
+            pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 3 );
-            pq.removeMax( receiver );
+            pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 2 );
-            pq.removeMax( receiver );
+            pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 1 );
             assertThat( pq.isEmpty() ).isFalse();
-            pq.removeMax( receiver );
+            pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 0 );
             assertThat( pq.isEmpty() ).isTrue();
             assertThat( ids ).isEqualTo( List.of( 5, 7, 6, 3, 1, 4, 2 ) );
@@ -145,8 +145,8 @@ class FulltextResultCollectorTest
 
             try
             {
-                EntityScorePriorityQueue actualQueue = new EntityScorePriorityQueue( count );
-                PriorityQueue<EntityScore> expectedQueue = new PriorityQueue<>( count );
+                EntityScorePriorityQueue actualQueue = new EntityScorePriorityQueue();
+                PriorityQueue<EntityScore> expectedQueue = new PriorityQueue<>();
                 for ( int i = 0; i < count; i++ )
                 {
                     float score = (float) rng.nextDouble();
@@ -159,7 +159,7 @@ class FulltextResultCollectorTest
                 EntityScore entityScore = new EntityScore( 0, 0.0f );
                 while ( !actualQueue.isEmpty() )
                 {
-                    actualQueue.removeMax( entityScore );
+                    actualQueue.removeTop( entityScore );
                     assertThat( entityScore ).isEqualTo( expectedQueue.remove() );
                 }
                 assertThat( expectedQueue ).isEmpty();
@@ -184,14 +184,14 @@ class FulltextResultCollectorTest
             try
             {
                 PriorityQueue<EntityScorePriorityQueue> actualQueue = new PriorityQueue<>();
-                EntityScorePriorityQueue currentQueue = new EntityScorePriorityQueue( 10 );
+                EntityScorePriorityQueue currentQueue = new EntityScorePriorityQueue();
                 PriorityQueue<EntityScore> expectedQueue = new PriorityQueue<>( count );
                 for ( int i = 0, j = 1; i < count; i++, j++ )
                 {
                     if ( j == 10 )
                     {
                         actualQueue.add( currentQueue );
-                        currentQueue = new EntityScorePriorityQueue( 10 );
+                        currentQueue = new EntityScorePriorityQueue();
                         j = 0;
                     }
                     float score = (float) rng.nextDouble();
