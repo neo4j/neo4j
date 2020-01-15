@@ -137,7 +137,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               profile: Boolean,
               prePopulate: Boolean,
               subscriber: QuerySubscriber): QueryExecution = {
-    queryExecutionMonitor.start( context.executingQuery() )
+    queryExecutionMonitor.start(context.executingQuery())
     executeSubQuery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
   }
 
@@ -158,7 +158,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               prePopulate: Boolean,
               input: InputDataStream,
               subscriber: QuerySubscriber): QueryExecution = {
-    queryExecutionMonitor.start( context.executingQuery() )
+    queryExecutionMonitor.start(context.executingQuery())
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
       doExecute(query, params, context, isOutermostQuery = true, prePopulate, input, queryTracer, subscriber)
@@ -209,7 +209,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         tracer: QueryCompilationEvent,
                         subscriber: QuerySubscriber): QueryExecution = {
 
-    val executableQuery = getOrCompile(context, query, tracer, params)
+    val executableQuery = try {
+      getOrCompile(context, query, tracer, params)
+    } catch {
+      case t: Throwable =>
+        if (isOutermostQuery)
+          queryExecutionMonitor.endFailure(context.executingQuery(), null)
+        throw t
+    }
     if (query.options.executionMode.name != "explain") {
       checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
     }

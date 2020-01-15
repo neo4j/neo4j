@@ -49,7 +49,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   private def runQuery(query: String, f: ResultSubscriber => Unit = defaultFunction ): ExecutingQuery = {
     db.withTx( tx => {
       val context = db.transactionalContext(tx, query = query -> Map.empty)
-      val executingQuery = context.executingQuery()
       val result = new ResultSubscriber(context)
       val executionResult = engine.execute(query,
         MapValue.EMPTY,
@@ -63,7 +62,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
       } finally {
         result.close()
       }
-      executingQuery
+      context.executingQuery()
     } )
   }
 
