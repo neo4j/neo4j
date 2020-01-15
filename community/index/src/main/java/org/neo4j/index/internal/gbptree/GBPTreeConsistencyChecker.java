@@ -144,6 +144,7 @@ class GBPTreeConsistencyChecker<KEY>
         }
         target.set( index );
     }
+
     private void checkSubtree( File file, PageCursor cursor, KeyRange<KEY> range, long parentNode, long pointerGeneration,
             GBPTreePointerType parentPointerType, int level, GBPTreeConsistencyCheckVisitor<KEY> visitor, BitSet seenIds ) throws IOException
     {
