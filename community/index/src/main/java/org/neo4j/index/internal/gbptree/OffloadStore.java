@@ -36,9 +36,9 @@ public interface OffloadStore<KEY, VALUE>
     /**
      * Read only key.
      *
-     * @see #readKeyValue(long, Object, Object)
+     * @see #readKeyValue(long, Object, Object, PageCursorTracer)
      */
-    void readKey( long offloadId, KEY into ) throws IOException;
+    void readKey( long offloadId, KEY into, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Read key and value mapped to by given offloadId.
@@ -46,16 +46,17 @@ public interface OffloadStore<KEY, VALUE>
      * @param offloadId id for which to read key and value.
      * @param key instance to read key into.
      * @param value instance to read value into
+     * @param cursorTracer underlying page cursor tracer
      * @throws IOException if something went wrong while reading key or value.
      */
-    void readKeyValue( long offloadId, KEY key, VALUE value ) throws IOException;
+    void readKeyValue( long offloadId, KEY key, VALUE value, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Read only value.
      *
-     * @see #readKeyValue(long, Object, Object)
+     * @see #readKeyValue(long, Object, Object, PageCursorTracer)
      */
-    void readValue( long offloadId, VALUE into ) throws IOException;
+    void readValue( long offloadId, VALUE into, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Store key in offload store.

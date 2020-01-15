@@ -245,9 +245,9 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract long offloadIdAt( PageCursor cursor, int pos, Type type );
 
-    abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type );
+    abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type, PageCursorTracer cursorTracer );
 
-    abstract void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos );
+    abstract void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, PageCursorTracer cursorTracer );
 
     abstract void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount,
             long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException;
@@ -270,7 +270,7 @@ abstract class TreeNode<KEY,VALUE>
      */
     abstract boolean setKeyAtInternal( PageCursor cursor, KEY key, int pos );
 
-    abstract VALUE valueAt( PageCursor cursor, VALUE value, int pos );
+    abstract VALUE valueAt( PageCursor cursor, VALUE value, int pos, PageCursorTracer cursorTracer );
 
     /**
      * Overwrite value at position with given value.
@@ -408,7 +408,8 @@ abstract class TreeNode<KEY,VALUE>
 
     // Useful for debugging
     @SuppressWarnings( "unused" )
-    abstract void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration );
+    abstract void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration,
+            PageCursorTracer cursorTracer );
 
     /**
      * @return {@link String} describing inconsistency of empty string "" if no inconsistencies.

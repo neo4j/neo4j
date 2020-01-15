@@ -24,7 +24,7 @@ import java.io.IOException;
 @FunctionalInterface
 interface OffloadIdValidator
 {
-    boolean valid( long offloadId ) throws IOException;
-
     OffloadIdValidator ALWAYS_TRUE = offloadId -> true;
+
+    boolean valid( long offloadId ) throws IOException;
 }

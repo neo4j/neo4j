@@ -225,8 +225,7 @@ class LargeDynamicKeysIT
             for ( int i = 0; i < 1_000; i++ )
             {
                 // value, based on i
-                RawBytes value = new RawBytes();
-                value.bytes = new byte[random.nextInt( minValueSize, maxValueSize )];
+                RawBytes value = new RawBytes( new byte[random.nextInt( minValueSize, maxValueSize )] );
                 random.nextBytes( value.bytes );
 
                 // key, randomly generated
@@ -236,8 +235,7 @@ class LargeDynamicKeysIT
                     string = random.nextAlphaNumericString( minKeySize, maxKeySize );
                 }
                 while ( !generatedStrings.add( string ) );
-                RawBytes key = new RawBytes();
-                key.bytes = UTF8.encode( string );
+                RawBytes key = new RawBytes( UTF8.encode( string ) );
                 entries.add( Pair.of( key, value ) );
             }
 

@@ -77,7 +77,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     OffloadStoreImpl<KEY,VALUE> createOffloadStore()
     {
         SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
-        OffloadPageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadPageCursorFactory pcFactory = ( id, flags, cursorTracer ) -> cursor.duplicate( id );
         OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
         return new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, PAGE_SIZE );
     }
@@ -180,9 +180,9 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
-        KEY actualKey = node.keyAt( cursor, readKey, 0, LEAF );
+        KEY actualKey = node.keyAt( cursor, readKey, 0, LEAF, NULL );
         assertKeyEquals( firstKey, actualKey );
-        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0, NULL ) );
 
         // WHEN
         KEY secondKey = key( 3 );
@@ -191,10 +191,10 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
-        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
-        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
-        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) );
-        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1 ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF, NULL ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0, NULL ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF, NULL ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1, NULL ) );
 
         // WHEN
         KEY removedKey = key( 2 );
@@ -203,22 +203,22 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         TreeNode.setKeyCount( cursor, 3 );
 
         // THEN
-        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
-        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
-        assertKeyEquals( removedKey, node.keyAt( cursor, readKey, 1, LEAF ) );
-        assertValueEquals( removedValue, node.valueAt( cursor, readValue, 1 ) );
-        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 2, LEAF ) );
-        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 2 ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF, NULL ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0, NULL ) );
+        assertKeyEquals( removedKey, node.keyAt( cursor, readKey, 1, LEAF, NULL ) );
+        assertValueEquals( removedValue, node.valueAt( cursor, readValue, 1, NULL ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 2, LEAF, NULL ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 2, NULL ) );
 
         // WHEN
         node.removeKeyValueAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
-        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
-        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
-        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) );
-        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1 ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF, NULL ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0, NULL ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF, NULL ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1, NULL ) );
 
         // WHEN
         VALUE overwriteValue = value( 666 );
@@ -226,10 +226,10 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                 String.format( "Could not overwrite value, oldValue=%s, newValue=%s", firstValue, overwriteValue ) );
 
         // THEN
-        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
-        assertValueEquals( overwriteValue, node.valueAt( cursor, readValue, 0 ) );
-        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) );
-        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1 ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF, NULL ) );
+        assertValueEquals( overwriteValue, node.valueAt( cursor, readValue, 0, NULL ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF, NULL ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1, NULL ) );
     }
 
     @Test
@@ -324,7 +324,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         KEY readKey = layout.newKey();
         for ( int i = 0; i < keyCount; i++ )
         {
-            assertKeyEquals( key( firstKey + i ), node.keyAt( cursor, readKey, i, INTERNAL ) );
+            assertKeyEquals( key( firstKey + i ), node.keyAt( cursor, readKey, i, INTERNAL, NULL ) );
         }
     }
 
@@ -391,7 +391,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.defragmentLeaf( cursor );
 
         // THEN
-        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
+        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF, NULL ) );
     }
 
     @Test
@@ -414,7 +414,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.defragmentLeaf( cursor );
 
         // THEN
-        assertKeyEquals( key( 2 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
+        assertKeyEquals( key( 2 ), node.keyAt( cursor, layout.newKey(), 0, LEAF, NULL ) );
     }
 
     @Test
@@ -440,8 +440,8 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.defragmentLeaf( cursor );
 
         // THEN
-        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
-        assertKeyEquals( key( 3 ), node.keyAt( cursor, layout.newKey(), 1, LEAF ) );
+        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF, NULL ) );
+        assertKeyEquals( key( 3 ), node.keyAt( cursor, layout.newKey(), 1, LEAF, NULL ) );
     }
 
     @Test
@@ -474,9 +474,9 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.defragmentLeaf( cursor );
 
         // THEN
-        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
-        assertKeyEquals( key( 3 ), node.keyAt( cursor, layout.newKey(), 1, LEAF ) );
-        assertKeyEquals( key( 5 ), node.keyAt( cursor, layout.newKey(), 2, LEAF ) );
+        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF, NULL ) );
+        assertKeyEquals( key( 3 ), node.keyAt( cursor, layout.newKey(), 1, LEAF, NULL ) );
+        assertKeyEquals( key( 5 ), node.keyAt( cursor, layout.newKey(), 2, LEAF, NULL ) );
     }
 
     @Test
@@ -510,8 +510,8 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.defragmentLeaf( cursor );
 
         // THEN
-        assertKeyEquals( key( 2 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
-        assertKeyEquals( key( 4 ), node.keyAt( cursor, layout.newKey(), 1, LEAF ) );
+        assertKeyEquals( key( 2 ), node.keyAt( cursor, layout.newKey(), 0, LEAF, NULL ) );
+        assertKeyEquals( key( 4 ), node.keyAt( cursor, layout.newKey(), 1, LEAF, NULL ) );
     }
 
     @Test
@@ -562,8 +562,8 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                 if ( expectedKeyCount > 0 )
                 {   // there are things to remove
                     int position = random.nextInt( expectedKeyCount );
-                    node.keyAt( cursor, readKey, position, LEAF );
-                    node.valueAt( cursor, readValue, position );
+                    node.keyAt( cursor, readKey, position, LEAF, NULL );
+                    node.valueAt( cursor, readValue, position, NULL );
                     node.removeKeyValueAt( cursor, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
                     KEY expectedKey = expectedKeys.remove( position );
                     VALUE expectedValue = expectedValues.remove( position );
@@ -589,11 +589,11 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         for ( int i = 0; i < expectedKeyCount; i++ )
         {
             KEY expectedKey = expectedKeys.get( i );
-            node.keyAt( cursor, actualKey, i, LEAF );
+            node.keyAt( cursor, actualKey, i, LEAF, NULL );
             assertEquals( 0, layout.compare( expectedKey, actualKey ), "Key differ with expected, actualKey=" + actualKey + ", expectedKey=" + expectedKey );
 
             VALUE expectedValue = expectedValues.get( i );
-            node.valueAt( cursor, actualValue, i );
+            node.valueAt( cursor, actualValue, i, NULL );
             assertEquals( 0, layout.compareValue( expectedValue, actualValue ),
                     "Value differ with expected, actualValue=" + actualValue + ", expectedValue=" + expectedValue );
         }
@@ -748,7 +748,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
             else
             {
                 KEY expectedKey = key( keysAndChildren[i] );
-                node.keyAt( cursor, actualKey, pos, INTERNAL );
+                node.keyAt( cursor, actualKey, pos, INTERNAL, NULL );
                 assertEquals( 0, layout.compare( expectedKey, actualKey ) );
             }
         }

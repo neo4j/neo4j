@@ -164,7 +164,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    KEY keyAt( PageCursor cursor, KEY into, int pos, Type type )
+    KEY keyAt( PageCursor cursor, KEY into, int pos, Type type, PageCursorTracer cursorTracer )
     {
         placeCursorAtActualKey( cursor, pos, type );
 
@@ -176,7 +176,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             long offloadId = DynamicSizeUtil.readOffloadId( cursor );
             try
             {
-                offloadStore.readKey( offloadId, into );
+                offloadStore.readKey( offloadId, into, cursorTracer );
             }
             catch ( IOException e )
             {
@@ -199,7 +199,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos )
+    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, PageCursorTracer cursorTracer )
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
 
@@ -212,7 +212,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             long offloadId = DynamicSizeUtil.readOffloadId( cursor );
             try
             {
-                offloadStore.readKeyValue( offloadId, intoKey, intoValue );
+                offloadStore.readKeyValue( offloadId, intoKey, intoValue, cursorTracer );
             }
             catch ( IOException e )
             {
@@ -428,7 +428,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    VALUE valueAt( PageCursor cursor, VALUE into, int pos )
+    VALUE valueAt( PageCursor cursor, VALUE into, int pos, PageCursorTracer cursorTracer )
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
 
@@ -442,7 +442,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             long offloadId = readOffloadId( cursor );
             try
             {
-                offloadStore.readValue( offloadId, into );
+                offloadStore.readValue( offloadId, into, cursorTracer );
             }
             catch ( IOException e )
             {
@@ -799,14 +799,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         KEY rightInSplit;
         if ( splitPos == insertPos )
         {
-            leftInSplit = keyAt( leftCursor, tmpKeyLeft, splitPos - 1, LEAF );
+            leftInSplit = keyAt( leftCursor, tmpKeyLeft, splitPos - 1, LEAF, cursorTracer );
             rightInSplit = newKey;
 
         }
         else
         {
             int rightPos = insertPos < splitPos ? splitPos - 1 : splitPos;
-            rightInSplit = keyAt( leftCursor, tmpKeyRight, rightPos, LEAF );
+            rightInSplit = keyAt( leftCursor, tmpKeyRight, rightPos, LEAF, cursorTracer );
 
             if ( rightPos == insertPos )
             {
@@ -815,7 +815,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             else
             {
                 int leftPos = rightPos - 1;
-                leftInSplit = keyAt( leftCursor, tmpKeyLeft, leftPos, LEAF );
+                leftInSplit = keyAt( leftCursor, tmpKeyLeft, leftPos, LEAF, cursorTracer );
             }
         }
         layout.minimalSplitter( leftInSplit, rightInSplit, newSplitter );
@@ -865,7 +865,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, INTERNAL );
+            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, INTERNAL, cursorTracer );
         }
         int rightKeyCount = keyCountAfterInsert - splitPos - 1; // -1 because don't keep prim key in internal
 
@@ -1540,7 +1540,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     @SuppressWarnings( "unused" )
     @Override
-    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
+    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration,
+            PageCursorTracer cursorTracer )
     {
         System.out.println( asString( cursor, includeValue, includeAllocSpace, stableGeneration, unstableGeneration ) );
     }

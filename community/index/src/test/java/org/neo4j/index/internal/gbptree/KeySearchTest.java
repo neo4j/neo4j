@@ -70,7 +70,7 @@ class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
 
         // then
-        int result = search( cursor, node, LEAF, searchKey, readKey, keyCount );
+        int result = search( cursor, node, LEAF, searchKey, readKey, keyCount, NULL );
         assertSearchResult( false, 0, result );
     }
 
@@ -82,7 +82,7 @@ class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
 
         // then
-        final int result = search( cursor, node, INTERNAL, searchKey, readKey, keyCount );
+        final int result = search( cursor, node, INTERNAL, searchKey, readKey, keyCount, NULL );
         assertSearchResult( false, 0, result );
     }
 
@@ -431,7 +431,7 @@ class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT );
+            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT, NULL );
 
             // THEN
             assertSearchResult( true, i, result );
@@ -449,7 +449,7 @@ class KeySearchTest
         for ( int i = 1; i < KEY_COUNT - 1; i++ )
         {
             key.setValue( key( i ) - 1 );
-            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT );
+            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT, NULL );
 
             // THEN
             assertSearchResult( false, i, result );
@@ -487,7 +487,7 @@ class KeySearchTest
         for ( int i = 0; i < 1_000; i++ )
         {
             searchKey.setValue( random.nextInt( currentKey + 10 ) );
-            int searchResult = search( cursor, node, LEAF, searchKey, readKey, keyCount );
+            int searchResult = search( cursor, node, LEAF, searchKey, readKey, keyCount, NULL );
 
             // THEN position should be as expected
             boolean exists = contains( keys, searchKey, layout );
@@ -522,7 +522,7 @@ class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
         TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
         searchKey.setValue( key );
-        return search( cursor, node, type, searchKey, readKey, keyCount );
+        return search( cursor, node, type, searchKey, readKey, keyCount, NULL );
     }
 
     private void appendKey( long key ) throws IOException

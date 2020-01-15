@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.util.Comparator;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Methods for (binary-)searching keys in a tree node.
@@ -64,7 +65,7 @@ class KeySearch
      * To extract whether or not the exact key was found, then use {@link #isHit(int)}.
      */
     static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, TreeNode.Type type, KEY key,
-            KEY readKey, int keyCount )
+            KEY readKey, int keyCount, PageCursorTracer cursorTracer )
     {
         if ( keyCount == 0 )
         {
@@ -81,12 +82,12 @@ class KeySearch
         int comparison;
 
         // key greater than greatest key in node
-        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher, type ) ) > 0 )
+        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher, type, cursorTracer ) ) > 0 )
         {
             pos = keyCount;
         }
         // key smaller than or equal to smallest key in node
-        else if ( (comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower, type ) )) <= 0 )
+        else if ( (comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower, type, cursorTracer ) )) <= 0 )
         {
             if ( comparison == 0 )
             {
@@ -103,7 +104,7 @@ class KeySearch
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type ) );
+                comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type, cursorTracer ) );
                 if ( comparison <= 0 )
                 {
                     higher = pos;
@@ -119,7 +120,7 @@ class KeySearch
             }
             pos = lower;
 
-            hit = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type ) ) == 0;
+            hit = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type, cursorTracer ) ) == 0;
         }
         return searchResult( pos, hit );
     }
@@ -130,9 +131,9 @@ class KeySearch
     }
 
     /**
-     * Extracts the position from a search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
+     * Extracts the position from a search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
      *
-     * @param searchResult search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
+     * @param searchResult search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
      * @return position of the search result.
      */
     static int positionOf( int searchResult )
@@ -142,9 +143,9 @@ class KeySearch
 
     /**
      * Extracts whether or not the searched key was found from search result from
-     * {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
+     * {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
      *
-     * @param searchResult search result form {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
+     * @param searchResult search result form {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
      * @return whether or not the searched key was found.
      */
     static boolean isHit( int searchResult )

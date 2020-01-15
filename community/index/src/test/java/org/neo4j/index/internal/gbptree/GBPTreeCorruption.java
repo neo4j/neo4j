@@ -145,8 +145,8 @@ public final class GBPTreeCorruption
             // Record key and value on higher position
             KEY key = layout.newKey();
             VALUE value = layout.newValue();
-            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.LEAF );
-            node.valueAt( cursor, value, higherKeyPos );
+            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.LEAF, NULL );
+            node.valueAt( cursor, value, higherKeyPos, NULL );
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
             node.removeKeyValueAt( cursor, higherKeyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
@@ -166,7 +166,7 @@ public final class GBPTreeCorruption
 
             // Record key and right child on higher position together with generation of child pointer
             KEY key = layout.newKey();
-            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.INTERNAL );
+            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.INTERNAL, NULL );
             final GenerationKeeper childPointerGeneration = new GenerationKeeper();
             long rightChild = node.childAt( cursor, higherKeyPos + 1, treeState.stableGeneration(), treeState.unstableGeneration(), childPointerGeneration );
 
@@ -204,7 +204,7 @@ public final class GBPTreeCorruption
         return ( cursor, layout, node, treeState ) -> {
             // Record value so that we can reinsert it together with key later
             VALUE value = layout.newValue();
-            node.valueAt( cursor, value, keyPos );
+            node.valueAt( cursor, value, keyPos, NULL );
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
             node.removeKeyValueAt( cursor, keyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL );

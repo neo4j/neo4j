@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * This interface exists so that {@link OffloadStoreImpl} can be used in {@link GBPTree} tests that are not backed by a page cache but
@@ -31,5 +32,5 @@ import org.neo4j.io.pagecache.PageCursor;
 @FunctionalInterface
 interface OffloadPageCursorFactory
 {
-    PageCursor create( long pageId, int pf_flags ) throws IOException;
+    PageCursor create( long pageId, int pf_flags, PageCursorTracer cursorTracer ) throws IOException;
 }

@@ -62,11 +62,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @Override
-    public void readKey( long offloadId, KEY into ) throws IOException
+    public void readKey( long offloadId, KEY into, PageCursorTracer cursorTracer ) throws IOException
     {
         validateOffloadId( offloadId );
 
-        try ( PageCursor cursor = pcFactory.create( offloadId, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = pcFactory.create( offloadId, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             do
             {
@@ -93,11 +93,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @Override
-    public void readKeyValue( long offloadId, KEY key, VALUE value ) throws IOException
+    public void readKeyValue( long offloadId, KEY key, VALUE value, PageCursorTracer cursorTracer ) throws IOException
     {
         validateOffloadId( offloadId );
 
-        try ( PageCursor cursor = pcFactory.create( offloadId, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = pcFactory.create( offloadId, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             do
             {
@@ -125,11 +125,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @Override
-    public void readValue( long offloadId, VALUE into ) throws IOException
+    public void readValue( long offloadId, VALUE into, PageCursorTracer cursorTracer ) throws IOException
     {
         validateOffloadId( offloadId );
 
-        try ( PageCursor cursor = pcFactory.create( offloadId, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = pcFactory.create( offloadId, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             do
             {
@@ -161,7 +161,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     {
         int keySize = layout.keySize( key );
         long newId = acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
-        try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             placeCursorAtOffloadId( cursor, newId );
 
@@ -179,7 +179,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
         long newId = acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
-        try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             placeCursorAtOffloadId( cursor, newId );
 

@@ -22,9 +22,23 @@ package org.neo4j.index.internal.gbptree;
 import java.util.Arrays;
 import java.util.StringJoiner;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+
 class RawBytes
 {
+    static RawBytes EMPTY_BYTES = new RawBytes( EMPTY_BYTE_ARRAY );
+
     byte[] bytes;
+
+    RawBytes()
+    {
+        this( EMPTY_BYTE_ARRAY );
+    }
+
+    RawBytes( byte[] byteArray )
+    {
+        bytes = byteArray;
+    }
 
     @Override
     public String toString()

@@ -258,9 +258,10 @@ class InternalTreeLogic<KEY,VALUE>
      * @param key KEY to make change for.
      * @param stableGeneration stable generation.
      * @param unstableGeneration unstable generation.
+     * @param cursorTracer underlying page cursor tracer.
      * @throws IOException on {@link PageCursor} error.
      */
-    private void moveToCorrectLeaf( PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration )
+    private void moveToCorrectLeaf( PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer )
             throws IOException
     {
         int previousLevel = currentLevel;
@@ -277,7 +278,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // We still need to go down further, but we're on the right path
             int keyCount = TreeNode.keyCount( cursor );
-            int searchResult = search( cursor, INTERNAL, key, readKey, keyCount );
+            int searchResult = search( cursor, INTERNAL, key, readKey, keyCount, cursorTracer );
             int childPos = positionOf( searchResult );
             if ( isHit( searchResult ) )
             {
@@ -302,7 +303,7 @@ class InternalTreeLogic<KEY,VALUE>
                 }
                 else
                 {
-                    bTreeNode.keyAt( cursor, level.lower, childPos - 1, INTERNAL );
+                    bTreeNode.keyAt( cursor, level.lower, childPos - 1, INTERNAL, cursorTracer );
                 }
             }
             level.upperIsOpenEnded = childPos >= keyCount &&
@@ -316,7 +317,7 @@ class InternalTreeLogic<KEY,VALUE>
                 }
                 else
                 {
-                    bTreeNode.keyAt( cursor, level.upper, childPos, INTERNAL );
+                    bTreeNode.keyAt( cursor, level.upper, childPos, INTERNAL, cursorTracer );
                 }
             }
 
@@ -362,6 +363,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @param createIfNotExists create this key if it doesn't exist
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @param cursorTracer underlying page cursor tracer
      * @throws IOException on cursor failure
      */
     void insert( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger,
@@ -369,16 +371,16 @@ class InternalTreeLogic<KEY,VALUE>
     {
         assert cursorIsAtExpectedLocation( cursor );
         bTreeNode.validateKeyValueSize( key, value );
-        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
+        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration, cursorTracer );
 
         insertInLeaf( cursor, structurePropagation, key, value, valueMerger, createIfNotExists, stableGeneration, unstableGeneration, cursorTracer );
 
         handleStructureChanges( cursor, structurePropagation, stableGeneration, unstableGeneration, cursorTracer );
     }
 
-    private int search( PageCursor cursor, TreeNode.Type type, KEY key, KEY readKey, int keyCount )
+    private int search( PageCursor cursor, TreeNode.Type type, KEY key, KEY readKey, int keyCount, PageCursorTracer cursorTracer )
     {
-        int searchResult = KeySearch.search( cursor, bTreeNode, type, key, readKey, keyCount );
+        int searchResult = KeySearch.search( cursor, bTreeNode, type, key, readKey, keyCount, cursorTracer );
         KeySearch.assertSuccess( searchResult );
         return searchResult;
     }
@@ -443,7 +445,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // No overflow
-        int pos = positionOf( search( cursor, INTERNAL, primKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, INTERNAL, primKey, readKey, keyCount, cursorTracer ) );
         bTreeNode.insertKeyAndRightChildAt( cursor, primKey, rightChild, pos, keyCount, stableGeneration, unstableGeneration, cursorTracer );
         // Increase key count
         TreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -459,6 +461,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @param newKey new key to be inserted together with newRightChild, causing the split
      * @param newRightChild new child to be inserted to the right of newKey
      * @param keyCount key count for fullNode
+     * @param cursorTracer underlying page cursor tracer.
      * @throws IOException on cursor failure
      */
     private void splitInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY newKey,
@@ -470,7 +473,7 @@ class InternalTreeLogic<KEY,VALUE>
         long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
 
         // Find position to insert new key
-        int pos = positionOf( search( cursor, INTERNAL, newKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, INTERNAL, newKey, readKey, keyCount, cursorTracer ) );
 
         // Update structurePropagation
         structurePropagation.hasRightKeyInsert = true;
@@ -515,13 +518,14 @@ class InternalTreeLogic<KEY,VALUE>
      * @param value value to be associated with key
      * @param valueMerger {@link ValueMerger} for deciding what to do with existing keys
      * @param createIfNotExists create this key if it doesn't exist
+     * @param cursorTracer underlying page cursor tracer.
      * @throws IOException on cursor failure
      */
     private void insertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger,
             boolean createIfNotExists, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
-        int search = search( cursor, LEAF, key, readKey, keyCount );
+        int search = search( cursor, LEAF, key, readKey, keyCount, cursorTracer );
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
@@ -541,7 +545,7 @@ class InternalTreeLogic<KEY,VALUE>
             PageCursorTracer cursorTracer ) throws IOException
     {
         // This key already exists, what shall we do? ask the valueMerger
-        bTreeNode.valueAt( cursor, readValue, pos );
+        bTreeNode.valueAt( cursor, readValue, pos, cursorTracer );
         ValueMerger.MergeResult mergeResult = valueMerger.merge( readKey, key, readValue, value );
         if ( mergeResult == ValueMerger.MergeResult.UNCHANGED )
         {
@@ -681,7 +685,7 @@ class InternalTreeLogic<KEY,VALUE>
         // 5. Write new key/values into L
 
         // Position where newKey / newValue is to be inserted
-        int pos = positionOf( search( cursor, LEAF, newKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, LEAF, newKey, readKey, keyCount, cursorTracer ) );
 
         structurePropagation.hasRightKeyInsert = true;
         structurePropagation.midChild = current;
@@ -742,7 +746,7 @@ class InternalTreeLogic<KEY,VALUE>
             long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException
     {
         assert cursorIsAtExpectedLocation( cursor );
-        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
+        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration, cursorTracer );
 
         if ( !removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, cursorTracer ) )
         {
@@ -994,7 +998,7 @@ class InternalTreeLogic<KEY,VALUE>
 
             // Create new version of node, save rightmost key in structurePropagation, remove rightmost key and child
             createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration, cursorTracer );
-            bTreeNode.keyAt( cursor, structurePropagation.bubbleKey, keyCount - 1, INTERNAL );
+            bTreeNode.keyAt( cursor, structurePropagation.bubbleKey, keyCount - 1, INTERNAL, cursorTracer );
             simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, false, stableGeneration, unstableGeneration, cursorTracer );
 
             return true;
@@ -1073,7 +1077,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         int keyCount = TreeNode.keyCount( cursor );
 
-        int search = search( cursor, LEAF, key, readKey, keyCount );
+        int search = search( cursor, LEAF, key, readKey, keyCount, cursorTracer );
         int pos = positionOf( search );
         boolean hit = isHit( search );
         if ( !hit )
@@ -1115,7 +1119,7 @@ class InternalTreeLogic<KEY,VALUE>
                 {
                     createSuccessorIfNeeded( leftSiblingCursor, structurePropagation, UPDATE_LEFT_CHILD,
                             stableGeneration, unstableGeneration, cursorTracer );
-                    rebalanceLeaf( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, keysToRebalance , structurePropagation );
+                    rebalanceLeaf( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, keysToRebalance , structurePropagation, cursorTracer );
                 }
                 else if ( keysToRebalance == -1 )
                 {
@@ -1173,7 +1177,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         // Read the right-most key from the right sibling to use when comparing whether or not
         // a common parent covers the keys in right sibling too
-        bTreeNode.keyAt( rightSiblingCursor, structurePropagation.rightKey, rightSiblingKeyCount - 1, LEAF );
+        bTreeNode.keyAt( rightSiblingCursor, structurePropagation.rightKey, rightSiblingKeyCount - 1, LEAF, cursorTracer );
         merge( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount, stableGeneration, unstableGeneration, cursorTracer );
 
         // Propagate change
@@ -1191,7 +1195,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         // Read the left-most key from the left sibling to use when comparing whether or not
         // a common parent covers the keys in left sibling too
-        bTreeNode.keyAt( leftSiblingCursor, structurePropagation.leftKey, 0, LEAF );
+        bTreeNode.keyAt( leftSiblingCursor, structurePropagation.leftKey, 0, LEAF, cursorTracer );
         merge( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, stableGeneration, unstableGeneration, cursorTracer );
 
         // Propagate change
@@ -1218,14 +1222,14 @@ class InternalTreeLogic<KEY,VALUE>
     }
 
     private void rebalanceLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
-            int numberOfKeysToMove, StructurePropagation<KEY> structurePropagation )
+            int numberOfKeysToMove, StructurePropagation<KEY> structurePropagation, PageCursorTracer cursorTracer )
     {
         bTreeNode.moveKeyValuesFromLeftToRight( leftCursor, leftKeyCount, rightCursor, rightKeyCount, leftKeyCount - numberOfKeysToMove );
 
         // Propagate change
         structurePropagation.hasLeftKeyReplace = true;
         structurePropagation.keyReplaceStrategy = REPLACE;
-        bTreeNode.keyAt( rightCursor, structurePropagation.leftKey, 0, LEAF );
+        bTreeNode.keyAt( rightCursor, structurePropagation.leftKey, 0, LEAF, cursorTracer );
     }
 
     /**
@@ -1238,13 +1242,14 @@ class InternalTreeLogic<KEY,VALUE>
      * @param pos Position to remove from
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @param cursorTracer underlying page cursor tracer.
      * @return keyCount after remove
      */
     private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos, long stableGeneration, long unstableGeneration,
             PageCursorTracer cursorTracer ) throws IOException
     {
         // Save value to remove
-        bTreeNode.valueAt( cursor, into, pos );
+        bTreeNode.valueAt( cursor, into, pos, cursorTracer );
         // Remove key/value
         bTreeNode.removeKeyValueAt( cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorTracer );
 

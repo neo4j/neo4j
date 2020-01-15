@@ -46,7 +46,7 @@ class OffloadStoreTest
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         idProvider = new SimpleIdProvider( cursor::duplicate );
-        pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        pcFactory = ( id, flags, cursorTracer ) -> cursor.duplicate( id );
         idValidator = OffloadIdValidator.ALWAYS_TRUE;
     }
 
@@ -63,20 +63,20 @@ class OffloadStoreTest
 
         {
             RawBytes into = layout.newKey();
-            offloadStore.readKey( offloadId, into );
+            offloadStore.readKey( offloadId, into, NULL );
             assertEquals( 0, layout.compare( key, into ) );
         }
 
         {
             RawBytes into = layout.newKey();
-            offloadStore.readValue( offloadId, into );
+            offloadStore.readValue( offloadId, into, NULL );
             assertEquals( 0, layout.compare( value, into ) );
         }
 
         {
             RawBytes intoKey = layout.newKey();
             RawBytes intoValue = layout.newValue();
-            offloadStore.readKeyValue( offloadId, intoKey, intoValue );
+            offloadStore.readKeyValue( offloadId, intoKey, intoValue, NULL );
             assertEquals( 0, layout.compare( key, intoKey ) );
             assertEquals( 0, layout.compare( value, intoValue ) );
         }
@@ -103,20 +103,20 @@ class OffloadStoreTest
 
         {
             RawBytes key = layout.newKey();
-            IOException exception = assertThrows( IOException.class, () -> offloadStore.readKey( 0, key ) );
+            IOException exception = assertThrows( IOException.class, () -> offloadStore.readKey( 0, key, NULL ) );
             assertTrue( exception.getMessage().contains( expectedMessage ) );
         }
 
         {
             RawBytes value = layout.newValue();
-            IOException exception = assertThrows( IOException.class, () -> offloadStore.readValue( 0, value ) );
+            IOException exception = assertThrows( IOException.class, () -> offloadStore.readValue( 0, value, NULL ) );
             assertTrue( exception.getMessage().contains( expectedMessage ) );
         }
 
         {
             RawBytes key = layout.newKey();
             RawBytes value = layout.newValue();
-            IOException exception = assertThrows( IOException.class, () -> offloadStore.readKeyValue( 0, key, value ) );
+            IOException exception = assertThrows( IOException.class, () -> offloadStore.readKeyValue( 0, key, value, NULL ) );
             assertTrue( exception.getMessage().contains( expectedMessage ) );
         }
     }

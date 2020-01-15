@@ -114,7 +114,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    KEY keyAt( PageCursor cursor, KEY into, int pos, Type type )
+    KEY keyAt( PageCursor cursor, KEY into, int pos, Type type, PageCursorTracer cursorTracer )
     {
         cursor.setOffset( keyOffset( pos ) );
         layout.readKey( cursor, into, FIXED_SIZE_KEY );
@@ -122,10 +122,10 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos )
+    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, PageCursorTracer cursorTracer )
     {
-        keyAt( cursor, intoKey, pos, LEAF );
-        valueAt( cursor, intoValue, pos );
+        keyAt( cursor, intoKey, pos, LEAF, cursorTracer );
+        valueAt( cursor, intoValue, pos, cursorTracer );
     }
 
     @Override
@@ -174,7 +174,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    VALUE valueAt( PageCursor cursor, VALUE value, int pos )
+    VALUE valueAt( PageCursor cursor, VALUE value, int pos, PageCursorTracer cursorTracer )
     {
         cursor.setOffset( valueOffset( pos ) );
         layout.readValue( cursor, value, FIXED_SIZE_VALUE );
@@ -380,7 +380,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, LEAF );
+            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, LEAF, cursorTracer );
         }
         int rightKeyCount = keyCountAfterInsert - splitPos;
 
@@ -469,7 +469,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, INTERNAL );
+            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, INTERNAL, cursorTracer );
         }
         int rightKeyCount = keyCountAfterInsert - splitPos - 1; // -1 because don't keep prim key in internal
 
@@ -577,12 +577,13 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
+    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration,
+            PageCursorTracer cursorTracer )
     {
         PrintingGBPTreeVisitor<KEY,VALUE> visitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults() );
         try
         {
-            new GBPTreeStructure<>( this, layout, stableGeneration, unstableGeneration ).visitTreeNode( cursor, visitor );
+            new GBPTreeStructure<>( this, layout, stableGeneration, unstableGeneration ).visitTreeNode( cursor, visitor, cursorTracer );
         }
         catch ( IOException e )
         {

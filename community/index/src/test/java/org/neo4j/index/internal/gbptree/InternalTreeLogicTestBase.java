@@ -111,7 +111,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         readCursor.next( newId );
 
         layout = getLayout();
-        OffloadPageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadPageCursorFactory pcFactory = ( id, flags, cursorTracer ) -> cursor.duplicate( id );
         OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
         OffloadStoreImpl<KEY, VALUE> offloadStore = new OffloadStoreImpl<>( layout, id, pcFactory, idValidator, PAGE_SIZE );
         node = getTreeNode( PAGE_SIZE, layout, offloadStore );
@@ -1178,7 +1178,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // THEN
         root.goTo( readCursor );
-        int searchResult = KeySearch.search( readCursor, node, LEAF, key, layout.newKey(), keyCount() );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key, layout.newKey(), keyCount(), NULL );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
         assertEquals( 0, pos );
@@ -1210,13 +1210,13 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         // then
         goTo( readCursor, root.id() );
         // key1 should exist
-        int searchResult = KeySearch.search( readCursor, node, LEAF, key1, layout.newKey(), keyCount() );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key1, layout.newKey(), keyCount(), NULL );
         assertTrue( KeySearch.isHit( searchResult ) );
         // key2 should not exist
-        searchResult = KeySearch.search( readCursor, node, LEAF, key2, layout.newKey(), keyCount() );
+        searchResult = KeySearch.search( readCursor, node, LEAF, key2, layout.newKey(), keyCount(), NULL );
         assertFalse( KeySearch.isHit( searchResult ) );
         // key3 should exist
-        searchResult = KeySearch.search( readCursor, node, LEAF, key3, layout.newKey(), keyCount() );
+        searchResult = KeySearch.search( readCursor, node, LEAF, key3, layout.newKey(), keyCount(), NULL );
         assertTrue( KeySearch.isHit( searchResult ) );
     }
 
@@ -1275,7 +1275,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
             for ( int i = 0; i < keyCount; i++ )
             {
                 KEY key = layout.newKey();
-                node.keyAt( readCursor, key, i, LEAF );
+                node.keyAt( readCursor, key, i, LEAF, NULL );
                 assertTrue( expectedKeys.remove( key ) );
             }
         }
@@ -1776,7 +1776,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         for ( int i = 0; i < keyCount; i++ )
         {
             KEY into = layout.newKey();
-            node.keyAt( cursor, into, i, type );
+            node.keyAt( cursor, into, i, type, NULL );
             keys.add( into );
         }
         return keys;
@@ -1823,17 +1823,17 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     {
         KEY readKey = layout.newKey();
         VALUE readValue = layout.newValue();
-        int search = KeySearch.search( readCursor, node, LEAF, key, readKey, TreeNode.keyCount( readCursor ) );
+        int search = KeySearch.search( readCursor, node, LEAF, key, readKey, TreeNode.keyCount( readCursor ), NULL );
         assertTrue( KeySearch.isHit( search ) );
         int keyPos = KeySearch.positionOf( search );
-        node.valueAt( readCursor, readValue, keyPos );
+        node.valueAt( readCursor, readValue, keyPos, NULL );
         assertEqualsValue( expectedValue, readValue );
     }
 
     private void assertKeyNotFound( KEY key, TreeNode.Type type )
     {
         KEY readKey = layout.newKey();
-        int search = KeySearch.search( readCursor, node, type, key, readKey, TreeNode.keyCount( readCursor ) );
+        int search = KeySearch.search( readCursor, node, type, key, readKey, TreeNode.keyCount( readCursor ), NULL );
         assertFalse( KeySearch.isHit( search ) );
     }
 
@@ -1862,7 +1862,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( root.id() );
         PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults() );
-        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor );
+        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor, NULL );
         cursor.next( currentPageId );
     }
 
@@ -1926,7 +1926,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         try
         {
             readCursor.next( nodeId );
-            return node.keyAt( readCursor, readKey, pos, type );
+            return node.keyAt( readCursor, readKey, pos, type, NULL );
         }
         finally
         {
@@ -1936,7 +1936,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private KEY keyAt( int pos, TreeNode.Type type )
     {
-        return node.keyAt( readCursor, layout.newKey(), pos, type );
+        return node.keyAt( readCursor, layout.newKey(), pos, type, NULL );
     }
 
     private VALUE valueAt( long nodeId, int pos )
@@ -1946,7 +1946,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         try
         {
             readCursor.next( nodeId );
-            return node.valueAt( readCursor, readValue, pos );
+            return node.valueAt( readCursor, readValue, pos, NULL );
         }
         finally
         {
@@ -1956,7 +1956,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private VALUE valueAt( int pos )
     {
-        return node.valueAt( readCursor, layout.newValue(), pos );
+        return node.valueAt( readCursor, layout.newValue(), pos, NULL );
     }
 
     void insert( KEY key, VALUE value ) throws IOException

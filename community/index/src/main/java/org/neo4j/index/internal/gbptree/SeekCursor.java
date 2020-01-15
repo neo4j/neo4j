@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -39,7 +40,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * <p>
  * Concurrent writes can happen in the visited nodes and tree structure may change. This implementation
  * guards for that by re-reading if change happens underneath, but will not provide a consistent view of
- * the data as it were when the seek starts, i.e. doesn't support MVCC-style.
+ * the data as it were when the seek starts.
  * <p>
  * Seek can be performed forwards or backwards, returning hits in ascending or descending order respectively
  * (as defined by {@link Layout#compare(Object, Object)}). Direction is decided on relation between
@@ -174,6 +175,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      * Cursor for reading from tree nodes and also will be moved around when following pointers.
      */
     private final PageCursor cursor;
+
+    /**
+     * underlying page cursor tracer
+     */
+    private final PageCursorTracer cursorTracer;
 
     /**
      * Key instances to use for reading keys from current node.
@@ -357,7 +363,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     private long pointerGeneration;
 
     /**
-     * Result from {@link KeySearch#search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
+     * Result from {@link KeySearch#search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
      */
     private int searchResult;
 
@@ -428,10 +434,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     @SuppressWarnings( "unchecked" )
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
-            RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead, Monitor monitor )
-                    throws IOException
+            RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead, Monitor monitor,
+            PageCursorTracer cursorTracer ) throws IOException
     {
         this.cursor = cursor;
+        this.cursorTracer = cursorTracer;
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
@@ -656,7 +663,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             if ( verifyExpectedFirstAfterGoToNext )
             {
                 pos = seekForward ? 0 : keyCount - 1;
-                bTreeNode.keyAt( cursor, firstKeyInNode, pos, LEAF );
+                bTreeNode.keyAt( cursor, firstKeyInNode, pos, LEAF, cursorTracer );
             }
 
             if ( concurrentWriteHappened )
@@ -694,7 +701,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                     mutableKeys[cachedLength] = layout.newKey();
                     mutableValues[cachedLength] = layout.newValue();
                 }
-                bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos );
+                bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorTracer );
 
                 if ( insideEndRange( exactMatch, cachedLength ) )
                 {
@@ -893,7 +900,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private int searchKey( KEY key, TreeNode.Type type )
     {
-        return KeySearch.search( cursor, bTreeNode, type, key, mutableKeys[0], keyCount );
+        return KeySearch.search( cursor, bTreeNode, type, key, mutableKeys[0], keyCount, cursorTracer );
     }
 
     private int positionOf( int searchResult )
@@ -1032,7 +1039,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 if ( keyCountIsSane( keyCount ) )
                 {
                     int firstPos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos, LEAF );
+                    bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos, LEAF, cursorTracer );
                 }
             }
 
