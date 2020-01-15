@@ -22,26 +22,26 @@ package org.neo4j.server;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.client.urlconnection.HTTPSProperties;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
+import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.InsecureTrustManager;
 
-import static com.sun.jersey.client.urlconnection.HTTPSProperties.PROPERTY_HTTPS_PROPERTIES;
 import static java.util.Collections.emptyList;
 import static org.eclipse.jetty.http.HttpHeader.SERVER;
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
@@ -54,11 +54,19 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 {
     private static final String HSTS_HEADER_VALUE = "max-age=31536000; includeSubDomains; preload";
 
+    private SSLSocketFactory originalSslSocketFactory;
     private CommunityNeoServer server;
+
+    @Before
+    public void setUp()
+    {
+        originalSslSocketFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
+    }
 
     @After
     public void tearDown() throws Exception
     {
+        HttpsURLConnection.setDefaultSSLSocketFactory( originalSslSocketFactory );
         if ( server != null )
         {
             server.stop();
@@ -113,9 +121,15 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private CommunityNeoServer buildServer( String hstsValue ) throws Exception
     {
+        SslPolicyConfig httpsSslPolicyConfig = new SslPolicyConfig( "default" );
         CommunityServerBuilder builder = serverOnRandomPorts()
                 .withHttpsEnabled()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() );
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .withProperty( "https.ssl_policy", "default" )
+                .withProperty( httpsSslPolicyConfig.base_directory.name(), folder.directory( "cert" ).getAbsolutePath() )
+                .withProperty( httpsSslPolicyConfig.allow_key_generation.name(), "true" )
+                .withProperty( httpsSslPolicyConfig.client_auth.name(), ClientAuth.NONE.name() )
+                .withProperty( httpsSslPolicyConfig.ciphers.name(), getSupportedCipherInACommaSeparatedString() );
 
         if ( hstsValue != null )
         {
@@ -194,11 +208,16 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private static Client createClient() throws Exception
     {
-        HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
-        ClientConfig config = new DefaultClientConfig();
-        SSLContext ctx = SSLContext.getInstance( "TLS" );
+        SSLContext ctx = SSLContext.getInstance( "TLSv1.2" );
         ctx.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
-        config.getProperties().put( PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties( hostnameVerifier, ctx ) );
-        return Client.create( config );
+        HttpsURLConnection.setDefaultSSLSocketFactory( ctx.getSocketFactory() );
+        return Client.create();
+    }
+
+    private static String getSupportedCipherInACommaSeparatedString() throws Exception
+    {
+        SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+        String[] defaultCiphers = ssf.getDefaultCipherSuites();
+        return String.join( ",", defaultCiphers );
     }
 }
