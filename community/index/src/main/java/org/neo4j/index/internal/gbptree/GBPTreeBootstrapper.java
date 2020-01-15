@@ -59,7 +59,10 @@ public class GBPTreeBootstrapper
         {
             // Get meta information about the tree
             MetaVisitor<?,?> metaVisitor = new MetaVisitor();
-            GBPTreeStructure.visitHeader( pageCache, file, metaVisitor );
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
+            {
+                GBPTreeStructure.visitHeader( pageCache, file, metaVisitor, cursorTracer );
+            }
             Meta meta = metaVisitor.meta;
             Pair<TreeState,TreeState> statePair = metaVisitor.statePair;
             TreeState state = TreeStatePair.selectNewestValidState( statePair );

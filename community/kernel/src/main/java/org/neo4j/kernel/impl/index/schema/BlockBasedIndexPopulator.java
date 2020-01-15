@@ -376,7 +376,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         {
             KEY key = allConflictingKeys.key();
             key.setCompareId( false );
-            verifyUniqueSeek( tree.seek( key, key, TRACER_SUPPLIER.get() ) );
+            try ( var seeker = tree.seek( key, key, TRACER_SUPPLIER.get() ) )
+            {
+                verifyUniqueSeek( seeker );
+            }
         }
     }
 

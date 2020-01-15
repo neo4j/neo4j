@@ -86,7 +86,6 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.Long.MAX_VALUE;
 import static java.lang.Math.toIntExact;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -1312,7 +1311,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong, MutableLong> index = index().build() )
         {
             MutableLong from = new MutableLong( Long.MIN_VALUE );
-            MutableLong to = new MutableLong( MAX_VALUE );
+            MutableLong to = new MutableLong( Long.MAX_VALUE );
             try ( Seeker<MutableLong,MutableLong> seek = index.seek( from, to, NULL ) )
             {
                 assertFalse( seek.next() );
@@ -1338,7 +1337,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong, MutableLong> index = index().build() )
         {
             MutableLong from = new MutableLong( Long.MIN_VALUE );
-            MutableLong to = new MutableLong( MAX_VALUE );
+            MutableLong to = new MutableLong( Long.MAX_VALUE );
             try ( Seeker<MutableLong,MutableLong> seek = index.seek( from, to, NULL ) )
             {
                 assertTrue( seek.next() );
@@ -1578,7 +1577,7 @@ class GBPTreeTest
             }
 
             Seeker<MutableLong,MutableLong> seek =
-                    tree.seek( new MutableLong( 0 ), new MutableLong( MAX_VALUE ), NULL );
+                    tree.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ), NULL );
             assertTrue( seek.next() );
             assertTrue( seek.next() );
             seek.close();
@@ -1711,7 +1710,7 @@ class GBPTreeTest
                         go.countDown();
                         go.await();
                         try ( Seeker<MutableLong,MutableLong> seek = tree
-                                .seek( new MutableLong( MAX_VALUE ), new MutableLong( MAX_VALUE ), NULL ) )
+                                .seek( new MutableLong( Long.MAX_VALUE ), new MutableLong( Long.MAX_VALUE ), NULL ) )
                         {
                             seek.next();
                         }
@@ -1777,6 +1776,70 @@ class GBPTreeTest
         TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).withReadOnly( true ).build() );
         assertThat( e.getMessage() ).contains( "Can not create new tree file in read only mode" );
         assertThat( e.getMessage() ).contains( indexFile.getAbsolutePath() );
+    }
+
+    @Test
+    void trackPageCacheAccessOnVisit() throws IOException
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var tree = index( defaultPageSize ).with( pageCacheTracer ).build() )
+        {
+            var traverseCursor = pageCacheTracer.createPageCursorTracer( "traverseTree" );
+            tree.visit( new GBPTreeVisitor.Adaptor(), traverseCursor );
+
+            assertThat( traverseCursor.pins() ).isEqualTo( 5 );
+            assertThat( traverseCursor.unpins() ).isEqualTo( 5 );
+            assertThat( traverseCursor.hits() ).isEqualTo( 5 );
+        }
+    }
+
+    @Test
+    void trackPageCacheAccessOnTreeSeek() throws IOException
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var tree = index( defaultPageSize ).with( pageCacheTracer ).build() )
+        {
+            for ( int i = 0; i < 1000; i++ )
+            {
+                for ( int j = 0; j < 1000; j++ )
+                {
+                    insert( tree, i, j );
+                }
+            }
+            var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" );
+            try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( Integer.MAX_VALUE ), cursorTracer ) )
+            {
+                while ( seeker.next() )
+                {
+                    // just scroll over the results
+                }
+            }
+            assertThat( cursorTracer.hits() ).isEqualTo( 8 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 8 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 8 );
+            assertThat( cursorTracer.faults() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    void trackPageCacheAccessOnEmptyTreeSeek() throws IOException
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var tree = index( defaultPageSize ).with( pageCacheTracer ).build() )
+        {
+            var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" );
+            try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( 1000 ), cursorTracer ) )
+            {
+                while ( seeker.next() )
+                {
+                    // just scroll over the results
+                }
+            }
+            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.faults() ).isEqualTo( 0 );
+        }
     }
 
     private byte[] fileContent( File indexFile ) throws IOException
@@ -1859,7 +1922,7 @@ class GBPTreeTest
         while ( trace.size() <= 1 );
 
         trace.clear();
-        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( MAX_VALUE ), cursorTracer ) )
+        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ), cursorTracer ) )
         {
             //noinspection StatementWithEmptyBody
             while ( seek.next() )

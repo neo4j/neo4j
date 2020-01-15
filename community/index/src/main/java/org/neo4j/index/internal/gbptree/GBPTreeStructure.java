@@ -34,7 +34,6 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
@@ -65,11 +64,11 @@ public class GBPTreeStructure<KEY, VALUE>
      * @param visitor {@link GBPTreeVisitor} that shall visit header.
      * @throws IOException on I/O error.
      */
-    public static void visitHeader( PageCache pageCache, File file, GBPTreeVisitor visitor ) throws IOException
+    public static void visitHeader( PageCache pageCache, File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
         {
-            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() ) )
+            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {
                 visitMeta( cursor, visitor );
                 visitTreeState( cursor, visitor );
