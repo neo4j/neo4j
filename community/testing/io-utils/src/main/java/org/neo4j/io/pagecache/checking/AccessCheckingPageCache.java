@@ -19,11 +19,8 @@
  */
 package org.neo4j.io.pagecache.checking;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.OpenOption;
 import java.util.Optional;
 
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -46,9 +43,9 @@ public class AccessCheckingPageCache extends DelegatingPageCache
     }
 
     @Override
-    public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+    public PagedFile map( File file, int pageSize ) throws IOException
     {
-        return new AccessCheckingPagedFile( super.map( file, pageSize, openOptions ) );
+        return new AccessCheckingPagedFile( super.map( file, pageSize ) );
     }
 
     @Override

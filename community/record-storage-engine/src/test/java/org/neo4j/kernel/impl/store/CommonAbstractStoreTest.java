@@ -113,7 +113,7 @@ class CommonAbstractStoreTest
                 .thenReturn( idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
-        when( mockedPageCache.map( eq( storeFile ), anyInt() ) ).thenReturn( pageFile );
+        when( mockedPageCache.map( eq( storeFile ), anyInt(), any() ) ).thenReturn( pageFile );
     }
 
     @Test

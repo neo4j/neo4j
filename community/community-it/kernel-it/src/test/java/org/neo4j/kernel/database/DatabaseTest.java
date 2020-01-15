@@ -61,7 +61,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -72,6 +71,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -300,7 +300,8 @@ public class DatabaseTest
         {
             PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
                                                      invocation.getArgument( 1, VersionContextSupplier.class ),
-                                                     invocation.getArgument( 2, Integer.class ), immutable.empty() ) );
+                                                     invocation.getArgument( 2, Integer.class ),
+                                                     invocation.getArgument( 3, ImmutableSet.class ) ) );
             files.add( file );
             return file;
         } )
@@ -318,7 +319,7 @@ public class DatabaseTest
         verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
         for ( PagedFile file : files )
         {
-            verify( file ).flushAndForce( IOLimiter.UNLIMITED );
+            verify( file, atLeastOnce() ).flushAndForce( IOLimiter.UNLIMITED );
         }
     }
 
@@ -332,7 +333,8 @@ public class DatabaseTest
         {
             PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
                                                      invocation.getArgument( 1, VersionContextSupplier.class ),
-                                                     invocation.getArgument( 2, Integer.class ), immutable.empty() ) );
+                                                     invocation.getArgument( 2, Integer.class ),
+                                                     invocation.getArgument( 3, ImmutableSet.class ) ) );
             files.add( file );
             return file;
         } )
@@ -349,7 +351,7 @@ public class DatabaseTest
         verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
         for ( PagedFile file : files )
         {
-            verify( file ).flushAndForce( IOLimiter.UNLIMITED );
+            verify( file, atLeastOnce() ).flushAndForce( IOLimiter.UNLIMITED );
         }
     }
 
