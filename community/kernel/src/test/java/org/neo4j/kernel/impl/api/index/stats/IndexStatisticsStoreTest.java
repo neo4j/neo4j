@@ -33,7 +33,6 @@ import java.util.function.Function;
 
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -50,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.test.Race.throwing;
 
 @EphemeralPageCacheExtension
@@ -103,6 +103,28 @@ class IndexStatisticsStoreTest
     }
 
     @Test
+    void tracePageCacheAccessOnCheckpoint() throws IOException
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+
+        var store = openStore( cacheTracer, "checkpoint" );
+
+        try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckpoint" ) )
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                store.replaceStats( i, new IndexSample() );
+            }
+
+            store.checkpoint( UNLIMITED, cursorTracer );
+            assertThat( cursorTracer.pins() ).isEqualTo( 43 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 43 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 35 );
+            assertThat( cursorTracer.faults() ).isEqualTo( 8 );
+        }
+    }
+
+    @Test
     void shouldReplaceIndexSample()
     {
         // given
@@ -151,7 +173,7 @@ class IndexStatisticsStoreTest
 
     private void restartStore() throws IOException
     {
-        store.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
+        store.checkpoint( UNLIMITED, PageCursorTracer.NULL );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
         store = openStore( pageCacheTracer, "stats" );
@@ -191,7 +213,7 @@ class IndexStatisticsStoreTest
             for ( int i = 0; i < 20; i++ )
             {
                 Thread.sleep( 5 );
-                store.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
+                store.checkpoint( UNLIMITED, PageCursorTracer.NULL );
             }
             checkpointDone.set( true );
         } ) );

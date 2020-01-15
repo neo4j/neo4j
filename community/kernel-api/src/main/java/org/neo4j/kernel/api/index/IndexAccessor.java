@@ -104,6 +104,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
     IndexReader newReader();
 
     /**
+     * @param cursorTracer underlying page cursor tracer
      * @return a {@link BoundedIterable} to access all entity ids indexed in this index.
      */
     default BoundedIterable<Long> newAllEntriesReader( PageCursorTracer cursorTracer )
@@ -112,6 +113,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
     }
 
     /**
+     * @param cursorTracer underlying page cursor tracer
      * @return a {@link BoundedIterable} to access all entity ids indexed in the range {@code fromIdInclusive}-{@code toIdExclusive} in this index.
      */
     BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer );
