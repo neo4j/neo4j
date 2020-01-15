@@ -80,9 +80,19 @@ public class QuerySnapshot
         return query.id();
     }
 
+    public String rawQueryText()
+    {
+        return query.rawQueryText();
+    }
+
     public Optional<String> obfuscatedQueryText()
     {
         return obfuscatedQueryText;
+    }
+
+    public MapValue rawQueryParameters()
+    {
+        return query.rawQueryParameters();
     }
 
     public Optional<MapValue> obfuscatedQueryParameters()

@@ -956,6 +956,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
             newBuilder( "dbms.logs.query.page_logging_enabled", BOOL, false ).dynamic().build();
 
+    @Description( "Log query text and parameters without obfuscating passwords. " +
+            "This allows to log queries earlier, before parsing starts." )
+    public static final Setting<Boolean> log_queries_early_raw_logging_enabled =
+            newBuilder( "dbms.logs.query.early_raw_logging_enabled", BOOL, false ).dynamic().build();
+
     @Description( "If the execution of query takes more time than this threshold, the query is logged once completed - " +
             "provided query logging is set to INFO. Defaults to 0 seconds, that is all queries are logged." )
     public static final Setting<Duration> log_queries_threshold =

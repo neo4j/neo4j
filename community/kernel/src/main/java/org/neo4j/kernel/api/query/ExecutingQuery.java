@@ -285,6 +285,11 @@ public class ExecutingQuery
         return rawQueryText;
     }
 
+    public MapValue rawQueryParameters()
+    {
+        return rawQueryParameters;
+    }
+
     Supplier<ExecutionPlanDescription> planDescriptionSupplier()
     {
         return planDescriptionSupplier;
