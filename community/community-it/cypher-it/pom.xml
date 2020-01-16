@@ -21,6 +21,7 @@
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.community.cypher.it</moduleName>
+        <skip-scalastyle>false</skip-scalastyle>
     </properties>
 
     <scm>

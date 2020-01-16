@@ -19,12 +19,11 @@
  */
 package org.neo4j.internal.collector
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
 
 class DataCollectorTestSupport extends ExecutionEngineFunSuite {
-
-  import DataCollectorMatchers._
 
   val IDLE = "idle"
   val COLLECTING = "collecting"

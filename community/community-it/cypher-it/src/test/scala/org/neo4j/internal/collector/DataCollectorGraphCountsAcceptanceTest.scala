@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.collector
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.GraphIcing
 
 class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite with GraphIcing with SampleGraphs {
 
@@ -128,34 +129,33 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
                         hotel: String)
 
   private def assertSteelfaceGraphCounts(res: Map[String, AnyRef], tokenNames: TokenNames): Unit = {
-    import tokenNames._
 
     res("section") should be("GRAPH COUNTS")
     list(res("data"), "nodes") should contain only(
       Map("count" -> 1278),
-      Map("label" -> User, "count" -> 1000),
-      Map("label" -> Car, "count" -> 128),
-      Map("label" -> Room, "count" -> 150)
+      Map("label" -> tokenNames.User, "count" -> 1000),
+      Map("label" -> tokenNames.Car, "count" -> 128),
+      Map("label" -> tokenNames.Room, "count" -> 150)
     )
     list(res("data"), "relationships") should contain only(
       Map("count" -> 320),
-      Map("relationshipType" -> OWNS, "count" -> 170),
-      Map("relationshipType" -> OWNS, "startLabel" -> User, "count" -> 170),
-      Map("relationshipType" -> OWNS, "endLabel" -> Car, "count" -> 100),
-      Map("relationshipType" -> OWNS, "endLabel" -> Room, "count" -> 70),
-      Map("relationshipType" -> STAYS_IN, "count" -> 150),
-      Map("relationshipType" -> STAYS_IN, "startLabel" -> User, "count" -> 150),
-      Map("relationshipType" -> STAYS_IN, "endLabel" -> Room, "count" -> 150)
+      Map("relationshipType" -> tokenNames.OWNS, "count" -> 170),
+      Map("relationshipType" -> tokenNames.OWNS, "startLabel" -> tokenNames.User, "count" -> 170),
+      Map("relationshipType" -> tokenNames.OWNS, "endLabel" -> tokenNames.Car, "count" -> 100),
+      Map("relationshipType" -> tokenNames. OWNS, "endLabel" -> tokenNames.Room, "count" -> 70),
+      Map("relationshipType" -> tokenNames.STAYS_IN, "count" -> 150),
+      Map("relationshipType" -> tokenNames.STAYS_IN, "startLabel" -> tokenNames.User, "count" -> 150),
+      Map("relationshipType" -> tokenNames.STAYS_IN, "endLabel" -> tokenNames.Room, "count" -> 150)
     )
     list(res("data"), "indexes") should contain only(
-      Map("labels" -> List(User), "properties" -> List(email), "totalSize" -> 1000, "estimatedUniqueSize" -> 1000, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List(User), "properties" -> List(lastName), "totalSize" -> 500, "estimatedUniqueSize" -> 500, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List(User), "properties" -> List(firstName, lastName), "totalSize" -> 300, "estimatedUniqueSize" -> 300, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List(Room), "properties" -> List(hotel, number), "totalSize" -> 150, "estimatedUniqueSize" -> 50, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List(Car), "properties" -> List(number), "totalSize" -> 120, "estimatedUniqueSize" -> 120, "updatesSinceEstimation" -> 8)
+      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.email), "totalSize" -> 1000, "estimatedUniqueSize" -> 1000, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.lastName), "totalSize" -> 500, "estimatedUniqueSize" -> 500, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.firstName, tokenNames.lastName), "totalSize" -> 300, "estimatedUniqueSize" -> 300, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(tokenNames.Room), "properties" -> List(tokenNames.hotel, tokenNames.number), "totalSize" -> 150, "estimatedUniqueSize" -> 50, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(tokenNames.Car), "properties" -> List(tokenNames.number), "totalSize" -> 120, "estimatedUniqueSize" -> 120, "updatesSinceEstimation" -> 8)
     )
     list(res("data"), "constraints") should contain only
-      Map("label" -> User, "properties" -> List(email), "type" -> "Uniqueness constraint")
+      Map("label" -> tokenNames.User, "properties" -> List(tokenNames.email), "type" -> "Uniqueness constraint")
   }
 
   private def list(map: AnyRef, key: String): IndexedSeq[AnyRef] =

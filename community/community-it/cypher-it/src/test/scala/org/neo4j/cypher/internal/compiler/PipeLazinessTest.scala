@@ -19,17 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.mockito.Mockito._
+import org.mockito.Mockito.when
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ShortestPathExpression, Variable}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, SortItem}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.graphdb._
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
+import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
+import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.SortItem
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.FakePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ShortestPathPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionPipe
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asJavaIterableConverter
 
 /*
 This test fixture tries to assert that Pipe declaring that they are lazy

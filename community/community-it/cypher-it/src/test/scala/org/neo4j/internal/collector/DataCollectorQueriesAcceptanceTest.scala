@@ -22,14 +22,18 @@ package org.neo4j.internal.collector
 import java.nio.file.Files
 
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.graphdb.{Node, Path, Relationship}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
+import org.neo4j.internal.collector.DataCollectorMatchers.beCypher
+import org.neo4j.internal.collector.DataCollectorMatchers.beListWithoutOrder
+import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.mutable.ArrayBuffer
 
 class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
-
-  import DataCollectorMatchers._
 
   test("should collect and retrieve queries") {
     // given

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.collector
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
 
 class DataCollectorTokensAcceptanceTest extends ExecutionEngineFunSuite {

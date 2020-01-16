@@ -23,28 +23,40 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.FullyParsedQuery
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.RuntimeJavaValueConverter
+import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Result
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.{QueryExecutionEngine, RecordingQuerySubscriber}
+import org.neo4j.kernel.impl.query.QueryExecutionEngine
+import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.logging.LogProvider
+import org.neo4j.logging.NullLogProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{MapValue, VirtualValues}
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.Map
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
 trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineHelper {
   self: CypherFunSuite with GraphDatabaseTestSupport =>

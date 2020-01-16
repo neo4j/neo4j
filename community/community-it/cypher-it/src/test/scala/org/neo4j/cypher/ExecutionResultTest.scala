@@ -21,10 +21,10 @@ package org.neo4j.cypher
 
 import java.util.regex.Pattern
 
-import org.junit.Assert._
+import org.junit.Assert.assertTrue
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.mapAsScalaMapConverter
 
 class ExecutionResultTest extends ExecutionEngineFunSuite {
 

@@ -19,25 +19,51 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.{Clock, Duration, Instant, ZoneOffset}
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
 
-import org.neo4j.configuration.{Config, GraphDatabaseSettings}
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher
-import org.neo4j.cypher._
+import org.neo4j.cypher.CypherExpressionEngineOption
+import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.GraphDatabaseTestSupport
+import org.neo4j.cypher.internal.CacheTracer
+import org.neo4j.cypher.internal.CommunityCompilerFactory
+import org.neo4j.cypher.internal.CommunityRuntimeContextManager
+import org.neo4j.cypher.internal.CommunityRuntimeFactory
+import org.neo4j.cypher.internal.Compiler
+import org.neo4j.cypher.internal.CompilerLibrary
+import org.neo4j.cypher.internal.CypherConfiguration
+import org.neo4j.cypher.internal.CypherCurrentCompiler
+import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.{MIN_NODES_ALL, MIN_NODES_WITH_LABEL}
-import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
+import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.AssertableLogProvider.Level
+import org.neo4j.logging.Log
 import org.neo4j.logging.LogAssertions.assertThat
-import org.neo4j.logging.{AssertableLogProvider, Log, NullLog, NullLogProvider}
+import org.neo4j.logging.NullLog
+import org.neo4j.logging.NullLogProvider
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -124,7 +150,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   private def runQuery(query: String,
                        params: scala.Predef.Map[String, AnyRef] = Map.empty,
                        cypherCompiler: Compiler = compiler): Unit = {
-    import collection.JavaConverters._
 
     val preParser = new PreParser(CypherVersion.default,
       CypherPlannerOption.default,

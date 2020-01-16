@@ -21,11 +21,18 @@ package org.neo4j.internal.collector
 
 import java.time.ZonedDateTime
 
-import org.neo4j.cypher.internal.parser.CypherParser
-import org.neo4j.cypher.internal.{PreParsedQuery, PreParser}
+import org.neo4j.cypher.CypherExpressionEngineOption
+import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.PreParsedQuery
+import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.{CypherExpressionEngineOption, CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.parser.CypherParser
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.Manifest

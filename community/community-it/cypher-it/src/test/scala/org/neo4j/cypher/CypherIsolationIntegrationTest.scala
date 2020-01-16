@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import java.util.concurrent.{Callable, Executors}
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 import org.neo4j.graphdb.Node
 

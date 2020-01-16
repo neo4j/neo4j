@@ -23,7 +23,9 @@ import java.time.ZonedDateTime
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.exceptions.CypherExecutionException
-import org.neo4j.internal.collector.DataCollectorMatchers.{beListInOrder, beMapContaining, occurBetween}
+import org.neo4j.internal.collector.DataCollectorMatchers.beListInOrder
+import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
+import org.neo4j.internal.collector.DataCollectorMatchers.occurBetween
 
 class DataCollectorAcceptanceTest extends ExecutionEngineFunSuite {
 

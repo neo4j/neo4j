@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.collector
 
-import java.time.ZonedDateTime
-import java.util.{Locale, TimeZone}
+import java.util.Locale
+import java.util.TimeZone
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
+import org.neo4j.internal.collector.DataCollectorMatchers.ofType
 
 class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
-
-  import DataCollectorMatchers._
 
   test("should get system data on retrieve('META')") {
     // when

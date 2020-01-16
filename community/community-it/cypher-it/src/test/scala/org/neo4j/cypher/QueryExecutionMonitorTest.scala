@@ -19,21 +19,24 @@
  */
 package org.neo4j.cypher
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, ResultSubscriber}
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.ResultRow
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.immutable.Map
 import scala.language.implicitConversions
 

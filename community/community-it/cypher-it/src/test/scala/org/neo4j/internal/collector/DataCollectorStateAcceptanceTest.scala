@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.collector
 
-class DataCollectorStateAcceptanceTest extends DataCollectorTestSupport {
+import org.neo4j.internal.collector.DataCollectorMatchers.beMap
 
-  import DataCollectorMatchers._
+class DataCollectorStateAcceptanceTest extends DataCollectorTestSupport {
 
   test("QUERIES: happy path collect cycle") {
     assertCollecting("QUERIES")

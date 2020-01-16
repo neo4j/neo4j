@@ -21,10 +21,12 @@ package org.neo4j.cypher
 
 import java.util.Optional
 
-import org.hamcrest.CoreMatchers._
-import org.junit.Assert._
-import org.neo4j.cypher.internal.util.helpers.StringHelper._
-import org.neo4j.exceptions.{Neo4jException, SyntaxException}
+import org.hamcrest.CoreMatchers.containsString
+import org.hamcrest.CoreMatchers.equalTo
+import org.junit.Assert.assertThat
+import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
+import org.neo4j.exceptions.Neo4jException
+import org.neo4j.exceptions.SyntaxException
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite {
 

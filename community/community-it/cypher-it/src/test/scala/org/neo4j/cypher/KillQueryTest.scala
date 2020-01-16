@@ -24,11 +24,14 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.graphdb.{TransactionTerminatedException, TransientTransactionFailureException}
+import org.neo4j.graphdb.TransactionTerminatedException
+import org.neo4j.graphdb.TransientTransactionFailureException
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.TransactionalContextFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class KillQueryTest extends ExecutionEngineFunSuite {

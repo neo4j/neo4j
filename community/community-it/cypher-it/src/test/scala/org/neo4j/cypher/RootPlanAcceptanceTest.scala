@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
+import org.neo4j.cypher.internal.InterpretedRuntimeName
+import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.frontend.PlannerName
-import org.neo4j.cypher.internal.{InterpretedRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {

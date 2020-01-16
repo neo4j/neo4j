@@ -22,16 +22,24 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.concurrent.TimeUnit.SECONDS
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, IndexLimitation, SlowContains}
-import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.frontend.phases.devNullLogger
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.SlowContains
+import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
-import org.neo4j.kernel.api.KernelTransaction.Type._
+import org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder

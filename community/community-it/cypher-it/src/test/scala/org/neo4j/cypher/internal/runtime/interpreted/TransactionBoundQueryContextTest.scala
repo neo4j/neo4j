@@ -25,16 +25,21 @@ import java.util.concurrent.atomic.AtomicReference
 
 import org.hamcrest.Matchers.greaterThan
 import org.junit.Assert.assertThat
-import org.mockito.Mockito._
+import org.mockito.Mockito.RETURNS_DEEP_STUBS
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
+import org.mockito.Mockito.when
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.graphdb._
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
@@ -48,17 +53,20 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.database.TestDatabaseIdRepository
-import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation}
+import org.neo4j.kernel.impl.api.ClockContext
+import org.neo4j.kernel.impl.api.KernelStatement
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.lock.LockTracer
 import org.neo4j.resources.CpuClock
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 

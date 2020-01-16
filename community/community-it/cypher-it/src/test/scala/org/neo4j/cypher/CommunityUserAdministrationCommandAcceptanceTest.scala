@@ -22,10 +22,16 @@ package org.neo4j.cypher
 import java.util
 import java.util.Collections
 
-import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME}
-import org.neo4j.exceptions._
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
+import org.neo4j.exceptions.DatabaseAdministrationException
+import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.ParameterNotFoundException
+import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.exceptions.SyntaxException
+import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.security.AuthorizationViolationException
-import org.neo4j.graphdb.{QueryExecutionException, Result}
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException

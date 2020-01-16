@@ -20,11 +20,15 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Entity, Node, Relationship, Result}
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.exceptions.Status
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 abstract class ExecutionEngineFunSuite
   extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport {

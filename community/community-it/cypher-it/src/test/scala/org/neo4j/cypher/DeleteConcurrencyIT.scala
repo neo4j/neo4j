@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.PrintWriter
+import java.io.StringWriter
 
-import org.neo4j.exceptions.{CypherExecutionException, KernelException}
-import org.neo4j.graphdb.{NotFoundException, TransactionFailureException}
+import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.exceptions.KernelException
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
 
 class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
