@@ -777,7 +777,7 @@ public abstract class Expression extends ExpressionTemplate
 
     private static Expression notExpr( final Expression expression )
     {
-        assert expression.type == BOOLEAN : "Can only apply not() to boolean expressions";
+        assert expression.type.equals( BOOLEAN ) : "Can only apply not() to boolean expressions";
         return new Expression( BOOLEAN )
         {
             @Override

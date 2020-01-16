@@ -42,10 +42,7 @@ public final class ByteCodeUtils
     public static String className( TypeReference reference )
     {
         StringBuilder builder = new StringBuilder();
-        if ( reference.isArray() )
-        {
-           builder.append( "[L" );
-        }
+        builder.append( "[L".repeat( Math.max( 0, reference.arrayDepth() ) ) );
         if ( !reference.packageName().isEmpty() )
         {
             builder.append( reference.packageName() ).append( '.' );
@@ -176,11 +173,7 @@ public final class ByteCodeUtils
             boolean showErasure )
     {
         String name = reference.name();
-        if ( reference.isArray() )
-        {
-            builder.append( "[" );
-        }
-
+        builder.append( "[".repeat( Math.max( 0, reference.arrayDepth() ) ) );
         switch ( name )
         {
         case "int":

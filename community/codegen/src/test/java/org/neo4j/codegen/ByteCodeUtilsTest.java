@@ -69,6 +69,17 @@ class ByteCodeUtilsTest
 
         //reference array type
         assertTypeName( String[].class, "[Ljava/lang/String;" );
+
+        //nested arrays
+        assertTypeName( int[][].class, "[[I" );
+        assertTypeName( byte[][].class, "[[B" );
+        assertTypeName( short[][].class, "[[S" );
+        assertTypeName( char[][].class, "[[C" );
+        assertTypeName( float[][].class, "[[F" );
+        assertTypeName( double[][].class, "[[D" );
+        assertTypeName( boolean[][].class, "[[Z" );
+
+        assertTypeName( String[][].class, "[[Ljava/lang/String;" );
     }
 
     @Test
