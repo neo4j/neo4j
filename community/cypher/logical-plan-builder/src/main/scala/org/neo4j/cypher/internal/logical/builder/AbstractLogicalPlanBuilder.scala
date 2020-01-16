@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.LabelId
-import org.neo4j.cypher.internal.util.PropertyKeyId
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -432,7 +432,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                              inclusive: Boolean = false,
                              argumentIds: Set[String] = Set.empty): IMPL = {
     val label = resolver.getLabelId(labelName)
-
 
     val propId = resolver.getPropertyKeyId(property)
     val planBuilder = (idGen: IdGen) => {
