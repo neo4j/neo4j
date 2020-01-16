@@ -36,15 +36,11 @@ public interface OffHeapBlockAllocator
     {
         final long addr;
         final long size;
-        final long unalignedAddr;
-        final long unalignedSize;
 
-        MemoryBlock( long addr, long size, long unalignedAddr, long unalignedSize )
+        MemoryBlock( long addr, long size )
         {
             this.size = size;
             this.addr = addr;
-            this.unalignedSize = unalignedSize;
-            this.unalignedAddr = unalignedAddr;
         }
     }
 }

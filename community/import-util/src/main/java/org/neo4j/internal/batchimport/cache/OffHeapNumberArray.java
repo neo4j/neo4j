@@ -21,11 +21,8 @@ package org.neo4j.internal.batchimport.cache;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 
-import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
-
 public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N>
 {
-    private final long allocatedAddress;
     protected final long address;
     protected final long length;
     private final long allocatedBytes;
@@ -36,24 +33,8 @@ public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseN
         super( itemSize, base );
         UnsafeUtil.assertHasUnsafe();
         this.length = length;
-
-        long dataSize = length * itemSize;
-        if ( UnsafeUtil.allowUnalignedMemoryAccess || !isPowerOfTwo(itemSize ) )
-        {
-            // we can end up here even if we require aligned memory access. Reason is that item size
-            // isn't power of two anyway and so we have to fallback to safer means of accessing the memory,
-            // i.e. byte for byte.
-            allocatedBytes = dataSize;
-            this.allocatedAddress = this.address = UnsafeUtil.allocateMemory( allocatedBytes );
-        }
-        else
-        {
-            // the item size is a power of two and we're required to access memory aligned
-            // so we can allocate a bit more to ensure we can get an aligned memory address to start from.
-            allocatedBytes = dataSize + itemSize - 1;
-            this.allocatedAddress = UnsafeUtil.allocateMemory( allocatedBytes );
-            this.address = UnsafeUtil.alignedMemory( allocatedAddress, itemSize );
-        }
+        this.allocatedBytes = length * itemSize;
+        this.address = UnsafeUtil.allocateMemory( allocatedBytes );
     }
 
     @Override
@@ -76,7 +57,7 @@ public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseN
             if ( length > 0 )
             {
                 // Allocating 0 bytes actually returns address 0
-                UnsafeUtil.free( allocatedAddress, allocatedBytes );
+                UnsafeUtil.free( address, allocatedBytes );
             }
             closed = true;
         }

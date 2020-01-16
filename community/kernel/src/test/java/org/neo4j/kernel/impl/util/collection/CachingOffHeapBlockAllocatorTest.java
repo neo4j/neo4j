@@ -75,14 +75,14 @@ class CachingOffHeapBlockAllocatorTest
     void allocateAndFree()
     {
         final MemoryBlock block1 = allocator.allocate( 128, memoryTracker );
-        assertEquals( block1.size, 128 );
-        assertEquals( 128 + Long.BYTES - 1, block1.unalignedSize );
-        assertEquals( block1.unalignedSize, memoryTracker.usedDirectMemory() );
+        assertEquals( 128, block1.size );
+        assertEquals( 128, block1.size );
+        assertEquals( block1.size, memoryTracker.usedDirectMemory() );
 
         final MemoryBlock block2 = allocator.allocate( 256, memoryTracker );
-        assertEquals( block2.size, 256 );
-        assertEquals( 256 + Long.BYTES - 1, block2.unalignedSize );
-        assertEquals( block1.unalignedSize + block2.unalignedSize, memoryTracker.usedDirectMemory() );
+        assertEquals( 256, block2.size );
+        assertEquals( 256, block2.size );
+        assertEquals( block1.size + block2.size, memoryTracker.usedDirectMemory() );
 
         allocator.free( block1, memoryTracker );
         allocator.free( block2, memoryTracker );
@@ -134,10 +134,10 @@ class CachingOffHeapBlockAllocatorTest
 
         verify( allocator, times( CACHE_SIZE + EXTRA ) ).allocateNew( eq( 64L ), any() );
         verify( allocator, times( CACHE_SIZE + EXTRA ) ).allocateNew( eq( 128L ), any() );
-        assertEquals( (CACHE_SIZE + EXTRA) * (64 + 128 + 2 * (Long.BYTES - 1)), memoryTracker.usedDirectMemory() );
+        assertEquals( (CACHE_SIZE + EXTRA) * (64 + 128), memoryTracker.usedDirectMemory() );
 
         blocks64.forEach( it -> allocator.free( it, memoryTracker ) );
-        assertEquals( (CACHE_SIZE + EXTRA) * (128 + Long.BYTES - 1), memoryTracker.usedDirectMemory() );
+        assertEquals( (CACHE_SIZE + EXTRA) * 128, memoryTracker.usedDirectMemory() );
 
         blocks128.forEach( it -> allocator.free( it, memoryTracker ) );
         assertEquals( 0, memoryTracker.usedDirectMemory() );

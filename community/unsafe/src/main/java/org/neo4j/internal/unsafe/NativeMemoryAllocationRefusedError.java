@@ -29,9 +29,8 @@ public class NativeMemoryAllocationRefusedError extends Error
     private final long attemptedAllocationSizeBytes;
     private final long alreadyAllocatedBytes;
 
-    NativeMemoryAllocationRefusedError( long size, long alreadyAllocatedBytes, Throwable cause )
+    NativeMemoryAllocationRefusedError( long size, long alreadyAllocatedBytes )
     {
-        super( cause );
         this.attemptedAllocationSizeBytes = size;
         this.alreadyAllocatedBytes = alreadyAllocatedBytes;
     }

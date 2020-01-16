@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.unsafe;
 
+import com.sun.jna.Native;
 import sun.misc.Unsafe;
 
 import java.lang.invoke.MethodHandle;
@@ -452,15 +453,12 @@ public final class UnsafeUtil
      */
     public static long allocateMemory( long bytes ) throws NativeMemoryAllocationRefusedError
     {
-        final long pointer;
-        try
+        final long pointer = Native.malloc( bytes );
+        if ( pointer == 0 )
         {
-            pointer = unsafe.allocateMemory( bytes );
+            throw new NativeMemoryAllocationRefusedError( bytes, GlobalMemoryTracker.INSTANCE.usedDirectMemory() );
         }
-        catch ( Throwable e )
-        {
-            throw new NativeMemoryAllocationRefusedError( bytes, GlobalMemoryTracker.INSTANCE.usedDirectMemory(), e );
-        }
+
         if ( DIRTY_MEMORY )
         {
             setMemory( pointer, bytes, (byte) 0xA5 );
@@ -486,33 +484,6 @@ public final class UnsafeUtil
     }
 
     /**
-     * Returns address pointer equal to or slightly after the given {@code pointer}.
-     * The returned pointer as aligned with {@code alignBy} such that {@code pointer % alignBy == 0}.
-     * The given pointer should be allocated with at least the requested size + {@code alignBy - 1},
-     * where the additional bytes will serve as padding for the worst case where the start of the usable
-     * area of the allocated memory will need to be shifted at most {@code alignBy - 1} bytes to the right.
-     * <p>
-     * <pre><code>
-     * 0   4   8   12  16  20        ; 4-byte alignments
-     * |---|---|---|---|---|         ; memory
-     *        --------===            ; allocated memory (-required, =padding)
-     *         ^------^              ; used memory
-     * </code></pre>
-     *
-     * @param pointer pointer to allocated memory from {@link #allocateMemory(long, MemoryAllocationTracker)} )}.
-     * @param alignBy power-of-two size to align to, e.g. 4 or 8.
-     * @return pointer to place inside the allocated memory to consider the effective start of the
-     * memory, which from that point is aligned by {@code alignBy}.
-     */
-    public static long alignedMemory( long pointer, int alignBy )
-    {
-        assert Integer.bitCount( alignBy ) == 1 : "Requires alignment to be power of 2, but was " + alignBy;
-
-        long misalignment = pointer % alignBy;
-        return misalignment == 0 ? pointer : pointer + (alignBy - misalignment);
-    }
-
-    /**
      * Free the memory that was allocated with {@link #allocateMemory} and update memory allocation tracker accordingly.
      */
     public static void free( long pointer, long bytes, MemoryAllocationTracker allocationTracker )
@@ -528,7 +499,7 @@ public final class UnsafeUtil
     public static void free( long pointer, long bytes )
     {
         checkFree( pointer );
-        unsafe.freeMemory( pointer );
+        Native.free( pointer );
         GlobalMemoryTracker.INSTANCE.deallocated( bytes );
     }
 

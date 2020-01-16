@@ -44,7 +44,7 @@ class CapacityLimitingBlockAllocatorDecoratorTest
         when( allocator.allocate( anyLong(), any( MemoryAllocationTracker.class ) ) ).then( invocation ->
         {
             final long size = invocation.<Long>getArgument( 0 );
-            return new MemoryBlock( 0, size, 0, size );
+            return new MemoryBlock( 0, size );
         } );
         final CapacityLimitingBlockAllocatorDecorator decorator = new CapacityLimitingBlockAllocatorDecorator( allocator, 1024 );
 

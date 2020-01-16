@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.jctools.queues.QueueFactory;
-import org.jctools.queues.spec.ConcurrentQueueSpec;
+import org.jctools.queues.MpmcArrayQueue;
 
 import java.util.Queue;
 
@@ -69,12 +68,11 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         this.maxCacheableBlockSize = requirePowerOfTwo( maxCacheableBlockSize );
 
         final int numOfCaches = log2floor( maxCacheableBlockSize ) + 1;
-        ConcurrentQueueSpec spec = ConcurrentQueueSpec.createBoundedMpmc( maxCachedBlocks );
         //noinspection unchecked
         this.caches = new Queue[numOfCaches];
         for ( int i = 0; i < caches.length; i++ )
         {
-            caches[i] = QueueFactory.newQueue( spec );
+            caches[i] = new MpmcArrayQueue<>( maxCachedBlocks );
         }
     }
 
@@ -96,7 +94,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         }
         else
         {
-            tracker.allocated( block.unalignedSize );
+            tracker.allocated( block.size );
         }
         return block;
     }
@@ -125,7 +123,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
             return;
         }
 
-        tracker.deallocated( block.unalignedSize );
+        tracker.deallocated( block.size );
     }
 
     @Override
@@ -137,7 +135,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
             MemoryBlock block;
             while ( (block = cache.poll()) != null )
             {
-                UnsafeUtil.free( block.unalignedAddr, block.unalignedSize );
+                UnsafeUtil.free( block.addr, block.size );
             }
         }
     }
@@ -145,16 +143,14 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     @VisibleForTesting
     void doFree( MemoryBlock block, MemoryAllocationTracker tracker )
     {
-        UnsafeUtil.free( block.unalignedAddr, block.unalignedSize, tracker );
+        UnsafeUtil.free( block.addr, block.size, tracker );
     }
 
     @VisibleForTesting
     MemoryBlock allocateNew( long size, MemoryAllocationTracker tracker )
     {
-        final long unalignedSize = requirePositive( size ) + Long.BYTES - 1;
-        final long unalignedAddr = UnsafeUtil.allocateMemory( unalignedSize, tracker );
-        final long addr = UnsafeUtil.alignedMemory( unalignedAddr, Long.BYTES );
-        return new MemoryBlock( addr, size, unalignedAddr, unalignedSize );
+        final long addr = UnsafeUtil.allocateMemory( size, tracker );
+        return new MemoryBlock( addr, size );
     }
 
     private boolean notCacheable( long size )

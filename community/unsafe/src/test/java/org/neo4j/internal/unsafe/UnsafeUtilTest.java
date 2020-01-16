@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -566,25 +565,6 @@ class UnsafeUtilTest
         finally
         {
             UnsafeUtil.exchangeNativeAccessCheckEnabled( nativeAccessCheckEnabled );
-        }
-    }
-
-    @Test
-    void shouldAlignMemoryTo4ByteBoundary()
-    {
-        // GIVEN
-        long allocatedMemory = currentTimeMillis();
-        int alignBy = 4;
-
-        // WHEN
-        for ( int i = 0; i < 10; i++ )
-        {
-            // THEN
-            long alignedMemory = UnsafeUtil.alignedMemory( allocatedMemory, alignBy );
-            assertTrue( alignedMemory >= allocatedMemory );
-            assertEquals( 0, alignedMemory % Integer.BYTES );
-            assertTrue( alignedMemory - allocatedMemory <= 3 );
-            allocatedMemory++;
         }
     }
 

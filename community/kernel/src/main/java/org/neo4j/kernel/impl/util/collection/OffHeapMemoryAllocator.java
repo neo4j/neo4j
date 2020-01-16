@@ -50,7 +50,7 @@ public class OffHeapMemoryAllocator implements MemoryAllocator
         final MemoryBlock block = blockAllocator.allocate( size, tracker );
         if ( zeroed )
         {
-            setMemory( block.unalignedAddr, block.unalignedSize, (byte) 0 );
+            setMemory( block.addr, block.size, (byte) 0 );
         }
         return new OffHeapMemory( block );
     }
@@ -79,7 +79,7 @@ public class OffHeapMemoryAllocator implements MemoryAllocator
         @Override
         public void clear()
         {
-            setMemory( block.unalignedAddr, block.unalignedSize, (byte) 0 );
+            setMemory( block.addr, block.size, (byte) 0 );
         }
 
         @Override
