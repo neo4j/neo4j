@@ -19,15 +19,45 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values._
-import org.neo4j.values.storable.Values._
-import org.neo4j.values.storable._
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.ByteValue
+import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.FloatValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.ShortValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values.booleanValue
+import org.neo4j.values.storable.Values.byteArray
+import org.neo4j.values.storable.Values.byteValue
+import org.neo4j.values.storable.Values.charArray
+import org.neo4j.values.storable.Values.doubleArray
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.floatArray
+import org.neo4j.values.storable.Values.floatValue
+import org.neo4j.values.storable.Values.intArray
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.longArray
+import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.Values.shortArray
+import org.neo4j.values.storable.Values.shortValue
+import org.neo4j.values.storable.Values.stringArray
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues.list
-import org.neo4j.values.virtual._
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asJavaIterableConverter
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 object ImplicitValueConversion {
 

@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.expressions.LabelToken
-import org.neo4j.internal.kernel.api.{IndexReadSession, SchemaRead}
-import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor}
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.internal.schema.SchemaDescriptor
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 /**

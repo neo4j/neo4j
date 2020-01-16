@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
-import org.neo4j.values.virtual.{ListValue, RelationshipValue}
 
 /**
   * Utility class that has constant time `append`, `contains`, and `size` methods

@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
+import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSchemaWriteAccess
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.values.AnyValue
 

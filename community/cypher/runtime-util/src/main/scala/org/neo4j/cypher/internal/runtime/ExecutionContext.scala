@@ -23,10 +23,16 @@ import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual._
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeReference
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipReference
+import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable
 
 object ExecutionContext {
   def empty: ExecutionContext = apply()
@@ -37,7 +43,7 @@ object ExecutionContext {
     context
   }
 
-  def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty): MapExecutionContext = new MapExecutionContext(m, null)
+  def apply(m: mutable.Map[String, AnyValue] = MutableMaps.empty): MapExecutionContext = new MapExecutionContext(m, null)
 }
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)
@@ -126,7 +132,7 @@ trait ExecutionContext extends WithHeapUsageEstimation {
 
 }
 
-class MapExecutionContext(private val m: MutableMap[String, AnyValue], private var cachedProperties: MutableMap[ASTCachedProperty, Value] = null)
+class MapExecutionContext(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty, Value] = null)
   extends ExecutionContext {
 
   override def copyTo(target: ExecutionContext, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit = fail()
@@ -233,7 +239,7 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
 
   override def setCachedProperty(key: ASTCachedProperty, value: Value): Unit = {
     if (cachedProperties == null) {
-      cachedProperties = MutableMap.empty
+      cachedProperties = mutable.Map.empty
     }
     cachedProperties.put(key, value)
   }
@@ -283,7 +289,7 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
     total
   }
 
-  private def cloneFromMap(newMap: MutableMap[String, AnyValue]): ExecutionContext = {
+  private def cloneFromMap(newMap: mutable.Map[String, AnyValue]): ExecutionContext = {
     val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
     val map = new MapExecutionContext(newMap, newCachedProperties)
     map.setLinenumber(getLinenumber)

@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.util.{List => JavaList, Map => JavaMap}
+import java.util
 
 import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.Map
 
 // This converts runtime scala values into runtime Java value
@@ -32,15 +33,15 @@ import scala.collection.Map
 //
 class RuntimeJavaValueConverter(skip: Any => Boolean) {
 
-  final def asDeepJavaMap[S](map: Map[S, Any]): JavaMap[S, Any] =
-    if (map == null) null else immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[S, Any]
+  final def asDeepJavaMap[S](map: Map[S, Any]): util.Map[S, Any] =
+    if (map == null) null else immutableMapValues(map, asDeepJavaValue).asJava: util.Map[S, Any]
 
   def asDeepJavaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
-    case map: Map[_, _] => immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[_, _]
+    case map: Map[_, _] => immutableMapValues(map, asDeepJavaValue).asJava: util.Map[_, _]
     case JavaListWrapper(inner, _) => inner
-    case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toIndexedSeq.asJava: JavaList[_]
-    case traversable: TraversableOnce[_] => traversable.map(asDeepJavaValue).toVector.asJava: JavaList[_]
+    case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toIndexedSeq.asJava: util.List[_]
+    case traversable: TraversableOnce[_] => traversable.map(asDeepJavaValue).toVector.asJava: util.List[_]
     case anything => anything
   }
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.logical.plans.{QualifiedName, SeekableArgs}
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.{expressions => ast}
 
 sealed abstract class Argument extends Product {
 
@@ -46,21 +46,21 @@ object Arguments {
 
   case class PageCacheHitRatio(value: Double) extends Argument
 
-  case class Expression(value: ast.Expression) extends Argument
+  case class Expression(value: org.neo4j.cypher.internal.expressions.Expression) extends Argument
 
-  case class Expressions(expressions: Map[String, ast.Expression]) extends Argument
+  case class Expressions(expressions: Map[String, org.neo4j.cypher.internal.expressions.Expression]) extends Argument
 
   case class UpdateActionName(value: String) extends Argument
 
   case class MergePattern(startPoint: String) extends Argument
 
-  case class Index(label: String, propertyKeys: Seq[String], caches: Seq[ast.Expression]) extends Argument
+  case class Index(label: String, propertyKeys: Seq[String], caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
 
-  case class PrefixIndex(label: String, propertyKey: String, prefix: ast.Expression, caches: Seq[ast.Expression]) extends Argument
+  case class PrefixIndex(label: String, propertyKey: String, prefix: org.neo4j.cypher.internal.expressions.Expression, caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
 
-  case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String], caches: Seq[ast.Expression]) extends Argument
+  case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String], caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
 
-  case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean, caches: Seq[ast.Expression]) extends Argument
+  case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean, caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
 
   case class IndexName(index: String) extends Argument
 
@@ -77,7 +77,7 @@ object Arguments {
   case class EstimatedRows(value: Double) extends Argument
 
   case class Signature(procedureName: QualifiedName,
-                       args: Seq[ast.Expression],
+                       args: Seq[org.neo4j.cypher.internal.expressions.Expression],
                        results: Seq[(String, CypherType)]) extends Argument
 
   // This is the version of cypher

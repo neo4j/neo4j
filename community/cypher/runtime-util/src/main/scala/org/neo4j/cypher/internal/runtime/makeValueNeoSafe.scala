@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{ArrayValue, Value, Values}
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
 

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.lang.{Iterable => JavaIterable}
+import java.lang
 import java.util
-import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.immutable
 
 // Converts java runtime values to scala runtime values
@@ -34,18 +34,18 @@ import scala.collection.immutable
 //
 class RuntimeScalaValueConverter(skip: Any => Boolean) {
 
-  final def asDeepScalaMap[A, B](map: JavaMap[A, B]): immutable.Map[A, Any] =
+  final def asDeepScalaMap[A, B](map: util.Map[A, B]): immutable.Map[A, Any] =
     if (map == null) null else immutableMapValues(map.asScala, asDeepScalaValue): immutable.Map[A, Any]
 
-  final def asShallowScalaMap[A, B](map: JavaMap[A, B]): immutable.Map[A, Any] =
+  final def asShallowScalaMap[A, B](map: util.Map[A, B]): immutable.Map[A, Any] =
     if (map == null) null else map.asScala.toMap
 
   def asDeepScalaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
-    case javaMap: JavaMap[_, _] => immutableMapValues(javaMap.asScala, asDeepScalaValue)
+    case javaMap: util.Map[_, _] => immutableMapValues(javaMap.asScala, asDeepScalaValue)
     case javaList: java.util.LinkedList[_] => copyJavaList(javaList,() => new util.LinkedList[Any]())
     case javaList: java.util.List[_] => copyJavaList(javaList,() => new util.ArrayList[Any](javaList.size()))
-    case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
+    case javaIterable: lang.Iterable[_] => javaIterable.asScala.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
     case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
     case traversable: TraversableOnce[_] => traversable.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
     case anything => anything
@@ -53,8 +53,8 @@ class RuntimeScalaValueConverter(skip: Any => Boolean) {
 
   def asShallowScalaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
-    case javaMap: JavaMap[_, _] => javaMap.asScala.toMap: immutable.Map[_, _]
-    case javaIterable: JavaIterable[_] => javaIterable.asScala.toIndexedSeq: IndexedSeq[_]
+    case javaMap: util.Map[_, _] => javaMap.asScala.toMap: immutable.Map[_, _]
+    case javaIterable: lang.Iterable[_] => javaIterable.asScala.toIndexedSeq: IndexedSeq[_]
     case map: collection.Map[_, _] => map.toMap: immutable.Map[_, _]
     case anything => anything
   }

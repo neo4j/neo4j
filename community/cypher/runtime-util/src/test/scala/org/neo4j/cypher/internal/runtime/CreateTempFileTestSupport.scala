@@ -19,11 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.io.{FileOutputStream, OutputStreamWriter, PrintWriter}
-import java.nio.file.{Files, Path}
-import java.util.zip.{GZIPOutputStream, ZipEntry, ZipOutputStream}
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
+import java.io.PrintWriter
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.zip.GZIPOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
-import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.io.fs.FileUtils
 
 import scala.io.Codec

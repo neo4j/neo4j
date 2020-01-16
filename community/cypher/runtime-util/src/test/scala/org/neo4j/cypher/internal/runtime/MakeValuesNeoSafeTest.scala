@@ -21,10 +21,26 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.values.storable.Values._
+import org.neo4j.values.storable.Values.booleanArray
+import org.neo4j.values.storable.Values.booleanValue
+import org.neo4j.values.storable.Values.byteArray
+import org.neo4j.values.storable.Values.doubleArray
+import org.neo4j.values.storable.Values.floatArray
+import org.neo4j.values.storable.Values.intArray
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.longArray
+import org.neo4j.values.storable.Values.shortArray
+import org.neo4j.values.storable.Values.stringArray
+import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.list
 
-import scala.Array._
+import scala.Array.emptyBooleanArray
+import scala.Array.emptyByteArray
+import scala.Array.emptyDoubleArray
+import scala.Array.emptyFloatArray
+import scala.Array.emptyIntArray
+import scala.Array.emptyLongArray
+import scala.Array.emptyShortArray
 
 class MakeValuesNeoSafeTest extends CypherFunSuite {
 

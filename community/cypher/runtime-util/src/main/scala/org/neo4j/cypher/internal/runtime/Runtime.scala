@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.impl.query.{QueryExecution, ResultBuffer}
+import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.kernel.impl.query.ResultBuffer
 import org.neo4j.values.virtual.MapValue
 
 // =============================================== /

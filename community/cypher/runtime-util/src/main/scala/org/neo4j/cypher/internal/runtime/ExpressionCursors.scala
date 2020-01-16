@@ -19,7 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
+import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.io.IOUtils
 
 /**

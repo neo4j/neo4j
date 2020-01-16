@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.values.storable.CoordinateReferenceSystem
+import org.neo4j.values.storable.DurationArray
 import org.neo4j.values.storable.DurationValue.duration
+import org.neo4j.values.storable.LocalTimeArray
 import org.neo4j.values.storable.LocalTimeValue.localTime
-import org.neo4j.values.storable._
+import org.neo4j.values.storable.PointArray
+import org.neo4j.values.storable.StringArray
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 class CastSupportTest extends CypherFunSuite {

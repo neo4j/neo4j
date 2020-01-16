@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
 import org.neo4j.internal.helpers.Exceptions
-import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CloseListener}
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
+import org.neo4j.internal.kernel.api.CloseListener
+
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource with CloseListener {
   protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor)
@@ -181,7 +184,6 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor) extend
 }
 
 class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {
-  import scala.collection.JavaConverters._
 
   val resources: java.util.Collection[AutoCloseablePlus] = new java.util.concurrent.ConcurrentLinkedQueue[AutoCloseablePlus]()
 

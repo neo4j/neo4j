@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import scala.reflect._
+import scala.reflect.ClassTag
 
 /**
  * Map implementation optimized for fast writes via putValues.

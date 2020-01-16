@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.runtime.ast
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.expressions.{Expression, LogicalProperty, PropertyKeyName}
-import org.neo4j.cypher.internal.util.{InputPosition, Rewritable}
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable
 
 abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression{
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success

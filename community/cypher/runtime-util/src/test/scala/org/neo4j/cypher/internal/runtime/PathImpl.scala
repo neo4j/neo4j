@@ -19,13 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.lang.{Iterable => JavaIterable}
-import java.util.{Iterator => JavaIterator}
+import java.lang
+import java.util
 
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.traversal.Paths
-import org.neo4j.graphdb.{Entity, Node, Path, Relationship}
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asJavaIterableConverter
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
 import scala.collection.mutable
 
 case class PathImpl(pathEntities: Entity*)
@@ -69,13 +74,13 @@ case class PathImpl(pathEntities: Entity*)
 
   def lastRelationship(): Relationship = if (relList.isEmpty) null else relList.last
 
-  def relationships(): JavaIterable[Relationship] = relList.asJava
+  def relationships(): lang.Iterable[Relationship] = relList.asJava
 
-  def nodes(): JavaIterable[Node] = nodeList.asJava
+  def nodes(): lang.Iterable[Node] = nodeList.asJava
 
   def length(): Int = relList.size
 
-  def iterator(): JavaIterator[Entity] = pathEntities.asJava.iterator()
+  def iterator(): util.Iterator[Entity] = pathEntities.asJava.iterator()
 
   def foreach[U](f: Entity => U) {
     pathEntities.foreach(f)
@@ -93,7 +98,7 @@ case class PathImpl(pathEntities: Entity*)
     that.asScala.toList == pathEntities.toList
   }
 
-  def reverseNodes(): JavaIterable[Node] = nodeList.reverse.asJava
+  def reverseNodes(): lang.Iterable[Node] = nodeList.reverse.asJava
 
-  def reverseRelationships(): JavaIterable[Relationship] = relList.reverse.asJava
+  def reverseRelationships(): lang.Iterable[Relationship] = relList.reverse.asJava
 }
