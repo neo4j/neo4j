@@ -104,7 +104,7 @@ class FulltextResultCollector implements Collector
      * Organise entity ids by decreasing scores, using a binary heap.
      * The implementation of the priority queue algorithm follows the one in Algorithms, 4th Edition by Robert Sedgewick and Kevin Wayne.
      */
-    static class EntityScorePriorityQueue implements Comparable<EntityScorePriorityQueue>
+    static class EntityScorePriorityQueue
     {
         private static final int ROOT = 1; // Root of the heap is always at index 1.
         private final boolean maxQueue; // 'true' if this is a max-priority queue, 'false' for a min-priority queue.
@@ -122,12 +122,6 @@ class FulltextResultCollector implements Collector
             this.maxQueue = maxQueue;
             entities = new long[33];
             scores = new float[33];
-        }
-
-        @Override
-        public int compareTo( EntityScorePriorityQueue o )
-        {
-            return Float.compare( o.scores[ROOT], scores[ROOT] );
         }
 
         public int size()
