@@ -54,6 +54,9 @@ Eclipse Public License v2.0
   JUnit Platform Engine API
   JUnit Platform Launcher
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+
 Dependencies with multiple licenses
 -----------------------------------
 

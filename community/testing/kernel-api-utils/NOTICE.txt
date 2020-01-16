@@ -40,6 +40,9 @@ Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+
 MIT License
   mockito-core
 
