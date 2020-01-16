@@ -55,7 +55,7 @@ class FulltextResultCollector implements Collector
     @Override
     public LeafCollector getLeafCollector( LeafReaderContext context ) throws IOException
     {
-        return new ScoredEntitySet( context, pq );
+        return new ScoredEntityLeafCollector( context, pq );
     }
 
     @Override
@@ -64,13 +64,13 @@ class FulltextResultCollector implements Collector
         return ScoreMode.COMPLETE;
     }
 
-    static class ScoredEntitySet implements LeafCollector
+    private static class ScoredEntityLeafCollector implements LeafCollector
     {
         private final EntityScorePriorityQueue pq;
         private final NumericDocValues values;
         private Scorable scorer;
 
-        ScoredEntitySet( LeafReaderContext context, EntityScorePriorityQueue pq ) throws IOException
+        ScoredEntityLeafCollector( LeafReaderContext context, EntityScorePriorityQueue pq ) throws IOException
         {
             LeafReader reader = context.reader();
             values = reader.getNumericDocValues( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
@@ -107,6 +107,7 @@ class FulltextResultCollector implements Collector
     static class EntityScorePriorityQueue
     {
         private static final int ROOT = 1; // Root of the heap is always at index 1.
+        private static final int INITIAL_CAPACITY = 33; // Some number not too big, and not too small.
         private final boolean maxQueue; // 'true' if this is a max-priority queue, 'false' for a min-priority queue.
         private long[] entities;
         private float[] scores;
@@ -120,8 +121,8 @@ class FulltextResultCollector implements Collector
         EntityScorePriorityQueue( boolean maxQueue )
         {
             this.maxQueue = maxQueue;
-            entities = new long[33];
-            scores = new float[33];
+            entities = new long[INITIAL_CAPACITY];
+            scores = new float[INITIAL_CAPACITY];
         }
 
         public int size()
@@ -146,18 +147,18 @@ class FulltextResultCollector implements Collector
             liftTowardsRoot( size );
         }
 
-        protected void growCapacity()
-        {
-            entities = Arrays.copyOf( entities, entities.length * 2 );
-            scores = Arrays.copyOf( scores, scores.length * 2 );
-        }
-
         public void removeTop( LongFloatProcedure receiver )
         {
             receiver.value( entities[ROOT], scores[ROOT] );
             swap( ROOT, size );
-            size--;
+            size -= 1;
             pushTowardsBottom();
+        }
+
+        private void growCapacity()
+        {
+            entities = Arrays.copyOf( entities, entities.length * 2 );
+            scores = Arrays.copyOf( scores, scores.length * 2 );
         }
 
         private void liftTowardsRoot( int index )
@@ -210,8 +211,8 @@ class FulltextResultCollector implements Collector
     static class EntityResultsIterator implements ValuesIterator, LongFloatProcedure
     {
         private final EntityScorePriorityQueue pq;
-        public long currentEntity;
-        public float currentScore;
+        private long currentEntity;
+        private float currentScore;
 
         EntityResultsIterator( EntityScorePriorityQueue pq )
         {

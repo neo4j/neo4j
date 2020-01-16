@@ -25,6 +25,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.SplittableRandom;
@@ -133,11 +134,35 @@ class FulltextResultCollectorTest
             pq.removeTop( receiver );
             assertThat( pq.size() ).isEqualTo( 0 );
             assertThat( pq.isEmpty() ).isTrue();
-            assertThat( ids ).isEqualTo( List.of( 5, 7, 6, 3, 1, 4, 2 ) );
+            assertThat( ids ).containsExactly( 5, 7, 6, 3, 1, 4, 2 );
+        }
+
+        @Test
+        void queueMustCollectAndMinOrderResultsByScore()
+        {
+            EntityScorePriorityQueue pq = new EntityScorePriorityQueue( false );
+            assertThat( pq.isEmpty() ).isTrue();
+            pq.insert( 1, 3.0f );
+            assertThat( pq.isEmpty() ).isFalse();
+            pq.insert( 2, 1.0f );
+            pq.insert( 3, 4.0f );
+            pq.insert( 4, 2.0f );
+            pq.insert( 5, 7.0f );
+            pq.insert( 6, 5.0f );
+            pq.insert( 7, 6.0f );
+
+            List<Integer> ids = new ArrayList<>( 7 );
+            LongFloatProcedure receiver = ( id, score ) -> ids.add( (int) id );
+            while ( !pq.isEmpty() )
+            {
+                pq.removeTop( receiver );
+            }
+
+            assertThat( ids ).containsExactly( 2, 4, 1, 3, 6, 7, 5 );
         }
 
         @RepeatedTest( 200 )
-        void randomizedPriorityQueueTest()
+        void randomizedMaxPriorityQueueTest()
         {
             long seed = ThreadLocalRandom.current().nextLong();
             SplittableRandom rng = new SplittableRandom( seed );
@@ -147,6 +172,40 @@ class FulltextResultCollectorTest
             {
                 EntityScorePriorityQueue actualQueue = new EntityScorePriorityQueue();
                 PriorityQueue<EntityScore> expectedQueue = new PriorityQueue<>();
+                for ( int i = 0; i < count; i++ )
+                {
+                    float score = (float) rng.nextDouble();
+                    expectedQueue.add( new EntityScore( i, score ) );
+                    actualQueue.insert( i, score );
+                }
+
+                assertThat( actualQueue.size() ).isEqualTo( expectedQueue.size() );
+
+                EntityScore entityScore = new EntityScore( 0, 0.0f );
+                while ( !actualQueue.isEmpty() )
+                {
+                    actualQueue.removeTop( entityScore );
+                    assertThat( entityScore ).isEqualTo( expectedQueue.remove() );
+                }
+                assertThat( expectedQueue ).isEmpty();
+            }
+            catch ( Throwable e )
+            {
+                throw new RuntimeException( "Failed using seed = " + seed, e );
+            }
+        }
+
+        @RepeatedTest( 200 )
+        void randomizedMinPriorityQueueTest()
+        {
+            long seed = ThreadLocalRandom.current().nextLong();
+            SplittableRandom rng = new SplittableRandom( seed );
+            int count = rng.nextInt( 5, 100 );
+
+            try
+            {
+                EntityScorePriorityQueue actualQueue = new EntityScorePriorityQueue( false );
+                PriorityQueue<EntityScore> expectedQueue = new PriorityQueue<>( Comparator.reverseOrder() );
                 for ( int i = 0; i < count; i++ )
                 {
                     float score = (float) rng.nextDouble();
