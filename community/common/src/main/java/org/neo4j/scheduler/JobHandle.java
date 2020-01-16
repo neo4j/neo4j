@@ -27,6 +27,8 @@ import java.util.concurrent.TimeoutException;
 
 public interface JobHandle<T>
 {
+    JobHandle<?> EMPTY = new NullJobHandle<>();
+
     void cancel();
 
     /**
@@ -52,8 +54,6 @@ public interface JobHandle<T>
     {
         throw new UnsupportedOperationException( "Unsupported in this implementation" );
     }
-
-    JobHandle<?> nullInstance = new NullJobHandle<>();
 
     class NullJobHandle<T> implements JobHandle<T>
     {

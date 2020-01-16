@@ -52,13 +52,13 @@ class IndexSamplingJobTracker
         {
             if ( stopped )
             {
-                return JobHandle.nullInstance;
+                return JobHandle.EMPTY;
             }
 
             long indexId = samplingJob.indexId();
             if ( executingJobs.contains( indexId ) )
             {
-                return JobHandle.nullInstance;
+                return JobHandle.EMPTY;
             }
 
             executingJobs.add( indexId );

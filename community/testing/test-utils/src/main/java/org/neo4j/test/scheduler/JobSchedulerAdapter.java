@@ -33,6 +33,8 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
+import static org.neo4j.scheduler.JobHandle.EMPTY;
+
 public class JobSchedulerAdapter extends LifecycleAdapter implements JobScheduler
 {
     @Override
@@ -78,21 +80,21 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
     public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay,
             TimeUnit timeUnit )
     {
-        return null;
+        return EMPTY;
     }
 
     @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period,
             TimeUnit timeUnit )
     {
-        return null;
+        return EMPTY;
     }
 
     @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay,
             long period, TimeUnit timeUnit )
     {
-        return null;
+        return EMPTY;
     }
 
     @Override

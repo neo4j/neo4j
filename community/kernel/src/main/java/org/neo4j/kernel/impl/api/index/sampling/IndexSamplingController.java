@@ -235,7 +235,7 @@ public class IndexSamplingController
         {
             return new IndexSamplingJobHandle( jobTracker.scheduleSamplingJob( job ), descriptor );
         }
-        return new IndexSamplingJobHandle( JobHandle.nullInstance, descriptor );
+        return new IndexSamplingJobHandle( JobHandle.EMPTY, descriptor );
     }
 
     private void sampleIndexOnCurrentThread( IndexMap indexMap, long indexId )
