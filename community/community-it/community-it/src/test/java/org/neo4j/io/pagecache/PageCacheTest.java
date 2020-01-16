@@ -79,7 +79,6 @@ import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.eclipse.collections.api.factory.Sets.mutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -115,7 +114,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     protected PagedFile map( PageCache pageCache, File file, int filePageSize, ImmutableSet<OpenOption> options ) throws IOException
     {
-        return pageCache.map( file, filePageSize, immutable.withAll( mutable.withAll( openOptions ).withAll( options ) ) );
+        return pageCache.map( file, filePageSize, openOptions.newWithAll( options ) );
     }
 
     protected PagedFile map( File file, int filePageSize ) throws IOException

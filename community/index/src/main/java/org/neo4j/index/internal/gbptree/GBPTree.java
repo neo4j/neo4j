@@ -55,7 +55,6 @@ import org.neo4j.util.VisibleForTesting;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.eclipse.collections.impl.factory.Sets.mutable;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -746,7 +745,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
 
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile, pageSize, immutable.withAll( mutable.ofAll( openOptions ).with( CREATE ) ) );
+        PagedFile pagedFile = pageCache.map( indexFile, pageSize, openOptions.newWith( CREATE ) );
         created = true;
         return pagedFile;
     }

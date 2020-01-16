@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.store.format.aligned.AlignedFormatFamily;
 import org.neo4j.logging.LogProvider;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.eclipse.collections.api.factory.Sets.mutable;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.DIRECT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
@@ -153,6 +152,6 @@ public class StoreFactory
         {
             return openOptions;
         }
-        return immutable.withAll( mutable.ofAll( openOptions ).withAll( openOptions ) );
+        return openOptions.newWith( DIRECT );
     }
 }

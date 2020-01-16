@@ -259,7 +259,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
 
             assertDistinct( lists );
-            assertEquals( FOO_NODES, LongSets.immutable.withAll(  concat( lists ) ) );
+            assertEquals( FOO_NODES, LongSets.immutable.withAll( concat( lists ) ) );
         }
         finally
         {

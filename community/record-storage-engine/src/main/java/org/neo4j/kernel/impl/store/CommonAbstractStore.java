@@ -61,8 +61,6 @@ import org.neo4j.util.concurrent.Runnables;
 import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
-import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.eclipse.collections.impl.factory.Sets.mutable;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
@@ -199,7 +197,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 // This store has a store-specific header so we have read it before we can be sure that we can map it with correct page size.
                 // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
                 HEADER defaultHeader = storeHeaderFormat.generateHeader();
-                pagedFile = pageCache.map( storageFile, filePageSize, immutable.withAll( mutable.ofAll( openOptions ).with( ANY_PAGE_SIZE ) ) );
+                pagedFile = pageCache.map( storageFile, filePageSize, openOptions.newWith( ANY_PAGE_SIZE ) );
                 HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile );
                 if ( !defaultHeader.equals( readHeader ) )
                 {
@@ -236,7 +234,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                             readOnly, cursorTracer, openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
-                    pagedFile = pageCache.map( storageFile, filePageSize, immutable.withAll( mutable.ofAll( openOptions ).with( CREATE ) ) );
+                    pagedFile = pageCache.map( storageFile, filePageSize, openOptions.newWith( CREATE ) );
                     initialiseNewStoreFile();
                     return true; // <-- successfully created and initialized
                 }
