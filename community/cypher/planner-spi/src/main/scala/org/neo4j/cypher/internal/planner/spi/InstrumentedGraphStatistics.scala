@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import java.lang.Math.{abs, max}
+import java.lang.Math.abs
+import java.lang.Math.max
 
-import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 
 import scala.collection.mutable
 

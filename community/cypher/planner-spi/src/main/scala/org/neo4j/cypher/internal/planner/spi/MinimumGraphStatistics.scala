@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId}
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.RelTypeId
 
 object MinimumGraphStatistics {
   val MIN_NODES_ALL: Int = 10
@@ -40,13 +42,11 @@ object MinimumGraphStatistics {
   */
 class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphStatistics(delegate) {
 
-  import MinimumGraphStatistics._
-
   override def nodesAllCardinality(): Cardinality =
-    atLeast(delegate.nodesAllCardinality().amount, MIN_NODES_ALL_CARDINALITY)
+    atLeast(delegate.nodesAllCardinality().amount, MinimumGraphStatistics.MIN_NODES_ALL_CARDINALITY)
 
   override def nodesWithLabelCardinality(maybeLabelId: Option[LabelId]): Cardinality = {
-    atLeast(delegate.nodesWithLabelCardinality(maybeLabelId), MIN_NODES_WITH_LABEL_CARDINALITY)
+    atLeast(delegate.nodesWithLabelCardinality(maybeLabelId), MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY)
   }
 
   override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
@@ -63,7 +63,7 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
         case _ =>
           delegate.patternStepCardinality(fromLabel, relTypeId, toLabel)
       }
-    atLeast(emulatedCompleteCardinality, MIN_PATTERN_STEP_CARDINALITY)
+    atLeast(emulatedCompleteCardinality, MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY)
   }
 
   private def atLeast(x: Cardinality, minimum: Cardinality): Cardinality = {
