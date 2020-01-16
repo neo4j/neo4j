@@ -183,22 +183,14 @@ class FulltextResultCollectorTest
 
             try
             {
-                PriorityQueue<EntityScorePriorityQueue> actualQueue = new PriorityQueue<>();
-                EntityScorePriorityQueue currentQueue = new EntityScorePriorityQueue();
+                EntityScorePriorityQueue actualQueue = new EntityScorePriorityQueue();
                 PriorityQueue<EntityScore> expectedQueue = new PriorityQueue<>( count );
                 for ( int i = 0, j = 1; i < count; i++, j++ )
                 {
-                    if ( j == 10 )
-                    {
-                        actualQueue.add( currentQueue );
-                        currentQueue = new EntityScorePriorityQueue();
-                        j = 0;
-                    }
                     float score = (float) rng.nextDouble();
                     expectedQueue.add( new EntityScore( i, score ) );
-                    currentQueue.insert( i, score );
+                    actualQueue.insert( i, score );
                 }
-                actualQueue.add( currentQueue );
                 EntityResultsIterator iterator = new EntityResultsIterator( actualQueue );
 
                 EntityScore entityScore = new EntityScore( 0, 0.0f );

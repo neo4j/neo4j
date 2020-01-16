@@ -37,6 +37,7 @@ public class NativeAccessProvider
     {
         return HOLDER.nativeAccess;
     }
+
     private static class AccessHolder
     {
         private final NativeAccess nativeAccess;

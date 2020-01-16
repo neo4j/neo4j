@@ -31,39 +31,31 @@ import org.eclipse.collections.api.block.procedure.primitive.LongFloatProcedure;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
 
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
 class FulltextResultCollector implements Collector
 {
-    private final PriorityQueue<EntityScorePriorityQueue> results;
-    private ScoredEntitySet currentCollector;
+    private final EntityScorePriorityQueue pq;
 
     FulltextResultCollector()
     {
-        results = new PriorityQueue<>();
+        pq = new EntityScorePriorityQueue();
     }
 
     public ValuesIterator iterator()
     {
-        if ( currentCollector == null )
+        if ( pq.isEmpty() )
         {
             return ValuesIterator.EMPTY;
         }
-        currentCollector.collectionFinished( results );
-
-        return new EntityResultsIterator( results );
+        return new EntityResultsIterator( pq );
     }
 
     @Override
     public LeafCollector getLeafCollector( LeafReaderContext context ) throws IOException
     {
-        if ( currentCollector != null )
-        {
-            currentCollector.collectionFinished( results );
-        }
-        return currentCollector = new ScoredEntitySet( context );
+        return new ScoredEntitySet( context, pq );
     }
 
     @Override
@@ -78,11 +70,11 @@ class FulltextResultCollector implements Collector
         private final NumericDocValues values;
         private Scorable scorer;
 
-        ScoredEntitySet( LeafReaderContext context ) throws IOException
+        ScoredEntitySet( LeafReaderContext context, EntityScorePriorityQueue pq ) throws IOException
         {
             LeafReader reader = context.reader();
             values = reader.getNumericDocValues( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
-            pq = new EntityScorePriorityQueue();
+            this.pq = pq;
         }
 
         @Override
@@ -104,14 +96,6 @@ class FulltextResultCollector implements Collector
             else
             {
                 throw new RuntimeException( "No document value for document id " + doc + "." );
-            }
-        }
-
-        public void collectionFinished( PriorityQueue<EntityScorePriorityQueue> results )
-        {
-            if ( !pq.isEmpty() )
-            {
-                results.add( pq );
             }
         }
     }
@@ -231,46 +215,13 @@ class FulltextResultCollector implements Collector
 
     static class EntityResultsIterator implements ValuesIterator, LongFloatProcedure
     {
-        private final PriorityQueue<EntityScorePriorityQueue> results;
-        private EntityScorePriorityQueue top;
+        private final EntityScorePriorityQueue pq;
         public long currentEntity;
         public float currentScore;
 
-        EntityResultsIterator( PriorityQueue<EntityScorePriorityQueue> results )
+        EntityResultsIterator( EntityScorePriorityQueue pq )
         {
-            this.results = results;
-            top = results.poll();
-        }
-
-        private void fetchNext()
-        {
-            if ( ensureTop() )
-            {
-                top.removeTop( this );
-                if ( top.isEmpty() )
-                {
-                    top = results.poll();
-                }
-            }
-        }
-
-        private boolean ensureTop()
-        {
-            if ( top == null )
-            {
-                return false;
-            }
-            if ( results.isEmpty() )
-            {
-                return true;
-            }
-            if ( top.compareTo( results.peek() ) > 0 )
-            {
-                EntityScorePriorityQueue nextTop = results.poll();
-                results.offer( top );
-                top = nextTop;
-            }
-            return true;
+            this.pq = pq;
         }
 
         @Override
@@ -290,7 +241,7 @@ class FulltextResultCollector implements Collector
         {
             if ( hasNext() )
             {
-                fetchNext();
+                pq.removeTop( this );
                 return currentEntity;
             }
             else
@@ -302,7 +253,7 @@ class FulltextResultCollector implements Collector
         @Override
         public boolean hasNext()
         {
-            return top != null;
+            return !pq.isEmpty();
         }
 
         @Override
