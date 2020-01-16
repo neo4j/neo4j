@@ -38,8 +38,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,26 +73,17 @@ class SetInitialPasswordCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo( String.format(
-                "USAGE%n" +
-                "%n" +
-                "set-initial-password [--require-password-change] [--verbose] <password>%n" +
-                "%n" +
-                "DESCRIPTION%n" +
-                "%n" +
-                "Sets the initial password of the initial admin user ('neo4j'). And removes the%n" +
-                "requirement to change password on first login.%n" +
-                "%n" +
-                "PARAMETERS%n" +
-                "%n" +
-                "      <password>%n" +
-                "%n" +
-                "OPTIONS%n" +
-                "%n" +
-                "      --verbose    Enable verbose output.%n" +
-                "      --require-password-change%n" +
-                "                   Require the user to change their password on first login."
-        ) ) );
+        assertThat( baos.toString().trim() ).isEqualTo( String.format(
+                "USAGE%n" + "%n" +
+                        "set-initial-password [--require-password-change] [--verbose] <password>%n" +
+                        "%n" + "DESCRIPTION%n" + "%n" +
+                        "Sets the initial password of the initial admin user ('neo4j'). And removes the%n" +
+                        "requirement to change password on first login.%n" +
+                        "%n" + "PARAMETERS%n" + "%n" +
+                        "      <password>%n" + "%n" + "OPTIONS%n" + "%n" +
+                        "      --verbose    Enable verbose output.%n" +
+                        "      --require-password-change%n" +
+                        "                   Require the user to change their password on first login." ) );
     }
 
     @Test

@@ -33,9 +33,7 @@ import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -85,7 +83,7 @@ class TransactionStateMachineV4SPITest
 
         // Then
         verify( tx ).getBookmarkMetadata();
-        assertThat( bookmark, instanceOf( BookmarkWithDatabaseId.class ) );
-        assertThat( bookmark.txId(), equalTo( 42L ) );
+        assertThat( bookmark ).isInstanceOf( BookmarkWithDatabaseId.class );
+        assertThat( bookmark.txId() ).isEqualTo( 42L );
     }
 }

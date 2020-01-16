@@ -45,9 +45,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -114,7 +113,7 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
             connection3 = connectAndPerformBoltHandshake( newConnection() );
 
             connection3.send( util.defaultAuth() );
-            assertThat( connection3, util.eventuallyReceives(
+            assertThat( connection3 ).satisfies( util.eventuallyReceives(
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
             assertThat( userLogProvider ).containsMessages(
@@ -201,18 +200,18 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         connectAndPerformBoltHandshake( connection );
 
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         SECONDS.sleep( sleepSeconds ); // sleep a bit to allow worker thread return back to the pool
 
         connection.send( util.chunk( BoltV4Messages.run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     private TransportConnection connectAndPerformBoltHandshake( TransportConnection connection ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         return connection;
     }
 
@@ -220,7 +219,7 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
     {
         connection.send( util.chunk( BoltV4Messages.discardAll() ) );
 
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     private void close( TransportConnection connection )

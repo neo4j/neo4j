@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
+import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,12 +42,11 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.neo4j.bolt.testing.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.testing.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
@@ -104,7 +104,7 @@ public class SupportedStructTypesV2IT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
     }
 
     @Test
@@ -114,7 +114,7 @@ public class SupportedStructTypesV2IT
                 .send( util.acceptedVersions( 4, 3, 0, 0 ) )
                 .send( util.defaultAuth() );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
     }
 
     @Test
@@ -269,9 +269,9 @@ public class SupportedStructTypesV2IT
 
         connection.send( util.defaultRunAutoCommitTx( "CREATE (n:Node {value: $value}) RETURN 42", map( new String[]{"value"}, new AnyValue[]{value} ) ) );
 
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 42 ) ) ) ),
+                msgRecord( eqRecord(new Condition<>( v -> v.equals( longValue( 42 ) ), "equals condition" ) ) ),
                 msgSuccess() ) );
     }
 
@@ -281,9 +281,9 @@ public class SupportedStructTypesV2IT
 
         connection.send( util.defaultRunAutoCommitTx( query ) );
 
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( expectedValue ) ) ),
+                msgRecord( eqRecord( new Condition<>( v -> v.equals( expectedValue ), "equals condition" ) ) ),
                 msgSuccess() ) );
     }
 
@@ -293,9 +293,9 @@ public class SupportedStructTypesV2IT
 
         connection.send( util.defaultRunAutoCommitTx( "RETURN $value", map( new String[]{"value"}, new AnyValue[]{value} ) ) );
 
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( value ) ) ),
+                msgRecord( eqRecord( new Condition<>( v -> v.equals( value ), "equals condition" ) ) ),
                 msgSuccess() ) );
     }
 
@@ -305,7 +305,7 @@ public class SupportedStructTypesV2IT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 }

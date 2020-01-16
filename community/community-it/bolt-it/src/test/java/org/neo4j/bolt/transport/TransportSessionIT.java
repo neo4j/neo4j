@@ -19,15 +19,12 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
+import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.testing.TestNotification;
@@ -36,20 +33,17 @@ import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasKey;
-import static org.neo4j.bolt.testing.MessageMatchers.hasNotification;
-import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.testing.MessageMatchers.msgIgnored;
-import static org.neo4j.bolt.testing.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.testing.StreamMatchers.eqRecord;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.hasNotification;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
+import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -75,7 +69,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAcceptedVersions() );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
     }
 
     @Test
@@ -86,7 +80,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.acceptedVersions( 1337, 0, 0, 0 ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 0} ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 0} ) );
     }
 
     @Test
@@ -99,17 +93,16 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( entryFieldMatcher, hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( CoreMatchers.allOf( entryTypeMatcher,
-                        hasKey( "t_last" ) ) ) ) );
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_first" ).containsEntry( "fields", asList( "a", "a_squared" ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ), longEquals( 1L ) ) ),
+                msgRecord( eqRecord( longEquals( 2L ), longEquals( 4L ) ) ),
+                msgRecord( eqRecord( longEquals( 3L ), longEquals( 9L ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_last" ).containsEntry( "type", "r" ) ) ) );
     }
 
     @Test
@@ -122,13 +115,13 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTxWithoutResult( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ),
-                msgSuccess( CoreMatchers.allOf( entryTypeMatcher, hasKey( "t_last" ) ) ) ) );
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_first" ).containsEntry( "fields", asList( "a", "a_squared" ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_last" ).containsEntry( "type", "r" ) ) ) );
     }
 
     @Test
@@ -140,8 +133,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth() )
                 .send( util.defaultRunAutoCommitTx( "QINVALID" ) );
 
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
                         String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
@@ -152,10 +145,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.send( util.defaultReset() ).send( util.defaultRunAutoCommitTx( "RETURN 1" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ) ) ),
                 msgSuccess() ) );
     }
 
@@ -168,23 +161,22 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth() )
                 .send( util.defaultRunAutoCommitTx( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ) );
 
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        Matcher<Map<? extends String,?>> ageMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( ageMatcher, hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_first" ).containsEntry( "fields", singletonList( "age" ) ) ),
+                msgRecord( eqRecord( longEquals( 2L ) ) ),
                 msgSuccess() ) );
 
         // When
         connection.send( util.defaultRunAutoCommitTx( "CALL db.labels() YIELD label" ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
-                        hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_first" ).containsEntry( "fields", singletonList( "label" ) ) ),
+                msgRecord( eqRecord( new Condition<>( v -> v.equals( stringValue( "Test" ) ), "Test value" ) ) ),
                 msgSuccess()
         ) );
     }
@@ -199,12 +191,12 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "CREATE (n:Test) DELETE n RETURN n" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
-                        hasKey( "t_first" ) ) ) ) );
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_first" )
+                        .containsEntry( "fields", singletonList( "n" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -213,10 +205,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         //                 labels: [] (90)
         //                  props: {} (A)]
         //}
-        assertThat( connection,
+        assertThat( connection ).satisfies(
                 eventuallyReceives( bytes( 0x00, 0x08, 0xB1, 0x71, 0x91,
                         0xB3, 0x4E, 0x00, 0x90, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -229,12 +221,11 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
-                        hasKey( "t_first" ) ) ) ) );
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_first" ).containsEntry( "fields", singletonList( "r" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -245,10 +236,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         //                 type: "T" (81 54)
         //                 props: {} (A0)]
         //}
-        assertThat( connection,
+        assertThat( connection ).satisfies(
                 eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
                         0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -259,8 +250,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() )
                 .send( util.defaultRunAutoCommitTx( "CREATE (n)" ) );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgSuccess() ) );
@@ -269,11 +260,11 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.send( util.defaultRunAutoCommitTx( "RETURN 1" ) );
 
         // Then
-        Matcher<Map<? extends String,?>> typeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
-                msgSuccess( CoreMatchers.allOf( typeMatcher, hasKey( "t_last" ) ) ) ) );
+                msgRecord( eqRecord( longEquals( 1L ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_last" ).containsEntry( "type", "r" ) ) ) );
     }
 
     @Test
@@ -286,8 +277,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 hasNotification(
@@ -328,8 +319,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "RETURN {p}", ValueUtils.asMapValue( params ) ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Request.Invalid,
                         "Value `null` is not supported as key in maps, must be a non-nullable string." ),
@@ -339,10 +330,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "RETURN 1" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ) ) ),
                 msgSuccess() ) );
     }
 
@@ -356,11 +347,16 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "DROP INDEX on :Movie12345(id)" ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed,
                         "Unable to drop index on (:Movie12345 {id}). There is no such index." ),
                 msgIgnored() ) );
+    }
+
+    private Condition<AnyValue> longEquals( long expected )
+    {
+        return new Condition<>( value -> value.equals( longValue( expected ) ), "long equals" );
     }
 }

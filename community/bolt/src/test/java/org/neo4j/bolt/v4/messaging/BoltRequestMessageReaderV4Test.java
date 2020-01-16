@@ -33,8 +33,7 @@ import org.neo4j.bolt.packstream.PackedInputArray;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -88,7 +87,7 @@ class BoltRequestMessageReaderV4Test
         reader.read( unpacker );
 
         verify( stateMachine ).process( eq( messageV4 ), any() );
-        assertThat( messageV3.meta(), equalTo( messageV4.meta() ) );
+        assertThat( messageV3.meta() ).isEqualTo( messageV4.meta() );
     }
 
     private static void testMessageDecoding( RequestMessage message ) throws Exception

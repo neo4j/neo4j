@@ -39,8 +39,8 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.MapUtil;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newMessageEncoder;
@@ -70,7 +70,7 @@ public abstract class BoltV3TransportBase
     public void setUp() throws Exception
     {
         address = server.lookupDefaultConnector();
-        connection = connectionClass.newInstance();
+        connection = connectionClass.getDeclaredConstructor().newInstance();
         util = new TransportTestUtil( newMessageEncoder() );
     }
 
@@ -89,7 +89,7 @@ public abstract class BoltV3TransportBase
                 .send( util.acceptedVersions( 3, 0, 0, 0 ) )
                 .send( util.chunk( new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) ) ) );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 }

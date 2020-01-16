@@ -33,9 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -175,7 +173,7 @@ class PackStreamTest
 
         // Then
         byte[] bytes = machine.output();
-        assertThat( bytes, equalTo( new byte[]{(byte) 0xC0} ) );
+        assertThat( bytes ).isEqualTo( new byte[]{(byte) 0xC0} );
 
         // When
         PackStream.Unpacker unpacker = newUnpacker( bytes );
@@ -197,13 +195,13 @@ class PackStreamTest
 
         // Then
         byte[] bytes = machine.output();
-        assertThat( bytes, equalTo( new byte[]{(byte) 0xC3} ) );
+        assertThat( bytes ).isEqualTo( new byte[]{(byte) 0xC3} );
 
         // When
         PackStream.Unpacker unpacker = newUnpacker( bytes );
 
         // Then
-        assertThat( unpacker.unpackBoolean(), equalTo( true ) );
+        assertThat( unpacker.unpackBoolean() ).isEqualTo( true );
 
     }
 
@@ -219,13 +217,13 @@ class PackStreamTest
 
         // Then
         byte[] bytes = machine.output();
-        assertThat( bytes, equalTo( new byte[]{(byte) 0xC2} ) );
+        assertThat( bytes ).isEqualTo( new byte[]{(byte) 0xC2} );
 
         // When
         PackStream.Unpacker unpacker = newUnpacker( bytes );
 
         // Then
-        assertThat( unpacker.unpackBoolean(), equalTo( false ) );
+        assertThat( unpacker.unpackBoolean() ).isEqualTo( false );
 
     }
 
@@ -244,13 +242,13 @@ class PackStreamTest
 
             // Then
             byte[] bytes = machine.output();
-            assertThat( bytes.length, equalTo( 1 ) );
+            assertThat( bytes.length ).isEqualTo( 1 );
 
             // When
             PackStream.Unpacker unpacker = newUnpacker( bytes );
 
             // Then
-            assertThat( unpacker.unpackLong(), equalTo( i ) );
+            assertThat( unpacker.unpackLong() ).isEqualTo( i );
         }
     }
 
@@ -269,13 +267,13 @@ class PackStreamTest
 
             // Then
             byte[] bytes = machine.output();
-            assertThat( bytes.length, lessThanOrEqualTo( 3 ) );
+            assertThat( bytes.length ).isLessThanOrEqualTo( 3 );
 
             // When
             PackStream.Unpacker unpacker = newUnpacker( bytes );
 
             // Then
-            assertThat( unpacker.unpackLong(), equalTo( i ) );
+            assertThat( unpacker.unpackLong() ).isEqualTo( i );
         }
     }
 
@@ -296,7 +294,7 @@ class PackStreamTest
 
             // Then
             long value = newUnpacker( machine.output() ).unpackLong();
-            assertThat( value, equalTo( n ) );
+            assertThat( value ).isEqualTo( n );
         }
     }
 
@@ -318,7 +316,7 @@ class PackStreamTest
             double value = newUnpacker( machine.output() ).unpackDouble();
 
             // Then
-            assertThat( value, equalTo( n ) );
+            assertThat( value ).isEqualTo( n );
         }
     }
 
@@ -339,7 +337,7 @@ class PackStreamTest
 
             // Then
             double value = newUnpacker( machine.output() ).unpackDouble();
-            assertThat( value, equalTo( n ) );
+            assertThat( value ).isEqualTo( n );
         }
     }
 
@@ -360,7 +358,7 @@ class PackStreamTest
 
             // Then
             String value = newUnpacker( machine.output() ).unpackString();
-            assertThat( value, equalTo( String.valueOf( c ) ) );
+            assertThat( value ).isEqualTo( String.valueOf( c ) );
         }
     }
 
@@ -380,7 +378,7 @@ class PackStreamTest
 
             // Then
             String value = newUnpacker( machine.output() ).unpackString();
-            assertThat( value, equalTo( String.valueOf( c ) ) );
+            assertThat( value ).isEqualTo( String.valueOf( c ) );
         }
     }
 
@@ -401,7 +399,7 @@ class PackStreamTest
 
             // Then
             String value = newUnpacker( machine.output() ).unpackString();
-            assertThat( value, equalTo( string ) );
+            assertThat( value ).isEqualTo( string );
         }
     }
 
@@ -419,7 +417,7 @@ class PackStreamTest
 
         // Then
         byte[] value = newUnpacker( machine.output() ).unpackBytes();
-        assertThat( value, equalTo( abcdefghij ) );
+        assertThat( value ).isEqualTo( abcdefghij );
     }
 
     @Test
@@ -436,7 +434,7 @@ class PackStreamTest
 
         // Then
         String value = newUnpacker( machine.output() ).unpackString();
-        assertThat( value, equalTo( abcdefghij ) );
+        assertThat( value ).isEqualTo( abcdefghij );
     }
 
     @Test
@@ -455,11 +453,11 @@ class PackStreamTest
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
+        assertThat( unpacker.unpackListHeader() ).isEqualTo( 3L );
 
-        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
-        assertThat( unpacker.unpackLong(), equalTo( 13L ) );
-        assertThat( unpacker.unpackLong(), equalTo( 14L ) );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 12L );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 13L );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 14L );
     }
 
     @Test
@@ -478,11 +476,11 @@ class PackStreamTest
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
+        assertThat( unpacker.unpackListHeader() ).isEqualTo( 3L );
 
-        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
-        assertThat( unpacker.unpackLong(), equalTo( 13L ) );
-        assertThat( unpacker.unpackLong(), equalTo( 14L ) );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 12L );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 13L );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 14L );
     }
 
     @Test
@@ -504,11 +502,11 @@ class PackStreamTest
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
+        assertThat( unpacker.unpackListHeader() ).isEqualTo( 3L );
 
-        assertThat( unpacker.unpackString(), equalTo( "eins" ) );
-        assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
-        assertThat( unpacker.unpackString(), equalTo( "drei" ) );
+        assertThat( unpacker.unpackString() ).isEqualTo( "eins" );
+        assertThat( unpacker.unpackString() ).isEqualTo( "zwei" );
+        assertThat( unpacker.unpackString() ).isEqualTo( "drei" );
     }
 
     @Test
@@ -529,11 +527,11 @@ class PackStreamTest
 
         // Then
 
-        assertThat( unpacker.unpackListHeader(), equalTo( PackStream.UNKNOWN_SIZE ) );
+        assertThat( unpacker.unpackListHeader() ).isEqualTo( PackStream.UNKNOWN_SIZE );
 
-        assertThat( unpacker.unpackString(), equalTo( "eins" ) );
-        assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
-        assertThat( unpacker.unpackString(), equalTo( "drei" ) );
+        assertThat( unpacker.unpackString() ).isEqualTo( "eins" );
+        assertThat( unpacker.unpackString() ).isEqualTo( "zwei" );
+        assertThat( unpacker.unpackString() ).isEqualTo( "drei" );
 
         unpacker.unpackEndOfStream();
     }
@@ -556,12 +554,12 @@ class PackStreamTest
 
         // Then
 
-        assertThat( unpacker.unpackMapHeader(), equalTo( 2L ) );
+        assertThat( unpacker.unpackMapHeader() ).isEqualTo( 2L );
 
-        assertThat( unpacker.unpackString(), equalTo( "one" ) );
-        assertThat( unpacker.unpackLong(), equalTo( 1L ) );
-        assertThat( unpacker.unpackString(), equalTo( "two" ) );
-        assertThat( unpacker.unpackLong(), equalTo( 2L ) );
+        assertThat( unpacker.unpackString() ).isEqualTo( "one" );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 1L );
+        assertThat( unpacker.unpackString() ).isEqualTo( "two" );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 2L );
     }
 
     @Test
@@ -583,12 +581,12 @@ class PackStreamTest
 
         // Then
 
-        assertThat( unpacker.unpackMapHeader(), equalTo( PackStream.UNKNOWN_SIZE ) );
+        assertThat( unpacker.unpackMapHeader() ).isEqualTo( PackStream.UNKNOWN_SIZE );
 
-        assertThat( unpacker.unpackString(), equalTo( "one" ) );
-        assertThat( unpacker.unpackLong(), equalTo( 1L ) );
-        assertThat( unpacker.unpackString(), equalTo( "two" ) );
-        assertThat( unpacker.unpackLong(), equalTo( 2L ) );
+        assertThat( unpacker.unpackString() ).isEqualTo( "one" );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 1L );
+        assertThat( unpacker.unpackString() ).isEqualTo( "two" );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 2L );
 
         unpacker.unpackEndOfStream();
     }
@@ -615,20 +613,20 @@ class PackStreamTest
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        assertThat( unpacker.unpackStructHeader(), equalTo( 3L ) );
-        assertThat( unpacker.unpackStructSignature(), equalTo( 'N' ) );
+        assertThat( unpacker.unpackStructHeader() ).isEqualTo( 3L );
+        assertThat( unpacker.unpackStructSignature() ).isEqualTo( 'N' );
 
-        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 12L );
 
-        assertThat( unpacker.unpackListHeader(), equalTo( 2L ) );
-        assertThat( unpacker.unpackString(), equalTo( "Person" ) );
-        assertThat( unpacker.unpackString(), equalTo( "Employee" ) );
+        assertThat( unpacker.unpackListHeader() ).isEqualTo( 2L );
+        assertThat( unpacker.unpackString() ).isEqualTo( "Person" );
+        assertThat( unpacker.unpackString() ).isEqualTo( "Employee" );
 
-        assertThat( unpacker.unpackMapHeader(), equalTo( 2L ) );
-        assertThat( unpacker.unpackString(), equalTo( "name" ) );
-        assertThat( unpacker.unpackString(), equalTo( "Alice" ) );
-        assertThat( unpacker.unpackString(), equalTo( "age" ) );
-        assertThat( unpacker.unpackLong(), equalTo( 33L ) );
+        assertThat( unpacker.unpackMapHeader() ).isEqualTo( 2L );
+        assertThat( unpacker.unpackString() ).isEqualTo( "name" );
+        assertThat( unpacker.unpackString() ).isEqualTo( "Alice" );
+        assertThat( unpacker.unpackString() ).isEqualTo( "age" );
+        assertThat( unpacker.unpackLong() ).isEqualTo( 33L );
     }
 
     @Test
@@ -665,7 +663,7 @@ class PackStreamTest
                 PackStream.TINY_STRING | 5, 'A', 'l', 'i', 'c', 'e',
                 PackStream.TINY_STRING | 3, 'a', 'g', 'e',
                 33};
-        assertThat( bytes, equalTo( expected ) );
+        assertThat( bytes ).isEqualTo( expected );
     }
 
     @Test
@@ -842,11 +840,11 @@ class PackStreamTest
             // Then
             int bufferSize = computeOutputBufferSize( size, false );
             byte[] output = machine.output();
-            assertThat( output.length, equalTo( bufferSize ) );
+            assertThat( output.length ).isEqualTo( bufferSize );
 
             client.reset( output );
             int value = unpacker.unpackBytesHeader();
-            assertThat( value, equalTo( size ) );
+            assertThat( value ).isEqualTo( size );
         }
     }
 
@@ -952,7 +950,7 @@ class PackStreamTest
 
             int bufferSize = computeOutputBufferSize( size, true );
             byte[] output = machine.output();
-            assertThat( output.length, equalTo( bufferSize ) );
+            assertThat( output.length ).isEqualTo( bufferSize );
 
             client.reset( output );
             int value;
@@ -971,7 +969,7 @@ class PackStreamTest
                 throw new IllegalArgumentException( "Unsupported type: " + type + "." );
             }
 
-            assertThat( value, equalTo( size ) );
+            assertThat( value ).isEqualTo( size );
         }
     }
 

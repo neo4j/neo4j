@@ -49,9 +49,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 
 @RunWith( Parameterized.class )
@@ -77,7 +77,7 @@ public class UnsupportedStructTypesV2IT
     public void setup() throws Exception
     {
         address = server.lookupDefaultConnector();
-        connection = connectionClass.newInstance();
+        connection = connectionClass.getDeclaredConstructor().newInstance();
         util = new TransportTestUtil( new Neo4jPackV2() );
     }
 
@@ -155,27 +155,27 @@ public class UnsupportedStructTypesV2IT
     private void testFailureWithUnpackableValue( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWith( valuePacker ) ) );
 
-        assertThat( connection,
+        assertThat( connection ).satisfies(
                 util.eventuallyReceives( msgFailure( Status.Statement.TypeError, expectedMessage ) ) );
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
     private void testDisconnectWithUnpackableValue( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWith( valuePacker ) ) );
 
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
     private byte[] createRunWith( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker ) throws IOException

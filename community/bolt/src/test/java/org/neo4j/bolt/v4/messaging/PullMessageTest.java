@@ -29,9 +29,7 @@ import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,7 +46,7 @@ class PullMessageTest
         PullMessage message = new PullMessage( asMapValue( singletonMap( "n", value ) ) );
 
         // Then
-        assertThat( message.n(), equalTo( value ) );
+        assertThat( message.n() ).isEqualTo( value );
     }
 
     @Test
@@ -59,7 +57,7 @@ class PullMessageTest
         MapValue meta = asMapValue( msgMetadata );
         // When & Then
         BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullMessage( meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting PULL size n to be a Long value, but got: String(\"invalid value type\")" ) );
+        assertThat( exception.getMessage() ).startsWith( "Expecting PULL size n to be a Long value, but got: String(\"invalid value type\")" );
     }
 
     @ParameterizedTest
@@ -68,7 +66,7 @@ class PullMessageTest
     {
         // When & Then
         BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullMessage( asMapValue( singletonMap( "n", value ) ) ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting PULL size to be at least 1" ) );
+        assertThat( exception.getMessage() ).startsWith( "Expecting PULL size to be at least 1" );
     }
 
     @Test
@@ -76,7 +74,7 @@ class PullMessageTest
     {
         // When & Then
         BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullMessage( MapValue.EMPTY ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting PULL size n to be a Long value, but got: NO_VALUE" ) );
+        assertThat( exception.getMessage() ).startsWith( "Expecting PULL size n to be a Long value, but got: NO_VALUE" );
     }
 
     @Test

@@ -53,8 +53,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.AnyValue;
 
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -109,8 +108,8 @@ public class BoltChannelAutoReadLimiterIT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         // when
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
@@ -122,7 +121,7 @@ public class BoltChannelAutoReadLimiterIT
         // expect
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
-            assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
+            assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
         }
 
         assertThat( logProvider ).forClass( BoltConnectionReadLimiter.class )

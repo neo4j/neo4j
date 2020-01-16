@@ -21,8 +21,7 @@ package org.neo4j.bolt.packstream.utf8;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -38,6 +37,6 @@ class GCFreeUTF8EncoderTest
         assumeTrue( encoder instanceof GCFreeUTF8Encoder );
 
         var error = assertThrows( AssertionError.class, () -> encoder.encode( invalidSurrogatePair ) );
-        assertThat( error.getMessage(), containsString( "Failure when converting to UTF-8." ) );
+        assertThat( error.getMessage() ).contains( "Failure when converting to UTF-8." );
     }
 }

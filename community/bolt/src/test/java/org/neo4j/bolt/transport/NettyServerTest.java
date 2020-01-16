@@ -31,11 +31,9 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.NamedThreadFactory;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.NullLogService;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -86,7 +84,7 @@ class NettyServerTest
         server.start();
         var actualAddress = portRegister.getLocalAddress( connector );
         assertNotNull( actualAddress );
-        assertThat( actualAddress.getPort(), greaterThan( 0 ) );
+        assertThat( actualAddress.getPort() ).isGreaterThan( 0 );
 
         server.stop();
         server.shutdown();

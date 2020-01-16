@@ -23,8 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
@@ -38,15 +37,15 @@ class MessageMetadataParserTest
     @Test
     void noDatabaseNameShouldDefaultToEmptyString() throws Exception
     {
-        assertThat( ABSENT_DB_NAME, equalTo( "" ) );
-        assertThat( parseDatabaseName( EMPTY_MAP ), equalTo( ABSENT_DB_NAME ) );
+        assertThat( ABSENT_DB_NAME ).isEqualTo( "" );
+        assertThat( parseDatabaseName( EMPTY_MAP ) ).isEqualTo( ABSENT_DB_NAME );
     }
 
     @Test
     void shouldParseDatabaseName() throws Exception
     {
         String databaseName = "cat_pictures";
-        assertThat( parseDatabaseName( asMapValue( map( "db", databaseName ) ) ), equalTo( databaseName ) );
+        assertThat( parseDatabaseName( asMapValue( map( "db", databaseName ) ) ) ).isEqualTo( databaseName );
     }
 
     @Test

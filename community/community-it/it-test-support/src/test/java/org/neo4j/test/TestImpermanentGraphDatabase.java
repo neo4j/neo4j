@@ -31,8 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -93,7 +92,7 @@ class TestImpermanentGraphDatabase
 
         cleanDatabaseContent( db );
 
-        assertThat( nodeCount(), is( 0L ) );
+        assertThat( nodeCount() ).isZero();
     }
 
     private static void cleanDatabaseContent( GraphDatabaseService db )

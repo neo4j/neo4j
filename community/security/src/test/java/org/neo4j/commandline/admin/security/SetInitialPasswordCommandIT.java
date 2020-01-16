@@ -38,9 +38,7 @@ import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -134,7 +132,7 @@ class SetInitialPasswordCommandIT
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
-        assertThat( e.getMessage(), containsString( "the provided initial password was not set because existing Neo4j users were detected" ) );
+        assertThat( e.getMessage() ).contains( "the provided initial password was not set because existing Neo4j users were detected" );
 
         // Then
         assertNoAuthIniFile();
@@ -153,8 +151,7 @@ class SetInitialPasswordCommandIT
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
-        assertThat( e.getMessage(), containsString(
-                    "the provided initial password was not set because existing Neo4j users were detected" ) );
+        assertThat( e.getMessage() ).contains( "the provided initial password was not set because existing Neo4j users were detected" );
 
         // Then
         assertNoAuthIniFile();
@@ -172,7 +169,7 @@ class SetInitialPasswordCommandIT
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
-        assertThat( e.getMessage(), containsString( "the provided initial password was not set because existing Neo4j users were detected" ) );
+        assertThat( e.getMessage() ).contains( "the provided initial password was not set because existing Neo4j users were detected" );
 
         // Then
         assertNoAuthIniFile();
@@ -206,7 +203,7 @@ class SetInitialPasswordCommandIT
         User neo4j = userRepository.getUserByName( AuthManager.INITIAL_USER_NAME );
         assertNotNull( neo4j );
         assertTrue( neo4j.credentials().matchesPassword( password ) );
-        assertThat( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ), equalTo( passwordChangeRequired ) );
+        assertThat( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) ).isEqualTo( passwordChangeRequired );
     }
 
     private void assertNoAuthIniFile()

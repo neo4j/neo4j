@@ -25,31 +25,29 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
+import org.neo4j.bolt.v3.BoltStateMachineV3;
+import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v3.BoltStateMachineV3;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
@@ -71,7 +69,7 @@ class TransactionReadyStateIT extends BoltStateMachineV3StateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertTrue( response.hasMetadata( "fields" ) );
         assertTrue( response.hasMetadata( "t_first" ) );
-        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) );
+        assertThat( machine.state() ).isInstanceOf( TransactionStreamingState.class );
     }
 
     @Test
@@ -85,9 +83,9 @@ class TransactionReadyStateIT extends BoltStateMachineV3StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertTrue( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -100,8 +98,8 @@ class TransactionReadyStateIT extends BoltStateMachineV3StateTestBase
         machine.process( ROLLBACK_MESSAGE, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -116,7 +114,7 @@ class TransactionReadyStateIT extends BoltStateMachineV3StateTestBase
         machine.process( new RunMessage( "A cypher query" ), handler );
 
         // Then
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
     }
 
     @Test
@@ -129,7 +127,7 @@ class TransactionReadyStateIT extends BoltStateMachineV3StateTestBase
         machine.process( InterruptSignal.INSTANCE, recorder );
 
         // Then
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     @ParameterizedTest
@@ -148,16 +146,16 @@ class TransactionReadyStateIT extends BoltStateMachineV3StateTestBase
         verifyKillsConnection( () -> machine.process( message, recorder ) );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
         assertNull( machine.state() );
     }
 
-    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV3Messages()
     {
         return Stream.of( newHelloMessage(), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new BeginMessage(), GOODBYE_MESSAGE );
     }
 
-    private BoltStateMachineV3 getBoltStateMachineInTxReadyState() throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV3 getBoltStateMachineInTxReadyState() throws BoltConnectionFatality
     {
         BoltStateMachineV3 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );

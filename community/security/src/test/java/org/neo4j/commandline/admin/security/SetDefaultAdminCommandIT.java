@@ -34,8 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -85,7 +84,7 @@ class SetDefaultAdminCommandIT
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
                 NullLogProvider.getInstance() );
         userRepository.start();
-        assertThat( userRepository.getAllUsernames(), containsInAnyOrder( username ) );
+        assertThat( userRepository.getAllUsernames() ).contains( username );
         userRepository.stop();
         userRepository.shutdown();
     }

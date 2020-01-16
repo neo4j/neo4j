@@ -23,24 +23,24 @@ import java.io.IOException;
 
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.messaging.RecordingByteChannel;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.ResponseMessage;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.runtime.SynchronousBoltConnection;
-import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
-import org.neo4j.bolt.messaging.RecordingByteChannel;
 import org.neo4j.bolt.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
+import org.neo4j.bolt.runtime.SynchronousBoltConnection;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.testing.MessageMatchers.serialize;
+import static org.neo4j.bolt.testing.MessageConditions.serialize;
 
 /**
  * A helper factory to generate boltV4 component in tests

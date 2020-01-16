@@ -36,8 +36,7 @@ import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,8 +81,8 @@ class TransactionStateMachineV3SPITest
 
         // Then
         verify( tx ).getBookmarkMetadata();
-        assertThat( bookmark, instanceOf( BookmarkWithPrefix.class ) );
-        assertEquals( bookmark.txId(), 42L );
+        assertThat( bookmark ).isInstanceOf( BookmarkWithPrefix.class );
+        assertEquals( 42L, bookmark.txId() );
     }
 
     @Test

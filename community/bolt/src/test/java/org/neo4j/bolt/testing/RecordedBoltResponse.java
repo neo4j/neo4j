@@ -27,9 +27,7 @@ import java.util.Map;
 import org.neo4j.bolt.messaging.BoltResponseMessage;
 import org.neo4j.values.AnyValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 
 public class RecordedBoltResponse
@@ -77,7 +75,7 @@ public class RecordedBoltResponse
 
     public void assertRecord( int index, AnyValue... values )
     {
-        assertThat( index, lessThan( records.size() ) );
+        assertThat( index ).isLessThan( records.size() );
         assertArrayEquals( records.get( index ), values );
     }
 
@@ -89,9 +87,9 @@ public class RecordedBoltResponse
     public AnyValue singleValueRecord()
     {
         var records = records();
-        assertThat( records.size(), equalTo( 1 ) );
+        assertThat( records.size() ).isEqualTo( 1 );
         var values = records.get( 0 );
-        assertThat( values.length, equalTo( 1 ) );
+        assertThat( values.length ).isEqualTo( 1 );
         return values[0];
     }
 

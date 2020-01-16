@@ -27,10 +27,10 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.txtracking.SimpleReconciledTransactionTracker;
-import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -40,9 +40,7 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -58,7 +56,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
 
         TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( ABSENT_DB_NAME, mock( StatementProcessorReleaseManager.class ) );
-        assertThat( spi, instanceOf( TransactionStateMachineSPI.class ) );
+        assertThat( spi ).isInstanceOf( TransactionStateMachineSPI.class );
     }
 
     @Test
@@ -69,7 +67,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
 
         BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () ->
                 spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ) ) );
-        assertThat( error.getMessage(), containsString( "Database selection by name not supported by Bolt protocol version lower than BoltV4." ) );
+        assertThat( error.getMessage() ).contains( "Database selection by name not supported by Bolt protocol version lower than BoltV4." );
     }
 
     private DatabaseManagementService managementServiceWithDatabase( String databaseName )

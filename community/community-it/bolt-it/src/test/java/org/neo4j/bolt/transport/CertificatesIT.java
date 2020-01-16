@@ -40,9 +40,7 @@ import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.ssl.PkiUtils;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
@@ -78,7 +76,7 @@ public class CertificatesIT
 
             // THEN
             Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
-            assertThat( certificatesSeen, contains( loadCertificateFromDisk() ) );
+            assertThat( certificatesSeen ).containsExactly( loadCertificateFromDisk() );
         }
         finally
         {
@@ -89,7 +87,7 @@ public class CertificatesIT
     private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
     {
         Certificate[] certificates = PkiUtils.loadCertificates( certFile );
-        assertThat( certificates.length, equalTo( 1 ) );
+        assertThat( certificates.length ).isEqualTo( 1 );
 
         return (X509Certificate) certificates[0];
     }

@@ -37,8 +37,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -124,7 +123,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
 
         cleanDatabaseContent( db );
 
-        assertThat( nodeCount(), is( 0L ) );
+        assertThat( nodeCount() ).isZero();
     }
 
     private static void cleanDatabaseContent( GraphDatabaseService db )

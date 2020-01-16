@@ -47,8 +47,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -204,7 +203,7 @@ class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( queueMonitor ).drained( same( connection ), anyCollection() );
-        assertThat( drainedJobs, hasSize( 1 ) );
+        assertThat( drainedJobs ).hasSize( 1 );
     }
 
     @Test
@@ -224,14 +223,14 @@ class DefaultBoltConnectionTest
 
         verify( queueMonitor ).drained( same( connection ), anyCollection() );
         assertEquals( 10, drainedJobs.size() );
-        assertThat( drainedJobs, hasSize( 10 ) );
+        assertThat( drainedJobs ).hasSize( 10 );
 
         drainedJobs.clear();
         connection.processNextBatch();
 
         verify( queueMonitor, times( 2 ) ).drained( same( connection ), anyCollection() );
         assertEquals( 5, drainedJobs.size() );
-        assertThat( drainedJobs, hasSize( 5 ) );
+        assertThat( drainedJobs ).hasSize( 5 );
     }
 
     @Test

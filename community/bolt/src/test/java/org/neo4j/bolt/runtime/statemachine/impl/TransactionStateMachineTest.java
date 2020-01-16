@@ -47,10 +47,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -149,9 +146,9 @@ class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
     }
 
     @Test
@@ -162,13 +159,13 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // We're in auto-commit state
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
 
         // call validate transaction
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
 
         verify( transaction, never() ).getReasonIfTerminated();
@@ -193,22 +190,22 @@ class TransactionStateMachineTest
         // We're in explicit-commit state
         beginTx( stateMachine, List.of() );
 
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
         assertNotNull( stateMachine.ctx.currentTransaction );
 
         // We run two statements
         stateMachine.run( "RETURN 1", null );
         stateMachine.run( "RETURN 2", null );
 
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
         assertNotNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementCounter, equalTo( 2 ) );
+        assertThat( stateMachine.ctx.statementCounter ).isEqualTo( 2 );
 
         RuntimeException error = assertThrows( RuntimeException.class, () -> stateMachine.reset() );
 
-        assertThat( error.getCause().getMessage(), equalTo( "You shall not pass" ) );
-        assertThat( error.getSuppressed().length, equalTo( 1 ) );
-        assertThat( error.getSuppressed()[0].getMessage(), equalTo( "Not pass twice" ) );
+        assertThat( error.getCause().getMessage() ).isEqualTo( "You shall not pass" );
+        assertThat( error.getSuppressed().length ).isEqualTo( 1 );
+        assertThat( error.getSuppressed()[0].getMessage() ).isEqualTo( "Not pass twice" );
     }
 
     @Test
@@ -219,21 +216,21 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // We're in auto-commit state
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
 
         stateMachine.run( "RETURN 1", null );
 
         // We're in auto-commit state
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNotNull( stateMachine.ctx.currentTransaction );
 
         // call validate transaction
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).rollback();
@@ -248,15 +245,15 @@ class TransactionStateMachineTest
 
         // start an explicit transaction
         beginTx( stateMachine );
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
         assertNotNull( stateMachine.ctx.currentTransaction );
 
         // verify transaction, which is timed out
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).rollback();
@@ -271,7 +268,7 @@ class TransactionStateMachineTest
 
         // start an explicit transaction
         beginTx( stateMachine );
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
         assertNotNull( stateMachine.ctx.currentTransaction );
 
         stateMachine.run( "RETURN 1", null );
@@ -279,9 +276,9 @@ class TransactionStateMachineTest
         // verify transaction, which is timed out
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).rollback();
@@ -319,7 +316,7 @@ class TransactionStateMachineTest
         RuntimeException e = assertThrows( RuntimeException.class, () -> stateMachine.run( "SOME STATEMENT", null ) );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
         assertNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -343,7 +340,7 @@ class TransactionStateMachineTest
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
         assertNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -362,7 +359,7 @@ class TransactionStateMachineTest
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
         assertNotNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -411,7 +408,7 @@ class TransactionStateMachineTest
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
         assertNotNull( stateMachine.ctx.currentTransaction );
     }
 

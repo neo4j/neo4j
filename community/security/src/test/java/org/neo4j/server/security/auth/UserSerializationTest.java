@@ -27,8 +27,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class UserSerializationTest
 {
@@ -49,7 +48,7 @@ class UserSerializationTest
         byte[] serialized = serialization.serialize( users );
 
         // Then
-        assertThat( serialization.deserializeRecords( serialized ), equalTo( users ) );
+        assertThat( serialization.deserializeRecords( serialized ) ).isEqualTo( users );
     }
 
     /**
@@ -72,13 +71,8 @@ class UserSerializationTest
                 "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n" ) );
 
         // Then
-        assertThat( deserialized, equalTo(
-                asList( new User.Builder( "Mike", new LegacyCredential( salt1, hash1 ) ).build(),
-                        new User.Builder( "Steve", new LegacyCredential( salt1, hash1 ) )
-                            .withRequiredPasswordChange( true ).withFlag("nice_guy").build(),
-                        new User.Builder( "Bob", new LegacyCredential( salt2, hash2 ) )
-                                .withRequiredPasswordChange( true )
-                                .build()
-        ) ) );
+        assertThat( deserialized ).isEqualTo( asList( new User.Builder( "Mike", new LegacyCredential( salt1, hash1 ) ).build(),
+                new User.Builder( "Steve", new LegacyCredential( salt1, hash1 ) ).withRequiredPasswordChange( true ).withFlag( "nice_guy" ).build(),
+                new User.Builder( "Bob", new LegacyCredential( salt2, hash2 ) ).withRequiredPasswordChange( true ).build() ) );
     }
 }

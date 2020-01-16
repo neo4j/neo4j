@@ -39,15 +39,14 @@ import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
@@ -67,10 +66,10 @@ class ReadyStateIT extends BoltStateMachineV4StateTestBase
         // Then
 
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertTrue( response.hasMetadata( "fields" ) );
         assertTrue( response.hasMetadata( "t_first") );
-        assertThat( machine.state(), instanceOf( AutoCommitState.class ) );
+        assertThat( machine.state() ).isInstanceOf( AutoCommitState.class );
     }
 
     @Test
@@ -86,8 +85,8 @@ class ReadyStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( response ).satisfies( succeeded() );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
     }
 
     @Test
@@ -102,7 +101,7 @@ class ReadyStateIT extends BoltStateMachineV4StateTestBase
         machine.process( InterruptSignal.INSTANCE, recorder );
 
         // Then
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     @Test
@@ -120,8 +119,8 @@ class ReadyStateIT extends BoltStateMachineV4StateTestBase
         machine.process( runMessage, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.General.UnknownError ) );
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.General.UnknownError ) );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
     }
 
     @Test
@@ -139,8 +138,8 @@ class ReadyStateIT extends BoltStateMachineV4StateTestBase
         machine.process( beginMessage, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.General.UnknownError ) );
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.General.UnknownError ) );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
     }
 
     @ParameterizedTest
@@ -168,7 +167,7 @@ class ReadyStateIT extends BoltStateMachineV4StateTestBase
         verifyKillsConnection( () -> machine.process( message, recorder ) );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
         assertNull( machine.state() );
     }
 
@@ -178,7 +177,7 @@ class ReadyStateIT extends BoltStateMachineV4StateTestBase
                 BoltV4Messages.goodbye() );
     }
 
-    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV3Messages()
     {
         return Stream.of( BoltV3Messages.run(), BoltV3Messages.begin(), BoltV3Messages.discardAll(), BoltV3Messages.pullAll() );
     }

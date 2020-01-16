@@ -54,11 +54,10 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -107,16 +106,8 @@ class DatabaseServiceBookmarkTest
             return null;
         } );
 
-        try
-        {
-            resultFuture.get( 20, SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ExecutionException.class ) );
-            assertThat( e.getCause(), instanceOf( TransactionIdTrackerException.class ) );
-        }
+        var e = assertThrows( ExecutionException.class, () -> resultFuture.get( 20, SECONDS ) );
+        assertThat( e.getCause() ).isInstanceOf( TransactionIdTrackerException.class );
     }
 
     @Test

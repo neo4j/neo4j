@@ -25,7 +25,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -42,16 +41,15 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.storable.BooleanValue;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.containsRecord;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
@@ -71,12 +69,12 @@ class AutoCommitStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertTrue( response.hasMetadata( "bookmark" ) );
         assertTrue( response.hasMetadata( "db" ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -91,19 +89,19 @@ class AutoCommitStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, containsRecord( 1L ) );
-        assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+        assertThat( response ).satisfies( containsRecord( 1L ) );
+        assertThat( response ).satisfies( succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
         assertFalse( response.hasMetadata( "db" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
 
         machine.process( newPullMessage( 2L ), recorder );
         response = recorder.nextResponse();
-        assertThat( response, containsRecord( 3L ) );
+        assertThat( response ).satisfies( containsRecord( 3L ) );
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertTrue( response.hasMetadata( "bookmark" ) );
         assertTrue( response.hasMetadata( "db" ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -118,10 +116,10 @@ class AutoCommitStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response).satisfies( succeeded() );
         assertTrue( response.hasMetadata( "bookmark" ) );
         assertTrue( response.hasMetadata( "db" ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -135,7 +133,7 @@ class AutoCommitStateIT extends BoltStateMachineV4StateTestBase
         machine.process( InterruptSignal.INSTANCE, recorder );
 
         // Then
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     @ParameterizedTest
@@ -152,35 +150,35 @@ class AutoCommitStateIT extends BoltStateMachineV4StateTestBase
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( AutoCommitState.class ) );
+        assertThat( machine.state() ).isInstanceOf( AutoCommitState.class );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.process( message, recorder ) );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
         assertNull( machine.state() );
     }
 
-    private static Stream<RequestMessage> illegalV4Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV4Messages()
     {
         return Stream.of( newHelloMessage(), new RunMessage( "any string" ), new BeginMessage(), ROLLBACK_MESSAGE, COMMIT_MESSAGE, ResetMessage.INSTANCE,
                 GOODBYE_MESSAGE, PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInAutoCommitState() throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInAutoCommitState() throws BoltConnectionFatality
     {
         return getBoltStateMachineInAutoCommitState( "CREATE (n {k:'k'}) RETURN n.k" );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInAutoCommitState( String query ) throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInAutoCommitState( String query ) throws BoltConnectionFatality
     {
         BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         machine.process( new RunMessage( query, EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( AutoCommitState.class ) );
+        assertThat( machine.state() ).isInstanceOf( AutoCommitState.class );
         return machine;
     }
 }

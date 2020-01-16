@@ -28,8 +28,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -84,7 +83,7 @@ class FileSystemUtilsTest
             fileWriter.append( 'a' );
         }
 
-        assertThat( FileSystemUtils.size( fs, file ), is( 1L ) );
+        assertThat( FileSystemUtils.size( fs, file ) ).isEqualTo( 1L );
     }
 
     @Test
@@ -103,6 +102,6 @@ class FileSystemUtilsTest
             fileWriter.append( 'a' );
         }
 
-        assertThat( FileSystemUtils.size( fs, dir ), is( 3L ) );
+        assertThat( FileSystemUtils.size( fs, dir ) ).isEqualTo( 3L );
     }
 }

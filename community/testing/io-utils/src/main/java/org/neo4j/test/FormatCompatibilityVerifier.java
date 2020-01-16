@@ -36,9 +36,8 @@ import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -96,7 +95,7 @@ public abstract class FormatCompatibilityVerifier
         catch ( FormatViolationException e )
         {
             // Good actually, or?
-            assertThat( e.getMessage(), containsString( "format version" ) );
+            assertThat( e.getMessage() ).contains( "format version" );
 
             globalFs.get().deleteFile( storeFile );
             createStoreFile( storeFile );

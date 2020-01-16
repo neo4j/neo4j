@@ -19,9 +19,6 @@
  */
 package org.neo4j.bolt.security.auth;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,8 +36,7 @@ import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,7 +58,7 @@ class BasicAuthenticationTest
         AuthenticationResult result = authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ) ) );
 
         // Then
-        assertThat( result.getLoginContext().subject().username(), equalTo( "mike" ) );
+        assertThat( result.getLoginContext().subject().username() ).isEqualTo( "mike" );
     }
 
     @Test
@@ -99,7 +95,7 @@ class BasicAuthenticationTest
             }
             catch ( AuthenticationException e )
             {
-                assertThat( e.status(), equalTo( Status.Security.Unauthorized ) );
+                assertThat( e.status() ).isEqualTo( Status.Security.Unauthorized );
             }
         }
 
@@ -118,7 +114,7 @@ class BasicAuthenticationTest
         authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password ) );
 
         // Then
-        assertThat( password, isCleared() );
+        assertThat( password ).containsOnly( 0 );
     }
 
     @Test
@@ -163,67 +159,5 @@ class BasicAuthenticationTest
         doReturn( new User.Builder( "mike", credentialFor( "secret2" ) ).build() ).when( realmHelper ).getUser( "mike" );
 
         return authentication;
-    }
-
-    static class HasStatus extends TypeSafeMatcher<Status.HasStatus>
-    {
-        private final Status status;
-
-        HasStatus( Status status )
-        {
-            this.status = status;
-        }
-
-        @Override
-        protected boolean matchesSafely( Status.HasStatus item )
-        {
-            return item.status() == status;
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( "expects status " )
-                    .appendValue( status );
-        }
-
-        @Override
-        protected void describeMismatchSafely( Status.HasStatus item, Description mismatchDescription )
-        {
-            mismatchDescription.appendText( "was " )
-                    .appendValue( item.status() );
-        }
-    }
-
-    private static CredentialsClearedMatcher isCleared()
-    {
-        return new CredentialsClearedMatcher();
-    }
-
-    static class CredentialsClearedMatcher extends BaseMatcher<byte[]>
-    {
-        @Override
-        public boolean matches( Object o )
-        {
-            if ( o instanceof byte[] )
-            {
-                byte[] bytes = (byte[]) o;
-                for ( byte aByte : bytes )
-                {
-                    if ( aByte != (byte) 0 )
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( "Byte array should contain only zeroes" );
-        }
     }
 }

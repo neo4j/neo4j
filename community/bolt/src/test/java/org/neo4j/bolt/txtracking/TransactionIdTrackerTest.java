@@ -47,7 +47,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
@@ -111,7 +111,7 @@ class TransactionIdTrackerTest
 
         // then
         verify( reconciledTransactionTracker, never() ).getLastReconciledTransactionId();
-        verifyZeroInteractions( transactionIdStore );
+        verifyNoInteractions( transactionIdStore );
     }
 
     @Test
@@ -143,7 +143,7 @@ class TransactionIdTrackerTest
 
         // then
         verify( reconciledTransactionTracker, times( 4 ) ).getLastReconciledTransactionId();
-        verifyZeroInteractions( transactionIdStore );
+        verifyNoInteractions( transactionIdStore );
     }
 
     @Test
@@ -179,7 +179,7 @@ class TransactionIdTrackerTest
         // then
         assertEquals( BookmarkTimeout, exception.status() );
         assertEquals( checkException, exception.getCause() );
-        verifyZeroInteractions( transactionIdStore );
+        verifyNoInteractions( transactionIdStore );
     }
 
     @Test
@@ -217,7 +217,7 @@ class TransactionIdTrackerTest
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
         assertEquals( checkException, exception.getCause() );
-        verifyZeroInteractions( transactionIdStore );
+        verifyNoInteractions( transactionIdStore );
     }
 
     @Test
@@ -249,7 +249,7 @@ class TransactionIdTrackerTest
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
         verify( reconciledTransactionTracker, never() ).getLastReconciledTransactionId();
-        verifyZeroInteractions( transactionIdStore );
+        verifyNoInteractions( transactionIdStore );
     }
 
     @Test
@@ -273,7 +273,7 @@ class TransactionIdTrackerTest
 
         // then
         assertEquals( 42L, transactionIdTracker.newestTransactionId( namedDatabaseId ) );
-        verifyZeroInteractions( reconciledTransactionTracker );
+        verifyNoInteractions( reconciledTransactionTracker );
     }
 
     @Test

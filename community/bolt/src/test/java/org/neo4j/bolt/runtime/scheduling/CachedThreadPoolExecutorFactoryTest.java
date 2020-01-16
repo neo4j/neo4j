@@ -44,12 +44,11 @@ import org.neo4j.function.Predicates;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
@@ -99,14 +98,14 @@ public class CachedThreadPoolExecutorFactoryTest
             switch ( queueSize )
             {
             case UNBOUNDED_QUEUE:
-                assertThat( queue, instanceOf( LinkedBlockingQueue.class ) );
+                assertThat( queue ).isInstanceOf( LinkedBlockingQueue.class );
                 assertEquals( Integer.MAX_VALUE, queue.remainingCapacity() );
                 break;
             case SYNCHRONOUS_QUEUE:
-                assertThat( queue, instanceOf( SynchronousQueue.class ) );
+                assertThat( queue ).isInstanceOf( SynchronousQueue.class );
                 break;
             case TEST_BOUNDED_QUEUE_SIZE:
-                assertThat( queue, instanceOf( ArrayBlockingQueue.class ) );
+                assertThat( queue ).isInstanceOf( ArrayBlockingQueue.class );
                 assertEquals( queueSize, queue.remainingCapacity() );
                 break;
             default:

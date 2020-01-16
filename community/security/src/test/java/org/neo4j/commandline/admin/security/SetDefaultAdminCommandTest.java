@@ -42,9 +42,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -84,24 +82,16 @@ class SetDefaultAdminCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo( String.format(
-            "USAGE%n" +
-                "%n" +
-                "set-default-admin [--verbose] <username>%n" +
-                "%n" +
-                "DESCRIPTION%n" +
-                "%n" +
-                "Sets the default admin user.%n" +
-                "This user will be granted the admin role on startup if the system has no roles.%n" +
-                "%n" +
-                "PARAMETERS%n" +
-                "%n" +
-                "      <username>%n" +
-                "%n" +
-                "OPTIONS%n" +
-                "%n" +
-                "      --verbose    Enable verbose output."
-        ) ) );
+        assertThat( baos.toString().trim() ).isEqualTo( String.format(
+                "USAGE%n" + "%n" +
+                        "set-default-admin [--verbose] <username>%n" +
+                        "%n" + "DESCRIPTION%n" + "%n" +
+                        "Sets the default admin user.%n" +
+                        "This user will be granted the admin role on startup if the system has no roles.%n" +
+                        "%n" +
+                        "PARAMETERS%n" + "%n" +
+                        "      <username>%n" + "%n" + "OPTIONS%n" + "%n"
+                        + "      --verbose    Enable verbose output." ) );
     }
 
     @Test
@@ -126,6 +116,6 @@ class SetDefaultAdminCommandTest
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
             NullLogProvider.getInstance() );
         userRepository.start();
-        assertThat( userRepository.getAllUsernames(), containsInAnyOrder( username ) );
+        assertThat( userRepository.getAllUsernames() ).contains( username );
     }
 }

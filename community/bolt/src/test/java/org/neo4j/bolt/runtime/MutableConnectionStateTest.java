@@ -25,8 +25,7 @@ import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.graphdb.TransactionTerminatedException;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -255,7 +254,7 @@ class MutableConnectionStateTest
         StatementProcessor processor = mock( StatementProcessor.class );
         state.setStatementProcessor( processor );
 
-        assertThat( state.getStatementProcessor(), equalTo( processor ) );
+        assertThat( state.getStatementProcessor() ).isEqualTo( processor );
     }
 
     @Test
@@ -265,11 +264,11 @@ class MutableConnectionStateTest
         StatementProcessor processor = mock( StatementProcessor.class );
         TransactionTerminatedException error =
                 assertThrows( TransactionTerminatedException.class, () -> state.setStatementProcessor( processor ) );
-        assertThat( error.status(), equalTo( Invalid ) );
+        assertThat( error.status() ).isEqualTo( Invalid );
 
         // The second set shall be fine
         state.setStatementProcessor( processor );
-        assertThat( state.getStatementProcessor(), equalTo( processor ) );
+        assertThat( state.getStatementProcessor() ).isEqualTo( processor );
     }
 
     @Test
@@ -277,10 +276,10 @@ class MutableConnectionStateTest
     {
         state.setPendingTerminationNotice( Invalid );
         TransactionTerminatedException error = assertThrows( TransactionTerminatedException.class, state::getStatementProcessor );
-        assertThat( error.status(), equalTo( Invalid ) );
+        assertThat( error.status() ).isEqualTo( Invalid );
 
         // The second get shall be fine
-        assertThat( state.getStatementProcessor(), equalTo( StatementProcessor.EMPTY ) );
+        assertThat( state.getStatementProcessor() ).isEqualTo( StatementProcessor.EMPTY );
     }
 
     @Test
@@ -289,11 +288,11 @@ class MutableConnectionStateTest
         // Given
         StatementProcessor processor = mock( StatementProcessor.class );
         state.setStatementProcessor( processor );
-        assertThat( state.getStatementProcessor(), equalTo( processor ) );
+        assertThat( state.getStatementProcessor() ).isEqualTo( processor );
 
         // When
         state.clearStatementProcessor();
         // Then
-        assertThat( state.getStatementProcessor(), equalTo( StatementProcessor.EMPTY ) );
+        assertThat( state.getStatementProcessor() ).isEqualTo( StatementProcessor.EMPTY );
     }
 }

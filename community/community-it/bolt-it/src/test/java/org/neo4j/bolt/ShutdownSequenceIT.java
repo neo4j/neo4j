@@ -21,6 +21,7 @@ package org.neo4j.bolt;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,20 +62,20 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.Stopwatch;
+import org.neo4j.values.AnyValue;
 
+import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.isA;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.testing.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.testing.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
@@ -138,10 +139,11 @@ public class ShutdownSequenceIT
         server.getManagementService().shutdown();
 
         // Expect the connection to have the following interactions
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-        assertThat( connection, util.eventuallyReceives( msgRecord( eqRecord( equalTo( stringValue( "0" ) ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives( msgFailure() ) );
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        Condition<AnyValue> equalRecord = new Condition<>( record -> record.equals( stringValue( "0" ) ), "Equal record" );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( equalRecord ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure() ) );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
                 .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
     }
@@ -156,7 +158,7 @@ public class ShutdownSequenceIT
         server.getManagementService().shutdown();
 
         // Expect the connection to be silently closed.
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
                 .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
     }
@@ -171,7 +173,7 @@ public class ShutdownSequenceIT
         // This calls a procedure that generates a stream of strings with 10ms pauses between each item
         // Ask for streaming to start
         connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.strings($limit, 10)", ValueUtils.asMapValue( MapUtil.map( "limit", count ) ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         // Consume records in another thread
         semaphore.acquire();
@@ -180,9 +182,10 @@ public class ShutdownSequenceIT
             var value = 0;
             for ( var i = 0; i < count; i++ )
             {
-                assertThat( connection,
-                        util.eventuallyReceives(
-                                msgRecord( eqRecord( equalTo( stringValue( String.valueOf( String.format( "%s-%d", PREFIX, value ) ) ) ) ) ) ) );
+                int conditionValue = value;
+                Condition<AnyValue> equalRecord = new Condition<>( record -> record.equals(
+                        stringValue( valueOf( String.format( "%s-%d", PREFIX, conditionValue ) ) ) ), "Equal record" );
+                assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( equalRecord ) ) ) );
                 value += 2;
 
                 if ( i == 500 )
@@ -190,7 +193,7 @@ public class ShutdownSequenceIT
                     semaphore.release();
                 }
             }
-            assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+            assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
             return 0;
         } );
 
@@ -204,7 +207,7 @@ public class ShutdownSequenceIT
         server.getManagementService().shutdown();
 
         // Expect the connection to be terminated but the thread pool shutdown to time out
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
                 .forLevel( WARN ).containsMessageWithArguments(
                 "Waited %s for the thread pool to shutdown cleanly, but timed out waiting for existing work to finish cleanly",
@@ -218,7 +221,7 @@ public class ShutdownSequenceIT
         }
         catch ( ExecutionException ex )
         {
-            assertThat( getRootCause( ex ), isA( IOException.class ) );
+            assertThat( getRootCause( ex ) ).isInstanceOf( IOException.class );
         }
     }
 
@@ -227,10 +230,10 @@ public class ShutdownSequenceIT
         var connection = new SocketConnection();
 
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
 
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         return connection;
     }
@@ -324,7 +327,7 @@ public class ShutdownSequenceIT
                     }
                 }
 
-                return new Output( String.valueOf( i ) );
+                return new Output( valueOf( i ) );
             } );
         }
 

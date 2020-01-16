@@ -62,12 +62,10 @@ import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -77,7 +75,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.packstream.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.packstream.example.Nodes.ALICE;
 import static org.neo4j.bolt.packstream.example.Paths.ALL_PATHS;
-import static org.neo4j.bolt.testing.MessageMatchers.serialize;
+import static org.neo4j.bolt.testing.MessageConditions.serialize;
 import static org.neo4j.values.storable.Values.durationValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -144,7 +142,7 @@ public class MessageDecoderTest
     @Test
     public void shouldCallExternalErrorOnDuration() throws Exception
     {
-        assumeThat( packerUnderTest.version(), equalTo( 1L ) );
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), durationValue( Duration.ofDays( 10 ) ),
                 "Duration values cannot be unpacked with this version of bolt." );
@@ -153,7 +151,7 @@ public class MessageDecoderTest
     @Test
     public void shouldCallExternalErrorOnDate() throws Exception
     {
-        assumeThat( packerUnderTest.version(), equalTo( 1L ) );
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( LocalDate.now() ),
                 "LocalDate values cannot be unpacked with this version of bolt." );
@@ -162,7 +160,7 @@ public class MessageDecoderTest
     @Test
     public void shouldCallExternalErrorOnLocalTime() throws Exception
     {
-        assumeThat( packerUnderTest.version(), equalTo( 1L ) );
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( LocalTime.now() ),
                 "LocalTime values cannot be unpacked with this version of bolt." );
@@ -171,7 +169,7 @@ public class MessageDecoderTest
     @Test
     public void shouldCallExternalErrorOnTime() throws Exception
     {
-        assumeThat( packerUnderTest.version(), equalTo( 1L ) );
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( OffsetTime.now() ),
                 "OffsetTime values cannot be unpacked with this version of bolt." );
@@ -180,7 +178,7 @@ public class MessageDecoderTest
     @Test
     public void shouldCallExternalErrorOnLocalDateTime() throws Exception
     {
-        assumeThat( packerUnderTest.version(), equalTo( 1L ) );
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( LocalDateTime.now() ),
                 "LocalDateTime values cannot be unpacked with this version of bolt." );
@@ -189,7 +187,7 @@ public class MessageDecoderTest
     @Test
     public void shouldCallExternalErrorOnDateTimeWithOffset() throws Exception
     {
-        assumeThat( packerUnderTest.version(), equalTo( 1L ) );
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( OffsetDateTime.now() ),
                 "OffsetDateTime values cannot be unpacked with this version of bolt." );
@@ -198,7 +196,7 @@ public class MessageDecoderTest
     @Test
     public void shouldCallExternalErrorOnDateTimeWithZoneName() throws Exception
     {
-        assumeThat( packerUnderTest.version(), equalTo( 1L ) );
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( ZonedDateTime.now() ),
                 "ZonedDateTime values cannot be unpacked with this version of bolt." );
@@ -221,7 +219,7 @@ public class MessageDecoderTest
         }
         catch ( BoltIOException ex )
         {
-            assertThat( ex.getMessage(), equalTo( "Struct types of 0x41 are not recognized." ) );
+            assertThat( ex.getMessage() ).isEqualTo( "Struct types of 0x41 are not recognized." );
         }
     }
 
@@ -333,6 +331,6 @@ public class MessageDecoderTest
     {
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass( String.class );
         verify( logMock ).error( captor.capture() );
-        assertThat( captor.getValue(), containsString( hexDump( messageBytes ) ) );
+        assertThat( captor.getValue() ).contains( hexDump( messageBytes ) );
     }
 }

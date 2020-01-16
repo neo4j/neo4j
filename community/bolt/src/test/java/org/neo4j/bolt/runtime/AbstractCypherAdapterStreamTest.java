@@ -43,9 +43,8 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.closeTo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Offset.offset;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -206,20 +205,11 @@ class AbstractCypherAdapterStreamTest
         MapValue meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "type" ), equalTo( stringValue( "rw" ) ) );
-        assertThat( meta.get( "stats" ), equalTo( mapValues(
-                "nodes-created", intValue( 1 ),
-                "nodes-deleted", intValue( 2 ),
-                "relationships-created", intValue( 3 ),
-                "relationships-deleted", intValue( 4 ),
-                "properties-set", intValue( 5 ),
-                "indexes-added", intValue( 6 ),
-                "indexes-removed", intValue( 7 ),
-                "constraints-added", intValue( 8 ),
-                "constraints-removed", intValue( 9 ),
-                "labels-added", intValue( 10 ),
-                "labels-removed", intValue( 11 )
-        ) ) );
+        assertThat( meta.get( "type" ) ).isEqualTo( stringValue( "rw" ) );
+        assertThat( meta.get( "stats" ) ).isEqualTo(
+                mapValues( "nodes-created", intValue( 1 ), "nodes-deleted", intValue( 2 ), "relationships-created", intValue( 3 ), "relationships-deleted",
+                        intValue( 4 ), "properties-set", intValue( 5 ), "indexes-added", intValue( 6 ), "indexes-removed", intValue( 7 ), "constraints-added",
+                        intValue( 8 ), "constraints-removed", intValue( 9 ), "labels-added", intValue( 10 ), "labels-removed", intValue( 11 ) ) );
     }
 
     @Test
@@ -246,8 +236,8 @@ class AbstractCypherAdapterStreamTest
         MapValue meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "type" ), equalTo( stringValue( "rw" ) ) );
-        assertThat( meta.get( "stats" ), equalTo( mapValues( "system-updates", intValue( 11 ) ) ) );
+        assertThat( meta.get( "type" ) ).isEqualTo( stringValue( "rw" ) );
+        assertThat( meta.get( "stats" ) ).isEqualTo( mapValues( "system-updates", intValue( 11 ) ) );
     }
 
     @Test
@@ -284,7 +274,7 @@ class AbstractCypherAdapterStreamTest
                 "identifiers", list( stringValue( "id1" ) ),
                 "operatorType", stringValue( "Join" ),
                 "children", list( expectedChild ) );
-        assertThat( meta.get( "plan" ), equalTo( expectedPlan ) );
+        assertThat( meta.get( "plan" ) ).isEqualTo( expectedPlan );
     }
 
     @Test
@@ -391,8 +381,7 @@ class AbstractCypherAdapterStreamTest
                 "position", mapValues( "offset", intValue( 4 ), "column", intValue( 6 ), "line", intValue( 5 ) )
         );
 
-        assertThat( meta.get( "notifications" ),
-                equalTo( list( msg1, msg2 ) ) );
+        assertThat( meta.get( "notifications" ) ).isEqualTo( list( msg1, msg2 ) );
     }
 
     private MapValue metadataOf( AbstractCypherAdapterStream stream ) throws Throwable
@@ -411,24 +400,23 @@ class AbstractCypherAdapterStreamTest
 
     private static void assertMapEqualsWithDelta( MapValue a, MapValue b, double delta )
     {
-        assertThat( "Map should have same size", a.size(), equalTo( b.size() ) );
+        assertThat( a.size() ).as( "Map should have same size" ).isEqualTo( b.size() );
         a.foreach( ( key, value ) -> {
             //assertThat( "Missing key", b.get( key ) != Values.NO_VALUE );
             AnyValue aValue = value;
             AnyValue bValue = b.get( key );
             if ( aValue instanceof MapValue )
             {
-                assertThat( "Value mismatch", bValue instanceof MapValue );
+                assertThat( bValue instanceof MapValue ).as( "Value mismatch" ).isTrue();
                 assertMapEqualsWithDelta( (MapValue) aValue, (MapValue) bValue, delta );
             }
             else if ( aValue instanceof DoubleValue )
             {
-                assertThat( "Value mismatch", ((DoubleValue) aValue).doubleValue(),
-                        closeTo( ((DoubleValue) bValue).doubleValue(), delta ) );
+                assertThat( ((DoubleValue) aValue).doubleValue() ).as( "Value mismatch" ).isCloseTo( ((DoubleValue) bValue).doubleValue(), offset( delta ) );
             }
             else
             {
-                assertThat( "Value mismatch", aValue, equalTo( bValue ) );
+                assertThat( aValue ).as( "Value mismatch" ).isEqualTo( bValue );
             }
         } );
     }

@@ -19,18 +19,16 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
+import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -39,14 +37,9 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasKey;
-import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.testing.TransportTestUtil.serverImmediatelyDisconnects;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
@@ -59,13 +52,13 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         // Given
         connection.connect( address )
                 .send( util.acceptedVersions( 3, 2, 1, 0 ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
 
         // When
         connection.send( util.chunk( GOODBYE_MESSAGE ) );
 
         // Then
-        assertThat( connection, serverImmediatelyDisconnects() );
+        assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
     }
 
     @Test
@@ -78,7 +71,7 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         connection.send( util.chunk( GOODBYE_MESSAGE ) );
 
         // Then
-        assertThat( connection, serverImmediatelyDisconnects() );
+        assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
     }
 
     @Test
@@ -89,14 +82,16 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
 
         // When
         connection.send( util.chunk( new RunMessage( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) ) );
-        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies(
+                util.eventuallyReceives( msgSuccess( message -> assertThat(message)
+                        .containsEntry( "fields",  asList( "a", "a_squared" )  )
+                        .containsKey("t_first" ) ) ) );
         // you shall be in the streaming state now
         connection.send( util.chunk( GOODBYE_MESSAGE ) );
 
         // Then
-        assertThat( connection, serverImmediatelyDisconnects() );
-        assertThat( server, eventuallyClosesTransaction() );
+        assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
+        assertThat( server ).satisfies( eventuallyClosesTransaction() );
     }
 
     @Test
@@ -107,7 +102,7 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
 
         // When
         connection.send( util.chunk( new RunMessage( "I am sending you to failed state!" ) ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Statement.SyntaxError,
                         String.format( "Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))%n" +
                                 "\"I am sending you to failed state!\"%n" +
@@ -116,7 +111,7 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         connection.send( util.chunk( GOODBYE_MESSAGE ) );
 
         // Then
-        assertThat( connection, serverImmediatelyDisconnects() );
+        assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
     }
 
     @Test
@@ -127,13 +122,13 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
 
         // When
         connection.send( util.chunk( new BeginMessage() ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
         // you shall be in tx_ready state now
         connection.send( util.chunk( GOODBYE_MESSAGE ) );
 
         // Then
-        assertThat( connection, serverImmediatelyDisconnects() );
-        assertThat( server, eventuallyClosesTransaction() );
+        assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
+        assertThat( server ).satisfies( eventuallyClosesTransaction() );
     }
 
     @Test
@@ -144,14 +139,14 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
 
         // When
         connection.send( util.chunk( new BeginMessage(), new RunMessage( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) ) );
-        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess(),
+                msgSuccess( message -> assertThat( message ).containsKey( "t_first" ).containsEntry( "fields", asList( "a", "a_squared" ) ) ) ) );
 
         // you shall be in the tx_streaming state now
         connection.send( util.chunk( GOODBYE_MESSAGE ) );
         // Then
-        assertThat( connection, serverImmediatelyDisconnects() );
-        assertThat( server, eventuallyClosesTransaction() );
+        assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
+        assertThat( server ).satisfies( eventuallyClosesTransaction() );
     }
 
     @Test
@@ -164,39 +159,29 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         connection.send( util.chunk( GOODBYE_MESSAGE, ResetMessage.INSTANCE, new RunMessage( "RETURN 1" ) ) );
 
         // Then
-        assertThat( connection, serverImmediatelyDisconnects() );
+        assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
     }
 
-    private static Matcher<Neo4jWithSocket> eventuallyClosesTransaction()
+    private static Condition<Neo4jWithSocket> eventuallyClosesTransaction()
     {
-        return new TypeSafeMatcher<Neo4jWithSocket>()
+        return new Condition<>( server ->
         {
-            @Override
-            public void describeTo( org.hamcrest.Description description )
+            BooleanSupplier condition = () -> getActiveTransactions( server ).size() == 0;
+            try
             {
-                description.appendText( "Eventually close all transactions" );
+                Predicates.await( condition, 2, TimeUnit.SECONDS );
+                return true;
             }
+            catch ( Exception e )
+            {
+                return false;
+            }
+        }, "Eventually close all transactions" );
+    }
 
-            @Override
-            protected boolean matchesSafely( Neo4jWithSocket server )
-            {
-                BooleanSupplier condition = () -> getActiveTransactions( server ).size() == 0;
-                try
-                {
-                    Predicates.await( condition, 2, TimeUnit.SECONDS );
-                    return true;
-                }
-                catch ( Exception e )
-                {
-                    return false;
-                }
-            }
-
-            private Set<KernelTransactionHandle> getActiveTransactions( Neo4jWithSocket server )
-            {
-                GraphDatabaseAPI gdb = (GraphDatabaseAPI) server.graphDatabaseService();
-                return gdb.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
-            }
-        };
+    private static Set<KernelTransactionHandle> getActiveTransactions( Neo4jWithSocket server )
+    {
+        var gdb = (GraphDatabaseAPI) server.graphDatabaseService();
+        return gdb.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
     }
 }

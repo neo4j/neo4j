@@ -55,10 +55,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
@@ -136,8 +135,8 @@ public class BoltThrottleMaxDurationIT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( client ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( client ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         Future<?> sender = otherThread.execute( state ->
         {
@@ -157,7 +156,7 @@ public class BoltThrottleMaxDurationIT
         }
         catch ( ExecutionException e )
         {
-            assertThat( getRootCause( e ), instanceOf( SocketException.class ) );
+            assertThat( getRootCause( e ) ).isInstanceOf( SocketException.class );
         }
 
         assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )

@@ -27,9 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
@@ -84,7 +82,7 @@ class BoltChannelTest
     {
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "my-bolt", channel );
 
-        assertThat( boltChannel.connectTime(), greaterThan( 0L ) );
+        assertThat( boltChannel.connectTime() ).isGreaterThan( 0L );
     }
 
     @Test
@@ -115,7 +113,7 @@ class BoltChannelTest
         assertEquals( "bolt-42", info2.connectionId() );
         assertEquals( "bolt", info2.protocol() );
         assertEquals( SocketAddress.format( channel.remoteAddress() ), info2.clientAddress() );
-        assertThat( info2.asConnectionDetails(), containsString( "my-driver" ) );
+        assertThat( info2.asConnectionDetails() ).contains( "my-driver" );
     }
 
     private static Channel channelMock( boolean open )

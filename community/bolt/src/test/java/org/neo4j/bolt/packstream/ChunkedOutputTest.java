@@ -38,8 +38,7 @@ import java.util.List;
 import org.neo4j.io.memory.ByteBuffers;
 
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -309,7 +308,7 @@ public class ChunkedOutputTest
         output.close();
 
         var e = assertThrows( PackOutputClosedException.class, () -> output.writeInt( 42 ) );
-        assertThat( e.getMessage(), containsString( remoteAddressString ) );
+        assertThat( e.getMessage() ).contains( remoteAddressString );
     }
 
     @Test

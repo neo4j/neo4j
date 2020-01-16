@@ -53,12 +53,11 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.System.lineSeparator;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.testing.MessageMatchers.serialize;
+import static org.neo4j.bolt.testing.MessageConditions.serialize;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newNeo4jPack;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
@@ -100,7 +99,7 @@ class BoltRequestMessageV3Test
 
         // Then
         MapValue params = msg.params();
-        assertThat( params, equalTo( parameters ) );
+        assertThat( params ).isEqualTo( parameters );
     }
 
     //"B1 71 91 B3 4E 0C 92 |84 55 73 65 72 | 86 42 61 6E\n61 6E 61 A284 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E"
@@ -110,10 +109,10 @@ class BoltRequestMessageV3Test
     {
         NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), map( new String[]{"name", "age"},
                 new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
-        assertThat( serialized( nodeValue ),
-                equalTo( "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E" + lineSeparator() +
-                         "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
-                         "65 0E" ) );
+        assertThat( serialized( nodeValue ) ).isEqualTo(
+                "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E" + lineSeparator() +
+                "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
+                "65 0E" );
     }
 
     @Test
@@ -124,9 +123,9 @@ class BoltRequestMessageV3Test
                 nodeValue( 2L, stringArray(), VirtualValues.EMPTY_MAP ),
                 stringValue( "KNOWS" ), map( new String[]{"name", "age"},
                         new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
-        assertThat( serialized( rel ),
-                equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
-                         "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
+        assertThat( serialized( rel ) ).isEqualTo(
+                "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
+                "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" );
     }
 
     private String serialized( AnyValue object ) throws IOException
@@ -137,7 +136,7 @@ class BoltRequestMessageV3Test
 
     private void assertSerializes( RequestMessage msg ) throws Exception
     {
-        assertThat( serializeAndDeserialize( msg ), equalTo( msg ) );
+        assertThat( serializeAndDeserialize( msg ) ).isEqualTo( msg );
     }
 
     private <T extends RequestMessage> T serializeAndDeserialize( T msg ) throws Exception

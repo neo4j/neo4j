@@ -47,13 +47,9 @@ import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -146,8 +142,8 @@ public class TransportWriteThrottleTest
         }
 
         assertTrue( future.isDone() );
-        assertThat( lockOverride.lockCallCount(), is( 0 ) );
-        assertThat( lockOverride.unlockCallCount(), is( 0 ) );
+        assertThat( lockOverride.lockCallCount() ).isEqualTo( 0 );
+        assertThat( lockOverride.unlockCallCount() ).isEqualTo( 0 );
     }
 
     @Test
@@ -178,8 +174,8 @@ public class TransportWriteThrottleTest
         }
 
         assertFalse( future.isDone() );
-        assertThat( lockOverride.lockCallCount(), greaterThan( 0 ) );
-        assertThat( lockOverride.unlockCallCount(), is( 0 ) );
+        assertThat( lockOverride.lockCallCount() ).isGreaterThan( 0 );
+        assertThat( lockOverride.unlockCallCount() ).isEqualTo( 0 );
 
         // stop the thread that is trying to acquire the lock
         // otherwise it remains actively spinning even after the test
@@ -234,8 +230,8 @@ public class TransportWriteThrottleTest
 
         otherThread.get().awaitFuture( completionFuture );
 
-        assertThat( lockOverride.lockCallCount(), greaterThan( 0 ) );
-        assertThat( lockOverride.unlockCallCount(), is( 1 ) );
+        assertThat( lockOverride.lockCallCount() ).isGreaterThan( 0 );
+        assertThat( lockOverride.unlockCallCount() ).isEqualTo( 1 );
     }
 
     @Test
@@ -266,8 +262,8 @@ public class TransportWriteThrottleTest
         }
         catch ( ExecutionException ex )
         {
-            assertThat( ex.getCause(), instanceOf( TransportThrottleException.class ) );
-            assertThat( ex.getMessage(), containsString( "will be closed because the client did not consume outgoing buffers for" ) );
+            assertThat( ex.getCause() ).isInstanceOf( TransportThrottleException.class );
+            assertThat( ex.getMessage() ).contains( "will be closed because the client did not consume outgoing buffers for" );
         }
     }
 

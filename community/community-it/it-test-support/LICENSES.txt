@@ -317,7 +317,6 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  Hamcrest
   Zstandard
 ------------------------------------------------------------------------------
 
@@ -1280,9 +1279,6 @@ Eclipse Public License v2.0
   jersey-core-server
   jersey-inject-hk2
   jersey-media-jaxb
-  JUnit Jupiter (Aggregator)
-  JUnit Jupiter API
-  JUnit Jupiter Params
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Platform Launcher

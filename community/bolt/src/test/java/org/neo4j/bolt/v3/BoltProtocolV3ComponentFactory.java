@@ -38,7 +38,7 @@ import org.neo4j.bolt.v3.messaging.BoltRequestMessageWriterV3;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.testing.MessageMatchers.serialize;
+import static org.neo4j.bolt.testing.MessageConditions.serialize;
 
 /**
  * A helper factory to generate boltV3 component in tests

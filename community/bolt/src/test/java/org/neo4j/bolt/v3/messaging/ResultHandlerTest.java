@@ -35,9 +35,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.values.storable.Values.values;
@@ -58,10 +56,10 @@ class ResultHandlerTest
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();
-        assertThat( messages.size(), equalTo( 3 ) );
-        assertThat( messages.get( 0 ), equalTo( new RecordMessage( record1 ) ) );
-        assertThat( messages.get( 1 ), equalTo( new RecordMessage( record2 ) ) );
-        assertThat( messages.get( 2 ), instanceOf( SuccessMessage.class ) );
+        assertThat( messages.size() ).isEqualTo( 3 );
+        assertThat( messages.get( 0 ) ).isEqualTo( new RecordMessage( record1 ) );
+        assertThat( messages.get( 1 ) ).isEqualTo( new RecordMessage( record2 ) );
+        assertThat( messages.get( 2 ) ).isInstanceOf( SuccessMessage.class );
     }
 
     @Test
@@ -78,8 +76,8 @@ class ResultHandlerTest
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();
-        assertThat( messages.size(), equalTo( 1 ) );
-        assertThat( messages.get( 0 ), instanceOf( SuccessMessage.class ) );
+        assertThat( messages.size() ).isEqualTo( 1 );
+        assertThat( messages.get( 0 ) ).isInstanceOf( SuccessMessage.class );
     }
 
     private static class TestBoltResult implements BoltResult

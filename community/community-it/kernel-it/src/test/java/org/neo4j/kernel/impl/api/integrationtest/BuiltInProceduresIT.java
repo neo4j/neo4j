@@ -63,11 +63,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -97,7 +93,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyLabel" )} ) ) );
+        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyLabel" )} );
     }
 
     @Test
@@ -139,7 +135,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // Then
         try
         {
-            assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyLabel" )} ) ) );
+            assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyLabel" )} );
         }
         finally
         {
@@ -162,7 +158,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyProp" )} ) ) );
+        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyProp" )} );
     }
 
     @Test
@@ -182,7 +178,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" )} ) ) );
+        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyRelType" )} );
     }
 
     @Test
@@ -204,8 +200,8 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "Neo4j Kernel" ),
-                VirtualValues.list( stringValue( Version.getNeo4jVersion() ) ), stringValue( "community" )} ) ) );
+        assertThat( asList( stream ) ).containsExactly(
+                new AnyValue[]{stringValue( "Neo4j Kernel" ), VirtualValues.list( stringValue( Version.getNeo4jVersion() ) ), stringValue( "community" )} );
 
         commit();
     }
@@ -251,43 +247,13 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         }
 
         // Then
-        assertThat( result, containsInAnyOrder(
-                dbIndexesResult(
-                        ageFooIndex.getId(),
-                        ageFooIndex.getName(),
-                        "ONLINE",
-                        100D,
-                        "UNIQUE",
-                        "BTREE",
-                        "NODE",
-                        singletonList( "Age" ),
-                        singletonList( "foo" ),
-                        ageFooIndex.getIndexProvider().name() ),
-
-                dbIndexesResult(
-                        personFooIndex.getId(),
-                        personFooIndex.getName(),
-                        "ONLINE",
-                        100D,
-                        "NONUNIQUE",
-                        "BTREE",
-                        "NODE",
-                        singletonList( "Person" ),
-                        singletonList( "foo" ),
-                        personFooIndex.getIndexProvider().name() ),
-
-                dbIndexesResult(
-                        personFooBarIndex.getId(),
-                        personFooBarIndex.getName(),
-                        "ONLINE",
-                        100D,
-                        "NONUNIQUE",
-                        "BTREE",
-                        "NODE",
-                        singletonList( "Person" ),
-                        Arrays.asList( "foo", "bar" ),
-                        personFooBarIndex.getIndexProvider().name() )
-        ) );
+        assertThat( result ).contains(
+                dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "BTREE", "NODE", singletonList( "Age" ),
+                        singletonList( "foo" ), ageFooIndex.getIndexProvider().name() ),
+                dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "Person" ),
+                        singletonList( "foo" ), personFooIndex.getIndexProvider().name() ),
+                dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE",
+                        singletonList( "Person" ), Arrays.asList( "foo", "bar" ), personFooBarIndex.getIndexProvider().name() ) );
         commit();
     }
 
@@ -383,55 +349,15 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // Then
         try
         {
-            assertThat( result, containsInAnyOrder(
-                    dbIndexesResult(
-                            ageFooIndex.getId(),
-                            ageFooIndex.getName(),
-                            "ONLINE",
-                            100D,
-                            "UNIQUE",
-                            "BTREE",
-                            "NODE",
-                            singletonList( "Age" ),
-                            singletonList( "foo" ),
-                            ageFooIndex.getIndexProvider().name() ),
-
-                    dbIndexesResult(
-                            personFooIndex.getId(),
-                            personFooIndex.getName(),
-                            "ONLINE",
-                            100D,
-                            "NONUNIQUE",
-                            "BTREE",
-                            "NODE",
-                            singletonList( "Person" ),
-                            singletonList( "foo" ),
-                            personFooIndex.getIndexProvider().name() ),
-
-                    dbIndexesResult(
-                            personFooBarIndex.getId(),
-                            personFooBarIndex.getName(),
-                            "ONLINE",
-                            100D,
-                            "NONUNIQUE",
-                            "BTREE",
-                            "NODE",
-                            singletonList( "Person" ),
-                            Arrays.asList( "foo", "bar" ),
-                            personFooBarIndex.getIndexProvider().name() ),
-
-                    dbIndexesResult(
-                            personBazIndex.getId(),
-                            personBazIndex.getName() /*???*/,
-                            "POPULATING",
-                            100D,
-                            "UNIQUE",
-                            "BTREE",
-                            "NODE",
-                            singletonList( "Person" ),
-                            singletonList( "baz" ),
-                            personBazIndex.getIndexProvider().name() )
-            ) );
+            assertThat( result ).contains(
+                    dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "BTREE", "NODE", singletonList( "Age" ),
+                            singletonList( "foo" ), ageFooIndex.getIndexProvider().name() ),
+                    dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "Person" ),
+                            singletonList( "foo" ), personFooIndex.getIndexProvider().name() ),
+                    dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE",
+                            singletonList( "Person" ), Arrays.asList( "foo", "bar" ), personFooBarIndex.getIndexProvider().name() ),
+                    dbIndexesResult( personBazIndex.getId(), personBazIndex.getName() /*???*/, "POPULATING", 100D, "UNIQUE", "BTREE", "NODE",
+                            singletonList( "Person" ), singletonList( "baz" ), personBazIndex.getIndexProvider().name() ) );
             commit();
         }
         finally
@@ -462,7 +388,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         }
 
         // Then, the initial query and the procedure call should now have been cleared
-        assertThat( monitor.numberOfFlushedItems(), equalTo( 2L ) );
+        assertThat( monitor.numberOfFlushedItems() ).isEqualTo( 2L );
     }
 
     @Test
@@ -481,7 +407,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // Then
         IndexSamplingMode mode = monitor.samplingMode();
         assertNotEquals( IndexSamplingMode.NO_WAIT, mode.millisToWaitForCompletion() );
-        assertThat( mode.millisToWaitForCompletion(), greaterThan( 0L ) );
+        assertThat( mode.millisToWaitForCompletion() ).isGreaterThan( 0L );
     }
 
     private ReplanMonitor replanMonitor()

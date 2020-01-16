@@ -19,7 +19,6 @@
  */
 package org.neo4j.store.watch;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +58,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -356,7 +354,7 @@ class FileWatchIT
 
         void assertDoesNotHaveAnyDeletions()
         {
-            assertThat( "Should not have any deletions registered", deletedFiles, Matchers.empty() );
+            assertThat( deletedFiles ).as( "Should not have any deletions registered" ).isEmpty();
         }
     }
 

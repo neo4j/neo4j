@@ -32,8 +32,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_lock_time;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
@@ -50,7 +49,7 @@ class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // Then
-        assertThat( authStrategy.authenticate( user, password( "right" ) ), equalTo( AuthenticationResult.SUCCESS ) );
+        assertThat( authStrategy.authenticate( user, password( "right" ) ) ).isEqualTo( AuthenticationResult.SUCCESS );
     }
 
     @Test
@@ -62,7 +61,7 @@ class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // Then
-        assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, password( "wrong" ) ) ).isEqualTo( AuthenticationResult.FAILURE );
     }
 
     @Test
@@ -74,11 +73,11 @@ class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // When we've failed two times
-        assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
-        assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, password( "wrong" ) ) ).isEqualTo( AuthenticationResult.FAILURE );
+        assertThat( authStrategy.authenticate( user, password( "wrong" ) ) ).isEqualTo( AuthenticationResult.FAILURE );
 
         // Then
-        assertThat( authStrategy.authenticate( user, password( "right" ) ), equalTo( AuthenticationResult.SUCCESS ));
+        assertThat( authStrategy.authenticate( user, password( "right" ) ) ).isEqualTo( AuthenticationResult.SUCCESS );
     }
 
     @Test
@@ -109,17 +108,17 @@ class RateLimitedAuthenticationStrategyTest
         // When we've failed max number of times
         for ( int i = 0; i < maxFailedAttempts; i++ )
         {
-            assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
+            assertThat( authStrategy.authenticate( user, password( "wrong" ) ) ).isEqualTo( AuthenticationResult.FAILURE );
         }
 
         // Then
-        assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ) );
+        assertThat( authStrategy.authenticate( user, password( "wrong" ) ) ).isEqualTo( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // But when time heals all wounds
         clock.forward( lockDuration.plus( 1, SECONDS ) );
 
         // Then things should be alright
-        assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, password( "wrong" ) ) ).isEqualTo( AuthenticationResult.FAILURE );
     }
 
     private static void testSlowRequestRateOnMultipleFailedAttemptsWhereAttemptIsValid( int maxFailedAttempts, Duration lockDuration )
@@ -132,17 +131,17 @@ class RateLimitedAuthenticationStrategyTest
         // When we've failed max number of times
         for ( int i = 0; i < maxFailedAttempts; i++ )
         {
-            assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
+            assertThat( authStrategy.authenticate( user, password( "wrong" ) ) ).isEqualTo( AuthenticationResult.FAILURE );
         }
 
         // Then
-        assertThat( authStrategy.authenticate( user, password( "right" ) ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+        assertThat( authStrategy.authenticate( user, password( "right" ) ) ).isEqualTo( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // But when time heals all wounds
         clock.forward( lockDuration.plus( 1, SECONDS ) );
 
         // Then things should be alright
-        assertThat( authStrategy.authenticate( user, password( "right" ) ), equalTo( AuthenticationResult.SUCCESS ) );
+        assertThat( authStrategy.authenticate( user, password( "right" ) ) ).isEqualTo( AuthenticationResult.SUCCESS );
     }
 
     @Test

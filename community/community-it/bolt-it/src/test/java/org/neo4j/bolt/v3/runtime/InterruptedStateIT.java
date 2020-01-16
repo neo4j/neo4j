@@ -25,7 +25,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -34,10 +33,9 @@ import org.neo4j.bolt.v3.messaging.BoltV3Messages;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 class InterruptedStateIT extends BoltStateMachineV3StateTestBase
@@ -53,8 +51,8 @@ class InterruptedStateIT extends BoltStateMachineV3StateTestBase
         machine.process( ResetMessage.INSTANCE, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -67,12 +65,12 @@ class InterruptedStateIT extends BoltStateMachineV3StateTestBase
 
         // When & Then
         machine.process( ResetMessage.INSTANCE, nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
 
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.process( ResetMessage.INSTANCE, recorder );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -86,8 +84,8 @@ class InterruptedStateIT extends BoltStateMachineV3StateTestBase
         machine.process( InterruptSignal.INSTANCE, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     @ParameterizedTest
@@ -107,8 +105,8 @@ class InterruptedStateIT extends BoltStateMachineV3StateTestBase
         machine.process( message, recorder );
 
         // then
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     private BoltStateMachineV3 getBoltStateMachineInInterruptedState() throws BoltConnectionFatality
@@ -116,11 +114,11 @@ class InterruptedStateIT extends BoltStateMachineV3StateTestBase
         BoltStateMachineV3 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
         machine.process( InterruptSignal.INSTANCE, nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
         return machine;
     }
 
-    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV3Messages()
     {
         // All messages except RESET
         return BoltV3Messages.supported().filter( it -> !it.equals( BoltV3Messages.reset() ) );

@@ -45,10 +45,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -293,9 +290,9 @@ class ExecutorBoltSchedulerTest
 
         Predicates.await( () -> executeBatchCompletionCount.get() > 0, 1, MINUTES );
 
-        assertThat( poolThread.get().getName(), not( equalTo( poolThreadName.get() ) ) );
-        assertThat( poolThread.get().getName(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
-        assertThat( poolThread.get().getName(), not( containsString( String.format( "[%s]", connection.remoteAddress() ) ) ) );
+        assertThat( poolThread.get().getName() ).isNotEqualTo( poolThreadName.get() );
+        assertThat( poolThread.get().getName() ).contains( String.format( "[%s]", CONNECTOR_KEY ) );
+        assertThat( poolThread.get().getName() ).doesNotContain( String.format( "[%s]", connection.remoteAddress() ) );
     }
 
     @Test
@@ -321,8 +318,8 @@ class ExecutorBoltSchedulerTest
 
         Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
 
-        assertThat( capturedThreadName.get(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
-        assertThat( capturedThreadName.get(), containsString( String.format( "[%s]", connection.remoteAddress() ) ) );
+        assertThat( capturedThreadName.get() ).contains( String.format( "[%s]", CONNECTOR_KEY ) );
+        assertThat( capturedThreadName.get() ).contains( String.format( "[%s]", connection.remoteAddress() ) );
 
         exitCondition.set( true );
     }

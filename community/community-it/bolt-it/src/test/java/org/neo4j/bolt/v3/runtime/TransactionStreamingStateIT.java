@@ -25,23 +25,21 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
+import org.neo4j.bolt.v3.BoltStateMachineV3;
+import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
-import org.neo4j.bolt.v3.BoltStateMachineV3;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,9 +47,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
@@ -71,9 +69,9 @@ class TransactionStreamingStateIT extends BoltStateMachineV3StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( TransactionReadyState.class );
     }
 
     @Test
@@ -88,11 +86,11 @@ class TransactionStreamingStateIT extends BoltStateMachineV3StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( TransactionReadyState.class );
     }
 
     @Test
@@ -106,7 +104,7 @@ class TransactionStreamingStateIT extends BoltStateMachineV3StateTestBase
         machine.process( InterruptSignal.INSTANCE, recorder );
 
         // Then
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     @ParameterizedTest
@@ -124,7 +122,7 @@ class TransactionStreamingStateIT extends BoltStateMachineV3StateTestBase
         machine.process( message, handler );
 
         // Then
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
     }
 
     @ParameterizedTest
@@ -142,18 +140,18 @@ class TransactionStreamingStateIT extends BoltStateMachineV3StateTestBase
 
         machine.process( new BeginMessage(), nullResponseHandler() );
         machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k" ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) );
+        assertThat( machine.state() ).isInstanceOf( TransactionStreamingState.class );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.process( message, recorder ) );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
         assertNull( machine.state() );
     }
 
-    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV3Messages()
     {
         return Stream.of( newHelloMessage(), new RunMessage( "any string" ), new BeginMessage(), ROLLBACK_MESSAGE, COMMIT_MESSAGE, ResetMessage.INSTANCE,
                 GOODBYE_MESSAGE );
@@ -164,15 +162,15 @@ class TransactionStreamingStateIT extends BoltStateMachineV3StateTestBase
         return Stream.of( PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE );
     }
 
-    private BoltStateMachineV3 getBoltStateMachineInTxStreamingState() throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV3 getBoltStateMachineInTxStreamingState() throws BoltConnectionFatality
     {
         BoltStateMachineV3 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         machine.process( new BeginMessage(), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( TransactionReadyState.class );
         machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k" ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) ); // tx streaming state
+        assertThat( machine.state() ).isInstanceOf( TransactionStreamingState.class ); // tx streaming state
         return machine;
     }
 }

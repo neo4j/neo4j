@@ -37,7 +37,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.internal.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.REQUIRED;
 
@@ -84,6 +84,6 @@ public class RequiredTransportEncryptionIT
         // When
         client.connect( address ).send( util.defaultAcceptedVersions() );
 
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( client ).satisfies( eventuallyDisconnects() );
     }
 }

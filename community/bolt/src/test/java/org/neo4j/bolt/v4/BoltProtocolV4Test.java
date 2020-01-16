@@ -24,17 +24,15 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
-import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 class BoltProtocolV4Test
@@ -48,7 +46,7 @@ class BoltProtocolV4Test
                 new BoltProtocolV4( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
                         bookmarksParser, NullLogService.getInstance() );
 
-        assertThat( protocolV4.createPack(), instanceOf( Neo4jPackV2.class ) );
+        assertThat( protocolV4.createPack() ).isInstanceOf( Neo4jPackV2.class );
     }
 
     @Test
@@ -58,7 +56,7 @@ class BoltProtocolV4Test
                 new BoltProtocolV4( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
                         bookmarksParser, NullLogService.getInstance() );
 
-        assertThat( protocolV4.version(), equalTo( 4L ) );
+        assertThat( protocolV4.version() ).isEqualTo( 4L );
     }
 
     @Test
@@ -68,7 +66,7 @@ class BoltProtocolV4Test
                 new BoltProtocolV4( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
                         bookmarksParser, NullLogService.getInstance() );
 
-        assertThat( protocolV4.createMessageReader( mock( BoltChannel.class ), mock( Neo4jPack.class ), mock( BoltConnection.class ),
-                bookmarksParser, NullLogService.getInstance() ), instanceOf( BoltRequestMessageReaderV4.class ) );
+        assertThat( protocolV4.createMessageReader( mock( BoltChannel.class ), mock( Neo4jPack.class ), mock( BoltConnection.class ), bookmarksParser,
+                NullLogService.getInstance() ) ).isInstanceOf( BoltRequestMessageReaderV4.class );
     }
 }

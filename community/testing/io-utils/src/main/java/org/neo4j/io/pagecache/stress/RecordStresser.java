@@ -29,9 +29,7 @@ import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -89,7 +87,8 @@ public class RecordStresser implements Callable<Void>
                     long newValue = format.incrementCounter( cursor, threadId );
                     countSum++;
                     assertFalse( cursor.shouldRetry(), "Write lock, so never a need to retry" );
-                    assertThat( "Record-local count must be less than or equal to thread-local count sum", newValue, lessThanOrEqualTo( countSum ) );
+                    assertThat( newValue ).describedAs( "Record-local count must be less than or equal to thread-local count sum" )
+                            .isLessThanOrEqualTo( countSum );
                 }
                 finally
                 {
@@ -112,6 +111,6 @@ public class RecordStresser implements Callable<Void>
                 actualSum += format.sumCountsForThread( cursor, threadId );
             }
         }
-        assertThat( "Thread specific sum across all records", actualSum, is( countSum ) );
+        assertThat( actualSum ).describedAs( "Thread specific sum across all records" ).isEqualTo( countSum );
     }
 }

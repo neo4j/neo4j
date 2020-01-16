@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,19 +48,14 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.neo4j.bolt.testing.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.testing.StreamMatchers.eqRecord;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
@@ -116,9 +112,10 @@ public class BoltV4TransportIT
 
         connection.send( util.chunk( new RunMessage( "CREATE ()" ), new PullMessage( asMapValue( map( "n", -1L ) ) ) ) );
 
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( allOf( hasEntry( "bookmark", expectedBookmark ) ) ) ) );
+                msgSuccess( responseMessage -> assertThat( responseMessage )
+                        .containsEntry( "bookmark", expectedBookmark ) ) ) );
     }
 
     @Test
@@ -131,14 +128,16 @@ public class BoltV4TransportIT
         var expectedBookmark = new BookmarkWithDatabaseId( lastClosedTransactionId + 1, getDatabaseId() ).toString();
 
         connection.send( util.chunk( new BeginMessage() ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( new RunMessage( "CREATE ()" ), new PullMessage( asMapValue( map( "n", -1L ) ) ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess( allOf( not( hasEntry( "bookmark", expectedBookmark ) ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess(),
+                msgSuccess( message -> assertThat( message ).doesNotContainEntry( "bookmark", expectedBookmark ) ) ) );
 
         connection.send( util.chunk( CommitMessage.COMMIT_MESSAGE ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess( allOf( hasEntry( "bookmark", expectedBookmark ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message ).containsEntry( "bookmark", expectedBookmark ) ) ) );
     }
 
     @Test
@@ -148,47 +147,50 @@ public class BoltV4TransportIT
 
         // begin a transaction
         connection.send( util.chunk( new BeginMessage() ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         // execute a query
         connection.send( util.chunk( new RunMessage( "UNWIND range(30, 40) AS x RETURN x" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( hasEntry( is( "qid" ), equalTo( 0L ) ), hasKey( "fields" ), hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message )
+                        .containsEntry( "qid", 0L )
+                        .containsKeys( "fields", "t_first" ) ) ) );
 
         // request 5 records but do not provide qid
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 5L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 30L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 31L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 32L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 33L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 34L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 30L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 31L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 32L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 33L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 34L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // request 2 more records but do not provide qid
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 2L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 35L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 36L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 35L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 36L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // request 3 more records and provide qid
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 3L, "qid", 0L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 37L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 38L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 39L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 37L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 38L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 39L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // request 10 more records but do not provide qid, only 1 more record is available
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 10L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 40L ) ) ) ),
-                msgSuccess( allOf( not( hasKey( "has_more" ) ), hasKey( "t_last" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 40L ) ) ),
+                msgSuccess( message -> assertThat( message ).containsKey("t_last")
+                                      .doesNotContainKey( "has_more" )) ) );
 
         // rollback the transaction
         connection.send( util.chunk( RollbackMessage.ROLLBACK_MESSAGE ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -198,92 +200,92 @@ public class BoltV4TransportIT
 
         // begin a transaction
         connection.send( util.chunk( new BeginMessage() ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         // execute query #0
         connection.send( util.chunk( new RunMessage( "UNWIND range(1, 10) AS x RETURN x" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( hasEntry( is( "qid" ), equalTo( 0L ) ), hasKey( "fields" ), hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message ).containsEntry( "qid", 0L ).containsKeys( "fields", "t_first" ) ) ) );
 
         // request 3 records for query #0
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 3L, "qid", 0L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 3L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 1L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 2L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 3L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // execute query #1
         connection.send( util.chunk( new RunMessage( "UNWIND range(11, 20) AS x RETURN x" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( hasEntry( is( "qid" ), equalTo( 1L ) ), hasKey( "fields" ), hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message ).containsEntry( "qid", 1L ).containsKeys( "fields", "t_first" ) ) ) );
 
         // request 2 records for query #1
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 2L, "qid", 1L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 11L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 12L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 11L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 12L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // execute query #2
         connection.send( util.chunk( new RunMessage( "UNWIND range(21, 30) AS x RETURN x" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( hasEntry( is( "qid" ), equalTo( 2L ) ), hasKey( "fields" ), hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies(  util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message ).containsEntry( "qid", 2L ).containsKeys( "fields", "t_first" ) ) ) );
 
         // request 4 records for query #2
         // no qid - should use the statement from the latest RUN
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 4L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 21L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 22L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 23L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 24L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 21L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 22L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 23L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 24L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // execute query #3
         connection.send( util.chunk( new RunMessage( "UNWIND range(31, 40) AS x RETURN x" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( hasEntry( is( "qid" ), equalTo( 3L ) ), hasKey( "fields" ), hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message ).containsEntry( "qid", 3L ).containsKeys( "fields", "t_first" ) ) ) );
 
         // request 1 record for query #3
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 1L, "qid", 3L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 31L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 31L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // request 2 records for query #0
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 2L, "qid", 0L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 4L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 5L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 4L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 5L ) ) ),
                 msgSuccess( singletonMap( "has_more", true ) ) ) );
 
         // request 9 records for query #3
         connection.send( util.chunk( new PullMessage( asMapValue( map( "n", 9L, "qid", 3L ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgRecord( eqRecord( equalTo( longValue( 32L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 33L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 34L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 35L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 36L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 37L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 38L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 39L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 40L ) ) ) ),
-                msgSuccess( allOf( not( hasKey( "has_more" ) ), hasKey( "t_last" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgRecord( eqRecord( longValueCondition( 32L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 33L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 34L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 35L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 36L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 37L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 38L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 39L ) ) ),
+                msgRecord( eqRecord( longValueCondition( 40L ) ) ),
+                msgSuccess( message -> assertThat( message ).containsKey( "t_last" ).doesNotContainKey( "has_more" ) ) ) );
 
         // commit the transaction
         connection.send( util.chunk( CommitMessage.COMMIT_MESSAGE ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     private void negotiateBoltV4() throws Exception
     {
         connection.connect( address ).send( util.acceptedVersions( 4, 0, 0, 0 ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
 
         connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     private long getLastClosedTransactionId()
@@ -298,5 +300,10 @@ public class BoltV4TransportIT
         var resolver = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver();
         var database = resolver.resolveDependency( Database.class );
         return database.getNamedDatabaseId();
+    }
+
+    private static Condition<AnyValue> longValueCondition( long expected )
+    {
+        return new Condition<>( value -> value.equals( longValue( expected ) ), "equals" );
     }
 }

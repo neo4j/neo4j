@@ -34,13 +34,14 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.PathValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.packstream.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.packstream.example.Nodes.ALICE;
 import static org.neo4j.bolt.packstream.example.Paths.ALL_PATHS;
-import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.kernel.api.exceptions.Status.Statement.TypeError;
 
 public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
 {
@@ -50,7 +51,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getSettingsFunction() );
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         address = server.lookupDefaultConnector();
     }
@@ -59,29 +60,29 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     public void shouldFailWhenNullKeyIsSent() throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createMsgWithNullKey() ) );
 
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
     @Test
     public void shouldFailWhenDuplicateKey() throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createMsgWithDuplicateKey() ) );
 
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, "Duplicate map key `key1`." ) ) );
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, "Duplicate map key `key1`." ) ) );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
     @Test
@@ -116,27 +117,27 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     public void shouldTerminateConnectionWhenUnknownMessageIsSent() throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createUnknownMsg() ) );
 
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
     private void testFailureWithV1Value( AnyValue value, String description ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWithUnknownValue( value ) ) );
 
-        assertThat( connection,
-                util.eventuallyReceives( msgFailure( Status.Statement.TypeError, description + " values cannot be unpacked with this version of bolt." ) ) );
-        assertThat( connection, eventuallyDisconnects() );
+        assertThat( connection ).satisfies(
+                util.eventuallyReceives( msgFailure( TypeError, description + " values cannot be unpacked with this version of bolt." ) ) );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
     private byte[] createRunWithUnknownValue( AnyValue value ) throws IOException

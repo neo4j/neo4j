@@ -48,7 +48,7 @@ class ShiroAuthenticationInfoTest
         assertEquals( AuthenticationResult.FAILURE.ordinal(), 1 );
         assertEquals( AuthenticationResult.TOO_MANY_ATTEMPTS.ordinal(), 2 );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED.ordinal(), 3 );
-        assertEquals( AuthenticationResult.values().length, 4 );
+        assertEquals( 4, AuthenticationResult.values().length );
     }
 
     @Test
@@ -57,7 +57,7 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", SUCCESS );
         info.merge( successInfo );
 
-        assertEquals( info.getAuthenticationResult(), SUCCESS );
+        assertEquals( SUCCESS, info.getAuthenticationResult() );
     }
 
     @Test
@@ -66,7 +66,7 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( failureInfo );
 
-        assertEquals( info.getAuthenticationResult(), FAILURE );
+        assertEquals( FAILURE, info.getAuthenticationResult() );
     }
 
     @Test
@@ -75,7 +75,7 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", TOO_MANY_ATTEMPTS );
         info.merge( tooManyAttemptsInfo );
 
-        assertEquals( info.getAuthenticationResult(), TOO_MANY_ATTEMPTS );
+        assertEquals( TOO_MANY_ATTEMPTS, info.getAuthenticationResult() );
     }
 
     @Test
@@ -84,7 +84,7 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", PASSWORD_CHANGE_REQUIRED );
         info.merge( pwChangeRequiredInfo );
 
-        assertEquals( info.getAuthenticationResult(), PASSWORD_CHANGE_REQUIRED );
+        assertEquals( PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult() );
     }
 
     @Test
@@ -93,7 +93,7 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( successInfo );
 
-        assertEquals( info.getAuthenticationResult(), SUCCESS );
+        assertEquals( SUCCESS, info.getAuthenticationResult() );
     }
 
     @Test
@@ -102,7 +102,7 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( tooManyAttemptsInfo );
 
-        assertEquals( info.getAuthenticationResult(), TOO_MANY_ATTEMPTS );
+        assertEquals( TOO_MANY_ATTEMPTS, info.getAuthenticationResult() );
     }
 
     @Test
@@ -111,7 +111,7 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( pwChangeRequiredInfo );
 
-        assertEquals( info.getAuthenticationResult(), PASSWORD_CHANGE_REQUIRED );
+        assertEquals( PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult() );
     }
 
     @Test
@@ -120,6 +120,6 @@ class ShiroAuthenticationInfoTest
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( pwChangeRequiredInfo );
 
-        assertEquals( info.getAuthenticationResult(), PASSWORD_CHANGE_REQUIRED );
+        assertEquals( PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult() );
     }
 }

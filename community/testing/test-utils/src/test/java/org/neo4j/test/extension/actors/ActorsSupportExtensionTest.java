@@ -36,8 +36,7 @@ import java.util.stream.IntStream;
 import org.neo4j.test.extension.Inject;
 
 import static java.time.Duration.ofMinutes;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -73,7 +72,7 @@ class ActorsSupportExtensionTest
                 CountDownLatch l2 = new CountDownLatch( 1 );
                 Future<String> f2 = actor.submit( l2::countDown, "bla" );
                 l2.await();
-                assertEquals( f2.get(), "bla" );
+                assertEquals( "bla", f2.get() );
 
                 CountDownLatch l3 = new CountDownLatch( 1 );
                 Future<String> f3 = actor.submit( () ->
@@ -82,7 +81,7 @@ class ActorsSupportExtensionTest
                     return "bla";
                 } );
                 l3.await();
-                assertEquals( f3.get(), "bla" );
+                assertEquals( "bla", f3.get() );
             } );
         }
 
@@ -149,7 +148,7 @@ class ActorsSupportExtensionTest
             actor.untilWaitingIn( CountDownLatch.class.getMethod( "await" ) );
             actor.interrupt();
             ExecutionException ee = assertThrows( ExecutionException.class, f1::get );
-            assertThat( ee.getCause(), instanceOf( InterruptedException.class ) );
+            assertThat( ee.getCause() ).isInstanceOf( InterruptedException.class );
         }
 
         @Test
@@ -273,7 +272,7 @@ class ActorsSupportExtensionTest
                     f1.get();
                     f2.get();
                     f3.get();
-                    assertEquals( counter.get(), 3 );
+                    assertEquals( 3, counter.get() );
                 }
             }
 
@@ -285,7 +284,7 @@ class ActorsSupportExtensionTest
                 Future<Integer> f2 = outerActor.submit( counter::incrementAndGet );
                 f1.get();
                 f2.get();
-                assertEquals( counter.get(), 2 );
+                assertEquals( 2, counter.get() );
             }
         }
 
@@ -295,7 +294,7 @@ class ActorsSupportExtensionTest
             AtomicInteger counter = new AtomicInteger();
             Future<Integer> f1 = outerActor.submit( counter::incrementAndGet );
             f1.get();
-            assertEquals( counter.get(), 1 );
+            assertEquals( 1, counter.get() );
         }
     }
 

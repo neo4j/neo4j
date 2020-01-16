@@ -56,10 +56,10 @@ class LegacyCredentialTest
 
         //equals
         assertEquals( INACCESSIBLE, credential );
-        assertEquals( credential, INACCESSIBLE );
+        assertEquals( INACCESSIBLE, credential );
         assertEquals( INACCESSIBLE, INACCESSIBLE );
         assertNotEquals( INACCESSIBLE, LegacyCredential.forPassword( "" ) );
-        assertNotEquals( LegacyCredential.forPassword( "" ), INACCESSIBLE );
+        assertNotEquals( INACCESSIBLE, LegacyCredential.forPassword( "" ) );
 
         //matchesPassword
         assertFalse( INACCESSIBLE.matchesPassword( new String( new byte[]{} )) );

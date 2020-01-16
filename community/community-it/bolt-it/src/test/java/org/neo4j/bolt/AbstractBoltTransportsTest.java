@@ -104,7 +104,7 @@ public abstract class AbstractBoltTransportsTest
 
     protected TransportConnection newConnection() throws Exception
     {
-        return connectionClass.newInstance();
+        return connectionClass.getDeclaredConstructor().newInstance();
     }
 
     protected void reconnect() throws Exception

@@ -33,20 +33,19 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.TextValue;
 
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.AllOf.allOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithoutMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
-import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
+import static org.neo4j.bolt.testing.BoltConditions.containsRecord;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithRecord;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithoutMetadata;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v4.messaging.BoltV4Messages.begin;
 import static org.neo4j.bolt.v4.messaging.BoltV4Messages.commit;
@@ -57,7 +56,6 @@ import static org.neo4j.bolt.v4.messaging.BoltV4Messages.rollback;
 import static org.neo4j.bolt.v4.messaging.BoltV4Messages.run;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-
 
 class TransactionIT extends BoltStateMachineV4StateTestBase
 {
@@ -79,9 +77,9 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( commit(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     @Test
@@ -99,9 +97,9 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( rollback(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     @Test
@@ -140,7 +138,7 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( commit(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
     }
 
     @Test
@@ -159,7 +157,7 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( rollback(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithoutMetadata( "bookmark" ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithoutMetadata( "bookmark" ) );
     }
 
     @Test
@@ -206,11 +204,11 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
             machine.process( pullAll(), recorder );
             machine.process( commit(), recorder );
 
-            assertThat( recorder.nextResponse(), succeeded() );
-            assertThat( recorder.nextResponse(), succeeded() );
+            assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+            assertThat( recorder.nextResponse() ).satisfies( succeeded() );
 
-            assertThat( recorder.nextResponse(), succeededWithRecord( "two" ) );
-            assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
+            assertThat( recorder.nextResponse() ).satisfies( succeededWithRecord( "two" ) );
+            assertThat( recorder.nextResponse() ).satisfies( succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
         }
 
         thread.join();
@@ -231,11 +229,11 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( pullAll(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Statement.SyntaxError ) );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithRecord( 2L ) );
         assertEquals( 0, recorder.responseCount() );
     }
 
@@ -254,11 +252,11 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( pullAll(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), allOf( containsRecord( 1L ), failedWithStatus( Status.Statement.ArithmeticError ) ) );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( containsRecord( 1L ) ).satisfies( failedWithStatus( Status.Statement.ArithmeticError ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithRecord( 2L ) );
         assertEquals( 0, recorder.responseCount() );
     }
     @Test
@@ -277,8 +275,8 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( pullAll(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
         assertEquals( 0, recorder.responseCount() );
     }
 
@@ -298,10 +296,10 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         machine.process( pullAll(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.ArithmeticError ) );
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Statement.ArithmeticError ) );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
         assertEquals( 0, recorder.responseCount() );
     }
 

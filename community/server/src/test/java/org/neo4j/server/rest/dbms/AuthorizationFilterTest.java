@@ -22,9 +22,11 @@ package org.neo4j.server.rest.dbms;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.regex.Pattern;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletOutputStream;
@@ -38,12 +40,14 @@ import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.BasicLoginContext;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.test.AuthTokenUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
@@ -55,7 +59,6 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
-import static org.neo4j.test.AuthTokenUtil.authTokenArgumentMatcher;
 
 class AuthorizationFilterTest
 {
@@ -177,7 +180,7 @@ class AuthorizationFilterTest
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( servletRequest.getRemoteAddr() ).thenReturn( "remote_ip_address" );
-        when( authManager.login( authTokenArgumentMatcher( authToken( "foo", "bar" ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
@@ -211,7 +214,7 @@ class AuthorizationFilterTest
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
         when( servletRequest.getRequestURI() ).thenReturn( "/db/data/" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authTokenArgumentMatcher( authToken( "foo", "bar" ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
@@ -234,7 +237,7 @@ class AuthorizationFilterTest
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authTokenArgumentMatcher( authToken( "foo", "bar" ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
@@ -263,7 +266,7 @@ class AuthorizationFilterTest
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authTokenArgumentMatcher( authToken( "foo", "bar" ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
@@ -305,5 +308,21 @@ class AuthorizationFilterTest
                 .collect( toList() );
 
         return new AuthorizationEnabledFilter( () -> authManager, logProvider, uriWhitelistPatterns );
+    }
+
+    private static class AuthTokenMatcher implements ArgumentMatcher<Map<String,Object>>
+    {
+        private final Map<String,Object> expectedMap;
+
+        AuthTokenMatcher( Map<String,Object> expectedMap )
+        {
+            this.expectedMap = expectedMap;
+        }
+
+        @Override
+        public boolean matches( Map<String,Object> map )
+        {
+            return AuthTokenUtil.matches( expectedMap, map );
+        }
     }
 }

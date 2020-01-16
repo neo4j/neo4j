@@ -32,9 +32,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
@@ -108,8 +106,9 @@ public class PageCacheStressTest
 
         public PageCacheStressTest build()
         {
-            assertThat( "the cache should cover only a fraction of the mapped file",
-                    numberOfPages, is( greaterThanOrEqualTo( 10 * numberOfCachePages ) ) );
+            assertThat( numberOfPages )
+                    .describedAs( "the cache should cover only a fraction of the mapped file" )
+                    .isGreaterThanOrEqualTo( 10 * numberOfCachePages );
             return new PageCacheStressTest( this );
         }
 

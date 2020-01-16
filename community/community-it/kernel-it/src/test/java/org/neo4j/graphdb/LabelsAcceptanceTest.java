@@ -65,9 +65,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.stream.Collectors.toSet;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.glassfish.jersey.internal.guava.Iterators.size;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -471,7 +470,7 @@ class LabelsAcceptanceTest
 
         // Then
         assertEquals( 2, labels.size() );
-        assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() ) );
+        assertThat( map( Label::name, labels ) ).contains( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
     }
 
     @Test
@@ -495,7 +494,7 @@ class LabelsAcceptanceTest
 
         // Then
         assertEquals( 1, labels.size() );
-        assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name() ) );
+        assertThat( map( Label::name, labels ) ).contains( Labels.MY_LABEL.name() );
     }
 
     @Test
@@ -538,7 +537,7 @@ class LabelsAcceptanceTest
 
             // Then
             assertEquals( 1, labels.size() );
-            assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name() ) );
+            assertThat( map( Label::name, labels ) ).contains( Labels.MY_LABEL.name() );
         } );
     }
 
@@ -582,7 +581,7 @@ class LabelsAcceptanceTest
 
             // Then
             assertEquals( 1, relTypes.size() );
-            assertThat( map( RelationshipType::name, relTypes ), hasItems( relType.name() ) );
+            assertThat( map( RelationshipType::name, relTypes ) ).contains( relType.name() );
         } );
     }
 

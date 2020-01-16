@@ -36,8 +36,7 @@ import java.util.Arrays;
 import org.neo4j.function.Factory;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
@@ -85,9 +84,9 @@ public class FileSystemAbstractionInterruptionTest
     public void verifyInterruptionAndChannelState() throws IOException
     {
         assertTrue( Thread.interrupted() );
-        assertThat( "channelShouldBeClosed? " + channelShouldBeClosed,
-                channel.isOpen(),
-                is( !channelShouldBeClosed ) );
+        assertThat( channel.isOpen() )
+                .describedAs( "channelShouldBeClosed? " + channelShouldBeClosed )
+                .isEqualTo( !channelShouldBeClosed );
 
         if ( channelShouldBeClosed )
         {

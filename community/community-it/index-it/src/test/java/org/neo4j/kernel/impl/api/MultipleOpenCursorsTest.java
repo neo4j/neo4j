@@ -45,16 +45,14 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.TextValue;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Does test having multiple iterators open on the same index
@@ -782,7 +780,7 @@ public class MultipleOpenCursorsTest
 
         void assertSameContent( List<Long> actual, List<Long> expected )
         {
-            assertThat( actual, is( containsInAnyOrder( expected.toArray() ) ) );
+            assertThat( actual ).containsAll( expected );
         }
 
         abstract void assertExactResult( List<Long> result );

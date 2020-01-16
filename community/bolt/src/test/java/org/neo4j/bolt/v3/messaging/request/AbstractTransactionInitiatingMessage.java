@@ -30,9 +30,7 @@ import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
@@ -57,7 +55,7 @@ public abstract class AbstractTransactionInitiatingMessage
         MapValue meta = ValueUtils.asMapValue( msgMetadata );
         // When & Then
         BoltIOException exception = assertThrows( BoltIOException.class, () -> createMessage( meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting transaction metadata value to be a Map value" ) );
+        assertThat( exception.getMessage() ).startsWith( "Expecting transaction metadata value to be a Map value" );
     }
 
     @Test
@@ -72,7 +70,7 @@ public abstract class AbstractTransactionInitiatingMessage
         TransactionInitiatingMessage beginMessage = createMessage(meta);
 
         // Then
-        assertThat( beginMessage.transactionMetadata().toString(), equalTo( txMetadata.toString() ) );
+        assertThat( beginMessage.transactionMetadata().toString() ).isEqualTo( txMetadata.toString() );
     }
 
     @Test
@@ -83,7 +81,7 @@ public abstract class AbstractTransactionInitiatingMessage
         MapValue meta = ValueUtils.asMapValue( msgMetadata );
         // When & Then
         BoltIOException exception = assertThrows( BoltIOException.class, () -> createMessage( meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting transaction timeout value to be a Long value" ) );
+        assertThat( exception.getMessage() ).startsWith( "Expecting transaction timeout value to be a Long value" );
     }
 
     @Test
@@ -97,7 +95,7 @@ public abstract class AbstractTransactionInitiatingMessage
         TransactionInitiatingMessage beginMessage = createMessage( meta );
 
         // Then
-        assertThat( beginMessage.transactionTimeout().toMillis(), equalTo( 123456L ) );
+        assertThat( beginMessage.transactionTimeout().toMillis() ).isEqualTo( 123456L );
     }
 
     @Test
@@ -108,7 +106,7 @@ public abstract class AbstractTransactionInitiatingMessage
         MapValue meta = ValueUtils.asMapValue( msgMetadata );
         // When & Then
         BoltIOException exception = assertThrows( BoltIOException.class, () -> createMessage( meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting access mode value to be a String value" ) );
+        assertThat( exception.getMessage() ).startsWith( "Expecting access mode value to be a String value" );
     }
 
     @Test
@@ -122,7 +120,7 @@ public abstract class AbstractTransactionInitiatingMessage
         TransactionInitiatingMessage beginMessage = createMessage( meta );
 
         // Then
-        assertThat( beginMessage.getAccessMode(), equalTo( AccessMode.WRITE ) );
+        assertThat( beginMessage.getAccessMode() ).isEqualTo( AccessMode.WRITE );
     }
 
     @Test
@@ -136,7 +134,7 @@ public abstract class AbstractTransactionInitiatingMessage
         TransactionInitiatingMessage beginMessage = createMessage( meta );
 
         // Then
-        assertThat( beginMessage.getAccessMode(), equalTo( AccessMode.READ ) );
+        assertThat( beginMessage.getAccessMode() ).isEqualTo( AccessMode.READ );
     }
 
     @Test
@@ -150,7 +148,7 @@ public abstract class AbstractTransactionInitiatingMessage
         TransactionInitiatingMessage beginMessage = createMessage( meta );
 
         // Then
-        assertThat( beginMessage.getAccessMode(), equalTo( AccessMode.WRITE ) );
+        assertThat( beginMessage.getAccessMode() ).isEqualTo( AccessMode.WRITE );
     }
 
     protected abstract TransactionInitiatingMessage createMessage() throws IOException;

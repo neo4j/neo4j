@@ -29,11 +29,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,7 +53,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
         try ( StoreChannel storeChannel = fsa.write( testFile ) )
         {
             int fileDescriptor = fsa.getFileDescriptor( storeChannel );
-            assertThat( fileDescriptor, greaterThan( 0 ) );
+            assertThat( fileDescriptor ).isGreaterThan( 0 );
         }
     }
 
@@ -69,7 +65,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
         try ( StoreChannel storeChannel = fsa.write( testFile ) )
         {
             int fileDescriptor = fsa.getFileDescriptor( storeChannel );
-            assertThat( fileDescriptor, equalTo( INVALID_FILE_DESCRIPTOR ) );
+            assertThat( fileDescriptor ).isEqualTo( INVALID_FILE_DESCRIPTOR );
         }
     }
 
@@ -83,7 +79,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
             escapedChannel = storeChannel;
         }
         int fileDescriptor = fsa.getFileDescriptor( escapedChannel );
-        assertThat( fileDescriptor, equalTo( INVALID_FILE_DESCRIPTOR ) );
+        assertThat( fileDescriptor ).isEqualTo( INVALID_FILE_DESCRIPTOR );
     }
 
     @Test
@@ -92,7 +88,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
         var testFile = testDirectory.createFile( "testBlock" );
         long blockSize = fsa.getBlockSize( testFile );
         assertTrue( isPowerOfTwo( blockSize ), "Observed block size: " + blockSize );
-        assertThat( blockSize, greaterThanOrEqualTo( 512L ) );
+        assertThat( blockSize ).isGreaterThanOrEqualTo( 512L );
     }
 
     @Test
@@ -110,6 +106,6 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
         IOException exception = assertThrows( IOException.class, () -> fsa.mkdirs( path ) );
         assertFalse( fsa.fileExists( path ) );
         String expectedMessage = format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path );
-        assertThat( exception.getMessage(), is( expectedMessage ) );
+        assertThat( exception.getMessage() ).isEqualTo( expectedMessage );
     }
 }

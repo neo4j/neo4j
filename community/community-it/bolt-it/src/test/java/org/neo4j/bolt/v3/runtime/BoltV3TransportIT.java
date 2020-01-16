@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -30,41 +29,37 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackedOutputArray;
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
-import org.neo4j.bolt.packstream.PackedOutputArray;
-import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.not;
-import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.testing.MessageMatchers.msgIgnored;
-import static org.neo4j.bolt.testing.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.testing.StreamMatchers.eqRecord;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
+import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmark;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -78,8 +73,9 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         connection.connect( address ).send( util.acceptedVersions( 3, 0, 0, 0 ) ).send(
                 util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess( allOf( hasKey( "server" ), hasKey( "connection_id" ) ) ) ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                        msgSuccess( message -> assertThat( message ).containsKeys( "server", "connection_id" ) ) ) );
     }
 
     @Test
@@ -89,7 +85,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 .send( util.acceptedVersions( 3, 2, 1, 0 ) )
                 .send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
     }
 
     @Test
@@ -102,14 +98,15 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         PullAllMessage.INSTANCE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), hasKey( "bookmark" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message ).containsKey( "t_first" )
+                                    .containsEntry( "fields", asList( "a", "a_squared" ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ), longEquals( 1L ) ) ),
+                msgRecord( eqRecord( longEquals( 2L ), longEquals( 4L ) ) ),
+                msgRecord( eqRecord( longEquals( 3L ), longEquals( 9L ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKeys( "bookmark", "t_last" )
+                        .containsEntry( "type", "r" ) ) ) );
     }
 
     @Test
@@ -122,11 +119,11 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 DiscardAllMessage.INSTANCE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), hasKey( "bookmark" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message )
+                        .containsKey( "t_first" ).containsEntry( "fields", asList( "a", "a_squared" ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKeys( "t_last", "bookmark" ).containsEntry( "type", "r" ) ) ) );
     }
 
     @Test
@@ -141,16 +138,17 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 COMMIT_MESSAGE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), not( hasKey( "bookmark" ) ) ) ),
-                msgSuccess( allOf( hasKey( "bookmark" ) ) ) ) );
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_first" ).containsEntry( "fields", asList( "a", "a_squared" ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ), longEquals( 1L ) ) ),
+                msgRecord( eqRecord( longEquals( 2L ), longEquals( 4L ) ) ),
+                msgRecord( eqRecord( longEquals( 3L ), longEquals( 9L ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_last" ).doesNotContainKey("bookmark" )
+                        .containsEntry( "type", "r" ) ),
+                msgSuccess( message -> assertThat( message ).containsKey("bookmark" ) ) ) );
     }
 
     @Test
@@ -165,15 +163,16 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 ROLLBACK_MESSAGE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), not( hasKey( "bookmark" ) ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_first" ).containsEntry( "fields", asList( "a", "a_squared" ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ), longEquals( 1L ) ) ),
+                msgRecord( eqRecord( longEquals( 2L ), longEquals( 4L ) ) ),
+                msgRecord( eqRecord( longEquals( 3L ), longEquals( 9L ) ) ),
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_last" ).doesNotContainKey( "bookmark" )
+                        .containsEntry( "type", "r" ) ),
                 msgSuccess() ) );
     }
 
@@ -186,7 +185,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         new RunMessage( "QINVALID" ),
                         PullAllMessage.INSTANCE ) );
 
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Statement.SyntaxError,
                         String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
                                 "\"QINVALID\"%n" +
@@ -197,10 +196,10 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         connection.send( util.chunk( ResetMessage.INSTANCE, new RunMessage( "RETURN 1" ), PullAllMessage.INSTANCE ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
+                msgRecord( eqRecord( longEquals(1L ) ) ),
                 msgSuccess() ) );
     }
 
@@ -213,10 +212,10 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         new RunMessage( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
                         PullAllMessage.INSTANCE ) );
 
-        Matcher<Map<? extends String,?>> ageMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( ageMatcher, hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_first" ).containsEntry( "fields", singletonList( "age" ) ) ),
+                msgRecord( eqRecord( longEquals( 2L ) ) ),
                 msgSuccess() ) );
 
         // When
@@ -225,10 +224,11 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 PullAllMessage.INSTANCE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ),
-                msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
+        final Condition<AnyValue> stringEquality = new Condition<>( value -> value.equals( stringValue( "Test" ) ), "String equals" );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_first" ).containsEntry( "fields", singletonList( "label" ) ) ),
+                msgRecord( eqRecord( stringEquality ) ),
                 msgSuccess()
         ) );
     }
@@ -243,9 +243,10 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         PullAllMessage.INSTANCE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message )
+                        .containsKey("t_first" )
+                .containsEntry( "fields", singletonList( "n" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -254,10 +255,10 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         //                 labels: [] (90)
         //                  props: {} (A)]
         //}
-        assertThat( connection,
+        assertThat( connection ).satisfies(
                 eventuallyReceives( bytes( 0x00, 0x08, 0xB1, 0x71, 0x91,
                         0xB3, 0x4E, 0x00, 0x90, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -270,9 +271,10 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         PullAllMessage.INSTANCE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( message -> assertThat( message )
+                            .containsKey("t_first" )
+                            .containsEntry( "fields", singletonList( "r" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -283,10 +285,10 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         //                 type: "T" (81 54)
         //                 props: {} (A0)]
         //}
-        assertThat( connection,
+        assertThat( connection ).satisfies(
                 eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
                         0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -297,7 +299,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         connection.send( util.chunk(
                         new RunMessage( "CREATE (n)" ),
                         PullAllMessage.INSTANCE ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess() ) );
 
@@ -308,11 +310,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         PullAllMessage.INSTANCE ) );
 
         // Then
-        Matcher<Map<? extends String,?>> typeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
-                msgSuccess( allOf( typeMatcher, hasKey( "t_last" ) ) ) ) );
+                msgRecord( eqRecord( longEquals( 1L ) ) ),
+                msgSuccess( message -> assertThat( message )
+                                                .containsKey( "t_last" )
+                                                .containsEntry( "type", "r" ) ) ) );
     }
 
     private byte[] bytes( int... ints )
@@ -342,7 +345,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         PullAllMessage.INSTANCE ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Request.Invalid,
                         "Value `null` is not supported as key in maps, must be a non-nullable string." ),
                 msgIgnored() ) );
@@ -350,10 +353,10 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         connection.send( util.chunk( ResetMessage.INSTANCE, new RunMessage( "RETURN 1" ), PullAllMessage.INSTANCE ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ) ) ),
                 msgSuccess() ) );
     }
 
@@ -367,7 +370,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         PullAllMessage.INSTANCE ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Schema.IndexDropFailed,
                         "Unable to drop index on (:Movie12345 {id}). There is no such index." ),
                 msgIgnored() ) );
@@ -388,19 +391,19 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 PullAllMessage.INSTANCE ) );
 
         // When
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
+                msgRecord( eqRecord( longEquals( 1L ) ) ),
                 msgSuccess() ) );
 
         // Then
         GraphDatabaseAPI gdb = (GraphDatabaseAPI) server.graphDatabaseService();
         Set<KernelTransactionHandle> txHandles = gdb.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
-        assertThat( txHandles.size(), equalTo( 1 ) );
+        assertThat( txHandles.size() ).isEqualTo( 1 );
         for ( KernelTransactionHandle txHandle: txHandles )
         {
-            assertThat( txHandle.getMetaData(), equalTo( txMetadata ) );
+            assertThat( txHandle.getMetaData() ).isEqualTo( txMetadata );
         }
         connection.send( util.chunk( ROLLBACK_MESSAGE ) );
     }
@@ -414,7 +417,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         connection.send( util.chunk( 32, beginMessage( metadata ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Transaction.InvalidBookmark, bookmarkString ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( InvalidBookmark, bookmarkString ) ) );
     }
 
     @Test
@@ -426,7 +429,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         connection.send( util.chunk( 32, beginMessage( metadata ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
     }
 
     @Test
@@ -438,7 +441,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         connection.send( util.chunk( 32, beginMessage( metadata ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
     }
 
     @Test
@@ -450,7 +453,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         connection.send( util.chunk( 32, runMessage( metadata ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Transaction.InvalidBookmark, bookmarkString ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( InvalidBookmark, bookmarkString ) ) );
     }
 
     @Test
@@ -462,7 +465,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         connection.send( util.chunk( 32, runMessage( metadata ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
     }
 
     @Test
@@ -474,7 +477,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         connection.send( util.chunk( 32, runMessage( metadata ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
     }
 
     @Test
@@ -490,9 +493,14 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 new RunMessage( "CREATE ()" ),
                 PullAllMessage.INSTANCE ) );
 
-        assertThat( connection, util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( allOf( hasEntry( "bookmark", expectedBookmark ) ) ) ) );
+                msgSuccess( message -> assertThat( message ).containsEntry("bookmark", expectedBookmark ) ) ) );
+    }
+
+    private Condition<AnyValue> longEquals( long expected )
+    {
+        return new Condition<>( value -> value.equals( longValue( expected ) ), "long equals" );
     }
 
     private byte[] beginMessage( Map<String,Object> metadata ) throws IOException

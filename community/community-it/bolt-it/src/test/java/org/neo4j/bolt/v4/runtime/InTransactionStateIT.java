@@ -41,8 +41,7 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.storable.BooleanValue;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,13 +49,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.testing.BoltMatchers.containsNoRecord;
-import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithoutMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.containsNoRecord;
+import static org.neo4j.bolt.testing.BoltConditions.containsRecord;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithoutMetadata;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
@@ -76,9 +75,9 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertTrue( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -93,10 +92,10 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
         assertFalse( response.hasMetadata( "db" ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @Test
@@ -111,10 +110,10 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
         assertTrue( response.hasMetadata( "db" ) );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
     }
 
     @Test
@@ -129,19 +128,19 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, containsNoRecord() );
-        assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+        assertThat( response ).satisfies( containsNoRecord() );
+        assertThat( response ).satisfies( succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
         assertFalse( response.hasMetadata( "db" ) );
 
         machine.process( newDiscardMessage( 2 ), recorder );
         response = recorder.nextResponse();
-        assertThat( response, containsNoRecord() );
+        assertThat( response ).satisfies( containsNoRecord() );
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
         assertTrue( response.hasMetadata( "db" ) );
-        assertThat( response, succeededWithoutMetadata( "has_more" ) );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( response ).satisfies( succeededWithoutMetadata( "has_more" ) );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
     }
 
     @Test
@@ -156,12 +155,12 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
         assertTrue( response.hasMetadata( "db" ) );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
     }
 
     @Test
@@ -176,18 +175,18 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, containsRecord( 1L ) );
-        assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+        assertThat( response ).satisfies( containsRecord( 1L ) );
+        assertThat( response ).satisfies( succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
         assertFalse( response.hasMetadata( "db" ) );
 
         machine.process( newPullMessage( 2 ), recorder );
         response = recorder.nextResponse();
-        assertThat( response, containsRecord( 3L ) );
+        assertThat( response ).satisfies( containsRecord( 3L ) );
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
         assertTrue( response.hasMetadata( "db" ) );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
     }
 
     @Test
@@ -202,9 +201,9 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
     }
 
     @Test
@@ -218,7 +217,7 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
         machine.process( new RunMessage( "any string" ), recorder );
 
         // Then
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
     }
 
     @Test
@@ -232,7 +231,7 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
         machine.process( InterruptSignal.INSTANCE, recorder );
 
         // Then
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     @ParameterizedTest
@@ -250,7 +249,7 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
         machine.process( message, handler );
 
         // Then
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
     }
 
     @ParameterizedTest
@@ -268,18 +267,18 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         machine.process( new BeginMessage(), nullResponseHandler() );
         machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.process( message, recorder ) );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
         assertNull( machine.state() );
     }
 
-    private static Stream<RequestMessage> illegalV4Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV4Messages()
     {
         return Stream.of(
                 newHelloMessage(),
@@ -293,20 +292,20 @@ class InTransactionStateIT extends BoltStateMachineV4StateTestBase
         return Stream.of( newPullMessage( 100L ), newDiscardMessage( 100L ) );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInTxState() throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInTxState() throws BoltConnectionFatality
     {
         return getBoltStateMachineInTxState( "CREATE (n {k:'k'}) RETURN n.k" );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInTxState( String query ) throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInTxState( String query ) throws BoltConnectionFatality
     {
         BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         machine.process( new BeginMessage(), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
         machine.process( new RunMessage( query, EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( InTransactionState.class ) ); // tx streaming state
+        assertThat( machine.state() ).isInstanceOf( InTransactionState.class ); // tx streaming state
         return machine;
     }
 }

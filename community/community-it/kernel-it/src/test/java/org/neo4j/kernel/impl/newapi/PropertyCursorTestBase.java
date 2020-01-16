@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -41,9 +39,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.hasItem;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -388,8 +384,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             if ( supportsBigProperties() )
             {
                 assertTrue( values.contains( LONG_STRING ), LONG_STRING_PROP );
-                assertThat( SMALL_ARRAY_PROP, values, hasItem( intArray( 1, 2, 3, 4 ) ) );
-                assertThat( BIG_ARRAY_PROP, values, hasItem( arrayContaining( LONG_STRING ) ) );
+                assertThat( values ).as( SMALL_ARRAY_PROP ).contains( new int[]{1, 2, 3, 4} );
+                assertThat( values ).as( BIG_ARRAY_PROP ).contains( LONG_STRING );
             }
             assertTrue( values.contains( pointValue ), POINT_PROP );
             assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
@@ -434,8 +430,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             if ( supportsBigProperties() )
             {
                 assertTrue( values.contains( LONG_STRING ), LONG_STRING_PROP );
-                assertThat( SMALL_ARRAY_PROP, values, hasItem( intArray( 1, 2, 3, 4 ) ) );
-                assertThat( BIG_ARRAY_PROP, values, hasItem( arrayContaining( LONG_STRING ) ) );
+                assertThat( values ).as( SMALL_ARRAY_PROP ).contains( new int[]{1, 2, 3, 4} );
+                assertThat( values ).as( BIG_ARRAY_PROP ).contains( LONG_STRING );
             }
             assertTrue( values.contains( pointValue ), POINT_PROP);
             assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
@@ -504,34 +500,5 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         relationship.properties( props );
         return props.next();
-    }
-
-    private static TypeSafeMatcher<int[]> intArray( int... content )
-    {
-        return new TypeSafeMatcher<int[]>()
-        {
-            @Override
-            protected boolean matchesSafely( int[] item )
-            {
-                if ( item.length != content.length )
-                {
-                    return false;
-                }
-                for ( int i = 0; i < content.length; i++ )
-                {
-                    if ( item[i] != content[i] )
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendValue( content );
-            }
-        };
     }
 }

@@ -34,8 +34,7 @@ import org.neo4j.logging.internal.LogService;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singleton;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -189,35 +188,35 @@ class BoltConnectionReadLimiterTest
     void shouldNotAcceptNegativeLowWatermark()
     {
         var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( -1, 5 ) );
-        assertThat( e.getMessage(), startsWith( "invalid lowWatermark value" )  );
+        assertThat( e.getMessage() ).startsWith( "invalid lowWatermark value" );
     }
 
     @Test
     void shouldNotAcceptLowWatermarkEqualToHighWatermark()
     {
         var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 5, 5 ) );
-        assertThat( e.getMessage(), startsWith( "invalid lowWatermark value" )  );
+        assertThat( e.getMessage() ).startsWith( "invalid lowWatermark value" );
     }
 
     @Test
     void shouldNotAcceptLowWatermarkLargerThanHighWatermark()
     {
         var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 6, 5 ) );
-        assertThat( e.getMessage(), startsWith( "invalid lowWatermark value" )  );
+        assertThat( e.getMessage() ).startsWith( "invalid lowWatermark value" );
     }
 
     @Test
     void shouldNotAcceptZeroHighWatermark()
     {
         var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 1, 0 ) );
-        assertThat( e.getMessage(), startsWith( "invalid highWatermark value" )  );
+        assertThat( e.getMessage() ).startsWith( "invalid highWatermark value" );
     }
 
     @Test
     void shouldNotAcceptNegativeHighWatermark()
     {
         var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 1, -1 ) );
-        assertThat( e.getMessage(), startsWith( "invalid highWatermark value" )  );
+        assertThat( e.getMessage() ).startsWith( "invalid highWatermark value" );
     }
 
     private BoltConnectionReadLimiter newLimiter( int low, int high )

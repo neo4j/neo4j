@@ -41,8 +41,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -176,7 +175,7 @@ class TestDirectoryExtensionTestSupport
             {
                 resultsObserved++;
                 String exceptionMessage = testExecutionResult.getThrowable().map( Throwable::getMessage ).orElse( "" );
-                assertThat( exceptionMessage, containsString( "Fail to cleanup test directory for lockFileAndFailToDeleteDirectory" ) );
+                assertThat( exceptionMessage ).contains( "Fail to cleanup test directory for lockFileAndFailToDeleteDirectory" );
             }
         }
 

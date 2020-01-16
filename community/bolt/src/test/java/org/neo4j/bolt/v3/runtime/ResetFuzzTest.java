@@ -62,9 +62,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -146,9 +144,9 @@ public class ResetFuzzTest
         try
         {
             RecordedBoltResponse response = recorder.nextResponse();
-            assertThat( response.message(), equalTo( SUCCESS ) );
-            assertThat( ((AbstractBoltStateMachine) machine).state(), instanceOf( ReadyState.class ) );
-            assertThat( liveTransactions.get(), equalTo( 0L ) );
+            assertThat( response.message() ).isEqualTo( SUCCESS );
+            assertThat( ((AbstractBoltStateMachine) machine).state() ).isInstanceOf( ReadyState.class );
+            assertThat( liveTransactions.get() ).isEqualTo( 0L );
         }
         catch ( AssertionError e )
         {

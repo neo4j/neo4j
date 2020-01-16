@@ -33,9 +33,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -88,8 +86,8 @@ class BoltStateMachineContextImplTest
         // When & Then
         BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class,
                     () -> context.setCurrentStatementProcessorForDatabase( "Bossi" ) );
-        assertThat( error.getMessage(), containsString( "Changing database without closing the previous is forbidden." ) );
-        assertThat( context.connectionState().getStatementProcessor(), equalTo( txStateMachine ) );
+        assertThat( error.getMessage() ).contains( "Changing database without closing the previous is forbidden." );
+        assertThat( context.connectionState().getStatementProcessor() ).isEqualTo( txStateMachine );
     }
 
     @Test
@@ -102,7 +100,7 @@ class BoltStateMachineContextImplTest
 
         // When & Then
         StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( DB_NAME );
-        assertThat( processor, equalTo( molly ) );
+        assertThat( processor ).isEqualTo( molly );
     }
 
     @Test
@@ -116,7 +114,7 @@ class BoltStateMachineContextImplTest
         context.releaseStatementProcessor();
 
         // Then
-        assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
+        assertThat( context.connectionState().getStatementProcessor() ).isEqualTo( EMPTY );
     }
 
     private static BoltStateMachineContextImpl boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, String databaseName )
@@ -128,12 +126,12 @@ class BoltStateMachineContextImplTest
 
         BoltStateMachineContextImpl context = newContext( mock( BoltStateMachine.class ), mock( BoltStateMachineSPI.class ) );
         context.setStatementProcessorProvider( provider );
-        assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
+        assertThat( context.connectionState().getStatementProcessor() ).isEqualTo( EMPTY );
 
         StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( databaseName );
 
-        assertThat( processor, equalTo( txStateMachine ) );
-        assertThat( context.connectionState().getStatementProcessor(), equalTo( txStateMachine ) );
+        assertThat( processor ).isEqualTo( txStateMachine );
+        assertThat( context.connectionState().getStatementProcessor() ).isEqualTo( txStateMachine );
         return context;
     }
 

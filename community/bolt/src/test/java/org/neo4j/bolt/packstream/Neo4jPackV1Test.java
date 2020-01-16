@@ -43,10 +43,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -99,9 +96,9 @@ public class Neo4jPackV1Test
         AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( ListValue.class ) );
+        assertThat( unpacked ).isInstanceOf( ListValue.class );
         ListValue unpackedList = (ListValue) unpacked;
-        assertThat( unpackedList, equalTo( ValueUtils.asListValue( expected ) ) );
+        assertThat( unpackedList ).isEqualTo( ValueUtils.asListValue( expected ) );
     }
 
     @Test
@@ -126,9 +123,9 @@ public class Neo4jPackV1Test
         AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( MapValue.class ) );
+        assertThat( unpacked ).isInstanceOf( MapValue.class );
         MapValue unpackedMap = (MapValue) unpacked;
-        assertThat( unpackedMap, equalTo( ALICE.properties() ) );
+        assertThat( unpackedMap ).isEqualTo( ALICE.properties() );
     }
 
     @Test
@@ -269,8 +266,8 @@ public class Neo4jPackV1Test
         AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( TextValue.class ) );
-        assertThat( unpacked, equalTo( stringValue( "C" ) ) );
+        assertThat( unpacked ).isInstanceOf( TextValue.class );
+        assertThat( unpacked ).isEqualTo( stringValue( "C" ) );
     }
 
     @Test
@@ -283,9 +280,8 @@ public class Neo4jPackV1Test
         Object unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( ListValue.class ) );
-        assertThat( unpacked,
-                equalTo( VirtualValues.list( stringValue( "W" ), stringValue( "H" ), stringValue( "Y" ) ) ) );
+        assertThat( unpacked ).isInstanceOf( ListValue.class );
+        assertThat( unpacked ).isEqualTo( VirtualValues.list( stringValue( "W" ), stringValue( "H" ), stringValue( "Y" ) ) );
     }
 
     @Test
@@ -301,9 +297,9 @@ public class Neo4jPackV1Test
 
         // When
         AnyValue unpacked = unpacked( output.bytes() );
-        assertThat( unpacked, is( instanceOf( UTF8StringValue.class ) ));
+        assertThat( unpacked ).isInstanceOf( UTF8StringValue.class );
 
         // Then
-        assertThat( unpacked, equalTo( textValue ) );
+        assertThat( unpacked ).isEqualTo( textValue );
     }
 }

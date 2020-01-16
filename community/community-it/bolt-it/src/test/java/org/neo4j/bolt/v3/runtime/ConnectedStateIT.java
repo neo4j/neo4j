@@ -34,13 +34,12 @@ import org.neo4j.bolt.v3.messaging.BoltV3Messages;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineSPIImpl.BOLT_SERVER_VERSION_PREFIX;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
 
 class ConnectedStateIT extends BoltStateMachineV3StateTestBase
 {
@@ -56,9 +55,9 @@ class ConnectedStateIT extends BoltStateMachineV3StateTestBase
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeededWithMetadata( "server", BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion() ) );
-        assertThat( response, succeededWithMetadata( "connection_id", "conn-v3-test-boltchannel-id" ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertThat( response ).satisfies( succeededWithMetadata( "server", BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion() ) );
+        assertThat( response ).satisfies( succeededWithMetadata( "connection_id", "conn-v3-test-boltchannel-id" ) );
+        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
     }
 
     @ParameterizedTest
@@ -85,7 +84,7 @@ class ConnectedStateIT extends BoltStateMachineV3StateTestBase
         verifyKillsConnection( () -> machine.process( message, recorder ) );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
         assertNull( machine.state() );
     }
 

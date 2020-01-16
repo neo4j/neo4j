@@ -31,9 +31,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.emptyList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -265,9 +263,9 @@ class BookmarksParserV3Test
     private static BookmarkWithPrefix parse( MapValue metadata ) throws BookmarkFormatException
     {
         var bookmarks = BookmarksParserV3.INSTANCE.parseBookmarks( metadata );
-        assertThat( bookmarks, hasSize( 1 ) );
+        assertThat( bookmarks ).hasSize( 1 );
         var bookmark = bookmarks.get( 0 );
-        assertThat( bookmark, instanceOf( BookmarkWithPrefix.class ) );
+        assertThat( bookmark ).isInstanceOf( BookmarkWithPrefix.class );
         return (BookmarkWithPrefix) bookmark;
     }
 

@@ -35,15 +35,13 @@ import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.testing.BoltMatchers.hasTransaction;
+import static org.neo4j.bolt.testing.BoltConditions.hasTransaction;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 /**
@@ -104,7 +102,6 @@ public class BoltV4MachineRoom
     private static void runBegin( BoltStateMachine machine ) throws BoltConnectionFatality, BoltIOException
     {
         machine.process( BoltV4Messages.begin(), nullResponseHandler() );
-        assertThat( machine, hasTransaction() );
+        assertThat( machine ).satisfies( hasTransaction() );
     }
-
 }

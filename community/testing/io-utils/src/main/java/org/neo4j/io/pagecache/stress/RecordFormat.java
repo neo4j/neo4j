@@ -23,8 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RecordFormat
 {
@@ -115,7 +114,7 @@ public class RecordFormat
             }
             while ( cursor.shouldRetry() );
             String msg = "Checksum for record " + i + " on page " + cursor.getCurrentPageId();
-            assertThat( msg, actualChecksum, is( expectedChecksum ) );
+            assertThat( actualChecksum ).describedAs( msg ).isEqualTo( expectedChecksum );
         }
     }
 }

@@ -19,21 +19,15 @@
  */
 package org.neo4j.test;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.mockito.ArgumentMatcher;
-
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.string.UTF8;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.internal.progress.ThreadSafeMockingProgress.mockingProgress;
 
 public class AuthTokenUtil
 {
@@ -93,67 +87,12 @@ public class AuthTokenUtil
             if ( AuthToken.containsSensitiveInformation( key ) )
             {
                 byte[] expectedByteArray = expectedValue != null ? UTF8.encode( (String) expectedValue ) : null;
-                assertTrue( Arrays.equals( expectedByteArray, (byte[]) actualValue ) );
+                assertArrayEquals( expectedByteArray, (byte[]) actualValue );
             }
             else
             {
                 assertEquals( expectedValue, actualValue );
             }
         } );
-    }
-
-    public static class AuthTokenMatcher extends BaseMatcher<Map<String,Object>>
-    {
-        private final Map<String,Object> expectedValue;
-
-        public AuthTokenMatcher( Map<String,Object> expectedValue )
-        {
-            this.expectedValue = expectedValue;
-        }
-
-        @Override
-        public boolean matches( Object o )
-        {
-            return AuthTokenUtil.matches( expectedValue, o );
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendValue( this.expectedValue );
-        }
-    }
-
-    public static AuthTokenMatcher authTokenMatcher( Map<String,Object> authToken )
-    {
-        return new AuthTokenMatcher( authToken );
-    }
-
-    public static class AuthTokenArgumentMatcher implements ArgumentMatcher<Map<String,Object>>, Serializable
-    {
-
-        private Map<String,Object> wanted;
-
-        public AuthTokenArgumentMatcher( Map<String,Object> authToken )
-        {
-            this.wanted = authToken;
-        }
-
-        @Override
-        public boolean matches( Map<String,Object> actual )
-        {
-            return AuthTokenUtil.matches( wanted, actual );
-        }
-
-        public String toString()
-        {
-            return "authTokenArgumentMatcher(" + wanted + ")";
-        }
-    }
-
-    public static Map<String,Object> authTokenArgumentMatcher( Map<String,Object> authToken )
-    {
-        mockingProgress().getArgumentMatcherStorage().reportMatcher( new AuthTokenArgumentMatcher( authToken ) );
-        return null;
     }
 }

@@ -26,12 +26,15 @@ import java.util.Map;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME;
+import static org.neo4j.kernel.api.security.AuthToken.CREDENTIALS;
+import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
+import static org.neo4j.kernel.api.security.AuthToken.REALM_KEY;
+import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
-import static org.neo4j.test.AuthTokenUtil.authTokenMatcher;
+import static org.neo4j.test.AuthTokenUtil.matches;
 
 class ShiroAuthTokenTest
 {
@@ -42,10 +45,10 @@ class ShiroAuthTokenTest
     void shouldSupportBasicAuthToken() throws Exception
     {
         ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
-        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
-                authTokenMatcher( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
-                        AuthToken.BASIC_SCHEME ) ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
+        var expected = map( PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME );
+        assertThat( token.getAuthTokenMap() ).as( "Token map should have only expected values" )
+                .matches( map -> matches( expected, map ) );
         testTokenSupportsRealm( token, true, "unknown", "native", "ldap" );
     }
 
@@ -53,10 +56,10 @@ class ShiroAuthTokenTest
     void shouldSupportBasicAuthTokenWithEmptyRealm() throws Exception
     {
         ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, "" ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
-        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
-                authTokenMatcher( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
-                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, "" ) ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
+        var expected = map( PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "" );
+        assertThat( token.getAuthTokenMap() ).as( "Token map should have only expected values" )
+                .matches( map -> matches( expected, map ) );
         testTokenSupportsRealm( token, true, "unknown", "native", "ldap" );
     }
 
@@ -64,10 +67,9 @@ class ShiroAuthTokenTest
     void shouldSupportBasicAuthTokenWithNullRealm() throws Exception
     {
         ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, null ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
-        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
-                authTokenMatcher( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
-                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, null ) ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
+        var expected = map( PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, null );
+        assertThat( token.getAuthTokenMap() ).as( "Token map should have only expected values" ).matches( map -> matches( expected, map ) );
         testTokenSupportsRealm( token, true, "unknown", "native", "ldap" );
     }
 
@@ -75,10 +77,9 @@ class ShiroAuthTokenTest
     void shouldSupportBasicAuthTokenWithWildcardRealm() throws Exception
     {
         ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, "*" ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
-        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
-                authTokenMatcher( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
-                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, "*" ) ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
+        var expected = map( PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "*" );
+        assertThat( token.getAuthTokenMap() ).as( "Token map should have only expected values" ).matches( map -> matches( expected, map ) );
         testTokenSupportsRealm( token, true, "unknown", "native", "ldap" );
     }
 
@@ -87,10 +88,9 @@ class ShiroAuthTokenTest
     {
         String realm = "ldap";
         ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, realm ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
-        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
-                authTokenMatcher( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
-                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, "ldap" ) ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
+        var expected = map( PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "ldap" );
+        assertThat( token.getAuthTokenMap() ).as( "Token map should have only expected values" ).matches( map -> matches( expected, map ) );
         testTokenSupportsRealm( token, true, realm );
         testTokenSupportsRealm( token, false, "unknown", "native" );
     }
@@ -99,12 +99,11 @@ class ShiroAuthTokenTest
     void shouldSupportCustomAuthTokenWithSpecificRealm() throws Exception
     {
         String realm = "ldap";
-        ShiroAuthToken token =
-                new ShiroAuthToken( AuthToken.newCustomAuthToken( USERNAME, PASSWORD, realm, AuthToken.BASIC_SCHEME ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
-        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
-                authTokenMatcher( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
-                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, "ldap" ) ) );
+        ShiroAuthToken token = new ShiroAuthToken( AuthToken.newCustomAuthToken( USERNAME, PASSWORD, realm, BASIC_SCHEME ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
+        var expected = map( PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "ldap" );
+        assertThat( token.getAuthTokenMap() ).as( "Token map should have only expected values" )
+                .matches( map -> matches( expected, map ) );
         testTokenSupportsRealm( token, true, realm );
         testTokenSupportsRealm( token, false, "unknown", "native" );
     }
@@ -116,12 +115,10 @@ class ShiroAuthTokenTest
         Map<String,Object> params = map( "a", "A", "b", "B" );
         ShiroAuthToken token =
                 new ShiroAuthToken(
-                        AuthToken.newCustomAuthToken( USERNAME, PASSWORD, realm, AuthToken.BASIC_SCHEME, params ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
-        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
-                authTokenMatcher( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
-                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, "ldap",
-                        "parameters", params ) ) );
+                        AuthToken.newCustomAuthToken( USERNAME, PASSWORD, realm, BASIC_SCHEME, params ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
+        var expected = map( PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "ldap", "parameters", params );
+        assertThat( token.getAuthTokenMap() ).as( "Token map should have only expected values" ).matches( map -> matches( expected, map ) );
         testTokenSupportsRealm( token, true, realm );
         testTokenSupportsRealm( token, false, "unknown", "native" );
     }
@@ -130,26 +127,25 @@ class ShiroAuthTokenTest
     void shouldHaveStringRepresentationWithNullRealm() throws Exception
     {
         ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, null ) );
-        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
+        testBasicAuthToken( token, USERNAME, PASSWORD, BASIC_SCHEME );
 
         String stringRepresentation = token.toString();
-        assertThat( stringRepresentation, containsString( "realm='null'" ) );
+        assertThat( stringRepresentation ).contains( "realm='null'" );
     }
 
     private void testTokenSupportsRealm( ShiroAuthToken token, boolean supports, String... realms )
     {
         for ( String realm : realms )
         {
-            assertThat( "Token should support '" + realm + "' realm", token.supportsRealm( realm ),
-                    equalTo( supports ) );
+            assertThat( token.supportsRealm( realm ) ).as( "Token should support '" + realm + "' realm" ).isEqualTo( supports );
         }
     }
 
     private void testBasicAuthToken( ShiroAuthToken token, String username, String password, String scheme )
             throws InvalidAuthTokenException
     {
-        assertThat( "Token should have basic scheme", token.getScheme(), equalTo( scheme ) );
-        assertThat( "Token have correct principal", token.getPrincipal(), equalTo( username ) );
-        assertThat( "Token have correct credentials", token.getCredentials(), equalTo( password( password ) ) );
+        assertThat( token.getScheme() ).as( "Token should have basic scheme" ).isEqualTo( scheme );
+        assertThat( token.getPrincipal() ).as( "Token have correct principal" ).isEqualTo( username );
+        assertThat( token.getCredentials() ).as( "Token have correct credentials" ).isEqualTo( password( password ) );
     }
 }

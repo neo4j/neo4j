@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -42,15 +41,14 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
-import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithRecord;
+import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v4.messaging.BoltV4Messages.begin;
 import static org.neo4j.bolt.v4.messaging.BoltV4Messages.commit;
@@ -73,7 +71,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         var runRecorder = new BoltResponseRecorder();
         machine.process( run( "CREATE (n {k:'k'}) RETURN n.k" ), runRecorder );
         // Then
-        assertThat( runRecorder.nextResponse(), succeeded() );
+        assertThat( runRecorder.nextResponse() ).satisfies( succeeded() );
 
         // When
         var pullRecorder = new BoltResponseRecorder();
@@ -94,11 +92,11 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         var recorder = new BoltResponseRecorder();
         machine.process( run( "MATCH (n:Victim) DELETE n" ), recorder );
         // Then the statement running should have succeeded
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
 
         // But the streaming should have failed, since it implicitly triggers commit and thus triggers a failure
         machine.process( discardAll(), recorder );
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Schema.ConstraintValidationFailed ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Schema.ConstraintValidationFailed ) );
     }
 
     @Test
@@ -119,7 +117,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         var recorder = new BoltResponseRecorder();
         machine.process( run( "this is not valid syntax" ), recorder );
         // Then I should see a failure
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Statement.SyntaxError ) );
         // This result in an illegal state change, and closes all open statement by default.
         assertFalse( machine.hasOpenStatement() );
 
@@ -128,7 +126,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         resetReceived( machine, recorder );
 
         // Then both operations should succeed
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
         assertFalse( machine.hasOpenStatement() );
     }
 
@@ -182,8 +180,8 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         // Then
         assertTrue( pullAllCallbackCalled.await( 30, TimeUnit.SECONDS ) );
         var err = error.get();
-        assertThat( err.status(), equalTo( Status.General.UnknownError ) );
-        assertThat( err.message(), CoreMatchers.containsString( "Ooopsies!" ) );
+        assertThat( err.status() ).isEqualTo( Status.General.UnknownError );
+        assertThat( err.message() ).contains( "Ooopsies!" );
     }
 
     @Test
@@ -203,7 +201,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         secondMachine.process( pullAll(), recorder );
         var response = recorder.nextResponse();
         var id = ((LongValue) response.singleValueRecord()).longValue();
-        assertThat( response, succeeded() );
+        assertThat( response ).satisfies( succeeded() );
 
         // And when I roll back that first session transaction
         firstMachine.process( BoltV4Messages.rollback(), nullResponseHandler() );
@@ -212,8 +210,8 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         recorder.reset();
         secondMachine.process( run( "MATCH (a:Person) WHERE id(a) = " + id + " RETURN COUNT(*)" ), recorder );
         secondMachine.process( pullAll(), recorder );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithRecord( 1L ) );
     }
 
     @Test
@@ -240,8 +238,8 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         machine.process( pullAll(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeededWithRecord( 150L ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithRecord( 150L ) );
 
         /*
          * 7 tokens have been created for
@@ -281,7 +279,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         );
 
         // Then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SemanticError ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Statement.SemanticError ) );
         // "Executing queries that use periodic commit in an open transaction is not possible."
     }
 
@@ -307,7 +305,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     @Test
@@ -333,18 +331,18 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         var recorder = new BoltResponseRecorder();
         machine.process( run( "X" ), recorder );
         machine.process( pullAll(), recorder );
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
-        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Statement.SyntaxError ) );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
 
         // The tx shall still be open.
         assertTrue( hasTransaction( machine ) );
 
         recorder.reset();
         machine.process( commit(), recorder );
-        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
 
         resetReceived( machine, recorder );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
 
         assertFalse( hasTransaction( machine ) );
     }
@@ -373,17 +371,17 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         machine.process( run( "X" ), recorder );
         machine.process( pullAll(), recorder );
 
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
-        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Statement.SyntaxError ) );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
 
         // The tx shall still be open.
         assertTrue( hasTransaction( machine ) );
 
         recorder.reset();
         machine.process( rollback(), recorder );
-        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
         resetReceived( machine, recorder );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
 
         assertFalse( hasTransaction( machine ) );
     }
@@ -421,8 +419,8 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         var recorder = new BoltResponseRecorder();
         machine.process( run( statement, params ), recorder );
         machine.process( pullAll(), recorder );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     private MapValue map( Object... keyValues )

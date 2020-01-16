@@ -31,8 +31,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -59,7 +58,7 @@ class EphemeralPageCacheExtensionTest
     @Test
     void testDirectoryWithHasEphemeralFileSystem()
     {
-        assertThat( testDirectory.getFileSystem(), instanceOf( EphemeralFileSystemAbstraction.class ) );
+        assertThat( testDirectory.getFileSystem() ).isInstanceOf( EphemeralFileSystemAbstraction.class );
     }
 
     @Test

@@ -1094,7 +1094,6 @@
         <scope>test</scope>
       </dependency>
 
-      <!-- The JUnit-Hamcrest-Mockito combo -->
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
@@ -1106,6 +1105,12 @@
         <artifactId>junit-vintage-engine</artifactId>
         <version>${junit.version}</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.junit.platform</groupId>
@@ -1503,6 +1508,12 @@
         <artifactId>junit</artifactId>
         <version>4.12</version>
         <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.testing.compile</groupId>

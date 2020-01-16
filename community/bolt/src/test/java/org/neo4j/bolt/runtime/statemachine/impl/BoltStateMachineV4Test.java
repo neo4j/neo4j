@@ -49,8 +49,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -69,14 +68,14 @@ import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMach
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachineWithTransaction;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachineWithTransactionSPI;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.reset;
-import static org.neo4j.bolt.testing.BoltMatchers.canReset;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.hasNoTransaction;
-import static org.neo4j.bolt.testing.BoltMatchers.inState;
-import static org.neo4j.bolt.testing.BoltMatchers.isClosed;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyOneResponse;
-import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
+import static org.neo4j.bolt.testing.BoltConditions.canReset;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.hasNoTransaction;
+import static org.neo4j.bolt.testing.BoltConditions.inState;
+import static org.neo4j.bolt.testing.BoltConditions.isClosed;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.verifyOneResponse;
+import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 
@@ -96,7 +95,7 @@ class BoltStateMachineV4Test
     @Test
     void initialStateShouldBeConnected()
     {
-        assertThat( newMachine(), inState( ConnectedState.class ) );
+        assertThat( newMachine() ).satisfies( inState( ConnectedState.class ) );
     }
 
     @Test
@@ -110,10 +109,10 @@ class BoltStateMachineV4Test
         reset( machine, nullResponseHandler() );
 
         // Then the transaction should have been rolled back...
-        assertThat( machine, hasNoTransaction() );
+        assertThat( machine ).satisfies( hasNoTransaction() );
 
         // ...and the machine should go back to READY
-        assertThat( machine, inState( ReadyState.class ) );
+        assertThat( machine ).satisfies( inState( ReadyState.class ) );
     }
 
     @Test
@@ -126,23 +125,23 @@ class BoltStateMachineV4Test
         machine.close();
 
         // Then the transaction should have been rolled back
-        assertThat( machine, hasNoTransaction() );
+        assertThat( machine ).satisfies( hasNoTransaction() );
     }
 
     @Test
     void shouldBeAbleToResetWhenInReadyState() throws Throwable
     {
         BoltStateMachine machine = init( newMachine() );
-        assertThat( machine, canReset() );
-        assertThat( machine, hasNoTransaction() );
+        assertThat( machine ).satisfies( canReset() );
+        assertThat( machine ).satisfies( hasNoTransaction() );
     }
 
     @Test
     void shouldResetWithOpenTransaction() throws Throwable
     {
         BoltStateMachine machine = newMachineWithTransaction();
-        assertThat( machine, canReset() );
-        assertThat( machine, hasNoTransaction() );
+        assertThat( machine ).satisfies( canReset() );
+        assertThat( machine ).satisfies( hasNoTransaction() );
     }
 
     @Test
@@ -155,8 +154,8 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.run(), nullResponseHandler() );
 
         // Then
-        assertThat( machine, canReset() );
-        assertThat( machine, hasNoTransaction() );
+        assertThat( machine ).satisfies( canReset() );
+        assertThat( machine ).satisfies( hasNoTransaction() );
     }
 
     @Test
@@ -169,8 +168,8 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.run(), nullResponseHandler() );
 
         // Then
-        assertThat( machine, canReset() );
-        assertThat( machine, hasNoTransaction() );
+        assertThat( machine ).satisfies( canReset() );
+        assertThat( machine ).satisfies( hasNoTransaction() );
     }
 
     @Test
@@ -184,7 +183,7 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.rollback(), nullResponseHandler() );
 
         // Then
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
     }
 
     @Test
@@ -195,13 +194,13 @@ class BoltStateMachineV4Test
 
         // ...which is subsequently closed
         machine.close();
-        assertThat( machine, isClosed() );
+        assertThat( machine ).satisfies( isClosed() );
 
         // When and interrupt and reset occurs
         reset( machine, nullResponseHandler() );
 
         // Then the machine should remain closed
-        assertThat( machine, isClosed() );
+        assertThat( machine ).satisfies( isClosed() );
     }
 
     @Test
@@ -220,9 +219,9 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.run(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     @Test
@@ -242,9 +241,9 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.run(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
 
         // But when
         recorder.reset();
@@ -252,8 +251,8 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.run(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     @Test
@@ -279,10 +278,10 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.pullAll(), recorder );
 
         // Then the breakage should surface as a FAILURE
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.General.UnknownError ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.General.UnknownError ) );
 
         // ...and the machine should have entered a FAILED state
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
     }
 
     @Test
@@ -303,7 +302,7 @@ class BoltStateMachineV4Test
         machine.process(BoltV4Messages.rollback(), nullResponseHandler() );
 
         // Then
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
     }
 
     @Test
@@ -319,7 +318,7 @@ class BoltStateMachineV4Test
         assertThrows( BoltProtocolBreachFatality.class, () -> machine.process( BoltV4Messages.begin(), nullResponseHandler() ) );
 
         // Then
-        assertThat( machine, inState( null ) );
+        assertThat( machine ).satisfies( inState( null ) );
     }
 
     @Test
@@ -331,13 +330,13 @@ class BoltStateMachineV4Test
 
         // Then no RUN...
         machine.process( BoltV4Messages.run(), nullResponseHandler() );
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
         // ...DISCARD_ALL...
         machine.process( BoltV4Messages.discardAll(), nullResponseHandler() );
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
         // ...or PULL_ALL should be possible
         machine.process( BoltV4Messages.pullAll(), nullResponseHandler() );
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
     }
 
     @Test
@@ -354,13 +353,13 @@ class BoltStateMachineV4Test
         reset( machine, recorder );
 
         // ...successfully
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
 
         // Then if I RUN a statement...
         machine.process( BoltV4Messages.run(), recorder );
 
         // ...everything should be fine again
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     @Test
@@ -478,7 +477,7 @@ class BoltStateMachineV4Test
         machine.markFailed( error );
 
         assertEquals( error, pendingError( machine ) );
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
     }
 
     @Test
@@ -547,7 +546,7 @@ class BoltStateMachineV4Test
 
         assertTrue( pendingIgnore( machine ) );
         assertEquals( error1, pendingError( machine ) ); // error remained the same and was ignored
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
     }
 
     @Test
@@ -620,7 +619,7 @@ class BoltStateMachineV4Test
 
         assertNull( pendingError( machine ) );
         assertFalse( pendingIgnore( machine ) );
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
         verify( responseHandler ).markFailed( error );
     }
 
@@ -638,7 +637,7 @@ class BoltStateMachineV4Test
         machine.process( BoltV4Messages.pullAll(), responseHandler );
 
         verify( spi, never() ).reportError( any() );
-        assertThat( machine, not( inState( FailedState.class ) ) );
+        assertThat( machine ).isNotEqualTo( inState( FailedState.class ) );
     }
 
     @Test
@@ -658,9 +657,9 @@ class BoltStateMachineV4Test
         machine.markFailed( Neo4jError.from( Status.Request.NoThreadsAvailable, "No Threads Available" ) );
         machine.process( BoltV4Messages.reset(), recorder );
 
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.NoThreadsAvailable ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.NoThreadsAvailable ) );
         // ...successfully
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     @Test
@@ -683,10 +682,10 @@ class BoltStateMachineV4Test
         machine.markFailed( Neo4jError.from( Status.Request.NoThreadsAvailable, "No Threads Available" ) );
         machine.process( BoltV4Messages.reset(), recorder );
 
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.NoThreadsAvailable ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.NoThreadsAvailable ) );
         // ...successfully
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
     private static void testMarkFailedOnNextMessage( ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action ) throws Exception
@@ -704,7 +703,7 @@ class BoltStateMachineV4Test
         // Expect
         assertNull( pendingError( machine ) );
         assertFalse( pendingIgnore( machine ) );
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
         verify( responseHandler ).markFailed( error );
     }
 
@@ -724,7 +723,7 @@ class BoltStateMachineV4Test
         // Expect
         assertNull( pendingError( machine ) );
         assertFalse( pendingIgnore( machine ) );
-        assertThat( machine, inState( ReadyState.class ) );
+        assertThat( machine ).satisfies( inState( ReadyState.class ) );
         verify( responseHandler, never() ).markFailed( any() );
         verify( responseHandler, never() ).markIgnored();
     }
@@ -746,7 +745,7 @@ class BoltStateMachineV4Test
         // Expect
         assertNull( pendingError( machine ) );
         assertFalse( pendingIgnore( machine ) );
-        assertThat( machine, inState( FailedState.class ) );
+        assertThat( machine ).satisfies( inState( FailedState.class ) );
         verify( responseHandler ).markIgnored();
     }
 
@@ -767,7 +766,7 @@ class BoltStateMachineV4Test
         // Expect
         assertNull( pendingError( machine ) );
         assertFalse( pendingIgnore( machine ) );
-        assertThat( machine, inState( ReadyState.class ) );
+        assertThat( machine ).satisfies( inState( ReadyState.class ) );
         verify( responseHandler, never() ).markIgnored();
         verify( responseHandler, never() ).markFailed( any() );
     }

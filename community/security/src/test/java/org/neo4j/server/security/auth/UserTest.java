@@ -24,9 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.kernel.impl.security.User;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
 class UserTest
@@ -40,21 +38,21 @@ class UserTest
         User u2 = new User.Builder( "Steve", fruit )
                 .withRequiredPasswordChange( true )
                 .withFlag( "nice_guy" ).build();
-        assertThat( u1, equalTo( u1 ) );
-        assertThat( u1, not( equalTo( u2 ) ) );
+        assertThat( u1 ).isEqualTo( u1 );
+        assertThat( u1 ).isNotEqualTo( u2 );
 
         User u1AsU2 = u1.augment().withCredentials( fruit )
                 .withRequiredPasswordChange( true )
                 .withFlag( "nice_guy" ).build();
-        assertThat( u1, not( equalTo( u1AsU2 )));
-        assertThat( u2, equalTo( u1AsU2 ));
+        assertThat( u1 ).isNotEqualTo( u1AsU2 );
+        assertThat( u2 ).isEqualTo( u1AsU2 );
 
         User u2AsU1 = u2.augment().withCredentials( abc )
                 .withRequiredPasswordChange( false )
                 .withoutFlag( "nice_guy" ).build();
-        assertThat( u2, not( equalTo( u2AsU1 )));
-        assertThat( u1, equalTo( u2AsU1 ));
+        assertThat( u2 ).isNotEqualTo( u2AsU1 );
+        assertThat( u1 ).isEqualTo( u2AsU1 );
 
-        assertThat( u1, not( equalTo( u2 ) ) );
+        assertThat( u1 ).isNotEqualTo( u2 );
     }
 }

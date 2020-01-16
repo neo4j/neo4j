@@ -37,9 +37,8 @@ import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -138,8 +137,8 @@ public class BasicSystemGraphRealmTest
         realm.login( authToken );
 
         // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-        assertThat( authToken.get( AuthToken.CREDENTIALS ), equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
+        assertThat( password ).isEqualTo( clearedPasswordWithSameLengthAs( "abc123" ) );
+        assertThat( authToken.get( AuthToken.CREDENTIALS ) ).isEqualTo( clearedPasswordWithSameLengthAs( "abc123" ) );
     }
 
     @Test
@@ -160,8 +159,8 @@ public class BasicSystemGraphRealmTest
         {
             // expected
         }
-        assertThat( password, equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
-        assertThat( authToken.get( AuthToken.CREDENTIALS ), equalTo( clearedPasswordWithSameLengthAs( "abc123" ) ) );
+        assertThat( password ).isEqualTo( clearedPasswordWithSameLengthAs( "abc123" ) );
+        assertThat( authToken.get( AuthToken.CREDENTIALS ) ).isEqualTo( clearedPasswordWithSameLengthAs( "abc123" ) );
     }
 
     @Test
@@ -194,7 +193,7 @@ public class BasicSystemGraphRealmTest
     private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult ) throws InvalidAuthTokenException
     {
         LoginContext securityContext = realm.login( authToken( username, password ) );
-        assertThat( securityContext.subject().getAuthenticationResult(), equalTo( expectedResult ) );
+        assertThat( securityContext.subject().getAuthenticationResult() ).isEqualTo( expectedResult );
     }
 
     private void setMockAuthenticationStrategyResult( User user, String password, AuthenticationResult result )

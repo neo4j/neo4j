@@ -25,27 +25,25 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.v3.BoltStateMachineV3;
+import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v3.BoltStateMachineV3;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
-import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
+import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
@@ -65,8 +63,8 @@ class FailedStateIT extends BoltStateMachineV3StateTestBase
         machine.process( message, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), wasIgnored() );
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
     }
 
     @Test
@@ -80,8 +78,8 @@ class FailedStateIT extends BoltStateMachineV3StateTestBase
         machine.process( InterruptSignal.INSTANCE, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( machine.state(), instanceOf( InterruptedState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
     }
 
     @ParameterizedTest
@@ -101,7 +99,7 @@ class FailedStateIT extends BoltStateMachineV3StateTestBase
         verifyKillsConnection( () -> machine.process( message, recorder ) );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
         assertNull( machine.state() );
     }
 
@@ -115,17 +113,17 @@ class FailedStateIT extends BoltStateMachineV3StateTestBase
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.process( runMessage, recorder );
 
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.General.UnknownError ) );
-        assertThat( machine.state(), instanceOf( FailedState.class ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.General.UnknownError ) );
+        assertThat( machine.state() ).isInstanceOf( FailedState.class );
         return machine;
     }
 
-    private static Stream<RequestMessage> ignoredMessages() throws BoltIOException
+    private static Stream<RequestMessage> ignoredMessages()
     {
         return Stream.of( DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new RunMessage( "A cypher query" ), COMMIT_MESSAGE, ROLLBACK_MESSAGE );
     }
 
-    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV3Messages()
     {
         return Stream.of( newHelloMessage(), new BeginMessage(), GOODBYE_MESSAGE );
     }

@@ -47,8 +47,7 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static java.util.Arrays.stream;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -93,12 +92,12 @@ class CachingExpandIntoTest
         }
 
         // Then
-        assertThat( connections( start, OUTGOING, end ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
-        assertThat( connections( start, OUTGOING, end, "R1" ), equalTo( LongSets.immutable.of( r1 ) ) );
-        assertThat( connections( start, INCOMING, end ), equalTo( LongSets.immutable.of( r3 ) ) );
-        assertThat( connections( start, INCOMING, end, "R1" ), equalTo( LongSets.immutable.empty()) );
-        assertThat( connections( start, BOTH, end ), equalTo( LongSets.immutable.of( r1, r2, r3 ) ) );
-        assertThat( connections( start, BOTH, end, "R2", "R3" ), equalTo( LongSets.immutable.of(  r2, r3 ) ) );
+        assertThat( connections( start, OUTGOING, end ) ).isEqualTo( LongSets.immutable.of( r1, r2 ) );
+        assertThat( connections( start, OUTGOING, end, "R1" ) ).isEqualTo( LongSets.immutable.of( r1 ) );
+        assertThat( connections( start, INCOMING, end ) ).isEqualTo( LongSets.immutable.of( r3 ) );
+        assertThat( connections( start, INCOMING, end, "R1" ) ).isEqualTo( LongSets.immutable.empty() );
+        assertThat( connections( start, BOTH, end ) ).isEqualTo( LongSets.immutable.of( r1, r2, r3 ) );
+        assertThat( connections( start, BOTH, end, "R2", "R3" ) ).isEqualTo( LongSets.immutable.of( r2, r3 ) );
     }
 
     @Test
@@ -117,12 +116,12 @@ class CachingExpandIntoTest
         }
 
         // Then
-        assertThat( connections( start, OUTGOING, end ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
-        assertThat( connections( start, OUTGOING, end, "R1" ), equalTo( LongSets.immutable.of( r1 ) ) );
-        assertThat( connections( start, INCOMING, end ), equalTo( LongSets.immutable.of( r3 ) ) );
-        assertThat( connections( start, INCOMING, end, "R1" ), equalTo( LongSets.immutable.empty()) );
-        assertThat( connections( start, BOTH, end ), equalTo( LongSets.immutable.of( r1, r2, r3 ) ) );
-        assertThat( connections( start, BOTH, end, "R2", "R3" ), equalTo( LongSets.immutable.of(  r2, r3 ) ) );
+        assertThat( connections( start, OUTGOING, end ) ).isEqualTo( LongSets.immutable.of( r1, r2 ) );
+        assertThat( connections( start, OUTGOING, end, "R1" ) ).isEqualTo( LongSets.immutable.of( r1 ) );
+        assertThat( connections( start, INCOMING, end ) ).isEqualTo( LongSets.immutable.of( r3 ) );
+        assertThat( connections( start, INCOMING, end, "R1" ) ).isEqualTo( LongSets.immutable.empty() );
+        assertThat( connections( start, BOTH, end ) ).isEqualTo( LongSets.immutable.of( r1, r2, r3 ) );
+        assertThat( connections( start, BOTH, end, "R2", "R3" ) ).isEqualTo( LongSets.immutable.of( r2, r3 ) );
     }
 
     @Test
@@ -141,12 +140,12 @@ class CachingExpandIntoTest
         }
 
         // Then
-        assertThat( connections( start, OUTGOING, end ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
-        assertThat( connections( start, OUTGOING, end, "R1" ), equalTo( LongSets.immutable.of( r1 ) ) );
-        assertThat( connections( start, INCOMING, end ), equalTo( LongSets.immutable.of( r3 ) ) );
-        assertThat( connections( start, INCOMING, end, "R1" ), equalTo( LongSets.immutable.empty()) );
-        assertThat( connections( start, BOTH, end ), equalTo( LongSets.immutable.of( r1, r2, r3 ) ) );
-        assertThat( connections( start, BOTH, end, "R2", "R3" ), equalTo( LongSets.immutable.of(  r2, r3 ) ) );
+        assertThat( connections( start, OUTGOING, end ) ).isEqualTo( LongSets.immutable.of( r1, r2 ) );
+        assertThat( connections( start, OUTGOING, end, "R1" ) ).isEqualTo( LongSets.immutable.of( r1 ) );
+        assertThat( connections( start, INCOMING, end ) ).isEqualTo( LongSets.immutable.of( r3 ) );
+        assertThat( connections( start, INCOMING, end, "R1" ) ).isEqualTo( LongSets.immutable.empty() );
+        assertThat( connections( start, BOTH, end ) ).isEqualTo( LongSets.immutable.of( r1, r2, r3 ) );
+        assertThat( connections( start, BOTH, end, "R2", "R3" ) ).isEqualTo( LongSets.immutable.of( r2, r3 ) );
     }
 
     @Test
@@ -165,12 +164,12 @@ class CachingExpandIntoTest
         }
 
         // Then
-        assertThat( connections( start, OUTGOING, end ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
-        assertThat( connections( start, OUTGOING, end, "R1" ), equalTo( LongSets.immutable.of( r1 ) ) );
-        assertThat( connections( start, INCOMING, end ), equalTo( LongSets.immutable.of( r3 ) ) );
-        assertThat( connections( start, INCOMING, end, "R1" ), equalTo( LongSets.immutable.empty()) );
-        assertThat( connections( start, BOTH, end ), equalTo( LongSets.immutable.of( r1, r2, r3 ) ) );
-        assertThat( connections( start, BOTH, end, "R2", "R3" ), equalTo( LongSets.immutable.of(  r2, r3 ) ) );
+        assertThat( connections( start, OUTGOING, end ) ).isEqualTo( LongSets.immutable.of( r1, r2 ) );
+        assertThat( connections( start, OUTGOING, end, "R1" ) ).isEqualTo( LongSets.immutable.of( r1 ) );
+        assertThat( connections( start, INCOMING, end ) ).isEqualTo( LongSets.immutable.of( r3 ) );
+        assertThat( connections( start, INCOMING, end, "R1" ) ).isEqualTo( LongSets.immutable.empty() );
+        assertThat( connections( start, BOTH, end ) ).isEqualTo( LongSets.immutable.of( r1, r2, r3 ) );
+        assertThat( connections( start, BOTH, end, "R2", "R3" ) ).isEqualTo( LongSets.immutable.of( r2, r3 ) );
     }
 
     @Test
@@ -189,12 +188,12 @@ class CachingExpandIntoTest
         }
 
         // Then
-        assertThat( connections( start, OUTGOING, end ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
-        assertThat( connections( start, OUTGOING, end, "R1" ), equalTo( LongSets.immutable.of( r1 ) ) );
-        assertThat( connections( start, INCOMING, end ), equalTo( LongSets.immutable.of( r3 ) ) );
-        assertThat( connections( start, INCOMING, end, "R1" ), equalTo( LongSets.immutable.empty()) );
-        assertThat( connections( start, BOTH, end ), equalTo( LongSets.immutable.of( r1, r2, r3 ) ) );
-        assertThat( connections( start, BOTH, end, "R2", "R3" ), equalTo( LongSets.immutable.of(  r2, r3 ) ) );
+        assertThat( connections( start, OUTGOING, end ) ).isEqualTo( LongSets.immutable.of( r1, r2 ) );
+        assertThat( connections( start, OUTGOING, end, "R1" ) ).isEqualTo( LongSets.immutable.of( r1 ) );
+        assertThat( connections( start, INCOMING, end ) ).isEqualTo( LongSets.immutable.of( r3 ) );
+        assertThat( connections( start, INCOMING, end, "R1" ) ).isEqualTo( LongSets.immutable.empty() );
+        assertThat( connections( start, BOTH, end ) ).isEqualTo( LongSets.immutable.of( r1, r2, r3 ) );
+        assertThat( connections( start, BOTH, end, "R2", "R3" ) ).isEqualTo( LongSets.immutable.of( r2, r3 ) );
     }
 
     @Test
@@ -225,30 +224,14 @@ class CachingExpandIntoTest
         {
 
             CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING );
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    start,
-                    null,
-                    end ) ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    end,
-                    null,
-                    start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    start,
-                    null,
-                    end ) ), equalTo( LongSets.immutable.of( r1, r2 ) ) );
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    end,
-                    null,
-                    start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, start, null, end ) ) ).isEqualTo(
+                    LongSets.immutable.of( r1, r2 ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, end, null, start ) ) ).isEqualTo(
+                    LongSets.immutable.of( r3 ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, start, null, end ) ) ).isEqualTo(
+                    LongSets.immutable.of( r1, r2 ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, end, null, start ) ) ).isEqualTo(
+                    LongSets.immutable.of( r3 ) );
         }
     }
 
@@ -282,30 +265,14 @@ class CachingExpandIntoTest
             int[] types = {t1, t3};
             CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING );
 
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    start,
-                    types,
-                    end ) ), equalTo( LongSets.immutable.of( r1 ) ) );
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    end,
-                    types,
-                    start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    start,
-                    types,
-                    end ) ), equalTo( LongSets.immutable.of( r1 ) ) );
-            assertThat( toSet( expandInto.connectingRelationships(
-                    nodeCursor, groupCursor,
-                    traversalCursor,
-                    end,
-                    types,
-                    start ) ), equalTo( LongSets.immutable.of( r3 ) ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, start, types, end ) ) ).isEqualTo(
+                    LongSets.immutable.of( r1 ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, end, types, start ) ) ).isEqualTo(
+                    LongSets.immutable.of( r3 ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, start, types, end ) ) ).isEqualTo(
+                    LongSets.immutable.of( r1 ) );
+            assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, end, types, start ) ) ).isEqualTo(
+                    LongSets.immutable.of( r3 ) );
         }
     }
 
@@ -349,56 +316,56 @@ class CachingExpandIntoTest
             //Find r3 first time
             RelationshipSelectionCursor cursor = expandInto.connectingRelationships( nodes, group, traversal, start, types, end );
             assertTrue( cursor.next() );
-            assertThat( cursor.relationshipReference(), equalTo( r3 ));
-            assertThat( cursor.sourceNodeReference(), equalTo( end ) );
-            assertThat( cursor.targetNodeReference(), equalTo( start ) );
-            assertThat( cursor.otherNodeReference(), equalTo( start ) );
-            assertThat( cursor.type(), equalTo( t3 ) );
+            assertThat( cursor.relationshipReference() ).isEqualTo( r3 );
+            assertThat( cursor.sourceNodeReference() ).isEqualTo( end );
+            assertThat( cursor.targetNodeReference() ).isEqualTo( start );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( start );
+            assertThat( cursor.type() ).isEqualTo( t3 );
             cursor.properties( properties );
             assertTrue( properties.next() );
-            assertThat( properties.propertyValue(), equalTo( stringValue( "Relationship 3" ) ) );
+            assertThat( properties.propertyValue() ).isEqualTo( stringValue( "Relationship 3" ) );
             assertFalse( properties.next() );
             assertFalse( cursor.next() );
 
             //Find r3 second time
             cursor = expandInto.connectingRelationships( nodes, group, traversal, start, types, end );
             assertTrue( cursor.next() );
-            assertThat( cursor.relationshipReference(), equalTo( r3 ));
-            assertThat( cursor.sourceNodeReference(), equalTo( end ) );
-            assertThat( cursor.targetNodeReference(), equalTo( start ) );
-            assertThat( cursor.otherNodeReference(), equalTo( start ) );
-            assertThat( cursor.type(), equalTo( t3 ) );
+            assertThat( cursor.relationshipReference() ).isEqualTo( r3 );
+            assertThat( cursor.sourceNodeReference() ).isEqualTo( end );
+            assertThat( cursor.targetNodeReference() ).isEqualTo( start );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( start );
+            assertThat( cursor.type() ).isEqualTo( t3 );
             cursor.properties( properties );
             assertTrue( properties.next() );
-            assertThat( properties.propertyValue(), equalTo( stringValue( "Relationship 3" ) ) );
+            assertThat( properties.propertyValue() ).isEqualTo( stringValue( "Relationship 3" ) );
             assertFalse( properties.next() );
             assertFalse( cursor.next() );
 
             //Find r2 first time
             cursor = expandInto.connectingRelationships( nodes, group, traversal, end, types, start );
             assertTrue( cursor.next() );
-            assertThat( cursor.relationshipReference(), equalTo( r2 ));
-            assertThat( cursor.sourceNodeReference(), equalTo( start ) );
-            assertThat( cursor.targetNodeReference(), equalTo( end ) );
-            assertThat( cursor.otherNodeReference(), equalTo( end ) );
-            assertThat( cursor.type(), equalTo( t2 ) );
+            assertThat( cursor.relationshipReference() ).isEqualTo( r2 );
+            assertThat( cursor.sourceNodeReference() ).isEqualTo( start );
+            assertThat( cursor.targetNodeReference() ).isEqualTo( end );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( end );
+            assertThat( cursor.type() ).isEqualTo( t2 );
             cursor.properties( properties );
             assertTrue( properties.next() );
-            assertThat( properties.propertyValue(), equalTo( stringValue( "Relationship 2" ) ) );
+            assertThat( properties.propertyValue() ).isEqualTo( stringValue( "Relationship 2" ) );
             assertFalse( properties.next() );
             assertFalse( cursor.next() );
 
             //Find r2 second time
             cursor = expandInto.connectingRelationships( nodes, group, traversal, end, types, start );
             assertTrue( cursor.next() );
-            assertThat( cursor.relationshipReference(), equalTo( r2 ));
-            assertThat( cursor.sourceNodeReference(), equalTo( start ) );
-            assertThat( cursor.targetNodeReference(), equalTo( end ) );
-            assertThat( cursor.otherNodeReference(), equalTo( end ) );
-            assertThat( cursor.type(), equalTo( t2 ) );
+            assertThat( cursor.relationshipReference() ).isEqualTo( r2 );
+            assertThat( cursor.sourceNodeReference() ).isEqualTo( start );
+            assertThat( cursor.targetNodeReference() ).isEqualTo( end );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( end );
+            assertThat( cursor.type() ).isEqualTo( t2 );
             cursor.properties( properties );
             assertTrue( properties.next() );
-            assertThat( properties.propertyValue(), equalTo( stringValue( "Relationship 2" ) ) );
+            assertThat( properties.propertyValue() ).isEqualTo( stringValue( "Relationship 2" ) );
             assertFalse( properties.next() );
             assertFalse( cursor.next() );
         }
@@ -431,11 +398,11 @@ class CachingExpandIntoTest
                 CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING );
 
                 read.singleNode( node, nodes );
-                assertThat( nodes.next(), equalTo( true ) );
-                assertThat( nodes.isDense(), equalTo( true ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING ), equalTo( 45 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING ), equalTo( 2 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH ), equalTo( 46 ) );
+                assertThat( nodes.next() ).isEqualTo( true );
+                assertThat( nodes.isDense() ).isEqualTo( true );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING ) ).isEqualTo( 45 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING ) ).isEqualTo( 2 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH ) ).isEqualTo( 46 );
             }
         }
     }
@@ -471,19 +438,19 @@ class CachingExpandIntoTest
             {
                 CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING );
                 read.singleNode( node, nodes );
-                assertThat( nodes.next(), equalTo( true ) );
-                assertThat( nodes.isDense(), equalTo( true ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING, out ), equalTo( 2 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING, in ), equalTo( 0 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING, loop ), equalTo( 1 ) );
+                assertThat( nodes.next() ).isEqualTo( true );
+                assertThat( nodes.isDense() ).isEqualTo( true );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING, out ) ).isEqualTo( 2 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING, in ) ).isEqualTo( 0 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, OUTGOING, loop ) ).isEqualTo( 1 );
 
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING, out ), equalTo( 0 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING, in ), equalTo( 1 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING, loop ), equalTo( 1 ) );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING, out ) ).isEqualTo( 0 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING, in ) ).isEqualTo( 1 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, INCOMING, loop ) ).isEqualTo( 1 );
 
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH, out ), equalTo( 2 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH, in ), equalTo( 1 ) );
-                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH, loop ), equalTo( 1 ) );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH, out ) ).isEqualTo( 2 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH, in ) ).isEqualTo( 1 );
+                assertThat( expand.nodeGetDegreeDense( nodes, groupCursor, BOTH, loop ) ).isEqualTo( 1 );
             }
         }
     }

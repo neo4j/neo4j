@@ -25,8 +25,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.SeverityLevel;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasKey;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestNotification implements Notification
 {
@@ -49,17 +48,17 @@ public class TestNotification implements Notification
     @SuppressWarnings( "unchecked" )
     public static Notification fromMap( Map<String,Object> notification )
     {
-        assertThat(notification, hasKey("code"));
-        assertThat(notification, hasKey("title"));
-        assertThat(notification, hasKey("description"));
-        assertThat(notification, hasKey("severity"));
+        assertThat( notification ).containsKey( "code" );
+        assertThat( notification ).containsKey( "title" );
+        assertThat( notification ).containsKey( "description" );
+        assertThat( notification ).containsKey( "severity" );
         InputPosition position = null;
         if ( notification.containsKey( "position" ) )
         {
             Map<String,Long> pos = (Map<String,Long>) notification.get( "position" );
-            assertThat( pos, hasKey( "offset" ) );
-            assertThat( pos, hasKey( "line" ) );
-            assertThat( pos, hasKey( "column" ) );
+            assertThat( pos ).containsKey( "offset" );
+            assertThat( pos ).containsKey( "line" );
+            assertThat( pos ).containsKey( "column" );
             position = new InputPosition( pos.get("offset").intValue(), pos.get("line").intValue(), pos.get("column").intValue() );
         }
 

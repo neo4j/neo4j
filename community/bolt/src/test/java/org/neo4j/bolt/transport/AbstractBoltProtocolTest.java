@@ -43,8 +43,7 @@ import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -75,10 +74,10 @@ class AbstractBoltProtocolTest
         boltProtocol.install();
 
         Iterator<Map.Entry<String,ChannelHandler>> handlers = channel.pipeline().iterator();
-        assertThat( handlers.next().getValue(), instanceOf( ChunkDecoder.class ) );
-        assertThat( handlers.next().getValue(), instanceOf( MessageAccumulator.class ) );
-        assertThat( handlers.next().getValue(), instanceOf( MessageDecoder.class ) );
-        assertThat( handlers.next().getValue(), instanceOf( HouseKeeper.class ) );
+        assertThat( handlers.next().getValue() ).isInstanceOf( ChunkDecoder.class );
+        assertThat( handlers.next().getValue() ).isInstanceOf( MessageAccumulator.class );
+        assertThat( handlers.next().getValue() ).isInstanceOf( MessageDecoder.class );
+        assertThat( handlers.next().getValue() ).isInstanceOf( HouseKeeper.class );
 
         assertFalse( handlers.hasNext() );
     }

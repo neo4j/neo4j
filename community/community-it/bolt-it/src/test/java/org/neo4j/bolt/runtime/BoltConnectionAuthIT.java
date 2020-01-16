@@ -31,14 +31,11 @@ import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.string.UTF8;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
-import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -70,8 +67,8 @@ class BoltConnectionAuthIT
         machine.process( BoltV4Messages.run( "CREATE ()" ), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", TRUE ) );
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.CredentialsExpired ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithMetadata( "credentials_expired", TRUE ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Security.CredentialsExpired ) );
     }
 
     @Test
@@ -90,7 +87,7 @@ class BoltConnectionAuthIT
         machine.process( BoltV4Messages.run( "CREATE ()" ), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "server", stringValue( version ) ) );
+        assertThat( recorder.nextResponse() ).satisfies( succeededWithMetadata( "server", stringValue( version ) ) );
     }
 
     @Test
@@ -105,6 +102,6 @@ class BoltConnectionAuthIT
         verifyKillsConnection( () -> machine.process( hello, recorder ) );
 
         // ...and
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.Unauthorized ) );
+        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Security.Unauthorized ) );
     }
 }

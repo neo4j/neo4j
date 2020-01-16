@@ -25,8 +25,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class Neo4jErrorTest
@@ -39,7 +38,7 @@ class Neo4jErrorTest
         Neo4jError error = Neo4jError.from( cause );
 
         // Then
-        assertThat( error.status(), equalTo( Status.General.UnknownError ) );
+        assertThat( error.status() ).isEqualTo( Status.General.UnknownError );
     }
 
     @Test
@@ -62,7 +61,7 @@ class Neo4jErrorTest
         Neo4jError error = Neo4jError.from( ex );
 
         // Then
-        assertThat( error.status(), equalTo( Status.Database.DatabaseUnavailable ) );
-        assertThat( error.cause(), equalTo( ex ) );
+        assertThat( error.status() ).isEqualTo( Status.Database.DatabaseUnavailable );
+        assertThat( error.cause() ).isEqualTo( ex );
     }
 }
