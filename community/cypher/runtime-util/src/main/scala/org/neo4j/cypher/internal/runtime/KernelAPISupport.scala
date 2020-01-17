@@ -32,7 +32,8 @@ object KernelAPISupport {
                                           ValueGroup.ZONED_DATE_TIME,
                                           ValueGroup.LOCAL_TIME,
                                           ValueGroup.ZONED_TIME,
-                                          ValueGroup.DURATION)
+                                          ValueGroup.DURATION,
+                                          ValueGroup.BOOLEAN)
 
   def asKernelIndexOrder(indexOrder: plans.IndexOrder): schema.IndexOrder =
     indexOrder match {
