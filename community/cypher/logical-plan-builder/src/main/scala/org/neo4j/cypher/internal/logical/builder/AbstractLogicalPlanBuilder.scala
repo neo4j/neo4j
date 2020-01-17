@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, pos}
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{InputPosition, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.util.attribution.{Id, IdGen, SameId, SequentialIdGen}
-import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, Cartesian_3D, WGS84, WGS84_3D}
-import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue}
+import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
+import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -416,36 +420,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
-  }
-
-  private def point2PointFunction(point: PointValue) = {
-
-    val coordinate = point.getCoordinate.getCoordinate
-    point.getCoordinateReferenceSystem match {
-      case Cartesian =>
-        function("point",
-                 literalMap(Map("x" -> literalFloat(coordinate.get(0)),
-                                "y" -> literalFloat(coordinate.get(1)),
-                                "crs" -> literalString("cartesian"))))
-      case Cartesian_3D =>
-        function("point",
-                 literalMap(Map("x" -> literalFloat(coordinate.get(0)),
-                                "y" -> literalFloat(coordinate.get(1)),
-                                "z" -> literalFloat(coordinate.get(2)),
-                                "crs" -> literalString("cartesian-3d"))))
-      case WGS84 =>
-        function("point",
-                 literalMap(Map("longitude" -> literalFloat(coordinate.get(0)),
-                                "latitude" -> literalFloat(coordinate.get(1)),
-                                "crs" -> literalString("wgs-84"))))
-      case WGS84_3D =>
-        function("point",
-                 literalMap(Map("longitude" -> literalFloat(coordinate.get(0)),
-                                "latitude" -> literalFloat(coordinate.get(1)),
-                                "height" -> literalFloat(coordinate.get(2)),
-                                "crs" -> literalString("wgs-84-3d"))))
-      case _ => throw new UnsupportedOperationException
-    }
   }
 
   def pointDistanceIndexSeek(node: String,
