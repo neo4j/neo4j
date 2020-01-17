@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 
 // Supported by all runtimes
@@ -372,6 +373,196 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     // then
     val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1)
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should handle range seeks: > false") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", 42)
+      tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean > ???)", paramExpr = Some(falseLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(3))
+  }
+
+  test("should handle range seeks: >= false") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", 42)
+      tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean >= ???)", paramExpr = Some(falseLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(5))
+  }
+
+  test("should handle range seeks: < false") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", 42)
+      tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean < ???)", paramExpr = Some(falseLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should handle range seeks: <= false") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", 42)
+      tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean <= ???)", paramExpr = Some(falseLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(2))
+  }
+
+  test("should handle range seeks: > true") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", 42)
+      tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean > ???)", paramExpr = Some(trueLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should handle range seeks: >= true") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", 42)
+      tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean >= ???)", paramExpr = Some(trueLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(3))
+  }
+
+  test("should handle range seeks: < true") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", 42)
+      tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean < ???)", paramExpr = Some(trueLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(2))
+  }
+
+  test("should handle range seeks: <= true") {
+    given {
+      index("L", "boolean")
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", false)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+      tx.createNode(Label.label("L")).setProperty("boolean", true)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:L(boolean <= ???)", paramExpr = Some(trueLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(5))
   }
 
   test("should seek nodes of a unique index with a property") {
