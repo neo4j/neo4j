@@ -653,6 +653,28 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
+  test("should support composite index with existence check") {
+    val nodes = given {
+      index("Honey", "prop", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 10, prop2)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(10)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
+
   test("should cache properties") {
     val nodes = given {
       index("Honey", "prop")
