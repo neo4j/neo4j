@@ -1801,10 +1801,7 @@ class GBPTreeTest
         {
             for ( int i = 0; i < 1000; i++ )
             {
-                for ( int j = 0; j < 1000; j++ )
-                {
-                    insert( tree, i, j );
-                }
+                insert( tree, i, 1 );
             }
             var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" );
             try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( Integer.MAX_VALUE ), cursorTracer ) )
