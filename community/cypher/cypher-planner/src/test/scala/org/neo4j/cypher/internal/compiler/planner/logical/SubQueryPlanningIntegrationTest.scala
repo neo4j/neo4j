@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.logical.plans.Ascending
 
 class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -311,7 +312,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults(z53)
-        .crossApply()
+        .apply()
         .|.distinct(s"$z53 AS $z53")
         .|.union()
         .|.|.projection(s"$z80 AS $z53")
@@ -354,6 +355,61 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .|.allNodeScan(x56)
         .projection(s"$x10 AS y")
         .projection(s"1 AS $x10")
+        .argument()
+        .build()
+    )
+  }
+
+  test("nested correlated CALLs with aggregation") {
+    val query =
+     """WITH 1 AS x
+        |CALL {
+        | WITH x
+        | CALL { WITH x RETURN max(x) AS xmax }
+        | CALL { WITH x RETURN min(x) AS xmin }
+        | RETURN xmax, xmin
+        |}
+        |RETURN x, xmax, xmin
+        |""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x", "xmax", "xmin")
+        .apply()
+        .|.crossApply()
+        .|.|.aggregation(Seq.empty, Seq("min(x) as xmin"))
+        .|.|.argument("x")
+        .|.crossApply()
+        .|.|.aggregation(Seq.empty, Seq("max(x) as xmax"))
+        .|.|.argument("x")
+        .|.argument("x")
+        .projection("1 AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("correlated CALL with ordered aggregation") {
+    val query =
+      """WITH 1 AS x
+        |CALL {
+        | WITH x
+        | WITH x AS y
+        | ORDER BY y
+        | RETURN y, max(y) as ymax
+        |}
+        |RETURN x, y, ymax
+        |""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x", "y", "ymax")
+        .crossApply()
+        .|.orderedAggregation(Seq("y AS y"), Seq("max(y) AS ymax"), Seq("y") )
+        .|.sort(Seq(Ascending("y")))
+        .|.projection("x AS y")
+        .|.argument("x")
+        .projection("1 AS x")
         .argument()
         .build()
     )

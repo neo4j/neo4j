@@ -115,11 +115,29 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
     val providedOrder = providedOrders.get(left.id)
-    val plan =
-      if (correlated) CrossApply(left, right)
-      else CartesianProduct(left, right)
+    val plan: LogicalPlan =
+      if (!correlated)
+        CartesianProduct(left, right)
+      else if (hasUncoveredAggregation(right))
+        CrossApply(left, right)
+      else
+        Apply(left, right)
 
     annotate(plan, solved, providedOrder, context)
+  }
+
+  private def hasUncoveredAggregation(plan: LogicalPlan): Boolean = {
+    type TreeFoldStep = Boolean => (Boolean, Option[Boolean => Boolean])
+    val keepGoing: TreeFoldStep = _ => (false, Some(identity))
+    val dontRecur: TreeFoldStep = _ => (false, None)
+
+    plan.treeFold(false) {
+      case _: Aggregation |
+           _: OrderedAggregation => return true
+      case _: CrossApply         => dontRecur
+      case _: LogicalPlan        => keepGoing
+      case _                     => dontRecur
+    }
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

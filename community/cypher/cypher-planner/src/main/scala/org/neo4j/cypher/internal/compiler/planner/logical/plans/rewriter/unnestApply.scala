@@ -46,7 +46,7 @@ case class unnestApply(solveds: Solveds, attributes: Attributes[LogicalPlan]) ex
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case BasicApply(_: Argument, rhs) =>
+    case Apply(_: Argument, rhs) =>
       rhs
 
     // L Ax Arg => L
@@ -70,7 +70,7 @@ case class unnestApply(solveds: Solveds, attributes: Attributes[LogicalPlan]) ex
       res
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@AntiConditionalApply(lhs, BasicApply(_: Argument, rhs), _) =>
+    case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
       original.copy(lhs, rhs)(SameId(original.id))
 
     // L Ax (σ R) => σ(L Ax R)
