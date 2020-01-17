@@ -67,13 +67,13 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
     @Override
     public <T> JobHandle<T> schedule( Group group, Callable<T> job )
     {
-        return null;
+        return (JobHandle<T>) EMPTY;
     }
 
     @Override
     public JobHandle<?> schedule( Group group, Runnable job )
     {
-        return null;
+        return EMPTY;
     }
 
     @Override
