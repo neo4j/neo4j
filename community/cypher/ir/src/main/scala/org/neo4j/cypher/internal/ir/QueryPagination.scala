@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ast.{Limit, Skip}
+import org.neo4j.cypher.internal.ast.Limit
+import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.exceptions.InternalException
 

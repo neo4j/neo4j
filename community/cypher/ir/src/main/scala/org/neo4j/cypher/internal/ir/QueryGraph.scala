@@ -19,13 +19,20 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 
+import scala.collection.GenSet
+import scala.collection.GenTraversableOnce
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{GenSet, GenTraversableOnce, mutable}
+import scala.math.Ordering.Implicits
 import scala.runtime.ScalaRunTime
 
 /*
@@ -490,8 +497,6 @@ object QueryGraph {
   }
 
   implicit object byCoveredIds extends Ordering[QueryGraph] {
-
-    import scala.math.Ordering.Implicits
 
     def compare(x: QueryGraph, y: QueryGraph): Int = {
       val xs = x.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq.sorted

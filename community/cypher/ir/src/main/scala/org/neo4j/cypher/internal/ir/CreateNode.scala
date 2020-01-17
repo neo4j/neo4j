@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.expressions.{Expression, LabelName}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
 
 /**
   * Create a new node with the provided labels and properties and assign it to the variable 'idName'.

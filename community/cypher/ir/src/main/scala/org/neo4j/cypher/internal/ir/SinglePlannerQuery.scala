@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.Hint
-import org.neo4j.cypher.internal.expressions.{LabelName, Variable}
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec

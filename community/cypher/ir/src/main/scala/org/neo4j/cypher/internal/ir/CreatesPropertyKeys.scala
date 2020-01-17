@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.expressions.{Expression, MapExpression, PropertyKeyName}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+
 /*
  * Used to simplify finding overlap between writing and reading properties
  */

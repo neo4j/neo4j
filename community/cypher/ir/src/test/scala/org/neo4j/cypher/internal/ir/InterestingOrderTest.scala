@@ -19,9 +19,19 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc, FullSatisfaction, NoSatisfaction, Satisfaction}
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.InterestingOrder.NoSatisfaction
+import org.neo4j.cypher.internal.ir.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InterestingOrderTest extends CypherFunSuite {

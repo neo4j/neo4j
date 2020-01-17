@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
-import org.neo4j.cypher.internal.expressions._
-
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.ProvidedOrder.Asc
+import org.neo4j.cypher.internal.ir.ProvidedOrder.Desc
 
 object ProvidedOrder {
 

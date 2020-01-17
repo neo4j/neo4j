@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 
 import scala.util.hashing.MurmurHash3
 

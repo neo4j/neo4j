@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, ColumnOrder, Desc}
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.InterestingOrder.ColumnOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
 
 /**
   * A candidate for how the rows in a query can be sorted, defined by OrderCandidate.order.

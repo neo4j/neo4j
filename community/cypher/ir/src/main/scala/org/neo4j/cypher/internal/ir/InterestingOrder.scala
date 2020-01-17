@@ -19,7 +19,14 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.InterestingOrder.ColumnOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.InterestingOrder.Satisfaction
 
 import scala.annotation.tailrec
 
@@ -74,8 +81,6 @@ object InterestingOrder {
   */
 case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
                             interestingOrderCandidates: Seq[InterestingOrderCandidate] = Seq.empty) {
-
-  import InterestingOrder._
 
   val isEmpty: Boolean = requiredOrderCandidate.isEmpty && interestingOrderCandidates.forall(_.isEmpty)
 

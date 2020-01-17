@@ -19,12 +19,32 @@
  */
 package org.neo4j.cypher.internal.ir.helpers
 
-import org.neo4j.cypher.internal.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.rewriting.rewriters._
-import org.neo4j.cypher.internal.expressions.{Ands, Expression, HasLabels, NodePatternExpression, Not, Ors, PatternComprehension, PatternExpression, Range, RelationshipChain, Variable}
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.NodePatternExpression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Range
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.PatternLength
+import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
+import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator.NameString
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.util.topDown
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)
