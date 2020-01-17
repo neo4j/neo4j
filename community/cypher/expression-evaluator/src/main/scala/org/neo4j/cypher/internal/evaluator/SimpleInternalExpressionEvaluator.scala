@@ -19,24 +19,31 @@
  */
 package org.neo4j.cypher.internal.evaluator
 
-import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.expressions.{Expression, Parameter}
+import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CONVERTERS
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.parser.Expressions
+import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ParameterMapping
+import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
+import org.neo4j.cypher.internal.runtime.createParameterArray
+import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-import org.parboiled.scala.{EOI, ReportingParseRunner, Rule1}
+import org.parboiled.scala.EOI
+import org.parboiled.scala.ReportingParseRunner
+import org.parboiled.scala.Rule1
 
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
-
-  import SimpleInternalExpressionEvaluator.CONVERTERS
 
   override def evaluate(expression: String): AnyValue =
     errorContext(expression) {

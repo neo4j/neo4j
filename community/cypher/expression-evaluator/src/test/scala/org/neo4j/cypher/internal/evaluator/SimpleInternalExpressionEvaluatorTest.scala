@@ -19,15 +19,21 @@
  */
 package org.neo4j.cypher.internal.evaluator
 
-import java.lang.Math.{PI, sin}
+import java.lang.Math.PI
+import java.lang.Math.sin
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
-import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
-import org.neo4j.values.storable.Values.{intValue, pointValue, stringValue}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.pointValue
+import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
-import org.neo4j.values.virtual.VirtualValues.{list, map}
-import org.scalatest._
+import org.neo4j.values.virtual.VirtualValues.list
+import org.neo4j.values.virtual.VirtualValues.map
+import org.scalatest.FunSuiteLike
+import org.scalatest.Matchers
 
 class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
 
