@@ -49,7 +49,7 @@ class CrashGenerationCleaner
     private static final int NUMBER_OF_WORKERS_DEFAULT = min( 8, Runtime.getRuntime().availableProcessors() );
     private static final int NUMBER_OF_WORKERS = FeatureToggles.getInteger( CrashGenerationCleaner.class, NUMBER_OF_WORKERS_NAME, NUMBER_OF_WORKERS_DEFAULT );
     private static final String BATCH_TIMEOUT_NAME = "batch_timeout";
-    private static final int BATCH_TIMEOUT_DEFAULT = 30;
+    private static final int BATCH_TIMEOUT_DEFAULT = 300;
     private static final int BATCH_TIMEOUT = FeatureToggles.getInteger( CrashGenerationCleaner.class, BATCH_TIMEOUT_NAME, BATCH_TIMEOUT_DEFAULT );
 
     private static final long MIN_BATCH_SIZE = 10;
