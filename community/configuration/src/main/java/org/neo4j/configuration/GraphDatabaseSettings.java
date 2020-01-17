@@ -957,7 +957,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.logs.query.page_logging_enabled", BOOL, false ).dynamic().build();
 
     @Description( "Log query text and parameters without obfuscating passwords. " +
-            "This allows to log queries earlier, before parsing starts." )
+            "This allows queries to be logged earlier before parsing starts." )
     public static final Setting<Boolean> log_queries_early_raw_logging_enabled =
             newBuilder( "dbms.logs.query.early_raw_logging_enabled", BOOL, false ).dynamic().build();
 
