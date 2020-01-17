@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.NodeCountFromCountStoreTestB
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexContainsScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexEndsWithScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexPointDistanceSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekRangeAndCompositeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekTestBase
