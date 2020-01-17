@@ -41,7 +41,7 @@ import static org.neo4j.internal.schema.IndexOrder.NONE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @DbmsExtension
-public class ReadTracingIT
+class ReadTracingIT
 {
     @Inject
     private GraphDatabaseAPI database;

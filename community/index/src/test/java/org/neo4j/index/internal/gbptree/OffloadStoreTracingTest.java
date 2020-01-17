@@ -38,7 +38,7 @@ import static org.neo4j.index.internal.gbptree.OffloadIdValidator.ALWAYS_TRUE;
 import static org.neo4j.index.internal.gbptree.RawBytes.EMPTY_BYTES;
 
 @PageCacheExtension
-public class OffloadStoreTracingTest
+class OffloadStoreTracingTest
 {
     @Inject
     private PageCache pageCache;
@@ -56,7 +56,7 @@ public class OffloadStoreTracingTest
     {
         cursorTracer = pageCacheTracer.createPageCursorTracer( "testCursorTracer" );
         pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize() );
-        OffloadPageCursorFactory pcFactory = ( pageId, pf_flags, cursorTracer ) -> pagedFile.io( pageId, pf_flags, cursorTracer );
+        OffloadPageCursorFactory pcFactory = pagedFile::io;
         var idProvider = new FreeListIdProvider( pagedFile, 10 );
         offloadStore = new OffloadStoreImpl<>( layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize() );
     }
@@ -113,7 +113,7 @@ public class OffloadStoreTracingTest
         cursorTracer.reportEvents();
         assertZeroCursor();
 
-        offloadStore.readKey( id,  EMPTY_BYTES, cursorTracer );
+        offloadStore.readKey( id, EMPTY_BYTES, cursorTracer );
 
         assertReadCursorEvents();
     }
@@ -125,7 +125,7 @@ public class OffloadStoreTracingTest
         cursorTracer.reportEvents();
         assertZeroCursor();
 
-        offloadStore.readKeyValue( id, EMPTY_BYTES,  EMPTY_BYTES, cursorTracer );
+        offloadStore.readKeyValue( id, EMPTY_BYTES, EMPTY_BYTES, cursorTracer );
 
         assertReadCursorEvents();
     }
@@ -137,7 +137,7 @@ public class OffloadStoreTracingTest
         cursorTracer.reportEvents();
         assertZeroCursor();
 
-        offloadStore.readKeyValue( id, EMPTY_BYTES, EMPTY_BYTES, cursorTracer );
+        offloadStore.readValue( id, EMPTY_BYTES, cursorTracer );
 
         assertReadCursorEvents();
     }
