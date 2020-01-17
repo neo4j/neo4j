@@ -19,8 +19,13 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.{One, ZeroOneOrMany}
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.util.One
+import org.neo4j.cypher.internal.util.ZeroOneOrMany
 
 sealed trait SeekableArgs {
   def expr: Expression

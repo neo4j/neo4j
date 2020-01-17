@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.expressions.{Expression, LabelToken}
-import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
   * For every node with the given label and property values, produces rows with that node.

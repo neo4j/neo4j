@@ -20,11 +20,17 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
-import org.neo4j.cypher.internal.ir.{LazyMode, StrictnessMode}
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.GraphScope
+import org.neo4j.cypher.internal.ast.PrivilegeQualifier
+import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.ir.LazyMode
+import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.exceptions.{DatabaseAdministrationException, SecurityAdministrationException}
+import org.neo4j.exceptions.DatabaseAdministrationException
+import org.neo4j.exceptions.SecurityAdministrationException
 
 abstract class MultiDatabaseLogicalPlan(source: Option[MultiDatabaseLogicalPlan] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source

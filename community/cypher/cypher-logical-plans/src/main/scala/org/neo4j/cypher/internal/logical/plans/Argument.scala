@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
   * Produce a single row with the contents of argument

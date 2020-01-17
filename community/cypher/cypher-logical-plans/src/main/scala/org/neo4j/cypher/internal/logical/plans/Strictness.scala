@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.ir.{EagerMode, LazyMode, StrictnessMode}
+import org.neo4j.cypher.internal.ir.EagerMode
+import org.neo4j.cypher.internal.ir.LazyMode
+import org.neo4j.cypher.internal.ir.StrictnessMode
 
 trait LazyLogicalPlan {
   self: LogicalPlan =>
