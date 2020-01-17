@@ -124,64 +124,22 @@ trait NodeIndexSeeker {
           val (valueGroup, range) = groupedRanges.head
           range match {
             case rangeLessThan: RangeLessThan[Value] =>
-              rangeLessThan.limit(BY_VALUE).map(limit => {
-                valueGroup match {
-                  case ValueGroup.BOOLEAN =>
-                    (limit.endPoint.equals(true), limit.isInclusive) match {
-                      case (true, true) => // <= true, always true
-                        IndexQuery.exists(propertyId)
-                      case (false, false) => // < false, always false
-                        return Nil
-                      case _ => // true only for false
-                        IndexQuery.exact(propertyId, BooleanValue.FALSE)
-                    }
-                  case _ =>
-                    IndexQuery.range(propertyId, null, false, limit.endPoint, limit.isInclusive)
-                }
-              }).toSeq
+              rangeLessThan.limit(BY_VALUE).map(limit => IndexQuery.range(propertyId, null, false, limit.endPoint, limit.isInclusive)).toSeq
 
             case rangeGreaterThan: RangeGreaterThan[Value] =>
-              rangeGreaterThan.limit(BY_VALUE).map(limit => {
-                valueGroup match {
-                  case ValueGroup.BOOLEAN =>
-                    (limit.endPoint.equals(true), limit.isInclusive) match {
-                      case (true, false) => // > true, always false
-                        return Nil
-                      case (false, true) => // >= false, always true
-                        IndexQuery.exists(propertyId)
-                      case _ => // true only for true
-                        IndexQuery.exact(propertyId, BooleanValue.TRUE)
-                    }
-                  case _ =>
-                    IndexQuery.range(propertyId, limit.endPoint, limit.isInclusive, null, false)
-                }
-              }).toSeq
+              rangeGreaterThan.limit(BY_VALUE).map(limit => IndexQuery.range(propertyId, limit.endPoint, limit.isInclusive, null, false)).toSeq
 
             case RangeBetween(rangeGreaterThan, rangeLessThan) =>
               val greaterThanLimit = rangeGreaterThan.limit(BY_VALUE).get
               val lessThanLimit = rangeLessThan.limit(BY_VALUE).get
-
               val compare = Values.COMPARATOR.compare(greaterThanLimit.endPoint, lessThanLimit.endPoint)
               if (compare < 0) {
-                valueGroup match {
-                  case ValueGroup.BOOLEAN =>
-                    (greaterThanLimit.isInclusive, lessThanLimit.isInclusive) match {
-                      case (true, true) => // false <= x <= true, always true
-                        List(IndexQuery.exists(propertyId))
-                      case (true, _) => // false <= x < true, true only for false
-                        List(IndexQuery.exact(propertyId, BooleanValue.FALSE))
-                      case (_, true) => // false < x <= true, true only for true
-                        List(IndexQuery.exact(propertyId, BooleanValue.TRUE))
-                      case _ => // false < x < true, always false
-                        Nil
-                    }
-                  case _ =>
                     List(IndexQuery.range(propertyId,
                       greaterThanLimit.endPoint,
                       greaterThanLimit.isInclusive,
                       lessThanLimit.endPoint,
                       lessThanLimit.isInclusive))
-                }
+
               } else if (compare == 0 && greaterThanLimit.isInclusive && lessThanLimit.isInclusive) {
                 List(IndexQuery.exact(propertyId, lessThanLimit.endPoint))
               } else {

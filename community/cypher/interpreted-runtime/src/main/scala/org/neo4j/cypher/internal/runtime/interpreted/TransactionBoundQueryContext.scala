@@ -220,9 +220,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val impossiblePredicate =
       predicates.exists {
         case p: IndexQuery.ExactPredicate => (p.value() eq Values.NO_VALUE) || (p.value().isInstanceOf[FloatingPointValue] && p.value().asInstanceOf[FloatingPointValue].isNaN)
-        case _: IndexQuery.ExistsPredicate if predicates.length > 1 => false
-        case p: IndexQuery =>
+        case _: IndexQuery.ExistsPredicate => predicates.length <= 1
+        case p: IndexQuery.RangePredicate[_] =>
           !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
+        case _ => false
       }
 
     if (impossiblePredicate) NodeValueIndexCursor.EMPTY
