@@ -19,13 +19,20 @@
  */
 package cypher.features
 
-import java.time._
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.OffsetTime
+import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
 
-import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.DurationValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.JavaConverters.mapAsScalaMapConverter
 
 object Neo4jValueToString extends (Any => String) {
 

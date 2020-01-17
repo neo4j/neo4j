@@ -19,9 +19,18 @@
  */
 package cypher.features
 
-import org.opencypher.tools.tck.values._
+import org.opencypher.tools.tck.values.CypherBoolean
+import org.opencypher.tools.tck.values.CypherFloat
+import org.opencypher.tools.tck.values.CypherInteger
+import org.opencypher.tools.tck.values.CypherList
+import org.opencypher.tools.tck.values.CypherNull
+import org.opencypher.tools.tck.values.CypherProperty
+import org.opencypher.tools.tck.values.CypherPropertyMap
+import org.opencypher.tools.tck.values.CypherString
+import org.opencypher.tools.tck.values.CypherValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object TCKValueToNeo4jValue extends (CypherValue => Object) {
 

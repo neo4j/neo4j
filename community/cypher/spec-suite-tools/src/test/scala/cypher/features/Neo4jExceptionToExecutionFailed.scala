@@ -21,7 +21,46 @@ package cypher.features
 
 import org.neo4j.kernel.api.exceptions.Status
 import org.opencypher.tools.tck.api.ExecutionFailed
-import org.opencypher.tools.tck.constants._
+import org.opencypher.tools.tck.constants.TCKErrorDetails.COLUMN_NAME_CONFLICT
+import org.opencypher.tools.tck.constants.TCKErrorDetails.CREATING_VAR_LENGTH
+import org.opencypher.tools.tck.constants.TCKErrorDetails.DELETED_ENTITY_ACCESS
+import org.opencypher.tools.tck.constants.TCKErrorDetails.DELETE_CONNECTED_NODE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.DIFFERENT_COLUMNS_IN_UNION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.FLOATING_POINT_OVERFLOW
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_AGGREGATION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_ARGUMENT_EXPRESSION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_ARGUMENT_PASSING_MODE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_ARGUMENT_TYPE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_ARGUMENT_VALUE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_CLAUSE_COMPOSITION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_DELETE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_ELEMENT_ACCESS
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_NUMBER_LITERAL
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_NUMBER_OF_ARGUMENTS
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_PARAMETER_USE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_PROPERTY_TYPE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_RELATIONSHIP_PATTERN
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_UNICODE_CHARACTER
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_UNICODE_LITERAL
+import org.opencypher.tools.tck.constants.TCKErrorDetails.LIST_ELEMENT_ACCESS_BY_NON_INTEGER
+import org.opencypher.tools.tck.constants.TCKErrorDetails.MAP_ELEMENT_ACCESS_BY_NON_STRING
+import org.opencypher.tools.tck.constants.TCKErrorDetails.MERGE_READ_OWN_WRITES
+import org.opencypher.tools.tck.constants.TCKErrorDetails.MISSING_PARAMETER
+import org.opencypher.tools.tck.constants.TCKErrorDetails.NEGATIVE_INTEGER_ARGUMENT
+import org.opencypher.tools.tck.constants.TCKErrorDetails.NESTED_AGGREGATION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.NON_CONSTANT_EXPRESSION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.NO_EXPRESSION_ALIAS
+import org.opencypher.tools.tck.constants.TCKErrorDetails.NO_SINGLE_RELATIONSHIP_TYPE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.NO_VARIABLES_IN_SCOPE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.NUMBER_OUT_OF_RANGE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.PROCEDURE_NOT_FOUND
+import org.opencypher.tools.tck.constants.TCKErrorDetails.PROPERTY_ACCESS_ON_NON_MAP
+import org.opencypher.tools.tck.constants.TCKErrorDetails.RELATIONSHIP_UNIQUENESS_VIOLATION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.REQUIRES_DIRECTED_RELATIONSHIP
+import org.opencypher.tools.tck.constants.TCKErrorDetails.UNDEFINED_VARIABLE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.UNKNOWN_FUNCTION
+import org.opencypher.tools.tck.constants.TCKErrorDetails.VARIABLE_ALREADY_BOUND
+import org.opencypher.tools.tck.constants.TCKErrorDetails.VARIABLE_TYPE_CONFLICT
 
 object Phase {
   val runtime = "runtime"
@@ -49,7 +88,6 @@ object Neo4jExceptionToExecutionFailed {
   }
 
   private def runtimeDetail(msg: String): String = {
-    import TCKErrorDetails._
     if (msg == null)
       ""
     else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input. ('-.+' is not a valid value|Got a negative integer)\\. Must be a non-negative integer\\.[\\s.\\S]*"))
@@ -93,7 +131,6 @@ object Neo4jExceptionToExecutionFailed {
   }
 
   private def compileTimeDetail(msg: String): String = {
-    import TCKErrorDetails._
     if (msg.matches("Invalid input. '-.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
       NEGATIVE_INTEGER_ARGUMENT
     else if (msg.matches("Invalid input. '.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))

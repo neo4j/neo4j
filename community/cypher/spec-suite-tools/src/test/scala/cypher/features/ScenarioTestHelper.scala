@@ -28,12 +28,15 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.function.Executable
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
-import org.opencypher.tools.tck.api.{ExpectError, Scenario}
+import org.opencypher.tools.tck.api.ExpectError
+import org.opencypher.tools.tck.api.Scenario
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asJavaCollectionConverter
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object ScenarioTestHelper {
   var unexpectedSuccessCount = new AtomicInteger(0)

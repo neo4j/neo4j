@@ -20,22 +20,37 @@
 package cypher.features
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.util.symbols.{CTBoolean, CTFloat, CTInteger, CTMap, CTNode, CTNumber, CTPath, CTRelationship, CTString, CypherType, ListType}
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.kernel.api.Kernel
+import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
-import org.neo4j.kernel.api.{Kernel, ResourceTracker}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
-import org.opencypher.tools.tck.api.{CypherValueRecords, Graph, ProcedureSupport}
+import org.opencypher.tools.tck.api.CypherValueRecords
+import org.opencypher.tools.tck.api.Graph
+import org.opencypher.tools.tck.api.ProcedureSupport
 import org.opencypher.tools.tck.values.CypherValue
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConverters.asJavaIteratorConverter
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 case class Neo4jValueRecords(header: List[String], rows: List[Array[AnyRef]])
 
