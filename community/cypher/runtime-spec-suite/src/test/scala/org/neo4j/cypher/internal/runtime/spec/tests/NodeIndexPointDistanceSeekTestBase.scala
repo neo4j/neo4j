@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.GetValue
-import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, Cartesian_3D, WGS84, WGS84_3D}
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
+import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
 import org.neo4j.values.storable.Values.pointValue
 
 abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
-                                                             edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT],
-                                                             sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                                              edition: Edition[CONTEXT],
+                                                                              runtime: CypherRuntime[CONTEXT],
+                                                                              sizeHint: Int
+                                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should seek 2d cartesian points (inclusively)") {
     given {
@@ -148,7 +154,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val d = WGS84_3D.getCalculator.distance( pointValue(WGS84_3D, 0, 0, 0),
-                                          pointValue(WGS84_3D, 10, 0, 0))
+                                             pointValue(WGS84_3D, 10, 0, 0))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
