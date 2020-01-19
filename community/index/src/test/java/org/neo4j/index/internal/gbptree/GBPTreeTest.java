@@ -26,6 +26,8 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -1794,6 +1796,7 @@ class GBPTreeTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     void trackPageCacheAccessOnTreeSeek() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
