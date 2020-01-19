@@ -65,7 +65,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.longValue;
 
 @RunWith( Parameterized.class )
 public class IndexingServiceIntegrationTest
@@ -127,7 +127,7 @@ public class IndexingServiceIntegrationTest
             var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( testConstraint );
             try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIndexUpdatesApply" ) )
             {
-                Iterable<IndexEntryUpdate<IndexDescriptor>> updates = List.of( add( 1, indexDescriptor, stringValue( "aa" ) ) );
+                Iterable<IndexEntryUpdate<IndexDescriptor>> updates = List.of( add( 1, indexDescriptor, longValue( 4 ) ) );
                 indexingService.applyUpdates( updates, cursorTracer );
 
                 assertEquals( 5L, cursorTracer.pins() );
