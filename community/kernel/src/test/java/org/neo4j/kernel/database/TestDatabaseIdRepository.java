@@ -39,7 +39,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 {
     private final String defaultDatabaseName;
-    private final Set<NamedDatabaseId> filterSet;
+    private final Set<String> filterSet;
 
     public TestDatabaseIdRepository()
     {
@@ -76,24 +76,16 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
     /**
      * Add a database to appear "not found" by the id repository
      */
-    public void filter( NamedDatabaseId namedDatabaseId )
+    public void filter( String databaseName )
     {
-        filterSet.add( namedDatabaseId );
-    }
-
-    /**
-     * Remove a database from the filter set, allowing it to be found by the "always found" default implementation of TestDatabaseIdRepository
-     */
-    public void unfilter( NamedDatabaseId namedDatabaseId )
-    {
-        filterSet.remove( namedDatabaseId );
+        filterSet.add( databaseName );
     }
 
     @Override
     public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
     {
         var id = super.getByName( databaseName );
-        var nameIsFiltered = id.map( filterSet::contains ).orElse( false );
+        var nameIsFiltered = id.map( NamedDatabaseId::name ).map( filterSet::contains ).orElse( false );
         return nameIsFiltered ? Optional.empty() : id;
     }
 
