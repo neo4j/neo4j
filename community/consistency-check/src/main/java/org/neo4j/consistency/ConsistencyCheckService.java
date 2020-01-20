@@ -85,6 +85,7 @@ import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instanti
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -228,7 +229,7 @@ public class ConsistencyCheckService
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             // Load tokens before starting extensions, etc.
-            tokenHolders.setInitialTokens( StoreTokens.allReadableTokens( neoStores ) );
+            tokenHolders.setInitialTokens( StoreTokens.allReadableTokens( neoStores ), TRACER_SUPPLIER.get() );
 
             life.start();
 

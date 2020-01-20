@@ -44,6 +44,7 @@ import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -151,7 +152,7 @@ class SafePropertyChainReader implements AutoCloseable
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).recordNotFullReferencesNext(),
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).invalidLength() ) )
                                 {
-                                    value = Values.stringValue( propertyStore.getStringFor( dynamicRecords ) );
+                                    value = Values.stringValue( propertyStore.getStringFor( dynamicRecords, TRACER_SUPPLIER.get() ) );
                                 }
                                 break;
                             case ARRAY:
@@ -164,11 +165,11 @@ class SafePropertyChainReader implements AutoCloseable
                                         record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).recordNotFullReferencesNext(),
                                         record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).invalidLength() ) )
                                 {
-                                    value = propertyStore.getArrayFor( dynamicRecords );
+                                    value = propertyStore.getArrayFor( dynamicRecords, TRACER_SUPPLIER.get() );
                                 }
                                 break;
                             default:
-                                value = type.value( block, null );
+                                value = type.value( block, null, TRACER_SUPPLIER.get() );
                                 break;
                             }
                         }

@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
@@ -77,7 +78,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     @Test
     void shouldScanASubsetOfRelationships()
     {
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
@@ -96,7 +97,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     @Test
     void shouldHandleSizeHintOverflow()
     {
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
@@ -115,7 +116,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     @Test
     void shouldFailForSizeHintZero()
     {
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // given
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
@@ -130,7 +131,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     {
         // given
         LongArrayList ids = new LongArrayList();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
@@ -158,13 +159,13 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         {
             // when
             Future<LongList> future1 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateRelationshipScanCursor, REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
             Future<LongList> future2 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateRelationshipScanCursor, REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
             Future<LongList> future3 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateRelationshipScanCursor, REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
             Future<LongList> future4 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateRelationshipScanCursor, REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
 
             // then
             LongList ids1 = future1.get();
@@ -194,7 +195,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         try
         {
             // when
-            Supplier<RelationshipScanCursor> allocateRelCursor = cursors::allocateRelationshipScanCursor;
+            Supplier<RelationshipScanCursor> allocateRelCursor = () -> cursors.allocateRelationshipScanCursor( NULL );
             Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100 ) );
             Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100 ) );
             Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100 ) );
@@ -231,7 +232,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
             ArrayList<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 11; i++ )
             {
-                futures.add( service.submit( randomBatchWorker( scan, cursors::allocateRelationshipScanCursor, REL_GET ) ) );
+                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET ) ) );
             }
 
             service.shutdown();

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 public class SimpleLogVersionRepository implements LogVersionRepository
@@ -48,7 +49,7 @@ public class SimpleLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public void setCurrentLogVersion( long version )
+    public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
     {
         this.logVersion = version;
     }

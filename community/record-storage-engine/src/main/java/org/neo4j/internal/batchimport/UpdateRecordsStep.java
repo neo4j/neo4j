@@ -36,6 +36,7 @@ import org.neo4j.internal.id.IdValidator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 
 /**
@@ -71,7 +72,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
                 store.prepareForCommit( record, idSequence.apply( record.getId() ) );
                 // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
                 // instead just note the highId. It will be mostly correct in the end.
-                store.updateRecord( record, IGNORE );
+                store.updateRecord( record, IGNORE, TRACER_SUPPLIER.get() );
                 recordsUpdatedInThisBatch++;
             }
         }

@@ -154,11 +154,11 @@ class AbstractDynamicStoreTest
             store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
-            store.updateRecord( first );
+            store.updateRecord( first, NULL );
             second.setNextBlock( third.getId() );
-            store.updateRecord( second );
+            store.updateRecord( second, NULL );
 
-            Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL, false ).iterator();
+            Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL, false, NULL ).iterator();
             assertTrue( records.hasNext() );
             assertEquals( first, records.next() );
             assertTrue( records.hasNext() );
@@ -180,13 +180,13 @@ class AbstractDynamicStoreTest
             store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
-            store.updateRecord( first );
+            store.updateRecord( first, NULL );
             second.setNextBlock( third.getId() );
-            store.updateRecord( second );
+            store.updateRecord( second, NULL );
             second.setInUse( false );
-            store.updateRecord( second );
+            store.updateRecord( second, NULL );
 
-            Iterator<DynamicRecord> records = store.getRecords( 1, FORCE, false ).iterator();
+            Iterator<DynamicRecord> records = store.getRecords( 1, FORCE, false, NULL ).iterator();
             assertTrue( records.hasNext() );
             assertEquals( first, records.next() );
             assertTrue( records.hasNext() );
@@ -227,7 +227,7 @@ class AbstractDynamicStoreTest
         DynamicRecord first = new DynamicRecord( id );
         first.setInUse( true );
         first.setData( RandomUtils.nextBytes( dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10 ) );
-        store.updateRecord( first );
+        store.updateRecord( first, NULL );
         return first;
     }
 

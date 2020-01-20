@@ -586,12 +586,12 @@ class FulltextIndexConsistencyCheckIT
 
         //when
         NeoStores stores = getNeoStores( db );
-        NodeRecord record = stores.getNodeStore().getRecord( nodeId, stores.getNodeStore().newRecord(), RecordLoad.NORMAL );
+        NodeRecord record = stores.getNodeStore().getRecord( nodeId, stores.getNodeStore().newRecord(), RecordLoad.NORMAL, NULL );
         long propId = record.getNextProp();
 
-        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
+        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL, NULL );
         propRecord.removePropertyBlock( 1 ); // remove property p2
-        stores.getPropertyStore().updateRecord( propRecord );
+        stores.getPropertyStore().updateRecord( propRecord, NULL );
 
         managementService.shutdown();
 
@@ -707,13 +707,13 @@ class FulltextIndexConsistencyCheckIT
         }
         NeoStores stores = getNeoStores( db );
         RelationshipRecord record = stores.getRelationshipStore().newRecord();
-        record = stores.getRelationshipStore().getRecord( relId, record, RecordLoad.NORMAL );
+        record = stores.getRelationshipStore().getRecord( relId, record, RecordLoad.NORMAL, NULL );
         long propId = record.getNextProp();
         record.setNextProp( AbstractBaseRecord.NO_ID );
-        stores.getRelationshipStore().updateRecord( record );
-        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
+        stores.getRelationshipStore().updateRecord( record, NULL );
+        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL, NULL );
         propRecord.setInUse( false );
-        stores.getPropertyStore().updateRecord( propRecord );
+        stores.getPropertyStore().updateRecord( propRecord, NULL );
         managementService.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();

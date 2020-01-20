@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class RecordNodeCursorTest
 {
@@ -57,7 +58,7 @@ class RecordNodeCursorTest
             record.initialize( record.getId() == 200, 1L, false, 1L, 0L );
             return null;
         } ).when( nodeStore ).nextRecordByCursor( any(), any(), any() );
-        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore );
+        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore, NULL );
 
         // when
         cursor.scan();

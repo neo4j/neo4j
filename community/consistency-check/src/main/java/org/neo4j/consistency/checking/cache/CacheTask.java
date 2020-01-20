@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -112,7 +113,7 @@ public abstract class CacheTask extends ConsistencyCheckerTask
             {
                 if ( client.getFromCache( nodeId, CacheSlots.NextRelationship.SLOT_FIRST_IN_TARGET ) == 0 )
                 {
-                    NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+                    NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE, TRACER_SUPPLIER.get() );
                     if ( node.inUse() && !node.isDense() )
                     {
                         storeProcessor.processNode( nodeStore, node );

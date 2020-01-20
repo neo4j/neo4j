@@ -69,8 +69,9 @@ public class IndexAccessors implements Closeable
             ThrowingFunction<IndexDescriptor,IndexAccessor,IOException> accessorLookup )
             throws IOException
     {
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores );
-        Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders ).indexesGetAll();
+        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, TRACER_SUPPLIER.get() );
+        Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders )
+                .indexesGetAll( TRACER_SUPPLIER.get() );
         while ( true )
         {
             try

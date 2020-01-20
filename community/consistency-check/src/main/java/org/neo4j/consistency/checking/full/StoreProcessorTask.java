@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static java.lang.String.format;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class StoreProcessorTask<R extends AbstractBaseRecord> extends ConsistencyCheckerTask
 {
@@ -93,7 +94,7 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
             }
             else
             {
-                processor.applyFiltered( store, progressListener );
+                processor.applyFiltered( store, progressListener, TRACER_SUPPLIER.get() );
             }
             cacheAccess.setForward( true );
         }

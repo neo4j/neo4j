@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -29,10 +30,12 @@ import org.neo4j.kernel.impl.store.record.Record;
 public class PropertyDeleter
 {
     private final PropertyTraverser traverser;
+    private final PageCursorTracer cursorTracer;
 
-    public PropertyDeleter( PropertyTraverser traverser )
+    public PropertyDeleter( PropertyTraverser traverser, PageCursorTracer cursorTracer )
     {
         this.traverser = traverser;
+        this.cursorTracer = cursorTracer;
     }
 
     public void deletePropertyChain( PrimitiveRecord primitive,
@@ -41,8 +44,7 @@ public class PropertyDeleter
         long nextProp = primitive.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            RecordProxy<PropertyRecord, PrimitiveRecord> propertyChange =
-                    propertyRecords.getOrLoad( nextProp, primitive );
+            RecordProxy<PropertyRecord, PrimitiveRecord> propertyChange = propertyRecords.getOrLoad( nextProp, primitive, cursorTracer );
 
             // TODO forChanging/forReading piggy-backing
             PropertyRecord propRecord = propertyChange.forChangingData();
@@ -113,8 +115,7 @@ public class PropertyDeleter
             RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords, PrimitiveRecord primitive,
             long propertyId )
     {
-        RecordProxy<PropertyRecord, PrimitiveRecord> recordChange =
-                propertyRecords.getOrLoad( propertyId, primitive );
+        RecordProxy<PropertyRecord, PrimitiveRecord> recordChange = propertyRecords.getOrLoad( propertyId, primitive, cursorTracer );
         PropertyRecord propRecord = recordChange.forChangingData();
         if ( !propRecord.inUse() )
         {
@@ -169,7 +170,7 @@ public class PropertyDeleter
         }
         if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
         {
-            PropertyRecord prevPropRecord = propertyRecords.getOrLoad( prevProp, primitive ).forChangingLinkage();
+            PropertyRecord prevPropRecord = propertyRecords.getOrLoad( prevProp, primitive, cursorTracer ).forChangingLinkage();
             assert prevPropRecord.inUse() : prevPropRecord + "->" + propRecord
             + " for " + primitive;
             prevPropRecord.setNextProp( nextProp );
@@ -177,7 +178,7 @@ public class PropertyDeleter
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord nextPropRecord = propertyRecords.getOrLoad( nextProp, primitive ).forChangingLinkage();
+            PropertyRecord nextPropRecord = propertyRecords.getOrLoad( nextProp, primitive, cursorTracer ).forChangingLinkage();
             assert nextPropRecord.inUse() : propRecord + "->" + nextPropRecord
             + " for " + primitive;
             nextPropRecord.setPrevProp( prevProp );

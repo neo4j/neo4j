@@ -400,9 +400,9 @@ public class DetectRandomSabotageIT
                     {
                         NodeStore store = stores.getNodeStore();
                         NodeRecord node = randomRecord( random, store, usedRecord() );
-                        NodeRecord before = store.getRecord( node.getId(), store.newRecord(), RecordLoad.NORMAL );
+                        NodeRecord before = store.getRecord( node.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
                         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
-                        long[] existing = nodeLabels.get( store );
+                        long[] existing = nodeLabels.get( store, NULL );
                         if ( random.nextBoolean() )
                         {
                             // Change inlined
@@ -414,7 +414,7 @@ public class DetectRandomSabotageIT
                                     node.setLabelField( labelField, node.getDynamicLabelRecords() );
                                 }
                             }
-                            while ( Arrays.equals( existing, NodeLabelsField.get( node, store ) ) );
+                            while ( Arrays.equals( existing, NodeLabelsField.get( node, store, NULL ) ) );
                         }
                         else
                         {
@@ -426,7 +426,7 @@ public class DetectRandomSabotageIT
                             }
                             while ( existingLabelField == node.getLabelField() );
                         }
-                        store.updateRecord( node );
+                        store.updateRecord( node, NULL );
                         return recordSabotage( before, node );
                     }
                 },
@@ -445,7 +445,7 @@ public class DetectRandomSabotageIT
                     {
                         RelationshipStore store = stores.getRelationshipStore();
                         RelationshipRecord relationship = randomRecord( random, store, usedRecord() );
-                        RelationshipRecord before = store.getRecord( relationship.getId(), store.newRecord(), RecordLoad.NORMAL );
+                        RelationshipRecord before = store.getRecord( relationship.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
                         LongSupplier rng = () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue() );
                         switch ( random.nextInt( 4 ) )
                         {
@@ -470,7 +470,7 @@ public class DetectRandomSabotageIT
                             guaranteedChangedId( relationship::getSecondNextRel, relationship::setSecondNextRel, rng );
                             break;
                         }
-                        store.updateRecord( relationship );
+                        store.updateRecord( relationship, NULL );
                         return recordSabotage( before, relationship );
                     }
                 },
@@ -715,7 +715,7 @@ public class DetectRandomSabotageIT
                         do
                         {
                             // If we're removing a label from the label index, make sure that the selected node has a label
-                            nodeRecord = store.getRecord( random.nextLong( store.getHighId() ), store.newRecord(), RecordLoad.CHECK );
+                            nodeRecord = store.getRecord( random.nextLong( store.getHighId() ), store.newRecord(), RecordLoad.CHECK, NULL );
                         }
                         while ( !add && (!nodeRecord.inUse() || nodeRecord.getLabelField() == NO_LABELS_FIELD.longValue()) );
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
@@ -727,7 +727,7 @@ public class DetectRandomSabotageIT
                             {
                                 // Our node is in use, make sure it's a label it doesn't already have
                                 NodeLabels labelsField = NodeLabelsField.parseLabelsField( nodeRecord );
-                                long[] labelsBefore = labelsField.get( store );
+                                long[] labelsBefore = labelsField.get( store, NULL );
                                 for ( long labelIdBefore : labelsBefore )
                                 {
                                     labelNames.remove( tokenHolders.labelTokens().getTokenById( (int) labelIdBefore ).name() );
@@ -766,9 +766,9 @@ public class DetectRandomSabotageIT
         protected <T extends AbstractBaseRecord> Sabotage setRandomRecordNotInUse( RandomRule random, RecordStore<T> store )
         {
             T before = randomRecord( random, store, usedRecord() );
-            T record = store.getRecord( before.getId(), store.newRecord(), RecordLoad.NORMAL );
+            T record = store.getRecord( before.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
             record.setInUse( false );
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
             return recordSabotage( before, record );
         }
 
@@ -787,9 +787,9 @@ public class DetectRandomSabotageIT
                 ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, LongSupplier rng )
         {
             T before = randomRecord( random, store, filter );
-            T record = store.getRecord( before.getId(), store.newRecord(), RecordLoad.NORMAL );
+            T record = store.getRecord( before.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
             guaranteedChangedId( () -> idGetter.applyAsLong( record ), changedId -> idSetter.accept( record, changedId ), rng );
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
             return recordSabotage( before, record );
         }
 
@@ -813,20 +813,20 @@ public class DetectRandomSabotageIT
             PropertyRecord propertyRecord = propertyStore.newRecord();
             while ( true )
             {
-                propertyStore.getRecord( random.nextLong( propertyStore.getHighId() ), propertyRecord, RecordLoad.CHECK );
+                propertyStore.getRecord( random.nextLong( propertyStore.getHighId() ), propertyRecord, RecordLoad.CHECK, NULL );
                 if ( propertyRecord.inUse() )
                 {
                     for ( PropertyBlock block : propertyRecord )
                     {
-                        if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore ) ) )
+                        if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore, NULL ) ) )
                         {
-                            propertyStore.ensureHeavy( block );
+                            propertyStore.ensureHeavy( block, NULL );
                             if ( block.getValueRecords().size() > 1 )
                             {
                                 DynamicRecord dynamicRecord = block.getValueRecords().get( random.nextInt( block.getValueRecords().size() - 1 ) );
-                                DynamicRecord before = dynamicStore.getRecord( dynamicRecord.getId(), dynamicStore.newRecord(), RecordLoad.NORMAL );
+                                DynamicRecord before = dynamicStore.getRecord( dynamicRecord.getId(), dynamicStore.newRecord(), RecordLoad.NORMAL, NULL );
                                 vandal.accept( dynamicRecord );
-                                dynamicStore.updateRecord( dynamicRecord );
+                                dynamicStore.updateRecord( dynamicRecord, NULL );
                                 return recordSabotage( before, dynamicRecord );
                             }
                         }
@@ -852,7 +852,7 @@ public class DetectRandomSabotageIT
             T record = store.newRecord();
             do
             {
-                store.getRecord( random.nextLong( highId ), record, RecordLoad.CHECK );
+                store.getRecord( random.nextLong( highId ), record, RecordLoad.CHECK, NULL );
             }
             while ( !filter.test( record ) );
             return record;

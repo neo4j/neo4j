@@ -631,7 +631,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 update.entityTokensChanged(),
                                 update.entityTokensUnchanged(),
                                 update.propertiesChanged(), false, EntityType.NODE );
-                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE );
+                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL );
                         indexService.applyUpdates( entryUpdates, NULL );
                     }
                 }

@@ -224,9 +224,9 @@ class NodeCheckerTest extends CheckerTestBase
             NodeRecord node = new NodeRecord( nodeId ).initialize( true, NULL, false, NULL, 0 );
             new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
             assertThat( node.getDynamicLabelRecords().size() ).isGreaterThanOrEqualTo( 2 );
-            nodeStore.updateRecord( node );
+            nodeStore.updateRecord( node, PageCursorTracer.NULL );
             vandal.accept( node );
-            nodeStore.updateRecord( node );
+            nodeStore.updateRecord( node, PageCursorTracer.NULL );
         }
 
         // when
@@ -308,7 +308,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             NodeRecord node = new NodeRecord( nodeStore.nextId( PageCursorTracer.NULL ) ).initialize( true, NULL, false, NULL, 0x171f5bd081L );
-            nodeStore.updateRecord( node );
+            nodeStore.updateRecord( node, PageCursorTracer.NULL );
         }
 
         // when

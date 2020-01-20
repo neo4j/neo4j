@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
@@ -51,7 +52,7 @@ public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
         {
             if ( node.inUse() )
             {
-                writer.write( labelChanges( node.getId(), EMPTY_LONG_ARRAY, get( node, nodeStore ) ) );
+                writer.write( labelChanges( node.getId(), EMPTY_LONG_ARRAY, get( node, nodeStore, TRACER_SUPPLIER.get() ) ) );
             }
         }
         sender.send( batch );

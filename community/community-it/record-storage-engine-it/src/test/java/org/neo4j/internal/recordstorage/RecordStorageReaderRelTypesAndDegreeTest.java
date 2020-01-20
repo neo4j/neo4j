@@ -55,6 +55,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.recordstorage.TestRelType.IN;
 import static org.neo4j.internal.recordstorage.TestRelType.LOOP;
 import static org.neo4j.internal.recordstorage.TestRelType.OUT;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
@@ -240,7 +241,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     private int degreeForDirectionAndType( StorageNodeCursor cursor, RelationshipDirection direction, int relType )
     {
         int degree = 0;
-        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor() )
+        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
         {
             groups.init( cursor.entityReference(), cursor.relationshipGroupReference(), cursor.isDense() );
             while ( groups.next() )
@@ -394,7 +395,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     private Set<TestRelType> relTypes( StorageNodeCursor cursor )
     {
         Set<TestRelType> types = new HashSet<>();
-        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor() )
+        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
         {
             groups.init( cursor.entityReference(), cursor.relationshipGroupReference(), cursor.isDense() );
             while ( groups.next() )
@@ -488,7 +489,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     private Set<TestDegreeItem> degrees( StorageNodeCursor nodeCursor )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
-        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor() )
+        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
         {
             groups.init( nodeCursor.entityReference(), nodeCursor.relationshipGroupReference(), nodeCursor.isDense() );
             while ( groups.next() )
@@ -501,7 +502,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
 
     private StorageNodeCursor newCursor( long nodeId )
     {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         return nodeCursor;
@@ -627,7 +628,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
 
     private static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
     {
-        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE );
+        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE, NULL );
     }
 
     private NodeRecord getNodeRecord( long id )
@@ -647,12 +648,12 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
 
     private void update( RelationshipGroupRecord record )
     {
-        resolveNeoStores().getRelationshipGroupStore().updateRecord( record );
+        resolveNeoStores().getRelationshipGroupStore().updateRecord( record, NULL );
     }
 
     private void update( RelationshipRecord record )
     {
-        resolveNeoStores().getRelationshipStore().updateRecord( record );
+        resolveNeoStores().getRelationshipStore().updateRecord( record, NULL );
     }
 
     private NeoStores resolveNeoStores()

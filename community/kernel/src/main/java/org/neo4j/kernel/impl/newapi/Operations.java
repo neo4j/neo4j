@@ -67,6 +67,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -137,16 +138,16 @@ public class Operations implements Write, SchemaWrite
     private final ConstraintSemantics constraintSemantics;
     private final IndexingProvidersService indexProviders;
     private final Config config;
+    private final PageCursorTracer cursorTracer;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
     private DefaultPropertyCursor restrictedPropertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
 
-    public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater,
-            CommandCreationContext commandCreationContext, KernelTransactionImplementation ktx,
-            KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config )
+    public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
+            KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
+            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config, PageCursorTracer cursorTracer )
     {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
@@ -159,15 +160,16 @@ public class Operations implements Write, SchemaWrite
         this.constraintSemantics = constraintSemantics;
         this.indexProviders = indexProviders;
         this.config = config;
+        this.cursorTracer = cursorTracer;
     }
 
     public void initialize()
     {
-        this.nodeCursor = cursors.allocateFullAccessNodeCursor();
-        this.propertyCursor = cursors.allocateFullAccessPropertyCursor();
-        this.relationshipCursor = cursors.allocateRelationshipScanCursor();
-        this.restrictedNodeCursor = cursors.allocateNodeCursor();
-        this.restrictedPropertyCursor = cursors.allocatePropertyCursor();
+        this.nodeCursor = cursors.allocateFullAccessNodeCursor( cursorTracer );
+        this.propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorTracer );
+        this.relationshipCursor = cursors.allocateRelationshipScanCursor( cursorTracer );
+        this.restrictedNodeCursor = cursors.allocateNodeCursor( cursorTracer );
+        this.restrictedPropertyCursor = cursors.allocatePropertyCursor( cursorTracer );
     }
 
     @Override
@@ -239,7 +241,7 @@ public class Operations implements Write, SchemaWrite
                     {
                         count.increment();
                     }
-                }, ktx.statementLocks().optimistic(), ktx.lockTracer() );
+                }, ktx.statementLocks().optimistic(), ktx.lockTracer(), ktx.pageCursorTracer() );
 
         locking.lockAllNodesAndConsumeRelationships( nodeId, ktx, ktx.ambientNodeCursor() );
         ktx.assertOpen();

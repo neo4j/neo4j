@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
@@ -129,7 +130,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         List<TraceEvent> expectedEvents = new ArrayList<>();
         expectedEvents.add( ON_ALL_NODES_SCAN );
 
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             nodes.setTracer( tracer );
@@ -150,7 +151,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -174,7 +175,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -260,7 +261,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( RelationshipScanCursor cursor = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor cursor = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -289,8 +290,8 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
-              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -325,9 +326,9 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
-              RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor( NULL );
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -369,8 +370,8 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
-              RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor() )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor( NULL ) )
         {
             // when
             groupCursor.setTracer( tracer );
@@ -399,8 +400,8 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL ) )
         {
             // when
             propertyCursor.setTracer( tracer );

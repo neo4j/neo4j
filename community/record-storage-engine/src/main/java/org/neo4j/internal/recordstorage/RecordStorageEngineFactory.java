@@ -202,7 +202,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             List<DynamicRecord> nameRecords = new ArrayList<>();
             AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorTracer );
             nameRecords.forEach( nameStore::prepareForCommit );
-            nameRecords.forEach( nameStore::updateRecord );
+            nameRecords.forEach( record -> nameStore.updateRecord( record, cursorTracer ) );
             nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
             int nameId = Iterables.first( nameRecords ).getIntId();
             PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
@@ -211,14 +211,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             keyTokenRecord.initialize( true, nameId );
             keyTokenRecord.setInternal( internal );
             keyTokenStore.prepareForCommit( keyTokenRecord );
-            keyTokenStore.updateRecord( keyTokenRecord );
+            keyTokenStore.updateRecord( keyTokenRecord, cursorTracer );
             keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
             return Math.toIntExact( tokenId );
         };
         TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
         TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens() );
+        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens( cursorTracer ) );
         return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ), cursorTracer );
     }
 }

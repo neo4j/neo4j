@@ -120,7 +120,7 @@ class NodeChecker implements Checker
     {
         long usedNodes = 0;
         try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
-                RecordNodeCursor nodeCursor = reader.allocateNodeCursor();
+                RecordNodeCursor nodeCursor = reader.allocateNodeCursor( TRACER_SUPPLIER.get() );
                 RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore() );
                 AllEntriesLabelScanReader labelIndexReader = context.labelScanStore.allNodeLabelRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId );
                 SafePropertyChainReader property = new SafePropertyChainReader( context );

@@ -36,7 +36,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -54,6 +53,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
@@ -147,7 +147,7 @@ class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
+        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
@@ -181,7 +181,7 @@ class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
         {
-            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
+            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL );
         }
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
@@ -252,7 +252,7 @@ class NodeCommandTest
 
     private Set<Integer> labels( NodeRecord record )
     {
-        long[] rawLabels = parseLabelsField( record ).get( nodeStore );
+        long[] rawLabels = parseLabelsField( record ).get( nodeStore, NULL );
         Set<Integer> labels = new HashSet<>( rawLabels.length );
         for ( long label : rawLabels )
         {

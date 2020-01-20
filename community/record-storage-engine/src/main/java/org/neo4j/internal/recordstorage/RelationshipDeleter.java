@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -35,11 +36,13 @@ class RelationshipDeleter
 {
     private final RelationshipGroupGetter relGroupGetter;
     private final PropertyDeleter propertyChainDeleter;
+    private final PageCursorTracer cursorTracer;
 
-    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter )
+    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter, PageCursorTracer cursorTracer )
     {
         this.relGroupGetter = relGroupGetter;
         this.propertyChainDeleter = propertyChainDeleter;
+        this.cursorTracer = cursorTracer;
     }
 
     /**
@@ -52,7 +55,7 @@ class RelationshipDeleter
      */
     void relDelete( long id, RecordAccessSet recordChanges, ResourceLocker locks )
     {
-        RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
+        RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingLinkage();
         propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
         disconnectRelationship( record, recordChanges, locks );
         updateNodesForDeletedRelationship( record, recordChanges, locks );
@@ -77,7 +80,7 @@ class RelationshipDeleter
         }
 
         locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, otherRelId );
-        RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null ).forChangingLinkage();
+        RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null, cursorTracer ).forChangingLinkage();
         boolean changed = false;
         long newId = pointer.get( rel );
         boolean newIsFirst = pointer.isFirstInChain( rel );
@@ -100,13 +103,11 @@ class RelationshipDeleter
     private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
             ResourceLocker locks )
     {
-        RecordProxy<NodeRecord, Void> startNodeChange =
-                recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null );
-        RecordProxy<NodeRecord, Void> endNodeChange =
-                recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null );
+        RecordProxy<NodeRecord, Void> startNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null, cursorTracer );
+        RecordProxy<NodeRecord, Void> endNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null, cursorTracer );
 
-        NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
-        NodeRecord endNode = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null ).forReadingLinkage();
+        NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null, cursorTracer ).forReadingLinkage();
+        NodeRecord endNode = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null, cursorTracer ).forReadingLinkage();
         boolean loop = startNode.getId() == endNode.getId();
 
         if ( !startNode.isDense() )
@@ -193,7 +194,7 @@ class RelationshipDeleter
         {
             locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
         }
-        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
+        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorTracer ).forChangingLinkage();
         if ( nodeId == firstRel.getFirstNode() )
         {
             firstRel.setFirstPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : relCount( nodeId, firstRel ) - 1 );
@@ -218,13 +219,13 @@ class RelationshipDeleter
         }
         else
         {   // There are others before it, point the previous to the next group
-            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, null ).forChangingLinkage();
+            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, null, cursorTracer ).forChangingLinkage();
             previousRecord.setNext( next );
         }
 
         if ( next != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {   // There are groups after this one, point that next group to the previous of the group to be deleted
-            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, null ).forChangingLinkage();
+            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, null, cursorTracer ).forChangingLinkage();
             nextRecord.setPrev( previous );
         }
         group.setInUse( false );

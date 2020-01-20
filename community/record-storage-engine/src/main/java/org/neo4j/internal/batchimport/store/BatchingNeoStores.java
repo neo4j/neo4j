@@ -189,12 +189,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
         // the db is either completely empty or non-existent anyway, so deleting this file is OK.
         fileSystem.deleteFile( NativeLabelScanStore.getLabelScanStoreFile( databaseLayout ) );
-
         instantiateStores();
-        neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
-                initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
-                BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
-                initialIds.lastCommittedTransactionLogVersion() );
     }
 
     public void assertDatabaseIsEmptyOrNonExistent()
@@ -253,6 +248,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         {
             neoStores.start( cursor );
             temporaryNeoStores.start( cursor );
+            neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
+                    initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
+                    BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
+                    initialIds.lastCommittedTransactionLogVersion(), cursor );
         }
     }
 

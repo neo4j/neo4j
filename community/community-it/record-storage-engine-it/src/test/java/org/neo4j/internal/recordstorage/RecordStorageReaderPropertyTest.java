@@ -31,6 +31,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Test read access to committed properties.
@@ -89,12 +90,12 @@ class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
             long nodeId = createNode( singletonMap( "prop", value ), label1 );
 
             // when
-            try ( StorageNodeCursor node = storageReader.allocateNodeCursor() )
+            try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL ) )
             {
                 node.single( nodeId );
                 assertTrue( node.next() );
 
-                try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor() )
+                try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor( NULL ) )
                 {
                     node.properties( props );
                     if ( props.next() )

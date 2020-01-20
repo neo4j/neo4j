@@ -44,7 +44,7 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     @Override
     public Iterable<SchemaRule> getAll()
     {
-        return schemaStorage.getAll();
+        return schemaStorage.getAll( cursorTracer );
     }
 
     @Override

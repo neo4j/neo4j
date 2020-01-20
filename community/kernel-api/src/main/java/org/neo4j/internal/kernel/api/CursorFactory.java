@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 /**
  * Allocates Cursors. To read data from the Kernel, Cursors are needed. A Cursor factory let's the Kernel consumer
  * allocate all types of cursors, which can then be reused for multiple read operations.
@@ -27,25 +29,25 @@ public interface CursorFactory
 {
     // entities
 
-    NodeCursor allocateNodeCursor();
+    NodeCursor allocateNodeCursor( PageCursorTracer cursorTracer );
 
-    NodeCursor allocateFullAccessNodeCursor();
+    NodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer );
 
-    RelationshipScanCursor allocateRelationshipScanCursor();
+    RelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer );
 
-    RelationshipScanCursor allocateFullAccessRelationshipScanCursor();
+    RelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer );
 
-    RelationshipTraversalCursor allocateRelationshipTraversalCursor();
+    RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer );
 
     // properties
 
-    PropertyCursor allocatePropertyCursor();
+    PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer );
 
-    PropertyCursor allocateFullAccessPropertyCursor();
+    PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer );
 
     // traversal
 
-    RelationshipGroupCursor allocateRelationshipGroupCursor();
+    RelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer );
 
     // schema indexes
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -34,6 +33,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -78,7 +78,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             read.allNodesScan( nodes );
@@ -96,7 +96,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     void shouldAccessNodesByReference()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             for ( long id : NODE_IDS )
             {

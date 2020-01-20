@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.assertCounts;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.computeKey;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.count;
@@ -87,7 +88,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( KernelTransaction tx = beginTransaction() )
         {
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( r, relationship );
                 assertTrue( relationship.next(), "should find relationship" );
@@ -124,7 +125,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( KernelTransaction tx = beginTransaction() )
         {
             assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( r, relationship );
                 assertFalse( relationship.next(), "should not find relationship" );
@@ -155,7 +156,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( KernelTransaction tx = beginTransaction() )
         {
             long r = tx.dataWrite().relationshipCreate( n1, type, n2 );
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 tx.dataRead().allRelationshipsScan( relationship );
                 assertCountRelationships( relationship, nRelationshipsInStore + 1, n1, type, n2 );
@@ -187,7 +188,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( KernelTransaction tx = beginTransaction() )
         {
             assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 tx.dataRead().allRelationshipsScan( relationship );
                 assertCountRelationships( relationship, nRelationshipsInStore - 1, n1, type, n2 );
@@ -211,8 +212,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
@@ -245,8 +246,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( KernelTransaction tx = beginTransaction() )
         {
             tx.dataWrite().relationshipDelete( r );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
@@ -273,8 +274,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
@@ -354,9 +355,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             assertEquals( tx.dataWrite().relationshipSetProperty( r, prop1, stringValue( "hello" ) ), NO_VALUE );
             assertEquals( tx.dataWrite().relationshipSetProperty( r, prop2, stringValue( "world" ) ), NO_VALUE );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
@@ -409,8 +410,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
 
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -460,8 +461,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken2, stringValue( "world" ) ),
                     NO_VALUE );
 
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -521,8 +522,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ),
                     stringValue( "hello" ) );
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -569,8 +570,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ),
                     stringValue( "hello" ) );
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -614,8 +615,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     stringValue( "hello" ) );
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ),
                     NO_VALUE );
-            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -706,9 +707,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             long in1 = write.relationshipCreate( write.nodeCreate(), incoming, start );
             long in2 = write.relationshipCreate( write.nodeCreate(), incoming, start );
             long loop = write.relationshipCreate( start, looping, start );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL ) )
             {
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
@@ -774,9 +775,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             long newRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL ) )
             {
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
@@ -816,9 +817,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             int two = tx.tokenWrite().relationshipTypeGetOrCreateForName( "TWO" );
             long newRelationship = write.relationshipCreate( start, two, write.nodeCreate() );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL ) )
             {
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
@@ -879,9 +880,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             int two = tx.tokenWrite().relationshipTypeGetOrCreateForName( "TWO" );
             long newRelationship = write.relationshipCreate( start, two, write.nodeCreate() );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL ) )
             {
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
@@ -944,9 +945,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             long newRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL ) )
             {
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
@@ -993,9 +994,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             long newRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL ) )
             {
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
@@ -1192,8 +1193,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Map<String,Integer> expectedCounts = modifyStartNodeRelationships( start, tx );
 
             // given
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
             {
                 // when
                 tx.dataRead().singleNode( start.id, node );
@@ -1226,9 +1227,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Map<String,Integer> expectedCounts = modifyStartNodeRelationships( start, tx );
 
             // given
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor();
-                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL );
+                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
             {
                 // when
                 read.singleNode( start.id, node );
@@ -1348,7 +1349,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // Then
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
@@ -1369,7 +1370,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long relationship = write.relationshipCreate( write.nodeCreate(), token, write.nodeCreate() );
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
@@ -1405,7 +1406,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // Then
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
@@ -1437,8 +1438,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // Then
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor relationships = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor properties = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor relationships = tx.cursors().allocateRelationshipScanCursor( NULL );
+                  PropertyCursor properties = tx.cursors().allocatePropertyCursor( NULL ) )
             {
                 tx.dataRead().singleRelationship( relationship, relationships );
                 assertTrue( relationships.next() );
@@ -1455,7 +1456,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
     private boolean hasProperties( RelationshipScanCursor cursor, KernelTransaction tx )
     {
-        try ( PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor() )
+        try ( PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( NULL ) )
         {
             cursor.properties( propertyCursor );
             return propertyCursor.next();
@@ -1513,8 +1514,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             Write write = tx.dataWrite();
             createRelationship( direction, start, type, write );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL ) )
             {
                 Read read = tx.dataRead();
                 read.singleNode( start, node );

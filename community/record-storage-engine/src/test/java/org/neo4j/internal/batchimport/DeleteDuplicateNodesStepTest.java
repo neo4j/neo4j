@@ -126,18 +126,18 @@ class DeleteDuplicateNodesStepTest
             expectedNodes += stride;
 
             // Verify node record
-            assertEquals( expectedToBeInUse, neoStores.getNodeStore().isInUse( entity.node.getId() ) );
+            assertEquals( expectedToBeInUse, neoStores.getNodeStore().isInUse( entity.node.getId(), NULL ) );
 
             // Verify label records
             for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
             {
-                assertEquals( expectedToBeInUse, neoStores.getNodeStore().getDynamicLabelStore().isInUse( labelRecord.getId() ) );
+                assertEquals( expectedToBeInUse, neoStores.getNodeStore().getDynamicLabelStore().isInUse( labelRecord.getId(), NULL ) );
             }
 
             // Verify property records
             for ( PropertyRecord propertyRecord : entity.properties )
             {
-                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId() ) );
+                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), NULL ) );
                 for ( PropertyBlock property : propertyRecord )
                 {
                     // Verify property dynamic value records
@@ -154,7 +154,7 @@ class DeleteDuplicateNodesStepTest
                             break;
                         default: throw new IllegalArgumentException( propertyRecord + " " + property );
                         }
-                        assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId() ) );
+                        assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), NULL ) );
                     }
                     expectedProperties += stride;
                 }
@@ -210,7 +210,7 @@ class DeleteDuplicateNodesStepTest
         {
             nodeRecord.setNextProp( propertyRecords[0].getId() );
         }
-        nodeStore.updateRecord( nodeRecord );
+        nodeStore.updateRecord( nodeRecord, NULL );
         monitor.nodesImported( 1 );
         monitor.propertiesImported( propertyCount );
         return new Ids( nodeRecord, propertyRecords );
@@ -244,7 +244,7 @@ class DeleteDuplicateNodesStepTest
             current.addPropertyBlock( block );
             space -= block.getValueBlocks().length;
         }
-        records.forEach( propertyStore::updateRecord );
+        records.forEach( record -> propertyStore.updateRecord( record, NULL ) );
         return records.toArray( new PropertyRecord[0] );
     }
 

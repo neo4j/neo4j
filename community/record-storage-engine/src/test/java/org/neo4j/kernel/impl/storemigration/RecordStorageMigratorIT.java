@@ -346,7 +346,7 @@ class RecordStorageMigratorIT
                 List<DynamicRecord> dynamicRecords = schemaStore35.allocateFrom( schemaRule, PageCursorTracer.NULL );
                 for ( DynamicRecord dynamicRecord : dynamicRecords )
                 {
-                    schemaStore35.updateRecord( dynamicRecord );
+                    schemaStore35.updateRecord( dynamicRecord, PageCursorTracer.NULL );
                 }
             }
             catch ( NoSuchElementException ignore )
@@ -375,10 +375,10 @@ class RecordStorageMigratorIT
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
-            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores );
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, PageCursorTracer.NULL );
             SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders );
             List<SchemaRule> migratedRules = new ArrayList<>();
-            storage.getAll().iterator().forEachRemaining( migratedRules::add );
+            storage.getAll( PageCursorTracer.NULL ).iterator().forEachRemaining( migratedRules::add );
 
             // Nerf the rule names, since migration may change those around.
             migratedRules = migratedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
@@ -406,11 +406,11 @@ class RecordStorageMigratorIT
             long maxId = 0;
             for ( DynamicRecord nameRecord : nameRecords )
             {
-                nameStore.updateRecord( nameRecord );
+                nameStore.updateRecord( nameRecord, PageCursorTracer.NULL );
                 maxId = Math.max( nameRecord.getId(), maxId );
             }
             nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse() ) );
-            tokenStore.updateRecord( record );
+            tokenStore.updateRecord( record, PageCursorTracer.NULL );
             tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse() ) );
         }
         nameStore.flush( PageCursorTracer.NULL );

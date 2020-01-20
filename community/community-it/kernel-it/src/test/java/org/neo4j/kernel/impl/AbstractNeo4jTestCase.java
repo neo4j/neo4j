@@ -39,6 +39,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ResourceLock( SHARED_RESOURCE )
@@ -111,7 +112,7 @@ public abstract class AbstractNeo4jTestCase
         int inUse = 0;
         for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )
         {
-            RECORD record = store.getRecord( id, store.newRecord(), RecordLoad.FORCE );
+            RECORD record = store.getRecord( id, store.newRecord(), RecordLoad.FORCE, NULL );
             if ( record.inUse() )
             {
                 inUse++;

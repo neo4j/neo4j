@@ -35,6 +35,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
@@ -97,7 +98,8 @@ public class DefaultRecoveryService implements RecoveryService
             long logVersion = lastClosedTransaction[1];
             log.warn( "Recovery detected that transaction logs were missing. " +
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true );
+            transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true,
+                    TRACER_SUPPLIER.get() );
             return;
         }
         if ( lastRecoveredTransaction != null )
@@ -105,7 +107,7 @@ public class DefaultRecoveryService implements RecoveryService
             LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
             transactionIdStore
                     .setLastCommittedAndClosedTransactionId( commitEntry.getTxId(), lastRecoveredTransaction.getChecksum(), commitEntry.getTimeWritten(),
-                            lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion() );
+                            lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion(), TRACER_SUPPLIER.get() );
         }
         else
         {
@@ -116,10 +118,10 @@ public class DefaultRecoveryService implements RecoveryService
             log.warn( "Recovery detected that transaction logs tail can't be trusted. " +
                     "Resetting offset of last closed transaction to point to the last recoverable log position: " + positionAfterLastRecoveredTransaction );
             transactionIdStore.resetLastClosedTransaction( lastClosedTransactionId, positionAfterLastRecoveredTransaction.getLogVersion(),
-                    positionAfterLastRecoveredTransaction.getByteOffset(), false );
+                    positionAfterLastRecoveredTransaction.getByteOffset(), false, TRACER_SUPPLIER.get() );
         }
 
-        logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion() );
+        logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion(), TRACER_SUPPLIER.get() );
     }
 
     static class RecoveryVisitor implements RecoveryApplier

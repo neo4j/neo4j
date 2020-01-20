@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -49,7 +50,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
         this.cache = cache;
         this.batchSize = config.batchSize();
         this.nodeStore = nodeStore;
-        this.nodeCursor = nodeStore.openPageCursorForReading( 0 );
+        this.nodeCursor = nodeStore.openPageCursorForReading( 0, TRACER_SUPPLIER.get() );
         newBatch();
     }
 

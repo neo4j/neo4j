@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
@@ -37,11 +38,13 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private long single;
     private LongIterator addedRelationships;
     private CursorPool<DefaultRelationshipScanCursor> pool;
+    private final PageCursorTracer cursorTracer;
 
-    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor )
+    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor, PageCursorTracer cursorTracer )
     {
         super( storeCursor );
         this.pool = pool;
+        this.cursorTracer = cursorTracer;
     }
 
     void scan( int type, Read read )
@@ -125,8 +128,8 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         {
             return true;
         }
-        try ( NodeCursor sourceNode = read.cursors().allocateNodeCursor();
-              NodeCursor targetNode = read.cursors().allocateNodeCursor() )
+        try ( NodeCursor sourceNode = read.cursors().allocateNodeCursor( cursorTracer );
+              NodeCursor targetNode = read.cursors().allocateNodeCursor( cursorTracer ) )
         {
             read.singleNode( storeCursor.sourceNodeReference(), sourceNode );
             read.singleNode( storeCursor.targetNodeReference(), targetNode );

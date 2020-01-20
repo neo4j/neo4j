@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -99,10 +100,10 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
     @Test
     void shouldTraverseTreeOfDepthThree()
     {
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor relationship1 = cursors.allocateRelationshipTraversalCursor();
-              RelationshipTraversalCursor relationship2 = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
+              RelationshipTraversalCursor relationship1 = cursors.allocateRelationshipTraversalCursor( NULL );
+              RelationshipTraversalCursor relationship2 = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             MutableLongSet leafs = new LongHashSet();
             long total = 0;

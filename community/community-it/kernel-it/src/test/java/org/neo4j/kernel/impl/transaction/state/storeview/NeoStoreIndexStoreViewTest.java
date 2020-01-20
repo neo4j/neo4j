@@ -75,6 +75,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension
 class NeoStoreIndexStoreViewTest
@@ -273,7 +274,7 @@ class NeoStoreIndexStoreViewTest
                         null, propertyUpdateVisitor, new int[]{labelId},
                         id -> true );
 
-        try ( StorageNodeCursor nodeCursor = reader.allocateNodeCursor() )
+        try ( StorageNodeCursor nodeCursor = reader.allocateNodeCursor( NULL ) )
         {
             nodeCursor.single( 1 );
             nodeCursor.next();
@@ -302,7 +303,7 @@ class NeoStoreIndexStoreViewTest
                 new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId},
                         id -> true );
 
-        try ( StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor() )
+        try ( StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor( NULL ) )
         {
             relationshipScanCursor.single( 1 );
             relationshipScanCursor.next();

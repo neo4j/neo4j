@@ -156,13 +156,13 @@ class OperationsTest
         nodeCursor = mock( FullAccessNodeCursor.class );
         propertyCursor = mock( FullAccessPropertyCursor.class );
         relationshipCursor = mock( DefaultRelationshipScanCursor.class );
-        when( cursors.allocateFullAccessNodeCursor() ).thenReturn( nodeCursor );
-        when( cursors.allocateFullAccessPropertyCursor() ).thenReturn( propertyCursor );
-        when( cursors.allocateRelationshipScanCursor() ).thenReturn( relationshipCursor );
+        when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( nodeCursor );
+        when( cursors.allocateFullAccessPropertyCursor( NULL ) ).thenReturn( propertyCursor );
+        when( cursors.allocateRelationshipScanCursor( NULL ) ).thenReturn( relationshipCursor );
         StorageEngine engine = mock( StorageEngine.class );
         storageReader = mock( StorageReader.class );
         storageReaderSnapshot = mock( StorageSchemaReader.class );
-        when( storageReader.nodeExists( anyLong() ) ).thenReturn( true );
+        when( storageReader.nodeExists( anyLong(), any() ) ).thenReturn( true );
         when( storageReader.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( storageReader.schemaSnapshot() ).thenReturn( storageReaderSnapshot );
@@ -185,7 +185,7 @@ class OperationsTest
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
                  transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
-                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults() );
+                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), NULL );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot );
@@ -1033,7 +1033,7 @@ class OperationsTest
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ) );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL );
 
         // when
         operations.nodeCreate();
@@ -1056,11 +1056,11 @@ class OperationsTest
         when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
-        when( cursors.allocateFullAccessNodeCursor() ).thenReturn( mock( FullAccessNodeCursor.class ) );
-        when( cursors.allocateFullAccessPropertyCursor() ).thenReturn( mock( FullAccessPropertyCursor.class ) );
+        when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
+        when( cursors.allocateFullAccessPropertyCursor( NULL ) ).thenReturn( mock( FullAccessPropertyCursor.class ) );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ) );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL );
         operations.initialize();
 
         // when
@@ -1089,7 +1089,7 @@ class OperationsTest
         when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ) );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL );
 
         // when
         operations.relationshipCreate( 0, 1, 2 );
@@ -1120,7 +1120,7 @@ class OperationsTest
         when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults() );
+                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), NULL );
 
         // when
         operations.indexCreate( IndexPrototype.forSchema( schema ).withName( "name" ) );

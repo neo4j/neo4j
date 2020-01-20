@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import org.neo4j.internal.recordstorage.RecordRelationshipTraversalCursor.Record;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -35,6 +36,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
 {
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
+    private final PageCursorTracer cursorTracer;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
 
     private BufferedGroup bufferedGroup;
@@ -42,11 +44,12 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     private PageCursor edgePage;
     private boolean open;
 
-    RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
+    RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -73,7 +76,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         setId( NO_ID );
         setNext( NO_ID );
 
-        try ( PageCursor edgePage = relationshipStore.openPageCursorForReading( relationshipReference ) )
+        try ( PageCursor edgePage = relationshipStore.openPageCursorForReading( relationshipReference, cursorTracer ) )
         {
             final MutableIntObjectMap<BufferedGroup> buffer = new IntObjectHashMap<>();
             BufferedGroup current = null;
@@ -207,7 +210,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         }
         if ( edgePage == null )
         {
-            edgePage = relationshipStore.openPageCursorForReading( reference );
+            edgePage = relationshipStore.openPageCursorForReading( reference, cursorTracer );
         }
         relationshipStore.getRecordByCursor( reference, edge, RecordLoad.FORCE, edgePage );
         if ( edge.getFirstNode() == getOwningNode() )
@@ -391,7 +394,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
 
     private PageCursor groupPage( long reference )
     {
-        return groupStore.openPageCursorForReading( reference );
+        return groupStore.openPageCursorForReading( reference, cursorTracer );
     }
 
     private void group( RelationshipGroupRecord record, long reference, PageCursor page )

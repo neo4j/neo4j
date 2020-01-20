@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -33,6 +34,7 @@ import static java.lang.Math.min;
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private final NodeStore read;
+    private final PageCursorTracer cursorTracer;
     private PageCursor pageCursor;
     private long next;
     private long highMark;
@@ -40,10 +42,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private boolean open;
     private boolean batched;
 
-    RecordNodeCursor( NodeStore read )
+    RecordNodeCursor( NodeStore read, PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.read = read;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -128,14 +131,14 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public long[] labels()
     {
-        return NodeLabelsField.get( this, read );
+        return NodeLabelsField.get( this, read, cursorTracer );
     }
 
     @Override
     public boolean hasLabel( int label )
     {
         //Get labels from store and put in intSet, unfortunately we get longs back
-        long[] longs = NodeLabelsField.get( this, read );
+        long[] longs = NodeLabelsField.get( this, read, cursorTracer );
         for ( long labelToken : longs )
         {
             if ( labelToken == label )
@@ -282,7 +285,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
     private PageCursor nodePage( long reference )
     {
-        return read.openPageCursorForReading( reference );
+        return read.openPageCursorForReading( reference, cursorTracer );
     }
 
     private long nodeHighMark()

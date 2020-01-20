@@ -23,6 +23,8 @@ import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.PrimitiveLongResourceIterator
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexOrderAscending, IndexOrderDescending, IndexOrderNone}
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
@@ -30,8 +32,6 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.{CursorIterator, IndexSearchMonitor, RelationshipCursorIterator}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.operations.CursorUtils
 import org.neo4j.exceptions.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphalgo.BasicEvaluationContext
@@ -89,9 +89,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def writes() = transactionalContext.dataWrite
 
-  private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor()
+  private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor( transactionalContext.kernelTransaction.pageCursorTracer() )
 
-  private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor()
+  private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor( transactionalContext.kernelTransaction.pageCursorTracer() )
 
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
 
@@ -156,6 +156,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val cursor = allocateNodeCursor()
     val cursors = transactionalContext.cursors
+    var cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer()
 
     try {
       val read = reads()
@@ -163,9 +164,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       if (!cursor.next()) Iterator.empty
       else {
         val selectionCursor = dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types)
-          case INCOMING => incomingCursor(cursors, cursor, types)
-          case BOTH => allCursor(cursors, cursor, types)
+          case OUTGOING => outgoingCursor(cursors, cursor, types, cursorTracer)
+          case INCOMING => incomingCursor(cursors, cursor, types, cursorTracer)
+          case BOTH => allCursor(cursors, cursor, types, cursorTracer)
         }
         resources.trace(selectionCursor)
         new CursorIterator[RelationshipValue] {
@@ -192,13 +193,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       val read = reads()
       val cursors = transactionalContext.cursors
+      var cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer();
       read.singleNode(node, cursor)
       if (!cursor.next()) RelationshipIterator.EMPTY
       else {
         val selectionCursor = dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types)
-          case INCOMING => incomingCursor(cursors, cursor, types)
-          case BOTH => allCursor(cursors, cursor, types)
+          case OUTGOING => outgoingCursor(cursors, cursor, types, cursorTracer)
+          case INCOMING => incomingCursor(cursors, cursor, types, cursorTracer)
+          case BOTH => allCursor(cursors, cursor, types, cursorTracer)
         }
         resources.trace(selectionCursor)
         new RelationshipCursorIterator(selectionCursor)
@@ -371,37 +373,37 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors)
+    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor, transactionalContext.cursors)
+    else Nodes.countIncoming(nodeCursor, transactionalContext.cursors, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor, transactionalContext.cursors)
+    else Nodes.countAll(nodeCursor, transactionalContext.cursors, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, relationship)
+    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor, transactionalContext.cursors, relationship)
+    else Nodes.countIncoming(nodeCursor, transactionalContext.cursors, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor, transactionalContext.cursors, relationship)
+    else Nodes.countAll(nodeCursor, transactionalContext.cursors, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = {
@@ -885,25 +887,25 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite()
 
   private def allocateAndTraceNodeCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeCursor()
+    val cursor = transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceRelationshipGroupCursor() = {
-    val cursor = transactionalContext.cursors.allocateRelationshipGroupCursor()
+    val cursor = transactionalContext.cursors.allocateRelationshipGroupCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceRelationshipTraversalCursor() = {
-    val cursor = transactionalContext.cursors.allocateRelationshipTraversalCursor()
+    val cursor = transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceRelationshipScanCursor() = {
-    val cursor = transactionalContext.cursors.allocateRelationshipScanCursor()
+    val cursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     cursor
   }

@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
 class FullAccessPropertyCursor extends DefaultPropertyCursor
 {
-    FullAccessPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
+    FullAccessPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, PageCursorTracer cursorTracer )
     {
-        super( pool, storeCursor );
+        super( pool, storeCursor, cursorTracer );
     }
 
     @Override

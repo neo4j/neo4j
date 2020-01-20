@@ -27,6 +27,8 @@ import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
     final StoragePropertyCursor storePropertyCursor;
@@ -39,7 +41,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     {
         this.cursor = cursor;
         this.requiresPropertyMigration = requiresPropertyMigration;
-        this.storePropertyCursor = storageReader.allocatePropertyCursor();
+        this.storePropertyCursor = storageReader.allocatePropertyCursor( TRACER_SUPPLIER.get() );
     }
 
     void visitProperties( T record, InputEntityVisitor visitor )

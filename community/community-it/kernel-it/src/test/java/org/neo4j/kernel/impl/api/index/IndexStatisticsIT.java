@@ -55,6 +55,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -95,7 +96,7 @@ class IndexStatisticsIT
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
-        long indexId = single( schemaRuleAccess.indexGetForSchema( index ) ).getId();
+        long indexId = single( schemaRuleAccess.indexGetForSchema( index, NULL ) ).getId();
 
         // for which we don't have index counts
         resetIndexCounts( indexId );

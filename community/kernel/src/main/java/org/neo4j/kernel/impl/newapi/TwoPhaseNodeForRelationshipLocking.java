@@ -27,6 +27,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -43,14 +44,15 @@ class TwoPhaseNodeForRelationshipLocking
     private static final long[] EMPTY = new long[0];
     private final Locks.Client locks;
     private final LockTracer lockTracer;
+    private final PageCursorTracer cursorTracer;
 
-    TwoPhaseNodeForRelationshipLocking(
-            ThrowingConsumer<Long,KernelException> relIdAction, Locks.Client locks,
-            LockTracer lockTracer )
+    TwoPhaseNodeForRelationshipLocking( ThrowingConsumer<Long,KernelException> relIdAction, Locks.Client locks, LockTracer lockTracer,
+            PageCursorTracer cursorTracer )
     {
         this.relIdAction = relIdAction;
         this.locks = locks;
         this.lockTracer = lockTracer;
+        this.cursorTracer = cursorTracer;
     }
 
     void lockAllNodesAndConsumeRelationships( long nodeId, final KernelTransaction transaction, NodeCursor nodes ) throws KernelException
@@ -72,8 +74,7 @@ class TwoPhaseNodeForRelationshipLocking
             //if the node is not there, someone else probably deleted it, just ignore
             if ( nodes.next() )
             {
-                try ( RelationshipSelectionCursor rels =
-                              RelationshipSelections.allCursor( transaction.cursors(), nodes, null ) )
+                try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
                 {
                     boolean first = true;
                     while ( rels.next() && !retry )
@@ -99,8 +100,7 @@ class TwoPhaseNodeForRelationshipLocking
             this.sortedNodeIds = EMPTY;
             return;
         }
-        try ( RelationshipSelectionCursor rels =
-                      RelationshipSelections.allCursor( transaction.cursors(), nodes, null ) )
+        try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
         {
             while ( rels.next() )
             {

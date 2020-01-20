@@ -48,6 +48,7 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -103,7 +104,7 @@ class RelationshipChecker implements Checker
         RelationshipCounter counter = observedCounts.instantiateRelationshipCounter();
         long[] typeHolder = new long[1];
         try ( RecordStorageReader reader = new RecordStorageReader( neoStores );
-                RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor();
+                RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() );
                 SafePropertyChainReader property = new SafePropertyChainReader( context );
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes ) )
         {

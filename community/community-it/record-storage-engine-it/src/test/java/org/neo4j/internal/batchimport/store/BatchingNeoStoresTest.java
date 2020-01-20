@@ -285,7 +285,7 @@ class BatchingNeoStoresTest
             ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ), NULL );
             ((PropertyRecord) record).addPropertyBlock( block );
         }
-        store.updateRecord( record );
+        store.updateRecord( record, NULL );
     }
 
     private void someDataInTheDatabase() throws Exception

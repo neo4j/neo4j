@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in
  * multiple phases.
@@ -113,7 +115,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             SchemaRule rule;
             try
             {
-                rule = ruleAccess.loadSingleSchemaRule( record.getId() );
+                rule = ruleAccess.loadSingleSchemaRule( record.getId(), TRACER_SUPPLIER.get() );
             }
             catch ( MalformedSchemaRuleException e )
             {

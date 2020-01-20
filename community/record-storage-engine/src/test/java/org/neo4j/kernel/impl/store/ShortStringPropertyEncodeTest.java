@@ -198,7 +198,7 @@ class ShortStringPropertyEncodeTest
         TextValue expectedValue = Values.stringValue( string );
         propertyStore.encodeValue( block, KEY_ID, expectedValue, PageCursorTracer.NULL );
         assertEquals( 0, block.getValueRecords().size() );
-        Value readValue = block.getType().value( block, propertyStore );
+        Value readValue = block.getType().value( block, propertyStore, PageCursorTracer.NULL );
         assertEquals( expectedValue, readValue );
     }
 }

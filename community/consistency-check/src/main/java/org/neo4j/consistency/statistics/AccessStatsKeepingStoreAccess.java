@@ -20,6 +20,7 @@
 package org.neo4j.consistency.statistics;
 
 import org.neo4j.consistency.statistics.AccessStatistics.AccessStats;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -64,10 +65,10 @@ public class AccessStatsKeepingStoreAccess extends StoreAccess
         }
 
         @Override
-        public RECORD getRecord( long id, RECORD record, RecordLoad load )
+        public RECORD getRecord( long id, RECORD record, RecordLoad load, PageCursorTracer cursorTracer )
         {
             accessStats.upRead( id );
-            return super.getRecord( id, record, load );
+            return super.getRecord( id, record, load, cursorTracer );
         }
     }
 }

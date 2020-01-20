@@ -40,6 +40,7 @@ import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.assertCount;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.assertCounts;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.count;
@@ -89,8 +90,8 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     void shouldNotAccessGroupsOfBareNode()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL ) )
         {
             // when
             read.singleNode( bare, node );
@@ -106,9 +107,9 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     void shouldTraverseRelationshipsOfGivenType()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
+              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             int empty = 0;
             // when
@@ -174,9 +175,9 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     void shouldFollowSpecificRelationship()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
+              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             // when - traversing from start to end
             read.singleNode( start, node );
@@ -238,7 +239,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     void shouldHaveBeenAbleToCreateDenseAndSparseNodes()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL ) )
         {
             read.singleNode( dense.id, node );
             assertTrue( node.next(), "access dense node" );
@@ -307,9 +308,9 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         // given
         Map<String,Integer> expectedCounts = start.expectedCounts();
 
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
+              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             // when
             read.singleNode( start.id, node );
@@ -368,8 +369,8 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             throws KernelException
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             // when
             read.singleNode( start.id, node );

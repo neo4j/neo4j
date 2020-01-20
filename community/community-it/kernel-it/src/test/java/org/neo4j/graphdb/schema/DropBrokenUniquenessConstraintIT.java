@@ -59,7 +59,7 @@ class DropBrokenUniquenessConstraintIT
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.indexesGetAll().forEachRemaining( schemaRules::deleteSchemaRule );
+        schemaRules.indexesGetAll( NULL ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL ) );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
@@ -117,7 +117,7 @@ class DropBrokenUniquenessConstraintIT
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.constraintsGetAllIgnoreMalformed().forEachRemaining( schemaRules::deleteSchemaRule );
+        schemaRules.constraintsGetAllIgnoreMalformed( NULL ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL ) );
 
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
@@ -149,7 +149,7 @@ class DropBrokenUniquenessConstraintIT
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.constraintsGetAllIgnoreMalformed().forEachRemaining( schemaRules::deleteSchemaRule );
+        schemaRules.constraintsGetAllIgnoreMalformed( NULL ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL ) );
         writeSchemaRulesWithoutConstraint( schemaRules );
 
         // At this point the SchemaCache doesn't know about this change so we have to reload it
@@ -172,7 +172,7 @@ class DropBrokenUniquenessConstraintIT
 
     private void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules ) throws KernelException
     {
-        for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll() ) )
+        for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( NULL ) ) )
         {
             schemaRules.writeSchemaRule( rule, NULL );
         }

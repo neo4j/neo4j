@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ResourceLocker;
@@ -194,7 +195,7 @@ class RelationshipCreatorTest
 
     private void createRelationshipBetween( long fromNode, long toNode )
     {
-        RelationshipCreator logic = new RelationshipCreator( newRelGroupGetter( givenState ), denseNodeThreshold );
+        RelationshipCreator logic = new RelationshipCreator( newRelGroupGetter( givenState ), denseNodeThreshold, PageCursorTracer.NULL );
 
         logic.relationshipCreate( nextRelId( givenState ), 0, fromNode, toNode, changeset, ResourceLocker.IGNORE );
     }

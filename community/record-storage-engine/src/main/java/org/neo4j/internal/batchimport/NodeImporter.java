@@ -39,6 +39,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.max;
 import static java.util.Arrays.copyOf;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -97,7 +98,7 @@ public class NodeImporter extends EntityImporter
             idPropertyRecord.addPropertyBlock( idPropertyBlock );
             idPropertyRecord.setId( nodeId ); // yes nodeId
             idPropertyRecord.setInUse( true );
-            idPropertyStore.updateRecord( idPropertyRecord, IGNORE );
+            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, TRACER_SUPPLIER.get() );
             idPropertyRecord.clear();
         }
         return true;
@@ -145,7 +146,7 @@ public class NodeImporter extends EntityImporter
         // Write data to stores
         nodeRecord.setNextProp( createAndWritePropertyChain() );
         nodeRecord.setInUse( true );
-        nodeStore.updateRecord( nodeRecord, IGNORE );
+        nodeStore.updateRecord( nodeRecord, IGNORE, TRACER_SUPPLIER.get() );
         nodeCount++;
         nodeRecord.clear();
         nodeRecord.setId( NULL_REFERENCE.longValue() );

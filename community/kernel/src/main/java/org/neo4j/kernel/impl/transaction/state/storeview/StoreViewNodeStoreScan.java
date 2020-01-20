@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
@@ -51,7 +52,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
     @Override
     protected StorageNodeCursor allocateCursor( StorageReader storageReader )
     {
-        return storageReader.allocateNodeCursor();
+        return storageReader.allocateNodeCursor( TRACER_SUPPLIER.get() );
     }
 
     @Override

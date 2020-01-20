@@ -302,7 +302,7 @@ public class TransactionRecordState implements RecordState
      */
     public void nodeDelete( long nodeId )
     {
-        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer ).forChangingData();
         if ( !nodeRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete Node[" + nodeId +
@@ -337,7 +337,7 @@ public class TransactionRecordState implements RecordState
      */
     void relRemoveProperty( long relId, int propertyKey )
     {
-        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
+        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null, cursorTracer );
         propertyDeleter.removeProperty( rel, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
@@ -350,7 +350,7 @@ public class TransactionRecordState implements RecordState
      */
     public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
-        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
+        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
         propertyDeleter.removeProperty( node, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
@@ -363,7 +363,7 @@ public class TransactionRecordState implements RecordState
      */
     void relChangeProperty( long relId, int propertyKey, Value value )
     {
-        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
+        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null, cursorTracer );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
     }
 
@@ -376,7 +376,7 @@ public class TransactionRecordState implements RecordState
      */
     void nodeChangeProperty( long nodeId, int propertyKey, Value value )
     {
-        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
+        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
     }
 
@@ -389,7 +389,7 @@ public class TransactionRecordState implements RecordState
      */
     void relAddProperty( long relId, int propertyKey, Value value )
     {
-        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
+        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null, cursorTracer );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
     }
 
@@ -401,19 +401,19 @@ public class TransactionRecordState implements RecordState
      */
     void nodeAddProperty( long nodeId, int propertyKey, Value value )
     {
-        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
+        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
     }
 
     void addLabelToNode( long labelId, long nodeId )
     {
-        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer ).forChangingData();
         parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore(), cursorTracer );
     }
 
     void removeLabelFromNode( long labelId, long nodeId )
     {
-        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer ).forChangingData();
         parseLabelsField( nodeRecord ).remove( labelId, nodeStore, cursorTracer );
     }
 
@@ -424,7 +424,7 @@ public class TransactionRecordState implements RecordState
      */
     public void nodeCreate( long nodeId )
     {
-        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().create( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().create( nodeId, null, cursorTracer ).forChangingData();
         nodeRecord.setInUse( true );
         nodeRecord.setCreated();
     }
@@ -466,7 +466,7 @@ public class TransactionRecordState implements RecordState
     private static <R extends TokenRecord> void createToken( TokenStore<R> store, String name, long id, boolean internal, RecordAccess<R,Void> recordAccess,
             PageCursorTracer cursorTracer )
     {
-        R record = recordAccess.create( id, null ).forChangingData();
+        R record = recordAccess.create( id, null, cursorTracer ).forChangingData();
         record.setInUse( true );
         record.setInternal( internal );
         record.setCreated();
@@ -488,7 +488,7 @@ public class TransactionRecordState implements RecordState
 
     void schemaRuleCreate( long ruleId, boolean isConstraint, SchemaRule rule )
     {
-        SchemaRecord record = recordChangeSet.getSchemaRuleChanges().create( ruleId, rule ).forChangingData();
+        SchemaRecord record = recordChangeSet.getSchemaRuleChanges().create( ruleId, rule, cursorTracer ).forChangingData();
         record.setInUse( true );
         record.setCreated();
         record.setConstraint( isConstraint );
@@ -496,7 +496,7 @@ public class TransactionRecordState implements RecordState
 
     void schemaRuleDelete( long ruleId, SchemaRule rule )
     {
-        RecordProxy<SchemaRecord,SchemaRule> proxy = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, rule );
+        RecordProxy<SchemaRecord,SchemaRule> proxy = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, rule, cursorTracer );
         SchemaRecord record = proxy.forReadingData();
         if ( record.inUse() )
         {
@@ -510,7 +510,7 @@ public class TransactionRecordState implements RecordState
 
     void schemaRuleSetProperty( long ruleId, int propertyKeyId, Value value, SchemaRule rule )
     {
-        RecordProxy<SchemaRecord, SchemaRule> record = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, rule );
+        RecordProxy<SchemaRecord, SchemaRule> record = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, rule, cursorTracer );
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
@@ -523,8 +523,8 @@ public class TransactionRecordState implements RecordState
         long ruleId = rule.getId();
         rule = rule.withOwningConstraintId( constraintId );
         RecordAccess<SchemaRecord,SchemaRule> changes = recordChangeSet.getSchemaRuleChanges();
-        RecordProxy<SchemaRecord,SchemaRule> record = changes.getOrLoad( ruleId, rule );
-        changes.setRecord( ruleId, record.forReadingData(), rule ).forChangingData();
+        RecordProxy<SchemaRecord,SchemaRule> record = changes.getOrLoad( ruleId, rule, cursorTracer );
+        changes.setRecord( ruleId, record.forReadingData(), rule, cursorTracer ).forChangingData();
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 

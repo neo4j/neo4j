@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countAllDense;
@@ -175,10 +176,11 @@ public class CachingExpandInto
             NodeCursor nodeCursor,
             long fromNode,
             int[] types,
-            long toNode )
+            long toNode,
+            PageCursorTracer cursorTracer )
     {
-        return connectingRelationships( nodeCursor, cursors.allocateRelationshipGroupCursor(),
-                cursors.allocateRelationshipTraversalCursor(), fromNode, types, toNode );
+        return connectingRelationships( nodeCursor, cursors.allocateRelationshipGroupCursor( cursorTracer ),
+                cursors.allocateRelationshipTraversalCursor( cursorTracer ), fromNode, types, toNode );
     }
 
     int nodeGetDegreeDense( NodeCursor nodeCursor, RelationshipGroupCursor group, Direction direction )

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class NodeLabelReader
@@ -90,7 +91,7 @@ public class NodeLabelReader
         }
         else
         {
-            copyToSet( nodeLabels.get( null ), labels );
+            copyToSet( nodeLabels.get( null, TRACER_SUPPLIER.get() ), labels );
         }
 
         return labels;
@@ -106,7 +107,7 @@ public class NodeLabelReader
             long id = NodeLabelsField.firstDynamicLabelRecordId( field );
             while ( !Record.NULL_REFERENCE.is( id ) )
             {
-                DynamicRecord record = labels.getRecord( id, labels.newRecord(), FORCE );
+                DynamicRecord record = labels.getRecord( id, labels.newRecord(), FORCE, TRACER_SUPPLIER.get() );
                 if ( !record.inUse() || !alreadySeen.add( id ) )
                 {
                     return PrimitiveLongCollections.EMPTY_LONG_ARRAY;

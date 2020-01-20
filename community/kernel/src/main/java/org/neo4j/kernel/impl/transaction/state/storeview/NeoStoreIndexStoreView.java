@@ -31,6 +31,8 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * Node store view that will always visit all nodes during store scan.
  */
@@ -66,6 +68,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public NodePropertyAccessor newPropertyAccessor()
     {
-        return new DefaultNodePropertyAccessor( storageEngine.get() );
+        return new DefaultNodePropertyAccessor( storageEngine.get(), TRACER_SUPPLIER.get() );
     }
 }

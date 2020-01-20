@@ -30,6 +30,8 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
@@ -39,7 +41,6 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -68,7 +69,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
         PageCache pageCache = pageCacheExtension.getPageCache( fs,
                 config().withInconsistentReads( nextReadIsInconsistent ) );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
-                pageCache, fs, NullLogProvider.getInstance(), NULL );
+                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         NeoStores neoStores = factory.openAllNeoStores( true );
         initialiseStore( neoStores );
         return neoStores;
@@ -77,7 +78,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     protected S initialiseStore( NeoStores neoStores )
     {
         S store = getStore( neoStores );
-        store.updateRecord( createExistingRecord( false ) );
+        store.updateRecord( createExistingRecord( false ), PageCursorTracer.NULL );
         return store;
     }
 
@@ -93,14 +94,14 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
 
     protected R getHeavy( S store, long id )
     {
-        R record = store.getRecord( id, store.newRecord(), NORMAL );
-        store.ensureHeavy( record );
+        R record = store.getRecord( id, store.newRecord(), NORMAL, PageCursorTracer.NULL );
+        store.ensureHeavy( record, PageCursorTracer.NULL );
         return record;
     }
 
     R getForce( S store, int id )
     {
-        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE );
+        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE, PageCursorTracer.NULL );
     }
 
     @Test

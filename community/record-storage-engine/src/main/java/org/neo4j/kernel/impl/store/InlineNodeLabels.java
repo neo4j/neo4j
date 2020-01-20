@@ -47,7 +47,7 @@ public class InlineNodeLabels implements NodeLabels
     }
 
     @Override
-    public long[] get( NodeStore nodeStore )
+    public long[] get( NodeStore nodeStore, PageCursorTracer cursorTracer )
     {
         return get( node );
     }

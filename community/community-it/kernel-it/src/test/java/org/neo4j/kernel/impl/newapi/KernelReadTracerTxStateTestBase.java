@@ -68,7 +68,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+              NodeCursor cursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
         {
             tx.dataWrite().nodeCreate();
             tx.dataWrite().nodeCreate();
@@ -169,7 +169,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+              RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( tx.pageCursorTracer() ) )
         {
             long n1 = tx.dataWrite().nodeCreate();
             long n2 = tx.dataWrite().nodeCreate();
@@ -198,8 +198,8 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
-              RelationshipTraversalCursor cursor = tx.cursors().allocateRelationshipTraversalCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+              RelationshipTraversalCursor cursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() ) )
         {
             long n1 = tx.dataWrite().nodeCreate();
             long n2 = tx.dataWrite().nodeCreate();
@@ -226,8 +226,8 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
-              RelationshipGroupCursor cursor = tx.cursors().allocateRelationshipGroupCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+              RelationshipGroupCursor cursor = tx.cursors().allocateRelationshipGroupCursor( tx.pageCursorTracer() ) )
         {
             long n1 = tx.dataWrite().nodeCreate();
             long n2 = tx.dataWrite().nodeCreate();
@@ -255,8 +255,8 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
-              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
         {
             long n = tx.dataWrite().nodeCreate();
             int name = tx.token().propertyKey( "name" );

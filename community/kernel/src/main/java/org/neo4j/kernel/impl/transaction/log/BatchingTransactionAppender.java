@@ -28,6 +28,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -45,6 +46,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
 
 /**
@@ -120,7 +122,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                     // really recover from and would point to a bug somewhere.
                     matchAgainstExpectedTransactionIdIfAny( transactionId, tx );
 
-                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent, previousChecksum );
+                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent,
+                            previousChecksum, TRACER_SUPPLIER.get() );
                     previousChecksum = commitment.getTransactionChecksum();
                     tx.commitment( commitment, transactionId );
                     tx.logPosition( commitment.logPosition() );
@@ -200,8 +203,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
      * this transaction contains any explicit index changes.
      */
-    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent, int previousChecksum )
-            throws IOException
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent, int previousChecksum,
+            PageCursorTracer cursorTracer ) throws IOException
     {
         // The outcome of this try block is either of:
         // a) transaction successfully appended, at which point we return a Commitment to be used after force
@@ -218,7 +221,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
             transactionMetadataCache.cacheTransactionMetadata( transactionId, logPositionBeforeCommit, checksum, transaction.getTimeCommitted() );
 
-            return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
+            return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit,
+                    transactionIdStore, cursorTracer );
         }
         catch ( final Throwable panic )
         {

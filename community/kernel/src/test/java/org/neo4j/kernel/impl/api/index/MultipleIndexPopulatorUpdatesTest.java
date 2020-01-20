@@ -56,6 +56,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class MultipleIndexPopulatorUpdatesTest
 {
@@ -68,7 +69,7 @@ class MultipleIndexPopulatorUpdatesTest
         IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
 
         StorageReader reader = mock( StorageReader.class );
-        when( reader.allocateNodeCursor() ).thenReturn( mock( StorageNodeCursor.class ) );
+        when( reader.allocateNodeCursor( any() ) ).thenReturn( mock( StorageNodeCursor.class ) );
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, () -> reader );
         InMemoryTokens tokens = new InMemoryTokens();

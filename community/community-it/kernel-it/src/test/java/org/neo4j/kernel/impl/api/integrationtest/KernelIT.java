@@ -174,7 +174,7 @@ class KernelIT extends KernelIntegrationTest
         executeDummyTxs( db, 42 );
 
         KernelTransaction tx = newTransaction();
-        try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
+        try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
         {
             tx.dataRead().singleNode( 1, node );
             node.next();

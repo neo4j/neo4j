@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class MandatoryProperties
 {
@@ -55,7 +56,7 @@ public class MandatoryProperties
     public MandatoryProperties( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
+        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores(), TRACER_SUPPLIER.get() );
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
         for ( ConstraintDescriptor constraint : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {
@@ -144,7 +145,7 @@ public class MandatoryProperties
 
     private Iterable<ConstraintDescriptor> constraintsIgnoringMalformed( SchemaRuleAccess schemaStorage )
     {
-        return schemaStorage::constraintsGetAllIgnoreMalformed;
+        return () -> schemaStorage.constraintsGetAllIgnoreMalformed( TRACER_SUPPLIER.get() );
     }
 
     private static void recordConstraint( int labelOrRelType, int propertyKey, MutableIntObjectMap<int[]> storage )

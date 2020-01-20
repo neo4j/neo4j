@@ -60,6 +60,7 @@ import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIP_GROUPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
 import static org.neo4j.consistency.checking.full.QueueDistribution.ROUND_ROBIN;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 class ConsistencyCheckTasks
 {
@@ -109,7 +110,7 @@ class ConsistencyCheckTasks
                     processor, ROUND_ROBIN ) );
             //NodeStore pass - just cache nextRel and inUse
             tasks.add( new CacheTask.CacheNextRel( CheckStage.Stage3_NS_NextRel, cacheAccess,
-                    Scanner.scan( nativeStores.getNodeStore() ) ) );
+                    Scanner.scan( nativeStores.getNodeStore(), TRACER_SUPPLIER.get() ) ) );
             //RelationshipStore pass - check nodes inUse, FirstInFirst, FirstInSecond using cached info
             processor = multiPass.processor( CheckStage.Stage4_RS_NextRel, NODES );
             multiPass.reDecorateRelationship( processor, RelationshipRecordCheck.relationshipRecordCheckBackwardPass(
@@ -171,7 +172,7 @@ class ConsistencyCheckTasks
         // PASS 1: Dynamic record chains
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( nativeStores.getRawNeoStores() );
+        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( nativeStores.getRawNeoStores(), TRACER_SUPPLIER.get() );
         final SchemaRecordCheck schemaCheck =
                 new SchemaRecordCheck( SchemaRuleAccess.getSchemaRuleAccess( nativeStores.getSchemaStore(), tokenHolders ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,

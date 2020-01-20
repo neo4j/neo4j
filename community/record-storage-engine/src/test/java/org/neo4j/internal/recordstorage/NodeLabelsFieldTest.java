@@ -226,7 +226,7 @@ class NodeLabelsFieldTest
         assertEquals( 1, Iterables.count( changedDynamicRecords ) );
         assertEquals( dynamicLabelsLongRepresentation( changedDynamicRecords ), node.getLabelField() );
         Assertions.assertArrayEquals( new long[]{labelId1, labelId2, labelId3},
-            DynamicNodeLabels.getDynamicLabelsArray( changedDynamicRecords, nodeStore.getDynamicLabelStore() ) );
+            DynamicNodeLabels.getDynamicLabelsArray( changedDynamicRecords, nodeStore.getDynamicLabelStore(), NULL ) );
     }
 
     @Test
@@ -257,7 +257,7 @@ class NodeLabelsFieldTest
 
         // WHEN
         Pair<Long,long[]> pair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( initialRecords,
-            nodeStore.getDynamicLabelStore() );
+            nodeStore.getDynamicLabelStore(), NULL );
 
         // THEN
         assertEquals( nodeId,  pair.first() );
@@ -297,7 +297,7 @@ class NodeLabelsFieldTest
 
         // WHEN
         Pair<Long,long[]> changedPair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( changedDynamicRecords,
-            nodeStore.getDynamicLabelStore() );
+            nodeStore.getDynamicLabelStore(), NULL );
 
         // THEN
         assertEquals( nodeId,  changedPair.first() );
@@ -501,7 +501,7 @@ class NodeLabelsFieldTest
 
         // THEN
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
-        long[] readLabelIds = labels.get( nodeStore );
+        long[] readLabelIds = labels.get( nodeStore, NULL );
         for ( long labelId : readLabelIds )
         {
             assertTrue( key.remove( (int) labelId ), "Found an unexpected label " + labelId );
@@ -552,7 +552,7 @@ class NodeLabelsFieldTest
     private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
     {
         Collection<DynamicRecord> records = DynamicNodeLabels.allocateRecordsForDynamicLabels( nodeId, longs, nodeStore.getDynamicLabelStore(), NULL );
-        nodeStore.updateDynamicLabelRecords( records, IdUpdateListener.DIRECT );
+        nodeStore.updateDynamicLabelRecords( records, IdUpdateListener.DIRECT, NULL );
         return records;
     }
 

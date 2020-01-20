@@ -26,6 +26,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
  * A {@link PageCursor} is used during the life cycle of this {@link Step}, e.g. between
@@ -80,7 +82,9 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         int i = 0;
         // Just use the first record in the batch here to satisfy the record cursor.
         // The truth is that we'll be using the read method which accepts an external record anyway so it doesn't matter.
-        try ( PageCursor cursor = prefetch ? store.openPageCursorForReadingWithPrefetching( id ) : store.openPageCursorForReading( id ) )
+        var cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursor cursor = prefetch ? store.openPageCursorForReadingWithPrefetching( id, cursorTracer )
+                                           : store.openPageCursorForReading( id, cursorTracer ) )
         {
             boolean hasNext = true;
             while ( hasNext )

@@ -39,7 +39,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -84,8 +83,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         this.state = state;
         this.store = storageReader;
         this.transaction = transaction;
-        this.internalTransaction = ((KernelTransactionImplementation) transaction).internalTransaction();
-        this.relationship = storageReader.allocateRelationshipScanCursor();
+        this.internalTransaction = transaction.internalTransaction();
+        this.relationship = storageReader.allocateRelationshipScanCursor( transaction.pageCursorTracer() );
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
@@ -190,8 +189,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private void takeSnapshot()
     {
-        try ( StorageNodeCursor node = store.allocateNodeCursor();
-              StoragePropertyCursor properties = store.allocatePropertyCursor() )
+        var cursorTracer = transaction.pageCursorTracer();
+        try ( StorageNodeCursor node = store.allocateNodeCursor( cursorTracer );
+              StoragePropertyCursor properties = store.allocatePropertyCursor( cursorTracer ) )
         {
             TokenRead tokenRead = transaction.tokenRead();
             state.addedAndRemovedNodes().getRemoved().each( nodeId ->

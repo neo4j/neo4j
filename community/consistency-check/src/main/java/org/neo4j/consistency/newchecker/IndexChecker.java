@@ -51,6 +51,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeGetNodeLabels;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class IndexChecker implements Checker
 {
@@ -237,7 +238,7 @@ public class IndexChecker implements Checker
         // This is one thread
         CheckerContext noReportingContext = context.withoutReporting();
         try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
-                RecordNodeCursor nodeCursor = reader.allocateNodeCursor();
+                RecordNodeCursor nodeCursor = reader.allocateNodeCursor( TRACER_SUPPLIER.get() );
                 RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore() );
                 SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext ) )
         {

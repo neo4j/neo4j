@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 public interface LogVersionRepository
 {
     long INITIAL_LOG_VERSION = 0;
@@ -34,7 +36,7 @@ public interface LogVersionRepository
      * Set current log version
      * @param version new current log version
      */
-    void setCurrentLogVersion( long version );
+    void setCurrentLogVersion( long version, PageCursorTracer cursorTracer );
 
     /**
      * Increments (making sure it is persisted on disk) and returns the latest log version for this repository.

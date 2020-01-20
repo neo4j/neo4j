@@ -100,6 +100,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private static final String STORAGE_ENGINE_START_TAG = "storageEngineStart";
+    private static final String SCHEMA_CACHE_START_TAG = "schemaCacheStart";
 
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
@@ -261,6 +262,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         if ( txState != null )
         {
+            var cursorTracer = TRACER_SUPPLIER.get();
             // We can make this cast here because we expected that the storageReader passed in here comes from
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
@@ -269,11 +271,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
-                    schemaRuleAccess, constraintSemantics, TRACER_SUPPLIER.get() );
+                    schemaRuleAccess, constraintSemantics, cursorTracer );
             CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
-            txStateVisitor = new TransactionCountingStateVisitor(
-                    txStateVisitor, storageReader, txState, countsRecordState );
+            txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorTracer );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );
@@ -324,11 +325,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
+        var cursorTracer = TRACER_SUPPLIER.get();
         if ( consistencyCheckApply && mode.needsAuxiliaryStores() )
         {
-            appliers.add( new ConsistencyCheckingBatchApplier( neoStores ) );
+            appliers.add( new ConsistencyCheckingBatchApplier( neoStores, cursorTracer ) );
         }
-        var cursorTracer = TRACER_SUPPLIER.get();
         appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs, cursorTracer ) );
         if ( mode.needsHighIdTracking() )
         {
@@ -336,7 +337,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
         if ( mode.needsCacheInvalidationOnUpdates() )
         {
-            appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
+            appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess, cursorTracer ) );
         }
         if ( mode.needsAuxiliaryStores() )
         {
@@ -376,7 +377,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @VisibleForTesting
     public void loadSchemaCache()
     {
-        schemaCache.load( schemaRuleAccess.getAll() );
+        try ( var cursor = cacheTracer.createPageCursorTracer( SCHEMA_CACHE_START_TAG ) )
+        {
+            schemaCache.load( schemaRuleAccess.getAll( cursor ) );
+        }
     }
 
     @Override
@@ -466,7 +470,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             @Override
             public void init()
             {
-                tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
+                tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), TRACER_SUPPLIER.get() );
                 loadSchemaCache();
             }
         };

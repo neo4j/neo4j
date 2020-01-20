@@ -75,7 +75,7 @@ class TestGrowingFileMemoryMapping
         {
             NodeRecord record = new NodeRecord( nodeId, false, i, 0 );
             record.setInUse( true );
-            nodeStore.updateRecord( record );
+            nodeStore.updateRecord( record, PageCursorTracer.NULL );
             nodeId = nodeStore.nextId( PageCursorTracer.NULL );
         }
 
@@ -84,7 +84,7 @@ class TestGrowingFileMemoryMapping
         for ( int i = 0; i < iterations; i++ )
         {
             record.setId( startingId + i );
-            nodeStore.getRecord( i, record, NORMAL );
+            nodeStore.getRecord( i, record, NORMAL, PageCursorTracer.NULL );
             assertTrue( record.inUse(), "record[" + i + "] should be in use" );
             assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( (long) i );
         }

@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class PropertyAwareEntityStoreScanTest
 {
@@ -73,7 +74,7 @@ class PropertyAwareEntityStoreScanTest
                     @Override
                     protected StorageNodeCursor allocateCursor( StorageReader storageReader )
                     {
-                        return storageReader.allocateNodeCursor();
+                        return storageReader.allocateNodeCursor( NULL );
                     }
                 };
         percentageSupplier.setStoreScan( scan );

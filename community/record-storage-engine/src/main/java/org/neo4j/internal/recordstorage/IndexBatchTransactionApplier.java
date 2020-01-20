@@ -172,8 +172,8 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( indexUpdates == null )
             {
-                indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore ),
-                        storageEngine.newReader() );
+                indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, cursorTracer ),
+                        storageEngine.newReader(), cursorTracer );
             }
             return indexUpdates;
         }

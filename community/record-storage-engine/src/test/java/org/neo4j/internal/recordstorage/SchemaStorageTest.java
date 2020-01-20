@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.mockito.matcher.KernelExceptionUserMessageAssert.assertThat;
 
 @EphemeralPageCacheExtension
@@ -80,7 +81,7 @@ class SchemaStorageTest
             pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
             StoreType.RELATIONSHIP_TYPE_TOKEN );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores ) );
+        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores, NULL ) );
     }
 
     @AfterEach
@@ -95,7 +96,7 @@ class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         var e = assertThrows( SchemaRuleNotFoundException.class, () ->
-            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ) ) );
+            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ), NULL ) );
 
         assertThat( e, tokenNameLookup ).hasUserMessage( "No label property existence constraint was found for (:Label1 {prop1})." );
     }
@@ -106,13 +107,13 @@ class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        when( schemaStorageSpy.streamAllSchemaRules( false ) ).thenReturn(
+        when( schemaStorageSpy.streamAllSchemaRules( false, NULL ) ).thenReturn(
             Stream.of(
                 getUniquePropertyConstraintRule( 1L, LABEL1_ID, PROP1_ID ),
                 getUniquePropertyConstraintRule( 2L, LABEL1_ID, PROP1_ID ) ) );
 
         var e = assertThrows( DuplicateSchemaRuleException.class, () ->
-            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ) ) );
+            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ), NULL ) );
 
         assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple label uniqueness constraints found for (:Label1 {prop1})." );
     }
@@ -123,7 +124,7 @@ class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         var e = assertThrows( SchemaRuleNotFoundException.class, () ->
-            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
+            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ), NULL ) );
         assertThat( e, tokenNameLookup ).hasUserMessage( "No relationship type property existence constraint was found for -[:Type1 {prop1}]-." );
     }
 
@@ -133,13 +134,13 @@ class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        when( schemaStorageSpy.streamAllSchemaRules( false ) ).thenReturn(
+        when( schemaStorageSpy.streamAllSchemaRules( false, NULL ) ).thenReturn(
             Stream.of(
                 getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1_ID, PROP1_ID ),
                 getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1_ID, PROP1_ID ) ) );
 
         var e = assertThrows( DuplicateSchemaRuleException.class, () ->
-            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
+            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ), NULL ) );
 
         assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for -[:Type1 {prop1}]-." );
     }

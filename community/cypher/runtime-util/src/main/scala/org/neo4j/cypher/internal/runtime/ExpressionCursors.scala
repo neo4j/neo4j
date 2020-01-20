@@ -26,6 +26,8 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.io.IOUtils
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 
 /**
   * Cursors which are used during expression evaluation. These are expected to be used within one
@@ -33,10 +35,10 @@ import org.neo4j.io.IOUtils
   *
   * @param cursorFactory cursor factor to allocate cursors with.
   */
-class ExpressionCursors(cursorFactory: CursorFactory) extends DefaultCloseListenable with AutoCloseablePlus {
-  val nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor()
-  val relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor()
-  val propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor()
+class ExpressionCursors(cursorFactory: CursorFactory, cursorTracer: PageCursorTracer) extends DefaultCloseListenable with AutoCloseablePlus {
+  val nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorTracer)
+  val relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorTracer)
+  val propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor(cursorTracer)
 
   override def isClosed: Boolean = {
     nodeCursor.isClosed && relationshipScanCursor.isClosed && propertyCursor.isClosed

@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -46,9 +47,10 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
     private final IdUpdateListener idUpdateListener;
+    private final PageCursorTracer cursorTracer;
 
     public NeoStoreTransactionApplier( CommandVersion version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
-            long transactionId, LockGroup lockGroup, IdUpdateListener idUpdateListener )
+            long transactionId, LockGroup lockGroup, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
     {
         this.version = version;
         this.lockGroup = lockGroup;
@@ -57,6 +59,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
         this.idUpdateListener = idUpdateListener;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -151,7 +154,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
             {
             case UPDATE:
             case CREATE:
-                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId );
+                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId, cursorTracer );
                 break;
             case DELETE:
                 break;
@@ -172,7 +175,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
 
     private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command )
     {
-        store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener );
+        store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener, cursorTracer );
     }
 
     private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion( BaseCommand<RECORD> command )

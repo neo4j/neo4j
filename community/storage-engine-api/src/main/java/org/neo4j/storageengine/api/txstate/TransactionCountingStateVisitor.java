@@ -25,12 +25,14 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
@@ -43,14 +45,14 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private final StorageRelationshipScanCursor relationshipCursor;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
-            ReadableTransactionState txState, CountsDelta counts )
+            ReadableTransactionState txState, CountsDelta counts, PageCursorTracer cursorTracer )
     {
         super( next );
         this.txState = txState;
         this.counts = counts;
-        this.nodeCursor = storageReader.allocateNodeCursor();
-        this.groupCursor = storageReader.allocateRelationshipGroupCursor();
-        this.relationshipCursor = storageReader.allocateRelationshipScanCursor();
+        this.nodeCursor = storageReader.allocateNodeCursor( cursorTracer );
+        this.groupCursor = storageReader.allocateRelationshipGroupCursor( cursorTracer );
+        this.relationshipCursor = storageReader.allocateRelationshipScanCursor( cursorTracer );
     }
 
     @Override
@@ -148,7 +150,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         }
     }
 
-    private boolean updateRelationshipsCountsFromDegrees( int type, long label, long outgoing, long incoming )
+    private void updateRelationshipsCountsFromDegrees( int type, long label, long outgoing, long incoming )
     {
         // untyped
         counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
@@ -156,7 +158,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         // typed
         counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
         counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
-        return false;
     }
 
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
@@ -202,6 +203,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void close()
     {
         super.close();
-        IOUtils.closeAllUnchecked( nodeCursor, groupCursor, relationshipCursor );
+        closeAllUnchecked( nodeCursor, groupCursor, relationshipCursor );
     }
 }

@@ -29,6 +29,8 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class PropertyRecordCheck
         implements RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
 {
@@ -82,7 +84,7 @@ public class PropertyRecordCheck
             default:
                 try
                 {
-                    type.value( block, null );
+                    type.value( block, null, TRACER_SUPPLIER.get() );
                 }
                 catch ( Exception e )
                 {

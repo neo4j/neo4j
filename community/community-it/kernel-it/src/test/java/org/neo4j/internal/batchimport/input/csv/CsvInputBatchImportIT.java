@@ -108,6 +108,7 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
@@ -446,7 +447,7 @@ class CsvInputBatchImportIT
     private Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
-        for ( NamedToken token : tokenStore.getTokens() )
+        for ( NamedToken token : tokenStore.getTokens( NULL ) )
         {
             translationTable.put( token.name(), token.id() );
         }

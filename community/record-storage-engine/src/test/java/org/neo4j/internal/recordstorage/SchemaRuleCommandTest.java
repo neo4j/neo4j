@@ -111,7 +111,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any() );
+        verify( schemaStore ).updateRecord( eq( after ), any(), any() );
     }
 
     @Test
@@ -149,8 +149,8 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, schemaRule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
+        verify( schemaStore ).updateRecord( eq( after ), any(), any() );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( txId, NULL );
     }
 
     @Test
@@ -167,7 +167,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any() );
+        verify( schemaStore ).updateRecord( eq( after ), any(), any() );
     }
 
     @Test

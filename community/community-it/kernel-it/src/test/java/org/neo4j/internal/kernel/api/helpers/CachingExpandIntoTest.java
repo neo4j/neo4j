@@ -217,9 +217,9 @@ class CachingExpandIntoTest
         }
 
         try ( KernelTransaction tx = transaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
-              RelationshipGroupCursor groupCursor = tx.cursors().allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+              RelationshipGroupCursor groupCursor = tx.cursors().allocateRelationshipGroupCursor(tx.pageCursorTracer());
+              RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() ) )
         {
 
             CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING );
@@ -256,9 +256,9 @@ class CachingExpandIntoTest
         }
 
         try ( KernelTransaction tx = transaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
-              RelationshipGroupCursor groupCursor = tx.cursors().allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+              RelationshipGroupCursor groupCursor = tx.cursors().allocateRelationshipGroupCursor(tx.pageCursorTracer());
+              RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() ) )
         {
 
             int[] types = {t1, t3};
@@ -302,10 +302,10 @@ class CachingExpandIntoTest
         }
 
         try ( KernelTransaction tx = transaction();
-              NodeCursor nodes = tx.cursors().allocateNodeCursor();
-              RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor();
-              PropertyCursor properties = tx.cursors().allocatePropertyCursor() )
+              NodeCursor nodes = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+              RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor(tx.pageCursorTracer());
+              RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() );
+              PropertyCursor properties = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
         {
 
             int[] types = {t2, t3};
@@ -391,8 +391,8 @@ class CachingExpandIntoTest
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
-            try ( NodeCursor nodes = cursors.allocateNodeCursor();
-                  RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor() )
+            try ( NodeCursor nodes = cursors.allocateNodeCursor( tx.pageCursorTracer() );
+                  RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor(tx.pageCursorTracer()) )
             {
                 CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING );
 
@@ -432,8 +432,8 @@ class CachingExpandIntoTest
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
-            try ( NodeCursor nodes = cursors.allocateNodeCursor();
-                  RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor() )
+            try ( NodeCursor nodes = cursors.allocateNodeCursor( tx.pageCursorTracer() );
+                  RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor( tx.pageCursorTracer() ) )
             {
                 CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING );
                 read.singleNode( node, nodes );
@@ -458,9 +458,9 @@ class CachingExpandIntoTest
             throws TransactionFailureException
     {
         try ( KernelTransaction tx = transaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
-              RelationshipGroupCursor groupCursor = tx.cursors().allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+              RelationshipGroupCursor groupCursor = tx.cursors().allocateRelationshipGroupCursor(tx.pageCursorTracer());
+              RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() ) )
         {
             int[] typeIds = types.length == 0 ? null : stream( types ).mapToInt( tx.tokenRead()::relationshipType ).toArray( );
 

@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * <ol>
  * <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
  * At this point that id isn't visible from any getter.</li>
- * <li>{@link #transactionCommitted(long, int, long)} is called with this id after the fact that the transaction
+ * <li>{@link #transactionCommitted(long, int, long, PageCursorTracer)} is called with this id after the fact that the transaction
  * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
  * <li>{@link #transactionClosed(long, long, long)} is called with this id again, this time after all changes the
@@ -66,7 +66,7 @@ public interface TransactionIdStore
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
-     * until handed to {@link #transactionCommitted(long, int, long)}.
+     * until handed to {@link #transactionCommitted(long, int, long, PageCursorTracer)}.
      */
     long nextCommittingTransactionId();
 
@@ -82,11 +82,12 @@ public interface TransactionIdStore
      * @param transactionId the applied transaction id.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
+     * @param cursorTracer underlying page cursor tracer
      */
-    void transactionCommitted( long transactionId, int checksum, long commitTimestamp );
+    void transactionCommitted( long transactionId, int checksum, long commitTimestamp, PageCursorTracer cursorTracer );
 
     /**
-     * @return highest seen {@link #transactionCommitted(long, int, long) committed transaction id}.
+     * @return highest seen {@link #transactionCommitted(long, int, long, PageCursorTracer)}  committed transaction id}.
      */
     long getLastCommittedTransactionId();
 
@@ -132,8 +133,10 @@ public interface TransactionIdStore
      * @param commitTimestamp the timestamp of the transaction commit.
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
+     * @param cursorTracer underlying page cursor tracer.
      */
-    void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion );
+    void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion,
+            PageCursorTracer cursorTracer );
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
@@ -152,8 +155,9 @@ public interface TransactionIdStore
      * @param logVersion new last closed transaction log version
      * @param byteOffset new last closed transaction offset
      * @param missingLogs flag to record missing logs date
+     * @param cursorTracer underlying page cursor tracer
      */
-    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs );
+    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, PageCursorTracer cursorTracer );
 
     /**
      * Forces the transaction id counters to persistent storage.

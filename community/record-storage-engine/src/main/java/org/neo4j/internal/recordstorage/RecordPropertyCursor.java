@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -52,6 +53,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     private static final int INITIAL_POSITION = -1;
 
     private final PropertyStore read;
+    private final PageCursorTracer cursorTracer;
     private long next;
     private int block;
     public ByteBuffer buffer;
@@ -60,10 +62,11 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     private PageCursor arrayPage;
     private boolean open;
 
-    RecordPropertyCursor( PropertyStore read )
+    RecordPropertyCursor( PropertyStore read, PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.read = read;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -392,17 +395,17 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
 
     private PageCursor propertyPage( long reference )
     {
-        return read.openPageCursorForReading( reference );
+        return read.openPageCursorForReading( reference, cursorTracer );
     }
 
     private PageCursor stringPage( long reference )
     {
-        return read.openStringPageCursor( reference );
+        return read.openStringPageCursor( reference, cursorTracer );
     }
 
     private PageCursor arrayPage( long reference )
     {
-        return read.openArrayPageCursor( reference );
+        return read.openArrayPageCursor( reference, cursorTracer );
     }
 
     private void property( PropertyRecord record, long reference, PageCursor pageCursor )

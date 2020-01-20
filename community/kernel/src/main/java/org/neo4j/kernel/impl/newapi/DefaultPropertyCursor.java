@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -43,6 +44,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
     private Read read;
     private StoragePropertyCursor storeCursor;
+    private final PageCursorTracer cursorTracer;
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
@@ -53,10 +55,11 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private long relationshipReference = NO_RELATIONSHIP;
     private LabelSet labels;
 
-    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
+    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, PageCursorTracer cursorTracer )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
+        this.cursorTracer = cursorTracer;
     }
 
     void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
@@ -254,7 +257,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
         if ( labels == null )
         {
-            try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
+            try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor( cursorTracer ) )
             {
                 read.singleNode( nodeReference, nodeCursor );
                 nodeCursor.next();
@@ -276,7 +279,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     {
         assert isRelationship();
 
-        try ( RelationshipScanCursor relCursor = read.cursors().allocateFullAccessRelationshipScanCursor() )
+        try ( RelationshipScanCursor relCursor = read.cursors().allocateFullAccessRelationshipScanCursor( cursorTracer ) )
         {
             read.singleRelationship( relationshipReference, relCursor );
             relCursor.next();

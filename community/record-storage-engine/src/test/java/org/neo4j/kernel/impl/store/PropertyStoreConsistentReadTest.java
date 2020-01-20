@@ -90,7 +90,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     {
         for ( PropertyBlock propertyBlock : record )
         {
-            store.ensureHeavy( propertyBlock );
+            store.ensureHeavy( propertyBlock, NULL );
         }
     }
 

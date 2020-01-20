@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -37,16 +38,19 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         implements RelationshipTraversalCursor
 {
     private final CursorPool<DefaultRelationshipTraversalCursor> pool;
+    private final PageCursorTracer cursorTracer;
     private LongIterator addedRelationships;
     private int type = ANY_RELATIONSHIP_TYPE;
     private RelationshipDirection direction;
     private boolean lazySelection;
     private boolean filterInitialized;
 
-    DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor )
+    DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
+            PageCursorTracer cursorTracer )
     {
         super( storeCursor );
         this.pool = pool;
+        this.cursorTracer = cursorTracer;
     }
 
     /**
@@ -192,7 +196,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         {
             return true;
         }
-        try ( NodeCursor nodeCursor = read.cursors().allocateNodeCursor() )
+        try ( NodeCursor nodeCursor = read.cursors().allocateNodeCursor( cursorTracer ) )
         {
             read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
             return nodeCursor.next();

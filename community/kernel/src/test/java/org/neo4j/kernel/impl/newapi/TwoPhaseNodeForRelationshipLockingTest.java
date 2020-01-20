@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.StubCursorFactory;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubRead;
@@ -44,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.set;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
@@ -59,8 +59,7 @@ class TwoPhaseNodeForRelationshipLockingTest
     {
         // given
         Collector collector = new Collector();
-        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks,
-                NONE );
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE, NULL );
 
         returnRelationships(
                 transaction, false,
@@ -86,7 +85,7 @@ class TwoPhaseNodeForRelationshipLockingTest
     {
         // given
         Collector collector = new Collector();
-        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE );
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE, NULL );
 
         TestRelationshipChain chain = new TestRelationshipChain( nodeId )
                 .outgoing( 21L, 43L, TYPE )
@@ -112,7 +111,7 @@ class TwoPhaseNodeForRelationshipLockingTest
     void lockNodeWithoutRelationships() throws Exception
     {
         Collector collector = new Collector();
-        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE );
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE, NULL );
         returnRelationships( transaction, false, new TestRelationshipChain( 42 ) );
 
         locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
@@ -121,10 +120,8 @@ class TwoPhaseNodeForRelationshipLockingTest
         verifyNoMoreInteractions( locks );
     }
 
-    static void returnRelationships( KernelTransaction transaction,
-            final boolean skipFirst, final TestRelationshipChain relIds ) throws EntityNotFoundException
+    static void returnRelationships( KernelTransaction transaction, final boolean skipFirst, final TestRelationshipChain relIds )
     {
-
         StubRead read = new StubRead();
         when( transaction.dataRead() ).thenReturn( read );
         StubCursorFactory cursorFactory = new StubCursorFactory( true );

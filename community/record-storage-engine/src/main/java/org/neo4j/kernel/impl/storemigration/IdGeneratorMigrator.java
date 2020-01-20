@@ -44,6 +44,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -86,12 +87,12 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
         if ( requiresIdFilesMigration( oldFormat, newFormat ) )
         {
-            migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat );
+            migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat, TRACER_SUPPLIER.get() );
         }
     }
 
-    private void migrateIdFiles( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat )
-        throws IOException
+    private void migrateIdFiles( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
+            PageCursorTracer cursorTracer ) throws IOException
     {
         // The store .id files needs to be migrated. At this point some of them have been sort-of-migrated, i.e. merely ported
         // to the new format, but just got the highId and nothing else. Regardless we want to do a proper migration here,
@@ -120,7 +121,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
                 storesInDbDirectory.toArray( StoreType[]::new ) ) )
         {
             stores.start( TRACER_SUPPLIER.get() );
-            buildIdFiles( migrationLayout, storesInDbDirectory, rebuiltIdGenerators, renameList, stores );
+            buildIdFiles( migrationLayout, storesInDbDirectory, rebuiltIdGenerators, renameList, stores, cursorTracer );
         }
         // Build the ones from the migration directory, those stores that have been migrated
         // Before doing this we will have to create empty stores for those that are missing, otherwise some of the stores
@@ -132,7 +133,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
                 .openNeoStores( storesInMigrationDirectory.toArray( StoreType[]::new ) ) )
         {
             stores.start( TRACER_SUPPLIER.get() );
-            buildIdFiles( migrationLayout, storesInMigrationDirectory, rebuiltIdGenerators, renameList, stores );
+            buildIdFiles( migrationLayout, storesInMigrationDirectory, rebuiltIdGenerators, renameList, stores, cursorTracer );
         }
         for ( File emptyPlaceHolderStoreFile : placeHolderStoreFiles )
         {
@@ -164,7 +165,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void buildIdFiles( DatabaseLayout layout, List<StoreType> storeTypes, IdGeneratorFactory rebuiltIdGenerators,
-        List<Pair<File,File>> renameMap, NeoStores stores )
+        List<Pair<File,File>> renameMap, NeoStores stores, PageCursorTracer cursorTracer )
     {
         for ( StoreType storeType : storeTypes )
         {
@@ -174,8 +175,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             File idFile = new File( actualIdFile.getAbsolutePath() + ".new" );
             renameMap.add( Pair.of( idFile, actualIdFile ) );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-            try ( var cursorTracer = TRACER_SUPPLIER.get();
-                  PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds() );
+            try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds(), cursorTracer );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
                   IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE,
                             readOnly, cursorTracer, immutable.empty() );

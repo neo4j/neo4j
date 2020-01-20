@@ -25,6 +25,8 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.StorageReader;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 /**
  * Essentially a convenience for store+record+cursor. The reason why a {@link StorageReader} isn't quite enough is that they typically
  * don't handle reading of inconsistent data.
@@ -39,7 +41,7 @@ class RecordReader<RECORD extends AbstractBaseRecord> implements AutoCloseable
     {
         this.store = store;
         this.record = store.newRecord();
-        this.cursor = store.openPageCursorForReading( 0 );
+        this.cursor = store.openPageCursorForReading( 0, TRACER_SUPPLIER.get() );
     }
 
     RECORD read( long id )

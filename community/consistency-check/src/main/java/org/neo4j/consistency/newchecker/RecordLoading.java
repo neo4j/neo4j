@@ -57,6 +57,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -95,7 +96,7 @@ class RecordLoading
                 labelRecord -> reporter.forDynamicBlock( RecordType.NODE_DYNAMIC_LABEL, labelRecord ).recordNotFullReferencesNext(),
                 labelRecord -> reporter.forDynamicBlock( RecordType.NODE_DYNAMIC_LABEL, labelRecord ).invalidLength() ) )
         {
-            return DynamicNodeLabels.getDynamicLabelsArray( records, labelReader.store() );
+            return DynamicNodeLabels.getDynamicLabelsArray( records, labelReader.store(), TRACER_SUPPLIER.get() );
         }
         return null;
     }
@@ -180,7 +181,7 @@ class RecordLoading
 
     <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, RECORD record, long id )
     {
-        return store.getRecord( id, record, RecordLoad.FORCE );
+        return store.getRecord( id, record, RecordLoad.FORCE, TRACER_SUPPLIER.get() );
     }
 
     static <RECORD extends TokenRecord> List<NamedToken> safeLoadTokens( TokenStore<RECORD> tokenStore )
@@ -205,7 +206,7 @@ class RecordLoading
                             nameReader, seenRecordIds, record.getNameId(), nameBlockSize ) )
                     {
                         record.addNameRecords( nameRecords );
-                        name = tokenStore.getStringFor( record );
+                        name = tokenStore.getStringFor( record, TRACER_SUPPLIER.get() );
                     }
                     else
                     {
@@ -302,7 +303,7 @@ class RecordLoading
                 }
                 catch ( TokenNotFoundException itnfe )
                 {
-                    TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE );
+                    TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE, TRACER_SUPPLIER.get() );
                     unusedReporter.accept( entity, tokenRecord );
                     return false;
                 }

@@ -79,10 +79,10 @@ class RelationshipGroupGetterTest
             RelationshipGroupRecord group10 = group( 2, 10 );
             RelationshipGroupRecord group23 = group( 3, 23 );
             link( group2, group4, group10, group23 );
-            store.updateRecord( group2 );
-            store.updateRecord( group4 );
-            store.updateRecord( group10 );
-            store.updateRecord( group23 );
+            store.updateRecord( group2, NULL );
+            store.updateRecord( group4, NULL );
+            store.updateRecord( group10, NULL );
+            store.updateRecord( group23, NULL );
             RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store, NULL );
             NodeRecord node = new NodeRecord( 0, true, group2.getId(), -1 );
 
@@ -93,11 +93,11 @@ class RelationshipGroupGetterTest
 
             // THEN only groups 2, 4 and 10 should have been loaded
             InOrder verification = inOrder( store );
-            verification.verify( store ).getRecord( eq( group2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store ).getRecord( eq( group4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store ).getRecord( eq( group10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
+            verification.verify( store ).getRecord( eq( group4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
+            verification.verify( store ).getRecord( eq( group10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
             verification.verify( store, never() )
-                    .getRecord( eq( group23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+                    .getRecord( eq( group23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
 
             // it should also be reported as not found
             assertNull( result.group() );

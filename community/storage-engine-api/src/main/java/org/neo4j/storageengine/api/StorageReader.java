@@ -30,6 +30,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.
@@ -109,9 +110,9 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
 
     int relationshipTypeCount();
 
-    boolean nodeExists( long id );
+    boolean nodeExists( long id, PageCursorTracer cursorTracer );
 
-    boolean relationshipExists( long id );
+    boolean relationshipExists( long id, PageCursorTracer cursorTracer );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
@@ -130,27 +131,27 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     /**
      * @return a new {@link StorageNodeCursor} capable of reading node data from the underlying storage.
      */
-    StorageNodeCursor allocateNodeCursor();
+    StorageNodeCursor allocateNodeCursor( PageCursorTracer cursorTracer );
 
     /**
      * @return a new {@link StoragePropertyCursor} capable of reading property data from the underlying storage.
      */
-    StoragePropertyCursor allocatePropertyCursor();
+    StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer );
 
     /**
      * @return a new {@link StorageRelationshipGroupCursor} capable of reading relationship group data from the underlying storage.
      */
-    StorageRelationshipGroupCursor allocateRelationshipGroupCursor();
+    StorageRelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer );
 
     /**
      * @return a new {@link StorageRelationshipTraversalCursor} capable of traversing relationships from the underlying storage.
      */
-    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor();
+    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer );
 
     /**
      * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
      */
-    StorageRelationshipScanCursor allocateRelationshipScanCursor();
+    StorageRelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer );
 
     /**
      * Get a lock-free snapshot of the current schema, for inspecting the current schema when no mutations are intended.

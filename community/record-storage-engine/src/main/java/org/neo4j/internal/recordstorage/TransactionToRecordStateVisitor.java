@@ -183,7 +183,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId() );
+        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId(), cursorTracer );
         ConstraintDescriptor constraint = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -191,7 +191,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId() );
+        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId(), cursorTracer );
         ConstraintDescriptor constraint = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -203,13 +203,13 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         clearSchemaState = true;
         try
         {
-            ConstraintDescriptor rule = schemaStorage.constraintsGetSingle( constraint );
+            ConstraintDescriptor rule = schemaStorage.constraintsGetSingle( constraint, cursorTracer );
             schemaStateChanger.dropSchemaRule( recordState, rule );
 
             if ( constraint.enforcesUniqueness() )
             {
                 // Remove the index for the constraint as well
-                IndexDescriptor[] indexes = schemaStorage.indexGetForSchema( constraint.schema() );
+                IndexDescriptor[] indexes = schemaStorage.indexGetForSchema( constraint.schema(), cursorTracer );
                 for ( IndexDescriptor index : indexes )
                 {
                     OptionalLong owningConstraintId = index.getOwningConstraintId();

@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
@@ -49,11 +50,11 @@ class NodeInputIdPropertyLookup implements LongFunction<Object>
     @Override
     public Object apply( long nodeId )
     {
-        propertyStore.getRecord( nodeId, propertyRecord, CHECK );
+        propertyStore.getRecord( nodeId, propertyRecord, CHECK, TRACER_SUPPLIER.get() );
         if ( !propertyRecord.inUse() )
         {
             return null;
         }
-        return propertyRecord.iterator().next().newPropertyValue( propertyStore ).asObject();
+        return propertyRecord.iterator().next().newPropertyValue( propertyStore, TRACER_SUPPLIER.get() ).asObject();
     }
 }

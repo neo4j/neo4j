@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -45,6 +46,6 @@ public interface ConstraintValidator
             RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup )
             throws CreateConstraintFailureException;
 
-    TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory,
-            ReadableTransactionState state, TxStateVisitor visitor );
+    TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory, ReadableTransactionState state,
+            TxStateVisitor visitor, PageCursorTracer pageCursorTracer );
 }

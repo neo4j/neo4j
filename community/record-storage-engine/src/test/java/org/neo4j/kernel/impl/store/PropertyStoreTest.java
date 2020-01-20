@@ -102,16 +102,16 @@ class PropertyStoreTest
 
             doAnswer( invocation ->
             {
-                PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE );
+                PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE, NULL );
                 assertFalse( recordBeforeWrite.inUse() );
                 return null;
-            } ).when( stringPropertyStore ).updateRecord( dynamicRecord );
+            } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any() );
 
             // when
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
 
             // then verify that our mocked method above, with the assert, was actually called
-            verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any() );
+            verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any() );
         }
         finally
         {

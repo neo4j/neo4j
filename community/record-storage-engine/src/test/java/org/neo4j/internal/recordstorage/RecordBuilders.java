@@ -250,13 +250,13 @@ public class RecordBuilders
         }
 
         @Override
-        public T load( long key, E additionalData )
+        public T load( long key, E additionalData, PageCursorTracer cursorTracer )
         {
             return records.stream().filter( r -> r.getId() == key ).findFirst().get();
         }
 
         @Override
-        public void ensureHeavy( T relationshipRecord )
+        public void ensureHeavy( T relationshipRecord, PageCursorTracer cursorTracer )
         {
 
         }

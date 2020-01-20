@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class StubCursorFactory implements CursorFactory
 {
@@ -59,49 +60,49 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
-    public NodeCursor allocateNodeCursor()
+    public NodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
     {
         return poll( nodeCursors );
     }
 
     @Override
-    public NodeCursor allocateFullAccessNodeCursor()
+    public NodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer )
     {
         return poll( fullNodeCursors );
     }
 
     @Override
-    public RelationshipScanCursor allocateRelationshipScanCursor()
+    public RelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
         return poll( relationshipScanCursors );
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor()
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
         return poll( fullRelationshipScanCursors );
     }
 
     @Override
-    public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
+    public RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
         return poll( relationshiTraversalCursors );
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor()
+    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer )
     {
         return poll( propertyCursors );
     }
 
     @Override
-    public PropertyCursor allocateFullAccessPropertyCursor()
+    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer )
     {
         return poll( fullPropertyCursors );
     }
 
     @Override
-    public RelationshipGroupCursor allocateRelationshipGroupCursor()
+    public RelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
     {
         return poll( groupCursors );
     }

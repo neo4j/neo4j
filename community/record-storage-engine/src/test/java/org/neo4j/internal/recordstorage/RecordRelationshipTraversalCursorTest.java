@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -180,23 +181,23 @@ class RecordRelationshipTraversalCursorTest
         if ( dense )
         {
             RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-            relationshipGroupStore.updateRecord( createRelationshipGroup( 1, 1, direction ) );
-            relationshipGroupStore.updateRecord( createRelationshipGroup( 2, 2, direction ) );
-            relationshipGroupStore.updateRecord( createRelationshipGroup( 3, 3, direction ) );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 1, 1, direction ), NULL );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 2, 2, direction ), NULL );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 3, 3, direction ), NULL );
         }
 
-        relationshipStore.updateRecord( createRelationship( 1, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
-        relationshipStore.updateRecord( createRelationship( 2, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
-        relationshipStore.updateRecord( createRelationship( 3, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
+        relationshipStore.updateRecord( createRelationship( 1, NO_NEXT_RELATIONSHIP.intValue(), direction ), NULL );
+        relationshipStore.updateRecord( createRelationship( 2, NO_NEXT_RELATIONSHIP.intValue(), direction ), NULL );
+        relationshipStore.updateRecord( createRelationship( 3, NO_NEXT_RELATIONSHIP.intValue(), direction ), NULL );
     }
 
     private void unUseRecord( long recordId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RelationshipRecord relationshipRecord = relationshipStore.getRecord( recordId, new RelationshipRecord( -1 ),
-                RecordLoad.FORCE );
+                RecordLoad.FORCE, NULL );
         relationshipRecord.setInUse( false );
-        relationshipStore.updateRecord( relationshipRecord );
+        relationshipStore.updateRecord( relationshipRecord, NULL );
     }
 
     private RelationshipGroupRecord createRelationshipGroup( long id, long relationshipId, RelationshipDirection direction )
@@ -225,18 +226,18 @@ class RecordRelationshipTraversalCursorTest
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         for ( int i = 1; i < recordsInChain; i++ )
         {
-            relationshipStore.updateRecord( createRelationship( i, i + 1, direction ) );
+            relationshipStore.updateRecord( createRelationship( i, i + 1, direction ), NULL );
         }
-        relationshipStore.updateRecord( createRelationship( recordsInChain, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
+        relationshipStore.updateRecord( createRelationship( recordsInChain, NO_NEXT_RELATIONSHIP.intValue(), direction ), NULL );
         if ( dense )
         {
             RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             for ( int i = 1; i < recordsInChain; i++ )
             {
-                relationshipGroupStore.updateRecord( createRelationshipGroup( i, i, direction ) );
+                relationshipGroupStore.updateRecord( createRelationshipGroup( i, i, direction ), NULL );
             }
             relationshipGroupStore
-                    .updateRecord( createRelationshipGroup( recordsInChain, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
+                    .updateRecord( createRelationshipGroup( recordsInChain, NO_NEXT_RELATIONSHIP.intValue(), direction ), NULL );
         }
     }
 
@@ -258,6 +259,6 @@ class RecordRelationshipTraversalCursorTest
 
     private RecordRelationshipTraversalCursor getNodeRelationshipCursor()
     {
-        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore() );
+        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), NULL );
     }
 }

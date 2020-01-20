@@ -46,7 +46,7 @@ public class RelationshipGroupGetter
         RecordProxy<RelationshipGroupRecord, Integer> current;
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            current = relGroupRecords.getOrLoad( groupId, null );
+            current = relGroupRecords.getOrLoad( groupId, null, cursorTracer );
             RelationshipGroupRecord record = current.forReadingData();
             record.setPrev( previousGroupId ); // not persistent so not a "change"
             if ( record.getType() == type )
@@ -74,7 +74,7 @@ public class RelationshipGroupGetter
         {
             assert node.isDense() : "Node " + node + " should have been dense at this point";
             long id = idGenerator.nextId( cursorTracer );
-            change = relGroupRecords.create( id, type );
+            change = relGroupRecords.create( id, type, cursorTracer );
             RelationshipGroupRecord record = change.forChangingData();
             record.setInUse( true );
             record.setCreated();
@@ -94,8 +94,7 @@ public class RelationshipGroupGetter
                 long firstGroupId = node.getNextRel();
                 if ( firstGroupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
                 {   // There are others, make way for this new group
-                    RelationshipGroupRecord previousFirstRecord =
-                            relGroupRecords.getOrLoad( firstGroupId, type ).forReadingData();
+                    RelationshipGroupRecord previousFirstRecord = relGroupRecords.getOrLoad( firstGroupId, type, cursorTracer ).forReadingData();
                     record.setNext( previousFirstRecord.getId() );
                     previousFirstRecord.setPrev( id );
                 }

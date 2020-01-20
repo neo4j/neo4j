@@ -48,6 +48,7 @@ import org.neo4j.io.fs.FlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -961,7 +962,7 @@ class RecoveryCorruptedTransactionLogIT
         }
 
         @Override
-        public void setCurrentLogVersion( long version )
+        public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
         {
             this.version = version;
         }

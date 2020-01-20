@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.codegen.api.Throw;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
@@ -37,6 +39,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.values.storable.Value;
@@ -51,6 +55,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 
@@ -60,17 +66,40 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     private static final String REL_INDEX_NAME = "rels";
 
     @Test
-    public void shouldFindNodeWithString() throws Exception
+    public void tracePageCacheAccessOnIndexQuering() throws Exception
     {
+        prepareNodeLabelPropIndex();
+
+        long nodeId;
+        var label2 = label( "label2" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            var node = tx.createNode( LABEL, label2 );
+            nodeId = node.getId();
+            node.setProperty( PROP, "b" );
             tx.commit();
         }
+
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.getNodeById( nodeId ).removeLabel( label2 );
+            KernelTransaction ktx = kernelTransaction( tx );
+
+            var cursorTracer = ktx.pageCursorTracer();
+            cursorTracer.reportEvents();
+            assertZeroTracer( cursorTracer );
+
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "b", nodeId );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
         }
+    }
+
+    @Test
+    public void shouldFindNodeWithString() throws Exception
+    {
+        prepareNodeLabelPropIndex();
         long firstID;
         long secondID;
         try ( Transaction tx = db.beginTx() )
@@ -96,15 +125,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-        }
+        prepareNodeLabelPropIndex();
 
         long firstID;
         long secondID;
@@ -141,15 +162,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-        }
+        prepareNodeLabelPropIndex();
 
         long firstID;
         long secondID;
@@ -240,15 +253,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-        }
+        prepareNodeLabelPropIndex();
 
         long firstID;
         try ( Transaction tx = db.beginTx() )
@@ -479,15 +484,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-        }
+        prepareNodeLabelPropIndex();
 
         long firstID;
         long secondID;
@@ -540,15 +537,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToDropAndReadIndex() throws Exception
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-        }
+        prepareNodeLabelPropIndex();
 
         long firstID;
         long secondID;
@@ -566,15 +555,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.schema().getIndexByName( NODE_INDEX_NAME ).drop();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-        }
+        prepareNodeLabelPropIndex();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -641,10 +622,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor completed = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ) );
-        assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
-        completed = completed.withIndexCapability( IndexCapability.NO_CAPABILITY );
+        assertNotEquals( NO_CAPABILITY, completed.getCapability() );
+        completed = completed.withIndexCapability( NO_CAPABILITY );
         completed = indexProvider.completeConfiguration( completed );
-        assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
+        assertNotEquals( NO_CAPABILITY, completed.getCapability() );
     }
 
     @Test
@@ -675,15 +656,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void fulltextIndexMustNotAnswerCoreApiIndexQueries()
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-        }
+        prepareNodeLabelPropIndex();
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -754,5 +727,26 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
                 assertFalse( nodes.hasNext() );
             }
         }
+    }
+
+    private void prepareNodeLabelPropIndex()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( IndexType.FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+        }
+    }
+
+    private void assertZeroTracer( PageCursorTracer cursorTracer )
+    {
+        assertThat( cursorTracer.pins() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorTracer.hits() ).isZero();
+        assertThat( cursorTracer.faults() ).isZero();
     }
 }

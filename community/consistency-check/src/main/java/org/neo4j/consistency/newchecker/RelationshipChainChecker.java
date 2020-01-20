@@ -54,7 +54,9 @@ import static org.neo4j.consistency.newchecker.RelationshipLink.SOURCE_PREV;
 import static org.neo4j.consistency.newchecker.RelationshipLink.TARGET_NEXT;
 import static org.neo4j.consistency.newchecker.RelationshipLink.TARGET_PREV;
 import static org.neo4j.internal.helpers.Format.duration;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Checks relationship chains, i.e. their internal pointers between relationship records.
@@ -113,7 +115,7 @@ class RelationshipChainChecker implements Checker
         workers[workers.length - 1] = () ->
         {
             RelationshipRecord relationship = relationshipStore.newRecord();
-            try ( PageCursor cursor = relationshipStore.openPageCursorForReadingWithPrefetching( 0 ) )
+            try ( PageCursor cursor = relationshipStore.openPageCursorForReadingWithPrefetching( 0, TRACER_SUPPLIER.get() ) )
             {
                 int recordsPerPage = relationshipStore.getRecordsPerPage();
                 long id = direction.startingId( highId );
@@ -176,8 +178,10 @@ class RelationshipChainChecker implements Checker
                 if ( !consistent )
                 {
                     RelationshipStore relationshipStore = context.neoStores.getRelationshipStore();
-                    RelationshipRecord relationship = relationshipStore.getRecord( relationshipId, relationshipStore.newRecord(), RecordLoad.FORCE );
-                    RelationshipRecord referenceRelationship = relationshipStore.getRecord( reference, relationshipStore.newRecord(), RecordLoad.FORCE );
+                    RelationshipRecord relationship = relationshipStore.getRecord( relationshipId, relationshipStore.newRecord(), FORCE,
+                            TRACER_SUPPLIER.get() );
+                    RelationshipRecord referenceRelationship = relationshipStore.getRecord( reference, relationshipStore.newRecord(), FORCE,
+                            TRACER_SUPPLIER.get() );
                     linkOf( sourceOrTarget == SOURCE, prevOrNext == PREV ).reportDoesNotReferenceBack( reporter, relationship, referenceRelationship );
                 }
             }
@@ -204,7 +208,7 @@ class RelationshipChainChecker implements Checker
         final long prevOrNext = direction.cacheSlot;
         return () ->
         {
-            try ( PageCursor otherRelationshipCursor = store.openPageCursorForReading( 0 ) )
+            try ( PageCursor otherRelationshipCursor = store.openPageCursorForReading( 0, TRACER_SUPPLIER.get()) )
             {
                 while ( (!end.get() || !queue.isEmpty()) && !context.isCancelled() )
                 {
@@ -288,7 +292,7 @@ class RelationshipChainChecker implements Checker
                 else if ( !NULL_REFERENCE.is( fromCache ) )
                 {
                     // Load it from store
-                    store.getRecordByCursor( linkId, otherRelationship, RecordLoad.FORCE, otherRelationshipCursor );
+                    store.getRecordByCursor( linkId, otherRelationship, FORCE, otherRelationshipCursor );
                 }
                 else
                 {

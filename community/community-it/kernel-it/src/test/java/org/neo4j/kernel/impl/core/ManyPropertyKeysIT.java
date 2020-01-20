@@ -59,6 +59,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -142,7 +143,7 @@ class ManyPropertyKeysIT
             Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ), cursorTracer );
             record.addNameRecords( nameRecords );
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
         neoStores.flush( IOLimiter.UNLIMITED, cursorTracer );
         neoStores.close();

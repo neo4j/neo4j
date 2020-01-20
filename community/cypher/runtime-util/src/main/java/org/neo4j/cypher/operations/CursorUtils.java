@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DurationValue;
@@ -172,7 +173,7 @@ public final class CursorUtils
     }
 
     public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
-            long nodeId, Direction direction, int[] types )
+            long nodeId, Direction direction, int[] types, PageCursorTracer cursorTracer )
     {
         read.singleNode( nodeId, node );
         if ( !node.next() )
@@ -182,11 +183,11 @@ public final class CursorUtils
         switch ( direction )
         {
         case OUTGOING:
-            return RelationshipSelections.outgoingCursor( cursors, node, types );
+            return RelationshipSelections.outgoingCursor( cursors, node, types, cursorTracer );
         case INCOMING:
-            return RelationshipSelections.incomingCursor( cursors, node, types );
+            return RelationshipSelections.incomingCursor( cursors, node, types, cursorTracer );
         case BOTH:
-            return RelationshipSelections.allCursor( cursors, node, types );
+            return RelationshipSelections.allCursor( cursors, node, types, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -288,10 +289,9 @@ public final class CursorUtils
     }
 
     public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
-            long nodeId,
-            Direction direction )
+            long nodeId, Direction direction, PageCursorTracer cursorTracer )
     {
-        return nodeGetRelationships( read, cursors, node, nodeId, direction, null );
+        return nodeGetRelationships( read, cursors, node, nodeId, direction, null, cursorTracer );
     }
 
     public static AnyValue propertyGet( String key,

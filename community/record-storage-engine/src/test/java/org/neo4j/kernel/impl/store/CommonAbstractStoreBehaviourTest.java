@@ -157,65 +157,65 @@ class CommonAbstractStoreBehaviourTest
     void getRawRecordDataMustNotThrowOnPageOverflow() throws Exception
     {
         prepareStoreForOutOfBoundsAccess();
-        store.getRawRecordData( 5 );
+        store.getRawRecordData( 5, NULL );
     }
 
     @Test
     void isInUseMustThrowOnPageOverflow()
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> store.isInUse( 5 ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.isInUse( 5, NULL ) );
     }
 
     @Test
     void isInUseMustThrowOnCursorError()
     {
-        verifyExceptionOnCursorError( () -> store.isInUse( 5 ) );
+        verifyExceptionOnCursorError( () -> store.isInUse( 5, NULL ) );
     }
 
     @Test
     void getRecordMustThrowOnPageOverflow()
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL, NULL ) );
     }
 
     @Test
     void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
-        store.getRecord( 5, new IntRecord( 5 ), CHECK );
+        store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL );
     }
 
     @Test
     void getRecordMustNotThrowOnPageOverflowWithForceLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
-        store.getRecord( 5, new IntRecord( 5 ), FORCE );
+        store.getRecord( 5, new IntRecord( 5 ), FORCE, NULL );
     }
 
     @Test
     void updateRecordMustThrowOnPageOverflow()
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> store.updateRecord( new IntRecord( 5 ) ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.updateRecord( new IntRecord( 5 ), NULL ) );
     }
 
     @Test
     void getRecordMustThrowOnCursorError()
     {
-        verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
+        verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL, NULL ) );
     }
 
     @Test
     void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode()
     {
         prepareStoreForCursorError();
-        store.getRecord( 5, new IntRecord( 5 ), CHECK );
+        store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL );
     }
 
     @Test
     void getRecordMustNotThrowOnCursorErrorWithForceLoadMode()
     {
         prepareStoreForCursorError();
-        store.getRecord( 5, new IntRecord( 5 ), FORCE );
+        store.getRecord( 5, new IntRecord( 5 ), FORCE, NULL );
     }
 
     @Test
@@ -225,7 +225,7 @@ class CommonAbstractStoreBehaviourTest
         store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
         record.value = 0xCAFEBABE;
-        store.updateRecord( record );
+        store.updateRecord( record, NULL );
         intsPerRecord = 8192;
         assertThrowsUnderlyingStorageException( () -> store.start( NULL ) );
     }
@@ -259,9 +259,9 @@ class CommonAbstractStoreBehaviourTest
         MutableLongSet holes = LongSets.mutable.empty();
         holes.add( store.nextId( NULL ) );
         holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ) );
+        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
         holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ) );
+        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
 
         // when
         store.close();
@@ -285,12 +285,12 @@ class CommonAbstractStoreBehaviourTest
         createStore();
         store.start( NULL );
         MutableLongSet holes = LongSets.mutable.empty();
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ) );
+        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
         holes.add( store.nextId( NULL ) );
         holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ) );
+        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
         holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ) );
+        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
 
         // when
         store.close();

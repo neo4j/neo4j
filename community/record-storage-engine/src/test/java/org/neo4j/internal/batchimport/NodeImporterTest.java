@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -88,8 +89,8 @@ class NodeImporterTest
 
             // then
             NodeStore nodeStore = stores.getNodeStore();
-            NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL );
-            long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore );
+            NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
+            long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, PageCursorTracer.NULL );
             assertEquals( numberOfLabels, labels.length );
         }
     }

@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class DirectRecordAccess implements RecordAccess
@@ -165,7 +166,7 @@ public class DirectRecordAccess implements RecordAccess
 
     <RECORD extends AbstractBaseRecord> DirectRecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
     {
-        return new DirectRecordReference<>( store.getRecord( id, store.newRecord(), FORCE ), this );
+        return new DirectRecordReference<>( store.getRecord( id, store.newRecord(), FORCE, TRACER_SUPPLIER.get() ), this );
     }
 
     @Override

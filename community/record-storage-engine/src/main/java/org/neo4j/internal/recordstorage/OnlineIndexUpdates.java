@@ -28,6 +28,7 @@ import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -56,17 +57,19 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final SchemaCache schemaCache;
     private final PropertyPhysicalToLogicalConverter converter;
     private final StorageReader reader;
+    private final PageCursorTracer cursorTracer;
     private final Collection<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
     private StorageNodeCursor nodeCursor;
     private StorageRelationshipScanCursor relationshipCursor;
 
-    public OnlineIndexUpdates( NodeStore nodeStore, SchemaCache schemaCache,
-            PropertyPhysicalToLogicalConverter converter, StorageReader reader )
+    public OnlineIndexUpdates( NodeStore nodeStore, SchemaCache schemaCache, PropertyPhysicalToLogicalConverter converter, StorageReader reader,
+            PageCursorTracer cursorTracer )
     {
         this.nodeStore = nodeStore;
         this.schemaCache = schemaCache;
         this.converter = converter;
         this.reader = reader;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -118,7 +121,7 @@ public class OnlineIndexUpdates implements IndexUpdates
                 entityType );
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        entityUpdates.forIndexKeys( relatedIndexes, reader, entityType ).forEach( updates::add );
+        entityUpdates.forIndexKeys( relatedIndexes, reader, entityType, cursorTracer ).forEach( updates::add );
     }
 
     private EntityUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
@@ -130,8 +133,8 @@ public class OnlineIndexUpdates implements IndexUpdates
         if ( nodeChanges != null )
         {
             // Special case since the node may not be heavy, i.e. further loading may be required
-            nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore );
-            nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore );
+            nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore, cursorTracer );
+            nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore, cursorTracer );
         }
         else
         {
@@ -194,7 +197,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     {
         if ( nodeCursor == null )
         {
-            nodeCursor = reader.allocateNodeCursor();
+            nodeCursor = reader.allocateNodeCursor( cursorTracer );
         }
         nodeCursor.single( nodeId );
         if ( !nodeCursor.next() )
@@ -208,7 +211,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     {
         if ( relationshipCursor == null )
         {
-            relationshipCursor = reader.allocateRelationshipScanCursor();
+            relationshipCursor = reader.allocateRelationshipScanCursor( cursorTracer );
         }
         relationshipCursor.single( relationshipId );
         if ( !relationshipCursor.next() )

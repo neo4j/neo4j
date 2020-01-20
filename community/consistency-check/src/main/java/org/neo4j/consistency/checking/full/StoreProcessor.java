@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
 import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
 import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.Scanner.scan;
 
 /**
@@ -216,7 +217,7 @@ public class StoreProcessor extends AbstractStoreProcessor
             }
         };
 
-        ResourceIterable<R> scan = scan( store, stage.isForward() );
+        ResourceIterable<R> scan = scan( store, stage.isForward(), TRACER_SUPPLIER.get() );
         try ( ResourceIterator<R> records = scan.iterator() )
         {
             distributeRecords( numberOfThreads, getClass().getSimpleName(), DEFAULT_QUEUE_SIZE,

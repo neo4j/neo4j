@@ -125,14 +125,14 @@ class RelationshipGroupDefragmenterTest
                 // firstOut/In/Loop we could use in verification phase later
                 groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
                 groupRecord.setId( groupStore.nextId( NULL ) );
-                groupStore.updateRecord( groupRecord );
+                groupStore.updateRecord( groupRecord, NULL );
 
                 if ( typeId == 0 )
                 {
                     // first round also create the nodes
                     nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
                     nodeRecord.setId( nodeId );
-                    nodeStore.updateRecord( nodeRecord );
+                    nodeStore.updateRecord( nodeRecord, NULL );
                     nodeStore.setHighestPossibleIdInUse( nodeId );
                 }
             }
@@ -174,13 +174,13 @@ class RelationshipGroupDefragmenterTest
                     // firstOut/In/Loop we could use in verification phase later
                     groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
                     groupRecord.setId( groupStore.nextId( NULL ) );
-                    groupStore.updateRecord( groupRecord );
+                    groupStore.updateRecord( groupRecord, NULL );
 
                     if ( !initializedNodes.get( nodeId ) )
                     {
                         nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
                         nodeRecord.setId( nodeId );
-                        nodeStore.updateRecord( nodeRecord );
+                        nodeStore.updateRecord( nodeRecord, NULL );
                         nodeStore.setHighestPossibleIdInUse( nodeId );
                         initializedNodes.set( nodeId );
                     }
@@ -217,7 +217,7 @@ class RelationshipGroupDefragmenterTest
         long firstId = store.getNumberOfReservedLowIds();
         long groupCount = store.getHighId() - firstId;
         RelationshipGroupRecord groupRecord = store.newRecord();
-        PageCursor groupCursor = store.openPageCursorForReading( firstId );
+        PageCursor groupCursor = store.openPageCursorForReading( firstId, NULL );
         long highGroupId = store.getHighId();
         long currentNodeId = -1;
         int currentTypeId = -1;

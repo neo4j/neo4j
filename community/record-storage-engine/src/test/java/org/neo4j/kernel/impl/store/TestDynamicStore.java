@@ -99,13 +99,13 @@ class TestDynamicStore
         long blockId = Iterables.first( records ).getId();
         for ( DynamicRecord record : records )
         {
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
         neoStores.close();
         neoStores = null;
 
-        assertThrows( RuntimeException.class, () -> store.getArrayFor( store.getRecords( blockId, NORMAL, false ) ) );
-        assertThrows( RuntimeException.class, () -> store.getRecords( 0, NORMAL, false ) );
+        assertThrows( RuntimeException.class, () -> store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL ) );
+        assertThrows( RuntimeException.class, () -> store.getRecords( 0, NORMAL, false, NULL ) );
     }
 
     @Test
@@ -119,7 +119,7 @@ class TestDynamicStore
         store.allocateRecords( records, chars, NULL );
         for ( DynamicRecord record : records )
         {
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
         // assertEquals( STR, new String( store.getChars( blockId ) ) );
     }
@@ -142,14 +142,14 @@ class TestDynamicStore
             if ( rIndex < deleteIndex && currentCount > 0 )
             {
                 long blockId = idsTaken.remove( random.nextInt( currentCount ) );
-                store.getRecords( blockId, NORMAL, false );
-                byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
+                store.getRecords( blockId, NORMAL, false, NULL );
+                byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL );
                 validateData( bytes, byteData.remove( blockId ) );
-                Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false );
+                Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false, NULL );
                 for ( DynamicRecord record : records )
                 {
                     record.setInUse( false );
-                    store.updateRecord( record );
+                    store.updateRecord( record, NULL );
                     set.remove( record.getId() );
                 }
                 currentCount--;
@@ -162,7 +162,7 @@ class TestDynamicStore
                 for ( DynamicRecord record : records )
                 {
                     assert !set.contains( record.getId() );
-                    store.updateRecord( record );
+                    store.updateRecord( record, NULL );
                     set.add( record.getId() );
                 }
                 long blockId = Iterables.first( records ).getId();
@@ -204,7 +204,7 @@ class TestDynamicStore
         store.allocateRecords( records, arrayToStore, NULL );
         for ( DynamicRecord record : records )
         {
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
         return Iterables.first( records ).getId();
     }
@@ -215,15 +215,15 @@ class TestDynamicStore
         DynamicArrayStore store = createDynamicArrayStore();
         byte[] emptyToWrite = createBytes( 0 );
         long blockId = create( store, emptyToWrite );
-        store.getRecords( blockId, NORMAL, false );
-        byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
+        store.getRecords( blockId, NORMAL, false, NULL );
+        byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL );
         assertEquals( 0, bytes.length );
 
-        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false );
+        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false, NULL );
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
     }
 
@@ -232,15 +232,15 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         long blockId = create( store, new String[0] );
-        store.getRecords( blockId, NORMAL, false );
-        String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
+        store.getRecords( blockId, NORMAL, false, NULL );
+        String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL );
         assertEquals( 0, readBack.length );
 
-        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false );
+        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false, NULL );
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
     }
 
@@ -255,9 +255,9 @@ class TestDynamicStore
         DynamicRecord secondLastRecord = records.get( records.size() - 2 );
         long secondLastId = secondLastRecord.getId();
         secondLastRecord.setNextBlock( secondLastId );
-        records.forEach( store::updateRecord );
+        records.forEach( record -> store.updateRecord( record, NULL ) );
 
-        var e = assertThrows( RecordChainCycleDetectedException.class, () -> store.getRecords( firstId, NORMAL, true ) );
+        var e = assertThrows( RecordChainCycleDetectedException.class, () -> store.getRecords( firstId, NORMAL, true, NULL ) );
         String message = e.getMessage();
         assertThat( message ).contains( "" + firstId );
         assertThat( message ).contains( "" + secondLastRecord.getId() );

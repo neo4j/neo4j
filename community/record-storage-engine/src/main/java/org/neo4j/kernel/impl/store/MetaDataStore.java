@@ -163,23 +163,24 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    protected void initialiseNewStoreFile() throws IOException
+    protected void initialiseNewStoreFile( PageCursorTracer cursorTracer ) throws IOException
     {
-        super.initialiseNewStoreFile();
+        super.initialiseNewStoreFile( cursorTracer );
 
         long storeVersionAsLong = MetaDataStore.versionStringToLong( storeVersion );
         StoreId storeId = new StoreId( storeVersionAsLong );
 
-        setCreationTime( storeId.getCreationTime() );
-        setRandomNumber( storeId.getRandomId() );
+        setCreationTime( storeId.getCreationTime(), cursorTracer );
+        setRandomNumber( storeId.getRandomId(), cursorTracer );
         // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID
         // then store has never been upgraded
-        setUpgradeTime( storeId.getCreationTime() );
+        setUpgradeTime( storeId.getCreationTime(), cursorTracer );
         setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
-        setCurrentLogVersion( 0 );
-        setLastCommittedAndClosedTransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
-        setStoreVersion( storeVersionAsLong );
-        setLatestConstraintIntroducingTx( 0 );
+        setCurrentLogVersion( 0, cursorTracer );
+        setLastCommittedAndClosedTransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION,
+                cursorTracer );
+        setStoreVersion( storeVersionAsLong, cursorTracer );
+        setLatestConstraintIntroducingTx( 0, cursorTracer );
 
         initHighId();
         flush( TRACER_SUPPLIER.get() );
@@ -188,14 +189,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // Only for initialization and recovery, so we don't need to lock the records
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion,
+            PageCursorTracer cursorTracer )
     {
         assertNotClosed();
-        setRecord( Position.LAST_TRANSACTION_ID, transactionId );
-        setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset );
-        setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp );
+        setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursorTracer );
+        setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum, cursorTracer );
+        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursorTracer );
+        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursorTracer );
+        setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp, cursorTracer );
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
@@ -351,11 +353,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return upgradeTimeField;
     }
 
-    public void setUpgradeTime( long time )
+    public void setUpgradeTime( long time, PageCursorTracer cursorTracer )
     {
         synchronized ( upgradeTimeLock )
         {
-            setRecord( Position.UPGRADE_TIME, time );
+            setRecord( Position.UPGRADE_TIME, time, cursorTracer );
             upgradeTimeField = time;
         }
     }
@@ -395,11 +397,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return creationTimeField;
     }
 
-    public void setCreationTime( long time )
+    public void setCreationTime( long time, PageCursorTracer cursorTracer )
     {
         synchronized ( creationTimeLock )
         {
-            setRecord( Position.TIME, time );
+            setRecord( Position.TIME, time, cursorTracer );
             creationTimeField = time;
         }
     }
@@ -411,12 +413,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return randomNumberField;
     }
 
-    public void setRandomNumber( long nr )
+    public void setRandomNumber( long random, PageCursorTracer cursorTracer )
     {
         synchronized ( randomNumberLock )
         {
-            setRecord( Position.RANDOM_NUMBER, nr );
-            randomNumberField = nr;
+            setRecord( Position.RANDOM_NUMBER, random, cursorTracer );
+            randomNumberField = random;
         }
     }
 
@@ -429,11 +431,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void setCurrentLogVersion( long version )
+    public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
     {
         synchronized ( logVersionLock )
         {
-            setRecord( Position.LOG_VERSION, version );
+            setRecord( Position.LOG_VERSION, version, cursorTracer );
             versionField = version;
         }
     }
@@ -486,11 +488,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return storeVersionField;
     }
 
-    public void setStoreVersion( long version )
+    public void setStoreVersion( long version, PageCursorTracer cursorTracer )
     {
         synchronized ( storeVersionLock )
         {
-            setRecord( Position.STORE_VERSION, version );
+            setRecord( Position.STORE_VERSION, version, cursorTracer );
             storeVersionField = version;
         }
     }
@@ -502,11 +504,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return latestConstraintIntroducingTxField;
     }
 
-    public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTx )
+    public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTx, PageCursorTracer cursorTracer )
     {
         synchronized ( lastConstraintIntroducingTxLock )
         {
-            setRecord( Position.LAST_CONSTRAINT_TRANSACTION, latestConstraintIntroducingTx );
+            setRecord( Position.LAST_CONSTRAINT_TRANSACTION, latestConstraintIntroducingTx, cursorTracer );
             latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
         }
     }
@@ -598,12 +600,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    private void setRecord( Position position, long value )
+    private void setRecord( Position position, long value, PageCursorTracer cursorTracer )
     {
         MetaDataRecord record = new MetaDataRecord();
         record.initialize( true, value );
         record.setId( position.id );
-        updateRecord( record );
+        updateRecord( record, cursorTracer );
     }
 
     private void setRecord( PageCursor cursor, Position position, long value )
@@ -690,7 +692,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, PageCursorTracer cursorTracer )
     {
         assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
@@ -710,14 +712,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 {
                     long pageId = pageIdForRecord( Position.LAST_TRANSACTION_ID.id );
                     assert pageId == pageIdForRecord( Position.LAST_TRANSACTION_CHECKSUM.id );
-                    try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
-                          PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+                    try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
                     {
                         if ( cursor.next() )
                         {
                             setRecord( cursor, Position.LAST_TRANSACTION_ID, transactionId );
                             setRecord( cursor, Position.LAST_TRANSACTION_CHECKSUM, checksum );
-                            setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp );
+                            setRecord( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp );
                         }
                     }
                     catch ( IOException e )
@@ -810,15 +811,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, PageCursorTracer cursorTracer )
     {
         assertNotClosed();
-        setRecord( Position.LAST_TRANSACTION_ID, transactionId );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset );
+        setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursorTracer );
+        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursorTracer );
+        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursorTracer );
         if ( missingLogs )
         {
-            setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis() );
+            setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis(), cursorTracer );
         }
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
     }

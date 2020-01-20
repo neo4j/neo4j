@@ -515,10 +515,10 @@ public class FulltextIndexProviderTest
                 var cursorTracer = PageCursorTracer.NULL;
                 try ( NeoStores neoStores = factory.openAllNeoStores( false ) )
                 {
-                    TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores );
+                    TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores, PageCursorTracer.NULL );
                     SchemaStore schemaStore = neoStores.getSchemaStore();
                     SchemaStorage storage = new SchemaStorage( schemaStore, tokens );
-                    IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule( indexId );
+                    IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule( indexId, PageCursorTracer.NULL );
                     Map<String,Value> indexConfigMap = new HashMap<>( index.getIndexConfig().asMap() );
                     for ( Map.Entry<String,Value> entry : indexConfigMap.entrySet() )
                     {

@@ -28,6 +28,7 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -45,19 +46,19 @@ public class SchemaStorage35
         this.schemaStore = schemaStore;
     }
 
-    public Iterable<SchemaRule> getAll()
+    public Iterable<SchemaRule> getAll( PageCursorTracer cursorTracer )
     {
-        return this::loadAllSchemaRules;
+        return () -> loadAllSchemaRules( cursorTracer );
     }
 
-    public Iterator<IndexDescriptor> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll( PageCursorTracer cursorTracer )
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor.class );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor.class, cursorTracer );
     }
 
-    public IndexDescriptor indexGetForName( String indexName )
+    public IndexDescriptor indexGetForName( String indexName, PageCursorTracer cursorTracer )
     {
-        Iterator<IndexDescriptor> itr = indexesGetAll();
+        Iterator<IndexDescriptor> itr = indexesGetAll( cursorTracer );
         while ( itr.hasNext() )
         {
             IndexDescriptor sid = itr.next();
@@ -69,9 +70,9 @@ public class SchemaStorage35
         return null;
     }
 
-    private Iterator<SchemaRule> loadAllSchemaRules()
+    private Iterator<SchemaRule> loadAllSchemaRules( PageCursorTracer cursorTracer )
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, cursorTracer );
     }
 
     /**
@@ -82,7 +83,8 @@ public class SchemaStorage35
      * @param returnType type of {@link SchemaRule} to load.
      * @return {@link Iterator} of the loaded schema rules, lazily loaded when advancing the iterator.
      */
-    private <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules( final Predicate<ReturnType> predicate, final Class<ReturnType> returnType )
+    private <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules( final Predicate<ReturnType> predicate, final Class<ReturnType> returnType,
+            PageCursorTracer cursorTracer )
     {
         return new PrefetchingIterator<>()
         {
@@ -97,7 +99,7 @@ public class SchemaStorage35
                 while ( currentId <= highestId )
                 {
                     long id = currentId++;
-                    schemaStore.getRecord( id, record, RecordLoad.FORCE );
+                    schemaStore.getRecord( id, record, RecordLoad.FORCE, cursorTracer );
                     if ( record.inUse() && record.isStartRecord() )
                     {
                         // It may be that concurrently to our reading there's a transaction dropping the schema rule
@@ -107,7 +109,7 @@ public class SchemaStorage35
                             Collection<DynamicRecord> records;
                             try
                             {
-                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false );
+                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, cursorTracer );
                             }
                             catch ( InvalidRecordException e )
                             {

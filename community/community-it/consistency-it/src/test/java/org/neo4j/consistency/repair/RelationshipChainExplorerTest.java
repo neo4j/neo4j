@@ -48,6 +48,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -88,7 +89,7 @@ public class RelationshipChainExplorerTest
         int relationshipIdInMiddleOfChain = 10;
         RecordSet<RelationshipRecord> records = new RelationshipChainExplorer( relationshipStore )
                 .exploreRelationshipRecordChainsToDepthTwo(
-                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL ) );
+                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL, NULL ) );
 
         // then
         assertEquals( degreeTwoNodes * 2, records.size() );
@@ -105,7 +106,7 @@ public class RelationshipChainExplorerTest
         int relationshipIdInMiddleOfChain = 10;
         RecordSet<RelationshipRecord> records = new RelationshipChainExplorer( relationshipStore )
                 .exploreRelationshipRecordChainsToDepthTwo(
-                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL ) );
+                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL, NULL ) );
 
         // then
         int recordsInaccessibleBecauseOfBrokenChain = 3;
@@ -114,15 +115,15 @@ public class RelationshipChainExplorerTest
 
     private static void breakTheChain( RecordStore<RelationshipRecord> relationshipStore )
     {
-        RelationshipRecord record = relationshipStore.getRecord( 10, relationshipStore.newRecord(), NORMAL );
+        RelationshipRecord record = relationshipStore.getRecord( 10, relationshipStore.newRecord(), NORMAL, NULL );
         long relationshipTowardsEndOfChain = record.getFirstNode();
         while ( record.inUse() && !record.isFirstInFirstChain() )
         {
-            record = relationshipStore.getRecord( relationshipTowardsEndOfChain, relationshipStore.newRecord(), FORCE );
+            record = relationshipStore.getRecord( relationshipTowardsEndOfChain, relationshipStore.newRecord(), FORCE, NULL );
             relationshipTowardsEndOfChain = record.getFirstPrevRel();
         }
 
-        relationshipStore.updateRecord( new RelationshipRecord( relationshipTowardsEndOfChain, 0, 0, 0 ) );
+        relationshipStore.updateRecord( new RelationshipRecord( relationshipTowardsEndOfChain, 0, 0, 0 ), NULL );
     }
 
     enum TestRelationshipType implements RelationshipType

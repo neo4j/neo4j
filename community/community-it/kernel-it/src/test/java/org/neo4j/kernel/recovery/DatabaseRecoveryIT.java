@@ -64,6 +64,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -125,7 +126,6 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
@@ -468,14 +468,14 @@ class DatabaseRecoveryIT
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), NULL, NullLog.getInstance(), contextSupplier,
+                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
                         jobScheduler, Clocks.nanoClock() ).getOrCreatePageCache();
-                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), NULL, NullLog.getInstance(), contextSupplier,
+                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
                         jobScheduler, Clocks.nanoClock() ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, immediate() ),
-                        pageCache1, fs1, logProvider, NULL ).openAllNeoStores();
+                        pageCache1, fs1, logProvider, PageCacheTracer.NULL ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, immediate() ),
-                        pageCache2, fs2, logProvider, NULL ).openAllNeoStores()
+                        pageCache2, fs2, logProvider, PageCacheTracer.NULL ).openAllNeoStores()
                 )
         {
             for ( StoreType storeType : StoreType.values() )
@@ -498,8 +498,8 @@ class DatabaseRecoveryIT
         RECORD record2 = store2.newRecord();
         for ( long id = store1.getNumberOfReservedLowIds(); id < maxHighId; id++ )
         {
-            store1.getRecord( id, record1, RecordLoad.CHECK );
-            store2.getRecord( id, record2, RecordLoad.CHECK );
+            store1.getRecord( id, record1, RecordLoad.CHECK, PageCursorTracer.NULL );
+            store2.getRecord( id, record2, RecordLoad.CHECK, PageCursorTracer.NULL );
             boolean deletedAndDynamicPropertyRecord = !record1.inUse() && store1 instanceof AbstractDynamicStore;
             if ( !deletedAndDynamicPropertyRecord )
             {

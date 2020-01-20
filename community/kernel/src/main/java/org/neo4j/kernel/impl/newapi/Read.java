@@ -141,7 +141,8 @@ abstract class Read implements TxStateHolder,
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index, true );
         cursorImpl.setRead( this );
-        CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this );
+        CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor( cursorTracer ),
+                cursors.allocatePropertyCursor( cursorTracer ), this );
         reader.distinctValues( cursorImpl, accessor, needsValues, cursorTracer );
     }
 
@@ -168,7 +169,7 @@ abstract class Read implements TxStateHolder,
                     {
                         // We need to filter the index result if the property is not allowed on some label
                         // since the nodes in the index might have both an allowed and a disallowed label for the property
-                        return new NodeLabelSecurityFilter( propertyIds, cursor, cursors.allocateNodeCursor(), this, accessMode );
+                        return new NodeLabelSecurityFilter( propertyIds, cursor, cursors.allocateNodeCursor( cursorTracer ), this, accessMode );
                     }
                 }
             }
@@ -183,7 +184,8 @@ abstract class Read implements TxStateHolder,
                     if ( !accessMode.allowsTraverseAllLabels() || !accessMode.allowsTraverseRelType( relType ) ||
                             !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
                     {
-                        return new RelationshipSecurityFilter( propertyIds, cursor, cursors.allocateRelationshipScanCursor(), this, accessMode );
+                        return new RelationshipSecurityFilter( propertyIds, cursor, cursors.allocateRelationshipScanCursor( cursorTracer ),
+                                this, accessMode );
                     }
                 }
             }
@@ -233,8 +235,8 @@ abstract class Read implements TxStateHolder,
             {
                 // filters[] can contain null elements. The non-null elements are the filters and each sit in the designated slot
                 // matching the values from the index.
-                target = new NodeValueClientFilter( target, cursors.allocateNodeCursor(),
-                        cursors.allocatePropertyCursor(), this, filters );
+                target = new NodeValueClientFilter( target, cursors.allocateNodeCursor( cursorTracer ),
+                        cursors.allocatePropertyCursor( cursorTracer ), this, filters );
             }
         }
         return target;
@@ -353,7 +355,7 @@ abstract class Read implements TxStateHolder,
         {
             this.inner = inner;
             this.accessMode = accessMode;
-            this.node = Read.this.cursors.allocateFullAccessNodeCursor();
+            this.node = Read.this.cursors.allocateFullAccessNodeCursor( cursorTracer );
         }
 
         @Override

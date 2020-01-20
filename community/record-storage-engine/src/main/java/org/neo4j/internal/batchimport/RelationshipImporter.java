@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.lang.String.format;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 
 /**
@@ -172,7 +173,7 @@ public class RelationshipImporter extends EntityImporter
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ) );
-            relationshipStore.updateRecord( relationshipRecord, IGNORE );
+            relationshipStore.updateRecord( relationshipRecord, IGNORE, TRACER_SUPPLIER.get() );
             relationshipCount++;
             typeCounts.increment( relationshipRecord.getType() );
         }

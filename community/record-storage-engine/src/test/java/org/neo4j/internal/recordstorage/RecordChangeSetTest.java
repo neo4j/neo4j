@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class RecordChangeSetTest
 {
@@ -74,11 +75,11 @@ class RecordChangeSetTest
          * We need to make sure some stuff is stored in the sets being managed. That is why forChangingLinkage() is
          * called - otherwise, no changes will be stored and changeSize() would return 0 anyway.
          */
-        changeSet.getNodeRecords().create( 1L, null ).forChangingLinkage();
-        changeSet.getPropertyRecords().create( 1L, null ).forChangingLinkage();
-        changeSet.getRelRecords().create( 1L, null ).forChangingLinkage();
-        changeSet.getSchemaRuleChanges().create( 1L, null ).forChangingLinkage();
-        changeSet.getRelGroupRecords().create( 1L, 1 ).forChangingLinkage();
+        changeSet.getNodeRecords().create( 1L, null, NULL ).forChangingLinkage();
+        changeSet.getPropertyRecords().create( 1L, null, NULL ).forChangingLinkage();
+        changeSet.getRelRecords().create( 1L, null, NULL ).forChangingLinkage();
+        changeSet.getSchemaRuleChanges().create( 1L, null, NULL ).forChangingLinkage();
+        changeSet.getRelGroupRecords().create( 1L, 1, NULL ).forChangingLinkage();
 
         changeSet.close();
 

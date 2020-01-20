@@ -29,6 +29,7 @@ import org.neo4j.internal.recordstorage.ConsistencyCheckingBatchApplier.Consiste
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -77,9 +78,9 @@ class ConsistencyCheckingApplierTest
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate() ), pageCache,
                 directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        checker = new ConsistencyCheckingApplier( relationshipStore );
+        checker = new ConsistencyCheckingApplier( relationshipStore, PageCursorTracer.NULL );
         applier = new NeoStoreTransactionApplier( CommandVersion.AFTER, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, 0,
-                new LockGroup(), IdUpdateListener.IGNORE );
+                new LockGroup(), IdUpdateListener.IGNORE, PageCursorTracer.NULL );
         appliers = new TransactionApplier[]{checker, applier};
     }
 

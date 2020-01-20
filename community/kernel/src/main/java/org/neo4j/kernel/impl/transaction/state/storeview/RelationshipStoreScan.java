@@ -27,6 +27,8 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
 {
     private final int[] relationshipTypeIds;
@@ -44,7 +46,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
     @Override
     protected StorageRelationshipScanCursor allocateCursor( StorageReader storageReader )
     {
-        return storageReader.allocateRelationshipScanCursor();
+        return storageReader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() );
     }
 
     @Override

@@ -204,11 +204,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 ", blockSize:" + getRecordDataSize() + "]";
     }
 
-    Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/> readFullByteArray( Iterable<DynamicRecord> records, PropertyType propertyType )
+    Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/> readFullByteArray( Iterable<DynamicRecord> records, PropertyType propertyType,
+            PageCursorTracer cursorTracer )
     {
         for ( DynamicRecord record : records )
         {
-            ensureHeavy( record );
+            ensureHeavy( record, cursorTracer );
         }
 
         return readFullByteArrayFromHeavyRecords( records, propertyType );

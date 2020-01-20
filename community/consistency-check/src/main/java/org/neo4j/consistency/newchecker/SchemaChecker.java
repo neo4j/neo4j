@@ -54,6 +54,7 @@ import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeLoadDynamicRecordChain;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -121,7 +122,7 @@ class SchemaChecker
                     continue;
                 }
 
-                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id );
+                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, TRACER_SUPPLIER.get() );
                 SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( schemaRule ), record.copy() );
                 if ( previousContentRecord != null )
                 {
@@ -174,7 +175,7 @@ class SchemaChecker
                 reader.read( id );
                 if ( record.inUse() )
                 {
-                    SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id );
+                    SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, TRACER_SUPPLIER.get() );
                     schemaRule.schema().processWith( basicSchemaCheck );
                     if ( schemaRule instanceof IndexDescriptor )
                     {

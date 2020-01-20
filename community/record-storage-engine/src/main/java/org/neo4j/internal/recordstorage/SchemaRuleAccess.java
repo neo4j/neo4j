@@ -43,11 +43,11 @@ public interface SchemaRuleAccess
 
     long newRuleId( PageCursorTracer cursorTracer );
 
-    Iterable<SchemaRule> getAll();
+    Iterable<SchemaRule> getAll( PageCursorTracer cursorTracer );
 
-    SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException;
+    SchemaRule loadSingleSchemaRule( long ruleId, PageCursorTracer cursorTracer ) throws MalformedSchemaRuleException;
 
-    Iterator<IndexDescriptor> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll( PageCursorTracer cursorTracer );
 
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
@@ -55,7 +55,7 @@ public interface SchemaRuleAccess
      * @return an array of all the matching index rules. Empty array if none found.
      * @param index the target {@link IndexDescriptor}
      */
-    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index );
+    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index, PageCursorTracer cursorTracer );
 
     /**
      * Find the IndexRule that has the given user supplied name.
@@ -63,7 +63,7 @@ public interface SchemaRuleAccess
      * @param indexName the user supplied index name to look for.
      * @return the matching IndexRule, or null if no matching index rule was found.
      */
-    IndexDescriptor indexGetForName( String indexName );
+    IndexDescriptor indexGetForName( String indexName, PageCursorTracer cursorTracer );
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor
@@ -72,9 +72,10 @@ public interface SchemaRuleAccess
      * @throws SchemaRuleNotFoundException if no ConstraintDescriptor matches the given descriptor
      * @throws DuplicateSchemaRuleException if two or more ConstraintDescriptors match the given descriptor
      */
-    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
+    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor, PageCursorTracer cursorTracer )
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
-    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed();
+    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed( PageCursorTracer cursorTracer );
 
     SchemaRecordChangeTranslator getSchemaRecordChangeTranslator();
 
@@ -89,5 +90,5 @@ public interface SchemaRuleAccess
      * This is a non-transactional operation that is primarily used for testing.
      */
     @VisibleForTesting
-    void deleteSchemaRule( SchemaRule rule );
+    void deleteSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer );
 }

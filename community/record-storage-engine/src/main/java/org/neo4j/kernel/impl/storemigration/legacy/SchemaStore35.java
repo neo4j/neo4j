@@ -87,7 +87,7 @@ public class SchemaStore35 extends AbstractDynamicStore
     public List<DynamicRecord> allocateFrom( SchemaRule rule, PageCursorTracer cursorTracer )
     {
         List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = getRecord( rule.getId(), newRecord(), CHECK );
+        DynamicRecord record = getRecord( rule.getId(), newRecord(), CHECK, cursorTracer );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
         allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule ), recordAllocator, cursorTracer );
         return records;

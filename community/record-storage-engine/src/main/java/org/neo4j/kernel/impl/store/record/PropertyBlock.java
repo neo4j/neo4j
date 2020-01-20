@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;
@@ -207,7 +208,7 @@ public class PropertyBlock
                 result.append( ",firstDynamic=" ).append( getSingleValueLong() );
                 break;
             default:
-                Object value = type.value( this, null ).asObject();
+                Object value = type.value( this, null, PageCursorTracer.NULL ).asObject();
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );
@@ -255,15 +256,15 @@ public class PropertyBlock
         return Arrays.equals( valueBlocks, other.valueBlocks );
     }
 
-    public Value newPropertyValue( PropertyStore propertyStore )
+    public Value newPropertyValue( PropertyStore propertyStore, PageCursorTracer cursorTracer )
     {
-        return getType().value( this, propertyStore );
+        return getType().value( this, propertyStore, cursorTracer );
     }
 
-    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore )
+    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore, PageCursorTracer cursorTracer )
     {
         int propertyKeyId = getKeyIndexId();
-        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore ) );
+        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore, cursorTracer ) );
     }
 
     public static int keyIndexId( long valueBlock )

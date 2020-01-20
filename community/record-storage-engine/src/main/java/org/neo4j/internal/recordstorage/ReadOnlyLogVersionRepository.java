@@ -25,6 +25,7 @@ import java.nio.file.NoSuchFileException;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
@@ -53,7 +54,7 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public void setCurrentLogVersion( long version )
+    public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Can't set current log version in read only version repository." );
     }

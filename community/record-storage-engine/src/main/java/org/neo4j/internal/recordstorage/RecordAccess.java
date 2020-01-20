@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 /**
  * Provides access to records, both for reading and for writing.
  */
@@ -34,14 +36,14 @@ public interface RecordAccess<RECORD,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData );
+    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
 
     RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
 
     @Deprecated
-    void setTo( long key, RECORD newRecord, ADDITIONAL additionalData );
+    void setTo( long key, RECORD newRecord, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
 
-    RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData );
+    RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
 
     /**
      * Creates a new record with the given {@code key}. Any {@code additionalData} is set in the
@@ -51,7 +53,7 @@ public interface RecordAccess<RECORD,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData );
+    RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
 
     /**
      * Closes the record access.
@@ -94,9 +96,9 @@ public interface RecordAccess<RECORD,ADDITIONAL>
     {
         RECORD newUnused( long key, ADDITIONAL additionalData );
 
-        RECORD load( long key, ADDITIONAL additionalData );
+        RECORD load( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
 
-        void ensureHeavy( RECORD record );
+        void ensureHeavy( RECORD record, PageCursorTracer cursorTracer );
 
         RECORD copy( RECORD record );
     }

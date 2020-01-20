@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 
@@ -72,7 +73,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     @Test
     void shouldScanASubsetOfNodes()
     {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
@@ -91,7 +92,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     @Test
     void shouldHandleSizeHintOverflow()
     {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
@@ -110,7 +111,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     @Test
     void shouldFailForSizeHintZero()
     {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // given
             Scan<NodeCursor> scan = read.allNodesScan();
@@ -125,7 +126,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     {
         // given
         LongArrayList ids = new LongArrayList();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
@@ -153,13 +154,13 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         {
             // when
             Future<LongList> future1 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32 ) );
             Future<LongList> future2 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32 ) );
             Future<LongList> future3 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32 ) );
             Future<LongList> future4 = service.submit(
-                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32 ) );
 
             // then
             LongList ids1 = future1.get();
@@ -189,7 +190,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         try
         {
             // when
-            Supplier<NodeCursor> allocateNodeCursor = cursors::allocateNodeCursor;
+            Supplier<NodeCursor> allocateNodeCursor = () -> cursors.allocateNodeCursor( NULL );
             Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100 ) );
             Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100 ) );
             Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100 ) );
@@ -226,7 +227,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             ArrayList<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
-                futures.add( service.submit( randomBatchWorker( scan, cursors::allocateNodeCursor, NODE_GET ) ) );
+                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET ) ) );
             }
 
             service.shutdown();

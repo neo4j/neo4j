@@ -44,6 +44,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -160,7 +161,7 @@ class CommonAbstractStoreTest
         TheStore store = newStore();
         TheRecord record = newRecord( -1 );
 
-        assertThrows( NegativeIdException.class, () -> store.updateRecord( record ) );
+        assertThrows( NegativeIdException.class, () -> store.updateRecord( record, NULL ) );
     }
 
     @Test
@@ -172,7 +173,7 @@ class CommonAbstractStoreTest
         TheStore store = newStore();
         TheRecord record = newRecord( maxFormatId + 1 );
 
-        assertThrows( IdCapacityExceededException.class, () -> store.updateRecord( record ) );
+        assertThrows( IdCapacityExceededException.class, () -> store.updateRecord( record, NULL ) );
     }
 
     @Test
@@ -181,7 +182,7 @@ class CommonAbstractStoreTest
         TheStore store = newStore();
         TheRecord record = newRecord( INTEGER_MINUS_ONE );
 
-        assertThrows( ReservedIdException.class, () -> store.updateRecord( record ) );
+        assertThrows( ReservedIdException.class, () -> store.updateRecord( record, NULL ) );
     }
 
     @Test
@@ -228,7 +229,7 @@ class CommonAbstractStoreTest
         }
 
         @Override
-        protected void initialiseNewStoreFile()
+        protected void initialiseNewStoreFile( PageCursorTracer cursorTracer )
         {
         }
 

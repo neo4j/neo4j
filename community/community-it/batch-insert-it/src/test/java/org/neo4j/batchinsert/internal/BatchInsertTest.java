@@ -760,15 +760,15 @@ class BatchInsertTest
             SchemaRecord record = store.newRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
             {
-                store.getRecord( i, record, RecordLoad.FORCE );
+                store.getRecord( i, record, RecordLoad.FORCE, NULL );
                 if ( record.inUse() )
                 {
                     inUse.add( i );
                 }
             }
             assertEquals( 2, inUse.size(), "records in use" );
-            SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ) );
-            SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ) );
+            SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ), NULL );
+            SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ), NULL );
             IndexDescriptor indexRule;
             ConstraintDescriptor constraint;
             if ( rule0 instanceof IndexDescriptor )
@@ -1129,7 +1129,7 @@ class BatchInsertTest
 
         NeoStores neoStores = getFlushedNeoStores( inserter );
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord record = nodeStore.getRecord( node1, nodeStore.newRecord(), NORMAL );
+        NodeRecord record = nodeStore.getRecord( node1, nodeStore.newRecord(), NORMAL, NULL );
         assertTrue( record.isDense(), "Node " + record + " should have been dense" );
         inserter.shutdown();
     }
@@ -1164,9 +1164,9 @@ class BatchInsertTest
 
         // THEN
         NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
-        long[] labelIds = labels.get( nodeStore );
+        long[] labelIds = labels.get( nodeStore, NULL );
         assertEquals( 1, labelIds.length );
         inserter.shutdown();
     }
@@ -1186,10 +1186,10 @@ class BatchInsertTest
 
         // THEN
         NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
-        long[] labelIds = labels.get( nodeStore );
+        long[] labelIds = labels.get( nodeStore, NULL );
         long[] sortedLabelIds = Arrays.copyOf( labelIds, labelIds.length );
         Arrays.sort( sortedLabelIds );
         assertArrayEquals( sortedLabelIds, labelIds );

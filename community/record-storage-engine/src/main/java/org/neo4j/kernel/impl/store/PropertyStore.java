@@ -203,13 +203,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     @Override
-    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener )
+    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
     {
-        updatePropertyBlocks( record, idUpdateListener );
-        super.updateRecord( record, idUpdateListener );
+        updatePropertyBlocks( record, idUpdateListener, cursorTracer );
+        super.updateRecord( record, idUpdateListener, cursorTracer );
     }
 
-    private void updatePropertyBlocks( PropertyRecord record, IdUpdateListener idUpdateListener )
+    private void updatePropertyBlocks( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
     {
         if ( record.inUse() )
         {
@@ -225,25 +225,25 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 if ( !block.isLight()
                         && block.getValueRecords().get( 0 ).isCreated() )
                 {
-                    updateDynamicRecords( block.getValueRecords(), idUpdateListener );
+                    updateDynamicRecords( block.getValueRecords(), idUpdateListener, cursorTracer );
                 }
             }
         }
-        updateDynamicRecords( record.getDeletedRecords(), idUpdateListener );
+        updateDynamicRecords( record.getDeletedRecords(), idUpdateListener, cursorTracer );
     }
 
-    private void updateDynamicRecords( List<DynamicRecord> records, IdUpdateListener idUpdateListener )
+    private void updateDynamicRecords( List<DynamicRecord> records, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
     {
         for ( DynamicRecord valueRecord : records )
         {
             PropertyType recordType = valueRecord.getType();
             if ( recordType == PropertyType.STRING )
             {
-                stringStore.updateRecord( valueRecord, idUpdateListener );
+                stringStore.updateRecord( valueRecord, idUpdateListener, cursorTracer );
             }
             else if ( recordType == PropertyType.ARRAY )
             {
-                arrayStore.updateRecord( valueRecord, idUpdateListener );
+                arrayStore.updateRecord( valueRecord, idUpdateListener, cursorTracer );
             }
             else
             {
@@ -253,15 +253,15 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     @Override
-    public void ensureHeavy( PropertyRecord record )
+    public void ensureHeavy( PropertyRecord record, PageCursorTracer cursorTracer )
     {
         for ( PropertyBlock block : record )
         {
-            ensureHeavy( block );
+            ensureHeavy( block, cursorTracer );
         }
     }
 
-    public void ensureHeavy( PropertyBlock block )
+    public void ensureHeavy( PropertyBlock block, PageCursorTracer cursorTracer )
     {
         if ( !block.isLight() )
         {
@@ -272,7 +272,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType( type );
         if ( dynamicStore != null )
         {
-            List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL, false );
+            List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL, false, cursorTracer );
             for ( DynamicRecord dynamicRecord : dynamicRecords )
             {
                 dynamicRecord.setType( type.intValue() );
@@ -291,9 +291,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
     }
 
-    public Value getValue( PropertyBlock propertyBlock )
+    public Value getValue( PropertyBlock propertyBlock, PageCursorTracer cursorTracer )
     {
-        return propertyBlock.getType().value( propertyBlock, this );
+        return propertyBlock.getType().value( propertyBlock, this, cursorTracer );
     }
 
     private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
@@ -341,14 +341,14 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
     }
 
-    public PageCursor openStringPageCursor( long reference )
+    public PageCursor openStringPageCursor( long reference, PageCursorTracer cursorTracer )
     {
-        return stringStore.openPageCursorForReading( reference );
+        return stringStore.openPageCursorForReading( reference, cursorTracer );
     }
 
-    public PageCursor openArrayPageCursor( long reference )
+    public PageCursor openArrayPageCursor( long reference, PageCursorTracer cursorTracer )
     {
-        return arrayStore.openPageCursorForReading( reference );
+        return arrayStore.openPageCursorForReading( reference, cursorTracer );
     }
 
     public ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page )
@@ -652,28 +652,28 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return UTF8.decode( byteArray );
     }
 
-    String getStringFor( PropertyBlock propertyBlock )
+    String getStringFor( PropertyBlock propertyBlock, PageCursorTracer cursorTracer )
     {
-        ensureHeavy( propertyBlock );
-        return getStringFor( propertyBlock.getValueRecords() );
+        ensureHeavy( propertyBlock, cursorTracer );
+        return getStringFor( propertyBlock.getValueRecords(), cursorTracer );
     }
 
-    public String getStringFor( Collection<DynamicRecord> dynamicRecords )
+    public String getStringFor( Collection<DynamicRecord> dynamicRecords, PageCursorTracer cursorTracer )
     {
-        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING );
+        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, cursorTracer );
         // A string doesn't have a header in the data array
         return decodeString( source.other() );
     }
 
-    Value getArrayFor( PropertyBlock propertyBlock )
+    Value getArrayFor( PropertyBlock propertyBlock, PageCursorTracer cursorTracer )
     {
-        ensureHeavy( propertyBlock );
-        return getArrayFor( propertyBlock.getValueRecords() );
+        ensureHeavy( propertyBlock, cursorTracer );
+        return getArrayFor( propertyBlock.getValueRecords(), cursorTracer );
     }
 
-    public Value getArrayFor( Iterable<DynamicRecord> records )
+    public Value getArrayFor( Iterable<DynamicRecord> records, PageCursorTracer cursorTracer )
     {
-        return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY ) );
+        return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY, cursorTracer ) );
     }
 
     @Override

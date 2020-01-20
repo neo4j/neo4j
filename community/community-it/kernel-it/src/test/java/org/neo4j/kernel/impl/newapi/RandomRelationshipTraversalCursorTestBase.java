@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class RandomRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -76,9 +77,9 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
     void shouldManageRandomTraversals()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
+              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             for ( int i = 0; i < N_TRAVERSALS; i++ )
             {

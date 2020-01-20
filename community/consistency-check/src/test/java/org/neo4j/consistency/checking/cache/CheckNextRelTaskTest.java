@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CheckNextRelTaskTest
 {
@@ -51,7 +52,7 @@ class CheckNextRelTaskTest
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         long highNodeId = 10L;
         when( nodeStore.getHighId() ).thenReturn( highNodeId );
-        when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenReturn( nodeRecord );
+        when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ), any() ) ).thenReturn( nodeRecord );
         when( nodeStore.newRecord() ).thenReturn( nodeRecord );
 
         StoreAccess storeAccess = new StoreAccess( neoStores );

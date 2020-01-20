@@ -21,9 +21,13 @@ package org.neo4j.token.api;
 
 import java.util.List;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 public interface TokensLoader
 {
-    List<NamedToken> getPropertyKeyTokens();
-    List<NamedToken> getLabelTokens();
-    List<NamedToken> getRelationshipTypeTokens();
+    List<NamedToken> getPropertyKeyTokens( PageCursorTracer cursorTracer );
+
+    List<NamedToken> getLabelTokens( PageCursorTracer cursorTracer );
+
+    List<NamedToken> getRelationshipTypeTokens( PageCursorTracer cursorTracer );
 }

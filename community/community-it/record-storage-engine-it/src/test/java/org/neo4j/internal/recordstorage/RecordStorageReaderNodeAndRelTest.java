@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Test reading committed node and relationships from disk.
@@ -69,7 +70,7 @@ class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
 
     private boolean nodeExists( long id )
     {
-        try ( StorageNodeCursor node = storageReader.allocateNodeCursor() )
+        try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL ) )
         {
             node.single( id );
             return node.next();
@@ -78,7 +79,7 @@ class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
 
     private boolean relationshipExists( long id )
     {
-        try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor() )
+        try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor( NULL ) )
         {
             relationship.single( id );
             return relationship.next();

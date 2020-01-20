@@ -244,7 +244,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         constraintIndexCreator,
                         constraintSemantics,
                         indexingService,
-                        config );
+                        config, pageCursorTracer );
         traceProvider = getTraceProvider( config );
         registerConfigChangeListeners( config );
         this.collectionsFactory = collectionsFactorySupplier.create();
@@ -1092,7 +1092,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private TxStateVisitor enforceConstraints( TxStateVisitor txStateVisitor )
     {
-        return constraintSemantics.decorateTxStateVisitor( storageReader, operations.dataRead(), operations.cursors(), txState, txStateVisitor );
+        return constraintSemantics.decorateTxStateVisitor( storageReader, operations.dataRead(), operations.cursors(), txState, txStateVisitor,
+                pageCursorTracer );
     }
 
     /**

@@ -84,7 +84,7 @@ class PropertyCreatorTest
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
         cursorTracer = pageCacheTracer.createPageCursorTracer( "propertyStore" );
-        creator = new PropertyCreator( propertyStore, new PropertyTraverser(), cursorTracer );
+        creator = new PropertyCreator( propertyStore, new PropertyTraverser( NULL ), cursorTracer );
     }
 
     @AfterEach
@@ -375,7 +375,7 @@ class PropertyCreatorTest
         PropertyRecord prev = null;
         for ( ExpectedRecord initialRecord : initialRecords )
         {
-            PropertyRecord record = this.records.create( propertyStore.nextId( cursorTracer ), primitive.record ).forChangingData();
+            PropertyRecord record = this.records.create( propertyStore.nextId( cursorTracer ), primitive.record, NULL ).forChangingData();
             record.setInUse( true );
             existingRecord( record, initialRecord );
 
@@ -430,7 +430,7 @@ class PropertyCreatorTest
         {
             PropertyBlock block = record.getPropertyBlock( expectedProperty.key );
             assertNotNull( block );
-            assertEquals( expectedProperty.value, block.getType().value( block, propertyStore ) );
+            assertEquals( expectedProperty.value, block.getType().value( block, propertyStore, NULL ) );
             if ( expectedProperty.assertHasDynamicRecords != null )
             {
                 if ( expectedProperty.assertHasDynamicRecords )

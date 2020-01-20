@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -81,22 +82,22 @@ class DirectRecordStoreMigrator
             for ( StoreType type : types )
             {
                 // This condition will exclude counts store first and foremost.
-                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ) );
+                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), NULL );
                 progressReporter.progress( 1 );
             }
         }
     }
 
-    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to )
+    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, PageCursorTracer cursorTracer )
     {
         to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse() );
 
         from.scanAllRecords( record ->
         {
             to.prepareForCommit( record );
-            to.updateRecord( record );
+            to.updateRecord( record, cursorTracer );
             return false;
-        } );
+        }, cursorTracer );
     }
 
     /**

@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 /**
@@ -56,7 +57,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
     @Override
     public boolean process( NodeRecord node )
     {
-        long[] labels = NodeLabelsField.get( node, nodeStore );
+        long[] labels = NodeLabelsField.get( node, nodeStore, TRACER_SUPPLIER.get() );
         if ( labels.length > 0 )
         {
             for ( long labelId : labels )

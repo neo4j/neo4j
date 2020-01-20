@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -81,7 +82,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             read.allNodesScan( nodes );
@@ -99,7 +100,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldAccessNodesByReference()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             for ( long id : NODE_IDS )
             {
@@ -119,7 +120,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldNotAccessNegativeReferences()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             read.singleNode( -2L, node  );
@@ -133,7 +134,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldNotFindDeletedNode()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             // when
             read.singleNode( gone, nodes );
@@ -147,7 +148,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldReadLabels()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
             LabelSet labels;
 

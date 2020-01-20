@@ -56,6 +56,7 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLabel.SLOT_LAB
 import static org.neo4j.consistency.checking.full.NodeLabelReader.getListOfLabels;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.counts.CountsKey.relationshipKey;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 class CountsBuilderDecorator extends CheckDecorator.Adapter
@@ -332,6 +333,6 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                                         RecordAccess recordAccess,
                                         long nodeId )
     {
-        return getListOfLabels( nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE ), recordAccess, engine );
+        return getListOfLabels( nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE, TRACER_SUPPLIER.get() ), recordAccess, engine );
     }
 }

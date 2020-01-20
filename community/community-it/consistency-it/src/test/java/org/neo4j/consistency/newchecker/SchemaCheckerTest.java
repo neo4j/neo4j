@@ -254,8 +254,8 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) );
             schemaStorage.writeSchemaRule( index, cursorTracer );
-            SchemaRecord schemaRecord = schemaStore.getRecord( index.getId(), schemaStore.newRecord(), RecordLoad.NORMAL );
-            propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ) );
+            SchemaRecord schemaRecord = schemaStore.getRecord( index.getId(), schemaStore.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
+            propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ), PageCursorTracer.NULL );
         }
 
         // when
@@ -556,13 +556,13 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (T)--->(D)---> (vandalized dynamic value chain)
-            TOKEN record = store.getRecord( tokenId, store.newRecord(), RecordLoad.NORMAL );
-            store.ensureHeavy( record );
+            TOKEN record = store.getRecord( tokenId, store.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
+            store.ensureHeavy( record, PageCursorTracer.NULL );
             vandal.accept( record );
             DynamicStringStore nameStore = store.getNameStore();
             for ( DynamicRecord nameRecord : record.getNameRecords() )
             {
-                nameStore.updateRecord( nameRecord );
+                nameStore.updateRecord( nameRecord, PageCursorTracer.NULL );
             }
         }
 

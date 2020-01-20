@@ -409,7 +409,7 @@ public class TransactionImpl implements InternalTransaction
         KernelTransaction ktx = kernelTransaction();
         return () ->
         {
-            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<>()
             {
@@ -442,7 +442,7 @@ public class TransactionImpl implements InternalTransaction
         KernelTransaction ktx = kernelTransaction();
         return () ->
         {
-            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
+            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allRelationshipsScan( cursor );
             return new PrefetchingResourceIterator<>()
             {
@@ -683,8 +683,8 @@ public class TransactionImpl implements InternalTransaction
         KernelTransaction transaction = kernelTransaction();
 
         NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor();
-        NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor();
-        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor();
+        NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor( transaction.pageCursorTracer() );
+        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer() );
 
         transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor );
 

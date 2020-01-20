@@ -55,7 +55,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( KernelTransaction tx = beginTransaction() )
         {
             nodeId = tx.dataWrite().nodeCreate();
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -84,7 +84,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             labelId = tx.token().labelGetOrCreateForName( labelName );
             tx.dataWrite().nodeAddLabel( nodeId, labelId );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -140,7 +140,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.dataWrite().nodeAddLabel( nodeId, toRegret );
             tx.dataWrite().nodeRemoveLabel( nodeId, toRegret );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -174,7 +174,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( KernelTransaction tx = beginTransaction() )
         {
             assertTrue( tx.dataWrite().nodeDelete( nodeId ) );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertFalse( node.next() );
@@ -216,8 +216,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop1, stringValue( "hello" ) ), NO_VALUE );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop2, stringValue( "world" ) ), NO_VALUE );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -257,8 +257,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             int propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -304,8 +304,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             propToken2 = tx.token().propertyKeyGetOrCreateForName( propKey2 );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken2, stringValue( "world" ) ), NO_VALUE );
 
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -355,8 +355,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ),
                     stringValue( "hello" ) );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -399,8 +399,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( KernelTransaction tx = beginTransaction() )
         {
             assertEquals( tx.dataWrite().nodeRemoveProperty( nodeId, propToken ), stringValue( "hello" ) );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -440,8 +440,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             assertEquals( tx.dataWrite().nodeRemoveProperty( nodeId, propToken ), stringValue( "hello" ) );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ), NO_VALUE );
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
@@ -779,8 +779,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         // Then
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor();
-                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( node, cursor );
                 assertTrue( cursor.next() );
@@ -804,8 +804,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( KernelTransaction tx = beginTransaction() )
         {
             long node = tx.dataWrite().nodeCreate();
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor();
-                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( node, cursor );
                 assertTrue( cursor.next() );
@@ -838,8 +838,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         // Then
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor();
-                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( node, cursor );
                 assertTrue( cursor.next() );
@@ -869,8 +869,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         // Then
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( NodeCursor nodes = tx.cursors().allocateNodeCursor();
-                  PropertyCursor properties = tx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor nodes = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
+                  PropertyCursor properties = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
             {
                 tx.dataRead().singleNode( node, nodes );
                 assertTrue( nodes.next() );

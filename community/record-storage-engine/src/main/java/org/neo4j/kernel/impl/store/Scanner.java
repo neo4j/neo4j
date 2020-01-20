@@ -27,6 +27,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
@@ -42,17 +43,17 @@ public class Scanner
     }
 
     @SafeVarargs
-    public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store,
+    public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store, PageCursorTracer cursorTracer,
             final Predicate<? super R>... filters )
     {
-        return scan( store, true, filters );
+        return scan( store, true, cursorTracer, filters );
     }
 
     @SafeVarargs
     public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store,
-            final boolean forward, final Predicate<? super R>... filters )
+            final boolean forward, PageCursorTracer cursorTracer, final Predicate<? super R>... filters )
     {
-        return () -> new Scan<>( store, forward, filters );
+        return () -> new Scan<>( store, forward, cursorTracer, filters );
     }
 
     private static class Scan<R extends AbstractBaseRecord> extends PrefetchingResourceIterator<R>
@@ -64,12 +65,12 @@ public class Scanner
         private final Predicate<? super R>[] filters;
 
         @SafeVarargs
-        Scan( RecordStore<R> store, boolean forward, final Predicate<? super R>... filters )
+        Scan( RecordStore<R> store, boolean forward, PageCursorTracer cursorTracer, final Predicate<? super R>... filters )
         {
             this.filters = filters;
             this.ids = new StoreIdIterator( store, forward );
             this.store = store;
-            this.cursor = store.openPageCursorForReading( 0 );
+            this.cursor = store.openPageCursorForReading( 0, cursorTracer );
             this.record = store.newRecord();
         }
 

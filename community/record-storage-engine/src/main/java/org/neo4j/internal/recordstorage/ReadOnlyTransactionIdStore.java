@@ -74,7 +74,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -110,7 +110,8 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion,
+            PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -122,7 +123,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

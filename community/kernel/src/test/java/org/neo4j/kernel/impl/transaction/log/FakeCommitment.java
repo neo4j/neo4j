@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 public class FakeCommitment implements Commitment
 {
     public static final int CHECKSUM = 3;
@@ -45,7 +47,7 @@ public class FakeCommitment implements Commitment
     public void publishAsCommitted()
     {
         committed = true;
-        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP );
+        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP, NULL );
     }
 
     @Override

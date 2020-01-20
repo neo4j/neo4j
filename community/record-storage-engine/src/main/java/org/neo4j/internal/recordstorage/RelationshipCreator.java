@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -33,11 +34,13 @@ public class RelationshipCreator
 {
     private final RelationshipGroupGetter relGroupGetter;
     private final int denseNodeThreshold;
+    private final PageCursorTracer cursorTracer;
 
-    public RelationshipCreator( RelationshipGroupGetter relGroupGetter, int denseNodeThreshold )
+    public RelationshipCreator( RelationshipGroupGetter relGroupGetter, int denseNodeThreshold, PageCursorTracer cursorTracer )
     {
         this.relGroupGetter = relGroupGetter;
         this.denseNodeThreshold = denseNodeThreshold;
+        this.cursorTracer = cursorTracer;
     }
 
     /**
@@ -53,13 +56,13 @@ public class RelationshipCreator
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId, RecordAccessSet recordChangeSet, ResourceLocker locks )
     {
         // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
-        NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();
-        NodeRecord secondNode = recordChangeSet.getNodeRecords().getOrLoad( secondNodeId, null ).forChangingLinkage();
+        NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null, cursorTracer ).forChangingLinkage();
+        NodeRecord secondNode = recordChangeSet.getNodeRecords().getOrLoad( secondNodeId, null, cursorTracer ).forChangingLinkage();
         convertNodeToDenseIfNecessary( firstNode, recordChangeSet.getRelRecords(),
                 recordChangeSet.getRelGroupRecords(), locks );
         convertNodeToDenseIfNecessary( secondNode, recordChangeSet.getRelRecords(),
                 recordChangeSet.getRelGroupRecords(), locks );
-        RelationshipRecord record = recordChangeSet.getRelRecords().create( id, null ).forChangingLinkage();
+        RelationshipRecord record = recordChangeSet.getRelRecords().create( id, null, cursorTracer ).forChangingLinkage();
         record.setLinks( firstNodeId, secondNodeId, type );
         record.setInUse( true );
         record.setCreated();
@@ -83,14 +86,14 @@ public class RelationshipCreator
         long relId = node.getNextRel();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordProxy<RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
+            RecordProxy<RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null, cursorTracer );
             RelationshipRecord rel = relChange.forReadingLinkage();
             if ( relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
                 locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relId );
                 // Re-read the record after we've locked it since another transaction might have
                 // changed in the meantime.
-                relChange = relRecords.getOrLoad( relId, null );
+                relChange = relRecords.getOrLoad( relId, null, cursorTracer );
 
                 convertNodeToDenseNode( node, relChange.forChangingLinkage(), relRecords, relGroupRecords, locks );
             }
@@ -187,7 +190,7 @@ public class RelationshipCreator
             if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {   // Lock and load the next relationship in the chain
                 locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relId );
-                relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
+                relRecord = relRecords.getOrLoad( relId, null, cursorTracer ).forChangingLinkage();
             }
         }
     }
@@ -199,7 +202,7 @@ public class RelationshipCreator
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
-            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
+            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorTracer ).forChangingLinkage();
             boolean changed = false;
             if ( firstRel.getFirstNode() == nodeId )
             {

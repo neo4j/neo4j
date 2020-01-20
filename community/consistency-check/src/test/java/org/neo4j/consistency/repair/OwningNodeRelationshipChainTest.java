@@ -59,9 +59,9 @@ class OwningNodeRelationshipChainTest
 
         @SuppressWarnings( "unchecked" )
         RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
-        when( recordStore.getRecord( eq( node1 ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+        when( recordStore.getRecord( eq( node1 ), any( NodeRecord.class ), any( RecordLoad.class ), any() ) )
                 .thenAnswer( new ReadNodeAnswer( false, node1Rel, NO_NEXT_PROPERTY.intValue() ) );
-        when( recordStore.getRecord( eq( node2 ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+        when( recordStore.getRecord( eq( node2 ), any( NodeRecord.class ), any( RecordLoad.class ), any() ) )
                 .thenAnswer( new ReadNodeAnswer( false, node2Rel, NO_NEXT_PROPERTY.intValue() ) );
         when( recordStore.newRecord() ).thenReturn( new NodeRecord( -1 ) );
 

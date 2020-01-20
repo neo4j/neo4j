@@ -75,7 +75,7 @@ class PropertyPhysicalToLogicalConverterTest
                         NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
-        converter = new PropertyPhysicalToLogicalConverter( store );
+        converter = new PropertyPhysicalToLogicalConverter( store, NULL );
     }
 
     @AfterEach

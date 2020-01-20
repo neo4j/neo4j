@@ -47,6 +47,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.Exceptions.contains;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 class TransactionRepresentationCommitProcessTest
@@ -122,7 +123,7 @@ class TransactionRepresentationCommitProcessTest
 
         commitProcess.commit( new TransactionToApply( noCommandTx ), commitEvent, INTERNAL );
 
-        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP );
+        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, NULL );
     }
 
     private TransactionToApply mockedTransaction()

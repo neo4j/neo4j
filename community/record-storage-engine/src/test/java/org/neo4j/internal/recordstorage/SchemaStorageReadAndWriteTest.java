@@ -89,7 +89,7 @@ class SchemaStorageReadAndWriteTest
         TokenHolders tokens = new TokenHolders( new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        tokens.setInitialTokens( StoreTokens.allTokens( neoStores ) );
+        tokens.setInitialTokens( StoreTokens.allTokens( neoStores ), NULL );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.propertyKeyTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.labelTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.relationshipTypeTokens().size() ) );
@@ -107,7 +107,7 @@ class SchemaStorageReadAndWriteTest
     {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
         storage.writeSchemaRule( schemaRule, NULL );
-        SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId() );
+        SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId(), NULL );
         assertTrue( RandomSchema.schemaDeepEquals( returnedRule, schemaRule ),
                 () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule );
     }

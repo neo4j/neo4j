@@ -69,46 +69,47 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public Iterable<SchemaRule> getAll()
+    public Iterable<SchemaRule> getAll( PageCursorTracer cursorTracer )
     {
-        return streamAllSchemaRules( false )::iterator;
+        return streamAllSchemaRules( false, cursorTracer )::iterator;
     }
 
     @Override
-    public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
+    public SchemaRule loadSingleSchemaRule( long ruleId, PageCursorTracer cursorTracer ) throws MalformedSchemaRuleException
     {
         SchemaRecord record = schemaStore.newRecord();
-        schemaStore.getRecord( ruleId, record, RecordLoad.NORMAL );
-        return readSchemaRule( record );
+        schemaStore.getRecord( ruleId, record, RecordLoad.NORMAL, cursorTracer );
+        return readSchemaRule( record, cursorTracer );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll( PageCursorTracer cursorTracer )
     {
-        return indexRules( streamAllSchemaRules( false ) ).iterator();
+        return indexRules( streamAllSchemaRules( false, cursorTracer ) ).iterator();
     }
 
     @Override
-    public IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier )
+    public IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier, PageCursorTracer cursorTracer )
     {
         SchemaDescriptor schema = supplier.schema();
-        return indexRules( streamAllSchemaRules( false ) )
+        return indexRules( streamAllSchemaRules( false, cursorTracer ) )
                 .filter( rule -> rule.schema().equals( schema ) )
                 .toArray( IndexDescriptor[]::new );
     }
 
     @Override
-    public IndexDescriptor indexGetForName( String indexName )
+    public IndexDescriptor indexGetForName( String indexName, PageCursorTracer cursorTracer )
     {
-        return indexRules( streamAllSchemaRules( false ) )
+        return indexRules( streamAllSchemaRules( false, cursorTracer ) )
                 .filter( idx -> idx.getName().equals( indexName ) )
                 .findAny().orElse( null );
     }
 
     @Override
-    public ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
+    public ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor, PageCursorTracer cursorTracer )
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
-        ConstraintDescriptor[] rules = constraintRules( streamAllSchemaRules( false ) )
+        ConstraintDescriptor[] rules = constraintRules( streamAllSchemaRules( false, cursorTracer ) )
                 .filter( descriptor::equals )
                 .toArray( ConstraintDescriptor[]::new );
         if ( rules.length == 0 )
@@ -123,9 +124,9 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed()
+    public Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed( PageCursorTracer cursorTracer )
     {
-        return constraintRules( streamAllSchemaRules( true ) ).iterator();
+        return constraintRules( streamAllSchemaRules( true, cursorTracer ) ).iterator();
     }
 
     @Override
@@ -171,21 +172,21 @@ public class SchemaStorage implements SchemaRuleAccess
             if ( !currRecord.hasSpaceFor( block ) )
             {
                 PropertyRecord nextRecord = newInitialisedPropertyRecord( propertyStore, rule, cursorTracer );
-                linkAndWritePropertyRecord( propertyStore, currRecord, nextRecord.getId(), nextPropId );
+                linkAndWritePropertyRecord( propertyStore, currRecord, nextRecord.getId(), nextPropId, cursorTracer );
                 nextPropId = currRecord.getId();
                 currRecord = nextRecord;
             }
             currRecord.addPropertyBlock( block );
         }
 
-        linkAndWritePropertyRecord( propertyStore, currRecord, Record.NO_PREVIOUS_PROPERTY.longValue(), nextPropId );
+        linkAndWritePropertyRecord( propertyStore, currRecord, Record.NO_PREVIOUS_PROPERTY.longValue(), nextPropId, cursorTracer );
         nextPropId = currRecord.getId();
 
         SchemaRecord schemaRecord = schemaStore.newRecord();
         schemaRecord.initialize( true, nextPropId );
         schemaRecord.setId( rule.getId() );
         schemaRecord.setCreated();
-        schemaStore.updateRecord( schemaRecord );
+        schemaStore.updateRecord( schemaRecord, cursorTracer );
         schemaStore.setHighestPossibleIdInUse( rule.getId() );
     }
 
@@ -198,45 +199,45 @@ public class SchemaStorage implements SchemaRuleAccess
         return record;
     }
 
-    private void linkAndWritePropertyRecord( PropertyStore propertyStore, PropertyRecord record, long prevPropId, long nextProp )
+    private void linkAndWritePropertyRecord( PropertyStore propertyStore, PropertyRecord record, long prevPropId, long nextProp, PageCursorTracer cursorTracer )
     {
         record.setInUse( true );
         record.setPrevProp( prevPropId );
         record.setNextProp( nextProp );
-        propertyStore.updateRecord( record );
+        propertyStore.updateRecord( record, cursorTracer );
         propertyStore.setHighestPossibleIdInUse( record.getId() );
     }
 
     @Override
-    public void deleteSchemaRule( SchemaRule rule )
+    public void deleteSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer )
     {
         SchemaRecord record = schemaStore.newRecord();
-        schemaStore.getRecord( rule.getId(), record, RecordLoad.FORCE );
+        schemaStore.getRecord( rule.getId(), record, RecordLoad.FORCE, cursorTracer );
         if ( record.inUse() )
         {
             long nextProp = record.getNextProp();
             record.setInUse( false );
-            schemaStore.updateRecord( record );
+            schemaStore.updateRecord( record, cursorTracer );
             PropertyStore propertyStore = schemaStore.propertyStore();
             PropertyRecord props = propertyStore.newRecord();
-            while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() && propertyStore.getRecord( nextProp, props, RecordLoad.NORMAL ).inUse() )
+            while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() && propertyStore.getRecord( nextProp, props, RecordLoad.NORMAL, cursorTracer ).inUse() )
             {
                 nextProp = props.getNextProp();
                 props.setInUse( false );
-                propertyStore.updateRecord( props );
+                propertyStore.updateRecord( props, cursorTracer );
             }
         }
     }
 
     @VisibleForTesting
-    Stream<SchemaRule> streamAllSchemaRules( boolean ignoreMalformed )
+    Stream<SchemaRule> streamAllSchemaRules( boolean ignoreMalformed, PageCursorTracer cursorTracer )
     {
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
         return LongStream.range( startId, endId )
-                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.FORCE ) )
+                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.FORCE, cursorTracer ) )
                 .filter( AbstractBaseRecord::inUse )
-                .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed ) );
+                .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, cursorTracer ) );
     }
 
     private Stream<IndexDescriptor> indexRules( Stream<SchemaRule> stream )
@@ -253,16 +254,16 @@ public class SchemaStorage implements SchemaRuleAccess
                 .map( rule -> (ConstraintDescriptor) rule );
     }
 
-    private Stream<SchemaRule> readSchemaRuleThrowingRuntimeException( SchemaRecord record, boolean ignoreMalformed )
+    private Stream<SchemaRule> readSchemaRuleThrowingRuntimeException( SchemaRecord record, boolean ignoreMalformed, PageCursorTracer cursorTracer )
     {
         try
         {
-            return Stream.of( readSchemaRule( record ) );
+            return Stream.of( readSchemaRule( record, cursorTracer ) );
         }
         catch ( MalformedSchemaRuleException e )
         {
             // In case we've raced with a record deletion, ignore malformed records that no longer appear to be in use.
-            if ( !ignoreMalformed && schemaStore.isInUse( record.getId() ) )
+            if ( !ignoreMalformed && schemaStore.isInUse( record.getId(), cursorTracer ) )
             {
                 throw new RuntimeException( e );
             }
@@ -270,8 +271,8 @@ public class SchemaStorage implements SchemaRuleAccess
         return Stream.empty();
     }
 
-    private SchemaRule readSchemaRule( SchemaRecord record ) throws MalformedSchemaRuleException
+    private SchemaRule readSchemaRule( SchemaRecord record, PageCursorTracer cursorTracer ) throws MalformedSchemaRuleException
     {
-        return SchemaStore.readSchemaRule( record, schemaStore.propertyStore(), tokenHolders );
+        return SchemaStore.readSchemaRule( record, schemaStore.propertyStore(), tokenHolders, cursorTracer );
     }
 }

@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -93,7 +94,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             read.allRelationshipsScan( relationships );
@@ -110,7 +111,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     void shouldAccessRelationshipByReference()
     {
         // given
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             for ( long id : RELATIONSHIP_IDS )
             {
@@ -129,7 +130,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     void shouldNotAccessDeletedRelationship()
     {
         // given
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             read.singleRelationship( none, relationships );
@@ -144,7 +145,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     void shouldNotAccessNegativeReferences()
     {
         // given
-        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             read.singleRelationship( -2L, relationship );
@@ -160,7 +161,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
         // given
         Map<Integer,Integer> counts = new HashMap<>();
 
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             read.allRelationshipsScan( relationships );
@@ -186,7 +187,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     void shouldAccessNodes()
     {
         // given
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
         {
             // when
             read.singleRelationship( one, relationships );

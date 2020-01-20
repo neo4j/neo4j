@@ -723,7 +723,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-                srcTokenHolders.setInitialTokens( allTokens( srcStore ) );
+                srcTokenHolders.setInitialTokens( allTokens( srcStore ), cursorTracer );
                 srcSchema.initialise( true, cursorTracer );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
@@ -744,7 +744,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             List<SchemaRule> namedRules = new ArrayList<>();
             List<SchemaRule> unnamedRules = new ArrayList<>();
-            srcAccess.getAll().forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+            srcAccess.getAll( TRACER_SUPPLIER.get() ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
             // Make sure that we process explicitly named schemas first.
             namedRules.forEach( r -> rules.put( r.getId(), r ) );
             unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
@@ -899,7 +899,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( storageReader.allocateNodeCursor(), storageReader, requiresPropertyMigration );
+            super( storageReader.allocateNodeCursor( TRACER_SUPPLIER.get() ), storageReader, requiresPropertyMigration );
         }
 
         @Override
@@ -921,7 +921,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( storageReader.allocateRelationshipScanCursor(), storageReader, requiresPropertyMigration );
+            super( storageReader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() ), storageReader, requiresPropertyMigration );
         }
 
         @Override

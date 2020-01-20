@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -35,15 +36,15 @@ public class DefaultNodePropertyAccessor implements NodePropertyAccessor
     private final StorageNodeCursor nodeCursor;
     private final StoragePropertyCursor propertyCursor;
 
-    public DefaultNodePropertyAccessor( StorageReader reader )
+    public DefaultNodePropertyAccessor( StorageReader reader, PageCursorTracer cursorTracer )
     {
         this.reader = reader;
-        nodeCursor = reader.allocateNodeCursor();
-        propertyCursor = reader.allocatePropertyCursor();
+        nodeCursor = reader.allocateNodeCursor( cursorTracer );
+        propertyCursor = reader.allocatePropertyCursor( cursorTracer );
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
     {
         nodeCursor.single( nodeId );
         if ( nodeCursor.next() && nodeCursor.hasProperties() )

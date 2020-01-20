@@ -132,7 +132,7 @@ public class AllStoreHolder extends Read
         }
 
         AccessMode mode = ktx.securityContext().mode();
-        boolean existsInNodeStore = storageReader.nodeExists( reference );
+        boolean existsInNodeStore = storageReader.nodeExists( reference, cursorTracer );
 
         if ( mode.allowsTraverseAllLabels() )
         {
@@ -144,7 +144,7 @@ public class AllStoreHolder extends Read
         }
         else
         {
-            try ( DefaultNodeCursor node = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
+            try ( DefaultNodeCursor node = cursors.allocateNodeCursor( cursorTracer ) ) // DefaultNodeCursor already contains traversal checks within next()
             {
                 ktx.dataRead().singleNode( reference, node );
                 return node.next();
@@ -201,7 +201,7 @@ public class AllStoreHolder extends Read
             // We need to calculate the counts through expensive operations. We cannot use a NodeLabelScan because the
             // label requested might not be allowed for that node, and yet the node might be visible due to Traverse rules.
             long count = 0;
-            try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
+            try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor( cursorTracer ) ) // DefaultNodeCursor already contains traversal checks within next()
             {
                 this.allNodesScan( nodes );
                 while ( nodes.next() )
@@ -226,7 +226,7 @@ public class AllStoreHolder extends Read
             try
             {
                 TransactionState txState = ktx.txState();
-                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) )
+                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts, cursorTracer ) )
                 {
                     txState.accept( countingVisitor );
                 }
@@ -262,9 +262,9 @@ public class AllStoreHolder extends Read
         else
         {
             long count = 0;
-            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor();
-                    DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor();
-                    DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor() )
+            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor( cursorTracer );
+                    DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor( cursorTracer );
+                    DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
             {
                 this.relationshipTypeScan( typeId, rels );
                 while ( rels.next() )
@@ -291,7 +291,7 @@ public class AllStoreHolder extends Read
             try
             {
                 TransactionState txState = ktx.txState();
-                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) )
+                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts, cursorTracer ) )
                 {
                     txState.accept( countingVisitor );
                 }
@@ -325,7 +325,7 @@ public class AllStoreHolder extends Read
                 return true;
             }
         }
-        return storageReader.relationshipExists( reference );
+        return storageReader.relationshipExists( reference, cursorTracer );
     }
 
     @Override

@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -46,58 +47,58 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public NodeCursor allocateNodeCursor()
+    public NodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultNodeCursor(
-                DefaultNodeCursor::release, storageReader.allocateNodeCursor() ) );
+                DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
-    public NodeCursor allocateFullAccessNodeCursor()
+    public NodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer )
     {
-        return trace( new FullAccessNodeCursor( DefaultNodeCursor::release, storageReader.allocateNodeCursor() ) );
+        return trace( new FullAccessNodeCursor( DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
-    public RelationshipScanCursor allocateRelationshipScanCursor()
+    public RelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
-        return trace( new DefaultRelationshipScanCursor(
-                DefaultRelationshipScanCursor::release, storageReader.allocateRelationshipScanCursor() ) );
+        return trace( new DefaultRelationshipScanCursor( DefaultRelationshipScanCursor::release,
+                storageReader.allocateRelationshipScanCursor( cursorTracer ), cursorTracer ) );
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor()
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
         return trace( new FullAccessRelationshipScanCursor(
-                DefaultRelationshipScanCursor::release, storageReader.allocateRelationshipScanCursor() ) );
+                DefaultRelationshipScanCursor::release, storageReader.allocateRelationshipScanCursor( cursorTracer ), cursorTracer ) );
     }
 
     @Override
-    public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
+    public RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultRelationshipTraversalCursor(
-                DefaultRelationshipTraversalCursor::release, storageReader.allocateRelationshipTraversalCursor() ) );
+                DefaultRelationshipTraversalCursor::release, storageReader.allocateRelationshipTraversalCursor( cursorTracer ), cursorTracer ) );
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor()
+    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultPropertyCursor(
-                DefaultPropertyCursor::release, storageReader.allocatePropertyCursor() ) );
+                DefaultPropertyCursor::release, storageReader.allocatePropertyCursor( cursorTracer ), cursorTracer ) );
     }
 
     @Override
-    public PropertyCursor allocateFullAccessPropertyCursor()
+    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer )
     {
         return trace( new FullAccessPropertyCursor(
-                DefaultPropertyCursor::release, storageReader.allocatePropertyCursor() ) );
+                DefaultPropertyCursor::release, storageReader.allocatePropertyCursor( cursorTracer ), cursorTracer ) );
     }
 
     @Override
-    public RelationshipGroupCursor allocateRelationshipGroupCursor()
+    public RelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultRelationshipGroupCursor(
-                DefaultRelationshipGroupCursor::release, storageReader.allocateRelationshipGroupCursor() ) );
+                DefaultRelationshipGroupCursor::release, storageReader.allocateRelationshipGroupCursor( cursorTracer ) ) );
     }
 
     @Override

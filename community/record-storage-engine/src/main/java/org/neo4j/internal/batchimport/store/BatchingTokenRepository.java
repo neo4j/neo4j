@@ -198,8 +198,8 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
         Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
-        store.updateRecord( record );
-        nameRecords.forEach( store.getNameStore()::updateRecord );
+        store.updateRecord( record, cursorTracer );
+        nameRecords.forEach( nameRecord -> store.getNameStore().updateRecord( nameRecord, cursorTracer ) );
     }
 
     private Iterable<Map.Entry<Integer,String>> sortCreatedTokensById()

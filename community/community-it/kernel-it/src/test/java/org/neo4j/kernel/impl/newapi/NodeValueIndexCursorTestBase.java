@@ -63,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -935,8 +936,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
     private Value getPropertyValueFromStore( long nodeReference )
     {
-        try ( NodeCursor storeCursor = cursors.allocateNodeCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
+        try ( NodeCursor storeCursor = cursors.allocateNodeCursor( NULL );
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL ) )
         {
             read.singleNode( nodeReference, storeCursor );
             storeCursor.next();

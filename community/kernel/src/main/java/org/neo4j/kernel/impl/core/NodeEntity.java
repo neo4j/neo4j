@@ -633,7 +633,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
 
-        return Nodes.countAll( nodes, transaction.cursors() );
+        return Nodes.countAll( nodes, transaction.cursors(), transaction.pageCursorTracer() );
     }
 
     @Override
@@ -648,7 +648,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        return Nodes.countAll( nodes, transaction.cursors(), typeId );
+        return Nodes.countAll( nodes, transaction.cursors(), typeId, transaction.pageCursorTracer() );
     }
 
     @Override
@@ -658,14 +658,16 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
+        var cursorTracer = transaction.pageCursorTracer();
+        var cursors = transaction.cursors();
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes, transaction.cursors() );
+            return Nodes.countOutgoing( nodes, cursors, cursorTracer );
         case INCOMING:
-            return Nodes.countIncoming( nodes, transaction.cursors() );
+            return Nodes.countIncoming( nodes, cursors, cursorTracer );
         case BOTH:
-            return Nodes.countAll( nodes, transaction.cursors() );
+            return Nodes.countAll( nodes, cursors, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -683,14 +685,16 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
+        var cursorTracer = transaction.pageCursorTracer();
+        var cursors = transaction.cursors();
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes, transaction.cursors(), typeId );
+            return Nodes.countOutgoing( nodes, cursors, typeId, cursorTracer );
         case INCOMING:
-            return Nodes.countIncoming( nodes, transaction.cursors(), typeId );
+            return Nodes.countIncoming( nodes, cursors, typeId, cursorTracer );
         case BOTH:
-            return Nodes.countAll( nodes, transaction.cursors(), typeId );
+            return Nodes.countAll( nodes, cursors, typeId, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -700,7 +704,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor() )
+        try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor( transaction.pageCursorTracer() ) )
         {
             NodeCursor nodes = transaction.ambientNodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
@@ -734,14 +738,16 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
 
+        var cursorTracer = transaction.pageCursorTracer();
+        var cursors = transaction.cursors();
         switch ( direction )
         {
         case OUTGOING:
-            return outgoingIterator( transaction.cursors(), node, typeIds, this );
+            return outgoingIterator( cursors, node, typeIds, this, cursorTracer );
         case INCOMING:
-            return incomingIterator( transaction.cursors(), node, typeIds, this );
+            return incomingIterator( cursors, node, typeIds, this, cursorTracer );
         case BOTH:
-            return allIterator( transaction.cursors(), node, typeIds, this );
+            return allIterator( cursors, node, typeIds, this, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }

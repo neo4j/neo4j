@@ -91,7 +91,7 @@ class RelationshipCreatorTest
 
         Tracker tracker = new Tracker( neoStores, idGeneratorFactory );
         RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL );
-        RelationshipCreator relationshipCreator = new RelationshipCreator( groupGetter, 5 );
+        RelationshipCreator relationshipCreator = new RelationshipCreator( groupGetter, 5, NULL );
 
         // WHEN
         relationshipCreator.relationshipCreate( idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId( NULL ), 0,

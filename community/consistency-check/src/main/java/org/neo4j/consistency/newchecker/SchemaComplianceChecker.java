@@ -65,7 +65,7 @@ class SchemaComplianceChecker implements AutoCloseable
         this.mandatoryProperties = mandatoryProperties;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
-        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ) );
+        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), TRACER_SUPPLIER.get() );
     }
 
     <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties( ENTITY entity, long[] entityTokens, IntObjectMap<Value> values,

@@ -40,8 +40,10 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class SchemaRuleMigrationTest
 {
@@ -87,7 +89,7 @@ class SchemaRuleMigrationTest
         SchemaRule rule2 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 3 ) ).withName( "a" ).materialise( 2 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "a", 2 ), new NamedToken( "b", 3 ) ) );
-        when( src.getAll() ).thenReturn( List.of( rule1, rule2 ) );
+        when( src.getAll( any() ) ).thenReturn( List.of( rule1, rule2 ) );
 
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
@@ -101,7 +103,7 @@ class SchemaRuleMigrationTest
         SchemaRule rule = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 1 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
-        when( src.getAll() ).thenReturn( List.of( rule ) );
+        when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
 
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
@@ -115,7 +117,7 @@ class SchemaRuleMigrationTest
         SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "index_1" ).materialise( 1 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
-        when( src.getAll() ).thenReturn( List.of( rule ) );
+        when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
 
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
@@ -129,7 +131,7 @@ class SchemaRuleMigrationTest
         SchemaRule rule = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 1 ).withName( "constraint_1" );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
-        when( src.getAll() ).thenReturn( List.of( rule ) );
+        when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
 
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
@@ -144,7 +146,7 @@ class SchemaRuleMigrationTest
         SchemaRule rule2 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 2 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ), new NamedToken( "bla", 3 ) ) );
-        when( src.getAll() ).thenReturn( List.of( rule1, rule2 ) );
+        when( src.getAll( any() ) ).thenReturn( List.of( rule1, rule2 ) );
 
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 

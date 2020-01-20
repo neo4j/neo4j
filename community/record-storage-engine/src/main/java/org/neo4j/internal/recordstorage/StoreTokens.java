@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.List;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -44,7 +45,8 @@ public class StoreTokens
      * <p>
      * Note that this will ignore any tokens that cannot be read, for instance due to a store inconsistency, or if the store needs to be recovered.
      * If you would rather have an exception thrown, then you need to {@link TokenHolder#setInitialTokens(List) set the initial tokens} on each of the token
-     * holders, using tokens read via the {@link TokenStore#getTokens()} method, instead of the {@link TokenStore#getAllReadableTokens()} method.
+     * holders, using tokens read via the {@link TokenStore#getTokens(PageCursorTracer)} method,
+     * instead of the {@link TokenStore#getAllReadableTokens(PageCursorTracer)} method.
      *
      * @param neoStores The {@link NeoStores} to read tokens from.
      */
@@ -53,21 +55,21 @@ public class StoreTokens
         return new TokensLoader()
         {
             @Override
-            public List<NamedToken> getPropertyKeyTokens()
+            public List<NamedToken> getPropertyKeyTokens( PageCursorTracer cursorTracer )
             {
-                return neoStores.getPropertyKeyTokenStore().getAllReadableTokens();
+                return neoStores.getPropertyKeyTokenStore().getAllReadableTokens( cursorTracer );
             }
 
             @Override
-            public List<NamedToken> getLabelTokens()
+            public List<NamedToken> getLabelTokens( PageCursorTracer cursorTracer )
             {
-                return neoStores.getLabelTokenStore().getAllReadableTokens();
+                return neoStores.getLabelTokenStore().getAllReadableTokens( cursorTracer );
             }
 
             @Override
-            public List<NamedToken> getRelationshipTypeTokens()
+            public List<NamedToken> getRelationshipTypeTokens( PageCursorTracer cursorTracer )
             {
-                return neoStores.getRelationshipTypeTokenStore().getAllReadableTokens();
+                return neoStores.getRelationshipTypeTokenStore().getAllReadableTokens( cursorTracer );
             }
         };
     }
@@ -84,21 +86,21 @@ public class StoreTokens
         return new TokensLoader()
         {
             @Override
-            public List<NamedToken> getPropertyKeyTokens()
+            public List<NamedToken> getPropertyKeyTokens( PageCursorTracer cursorTracer )
             {
-                return neoStores.getPropertyKeyTokenStore().getTokens();
+                return neoStores.getPropertyKeyTokenStore().getTokens( cursorTracer );
             }
 
             @Override
-            public List<NamedToken> getLabelTokens()
+            public List<NamedToken> getLabelTokens( PageCursorTracer cursorTracer )
             {
-                return neoStores.getLabelTokenStore().getTokens();
+                return neoStores.getLabelTokenStore().getTokens( cursorTracer );
             }
 
             @Override
-            public List<NamedToken> getRelationshipTypeTokens()
+            public List<NamedToken> getRelationshipTypeTokens( PageCursorTracer cursorTracer )
             {
-                return neoStores.getRelationshipTypeTokenStore().getTokens();
+                return neoStores.getRelationshipTypeTokenStore().getTokens( cursorTracer );
             }
         };
     }
@@ -112,13 +114,13 @@ public class StoreTokens
      * @param neoStores The {@link NeoStores} from which to load the initial tokens.
      * @return TokenHolders that can be used for reading tokens, but cannot create new ones.
      */
-    public static TokenHolders readOnlyTokenHolders( NeoStores neoStores )
+    public static TokenHolders readOnlyTokenHolders( NeoStores neoStores, PageCursorTracer cursorTracer )
     {
         TokenHolder propertyKeyTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
         TokenHolder labelTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
         TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
         TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-        tokenHolders.setInitialTokens( allReadableTokens( neoStores ) );
+        tokenHolders.setInitialTokens( allReadableTokens( neoStores ), cursorTracer );
         return tokenHolders;
     }
 

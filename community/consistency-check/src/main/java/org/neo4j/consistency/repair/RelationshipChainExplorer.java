@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.consistency.repair.RelationshipChainDirection.NEXT;
 import static org.neo4j.consistency.repair.RelationshipChainDirection.PREV;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -65,7 +66,7 @@ public class RelationshipChainExplorer
 
     protected RecordSet<RelationshipRecord> followChainFromNode( long nodeId, long relationshipId )
     {
-        return expandChain( recordStore.getRecord( relationshipId, recordStore.newRecord(), NORMAL ), nodeId, NEXT );
+        return expandChain( recordStore.getRecord( relationshipId, recordStore.newRecord(), NORMAL, TRACER_SUPPLIER.get() ), nodeId, NEXT );
     }
 
     private RecordSet<RelationshipRecord> expandChain( RelationshipRecord record, long nodeId,
@@ -77,7 +78,7 @@ public class RelationshipChainExplorer
         long nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
         while ( currentRecord.inUse() && !direction.fieldFor( nodeId, currentRecord ).endOfChain( currentRecord ) )
         {
-            currentRecord = recordStore.getRecord( nextRelId, recordStore.newRecord(), FORCE );
+            currentRecord = recordStore.getRecord( nextRelId, recordStore.newRecord(), FORCE, TRACER_SUPPLIER.get() );
             chain.add( currentRecord );
             nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
         }

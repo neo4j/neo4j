@@ -159,7 +159,7 @@ public abstract class RecordStorageReaderTestBase
     void deleteRelationship( long relationshipId ) throws Exception
     {
         TxState txState = new TxState();
-        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor() )
+        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor( NULL ) )
         {
             cursor.single( relationshipId );
             assertTrue( cursor.next() );

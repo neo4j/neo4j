@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -251,8 +252,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     void shouldNotAccessNonExistentNodeProperties()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
         {
             // when
             read.singleNode(bareNodeId, node );
@@ -272,8 +273,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     @Test
     void shouldNotAccessNonExistentRelationshipProperties()
     {
-        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL );
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
         {
             // when
             read.singleRelationship(bareRelId, relationship );
@@ -353,8 +354,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     void shouldAccessAllNodeProperties()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
         {
             // when
             read.singleNode( allPropsNodeId, node );
@@ -399,8 +400,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     void shouldAccessAllRelationshipProperties()
     {
         // given
-        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL );
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
         {
             // when
             read.singleRelationship( allPropsRelId, relationship );
@@ -444,8 +445,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     private void assertAccessSingleNodeProperty( long nodeId, Object expectedValue, ValueGroup expectedValueType )
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
         {
             // when
             read.singleNode( nodeId, node );
@@ -468,8 +469,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     private void assertAccessSingleRelationshipProperty( long relationshipId, Object expectedValue, ValueGroup expectedValueType )
     {
         // given
-        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL );
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
         {
             // when
             read.singleRelationship( relationshipId, relationship );

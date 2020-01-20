@@ -37,6 +37,8 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor, FAILURE extends Exception> implements StoreScan<FAILURE>
 {
     final CURSOR entityCursor;
@@ -54,7 +56,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     {
         this.storageReader = storageReader;
         this.entityCursor = allocateCursor( storageReader );
-        this.propertyCursor = storageReader.allocatePropertyCursor();
+        this.propertyCursor = storageReader.allocatePropertyCursor( TRACER_SUPPLIER.get() );
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;

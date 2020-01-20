@@ -240,7 +240,8 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 ) );
+        assertThrows( StoreFileClosedException.class,
+                () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4, NULL ) );
     }
 
     @Test
@@ -248,18 +249,18 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3, true ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3, true, NULL ) );
     }
 
     @Test
     void setLastClosedTransactionOverridesLastClosedTransactionInformation()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.resetLastClosedTransaction( 3, 4, 5, true );
+        metaDataStore.resetLastClosedTransaction( 3, 4, 5, true, NULL );
 
         assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
         assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
-        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE );
+        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
         assertThat( record.getValue() ).isGreaterThan( 0L );
     }
 
@@ -267,11 +268,11 @@ class MetaDataStoreTest
     void setLastClosedTransactionOverridesLastClosedTransactionInformationWithoutMissingLogsUpdate()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.resetLastClosedTransaction( 3, 4, 5, false );
+        metaDataStore.resetLastClosedTransaction( 3, 4, 5, false, NULL );
 
         assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
         assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
-        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE );
+        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
         assertEquals( -1, record.getValue() );
     }
 
@@ -280,7 +281,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP, NULL ) );
     }
 
     @Test
@@ -406,7 +407,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             PagedFile pf = store.pagedFile;
-            store.transactionCommitted( 2, 2, 2 );
+            store.transactionCommitted( 2, 2, 2, NULL );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
@@ -423,7 +424,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted( count, (int) count, count );
+                store.transactionCommitted( count, (int) count, count, NULL );
             } );
 
             race.addContestants( 3, throwing( () ->
@@ -479,7 +480,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted( count, (int) count, count );
+                store.transactionCommitted( count, (int) count, count, NULL );
             } );
 
             race.addContestants( 3, throwing( () ->
@@ -540,7 +541,7 @@ class MetaDataStoreTest
             {
                 actualValues.add( record.getValue() );
                 return false;
-            } );
+            }, NULL );
         }
 
         List<Long> expectedValues = Arrays.stream( positions ).map( p ->
@@ -579,7 +580,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             MetaDataRecord record = store.newRecord();
-            try ( PageCursor cursor = store.openPageCursorForReading( 0 ) )
+            try ( PageCursor cursor = store.openPageCursorForReading( 0, NULL ) )
             {
                 long highId = store.getHighId();
                 for ( long id = 0; id < highId; id++ )
@@ -622,7 +623,7 @@ class MetaDataStoreTest
             {
                 record.initialize( true, position.ordinal() + 1 );
             }
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
     }
 
@@ -675,7 +676,7 @@ class MetaDataStoreTest
             // Apparently this is possible, and will trick MetaDataStore into thinking the field is not initialised.
             // Thus it will reload all fields from the file, even though this ends up being the actual value in the
             // file. We do this because creating a proper MetaDataStore automatically initialises all fields.
-            store.setUpgradeTime( MetaDataStore.FIELD_NOT_INITIALIZED );
+            store.setUpgradeTime( MetaDataStore.FIELD_NOT_INITIALIZED, NULL );
             fakePageCursorOverflow = true;
             assertThrows( UnderlyingStorageException.class, store::getUpgradeTime );
             fakePageCursorOverflow = false;

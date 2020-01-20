@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public interface NodeLabels
 {
-    long[] get( NodeStore nodeStore );
+    long[] get( NodeStore nodeStore, PageCursorTracer cursorTracer );
 
     long[] getIfLoaded();
 

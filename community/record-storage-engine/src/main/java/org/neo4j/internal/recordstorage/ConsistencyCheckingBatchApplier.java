@@ -23,6 +23,7 @@ import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -39,16 +40,18 @@ import static org.neo4j.util.Preconditions.checkState;
 class ConsistencyCheckingBatchApplier extends BatchTransactionApplier.Adapter
 {
     private final RelationshipStore relationshipStore;
+    private final PageCursorTracer cursorTracer;
 
-    ConsistencyCheckingBatchApplier( NeoStores neoStores )
+    ConsistencyCheckingBatchApplier( NeoStores neoStores, PageCursorTracer cursorTracer )
     {
         this.relationshipStore = neoStores.getRelationshipStore();
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
     {
-        return new ConsistencyCheckingApplier( relationshipStore );
+        return new ConsistencyCheckingApplier( relationshipStore, cursorTracer );
     }
 
     static class ConsistencyCheckingApplier extends TransactionApplier.Adapter
@@ -57,10 +60,10 @@ class ConsistencyCheckingBatchApplier extends BatchTransactionApplier.Adapter
         private final RecordRelationshipScanCursor cursor;
         private final RecordRelationshipScanCursor otherCursor;
 
-        ConsistencyCheckingApplier( RelationshipStore relationshipStore )
+        ConsistencyCheckingApplier( RelationshipStore relationshipStore, PageCursorTracer cursorTracer )
         {
-            cursor = new RecordRelationshipScanCursor( relationshipStore );
-            otherCursor = new RecordRelationshipScanCursor( relationshipStore );
+            cursor = new RecordRelationshipScanCursor( relationshipStore, cursorTracer );
+            otherCursor = new RecordRelationshipScanCursor( relationshipStore, cursorTracer );
         }
 
         @Override

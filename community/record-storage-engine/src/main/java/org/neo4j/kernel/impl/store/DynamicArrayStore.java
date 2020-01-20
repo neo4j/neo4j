@@ -181,7 +181,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         int arrayLength = Array.getLength( array );
         byte[] bytes = new byte[NUMBER_HEADER_SIZE + arrayLength + offsetBytes];
-        bytes[offsetBytes + 0] = (byte) type.intValue();
+        bytes[offsetBytes] = (byte) type.intValue();
         bytes[offsetBytes + 1] = (byte) bitsUsedInLastByte;
         bytes[offsetBytes + 2] = (byte) requiredBits;
         if ( isPrimitiveByteArray )
@@ -204,7 +204,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         int arrayLength = Array.getLength( array );
         int bytesPerElement = type.maxBits / 8;
         byte[] bytes = new byte[NUMBER_HEADER_SIZE + bytesPerElement * arrayLength + offsetBytes];
-        bytes[offsetBytes + 0] = (byte) type.intValue();
+        bytes[offsetBytes] = (byte) type.intValue();
         bytes[offsetBytes + 1] = (byte) 8;
         bytes[offsetBytes + 2] = (byte) type.maxBits;
         type.writeAll( array, bytes, NUMBER_HEADER_SIZE + offsetBytes );
@@ -371,8 +371,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public Object getArrayFor( Iterable<DynamicRecord> records )
+    public Object getArrayFor( Iterable<DynamicRecord> records, PageCursorTracer cursorTracer )
     {
-        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+        return getRightArray( readFullByteArray( records, PropertyType.ARRAY , cursorTracer ) ).asObject();
     }
 }

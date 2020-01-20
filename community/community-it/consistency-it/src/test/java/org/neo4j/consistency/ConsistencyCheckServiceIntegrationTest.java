@@ -80,6 +80,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -376,9 +377,9 @@ public class ConsistencyCheckServiceIntegrationTest
             NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
-            RelationshipRecord record = relationshipStore.getRecord( 4, relationshipRecord, RecordLoad.FORCE );
+            RelationshipRecord record = relationshipStore.getRecord( 4, relationshipRecord, RecordLoad.FORCE, NULL );
             record.setInUse( false );
-            relationshipStore.updateRecord( relationshipRecord );
+            relationshipStore.updateRecord( relationshipRecord, NULL );
         }
         finally
         {

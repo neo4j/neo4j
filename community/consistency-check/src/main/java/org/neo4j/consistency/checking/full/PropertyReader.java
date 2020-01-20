@@ -38,6 +38,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 class PropertyReader implements NodePropertyAccessor
@@ -88,7 +89,7 @@ class PropertyReader implements NodePropertyAccessor
         long nextProp = firstPropertyRecordId;
         while ( !Record.NO_NEXT_PROPERTY.is( nextProp ) )
         {
-            PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE );
+            PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE, TRACER_SUPPLIER.get() );
             nextProp = propRecord.getNextProp();
             if ( !Record.NO_NEXT_PROPERTY.is( nextProp ) && !visitedPropertyRecordIds.add( nextProp ) )
             {
@@ -104,14 +105,14 @@ class PropertyReader implements NodePropertyAccessor
 
     public Value propertyValue( PropertyBlock block )
     {
-        return block.getType().value( block, propertyStore );
+        return block.getType().value( block, propertyStore, TRACER_SUPPLIER.get() );
     }
 
     @Override
     public Value getNodePropertyValue( long nodeId, int propertyKeyId )
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
-        if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE ).inUse() )
+        if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE, TRACER_SUPPLIER.get() ).inUse() )
         {
             SpecificValueVisitor visitor = new SpecificValueVisitor( propertyKeyId );
             try

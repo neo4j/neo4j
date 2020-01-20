@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -78,7 +79,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 @ImpermanentDbmsExtension
@@ -226,7 +226,7 @@ class LabelsAcceptanceTest
         JobScheduler scheduler = JobSchedulerFactory.createScheduler();
         try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
                 Lifespan lifespan = new Lifespan( scheduler );
-                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, NULL, EMPTY, scheduler ) )
+                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, PageCacheTracer.NULL, EMPTY, scheduler ) )
         {
             // Given
             Dependencies dependencies = new Dependencies();
@@ -721,8 +721,8 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor();
-                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor() )
+            try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor( PageCursorTracer.NULL );
+                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( PageCursorTracer.NULL ) )
             {
                 ktx.dataRead().singleNode( node.getId(), nodes );
                 while ( nodes.next() )
@@ -836,7 +836,7 @@ class LabelsAcceptanceTest
 
     private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        return IdContextFactoryBuilder.of( fileSystem, jobScheduler, Config.defaults(), NULL ).withIdGenerationFactoryProvider(
+        return IdContextFactoryBuilder.of( fileSystem, jobScheduler, Config.defaults(), PageCacheTracer.NULL ).withIdGenerationFactoryProvider(
                 any -> new DefaultIdGeneratorFactory( fileSystem, immediate() )
                 {
                     @Override

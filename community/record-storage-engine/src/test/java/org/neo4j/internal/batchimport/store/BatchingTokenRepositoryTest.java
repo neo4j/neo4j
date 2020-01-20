@@ -52,6 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -144,7 +145,7 @@ class BatchingTokenRepositoryTest
                 }
             }
 
-            List<NamedToken> tokens = tokenStore.getTokens();
+            List<NamedToken> tokens = tokenStore.getTokens( NULL );
             assertEquals( tokensPerRound * rounds, tokens.size() );
             for ( NamedToken token : tokens )
             {

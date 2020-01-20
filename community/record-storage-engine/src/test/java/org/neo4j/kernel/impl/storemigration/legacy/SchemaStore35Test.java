@@ -209,7 +209,7 @@ class SchemaStore35Test
 
         // WHEN
         SchemaStorage35 storage35 = new SchemaStorage35( store );
-        Collection<SchemaRule> readRules = asCollection( storage35.getAll() );
+        Collection<SchemaRule> readRules = asCollection( storage35.getAll( NULL ) );
 
         // THEN
         assertEquals( rules, readRules );
@@ -220,7 +220,7 @@ class SchemaStore35Test
         Collection<DynamicRecord> records = store.allocateFrom( rule, NULL );
         for ( DynamicRecord record : records )
         {
-            store.updateRecord( record );
+            store.updateRecord( record, NULL );
         }
     }
 

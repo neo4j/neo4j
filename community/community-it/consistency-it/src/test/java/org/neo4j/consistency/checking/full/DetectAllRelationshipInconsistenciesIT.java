@@ -67,6 +67,7 @@ import org.neo4j.token.TokenHolders;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -201,7 +202,7 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId )
     {
-        RelationshipRecord before = store.getRecord( id, store.newRecord(), RecordLoad.NORMAL );
+        RelationshipRecord before = store.getRecord( id, store.newRecord(), RecordLoad.NORMAL, NULL );
         RelationshipRecord after = before.copy();
 
         boolean sabotageSourceChain = random.nextBoolean(); // otherwise target chain
@@ -246,9 +247,9 @@ public class DetectAllRelationshipInconsistenciesIT
         }
 
         store.prepareForCommit( after );
-        store.updateRecord( after );
+        store.updateRecord( after, NULL );
 
-        RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : store.getRecord( otherReference, store.newRecord(), RecordLoad.FORCE );
+        RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : store.getRecord( otherReference, store.newRecord(), RecordLoad.FORCE, NULL );
         return new Sabotage( before, after, other );
     }
 }

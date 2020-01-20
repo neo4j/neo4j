@@ -31,7 +31,6 @@ import java.nio.file.OpenOption;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.LongSupplier;
 
@@ -59,6 +58,7 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -94,7 +94,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.DelegatingTokenHolder;
-import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
@@ -218,7 +217,7 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         StorageProperty oldProperty = null;
-        try ( StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor() )
+        try ( StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL ) )
         {
             nodeCursor.single( nodeId );
             if ( nodeCursor.next() )
@@ -242,30 +241,9 @@ public class NeoStoresTest
         return property;
     }
 
-    private StorageProperty relAddProperty( long relationshipId, int key, Object value )
-    {
-        StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
-        Value oldValue = Values.NO_VALUE;
-        try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor() )
-        {
-            cursor.single( relationshipId );
-            if ( cursor.next() )
-            {
-                StorageProperty fetched = getProperty( key, cursor.propertiesReference() );
-                if ( fetched != null )
-                {
-                    oldValue = fetched.value();
-                }
-            }
-        }
-
-        transactionState.relationshipDoReplaceProperty( relationshipId, key, oldValue, Values.of( value ) );
-        return property;
-    }
-
     private StorageProperty getProperty( int key, long propertyId )
     {
-        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor() )
+        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL ) )
         {
             propertyCursor.initNodeProperties( propertyId );
             if ( propertyCursor.next() )
@@ -316,7 +294,7 @@ public class NeoStoresTest
                 transactionState.relationshipDoDelete( relId, type, startNode, endNode );
         if ( !transactionState.relationshipVisit( id, visitor ) )
         {
-            try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor() )
+            try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor( NULL ) )
             {
                 cursor.single( id );
                 if ( !cursor.next() )
@@ -429,13 +407,13 @@ public class NeoStoresTest
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            metaDataStore.setCreationTime( 3 );
-            metaDataStore.setRandomNumber( 4 );
-            metaDataStore.setCurrentLogVersion( 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 43, 44 );
-            metaDataStore.setStoreVersion( recordVersion );
+            metaDataStore.setCreationTime( 3, NULL );
+            metaDataStore.setRandomNumber( 4, NULL );
+            metaDataStore.setCurrentLogVersion( 5, NULL );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 43, 44, NULL );
+            metaDataStore.setStoreVersion( recordVersion, NULL );
 
-            metaDataStore.setLatestConstraintIntroducingTx( 9 );
+            metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
         }
 
         File file = databaseLayout.metadataStore();
@@ -457,7 +435,7 @@ public class NeoStoresTest
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastClosedTransactionId() );
             assertEquals( recordVersion, metaDataStore.getStoreVersion() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
-            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{FIELD_NOT_PRESENT, 44, 43} );
+            assertArrayEquals( new long[]{FIELD_NOT_PRESENT, 44, 43}, metaDataStore.getLastClosedTransaction() );
         }
     }
 
@@ -477,7 +455,7 @@ public class NeoStoresTest
         assertEquals( 0L, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
-        metaDataStore.setLatestConstraintIntroducingTx( 10L );
+        metaDataStore.setLatestConstraintIntroducingTx( 10L, NULL );
 
         // then
         assertEquals( 10L, metaDataStore.getLatestConstraintIntroducingTx() );
@@ -538,13 +516,13 @@ public class NeoStoresTest
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            metaDataStore.setCreationTime( 3 );
-            metaDataStore.setRandomNumber( 4 );
-            metaDataStore.setCurrentLogVersion( 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 42, BASE_TX_COMMIT_TIMESTAMP, 43, 44 );
-            metaDataStore.setStoreVersion( recordVersion );
+            metaDataStore.setCreationTime( 3, NULL );
+            metaDataStore.setRandomNumber( 4, NULL );
+            metaDataStore.setCurrentLogVersion( 5, NULL );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 42, BASE_TX_COMMIT_TIMESTAMP, 43, 44, NULL );
+            metaDataStore.setStoreVersion( recordVersion, NULL );
 
-            metaDataStore.setLatestConstraintIntroducingTx( 9 );
+            metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
         }
 
         File file = databaseLayout.metadataStore();
@@ -568,7 +546,7 @@ public class NeoStoresTest
             assertEquals( new TransactionId( 10, 11, BASE_TX_COMMIT_TIMESTAMP ),
                     metaDataStore.getUpgradeTransaction() );
             assertEquals( 12, metaDataStore.getUpgradeTime() );
-            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{6, 44, 43} );
+            assertArrayEquals( new long[]{6, 44, 43}, metaDataStore.getLastClosedTransaction() );
         }
 
         MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13 );
@@ -591,15 +569,33 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
-                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0 );
+                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0, NULL );
 
             // WHEN
-            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP );
+            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, NULL );
 
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE} );
+            assertArrayEquals( new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE}, store.getLastClosedTransaction() );
+        }
+    }
+
+    @Test
+    public void tracePageCacheAccessOnTransactionCommittedCall()
+    {
+        StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fs, LOG_PROVIDER );
+
+        try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
+        {
+            MetaDataStore store = neoStore.getMetaDataStore();
+            var cacheTracer = new DefaultPageCacheTracer();
+            var cursorTracer = cacheTracer.createPageCursorTracer( "cursor" );
+            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, cursorTracer );
+
+            assertEquals( 1, cursorTracer.pins() );
+            assertEquals( 1, cursorTracer.hits() );
+            assertEquals( 1, cursorTracer.unpins() );
         }
     }
 
@@ -613,15 +609,15 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
-                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0 );
+                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0, NULL );
 
             // WHEN
-            store.transactionCommitted( 39, 3333, BASE_TX_COMMIT_TIMESTAMP );
+            store.transactionCommitted( 39, 3333, BASE_TX_COMMIT_TIMESTAMP, NULL );
 
             // THEN
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE} );
+            assertArrayEquals( new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE}, store.getLastClosedTransaction() );
         }
     }
 
@@ -749,51 +745,6 @@ public class NeoStoresTest
         throw new IllegalArgumentException( clazz.getName() );
     }
 
-    private void validateNodeRel1( long node, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3, long rel1, long rel2,
-            int relType1, int relType2 ) throws IOException, TokenNotFoundException
-    {
-        assertTrue( nodeExists( node ) );
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        PropertyReceiver<PropertyKeyValue> receiver = newPropertyReceiver( props );
-        nodeLoadProperties( node, receiver );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "string1", data.value().asObject() );
-                nodeAddProperty( node, prop1.propertyKeyId(), "-string1" );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( 1, data.value().asObject() );
-                nodeAddProperty( node, prop2.propertyKeyId(), -1 );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( true, data.value().asObject() );
-                nodeAddProperty( node, prop3.propertyKeyId(), false );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-
-        count = validateAndCountRelationships( node, rel1, rel2, relType1, relType2 );
-        assertEquals( 2, count );
-    }
-
     private int validateAndCountRelationships( long node, long rel1, long rel2, int relType1, int relType2 )
             throws IOException
     {
@@ -829,14 +780,14 @@ public class NeoStoresTest
 
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
     {
-        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor();
+        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor( NULL );
         relationships.init( node.entityReference(), node.allRelationshipsReference(), node.isDense() );
         return relationships;
     }
 
     private StorageNodeCursor allocateNodeCursor( long nodeId )
     {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
         nodeCursor.single( nodeId );
         return nodeCursor;
     }
@@ -844,76 +795,6 @@ public class NeoStoresTest
     private PropertyReceiver<PropertyKeyValue> newPropertyReceiver( Map<Integer, Pair<StorageProperty, Long>> props )
     {
         return ( property, propertyRecordId ) -> props.put( property.propertyKeyId(), Pair.of( property, propertyRecordId ) );
-    }
-
-    private void validateNodeRel2( long node, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3,
-            long rel1, long rel2, int relType1, int relType2 ) throws IOException, RuntimeException, TokenNotFoundException
-    {
-        assertTrue( nodeExists( node ) );
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        nodeLoadProperties( node, newPropertyReceiver( props ) );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "string2", data.value().asObject() );
-                nodeAddProperty( node, prop1.propertyKeyId(), "-string2" );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( 2, data.value().asObject() );
-                nodeAddProperty( node, prop2.propertyKeyId(), -2 );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( false, data.value().asObject() );
-                nodeAddProperty( node, prop3.propertyKeyId(), true );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-        count = 0;
-
-        try ( StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
-        {
-            assertTrue( nodeCursor.next() );
-            try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
-            {
-                while ( relationships.next() )
-                {
-                    long rel = relationships.entityReference();
-                    if ( rel == rel1 )
-                    {
-                        assertEquals( node, relationships.targetNodeReference() );
-                        assertEquals( relType1, relationships.type() );
-                    }
-                    else if ( rel == rel2 )
-                    {
-                        assertEquals( node, relationships.sourceNodeReference() );
-                        assertEquals( relType2, relationships.type() );
-                    }
-                    else
-                    {
-                        throw new IOException();
-                    }
-                    count++;
-                }
-            }
-        }
-        assertEquals( 2, count );
     }
 
     private boolean nodeExists( long nodeId )
@@ -924,51 +805,10 @@ public class NeoStoresTest
         }
     }
 
-    private void validateRel1( long rel, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3, long firstNode, long secondNode,
-            int relType ) throws IOException, TokenNotFoundException
-    {
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        relLoadProperties( rel, newPropertyReceiver( props ) );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "string1", data.value().asObject() );
-                relAddProperty( rel, prop1.propertyKeyId(), "-string1" );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( 1, data.value().asObject() );
-                relAddProperty( rel, prop2.propertyKeyId(), -1 );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( true, data.value().asObject() );
-                relAddProperty( rel, prop3.propertyKeyId(), false );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-        assertRelationshipData( rel, firstNode, secondNode, relType );
-    }
-
     private void assertRelationshipData( long rel, long firstNode, long secondNode,
             int relType )
     {
-        try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor() )
+        try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor( NULL ) )
         {
             cursor.single( rel );
             assertTrue( cursor.next() );
@@ -976,124 +816,6 @@ public class NeoStoresTest
             assertEquals( secondNode, cursor.targetNodeReference() );
             assertEquals( relType, cursor.type() );
         }
-    }
-
-    private void validateRel2( long rel, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3,
-            long firstNode, long secondNode, int relType ) throws IOException, TokenNotFoundException
-    {
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        relLoadProperties( rel, newPropertyReceiver( props ) );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "string2", data.value().asObject() );
-                relAddProperty( rel, prop1.propertyKeyId(), "-string2" );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( 2, data.value().asObject() );
-                relAddProperty( rel, prop2.propertyKeyId(), -2 );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( false, data.value().asObject() );
-                relAddProperty( rel, prop3.propertyKeyId(), true );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-        assertRelationshipData( rel, firstNode, secondNode, relType );
-    }
-
-    private void validateRelTypes( int relType1, int relType2 )
-            throws IOException
-    {
-        NamedToken data = rtStore.getToken( relType1 );
-        assertEquals( relType1, data.id() );
-        assertEquals( "relationshiptype1", data.name() );
-        data = rtStore.getToken( relType2 );
-        assertEquals( relType2, data.id() );
-        assertEquals( "relationshiptype2", data.name() );
-        List<NamedToken> allData = rtStore.getTokens();
-        assertEquals( 2, allData.size() );
-        for ( int i = 0; i < 2; i++ )
-        {
-            if ( allData.get( i ).id() == relType1 )
-            {
-                assertEquals( relType1, allData.get( i ).id() );
-                assertEquals( "relationshiptype1", allData.get( i ).name() );
-            }
-            else if ( allData.get( i ).id() == relType2 )
-            {
-                assertEquals( relType2, allData.get( i ).id() );
-                assertEquals( "relationshiptype2", allData.get( i ).name() );
-            }
-            else
-            {
-                throw new IOException();
-            }
-        }
-    }
-
-    private void deleteRel1( long rel, StorageProperty prop1, StorageProperty prop2,
-            StorageProperty prop3, long firstNode, long secondNode, int relType )
-            throws Exception
-    {
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        relLoadProperties( rel, newPropertyReceiver( props ) );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "-string1", data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( -1, data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( false, data.value().asObject() );
-                transactionState.relationshipDoRemoveProperty( rel, prop3.propertyKeyId() );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-        CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
-        relLoadProperties( rel, propertyCounter );
-        assertEquals( 3, propertyCounter.count );
-        assertRelationshipData( rel, firstNode, secondNode, relType );
-        relDelete( rel );
-
-        assertHasRelationships( firstNode );
-
-        assertHasRelationships( secondNode );
     }
 
     private static class CountingPropertyReceiver implements PropertyReceiver<PropertyKeyValue>
@@ -1105,53 +827,6 @@ public class NeoStoresTest
         {
             count++;
         }
-    }
-
-    private void deleteRel2( long rel, StorageProperty prop1, StorageProperty prop2,
-            StorageProperty prop3, long firstNode, long secondNode, int relType )
-            throws Exception
-    {
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        relLoadProperties( rel, newPropertyReceiver( props ) );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "-string2", data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( -2, data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( true, data.value().asObject() );
-                transactionState.relationshipDoRemoveProperty( rel, prop3.propertyKeyId() );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-        CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
-        relLoadProperties( rel, propertyCounter );
-        assertEquals( 3, propertyCounter.count );
-        assertRelationshipData( rel, firstNode, secondNode, relType );
-        relDelete( rel );
-
-        assertHasRelationships( firstNode );
-
-        assertHasRelationships( secondNode );
     }
 
     private void assertHasRelationships( long node )
@@ -1166,48 +841,6 @@ public class NeoStoresTest
         }
     }
 
-    private void deleteNode1( long node, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3 ) throws IOException, TokenNotFoundException
-    {
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        nodeLoadProperties( node, newPropertyReceiver( props ) );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "-string1", data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( -1, data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( false, data.value().asObject() );
-                transactionState.nodeDoRemoveProperty( node, prop3.propertyKeyId() );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-        CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
-        nodeLoadProperties( node, propertyCounter );
-        assertEquals( 3, propertyCounter.count );
-        assertHasRelationships( node );
-        transactionState.nodeDoDelete( node );
-    }
-
     private void deleteNode2( long node, StorageProperty prop1,
             StorageProperty prop2, StorageProperty prop3 ) throws IOException, TokenNotFoundException
     {
@@ -1217,9 +850,9 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
+            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL, NULL );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore );
+            StorageProperty data = block.newPropertyKeyValue( pStore, NULL );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
                 assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
@@ -1256,7 +889,7 @@ public class NeoStoresTest
     {
         for ( long relId : relIds )
         {
-            try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor() )
+            try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor( NULL ) )
             {
                 relationship.single( relId );
                 assertFalse( relationship.next() );
@@ -1290,13 +923,13 @@ public class NeoStoresTest
 
     private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void nodeLoadProperties( long nodeId, RECEIVER receiver )
     {
-        NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
+        NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
         loadProperties( nodeRecord.getNextProp(), receiver );
     }
 
     private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void relLoadProperties( long relId, RECEIVER receiver )
     {
-        RelationshipRecord relRecord = relStore.getRecord( relId, relStore.newRecord(), NORMAL );
+        RelationshipRecord relRecord = relStore.getRecord( relId, relStore.newRecord(), NORMAL, NULL );
         loadProperties( relRecord.getNextProp(), receiver );
     }
 
@@ -1305,10 +938,10 @@ public class NeoStoresTest
         PropertyRecord record = pStore.newRecord();
         while ( !Record.NULL_REFERENCE.is( nextProp ) )
         {
-            pStore.getRecord( nextProp, record, NORMAL );
+            pStore.getRecord( nextProp, record, NORMAL, NULL );
             for ( PropertyBlock propBlock : record )
             {
-                receiver.receive( propBlock.newPropertyKeyValue( pStore ), record.getId() );
+                receiver.receive( propBlock.newPropertyKeyValue( pStore, NULL ), record.getId() );
             }
             nextProp = record.getNextProp();
         }

@@ -24,6 +24,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+
 public class OwningNodeRelationshipChain
 {
     private final RelationshipChainExplorer relationshipChainExplorer;
@@ -45,7 +47,7 @@ public class OwningNodeRelationshipChain
         for ( RelationshipNodeField field : RelationshipNodeField.values() )
         {
             long nodeId = field.get( relationship );
-            nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.FORCE );
+            nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.FORCE, TRACER_SUPPLIER.get() );
             records.addAll( relationshipChainExplorer.followChainFromNode( nodeId, nodeRecord.getNextRel() ) );
         }
         return records;

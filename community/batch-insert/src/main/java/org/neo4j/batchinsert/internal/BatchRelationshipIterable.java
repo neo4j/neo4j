@@ -25,7 +25,10 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
@@ -33,8 +36,9 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
 
     BatchRelationshipIterable( RecordStorageReader storageReader, long nodeId )
     {
-        relationshipCursor = storageReader.allocateRelationshipTraversalCursor();
-        RecordNodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        var cursorTracer = TRACER_SUPPLIER.get();
+        relationshipCursor = storageReader.allocateRelationshipTraversalCursor( cursorTracer );
+        RecordNodeCursor nodeCursor = storageReader.allocateNodeCursor( cursorTracer );
         nodeCursor.single( nodeId );
         if ( !nodeCursor.next() )
         {

@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.RecordAccess.Loader;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -136,15 +137,15 @@ public class Loaders
             }
 
             @Override
-            public NodeRecord load( long key, Void additionalData )
+            public NodeRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL );
+                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
             }
 
             @Override
-            public void ensureHeavy( NodeRecord record )
+            public void ensureHeavy( NodeRecord record, PageCursorTracer cursorTracer )
             {
-                store.ensureHeavy( record );
+                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override
@@ -176,19 +177,19 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord load( long key, PrimitiveRecord additionalData )
+            public PropertyRecord load( long key, PrimitiveRecord additionalData, PageCursorTracer cursorTracer )
             {
-                PropertyRecord record = store.getRecord( key, store.newRecord(), NORMAL );
+                PropertyRecord record = store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
                 setOwner( record, additionalData );
                 return record;
             }
 
             @Override
-            public void ensureHeavy( PropertyRecord record )
+            public void ensureHeavy( PropertyRecord record, PageCursorTracer cursorTracer )
             {
                 for ( PropertyBlock block : record )
                 {
-                    store.ensureHeavy( block );
+                    store.ensureHeavy( block, cursorTracer );
                 }
             }
 
@@ -212,13 +213,13 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord load( long key, Void additionalData )
+            public RelationshipRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL );
+                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
             }
 
             @Override
-            public void ensureHeavy( RelationshipRecord record )
+            public void ensureHeavy( RelationshipRecord record, PageCursorTracer cursorTracer )
             {   // Nothing to load
             }
 
@@ -244,13 +245,13 @@ public class Loaders
             }
 
             @Override
-            public RelationshipGroupRecord load( long key, Integer type )
+            public RelationshipGroupRecord load( long key, Integer type, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL );
+                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
             }
 
             @Override
-            public void ensureHeavy( RelationshipGroupRecord record )
+            public void ensureHeavy( RelationshipGroupRecord record, PageCursorTracer cursorTracer )
             {   // Not needed
             }
 
@@ -273,13 +274,13 @@ public class Loaders
             }
 
             @Override
-            public SchemaRecord load( long key, SchemaRule additionalData )
+            public SchemaRecord load( long key, SchemaRule additionalData, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), RecordLoad.NORMAL );
+                return store.getRecord( key, store.newRecord(), RecordLoad.NORMAL, cursorTracer );
             }
 
             @Override
-            public void ensureHeavy( SchemaRecord record )
+            public void ensureHeavy( SchemaRecord record, PageCursorTracer cursorTracer )
             {
             }
 
@@ -303,15 +304,15 @@ public class Loaders
             }
 
             @Override
-            public PropertyKeyTokenRecord load( long key, Void additionalData )
+            public PropertyKeyTokenRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL );
+                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
             }
 
             @Override
-            public void ensureHeavy( PropertyKeyTokenRecord record )
+            public void ensureHeavy( PropertyKeyTokenRecord record, PageCursorTracer cursorTracer )
             {
-                store.ensureHeavy( record );
+                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override
@@ -334,15 +335,15 @@ public class Loaders
             }
 
             @Override
-            public LabelTokenRecord load( long key, Void additionalData )
+            public LabelTokenRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL );
+                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
             }
 
             @Override
-            public void ensureHeavy( LabelTokenRecord record )
+            public void ensureHeavy( LabelTokenRecord record, PageCursorTracer cursorTracer )
             {
-                store.ensureHeavy( record );
+                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override
@@ -365,15 +366,15 @@ public class Loaders
             }
 
             @Override
-            public RelationshipTypeTokenRecord load( long key, Void additionalData )
+            public RelationshipTypeTokenRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL );
+                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
             }
 
             @Override
-            public void ensureHeavy( RelationshipTypeTokenRecord record )
+            public void ensureHeavy( RelationshipTypeTokenRecord record, PageCursorTracer cursorTracer )
             {
-                store.ensureHeavy( record );
+                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override

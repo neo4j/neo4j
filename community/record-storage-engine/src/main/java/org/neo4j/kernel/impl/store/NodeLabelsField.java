@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 /**
@@ -51,10 +52,10 @@ public class NodeLabelsField
                 : new InlineNodeLabels( node );
     }
 
-    public static long[] get( NodeRecord node, NodeStore nodeStore )
+    public static long[] get( NodeRecord node, NodeStore nodeStore, PageCursorTracer cursorTracer )
     {
         return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
-                ? DynamicNodeLabels.get( node, nodeStore )
+                ? DynamicNodeLabels.get( node, nodeStore, cursorTracer )
                 : InlineNodeLabels.get( node );
     }
 

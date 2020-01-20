@@ -82,8 +82,7 @@ public class PropertyCreator
         long prop = primitive.getNextProp();
         while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (4)
         {
-            RecordProxy<PropertyRecord, PrimitiveRecord> proxy =
-                    propertyRecords.getOrLoad( prop, primitive );
+            RecordProxy<PropertyRecord, PrimitiveRecord> proxy = propertyRecords.getOrLoad( prop, primitive, cursorTracer );
             PropertyRecord propRecord = proxy.forReadingLinkage();
             assert propRecord.inUse() : propRecord;
 
@@ -143,14 +142,13 @@ public class PropertyCreator
         if ( freeHostProxy == null )
         {
             // We couldn't find free space along the way, so create a new host record
-            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), primitive ).forChangingData();
+            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), primitive, cursorTracer ).forChangingData();
             freeHost.setInUse( true );
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 // This isn't the first property record for the entity, re-shuffle the first one so that
                 // the new one becomes the first
-                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(),
-                        primitive ).forChangingLinkage();
+                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(), primitive, cursorTracer ).forChangingLinkage();
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( freeHost.getId() );
                 freeHost.setNextProp( prevProp.getId() );
@@ -207,8 +205,7 @@ public class PropertyCreator
         {
             return Record.NO_NEXT_PROPERTY.intValue();
         }
-        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), owner )
-                .forChangingData();
+        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), owner, cursorTracer ).forChangingData();
         createdPropertyRecords.accept( currentRecord );
         currentRecord.setInUse( true );
         currentRecord.setCreated();
@@ -222,7 +219,7 @@ public class PropertyCreator
                 PropertyRecord prevRecord = currentRecord;
                 // Create new record
                 long propertyId = propertyRecordIdGenerator.nextId( cursorTracer );
-                currentRecord = propertyRecords.create( propertyId, owner ).forChangingData();
+                currentRecord = propertyRecords.create( propertyId, owner, cursorTracer ).forChangingData();
                 createdPropertyRecords.accept( currentRecord );
                 currentRecord.setInUse( true );
                 currentRecord.setCreated();

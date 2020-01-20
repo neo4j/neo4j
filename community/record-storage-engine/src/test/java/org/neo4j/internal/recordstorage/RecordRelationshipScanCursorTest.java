@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 @PageCacheExtension
@@ -174,7 +175,7 @@ class RecordRelationshipScanCursorTest
 
     private static void createRelationshipRecord( long id, int type, RelationshipStore relationshipStore, boolean used )
     {
-       relationshipStore.updateRecord( new RelationshipRecord( id ).initialize( used, -1, 1, 2, type, -1, -1, -1, -1, true, true ) );
+       relationshipStore.updateRecord( new RelationshipRecord( id ).initialize( used, -1, 1, 2, type, -1, -1, -1, -1, true, true ), NULL );
     }
 
     private StoreFactory getStoreFactory()
@@ -185,6 +186,6 @@ class RecordRelationshipScanCursorTest
 
     private RecordRelationshipScanCursor createRelationshipCursor()
     {
-        return new RecordRelationshipScanCursor( neoStores.getRelationshipStore() );
+        return new RecordRelationshipScanCursor( neoStores.getRelationshipStore(), NULL );
     }
 }

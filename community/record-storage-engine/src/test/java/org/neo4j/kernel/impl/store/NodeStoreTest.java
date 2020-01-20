@@ -163,11 +163,11 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
         record.setInUse( true );
         record.setLabelField( labels, Collections.emptyList() );
-        nodeStore.updateRecord( record );
+        nodeStore.updateRecord( record, NULL );
 
         // WHEN
         // -- reading that record back
-        NodeRecord readRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
+        NodeRecord readRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
 
         // THEN
         // -- the label field must be the same
@@ -208,16 +208,16 @@ class NodeStoreTest
         NodeStore store = newNodeStore( fs );
 
         long exists = store.nextId( NULL );
-        store.updateRecord( new NodeRecord( exists, false, 10, 20, true ) );
+        store.updateRecord( new NodeRecord( exists, false, 10, 20, true ), NULL );
 
         long deleted = store.nextId( NULL );
-        store.updateRecord( new NodeRecord( deleted, false, 10, 20, true ) );
-        store.updateRecord( new NodeRecord( deleted, false, 10, 20, false ) );
+        store.updateRecord( new NodeRecord( deleted, false, 10, 20, true ), NULL );
+        store.updateRecord( new NodeRecord( deleted, false, 10, 20, false ), NULL );
 
         // When & then
-        assertTrue( store.isInUse( exists ) );
-        assertFalse( store.isInUse( deleted ) );
-        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId() ) );
+        assertTrue( store.isInUse( exists, NULL ) );
+        assertFalse( store.isInUse( deleted, NULL ) );
+        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), NULL ) );
     }
 
     @Test
@@ -236,12 +236,12 @@ class NodeStoreTest
             {
                 long nodeId = nodeStore.nextId( NULL );
                 NodeRecord record = new NodeRecord( nodeId, false, nextRelCandidate, 20, true );
-                nodeStore.updateRecord( record );
+                nodeStore.updateRecord( record, NULL );
                 if ( rng.nextInt( 0, 10 ) < 3 )
                 {
                     nextRelSet.remove( nextRelCandidate );
                     record.setInUse( false );
-                    nodeStore.updateRecord( record );
+                    nodeStore.updateRecord( record, NULL );
                 }
             }
         }
@@ -255,7 +255,7 @@ class NodeStoreTest
             assertTrue( nextRelSet.remove( record.getNextRel() ) );
             return false;
         };
-        nodeStore.scanAllRecords( scanner );
+        nodeStore.scanAllRecords( scanner, NULL );
 
         // ...NOR do we have anything left in the set afterwards.
         assertTrue( nextRelSet.isEmpty() );
@@ -302,13 +302,13 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( 5L );
         record.setSecondaryUnitIdOnLoad( 10L );
         record.setInUse( true );
-        nodeStore.updateRecord( record );
+        nodeStore.updateRecord( record, NULL );
         nodeStore.setHighestPossibleIdInUse( 10L );
 
         // WHEN
         record.setInUse( false );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener );
+        nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // THEN
         verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( PageCursorTracer.class ) );
@@ -323,13 +323,13 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( 5L );
         record.setSecondaryUnitIdOnLoad( 10L );
         record.setInUse( true );
-        nodeStore.updateRecord( record );
+        nodeStore.updateRecord( record, NULL );
         nodeStore.setHighestPossibleIdInUse( 10L );
 
         // WHEN
         record.setRequiresSecondaryUnit( false );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener );
+        nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // THEN
         verify( idUpdateListener, never() ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( PageCursorTracer.class ) );
@@ -350,7 +350,7 @@ class NodeStoreTest
 
         // when
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener );
+        nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // then
         verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( PageCursorTracer.class ) );
@@ -367,13 +367,13 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( primaryUnitId );
         record.setInUse( true );
         record.setCreated();
-        nodeStore.updateRecord( record );
+        nodeStore.updateRecord( record, NULL );
 
         // when
-        nodeStore.getRecord( primaryUnitId, record, NORMAL );
+        nodeStore.getRecord( primaryUnitId, record, NORMAL, NULL );
         record.setSecondaryUnitIdOnCreate( secondaryUnitId );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener );
+        nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // then
         verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( PageCursorTracer.class ) );

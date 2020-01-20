@@ -21,15 +21,24 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -39,12 +48,13 @@ import org.neo4j.test.extension.Inject;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DbmsExtension( configurationCallback = "configure" )
 class NeoStoresIT
 {
     @Inject
-    private GraphDatabaseService db;
+    private GraphDatabaseAPI db;
 
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
 
@@ -69,6 +79,122 @@ class NeoStoresIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
+    }
+
+    @Test
+    void tracePageCacheAccessOnGetRawRecordData() throws IOException
+    {
+        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        var neoStores = storageEngine.testAccessNeoStores();
+        var propertyStore = neoStores.getPropertyStore();
+
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.setProperty( "a", "b" );
+            transaction.commit();
+        }
+
+        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRawRecordData" );
+        propertyStore.getRawRecordData( 1L, cursorTracer );
+
+        assertEquals( 1, cursorTracer.hits() );
+        assertEquals( 1, cursorTracer.pins() );
+        assertEquals( 1, cursorTracer.unpins() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnInUseCheck()
+    {
+        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        var neoStores = storageEngine.testAccessNeoStores();
+        var propertyStore = neoStores.getPropertyStore();
+
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.setProperty( "a", "b" );
+            transaction.commit();
+        }
+
+        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnInUseCheck" );
+        propertyStore.isInUse( 1L, cursorTracer );
+
+        assertEquals( 1, cursorTracer.hits() );
+        assertEquals( 1, cursorTracer.pins() );
+        assertEquals( 1, cursorTracer.unpins() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnGetRecord()
+    {
+        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        var neoStores = storageEngine.testAccessNeoStores();
+        var nodeStore = neoStores.getNodeStore();
+
+        long nodeId;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.setProperty( "a", "b" );
+            nodeId = node.getId();
+            transaction.commit();
+        }
+
+        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRecord" );
+        nodeStore.getRecord( nodeId, new NodeRecord( nodeId ), RecordLoad.NORMAL, cursorTracer );
+
+        assertEquals( 1, cursorTracer.hits() );
+        assertEquals( 1, cursorTracer.pins() );
+        assertEquals( 1, cursorTracer.unpins() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnUpdateRecord()
+    {
+        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        var neoStores = storageEngine.testAccessNeoStores();
+        var nodeStore = neoStores.getNodeStore();
+
+        long nodeId;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.setProperty( "a", "b" );
+            nodeId = node.getId();
+            transaction.commit();
+        }
+
+        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnUpdateRecord" );
+        nodeStore.updateRecord( new NodeRecord( nodeId ), cursorTracer );
+
+        assertEquals( 5, cursorTracer.hits() );
+        assertEquals( 6, cursorTracer.pins() );
+        assertEquals( 6, cursorTracer.unpins() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnTokenReads()
+    {
+        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        var neoStores = storageEngine.testAccessNeoStores();
+        var propertyKeys = neoStores.getPropertyKeyTokenStore();
+
+        long nodeId;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.setProperty( "a", "b" );
+            nodeId = node.getId();
+            transaction.commit();
+        }
+
+        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnTokenReads" );
+        propertyKeys.getAllReadableTokens( cursorTracer );
+
+        assertEquals( 2, cursorTracer.hits() );
+        assertEquals( 2, cursorTracer.pins() );
+        assertEquals( 2, cursorTracer.unpins() );
     }
 
     @Test

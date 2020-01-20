@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
@@ -175,11 +176,11 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
     private List<Pair<String, Object>> getPropertiesFromRecord( long recordId )
     {
         final List<Pair<String, Object>> props = new ArrayList<>();
-        final PropertyRecord record = propertyStore().getRecord( recordId, propertyStore().newRecord(), RecordLoad.FORCE );
+        final PropertyRecord record = propertyStore().getRecord( recordId, propertyStore().newRecord(), RecordLoad.FORCE, NULL );
         record.forEach( block ->
         {
-            final Object value = propertyStore().getValue( block ).asObject();
-            final String name = propertyStore().getPropertyKeyTokenStore().getToken( block.getKeyIndexId() ).name();
+            final Object value = propertyStore().getValue( block, NULL ).asObject();
+            final String name = propertyStore().getPropertyKeyTokenStore().getToken( block.getKeyIndexId(), NULL ).name();
             props.add( pair( name, value ) );
         } );
         return props;

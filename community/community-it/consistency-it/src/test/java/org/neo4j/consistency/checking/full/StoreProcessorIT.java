@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @SuppressWarnings( "unchecked" )
 @DbmsExtension
@@ -55,13 +56,13 @@ class StoreProcessorIT
         ConsistencyReport.Reporter reporter = mock( ConsistencyReport.Reporter.class );
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 reporter, Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
-        nodeStore.updateRecord( node( 0, false, 0, 0 ) );
-        nodeStore.updateRecord( node( 1, false, 0, 0 ) );
-        nodeStore.updateRecord( node( 2, false, 0, 0 ) );
+        nodeStore.updateRecord( node( 0, false, 0, 0 ), NULL );
+        nodeStore.updateRecord( node( 1, false, 0, 0 ), NULL );
+        nodeStore.updateRecord( node( 2, false, 0, 0 ), NULL );
         nodeStore.setHighestPossibleIdInUse( 2 );
 
         // when
-        processor.applyFiltered( nodeStore );
+        processor.applyFiltered( nodeStore, NULL );
 
         // then
         verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ) );
@@ -86,15 +87,15 @@ class StoreProcessorIT
                 super.getRecordByCursor( id, target, mode, cursor );
             }
         };
-        nodeStore.updateRecord( node( 0, false, 0, 0 ) );
-        nodeStore.updateRecord( node( 1, false, 0, 0 ) );
-        nodeStore.updateRecord( node( 2, false, 0, 0 ) );
-        nodeStore.updateRecord( node( 3, false, 0, 0 ) );
-        nodeStore.updateRecord( node( 4, false, 0, 0 ) );
+        nodeStore.updateRecord( node( 0, false, 0, 0 ), NULL );
+        nodeStore.updateRecord( node( 1, false, 0, 0 ), NULL );
+        nodeStore.updateRecord( node( 2, false, 0, 0 ), NULL );
+        nodeStore.updateRecord( node( 3, false, 0, 0 ), NULL );
+        nodeStore.updateRecord( node( 4, false, 0, 0 ), NULL );
         nodeStore.setHighestPossibleIdInUse( 4 );
 
         // when
-        processor.applyFiltered( nodeStore );
+        processor.applyFiltered( nodeStore, NULL );
 
         // then
         verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ) );

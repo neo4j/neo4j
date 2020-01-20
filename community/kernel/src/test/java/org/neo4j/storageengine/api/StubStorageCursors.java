@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
@@ -59,12 +60,6 @@ public class StubStorageCursors implements StorageReader
             ( name, internal ) -> toIntExact( nextTokenId.getAndIncrement() ), TYPE_PROPERTY_KEY );
 
     private final Map<Long,NodeData> nodeData = new HashMap<>();
-    private final Map<String,Long> labelByName = new HashMap<>();
-    private final Map<Long,String> labelById = new HashMap<>();
-    private final Map<String,Long> propertyKeyByName = new HashMap<>();
-    private final Map<Long,String> propertyKeyById = new HashMap<>();
-    private final Map<String,Long> relationshipTypeByName = new HashMap<>();
-    private final Map<Long,String> relationshipTypeById = new HashMap<>();
     private final Map<Long,PropertyData> propertyData = new HashMap<>();
     private final Map<Long,RelationshipData> relationshipData = new HashMap<>();
 
@@ -276,13 +271,13 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public boolean nodeExists( long id )
+    public boolean nodeExists( long id, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public boolean relationshipExists( long id )
+    public boolean relationshipExists( long id, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
@@ -306,31 +301,31 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public StorageNodeCursor allocateNodeCursor()
+    public StorageNodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
     {
         return new StubStorageNodeCursor();
     }
 
     @Override
-    public StoragePropertyCursor allocatePropertyCursor()
+    public StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer )
     {
         return new StubStoragePropertyCursor();
     }
 
     @Override
-    public StorageRelationshipGroupCursor allocateRelationshipGroupCursor()
+    public StorageRelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor()
+    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public StorageRelationshipScanCursor allocateRelationshipScanCursor()
+    public StorageRelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
         return new StubStorageRelationshipScanCursor();
     }

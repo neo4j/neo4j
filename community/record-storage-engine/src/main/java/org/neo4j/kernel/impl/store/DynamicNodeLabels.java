@@ -51,18 +51,18 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     @Override
-    public long[] get( NodeStore nodeStore )
+    public long[] get( NodeStore nodeStore, PageCursorTracer cursorTracer )
     {
-        return get( node, nodeStore );
+        return get( node, nodeStore, cursorTracer );
     }
 
-    public static long[] get( NodeRecord node, NodeStore nodeStore )
+    public static long[] get( NodeRecord node, NodeStore nodeStore, PageCursorTracer cursorTracer )
     {
         if ( node.isLight() )
         {
-            nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ) );
+            nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ), cursorTracer );
         }
-        return getDynamicLabelsArray( node.getUsedDynamicLabelRecords(), nodeStore.getDynamicLabelStore() );
+        return getDynamicLabelsArray( node.getUsedDynamicLabelRecords(), nodeStore.getDynamicLabelStore(), cursorTracer );
     }
 
     @Override
@@ -95,7 +95,7 @@ public class DynamicNodeLabels implements NodeLabels
         if ( fieldPointsToDynamicRecordOfLabels( labelField ) )
         {
             // There are existing dynamic label records, get them
-            nodeStore.ensureHeavy( node, existingLabelsBits );
+            nodeStore.ensureHeavy( node, existingLabelsBits, cursorTracer );
             changedDynamicRecords = node.getDynamicLabelRecords();
             setNotInUse( changedDynamicRecords );
         }
@@ -122,9 +122,9 @@ public class DynamicNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
     {
-        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ) );
+        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ), cursorTracer );
         long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
-                nodeStore.getDynamicLabelStore() );
+                nodeStore.getDynamicLabelStore(), cursorTracer );
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         Collection<DynamicRecord> changedDynamicRecords = allocateRecordsForDynamicLabels( node.getId(), newLabelIds,
@@ -136,9 +136,9 @@ public class DynamicNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore, PageCursorTracer cursorTracer )
     {
-        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ) );
+        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ), cursorTracer );
         long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
-                nodeStore.getDynamicLabelStore() );
+                nodeStore.getDynamicLabelStore(), cursorTracer );
         long[] newLabelIds = filter( existingLabelIds, labelId );
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         if ( InlineNodeLabels.tryInlineInNodeRecord( node, newLabelIds, existingRecords ) )
@@ -220,11 +220,10 @@ public class DynamicNodeLabels implements NodeLabels
         return records;
     }
 
-    public static long[] getDynamicLabelsArray( Iterable<DynamicRecord> records,
-            AbstractDynamicStore dynamicLabelStore )
+    public static long[] getDynamicLabelsArray( Iterable<DynamicRecord> records, AbstractDynamicStore dynamicLabelStore, PageCursorTracer cursorTracer )
     {
         long[] storedLongs = (long[])
-            DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+            DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY, cursorTracer ) ).asObject();
         return LabelIdArray.stripNodeId( storedLongs );
     }
 
@@ -236,10 +235,10 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     public static Pair<Long, long[]> getDynamicLabelsArrayAndOwner( Iterable<DynamicRecord> records,
-            AbstractDynamicStore dynamicLabelStore )
+            AbstractDynamicStore dynamicLabelStore, PageCursorTracer cursorTracer )
     {
         long[] storedLongs = (long[])
-                DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+                DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY, cursorTracer ) ).asObject();
         return Pair.of(storedLongs[0], LabelIdArray.stripNodeId( storedLongs ));
     }
 }

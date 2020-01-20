@@ -33,6 +33,7 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension
 class PropertyReaderIT
@@ -53,19 +54,19 @@ class PropertyReaderIT
         // 1
         record.setId( 1 );
         record.initialize( true, -1, 2 );
-        propertyStore.updateRecord( record );
+        propertyStore.updateRecord( record, NULL );
         // 2
         record.setId( 2 );
         record.initialize( true, 1, 3 );
-        propertyStore.updateRecord( record );
+        propertyStore.updateRecord( record, NULL );
         // 3
         record.setId( 3 );
         record.initialize( true, 2, 4 );
-        propertyStore.updateRecord( record );
+        propertyStore.updateRecord( record, NULL );
         // 4
         record.setId( 4 );
         record.initialize( true, 3, 2 ); // <-- completing the circle
-        propertyStore.updateRecord( record );
+        propertyStore.updateRecord( record, NULL );
 
         // when
         PropertyReader reader = new PropertyReader( new StoreAccess( storageEngine.testAccessNeoStores() ) );

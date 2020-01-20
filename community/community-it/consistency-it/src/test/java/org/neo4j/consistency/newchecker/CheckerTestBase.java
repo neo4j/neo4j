@@ -334,12 +334,12 @@ class CheckerTestBase
 
     long[] nodeLabels( NodeRecord node )
     {
-        return NodeLabelsField.get( node, neoStores.getNodeStore() );
+        return NodeLabelsField.get( node, neoStores.getNodeStore(), PageCursorTracer.NULL );
     }
 
     NodeRecord loadNode( long id )
     {
-        return neoStores.getNodeStore().getRecord( id, neoStores.getNodeStore().newRecord(), RecordLoad.NORMAL );
+        return neoStores.getNodeStore().getRecord( id, neoStores.getNodeStore().newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
     }
 
     long node( long id, long nextProp, long nextRel, int... labels )
@@ -347,7 +347,7 @@ class CheckerTestBase
         NodeRecord node = new NodeRecord( id ).initialize( true, nextProp, false, NULL, 0 );
         long[] labelIds = toLongs( labels );
         InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, PageCursorTracer.NULL );
-        nodeStore.updateRecord( node );
+        nodeStore.updateRecord( node, PageCursorTracer.NULL );
         return id;
     }
 
@@ -356,14 +356,14 @@ class CheckerTestBase
     {
         RelationshipRecord relationship = new RelationshipRecord( id ).initialize( true, NULL, startNode, endNode, type, startPrev, startNext, endPrev,
                 endNext, firstInStart, firstInEnd );
-        relationshipStore.updateRecord( relationship );
+        relationshipStore.updateRecord( relationship, PageCursorTracer.NULL );
         return id;
     }
 
     long relationshipGroup( long id, long next, long owningNode, int type, long firstOut, long firstIn, long firstLoop )
     {
         RelationshipGroupRecord group = new RelationshipGroupRecord( id ).initialize( true, type, firstOut, firstIn, firstLoop, owningNode, next );
-        relationshipGroupStore.updateRecord( group );
+        relationshipGroupStore.updateRecord( group, PageCursorTracer.NULL );
         return id;
     }
 
@@ -393,7 +393,7 @@ class CheckerTestBase
         {
             prop.addPropertyBlock( property );
         }
-        propertyStore.updateRecord( prop );
+        propertyStore.updateRecord( prop, PageCursorTracer.NULL );
     }
 
     private static class LookupAccessorsFromRunningDb implements ThrowingFunction<IndexDescriptor,IndexAccessor,IOException>

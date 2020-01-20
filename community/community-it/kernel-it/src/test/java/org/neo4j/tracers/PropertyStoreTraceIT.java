@@ -28,6 +28,8 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -83,8 +85,8 @@ class PropertyStoreTraceIT
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnPropertyBlockIdGeneration" ) )
         {
-            final PropertyBlock propertyBlock = new PropertyBlock();
-            final DynamicRecord dynamicRecord = new DynamicRecord( 2 );
+            var propertyBlock = new PropertyBlock();
+            var dynamicRecord = new DynamicRecord( 2 );
             dynamicRecord.setData( new byte[]{0, 1, 2, 3, 4, 5, 6, 7} );
             propertyBlock.addValueRecord( dynamicRecord );
             propertyStore.encodeValue( propertyBlock, 1, stringValue( randomAlphabetic( (int) kibiBytes( 4 ) ) ), cursorTracer );

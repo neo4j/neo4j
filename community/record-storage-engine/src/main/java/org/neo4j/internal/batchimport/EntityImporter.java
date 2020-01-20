@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 
 /**
@@ -156,7 +157,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
                 long nextPropertyId = propertyIds.next();
                 long prevId = currentRecord.getId();
                 currentRecord.setNextProp( nextPropertyId );
-                propertyStore.updateRecord( currentRecord, IGNORE );
+                propertyStore.updateRecord( currentRecord, IGNORE, TRACER_SUPPLIER.get() );
                 currentRecord = propertyRecord( nextPropertyId );
                 currentRecord.setPrevProp( prevId );
             }
@@ -167,7 +168,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
         if ( currentRecord.size() > 0 )
         {
-            propertyStore.updateRecord( currentRecord, IGNORE );
+            propertyStore.updateRecord( currentRecord, IGNORE, TRACER_SUPPLIER.get() );
         }
 
         return firstRecordId;

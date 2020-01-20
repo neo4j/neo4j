@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -84,15 +85,15 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     @Override
-    public void ensureHeavy( NodeRecord node )
+    public void ensureHeavy( NodeRecord node, PageCursorTracer cursorTracer )
     {
         if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( node.getLabelField() ) )
         {
-            ensureHeavy( node, NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() ) );
+            ensureHeavy( node, NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() ), cursorTracer );
         }
     }
 
-    public void ensureHeavy( NodeRecord node, long firstDynamicLabelRecord )
+    public void ensureHeavy( NodeRecord node, long firstDynamicLabelRecord, PageCursorTracer cursorTracer )
     {
         if ( !node.isLight() )
         {
@@ -100,14 +101,14 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         }
 
         // Load any dynamic labels and populate the node record
-        node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false ) );
+        node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, cursorTracer ) );
     }
 
     @Override
-    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener )
+    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
     {
-        super.updateRecord( record, idUpdateListener );
-        updateDynamicLabelRecords( record.getDynamicLabelRecords(), idUpdateListener );
+        super.updateRecord( record, idUpdateListener, cursorTracer );
+        updateDynamicLabelRecords( record.getDynamicLabelRecords(), idUpdateListener, cursorTracer );
     }
 
     public DynamicArrayStore getDynamicLabelStore()
@@ -115,11 +116,11 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         return dynamicLabelStore;
     }
 
-    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords, IdUpdateListener idUpdateListener )
+    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
     {
         for ( DynamicRecord record : dynamicLabelRecords )
         {
-            dynamicLabelStore.updateRecord( record, idUpdateListener );
+            dynamicLabelStore.updateRecord( record, idUpdateListener, cursorTracer );
         }
     }
 }

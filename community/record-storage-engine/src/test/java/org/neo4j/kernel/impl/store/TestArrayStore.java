@@ -53,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -276,13 +277,13 @@ class TestArrayStore
         arrayStore.allocateRecords( records, array, PageCursorTracer.NULL );
         for ( DynamicRecord record : records )
         {
-            arrayStore.updateRecord( record );
+            arrayStore.updateRecord( record, NULL );
         }
         return records;
     }
 
     private Pair<byte[], byte[]> loadArray( Collection<DynamicRecord> records )
     {
-        return arrayStore.readFullByteArray( records, PropertyType.ARRAY );
+        return arrayStore.readFullByteArray( records, PropertyType.ARRAY, NULL );
     }
 }

@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.sort;
 import static org.neo4j.internal.helpers.ArrayUtil.union;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
@@ -202,7 +203,7 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
                 }
                 else
                 {
-                    validateLabelIds( nodeLabels.get( null ), engine, records );
+                    validateLabelIds( nodeLabels.get( null, TRACER_SUPPLIER.get() ), engine, records );
                 }
             }
 

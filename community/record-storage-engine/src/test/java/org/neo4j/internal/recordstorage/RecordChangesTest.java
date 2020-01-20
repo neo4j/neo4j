@@ -22,7 +22,10 @@ package org.neo4j.internal.recordstorage;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class RecordChangesTest
 {
@@ -35,13 +38,13 @@ class RecordChangesTest
         }
 
         @Override
-        public Object load( long o, Object additionalData )
+        public Object load( long o, Object additionalData, PageCursorTracer cursorTracer )
         {
             return o;
         }
 
         @Override
-        public void ensureHeavy( Object o )
+        public void ensureHeavy( Object o, PageCursorTracer cursorTracer )
         {
 
         }
@@ -60,10 +63,10 @@ class RecordChangesTest
         RecordChanges<Object, Object> change = new RecordChanges<>( loader, new MutableInt() );
 
         // When
-        change.getOrLoad( 1, null ).forChangingData();
-        change.getOrLoad( 1, null ).forChangingData();
-        change.getOrLoad( 2, null ).forChangingData();
-        change.getOrLoad( 3, null ).forReadingData();
+        change.getOrLoad( 1, null, NULL ).forChangingData();
+        change.getOrLoad( 1, null, NULL ).forChangingData();
+        change.getOrLoad( 2, null, NULL ).forChangingData();
+        change.getOrLoad( 3, null, NULL ).forReadingData();
 
         // Then
         assertThat( change.changeSize() ).isEqualTo( 2 );

@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Arrays.sort;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class NodeInUseWithCorrectLabelsCheck
         <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport.NodeInUseWithCorrectLabelsReport>
@@ -84,7 +85,7 @@ public class NodeInUseWithCorrectLabelsCheck
             }
             else
             {
-                long[] storeLabels = nodeLabels.get( null );
+                long[] storeLabels = nodeLabels.get( null, TRACER_SUPPLIER.get() );
                 REPORT report = engine.report();
                 validateLabelIds( nodeRecord, storeLabels, report );
             }

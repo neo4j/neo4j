@@ -29,11 +29,15 @@ import java.util.Map;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.PropertyKeyValue;
+import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -42,8 +46,12 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class EntityUpdatesTest
 {
@@ -78,7 +86,41 @@ class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE, NULL ) ).isEmpty();
+    }
+
+    @Test
+    void useProvidedCursorForPropertiesOnNodesLoad()
+    {
+        var cursorTracer = mock( PageCursorTracer.class );
+        var nodeCursor = mock( StorageNodeCursor.class );
+        var storageReader = mock( StorageReader.class, RETURNS_MOCKS );
+        when( nodeCursor.hasProperties() ).thenReturn( true );
+        when( nodeCursor.next() ).thenReturn( true );
+        when( storageReader.allocateNodeCursor( any() ) ).thenReturn( nodeCursor );
+
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
+        updates.forIndexKeys( indexes, storageReader, EntityType.NODE, cursorTracer );
+
+        verify( storageReader ).allocateNodeCursor( cursorTracer );
+        verify( storageReader ).allocatePropertyCursor( cursorTracer );
+    }
+
+    @Test
+    void useProvidedCursorForPropertiesOnRelationshipLoad()
+    {
+        var cursorTracer = mock( PageCursorTracer.class );
+        var relationshipCursor = mock( StorageRelationshipScanCursor.class );
+        var storageReader = mock( StorageReader.class, RETURNS_MOCKS );
+        when( relationshipCursor.hasProperties() ).thenReturn( true );
+        when( relationshipCursor.next() ).thenReturn( true );
+        when( storageReader.allocateRelationshipScanCursor( any() ) ).thenReturn( relationshipCursor );
+
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
+        updates.forIndexKeys( indexes, storageReader, EntityType.RELATIONSHIP, cursorTracer );
+
+        verify( storageReader ).allocateRelationshipScanCursor( cursorTracer );
+        verify( storageReader ).allocatePropertyCursor( cursorTracer );
     }
 
     @Test
@@ -92,7 +134,7 @@ class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -102,7 +144,7 @@ class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -112,7 +154,7 @@ class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, index1, property1.value() ) );
     }
 
@@ -128,7 +170,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, index1, property1.value() ), IndexEntryUpdate.add( nodeId, index2, property2.value() ),
                 IndexEntryUpdate.add( nodeId, index3, property3.value() ), IndexEntryUpdate.add( nodeId, index123, values123 ) );
     }
@@ -144,7 +186,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( index123 ), propertyLoader(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( singleton( index123 ), propertyLoader(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -158,7 +200,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( index123 ), propertyLoader( property2 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( index123 ), propertyLoader( property2 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, index123, values123 ) );
     }
 
@@ -169,7 +211,7 @@ class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -180,7 +222,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.remove( nodeId, index1, property1.value() ) );
     }
 
@@ -192,7 +234,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.remove( nodeId, index1, property1.value() ), IndexEntryUpdate.remove( nodeId, index2, property2.value() ),
                 IndexEntryUpdate.remove( nodeId, index3, property3.value() ), IndexEntryUpdate.remove( nodeId, index123, values123 ) );
     }
@@ -206,7 +248,7 @@ class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -218,7 +260,8 @@ class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ) ).contains( IndexEntryUpdate.add( nodeId, index1, property1.value() ) );
+        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE, NULL ) ).contains(
+                IndexEntryUpdate.add( nodeId, index1, property1.value() ) );
     }
 
     @Test
@@ -232,7 +275,7 @@ class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, index1, property1.value() ), IndexEntryUpdate.add( nodeId, index2, property2.value() ),
                 IndexEntryUpdate.add( nodeId, index3, property3.value() ), IndexEntryUpdate.add( nodeId, index123, values123 ) );
     }
@@ -248,7 +291,7 @@ class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -262,7 +305,7 @@ class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -272,7 +315,7 @@ class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( index1 ), assertNoLoading(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( singleton( index1 ), assertNoLoading(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -284,7 +327,7 @@ class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( index1 ), assertNoLoading(), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( singleton( index1 ), assertNoLoading(), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -297,7 +340,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader(), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader(), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, nonSchemaIndex, property1.value(), null, null ) );
     }
 
@@ -313,7 +356,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader(), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader(), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, nonSchemaIndex, values123 ) );
     }
 
@@ -328,7 +371,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.change( nodeId, nonSchemaIndex, values123, new Value[]{property1.value(), newValue2, property3.value()} ) );
     }
 
@@ -347,7 +390,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.change( nodeId, nonSchemaIndex, values123, new Value[]{newValue1, newValue2, newValue3} ) );
     }
 
@@ -361,7 +404,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property2 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property2 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.remove( nodeId, nonSchemaIndex, null, property2.value(), null ) );
     }
 
@@ -375,7 +418,7 @@ class EntityUpdatesTest
                         .build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.change( nodeId, nonSchemaIndex, values123, new Value[]{property1.value(), null, property3.value()} ) );
     }
 
@@ -387,7 +430,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, nonSchemaIndex, values123 ) );
     }
 
@@ -399,7 +442,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( allLabels ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.add( nodeId, nonSchemaIndex, values123 ) );
     }
 
@@ -411,7 +454,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( allLabels ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -422,7 +465,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( labelId1, unusedLabelId ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -433,7 +476,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( unusedLabelId ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.remove( nodeId, nonSchemaIndex, values123 ) );
     }
 
@@ -445,7 +488,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( allLabels ).withTokensAfter( label ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).isEmpty();
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).isEmpty();
     }
 
     @Test
@@ -456,7 +499,7 @@ class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ) ).contains(
+        assertThat( updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE, NULL ) ).contains(
                 IndexEntryUpdate.remove( nodeId, nonSchemaIndex, values123 ) );
     }
 
@@ -480,11 +523,11 @@ class EntityUpdatesTest
     {
         StorageReader reader = mock( StorageReader.class );
         IllegalStateException exception = new IllegalStateException( "Should never attempt to load properties!" );
-        when( reader.allocateNodeCursor() ).thenThrow( exception );
-        when( reader.allocateRelationshipScanCursor() ).thenThrow( exception );
-        when( reader.allocateRelationshipTraversalCursor() ).thenThrow( exception );
-        when( reader.allocateRelationshipGroupCursor() ).thenThrow( exception );
-        when( reader.allocatePropertyCursor() ).thenThrow( exception );
+        when( reader.allocateNodeCursor( any() ) ).thenThrow( exception );
+        when( reader.allocateRelationshipScanCursor( any() ) ).thenThrow( exception );
+        when( reader.allocateRelationshipTraversalCursor( any() ) ).thenThrow( exception );
+        when( reader.allocateRelationshipGroupCursor( any() ) ).thenThrow( exception );
+        when( reader.allocatePropertyCursor( any() ) ).thenThrow( exception );
         return reader;
     }
 }

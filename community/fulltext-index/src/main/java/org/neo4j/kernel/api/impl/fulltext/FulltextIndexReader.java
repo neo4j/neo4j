@@ -193,7 +193,7 @@ public class FulltextIndexReader implements IndexReader
         ReadableTransactionState state = context.getTransactionStateOrNull();
         if ( state != null && !isEventuallyConsistent( index ) )
         {
-            transactionState.maybeUpdate( context );
+            transactionState.maybeUpdate( context, cursorTracer );
             itr = transactionState.filter( itr, query );
         }
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client );

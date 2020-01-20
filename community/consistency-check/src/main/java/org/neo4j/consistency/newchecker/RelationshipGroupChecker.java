@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -75,7 +76,7 @@ class RelationshipGroupChecker implements Checker
         try ( RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
                 RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
                 RecordStorageReader reader = new RecordStorageReader( neoStores );
-                RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor() )
+                RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() ) )
         {
             ProgressListener localProgress = progress.threadLocalReporter();
             CacheAccess.Client client = context.cacheAccess.client();

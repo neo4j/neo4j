@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -30,11 +31,13 @@ import org.neo4j.storageengine.api.StorageRelationshipCursor;
 abstract class RecordRelationshipCursor extends RelationshipRecord implements RelationshipVisitor<RuntimeException>, StorageRelationshipCursor
 {
     final RelationshipStore relationshipStore;
+    private final PageCursorTracer cursorTracer;
 
-    RecordRelationshipCursor( RelationshipStore relationshipStore )
+    RecordRelationshipCursor( RelationshipStore relationshipStore, PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
@@ -89,7 +92,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
 
     PageCursor relationshipPage( long reference )
     {
-        return relationshipStore.openPageCursorForReading( reference );
+        return relationshipStore.openPageCursorForReading( reference, cursorTracer );
     }
 
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )

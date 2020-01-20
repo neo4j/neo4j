@@ -36,6 +36,8 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -58,10 +60,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class TxStateTransactionDataViewTest
 {
-    private final Statement stmt = mock( Statement.class );
     private final StubStorageCursors ops = new StubStorageCursors();
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final InternalTransaction internalTransaction = mock( InternalTransaction.class );
@@ -73,6 +75,9 @@ class TxStateTransactionDataViewTest
     void setup() throws PropertyKeyIdNotFoundKernelException
     {
         when( transaction.internalTransaction() ).thenReturn( internalTransaction );
+        var kernelTransaction = mock( KernelTransaction.class );
+        when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
+        when( kernelTransaction.pageCursorTracer() ).thenReturn( NULL );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
         {

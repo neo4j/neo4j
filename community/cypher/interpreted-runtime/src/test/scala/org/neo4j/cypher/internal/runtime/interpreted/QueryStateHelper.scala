@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, N
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber}
@@ -45,7 +46,7 @@ object QueryStateHelper extends MockitoSugar {
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: Array[AnyValue] = Array.empty,
-                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory]),
+                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], PageCursorTracer.NULL),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 expressionVariables: Array[AnyValue] = Array.empty,
                 subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
@@ -67,7 +68,7 @@ object QueryStateHelper extends MockitoSugar {
     emptyWith(db = db,
               query = queryContext,
               params = params,
-              expressionCursors = new ExpressionCursors(transactionalContext.cursors),
+              expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.pageCursorTracer()),
               subscriber = subscriber)
   }
 
