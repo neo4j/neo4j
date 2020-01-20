@@ -26,6 +26,8 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.server.security.auth.AuthProcedures
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+
 class CypherQueryObfuscatorIT extends CypherFunSuite {
 
   private val obfuscatorFactory = new CypherQueryObfuscatorFactory {
@@ -127,7 +129,6 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
 
   for (ParameterTest(rawText, obfuscatedText, rawParameters, obfuscatedParameters) <- parameterTests) {
     test(s"$rawText [params]") {
-      import scala.collection.JavaConverters._
       val params = ValueUtils.asMapValue(rawParameters.asJava)
       val expectedParams = ValueUtils.asMapValue(obfuscatedParameters.asJava)
       val ob = obfuscatorFactory.obfuscatorForQuery(rawText)
