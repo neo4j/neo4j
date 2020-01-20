@@ -171,12 +171,8 @@ final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String
   override def name = "GRANT ROLE"
 
   override def semanticCheck: SemanticCheck = {
-    if (roleNames.contains(reservedRoleName)) {
-      SemanticError(s"Failed to grant the specified role '$reservedRoleName': '$reservedRoleName' is a reserved role and cannot be granted.", position)
-    } else {
-      super.semanticCheck chain
-        SemanticState.recordCurrentScope(this)
-    }
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
   }
 }
 

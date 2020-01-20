@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.{InvalidArgumentException, InvalidSemanticsException}
 import org.neo4j.string.UTF8
 
 /**
@@ -202,7 +202,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
         }).foldLeft(Some(plans.AssertDbmsAdmin(AssignRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan])) {
-          case (source, (userName, roleName)) => Some(plans.GrantRoleToUser(source, userName, roleName))
+          case (source, ("PUBLIC", _)) => source
+          case (source, (roleName, userName)) => Some(plans.GrantRoleToUser(source, roleName, userName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE roles FROM users
