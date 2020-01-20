@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 abstract class BasicApply(idGen: IdGen) extends LogicalPlan(idGen) with ApplyPlan {
   def left: LogicalPlan
