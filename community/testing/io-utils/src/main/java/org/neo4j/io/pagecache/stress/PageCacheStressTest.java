@@ -88,9 +88,8 @@ public class PageCacheStressTest
             try ( PageCache pageCacheUnderTest = new MuninnPageCache(
                     swapperFactory, numberOfCachePages, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {
-                PageCacheStresser pageCacheStresser =
-                        new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
-                pageCacheStresser.stress( pageCacheUnderTest, condition );
+                PageCacheStresser pageCacheStresser = new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
+                pageCacheStresser.stress( pageCacheUnderTest, tracer, condition );
             }
         }
     }
